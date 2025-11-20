@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Iván Manfredi | AI Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Space Grotesk', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+              mono: ['monospace'],
+            },
+            colors: {
+              primary: '#000000',
+              paper: '#ffffff',
+              accent: '#00E676', // Tech Green (Profit/Go)
+              cyan: '#2979FF', // Electric Blue (Tech/Systems)
+              pink: '#FF4081',
+            },
+            boxShadow: {
+              'comic': '4px 4px 0px 0px rgba(0,0,0,1)',
+              'comic-hover': '6px 6px 0px 0px rgba(0,0,0,1)',
+              'comic-active': '2px 2px 0px 0px rgba(0,0,0,1)',
+            },
+            backgroundImage: {
+              'grid': 'linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)',
+            }
+          },
+        },
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        background-color: #fff;
+        color: #000;
+        overflow-x: hidden;
+      }
+      .bg-grid-pattern {
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, #f0f0f0 1px, transparent 1px),
+                          linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
+      }
+      .text-outline {
+        -webkit-text-stroke: 1px black;
+        color: transparent;
+      }
+      .text-outline-white {
+         -webkit-text-stroke: 1px black;
+         color: white;
+      }
+      /* Hide scrollbar */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
