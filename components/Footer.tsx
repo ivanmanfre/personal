@@ -35,8 +35,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 font-medium uppercase tracking-wide">
             <p>&copy; 2026 All Rights Reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
-                <a href="#" className="hover:text-white">Privacy</a>
-                <a href="#" className="hover:text-white">Terms</a>
+                <a href="mailto:ivan@intelligents.agency" className="hover:text-white">Contact</a>
             </div>
         </div>
       </div>

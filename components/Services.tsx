@@ -14,14 +14,14 @@ const services = [
     title: "AI Agents",
     description: "AI that qualifies your leads, answers support tickets, and processes documents 24/7, trained on your data and your playbook.",
     icon: Bot,
-    color: "bg-cyan-400",
+    color: "bg-cyan",
     tags: ["Lead Qualification", "Support Automation"]
   },
   {
     title: "Operations Audit",
     description: "Before building anything, I map every process in your business and find exactly where time and money are leaking.",
     icon: BarChart3,
-    color: "bg-pink-400",
+    color: "bg-pink",
     tags: ["Process Mapping", "ROI Analysis"]
   },
   {

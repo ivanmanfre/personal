@@ -30,7 +30,7 @@ const Cursor: React.FC = () => {
 
   return (
     <motion.div
-      className="fixed top-0 left-0 w-8 h-8 border border-cyan-400 rounded-full pointer-events-none z-50 mix-blend-difference hidden md:block"
+      className="fixed top-0 left-0 w-8 h-8 border border-cyan rounded-full pointer-events-none z-50 mix-blend-difference hidden md:block"
       animate={{
         x: mousePosition.x - 16,
         y: mousePosition.y - 16,
@@ -44,7 +44,7 @@ const Cursor: React.FC = () => {
         mass: 0.1
       }}
     >
-      <div className="w-1 h-1 bg-cyan-400 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+      <div className="w-1 h-1 bg-cyan rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
     </motion.div>
   );
 };

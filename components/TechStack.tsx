@@ -11,7 +11,7 @@ const TechStack: React.FC = () => {
     { name: "Claude", slug: "anthropic", bg: "bg-yellow-100" },
     { name: "Gemini", slug: "googlegemini", bg: "bg-blue-100" },
     { name: "LangChain", slug: "langchain", bg: "bg-white" },
-    { name: "Flowise", isLucide: true, icon: Workflow, bg: "bg-pink-100" },
+    { name: "Flowise", isLucide: true, icon: Workflow, bg: "bg-rose-100" },
     { name: "HubSpot", slug: "hubspot", bg: "bg-orange-200" },
     { name: "Salesforce", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/salesforce.svg", bg: "bg-blue-200" },
     { name: "Twilio", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/twilio.svg", bg: "bg-red-200" },
@@ -37,7 +37,7 @@ const TechStack: React.FC = () => {
   };
 
   return (
-    <section className="py-24 bg-cyan-400 border-t-4 border-black">
+    <section className="py-24 bg-cyan border-t-4 border-black">
       <div className="container mx-auto px-6">
          <div className="text-center mb-12">
             <motion.div 

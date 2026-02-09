@@ -100,24 +100,6 @@ const Hero: React.FC = () => {
           </a>
         </motion.div>
 
-        {/* Stats Bar */}
-        <div className="mt-24 w-full max-w-5xl border-2 border-black bg-white shadow-comic relative">
-            <div className="absolute top-0 left-0 w-full h-1 bg-black"></div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x-2 divide-black">
-                {[
-                    { label: 'Systems Deployed', value: '140+' },
-                    { label: 'Hours Saved Yearly', value: '10k+' },
-                    { label: 'Client Retention', value: '95%' },
-                    { label: 'Avg. ROI', value: '12x' },
-                ].map((stat, i) => (
-                    <div key={i} className="text-center py-6 md:py-8 hover:bg-gray-50 transition-colors group">
-                        <div className="text-3xl md:text-4xl font-black mb-2 group-hover:scale-110 transition-transform duration-300">{stat.value}</div>
-                        <div className="font-mono font-bold uppercase text-xs text-gray-500">{stat.label}</div>
-                    </div>
-                ))}
-            </div>
-        </div>
       </div>
     </section>
   );

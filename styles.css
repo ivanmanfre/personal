@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Space Grotesk', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: monospace;
+
+  --color-primary: #000000;
+  --color-paper: #ffffff;
+  --color-accent: #00E676;
+  --color-cyan: #2979FF;
+  --color-pink: #FF4081;
+
+  --shadow-comic: 4px 4px 0px 0px rgba(0,0,0,1);
+  --shadow-comic-hover: 6px 6px 0px 0px rgba(0,0,0,1);
+  --shadow-comic-active: 2px 2px 0px 0px rgba(0,0,0,1);
+}
+
+body {
+  background-color: #fff;
+  color: #000;
+  overflow-x: hidden;
+}
+
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, #f0f0f0 1px, transparent 1px),
+                    linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
+}
+
+.text-outline {
+  -webkit-text-stroke: 1px black;
+  color: transparent;
+}
+
+.text-outline-white {
+  -webkit-text-stroke: 1px black;
+  color: white;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

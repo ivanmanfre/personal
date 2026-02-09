@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 const About: React.FC = () => {
-  // Using Google Drive thumbnail URL for reliable embedding
-  // ID: 1YYjN5YoqKIfFvP64qRBsQokYnypG2Gwo
-  const [imgSrc, setImgSrc] = useState('https://drive.google.com/thumbnail?id=1YYjN5YoqKIfFvP64qRBsQokYnypG2Gwo&sz=w1000');
 
   return (
     <section id="about" className="py-24 bg-white border-t-4 border-black">
@@ -20,20 +17,16 @@ const About: React.FC = () => {
                 className="lg:w-1/4 relative max-w-xs"
             >
                 <div className="aspect-[4/5] bg-black border-2 border-black relative z-10 overflow-hidden group">
-                    <img 
-                        src={imgSrc}
-                        onError={(e) => {
-                            // Fallback to professional placeholder if drive link fails
-                            e.currentTarget.src = "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80"
-                        }}
-                        alt="Iván Manfredi" 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    <img
+                        src="/profile.jpg"
+                        alt="Iván Manfredi"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {/* Halftone Overlay */}
                     <div className="absolute inset-0 bg-dots opacity-30 mix-blend-overlay pointer-events-none" />
                 </div>
                 {/* Offset Decor */}
-                <div className="absolute top-4 left-4 w-full h-full bg-cyan-400 border-2 border-black -z-0" />
+                <div className="absolute top-4 left-4 w-full h-full bg-cyan border-2 border-black -z-0" />
             </motion.div>
 
             {/* Text Content */}

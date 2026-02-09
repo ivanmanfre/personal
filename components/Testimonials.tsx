@@ -5,31 +5,43 @@ import { motion } from 'framer-motion';
 const reviews = [
   {
     text: "Ivan is top notch. Response time is incredible, he is eager to do the work and deliverables are high functioning products.",
+    name: "Don Morron",
+    company: "Highland Tech",
     project: "N8N Inventory Autonomous System",
     rating: 5
   },
   {
     text: "Working with Ivan has been an absolute game-changer! He exceeded all expectations and saved our team countless hours.",
+    name: "Sydney McCoy",
+    company: "Real McCoy Real Estate",
     project: "Lead Flow & Slack Integration",
     rating: 5
   },
   {
     text: "Ivan is pure class, excellent, hard working and has attention to detail. Hire him!",
+    name: "Client",
+    company: "Construction Tech",
     project: "AI Voice Agent Infrastructure",
     rating: 5
   },
   {
     text: "Ivan is fantastic. Very knowledgable in n8n. Will be doing more projects with Ivan.",
+    name: "Client",
+    company: "SaaS Platform",
     project: "SaaS Backend Automation",
     rating: 5
   },
-   {
+  {
     text: "His solutions helped uncover opportunities we were missing—directly impacting our bottom line.",
+    name: "Client",
+    company: "E-Commerce",
     project: "Make.com Workflow Audit",
     rating: 5
   },
   {
     text: "Complete architectural overhaul. The documentation alone was worth the price.",
+    name: "Client",
+    company: "Enterprise",
     project: "Enterprise Systems Architecture",
     rating: 5
   }
@@ -66,11 +78,14 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
 
         {/* Footer */}
         <div className="border-t border-zinc-800 pt-5 mt-auto flex justify-between items-end">
-            <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase font-mono text-zinc-500 font-bold">Client Rating</span>
+            <div className="flex flex-col gap-2">
+                <div>
+                    <span className="text-sm font-bold text-white">{review.name}</span>
+                    <span className="text-xs text-zinc-500 ml-2">{review.company}</span>
+                </div>
                 <div className="flex gap-1">
                     {[...Array(review.rating)].map((_, i) => (
-                        <Star key={i} size={18} className="fill-accent text-accent drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]" />
+                        <Star key={i} size={14} className="fill-accent text-accent drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]" />
                     ))}
                 </div>
             </div>
