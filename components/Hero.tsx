@@ -1,69 +1,27 @@
 import React from 'react';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { ArrowRight, Activity } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 
 const Hero: React.FC = () => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  // Parallax factors
-  const x1 = useTransform(x, [0, window.innerWidth], [-20, 20]);
-  const y1 = useTransform(y, [0, window.innerHeight], [-20, 20]);
-  const x2 = useTransform(x, [0, window.innerWidth], [30, -30]);
-  const y2 = useTransform(y, [0, window.innerHeight], [30, -30]);
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    x.set(event.clientX);
-    y.set(event.clientY);
-  };
-
   return (
-    <section 
+    <section
       className="relative min-h-screen flex flex-col justify-center items-center pt-32 pb-20 bg-white overflow-hidden"
-      onMouseMove={handleMouseMove}
     >
-      {/* Blueprint Grid Background */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-60 pointer-events-none z-0" />
-
-      {/* Floating Architect Elements (Parallax) */}
-      <motion.div style={{ x: x1, y: y1 }} className="absolute top-24 left-12 opacity-60 pointer-events-none z-0 hidden lg:block">
-         <div className="border-2 border-dashed border-black w-64 h-64 rounded-full flex items-center justify-center">
-            <div className="w-2 h-2 bg-black rounded-full"></div>
-         </div>
-      </motion.div>
-
-      <motion.div style={{ x: x2, y: y2 }} className="absolute bottom-32 right-12 opacity-60 pointer-events-none z-0 hidden lg:block">
-         <div className="border-2 border-black w-40 h-40 rotate-12 bg-accent/20 backdrop-blur-sm"></div>
-      </motion.div>
+      {/* Subtle Grid Background */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10 flex flex-col items-center text-center">
-        
-        {/* Badge */}
-        <motion.div
-          initial={{ scale: 0, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          className="mb-8 bg-black text-white px-4 py-1 border-2 border-black shadow-comic flex items-center gap-2"
-        >
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          <span className="font-mono font-bold uppercase text-xs md:text-sm tracking-widest">
-            System Status: Operational
-          </span>
-        </motion.div>
 
         {/* Headline */}
         <motion.h1
-          style={{
-            x: useTransform(x, [0, window.innerWidth], [-5, 5]),
-            y: useTransform(y, [0, window.innerHeight], [-5, 5])
-          }}
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl md:text-6xl lg:text-8xl font-black tracking-tighter leading-[0.85] mb-8 uppercase relative max-w-7xl"
+          className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.9] mb-8 uppercase max-w-5xl"
         >
-          Your Best People <br className="md:hidden"/> Are Stuck <br />
-          <span className="relative inline-block mt-2 md:mt-0">
-            <span className="absolute inset-0 bg-accent -z-10 transform -rotate-1 border-2 border-black shadow-comic translate-y-1 md:translate-y-3"></span>
-            <span className="relative z-10 px-2 md:px-6 text-black">Doing Your Worst Work</span>
+          Your Best People Are Stuck{' '}
+          <span className="relative inline-block">
+            <span className="absolute inset-0 bg-accent -z-10 transform -rotate-1 border-2 border-black shadow-comic translate-y-1 md:translate-y-2"></span>
+            <span className="relative z-10 px-2 md:px-4">Doing Your Worst Work</span>
           </span>
         </motion.h1>
 
@@ -71,25 +29,25 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="text-xl md:text-2xl font-medium max-w-3xl mx-auto mb-12 leading-relaxed text-gray-800"
+          className="text-lg md:text-xl font-medium max-w-2xl mx-auto mb-12 leading-relaxed text-gray-700"
         >
-          Your senior talent is buried in manual processes, copy-pasting data, and babysitting workflows that a machine should run. I build the systems that <span className="bg-black text-white px-1 font-bold">free your team</span> to do the work that actually <span className="bg-black text-white px-1 font-bold">moves the needle</span>.
+          I build AI agents and automation systems that free your team from manual work, so they can focus on what actually grows the business.
         </motion.p>
 
         {/* Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto"
+          transition={{ delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
         >
           <a
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto px-8 py-4 bg-cyan border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 flex items-center justify-center gap-2 font-bold text-lg uppercase tracking-wide text-white"
+            className="w-full sm:w-auto px-8 py-4 bg-black border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 flex items-center justify-center gap-2 font-bold text-lg uppercase tracking-wide text-white"
           >
-            Book Strategy Call <ArrowRight size={24} />
+            Book Strategy Call <ArrowRight size={20} />
           </a>
 
           <a
