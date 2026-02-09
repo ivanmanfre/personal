@@ -52,7 +52,7 @@ const Hero: React.FC = () => {
 
         {/* Headline */}
         <motion.h1
-          style={{ 
+          style={{
             x: useTransform(x, [0, window.innerWidth], [-5, 5]),
             y: useTransform(y, [0, window.innerHeight], [-5, 5])
           }}
@@ -60,10 +60,10 @@ const Hero: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-5xl md:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.85] mb-8 uppercase relative max-w-7xl"
         >
-          Scale From <br className="md:hidden"/> 7 Figures <br />
+          Your Best People <br className="md:hidden"/> Are Stuck <br />
           <span className="relative inline-block mt-2 md:mt-0">
             <span className="absolute inset-0 bg-accent -z-10 transform -rotate-1 border-2 border-black shadow-comic translate-y-1 md:translate-y-3"></span>
-            <span className="relative z-10 px-2 md:px-6 text-black">To 8 Figures</span>
+            <span className="relative z-10 px-2 md:px-6 text-black">Doing Your Worst Work</span>
           </span>
         </motion.h1>
 
@@ -73,7 +73,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.2 }}
           className="text-xl md:text-2xl font-medium max-w-3xl mx-auto mb-12 leading-relaxed text-gray-800"
         >
-          Most companies are bleeding revenue. I find the <span className="bg-black text-white px-1 font-bold">+$100k</span> and <span className="bg-black text-white px-1 font-bold">+400 hours</span> lost to "operational drag" and turn that waste into fuel.
+          Your senior talent is buried in manual processes, copy-pasting data, and babysitting workflows that a machine should run. I build the systems that <span className="bg-black text-white px-1 font-bold">free your team</span> to do the work that actually <span className="bg-black text-white px-1 font-bold">moves the needle</span>.
         </motion.p>
 
         {/* Buttons */}
@@ -83,18 +83,21 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.4 }}
           className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto"
         >
-          <a 
+          <a
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-4 bg-cyan border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 flex items-center justify-center gap-2 font-bold text-lg uppercase tracking-wide text-white"
           >
-            Find My Bottleneck <ArrowRight size={24} />
+            Book Strategy Call <ArrowRight size={24} />
           </a>
-          
-          <button className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 font-bold text-lg uppercase tracking-wide text-black">
-            View Blueprint
-          </button>
+
+          <a
+            href="#cases"
+            className="w-full sm:w-auto px-8 py-4 bg-white border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 font-bold text-lg uppercase tracking-wide text-black text-center"
+          >
+            See Results
+          </a>
         </motion.div>
 
         {/* Stats Bar */}
@@ -103,10 +106,10 @@ const Hero: React.FC = () => {
             
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x-2 divide-black">
                 {[
-                    { label: 'Revenue Found', value: '+$10M' },
-                    { label: 'Hours Saved', value: '+10k' },
-                    { label: 'ROI Focused', value: '100%' },
-                    { label: 'Systems Built', value: '140+' },
+                    { label: 'Systems Deployed', value: '140+' },
+                    { label: 'Hours Saved Yearly', value: '10k+' },
+                    { label: 'Client Retention', value: '95%' },
+                    { label: 'Avg. ROI', value: '12x' },
                 ].map((stat, i) => (
                     <div key={i} className="text-center py-6 md:py-8 hover:bg-gray-50 transition-colors group">
                         <div className="text-3xl md:text-4xl font-black mb-2 group-hover:scale-110 transition-transform duration-300">{stat.value}</div>

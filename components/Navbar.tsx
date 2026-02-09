@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Square } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar: React.FC = () => {
@@ -16,12 +16,13 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-6 flex justify-between items-center">
         
         {/* Logo */}
-        <a href="#" className="flex items-center gap-2 group">
-          <div className="bg-black text-white p-1">
-            <Square size={24} fill="white" />
+        <a href="#" className="flex items-center gap-3 group">
+          <div className="relative w-10 h-10 bg-black border-2 border-black shadow-comic group-hover:shadow-comic-active group-hover:translate-x-[1px] group-hover:translate-y-[1px] transition-all flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-cyan/20"></div>
+            <span className="relative text-white font-black text-lg tracking-tight">IM</span>
           </div>
-          <span className="text-2xl font-bold tracking-tighter uppercase group-hover:text-cyan-600 transition-colors">
-            Iván <span className="text-cyan-600">Manfredi</span>
+          <span className="text-sm font-medium tracking-widest uppercase text-gray-700 group-hover:text-black transition-colors">
+            Iván Manfredi
           </span>
         </a>
 

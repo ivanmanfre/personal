@@ -2,10 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 const steps = [
-    { id: '01', title: 'Discovery', desc: 'I audit your messy workflows.' },
-    { id: '02', title: 'Blueprint', desc: 'I design the agent architecture.' },
-    { id: '03', title: 'Build', desc: 'I code the robots.' },
-    { id: '04', title: 'Launch', desc: 'We go live. You save money.' },
+    { id: '01', title: 'Discovery', desc: 'I map your processes and find where time and money are being wasted.' },
+    { id: '02', title: 'Blueprint', desc: 'You get a full system architecture before a single line of code is written.' },
+    { id: '03', title: 'Build', desc: 'I build, test, and document every workflow end-to-end.' },
+    { id: '04', title: 'Launch', desc: 'We deploy, measure results, and optimize for ROI.' },
 ];
 
 const Process: React.FC = () => {

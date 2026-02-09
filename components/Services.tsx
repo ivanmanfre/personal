@@ -4,46 +4,46 @@ import { motion, Variants } from 'framer-motion';
 
 const services = [
   {
-    title: "Strategic Automation",
-    description: "Eradicate manual work and eliminate human error. I create a 'Single Source of Truth' for your data.",
+    title: "Workflow Automation",
+    description: "Your team spends hours on tasks a machine should handle. I connect your tools, eliminate manual handoffs, and give you a single source of truth.",
     icon: Workflow,
     color: "bg-accent",
-    tags: ["Workflow Design", "Multi-app Orchestration"]
+    tags: ["n8n / Make / Zapier", "Multi-App Orchestration"]
   },
   {
-    title: "AI Agents & Clones",
-    description: "Automate complex decision-making. Clone your best sales rep or support agent.",
+    title: "AI Agents",
+    description: "AI that qualifies your leads, answers support tickets, and processes documents 24/7, trained on your data and your playbook.",
     icon: Bot,
     color: "bg-cyan-400",
-    tags: ["Lead Qualification", "Support Bots"]
+    tags: ["Lead Qualification", "Support Automation"]
   },
   {
-    title: "Operational Scale",
-    description: "Build a business that can 3x its revenue without 3x the headcount.",
+    title: "Operations Audit",
+    description: "Before building anything, I map every process in your business and find exactly where time and money are leaking.",
     icon: BarChart3,
     color: "bg-pink-400",
-    tags: ["Audit", "Infrastructure"]
+    tags: ["Process Mapping", "ROI Analysis"]
   },
   {
-    title: "RAG & LLM Integration",
-    description: "Systems that 'know' your business. Intelligent doc processing powered by OpenAI & Claude.",
+    title: "AI Knowledge Systems",
+    description: "Internal tools that actually know your business. Ask questions in plain english and get answers from your own docs, SOPs, and data.",
     icon: Database,
     color: "bg-green-400",
-    tags: ["Vector DB", "Semantic Search"]
+    tags: ["RAG / Vector Search", "Document Processing"]
   },
   {
     title: "CRM Architecture",
-    description: "Deep cleanups for HubSpot, Salesforce & Pipedrive. End-to-end data hygiene.",
+    description: "Your CRM should drive revenue, not slow you down. I restructure, clean, and automate HubSpot, Salesforce, and more.",
     icon: Share2,
     color: "bg-orange-400",
-    tags: ["Data Cleaning", "Migration"]
+    tags: ["Data Hygiene", "Pipeline Automation"]
   },
   {
-    title: "Reporting Dashboards",
-    description: "Real-time pulse on your business. Stop flying blind and start making data-driven decisions.",
+    title: "Reporting & Dashboards",
+    description: "Real-time visibility into the metrics that matter. No more spreadsheets, no more waiting for someone to pull the numbers.",
     icon: Zap,
     color: "bg-purple-400",
-    tags: ["Analytics", "KPI Tracking"]
+    tags: ["Live Analytics", "KPI Tracking"]
   }
 ];
 
@@ -73,11 +73,11 @@ const Services: React.FC = () => {
             className="mb-16 flex flex-col md:flex-row items-end gap-6 justify-between border-b-4 border-black pb-8"
         >
             <div>
-                <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 uppercase transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">Core Services</h2>
-                <h3 className="text-5xl md:text-6xl font-black uppercase leading-none">My Core Services</h3>
+                <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 uppercase transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">What I Build</h2>
+                <h3 className="text-5xl md:text-6xl font-black uppercase leading-none">Systems That Work While You Sleep</h3>
             </div>
             <p className="text-xl font-medium max-w-md text-right">
-                I architect solutions to turn your operations into an unfair competitive advantage.
+                Every system I build pays for itself. If it doesn't drive ROI, I won't build it.
             </p>
         </motion.div>
 

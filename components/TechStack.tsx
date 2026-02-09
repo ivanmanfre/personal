@@ -7,18 +7,17 @@ const TechStack: React.FC = () => {
     { name: "n8n", slug: "n8n", bg: "bg-red-200" },
     { name: "Make", slug: "make", bg: "bg-purple-200" },
     { name: "Zapier", slug: "zapier", bg: "bg-orange-200" },
-    { name: "OpenAI", slug: "openai", bg: "bg-green-200" },
+    { name: "OpenAI", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg", bg: "bg-green-200" },
     { name: "Claude", slug: "anthropic", bg: "bg-yellow-100" },
     { name: "Gemini", slug: "googlegemini", bg: "bg-blue-100" },
     { name: "LangChain", slug: "langchain", bg: "bg-white" },
-    // Flowise does not have a stable SimpleIcon slug, using Lucide Workflow icon instead
-    { name: "Flowise", isLucide: true, icon: Workflow, bg: "bg-pink-100" }, 
+    { name: "Flowise", isLucide: true, icon: Workflow, bg: "bg-pink-100" },
     { name: "HubSpot", slug: "hubspot", bg: "bg-orange-200" },
-    { name: "Salesforce", slug: "salesforce", bg: "bg-blue-200" },
-    { name: "Twilio", slug: "twilio", bg: "bg-red-200" }, // Replaced Pipedrive
+    { name: "Salesforce", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/salesforce.svg", bg: "bg-blue-200" },
+    { name: "Twilio", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/twilio.svg", bg: "bg-red-200" },
     { name: "Airtable", slug: "airtable", bg: "bg-blue-200" },
     { name: "Notion", slug: "notion", bg: "bg-white" },
-    { name: "Slack", slug: "slack", bg: "bg-white" },
+    { name: "Slack", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/slack.svg", bg: "bg-white" },
     { name: "Python", slug: "python", bg: "bg-yellow-200" },
   ];
 
@@ -79,10 +78,11 @@ const TechStack: React.FC = () => {
                     {tool.isLucide ? (
                         <tool.icon size={40} className="mb-3 text-black" />
                     ) : (
-                        <img 
-                            src={`https://cdn.simpleicons.org/${tool.slug}/000000`} 
+                        <img
+                            src={tool.src || `https://cdn.simpleicons.org/${tool.slug}/000000`}
                             alt={tool.name}
                             className="w-10 h-10 mb-3"
+                            style={tool.src ? { filter: 'brightness(0)' } : undefined}
                         />
                     )}
                     <span className="font-bold text-xs uppercase tracking-wider">{tool.name}</span>

@@ -1,11 +1,9 @@
 import React from 'react';
-import { Twitter, Linkedin, Mail, Github } from 'lucide-react';
+import { Linkedin, Mail } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const socials = [
-    { icon: Twitter, href: '#' },
     { icon: Linkedin, href: 'https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/' },
-    { icon: Github, href: '#' },
     { icon: Mail, href: 'mailto:ivan@intelligents.agency' },
   ];
 
@@ -16,7 +14,7 @@ const Footer: React.FC = () => {
             
             <div className="text-center md:text-left">
                 <h2 className="text-3xl font-black uppercase mb-2">Iván Manfredi</h2>
-                <p className="font-medium text-gray-400">Automating the future.</p>
+                <p className="font-medium text-gray-400">AI & Automation Architect</p>
             </div>
 
             <div className="flex gap-4">
@@ -35,7 +33,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 font-medium uppercase tracking-wide">
-            <p>&copy; 2025 All Rights Reserved.</p>
+            <p>&copy; 2026 All Rights Reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
                 <a href="#" className="hover:text-white">Privacy</a>
                 <a href="#" className="hover:text-white">Terms</a>

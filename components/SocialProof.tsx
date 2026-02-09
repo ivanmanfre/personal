@@ -5,18 +5,18 @@ import { AudioWaveform } from 'lucide-react';
 const SocialProof: React.FC = () => {
   const tools = [
     { name: "n8n", slug: "n8n" },
-    { name: "Twilio", slug: "twilio" },
+    { name: "Twilio", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/twilio.svg" },
     { name: "Retell AI", isLucide: true, icon: AudioWaveform },
     { name: "Stripe", slug: "stripe" },
     { name: "Shopify", slug: "shopify" },
     { name: "HubSpot", slug: "hubspot" },
-    { name: "OpenAI", slug: "openai" },
+    { name: "OpenAI", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg" },
     { name: "Zapier", slug: "zapier" },
-    { name: "Slack", slug: "slack" },
+    { name: "Slack", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/slack.svg" },
     { name: "Notion", slug: "notion" },
     { name: "Make", slug: "make" },
     { name: "Airtable", slug: "airtable" },
-    { name: "Salesforce", slug: "salesforce" },
+    { name: "Salesforce", src: "https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/salesforce.svg" },
   ];
 
   // Quadruple the list to ensure smooth infinite scrolling on large screens
@@ -44,8 +44,8 @@ const SocialProof: React.FC = () => {
                             <span className="font-black text-xl uppercase tracking-tighter leading-none">{tool.name}</span>
                          </div>
                     ) : (
-                     <img 
-                        src={`https://cdn.simpleicons.org/${tool.slug}/000000`} 
+                     <img
+                        src={tool.src || `https://cdn.simpleicons.org/${tool.slug}/000000`}
                         alt={tool.name}
                         className="h-10 md:h-12 w-auto object-contain"
                     />
