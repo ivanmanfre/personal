@@ -58,7 +58,7 @@ const Hero: React.FC = () => {
           }}
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-5xl md:text-7xl lg:text-9xl font-black tracking-tighter leading-[0.85] mb-8 uppercase relative max-w-7xl"
+          className="text-4xl md:text-6xl lg:text-8xl font-black tracking-tighter leading-[0.85] mb-8 uppercase relative max-w-7xl"
         >
           Your Best People <br className="md:hidden"/> Are Stuck <br />
           <span className="relative inline-block mt-2 md:mt-0">
