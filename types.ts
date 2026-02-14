@@ -35,3 +35,18 @@ export interface Testimonial {
   content: string;
   image: string;
 }
+
+export type ProductCategory = 'workflow' | 'template' | 'agent';
+
+export interface Product {
+  slug: string;
+  name: string;
+  headline: string;
+  description: string;
+  price: number;
+  category: ProductCategory;
+  icon: LucideIcon;
+  features: string[];
+  includes: string[];
+  checkoutUrl: string;
+}
