@@ -47,7 +47,10 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
         {/* Price + CTA */}
         <div className="flex items-center justify-between border-t-2 border-black pt-4 mt-auto">
-          <span className="text-3xl font-black">${product.price}</span>
+          <div>
+            <span className="text-xs font-bold uppercase text-gray-500 block">From</span>
+            <span className="text-3xl font-black">{product.tiers[0].label}</span>
+          </div>
           <span className="flex items-center gap-2 font-bold uppercase text-sm group-hover:gap-3 transition-all">
             View Details <ArrowRight size={16} />
           </span>

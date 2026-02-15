@@ -38,15 +38,25 @@ export interface Testimonial {
 
 export type ProductCategory = 'workflow' | 'template' | 'agent';
 
+export interface PricingTier {
+  id: string;
+  name: string;
+  price: number | null; // null = custom pricing
+  label: string; // e.g. "€297", "From €500"
+  description: string;
+  checkoutUrl: string; // LemonSqueezy URL or Calendly URL
+  highlighted?: boolean;
+}
+
 export interface Product {
   slug: string;
   name: string;
   headline: string;
   description: string;
-  price: number;
   category: ProductCategory;
   icon: LucideIcon;
   features: string[];
   includes: string[];
-  checkoutUrl: string;
+  setup: string[]; // required API keys & setup steps
+  tiers: PricingTier[];
 }
