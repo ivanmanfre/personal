@@ -1,4 +1,4 @@
-import { Workflow, Zap } from 'lucide-react';
+import { Workflow, Zap, FileSignature } from 'lucide-react';
 import { Product } from '../types';
 
 export const products: Product[] = [
@@ -127,6 +127,67 @@ export const products: Product[] = [
         price: null,
         label: 'From $1,000',
         description: 'I install it in your n8n instance, map all your HubSpot and ClickUp fields, configure your assignee database, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
+        checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
+      },
+    ],
+  },
+  {
+    slug: 'signflow',
+    name: 'SignFlow',
+    headline: 'Contract signed in DocuSign. Client fully onboarded. Zero manual steps.',
+    description:
+      'An n8n workflow that fires when a DocuSign envelope is completed, uses Claude to extract the client name and classify the service type from the signed contract, then automatically creates the client\'s Google Drive workspace from the right template, personalizes all documents, drafts pre-kickoff and post-kickoff emails in Gmail, and creates a Slack channel with the client invited — all before you finish your coffee.',
+    category: 'workflow',
+    icon: FileSignature,
+    features: [
+      'DocuSign webhook trigger on envelope completion',
+      'AI-powered client name extraction from signed PDF (Claude Opus)',
+      'Automatic service type classification (routes to correct template)',
+      'Google Drive workspace folder created per client',
+      'Template workspace doc copied and personalized with client name',
+      'Service-specific email drafts (pre-kickoff + post-kickoff) in Gmail',
+      'Slack channel auto-created and client invited via email',
+      'Multi-service routing (content, advising, exec LinkedIn)',
+      'Graceful failure handling if extraction fails',
+    ],
+    includes: [
+      'n8n workflow JSON (ready to import)',
+      'Step-by-step setup guide with screenshots',
+      'DocuSign webhook configuration walkthrough',
+      'Google workspace template examples',
+      'Email template customization guide',
+    ],
+    setup: [
+      'DocuSign account with Connect (webhooks) enabled',
+      'Anthropic API key (Claude for contract parsing)',
+      'Google Cloud project with Drive + Docs + Gmail OAuth2',
+      'Slack workspace with bot token',
+      'n8n instance (self-hosted or cloud)',
+    ],
+    tiers: [
+      {
+        id: 'workflow-only',
+        name: 'Workflow Only',
+        price: 197,
+        label: '$197',
+        description: 'The workflow JSON, setup guide, and all templates. You configure everything yourself.',
+        checkoutUrl: '#',
+      },
+      {
+        id: 'with-setup-call',
+        name: 'Workflow + Setup Call',
+        price: 347,
+        label: '$347',
+        description: 'Everything above plus a 45-min live setup call where I connect your DocuSign, Drive, Gmail, and Slack.',
+        checkoutUrl: '#',
+        highlighted: true,
+      },
+      {
+        id: 'custom-install',
+        name: 'Done-For-You Install',
+        price: null,
+        label: 'From $1,000',
+        description: 'I install it in your n8n instance, connect all APIs, set up your service templates, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
         checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
       },
     ],
