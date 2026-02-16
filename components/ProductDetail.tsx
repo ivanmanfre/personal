@@ -34,7 +34,7 @@ const ProductDetail: React.FC = () => {
 
   return (
     <section className="pt-32 pb-24 bg-white min-h-screen">
-      <div className="container mx-auto px-6 max-w-5xl">
+      <div className="container mx-auto px-6 max-w-7xl">
         {/* Back link */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <Link
