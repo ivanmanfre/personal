@@ -37,7 +37,7 @@ const StorePage: React.FC = () => {
             <h1 className="text-5xl md:text-7xl font-black uppercase leading-none">Store</h1>
           </div>
           <p className="text-xl font-medium max-w-2xl text-gray-700">
-            Pre-built automation systems ready to deploy. Each product includes the workflow files, setup guide, and video walkthrough.
+            Pre-built automation systems ready to deploy. Each product includes the workflow files and setup guide.
           </p>
         </motion.div>
 
