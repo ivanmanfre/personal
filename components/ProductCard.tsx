@@ -32,6 +32,17 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
           <product.icon className="text-black" size={32} strokeWidth={2.5} />
         </div>
 
+        {/* Preview image */}
+        {product.previewImage && (
+          <div className="border-2 border-black mb-6 overflow-hidden bg-gray-900 p-1.5 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            <img
+              src={product.previewImage}
+              alt={`${product.name} workflow`}
+              className="w-full h-auto"
+            />
+          </div>
+        )}
+
         {/* Category badge */}
         <span className="text-xs font-bold uppercase border border-black px-2 py-1 bg-gray-100 w-fit mb-4">
           {product.category}

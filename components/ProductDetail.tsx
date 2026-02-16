@@ -72,13 +72,13 @@ const ProductDetail: React.FC = () => {
                 <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
                   <span className="flex items-center gap-2"><Eye size={18} /> Workflow Preview</span>
                 </h2>
-                <div className="mt-4 border-2 border-black shadow-comic overflow-hidden bg-gray-900 p-2">
+                <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block mt-4 border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px] transition-all overflow-hidden bg-gray-900 p-2 cursor-zoom-in">
                   <img
                     src={product.previewImage}
                     alt={`${product.name} workflow`}
                     className="w-full h-auto"
                   />
-                </div>
+                </a>
               </div>
             )}
 
