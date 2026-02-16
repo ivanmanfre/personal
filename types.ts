@@ -59,4 +59,7 @@ export interface Product {
   includes: string[];
   setup: string[]; // required API keys & setup steps
   tiers: PricingTier[];
+  previewImage?: string; // path to workflow/product screenshot
+  sampleImage?: string; // path to sample output screenshot
+  samplePdf?: string; // path to downloadable sample PDF
 }

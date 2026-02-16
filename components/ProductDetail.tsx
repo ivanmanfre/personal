@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Package, ShoppingCart, Calendar, Wrench, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Check, Package, ShoppingCart, Calendar, Wrench, ExternalLink, Download, FileText, Eye } from 'lucide-react';
 import { products } from '../data/products';
 import { PricingTier } from '../types';
 
@@ -65,6 +65,48 @@ const ProductDetail: React.FC = () => {
             <p className="text-lg font-medium leading-relaxed mb-10 border-l-4 border-black pl-6">
               {product.description}
             </p>
+
+            {/* Workflow Preview */}
+            {product.previewImage && (
+              <div className="mb-10">
+                <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
+                  <span className="flex items-center gap-2"><Eye size={18} /> Workflow Preview</span>
+                </h2>
+                <div className="mt-4 border-2 border-black shadow-comic overflow-hidden bg-gray-900 p-2">
+                  <img
+                    src={product.previewImage}
+                    alt={`${product.name} workflow`}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Sample Output */}
+            {product.sampleImage && (
+              <div className="mb-10">
+                <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
+                  <span className="flex items-center gap-2"><FileText size={18} /> Sample Output</span>
+                </h2>
+                <div className="mt-4 border-2 border-black shadow-comic overflow-hidden bg-white">
+                  <img
+                    src={product.sampleImage}
+                    alt={`${product.name} sample output`}
+                    className="w-full h-auto"
+                  />
+                </div>
+                {product.samplePdf && (
+                  <a
+                    href={product.samplePdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-4 px-5 py-3 bg-white border-2 border-black font-bold uppercase text-sm shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px] transition-all"
+                  >
+                    <Download size={16} /> Download Full Sample PDF
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Features */}
             <div className="mb-10">
