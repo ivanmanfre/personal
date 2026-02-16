@@ -1,4 +1,4 @@
-import { Workflow } from 'lucide-react';
+import { Workflow, Zap } from 'lucide-react';
 import { Product } from '../types';
 
 export const products: Product[] = [
@@ -64,6 +64,69 @@ export const products: Product[] = [
         price: null,
         label: 'From $1,000',
         description: 'I install it in your n8n instance, configure all APIs, set up your client folders, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
+        checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
+      },
+    ],
+  },
+  {
+    slug: 'dealsync',
+    name: 'DealSync',
+    headline: 'Deal closes in HubSpot. Client project appears in ClickUp. Fully staffed.',
+    description:
+      'An n8n workflow that watches for closed-won deals in HubSpot and automatically creates a fully populated client engagement in ClickUp — complete with company linking, account manager assignment, team matching from your assignee database, and a structured review comment so the PM knows exactly what to do next. No copy-pasting deal data, no forgotten fields, no manual staffing lookups.',
+    category: 'workflow',
+    icon: Zap,
+    features: [
+      'HubSpot webhook trigger on deal stage change (Closed Won)',
+      'Full deal data pull with all custom properties',
+      'Automatic company lookup and linking (fuzzy name matching)',
+      'Creates new company record if none exists',
+      'Maps service line to job details, project type, and team tags',
+      'Account manager resolution (HubSpot owner → ClickUp user)',
+      'Assignee database query with service line + role matching',
+      'Lead strategist auto-assignment with fallback logic',
+      'Executing team population from assignee database',
+      'Structured review comment with assignment details and next steps',
+      'Duplicate prevention (skips already-synced deals)',
+      'HubSpot deal updated with ClickUp task ID for bi-directional linking',
+    ],
+    includes: [
+      'n8n workflow JSON (ready to import)',
+      'Step-by-step setup guide with screenshots',
+      'HubSpot webhook configuration walkthrough',
+      'ClickUp custom field ID mapping template',
+      'Service line → field mapping reference',
+    ],
+    setup: [
+      'HubSpot account with API access (Private App or OAuth2)',
+      'ClickUp account with API token',
+      'n8n instance (self-hosted or cloud)',
+      'ClickUp lists: Client Engagements, Companies, Assignee Database',
+    ],
+    tiers: [
+      {
+        id: 'workflow-only',
+        name: 'Workflow Only',
+        price: 247,
+        label: '$247',
+        description: 'The workflow JSON, setup guide, and all field mapping templates. You configure everything yourself.',
+        checkoutUrl: '#',
+      },
+      {
+        id: 'with-setup-call',
+        name: 'Workflow + Setup Call',
+        price: 447,
+        label: '$447',
+        description: 'Everything above plus a 45-min live setup call where I map your HubSpot fields to ClickUp and make sure it runs end-to-end.',
+        checkoutUrl: '#',
+        highlighted: true,
+      },
+      {
+        id: 'custom-install',
+        name: 'Done-For-You Install',
+        price: null,
+        label: 'From $1,000',
+        description: 'I install it in your n8n instance, map all your HubSpot and ClickUp fields, configure your assignee database, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
         checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
       },
     ],
