@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Package, ShoppingCart, Calendar, Wrench, ExternalLink, Download, FileText, Eye } from 'lucide-react';
+import { ArrowLeft, Check, Package, ShoppingCart, Calendar, Wrench, ExternalLink, Download, FileText, Eye, Zap } from 'lucide-react';
 import { products } from '../data/products';
 import { PricingTier } from '../types';
 
@@ -14,13 +14,12 @@ const categoryColors: Record<string, string> = {
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const product = products.find((p) => p.slug === slug);
-  const [selectedTier, setSelectedTier] = useState<string>('with-setup-call');
 
   if (!product) {
     return <Navigate to="/store" replace />;
   }
 
-  const activeTier = product.tiers.find((t) => t.id === selectedTier) || product.tiers[0];
+  const mainTier = product.tiers.find((t) => t.highlighted) || product.tiers[0];
 
   const handleBuy = (tier: PricingTier) => {
     if (!tier.checkoutUrl || tier.checkoutUrl === '#') return;
@@ -33,214 +32,268 @@ const ProductDetail: React.FC = () => {
   };
 
   return (
-    <section className="pt-32 pb-24 bg-white min-h-screen">
-      <div className="container mx-auto px-6 max-w-7xl">
-        {/* Back link */}
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <Link
-            to="/store"
-            className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-10 hover:gap-3 transition-all border-2 border-black px-4 py-2 shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px]"
-          >
-            <ArrowLeft size={16} /> Back to Store
-          </Link>
-        </motion.div>
-
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* Left: Product Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:w-3/5"
-          >
-            {/* Category + Title */}
-            <span
-              className={`inline-block text-xs font-bold uppercase px-3 py-1 border-2 border-black mb-4 ${categoryColors[product.category]} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]`}
+    <div className="bg-white min-h-screen">
+      {/* ── HERO ── */}
+      <section className="pt-32 pb-16 border-b-4 border-black">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <Link
+              to="/store"
+              className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-10 hover:gap-3 transition-all border-2 border-black px-4 py-2 shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px]"
             >
-              {product.category}
+              <ArrowLeft size={16} /> Back to Store
+            </Link>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+            <span
+              className={`inline-block text-xs font-bold uppercase px-3 py-1 border-2 border-black mb-6 ${categoryColors[product.category]} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]`}
+            >
+              n8n workflow
             </span>
-            <h1 className="text-4xl md:text-6xl font-black uppercase leading-[0.9] mb-6">
+            <h1 className="text-5xl md:text-7xl font-black uppercase leading-[0.9] mb-6">
               {product.name}
             </h1>
-            <p className="text-xl font-bold mb-4 text-gray-700">{product.headline}</p>
-            <p className="text-lg font-medium leading-relaxed mb-10 border-l-4 border-black pl-6">
+            <p className="text-2xl md:text-3xl font-bold mb-6 max-w-3xl mx-auto">
+              {product.headline}
+            </p>
+            <p className="text-lg font-medium leading-relaxed max-w-2xl mx-auto text-gray-600 mb-10">
               {product.description}
             </p>
 
-            {/* Workflow Preview */}
-            {product.previewImage && (
-              <div className="mb-10">
-                <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
-                  <span className="flex items-center gap-2"><Eye size={18} /> Workflow Preview</span>
-                </h2>
-                <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block mt-4 border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px] transition-all overflow-hidden bg-gray-900 p-2 cursor-zoom-in">
-                  <img
-                    src={product.previewImage}
-                    alt={`${product.name} workflow`}
-                    className="w-full h-auto"
-                  />
-                </a>
-              </div>
-            )}
-
-            {/* Sample Output */}
-            {product.sampleImage && (
-              <div className="mb-10">
-                <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
-                  <span className="flex items-center gap-2"><FileText size={18} /> Sample Output</span>
-                </h2>
-                <div className="mt-4 border-2 border-black shadow-comic overflow-hidden bg-white">
-                  <img
-                    src={product.sampleImage}
-                    alt={`${product.name} sample output`}
-                    className="w-full h-auto"
-                  />
-                </div>
-                {product.samplePdf && (
-                  <a
-                    href={product.samplePdf}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-4 px-5 py-3 bg-white border-2 border-black font-bold uppercase text-sm shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px] transition-all"
-                  >
-                    <Download size={16} /> Download Full Sample PDF
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Features */}
-            <div className="mb-10">
-              <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
-                What It Does
-              </h2>
-              <ul className="space-y-3 mt-4">
-                {product.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-accent border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                      <Check size={14} strokeWidth={3} />
-                    </div>
-                    <span className="text-lg font-medium">{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Primary CTA */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+              <button
+                onClick={() => handleBuy(mainTier)}
+                className="px-10 py-5 bg-accent border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 flex items-center gap-3 font-black text-xl uppercase"
+              >
+                <ShoppingCart size={24} /> Get It Now — {mainTier.label}
+              </button>
+              <a
+                href="#pricing"
+                className="px-8 py-5 bg-white border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all font-bold uppercase text-sm"
+              >
+                See All Plans
+              </a>
             </div>
 
-            {/* Includes */}
-            <div className="mb-10">
-              <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
-                What You Get
-              </h2>
-              <ul className="space-y-3 mt-4">
-                {product.includes.map((inc, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-cyan border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                      <Package size={14} strokeWidth={3} />
-                    </div>
-                    <span className="text-lg font-medium">{inc}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Setup Requirements */}
-            <div>
-              <h2 className="text-xl font-black uppercase mb-4 bg-black text-white inline-block px-3 py-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">
-                What You Need
-              </h2>
-              <ul className="space-y-3 mt-4">
-                {product.setup.map((req, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-orange-400 border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                      <Wrench size={14} strokeWidth={3} />
-                    </div>
-                    <span className="text-lg font-medium">{req}</span>
-                  </li>
-                ))}
-              </ul>
+            {/* Trust signals */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-bold text-gray-500">
+              <span className="flex items-center gap-1.5"><Check size={14} /> Instant download</span>
+              <span className="flex items-center gap-1.5"><Check size={14} /> Setup guide included</span>
+              <span className="flex items-center gap-1.5"><Check size={14} /> 30-day money-back guarantee</span>
             </div>
           </motion.div>
+        </div>
+      </section>
 
-          {/* Right: Pricing Card (sticky) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="lg:w-2/5"
-          >
-            <div className="lg:sticky lg:top-28 border-4 border-black bg-white shadow-comic">
-              {/* Header */}
-              <div className={`${categoryColors[product.category]} border-b-4 border-black p-6 text-center`}>
-                <product.icon className="text-black mx-auto mb-3" size={36} strokeWidth={2.5} />
-                <h3 className="text-lg font-black uppercase">Choose Your Plan</h3>
+      {/* ── WORKFLOW PREVIEW ── */}
+      {product.previewImage && (
+        <section className="bg-gray-950 py-12 border-b-4 border-black">
+          <div className="container mx-auto px-6 max-w-6xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <Eye size={18} className="text-gray-400" />
+                <span className="text-sm font-bold uppercase text-gray-400 tracking-widest">Workflow Preview</span>
               </div>
+              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block border-2 border-gray-700 hover:border-accent transition-colors overflow-hidden cursor-zoom-in rounded-sm">
+                <img
+                  src={product.previewImage}
+                  alt={`${product.name} workflow`}
+                  className="w-full h-auto"
+                />
+              </a>
+              <p className="text-center text-gray-500 text-sm font-medium mt-4">Click to view full size</p>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
-              {/* Tier Options */}
-              <div className="p-6 space-y-4">
-                {product.tiers.map((tier) => (
-                  <button
-                    key={tier.id}
-                    onClick={() => setSelectedTier(tier.id)}
-                    className={`w-full text-left p-4 border-2 transition-all ${
-                      selectedTier === tier.id
-                        ? 'border-black shadow-comic bg-gray-50 -translate-y-[2px]'
-                        : 'border-gray-300 hover:border-black'
-                    } ${tier.highlighted && selectedTier !== tier.id ? 'border-dashed border-black' : ''}`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-black uppercase text-sm">{tier.name}</span>
-                      <span className="font-black text-xl">{tier.label}</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-600">{tier.description}</p>
-                    {tier.highlighted && (
-                      <span className="inline-block mt-2 text-xs font-bold uppercase bg-accent border border-black px-2 py-0.5">
-                        Most Popular
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Buy Button */}
-              <div className="px-6 pb-6">
-                <button
-                  onClick={() => handleBuy(activeTier)}
-                  className="w-full px-8 py-4 bg-accent border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 flex items-center justify-center gap-3 font-black text-lg uppercase"
+      {/* ── FEATURES ── */}
+      <section className="py-20 border-b-4 border-black">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black uppercase mb-3">What It Does</h2>
+              <p className="text-lg font-medium text-gray-500">Every feature built for one goal: turning calls into content.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {product.features.map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-start gap-3 p-4 border-2 border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
                 >
-                  {activeTier.id === 'custom-install' ? (
-                    <>
-                      <Calendar size={22} /> Book a Call
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart size={22} /> Buy Now — {activeTier.label}
-                    </>
+                  <div className="w-6 h-6 bg-accent border-2 border-black flex items-center justify-center shrink-0">
+                    <Check size={14} strokeWidth={3} />
+                  </div>
+                  <span className="font-bold">{feature}</span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── SAMPLE OUTPUT + WHAT YOU GET ── */}
+      <section className="py-20 bg-gray-50 border-b-4 border-black">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black uppercase mb-3">See The Output</h2>
+              <p className="text-lg font-medium text-gray-500">Real briefs generated from a real client call.</p>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-10 items-start">
+              {/* Sample image */}
+              {product.sampleImage && (
+                <div className="lg:w-3/5">
+                  <div className="border-2 border-black shadow-comic overflow-hidden bg-white">
+                    <img
+                      src={product.sampleImage}
+                      alt={`${product.name} sample output`}
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  {product.samplePdf && (
+                    <a
+                      href={product.samplePdf}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-4 px-5 py-3 bg-white border-2 border-black font-bold uppercase text-sm shadow-comic hover:shadow-comic-hover hover:-translate-y-[2px] transition-all"
+                    >
+                      <Download size={16} /> Download Full Sample PDF
+                    </a>
                   )}
-                </button>
-
-                {activeTier.id === 'custom-install' && (
-                  <p className="text-xs font-bold text-center text-gray-500 mt-3 flex items-center justify-center gap-1">
-                    <ExternalLink size={12} /> Opens Calendly in a new tab
-                  </p>
-                )}
-              </div>
-
-              {/* Trust signals */}
-              <div className="border-t-2 border-black px-6 py-4 space-y-2 text-sm font-bold text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Check size={14} /> Instant download after purchase
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check size={14} /> Setup guide included
+              )}
+
+              {/* What you get */}
+              <div className={product.sampleImage ? 'lg:w-2/5' : 'w-full'}>
+                <div className="border-2 border-black bg-white shadow-comic p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-8 h-8 bg-cyan border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <Package size={16} strokeWidth={3} />
+                    </div>
+                    <h3 className="text-xl font-black uppercase">What You Get</h3>
+                  </div>
+                  <ul className="space-y-4">
+                    {product.includes.map((inc, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check size={18} strokeWidth={3} className="text-green-600 shrink-0 mt-0.5" />
+                        <span className="font-bold">{inc}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check size={14} /> 30-day money-back guarantee
+
+                {/* Setup requirements */}
+                <div className="border-2 border-black bg-white shadow-comic p-6 mt-4">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-8 h-8 bg-orange-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                      <Wrench size={16} strokeWidth={3} />
+                    </div>
+                    <h3 className="text-xl font-black uppercase">Requirements</h3>
+                  </div>
+                  <ul className="space-y-3">
+                    {product.setup.map((req, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Zap size={16} className="text-orange-500 shrink-0 mt-0.5" />
+                        <span className="font-medium text-gray-700">{req}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
           </motion.div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section id="pricing" className="py-20 border-b-4 border-black">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black uppercase mb-3">Choose Your Plan</h2>
+              <p className="text-lg font-medium text-gray-500">Same workflow. Pick the level of support you need.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {product.tiers.map((tier) => (
+                <div
+                  key={tier.id}
+                  className={`border-2 border-black bg-white flex flex-col ${
+                    tier.highlighted
+                      ? 'shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] -translate-y-2 relative'
+                      : 'shadow-comic'
+                  }`}
+                >
+                  {tier.highlighted && (
+                    <div className="bg-accent border-b-2 border-black text-center py-2 font-black text-sm uppercase">
+                      Most Popular
+                    </div>
+                  )}
+                  <div className="p-6 flex flex-col flex-grow">
+                    <h3 className="font-black uppercase text-lg mb-2">{tier.name}</h3>
+                    <div className="mb-4">
+                      <span className="text-4xl font-black">{tier.label}</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-600 mb-6 flex-grow">{tier.description}</p>
+                    <button
+                      onClick={() => handleBuy(tier)}
+                      className={`w-full px-6 py-4 border-2 border-black font-black uppercase text-sm transition-all active:shadow-none active:translate-y-1 flex items-center justify-center gap-2 ${
+                        tier.highlighted
+                          ? 'bg-accent shadow-comic hover:shadow-comic-hover hover:-translate-y-1'
+                          : tier.id === 'custom-install'
+                          ? 'bg-gray-100 shadow-comic hover:shadow-comic-hover hover:-translate-y-1'
+                          : 'bg-white shadow-comic hover:shadow-comic-hover hover:-translate-y-1'
+                      }`}
+                    >
+                      {tier.id === 'custom-install' ? (
+                        <><Calendar size={18} /> Book a Call</>
+                      ) : (
+                        <><ShoppingCart size={18} /> Buy Now</>
+                      )}
+                    </button>
+                    {tier.id === 'custom-install' && (
+                      <p className="text-xs font-bold text-center text-gray-400 mt-2 flex items-center justify-center gap-1">
+                        <ExternalLink size={10} /> Opens Calendly
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ── */}
+      <section className="py-16">
+        <div className="container mx-auto px-6 max-w-3xl text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <h2 className="text-3xl md:text-4xl font-black uppercase mb-4">Stop writing briefs manually</h2>
+            <p className="text-lg font-medium text-gray-600 mb-8">
+              One call. 8-14 briefs. Zero busywork.
+            </p>
+            <button
+              onClick={() => handleBuy(mainTier)}
+              className="px-10 py-5 bg-accent border-2 border-black shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-none active:translate-y-1 font-black text-xl uppercase inline-flex items-center gap-3"
+            >
+              <ShoppingCart size={24} /> Get CallBrief — {mainTier.label}
+            </button>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-bold text-gray-500 mt-6">
+              <span className="flex items-center gap-1.5"><Check size={14} /> Instant download</span>
+              <span className="flex items-center gap-1.5"><Check size={14} /> 30-day money-back guarantee</span>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
   );
 };
 
