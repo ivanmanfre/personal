@@ -6,9 +6,6 @@ const About: React.FC = () => {
 
     return (
         <section id="about" className="py-32 bg-black border-y-4 border-black relative overflow-hidden">
-            {/* Background Texture */}
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E')" }}></div>
-
             <div className="container mx-auto px-6 relative z-10 max-w-6xl">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -35,7 +32,7 @@ const About: React.FC = () => {
                             Most consultants focus on <span className="text-zinc-400">writing strategy decks.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-white leading-[1] tracking-tighter">
-                            I focus on <br /> <span className="font-drama italic text-accent drop-shadow-[0_0_15px_rgba(0,230,118,0.2)]">Deploying Systems.</span>
+                            I focus on <br /> <span className="font-drama italic text-accent">Deploying Systems.</span>
                         </h2>
                     </motion.div>
 
@@ -51,7 +48,7 @@ const About: React.FC = () => {
                             Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-white leading-[1] tracking-tighter">
-                            I build to <br /> <span className="font-drama italic text-cyan drop-shadow-[0_0_15px_rgba(41,121,255,0.2)]">Eradicate the labor.</span>
+                            I build to <br /> <span className="font-drama italic text-accent">Eradicate the labor.</span>
                         </h2>
                     </motion.div>
 
@@ -94,8 +91,8 @@ const About: React.FC = () => {
                     transition={{ delay: 0.4 }}
                     className="mt-32 max-w-4xl mx-auto text-center"
                 >
-                    <div className="bg-zinc-900 border-2 border-zinc-800 p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative group hover-lift transition-all">
-                        <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-zinc-800 group-hover:border-t-accent transition-colors"></div>
+                    <div className="bg-zinc-900 border-4 border-zinc-800 p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative group hover-lift transition-all">
+                        <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-accent"></div>
 
                         <p className="text-lg md:text-xl font-mono text-zinc-400 leading-relaxed">
                             EVERY AUTOMATION ARCHITECTURE IS BUILT ON A SINGLE RULE: <br /><br />

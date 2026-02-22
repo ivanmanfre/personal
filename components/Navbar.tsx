@@ -32,9 +32,8 @@ const Navbar: React.FC = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-cyan/20"></div>
-            <span className="relative text-white font-black text-xl tracking-tighter">IM</span>
+          <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center">
+            <span className="text-white font-black text-xl tracking-tighter">IM</span>
           </div>
           <span className="text-sm font-black tracking-widest uppercase text-gray-800 group-hover:text-black transition-colors">
             Iván Manfredi

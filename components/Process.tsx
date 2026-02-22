@@ -70,7 +70,7 @@ const steps = [
                         initial={{ pathLength: 0, pathOffset: 1 }}
                         animate={{ pathLength: 1, pathOffset: 0 }}
                         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        style={{ filter: 'drop-shadow(0px 0px 4px rgba(0, 230, 118, 0.8))' }}
+                        style={{  }}
                     />
                     {/* Logic Nodes */}
                     <circle cx="40" cy="50" r="4" fill="#fff" />
@@ -85,7 +85,7 @@ const steps = [
         title: 'Deployment Protocol',
         desc: 'I construct, stress-test, and deploy the workflow end-to-end into your tech stack. Operations shift from manual drag to automated throughput instantly.',
         color: 'bg-zinc-900',
-        textColor: 'text-cyan',
+        textColor: 'text-white',
         icon: (
             <div className="w-64 h-64 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">

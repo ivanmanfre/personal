@@ -67,9 +67,9 @@ const Services: React.FC = () => {
                 Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and cheaper than an entire offshore team.
               </p>
               <ul className="space-y-3 font-mono text-sm font-bold text-zinc-500 uppercase">
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-cyan"></div> RAG Knowledge Bases</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-cyan"></div> Semantic Data Extraction</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-cyan"></div> Voice & Text Interface</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> RAG Knowledge Bases</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Semantic Data Extraction</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Voice & Text Interface</li>
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-crosshair">

@@ -10,7 +10,8 @@ const cases = [
     title: "AI Call Auditing",
     metric: "100% Audit Rate",
     desc: "AI listens to every sales call, scores performance, and flags coaching opportunities. Went from auditing 5% of calls manually to 100% coverage overnight.",
-    color: "bg-accent"
+    color: "bg-accent",
+    metricBox: "bg-white border-2 border-black text-black"
   },
   {
     id: "02",
@@ -19,7 +20,8 @@ const cases = [
     title: "Regulatory Doc Automation",
     metric: "800 Hrs/Yr Saved",
     desc: "AI scans state-specific SWPPP regulatory requirements and auto-generates compliant documentation. Invoicing, document assembly, and filing, all hands-free.",
-    color: "bg-pink"
+    color: "bg-black",
+    metricBox: "bg-accent border-2 border-black text-black"
   },
   {
     id: "03",
@@ -28,7 +30,8 @@ const cases = [
     title: "Content Engine",
     metric: "20x Output",
     desc: "One recorded video becomes 20 social posts, a blog article, and a newsletter. AI handles transcription, repurposing, and scheduling across platforms.",
-    color: "bg-green-400"
+    color: "bg-white border-4 border-black",
+    metricBox: "bg-black border-2 border-black text-white"
   }
 ];
 
@@ -79,7 +82,7 @@ const CaseStudies: React.FC = () => {
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b-4 border-black flex items-center justify-center relative overflow-hidden`}>
                 <span className="text-9xl font-black opacity-20 text-black absolute -bottom-10 -right-10 select-none transition-transform group-hover:scale-110">{study.id}</span>
-                <div className="relative z-10 font-black text-4xl bg-white border-2 border-black px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center">
+                <div className={`relative z-10 font-black text-4xl ${study.metricBox} px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center`}>
                   {study.metric}
                 </div>
               </div>

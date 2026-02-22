@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$*!';
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
     const [display, setDisplay] = useState(text);
