@@ -68,7 +68,7 @@ const About: React.FC = () => {
                         <img
                             src="/ivan-portrait.jpg"
                             alt="Iván Manfredi"
-                            className="relative z-10 w-48 h-48 md:w-56 md:h-56 object-cover border-4 border-black grayscale group-hover:grayscale-0 transition-all duration-500"
+                            className="relative z-10 w-48 h-48 md:w-56 md:h-56 object-cover border-4 border-black transition-all duration-500"
                         />
                     </div>
 
