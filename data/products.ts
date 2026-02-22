@@ -1,4 +1,4 @@
-import { Workflow, Zap, FileSignature } from 'lucide-react';
+import { Workflow, Zap, Rocket, FileSignature } from 'lucide-react';
 import { Product } from '../types';
 
 export const products: Product[] = [
@@ -127,6 +127,68 @@ export const products: Product[] = [
         price: null,
         label: 'From $1,000',
         description: 'I install it in your n8n instance, map all your HubSpot and ClickUp fields, configure your assignee database, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
+        checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
+      },
+    ],
+  },
+  {
+    slug: 'onboardsync',
+    name: 'OnboardSync',
+    headline: 'Task moves to Onboarding. Client project fully built. Team assigned.',
+    description:
+      'An n8n workflow that triggers when a ClickUp engagement moves to "Onboarding" status and automatically builds the entire client project — creates the client folder with three lists (Project Management, Client Action Items, Off-boarding), copies every template task with full parent/subtask hierarchy, creates the Google Drive folder, copies and personalizes kickoff deck templates via Slides API, remaps all due dates relative to the deal start date, auto-assigns team members based on role patterns, flips the status to Active, and drops a completion comment with every link. Pairs perfectly with DealSync.',
+    category: 'workflow',
+    icon: Rocket,
+    features: [
+      'ClickUp webhook trigger on status change to "Onboarding"',
+      'Creates client folder with 3 pre-configured lists',
+      'Copies template tasks with full parent → subtask → sub-subtask hierarchy',
+      'Google Drive client folder created in shared Delivery drive',
+      'Kickoff deck templates copied and personalized via Google Slides API',
+      'Automatic due date remapping relative to deal start/close date',
+      'Team auto-assignment based on task name patterns and POD roles',
+      'Multi-level subtask creation (3 levels deep)',
+      'Status auto-updated to Active on completion',
+      'Completion comment with all folder and doc links',
+      'Pairs with DealSync for end-to-end deal → onboarding automation',
+    ],
+    includes: [
+      'n8n workflow JSON (ready to import)',
+      'Step-by-step setup guide with screenshots',
+      'ClickUp template structure reference',
+      'Google Drive folder structure template',
+      'Team role-to-pattern mapping guide',
+    ],
+    setup: [
+      'ClickUp account with API token',
+      'Google Cloud project with Drive + Slides OAuth2 credentials',
+      'ClickUp template lists (Project Management, Action Items, Off-boarding)',
+      'n8n instance (self-hosted or cloud)',
+    ],
+    tiers: [
+      {
+        id: 'workflow-only',
+        name: 'Workflow Only',
+        price: 247,
+        label: '$247',
+        description: 'The workflow JSON, setup guide, and all templates. You configure everything yourself.',
+        checkoutUrl: '#',
+      },
+      {
+        id: 'with-setup-call',
+        name: 'Workflow + Setup Call',
+        price: 447,
+        label: '$447',
+        description: 'Everything above plus a 45-min live setup call where I set up your ClickUp templates, Drive structure, and team assignment rules end-to-end.',
+        checkoutUrl: '#',
+        highlighted: true,
+      },
+      {
+        id: 'custom-install',
+        name: 'Done-For-You Install',
+        price: null,
+        label: 'From $1,000',
+        description: 'I install it in your n8n instance, build your template lists, configure Drive and Slides, set up team patterns, and adapt the workflow to your requirements and toolkit. Fully operational when I hand it over.',
         checkoutUrl: 'https://calendly.com/ivan-intelligents/30min',
       },
     ],

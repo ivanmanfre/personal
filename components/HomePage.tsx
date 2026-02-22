@@ -2,7 +2,6 @@ import React from 'react';
 import Hero from './Hero';
 import Services from './Services';
 import CaseStudies from './CaseStudies';
-import TechStack from './TechStack';
 import Process from './Process';
 import About from './About';
 import Testimonials from './Testimonials';
@@ -17,7 +16,6 @@ const HomePage: React.FC = () => {
       <CaseStudies />
       <Testimonials />
       <About />
-      <TechStack />
       <CTA />
     </>
   );

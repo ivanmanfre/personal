@@ -1,87 +1,113 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Target } from 'lucide-react';
 
 const About: React.FC = () => {
 
-  return (
-    <section id="about" className="py-24 bg-white border-t-4 border-black">
-      <div className="container mx-auto px-6">
-        <div className="border-4 border-black shadow-comic bg-white p-8 md:p-12 flex flex-col lg:flex-row gap-12">
-            
-            {/* Profile Image (Halftone Style) */}
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
-                whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="lg:w-1/4 relative max-w-xs"
-            >
-                <div className="aspect-[4/5] bg-black border-2 border-black relative z-10 overflow-hidden group">
-                    <img
-                        src="/profile.jpg"
-                        alt="Iván Manfredi"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    {/* Halftone Overlay */}
-                    <div className="absolute inset-0 bg-dots opacity-30 mix-blend-overlay pointer-events-none" />
-                </div>
-                {/* Offset Decor */}
-                <div className="absolute top-4 left-4 w-full h-full bg-cyan border-2 border-black -z-0" />
-            </motion.div>
+    return (
+        <section id="about" className="py-32 bg-black border-y-4 border-black relative overflow-hidden">
+            {/* Background Texture */}
+            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E')" }}></div>
 
-            {/* Text Content */}
-            <motion.div 
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="lg:w-2/3 flex flex-col justify-center"
-            >
-                <div className="inline-block bg-pink border-2 border-black px-4 py-1 text-white font-bold uppercase tracking-widest w-fit mb-4 shadow-comic transform -rotate-1">
-                    Why Partner With Me
-                </div>
-                <h2 className="text-4xl md:text-6xl font-black uppercase mb-6 leading-none">
-                    Strategy First. <br/> Tools Second.
-                </h2>
-                <p className="text-xl md:text-2xl font-bold leading-relaxed mb-8 border-l-4 border-accent pl-6">
-                    "If we can't tie the automation to ROI, I won't build it."
-                </p>
-                <div className="space-y-6 text-lg font-medium">
-                    <p>
-                        My approach is not for everyone. I don't start with "What do you want to build?" 
-                        I start with: <span className="bg-yellow-200 px-1 border border-black">"Where is the single biggest bottleneck capping your revenue right now?"</span>
-                    </p>
-                    
-                    <ul className="space-y-4 mt-4">
-                        <li className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-black text-white flex items-center justify-center font-bold text-sm shrink-0 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">1</div>
-                            <div>
-                                <strong className="uppercase block text-sm tracking-wide mb-1">Architect, Not Just A Builder</strong>
-                                You receive a full system blueprint, clear documentation, and a solution built to scale, not just a quick fix that breaks in a month.
-                            </div>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-black text-white flex items-center justify-center font-bold text-sm shrink-0 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">2</div>
-                            <div>
-                                <strong className="uppercase block text-sm tracking-wide mb-1">Long-Term Vision</strong>
-                                Nearly every partnership starts with "fix this one process" and evolves into "here's how we build an operation that can't be beaten."
-                            </div>
-                        </li>
-                        <li className="flex items-start gap-3">
-                            <div className="w-6 h-6 bg-black text-white flex items-center justify-center font-bold text-sm shrink-0 border border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">3</div>
-                            <div>
-                                <strong className="uppercase block text-sm tracking-wide mb-1">Focus on Outcome</strong>
-                                We build what will have the highest impact on your bottom line.
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </motion.div>
+            <div className="container mx-auto px-6 relative z-10 max-w-6xl">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mb-20 flex justify-center"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 border-2 border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <Target size={14} className="text-accent" /> Core Philosophy
+                    </div>
+                </motion.div>
 
-        </div>
-      </div>
-    </section>
-  );
+                <div className="flex flex-col gap-24">
+
+                    {/* Contrast 1 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6 }}
+                        className="text-center md:text-left border-l-4 border-zinc-800 pl-6 md:pl-10"
+                    >
+                        <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
+                            Most consultants focus on <span className="text-zinc-400">writing strategy decks.</span>
+                        </p>
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-white leading-[1] tracking-tighter">
+                            I focus on <br /> <span className="font-drama italic text-accent drop-shadow-[0_0_15px_rgba(0,230,118,0.2)]">Deploying Systems.</span>
+                        </h2>
+                    </motion.div>
+
+                    {/* Contrast 2 */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className="text-center md:text-right border-r-4 border-zinc-800 pr-6 md:pr-10"
+                    >
+                        <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
+                            Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
+                        </p>
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-white leading-[1] tracking-tighter">
+                            I build to <br /> <span className="font-drama italic text-cyan drop-shadow-[0_0_15px_rgba(41,121,255,0.2)]">Eradicate the labor.</span>
+                        </h2>
+                    </motion.div>
+
+                </div>
+
+                {/* About Me */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="mt-24 flex flex-col md:flex-row items-center gap-12 md:gap-16"
+                >
+                    {/* Photo */}
+                    <div className="shrink-0 relative group hover-lift">
+                        <div className="absolute inset-0 bg-accent translate-x-3 translate-y-3 border-2 border-black transition-transform group-hover:translate-x-4 group-hover:translate-y-4"></div>
+                        <img
+                            src="/ivan-portrait.jpg"
+                            alt="Iván Manfredi"
+                            className="relative z-10 w-48 h-48 md:w-56 md:h-56 object-cover border-4 border-black grayscale group-hover:grayscale-0 transition-all duration-500"
+                        />
+                    </div>
+
+                    {/* Bio */}
+                    <div className="flex-1 text-center md:text-left">
+                        <h3 className="text-3xl md:text-4xl font-black uppercase text-white mb-4 tracking-tight">
+                            Iván <span className="font-drama italic text-accent">Manfredi</span>
+                        </h3>
+                        <p className="font-mono text-xs text-accent uppercase tracking-widest mb-4">AI & Automation Architect</p>
+                        <p className="text-lg text-zinc-400 leading-relaxed max-w-xl">
+                            I've architected automation systems for companies across finance, legal, healthcare, and SaaS, eliminating thousands of hours of manual work. I don't sell retainers. I build infrastructure that compounds.
+                        </p>
+                    </div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.4 }}
+                    className="mt-32 max-w-4xl mx-auto text-center"
+                >
+                    <div className="bg-zinc-900 border-2 border-zinc-800 p-8 md:p-12 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative group hover-lift transition-all">
+                        <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-zinc-800 group-hover:border-t-accent transition-colors"></div>
+
+                        <p className="text-lg md:text-xl font-mono text-zinc-400 leading-relaxed">
+                            EVERY AUTOMATION ARCHITECTURE IS BUILT ON A SINGLE RULE: <br /><br />
+                            <span className="text-white font-bold bg-zinc-800 px-2 py-1">IF WE CANNOT TIE THE WORKFLOW DIRECTLY TO HOURS SAVED, ERRORS REDUCED, OR REVENUE GAINED, IT DOES NOT GET BUILT.</span> <br /><br />
+                            NO HYPE. NO GENERIC CHATBOTS. PURE ROI ENGINEERING.
+                        </p>
+                    </div>
+                </motion.div>
+
+            </div>
+        </section>
+    );
 };
 
 export default About;
