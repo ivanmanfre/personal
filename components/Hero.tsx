@@ -3,12 +3,6 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { ScrambleText } from './ui/ScrambleText';
 
-const stats = [
-  { number: '800+', label: 'Hours Eliminated' },
-  { number: '100%', label: 'Job Success Score' },
-  { number: '20x', label: 'Output Multiplier' },
-];
-
 const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-32 pb-24 bg-paper overflow-hidden">
@@ -86,20 +80,6 @@ const Hero: React.FC = () => {
           </a>
         </motion.div>
 
-        {/* Stat Strip */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          className="flex flex-col sm:flex-row border-4 border-black divide-y-4 sm:divide-y-0 sm:divide-x-4 divide-black max-w-xl"
-        >
-          {stats.map((stat, i) => (
-            <div key={i} className="flex-1 px-6 py-4 bg-white">
-              <div className="text-3xl font-black">{stat.number}</div>
-              <div className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </motion.div>
       </div>
 
       {/* Scroll indicator */}
