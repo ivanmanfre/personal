@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { isAuthenticated } from '../../lib/dashboardAuth';
+import { DashboardProvider } from '../../contexts/DashboardContext';
 import DashboardAuth from './DashboardAuth';
-import DashboardLayout, { type Tab } from './DashboardLayout';
+import DashboardLayout from './DashboardLayout';
 import OverviewPanel from './OverviewPanel';
 import PerformancePanel from './PerformancePanel';
+import WorkflowsPanel from './WorkflowsPanel';
+import CompetitorIntelPanel from './CompetitorIntelPanel';
 import LeadsPanel from './LeadsPanel';
+import AgentPanel from './AgentPanel';
 import SettingsPanel from './SettingsPanel';
+import type { Tab } from '../../types/dashboard';
 
 const Dashboard: React.FC = () => {
   const [authed, setAuthed] = useState(isAuthenticated());
@@ -18,18 +23,23 @@ const Dashboard: React.FC = () => {
   const panels: Record<Tab, React.ReactNode> = {
     overview: <OverviewPanel />,
     performance: <PerformancePanel />,
+    workflows: <WorkflowsPanel />,
+    competitors: <CompetitorIntelPanel />,
     leads: <LeadsPanel />,
+    agent: <AgentPanel />,
     settings: <SettingsPanel />,
   };
 
   return (
-    <DashboardLayout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onLogout={() => setAuthed(false)}
-    >
-      {panels[activeTab]}
-    </DashboardLayout>
+    <DashboardProvider>
+      <DashboardLayout
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onLogout={() => setAuthed(false)}
+      >
+        {panels[activeTab]}
+      </DashboardLayout>
+    </DashboardProvider>
   );
 };
 

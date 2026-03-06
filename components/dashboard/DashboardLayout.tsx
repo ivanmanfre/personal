@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
-
-type Tab = 'overview' | 'performance' | 'leads' | 'settings';
+import StatusDot from './shared/StatusDot';
+import RefreshIndicator from './shared/RefreshIndicator';
+import { useDashboard } from '../../contexts/DashboardContext';
+import type { Tab } from '../../types/dashboard';
 
 interface Props {
   activeTab: Tab;
@@ -14,17 +16,23 @@ interface Props {
 const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
   { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-5 h-5" /> },
+  { id: 'workflows', label: 'Workflows', icon: <Activity className="w-5 h-5" /> },
+  { id: 'competitors', label: 'Competitors', icon: <Swords className="w-5 h-5" /> },
   { id: 'leads', label: 'Leads', icon: <Users className="w-5 h-5" /> },
+  { id: 'agent', label: 'Agent', icon: <Bot className="w-5 h-5" /> },
   { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
 const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { systemHealth, lastRefreshed } = useDashboard();
 
   const handleLogout = () => {
     logout();
     onLogout();
   };
+
+  const healthStatus = systemHealth === 'healthy' ? 'healthy' : systemHealth === 'degraded' ? 'warning' : 'error';
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex">
@@ -33,7 +41,10 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-400 hover:text-white">
           {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
-        <span className="text-sm font-semibold text-zinc-300">Content System</span>
+        <div className="flex items-center gap-2">
+          <StatusDot status={healthStatus} pulse />
+          <span className="text-sm font-semibold text-zinc-300">Content System</span>
+        </div>
         <div className="w-6" />
       </div>
 
@@ -49,14 +60,17 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
             <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
               IM
             </div>
-            <div>
-              <p className="text-sm font-semibold text-white leading-tight">Content System</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-white leading-tight">Content System</p>
+                <StatusDot status={healthStatus} pulse />
+              </div>
               <p className="text-xs text-zinc-500">Ivan Manfredi</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -73,7 +87,10 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           ))}
         </nav>
 
-        <div className="p-3 border-t border-zinc-800">
+        <div className="p-3 border-t border-zinc-800 space-y-2">
+          <div className="px-3">
+            <RefreshIndicator lastRefreshed={lastRefreshed} />
+          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-zinc-800/50 transition-colors"
@@ -95,4 +112,3 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 };
 
 export default DashboardLayout;
-export type { Tab };
