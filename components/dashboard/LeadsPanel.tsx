@@ -36,7 +36,7 @@ const LeadsPanel: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Leads</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
         <EmptyState title="No leads yet" description="Lead pipeline workflow will populate this panel as prospects engage with your content." icon={<Users className="w-10 h-10" />} />
@@ -50,21 +50,21 @@ const LeadsPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Leads</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Leads" value={totalLeads} icon={<Users className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Qualified" value={statusCounts['qualified'] || 0} icon={<span className="text-sm">✅</span>} color="text-emerald-400" />
         <StatCard label="Converted" value={statusCounts['converted'] || 0} icon={<span className="text-sm">🎯</span>} color="text-purple-400" />
         <StatCard label="High ICP" value={icpDistribution.high} icon={<span className="text-sm">⭐</span>} color="text-amber-400" subValue={`${icpDistribution.medium} medium`} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Funnel */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-zinc-300 mb-4">Lead Funnel</h2>
           <div className="space-y-3">
             {funnelStages.map((stage) => {
@@ -89,7 +89,7 @@ const LeadsPanel: React.FC = () => {
         </div>
 
         {/* ICP Distribution */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 lg:col-span-2">
+        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 lg:col-span-2">
           <h2 className="text-sm font-semibold text-zinc-300 mb-4">ICP Score Distribution</h2>
           <div className="flex items-end gap-4 h-32">
             {([
@@ -128,7 +128,7 @@ const LeadsPanel: React.FC = () => {
       </div>
 
       {/* Leads table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

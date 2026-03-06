@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -40,7 +40,7 @@ const WorkflowsPanel: React.FC = () => {
     { id: 'schedule', label: 'Scheduled' },
     { id: 'event', label: 'Events' },
     { id: 'webhook', label: 'Webhooks' },
-    { id: 'sub-workflow', label: 'Sub-workflows' },
+    { id: 'sub-workflow', label: 'Sub-wf' },
     { id: 'manual', label: 'Manual' },
   ];
 
@@ -57,16 +57,15 @@ const WorkflowsPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Workflows</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Workflows</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Workflows" value={stats.total} icon={<Activity className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Active" value={stats.active} icon={<span className="text-sm">🟢</span>} color="text-emerald-400" />
-        <StatCard label="Errors (24h)" value={stats.totalErrors24h} icon={<span className="text-sm">🔴</span>} color={stats.totalErrors24h > 0 ? 'text-red-400' : 'text-zinc-400'} />
-        <StatCard label="Success Rate" value={`${successRate}%`} icon={<span className="text-sm">📊</span>} color="text-violet-400" />
+        <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Errors (24h)" value={stats.totalErrors24h} icon={<XCircle className="w-5 h-5" />} color={stats.totalErrors24h > 0 ? 'text-red-400' : 'text-zinc-500'} />
+        <StatCard label="Success Rate" value={`${successRate}%`} icon={<AlertTriangle className="w-5 h-5" />} color="text-violet-400" />
       </div>
 
       {/* Filters */}
@@ -74,23 +73,23 @@ const WorkflowsPanel: React.FC = () => {
         <div className="flex gap-1">
           {groups.map((g) => (
             <button key={g.id} onClick={() => setGroup(g.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${group === g.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${group === g.id ? 'bg-zinc-700/80 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}>
               {g.label}
             </button>
           ))}
         </div>
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workflows..."
-            className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-600" />
+            className="w-full pl-9 pr-3 py-2 bg-zinc-900/80 border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors" />
         </div>
       </div>
 
       {/* Workflow list */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-        <div className="divide-y divide-zinc-800">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        <div className="divide-y divide-zinc-800/50">
           {filtered.length === 0 ? (
-            <p className="px-4 py-8 text-zinc-500 text-sm text-center">No workflows found</p>
+            <p className="px-4 py-10 text-zinc-600 text-sm text-center">No workflows found</p>
           ) : (
             filtered.map((wf) => {
               const health = getWorkflowHealth(wf);
@@ -98,27 +97,32 @@ const WorkflowsPanel: React.FC = () => {
               return (
                 <div key={wf.workflowId}>
                   <button onClick={() => setExpanded(isExpanded ? null : wf.workflowId)}
-                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/50 transition-colors text-left">
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors text-left">
                     <StatusDot status={health} pulse={health === 'error'} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-zinc-200 truncate">{wf.workflowName}</p>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-zinc-500">
-                        <span>{wf.triggerType}</span>
-                        {wf.scheduleExpression && <span>· {wf.scheduleExpression}</span>}
-                        <span>· {wf.nodeCount} nodes</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{wf.triggerType}</span>
+                        {wf.scheduleExpression && <span className="text-[11px] text-zinc-600">{wf.scheduleExpression}</span>}
+                        <span className="text-[11px] text-zinc-600">{wf.nodeCount} nodes</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0 text-xs">
+                    <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right hidden sm:block">
-                        <p className="text-zinc-400">Last run: {timeAgo(wf.lastExecutionAt)}</p>
-                        <p className="text-zinc-500">
-                          {wf.successCount24h}✓ {wf.errorCount24h > 0 ? <span className="text-red-400">{wf.errorCount24h}✗</span> : `${wf.errorCount24h}✗`}
-                        </p>
+                        <p className="text-[11px] text-zinc-500">Last: {timeAgo(wf.lastExecutionAt)}</p>
+                        <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                          <span className="flex items-center gap-0.5 text-[11px] text-emerald-400/80">
+                            <CheckCircle2 className="w-3 h-3" />{wf.successCount24h}
+                          </span>
+                          <span className={`flex items-center gap-0.5 text-[11px] ${wf.errorCount24h > 0 ? 'text-red-400' : 'text-zinc-600'}`}>
+                            <XCircle className="w-3 h-3" />{wf.errorCount24h}
+                          </span>
+                        </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${wf.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-700 text-zinc-400'}`}>
-                        {wf.isActive ? 'Active' : 'Inactive'}
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${wf.isActive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700/50'}`}>
+                        {wf.isActive ? 'Active' : 'Off'}
                       </span>
-                      {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-500" /> : <ChevronRight className="w-4 h-4 text-zinc-500" />}
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600" /> : <ChevronRight className="w-4 h-4 text-zinc-600" />}
                     </div>
                   </button>
                   {isExpanded && (
@@ -127,10 +131,10 @@ const WorkflowsPanel: React.FC = () => {
                         <div><span className="text-zinc-500">Status:</span> <span className="text-zinc-300 ml-1">{wf.lastExecutionStatus || '—'}</span></div>
                         <div><span className="text-zinc-500">Duration:</span> <span className="text-zinc-300 ml-1">{wf.lastExecutionDurationMs ? `${(wf.lastExecutionDurationMs / 1000).toFixed(1)}s` : '—'}</span></div>
                         <div><span className="text-zinc-500">24h Total:</span> <span className="text-zinc-300 ml-1">{wf.totalExecutions24h}</span></div>
-                        <div><span className="text-zinc-500">ID:</span> <span className="text-zinc-300 ml-1 font-mono">{wf.workflowId}</span></div>
+                        <div><span className="text-zinc-500">ID:</span> <span className="text-zinc-300 ml-1 font-mono text-[11px]">{wf.workflowId}</span></div>
                       </div>
                       {wf.lastErrorMessage && (
-                        <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-300">
+                        <div className="p-2.5 bg-red-950/30 border border-red-500/15 rounded-lg text-xs text-red-300/90 font-mono leading-relaxed">
                           {wf.lastErrorMessage}
                         </div>
                       )}

@@ -64,20 +64,20 @@ const SettingsPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={fetchData} />
       </div>
 
       {/* Auto-refresh interval */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-zinc-400" />
-          <h2 className="text-sm font-semibold text-zinc-300">Auto-Refresh Interval</h2>
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Auto-Refresh Interval</h2>
         </div>
         <div className="px-4 py-4 flex items-center gap-2">
           {refreshOptions.map((opt) => (
             <button key={opt.value} onClick={() => setRefreshRate(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${refreshRate === opt.value ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white'}`}>
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${refreshRate === opt.value ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/40 hover:text-white hover:border-zinc-600'}`}>
               {opt.label}
             </button>
           ))}
@@ -85,31 +85,31 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Slack Notifications */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-          <Bell className="w-4 h-4 text-zinc-400" />
-          <h2 className="text-sm font-semibold text-zinc-300">Slack Channel Notifications</h2>
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+          <Bell className="w-3.5 h-3.5 text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Slack Channel Notifications</h2>
         </div>
         {channels.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500 text-sm">
+          <div className="p-10 text-center text-zinc-600 text-sm">
             No Slack channels configured. Add channels via WhatsApp.
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-zinc-800/50">
             {channels.map((ch) => (
-              <div key={ch.id} className="px-4 py-3 flex items-center gap-4">
-                <Hash className="w-4 h-4 text-zinc-500 shrink-0" />
+              <div key={ch.id} className="px-4 py-3 flex items-center gap-4 hover:bg-zinc-800/20 transition-colors">
+                <Hash className="w-4 h-4 text-zinc-600 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-200">{ch.channel_name}</p>
                   {ch.notify_on_keywords && ch.notify_on_keywords.length > 0 && (
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-[11px] text-zinc-500 mt-0.5">
                       Keywords: {ch.notify_on_keywords.join(', ')}
                     </p>
                   )}
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <span className="text-xs text-zinc-500">Mute bots</span>
+                    <span className="text-[11px] text-zinc-500">Mute bots</span>
                     <Toggle checked={ch.mute_bots} onChange={(v) => toggleChannel(ch.id, 'mute_bots', v)} />
                   </label>
                   <Toggle
@@ -125,25 +125,25 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* System Info */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-          <Database className="w-4 h-4 text-zinc-400" />
-          <h2 className="text-sm font-semibold text-zinc-300">System Info</h2>
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+          <Database className="w-3.5 h-3.5 text-zinc-500" />
+          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">System Info</h2>
         </div>
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-zinc-800/50">
           {tables.map((t) => (
-            <div key={t.name} className="px-4 py-2.5 flex items-center justify-between">
-              <span className="text-sm text-zinc-400 font-mono">{t.name}</span>
-              <span className="text-sm text-zinc-300 font-medium">{t.count.toLocaleString()} rows</span>
+            <div key={t.name} className="px-4 py-2.5 flex items-center justify-between hover:bg-zinc-800/20 transition-colors">
+              <span className="text-sm text-zinc-400 font-mono text-[13px]">{t.name}</span>
+              <span className="text-sm text-zinc-300 font-medium tabular-nums">{t.count.toLocaleString()} rows</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Info */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-zinc-300 mb-2">Managing Settings</h3>
-        <p className="text-xs text-zinc-500 leading-relaxed">
+      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
+        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Managing Settings</h3>
+        <p className="text-[11px] text-zinc-600 leading-relaxed">
           Most settings can be managed via WhatsApp commands through n8nClaw. Use &quot;manage slack notifications&quot; to add/remove channels, or toggle them directly here.
         </p>
       </div>
@@ -160,11 +160,11 @@ interface ToggleProps {
 const Toggle: React.FC<ToggleProps> = ({ checked, onChange, activeColor = 'bg-emerald-500' }) => (
   <button
     onClick={() => onChange(!checked)}
-    className={`relative w-10 h-5 rounded-full transition-colors ${checked ? activeColor : 'bg-zinc-700'}`}
+    className={`relative w-10 h-[22px] rounded-full transition-colors duration-200 ${checked ? activeColor : 'bg-zinc-700'}`}
   >
     <span
-      className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-        checked ? 'translate-x-5' : ''
+      className={`absolute top-[3px] left-[3px] w-4 h-4 bg-white rounded-full transition-transform duration-200 shadow-sm ${
+        checked ? 'translate-x-[18px]' : ''
       }`}
     />
   </button>

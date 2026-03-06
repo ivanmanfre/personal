@@ -22,11 +22,11 @@ const RefreshIndicator: React.FC<Props> = ({ lastRefreshed, onRefresh }) => {
   }, [lastRefreshed]);
 
   return (
-    <div className="flex items-center gap-2 text-xs text-zinc-500">
+    <div className="flex items-center gap-2 text-[11px] text-zinc-600">
       <span>Updated {ago}</span>
       {onRefresh && (
-        <button onClick={onRefresh} className="hover:text-white transition-colors" title="Refresh now">
-          <RefreshCw className="w-3.5 h-3.5" />
+        <button onClick={onRefresh} className="hover:text-zinc-300 transition-colors p-0.5 rounded" title="Refresh now">
+          <RefreshCw className="w-3 h-3" />
         </button>
       )}
     </div>

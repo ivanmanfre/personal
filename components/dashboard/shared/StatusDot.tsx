@@ -16,11 +16,11 @@ interface Props {
 }
 
 const StatusDot: React.FC<Props> = ({ status, pulse = false, size = 'sm' }) => {
-  const s = size === 'sm' ? 'w-2 h-2' : 'w-3 h-3';
+  const s = size === 'sm' ? 'w-2 h-2' : 'w-2.5 h-2.5';
   return (
     <span className="relative inline-flex">
       {pulse && status !== 'inactive' && (
-        <span className={`absolute inline-flex h-full w-full rounded-full ${colors[status]} opacity-50 animate-ping`} />
+        <span className={`absolute inline-flex h-full w-full rounded-full ${colors[status]} opacity-40 animate-ping`} />
       )}
       <span className={`relative inline-flex rounded-full ${s} ${colors[status]}`} />
     </span>

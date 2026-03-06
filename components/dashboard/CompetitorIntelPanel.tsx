@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Swords, ExternalLink, Lightbulb } from 'lucide-react';
+import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star } from 'lucide-react';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -27,22 +27,22 @@ const CompetitorIntelPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Competitor Intelligence</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Competitor Intelligence</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
       {/* Competitor profiles grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {competitorStats.map((c) => (
           <button key={c.id} onClick={() => { setSelectedCompetitor(c.competitorName); setShowOpportunities(false); }}
-            className={`bg-zinc-900 border rounded-xl p-4 text-left transition-colors ${selectedCompetitor === c.competitorName ? 'border-emerald-500/50' : 'border-zinc-800 hover:border-zinc-700'}`}>
+            className={`bg-zinc-900/80 border rounded-xl p-4 text-left transition-all duration-150 hover:bg-zinc-800/40 ${selectedCompetitor === c.competitorName ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-zinc-800/80'}`}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold text-zinc-200 truncate">{c.competitorName}</p>
-              <span className="text-xs text-zinc-500">{c.postCount} posts</span>
+              <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{c.postCount} posts</span>
             </div>
-            <div className="flex gap-4 text-xs text-zinc-400">
-              <span>~{c.avgLikes} avg likes</span>
-              <span>~{c.avgComments} avg comments</span>
+            <div className="flex gap-4 text-xs text-zinc-500">
+              <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-pink-400/60" /> ~{c.avgLikes}</span>
+              <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-400/60" /> ~{c.avgComments}</span>
             </div>
           </button>
         ))}
@@ -51,48 +51,52 @@ const CompetitorIntelPanel: React.FC = () => {
       {/* Filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">
         <button onClick={() => { setSelectedCompetitor('all'); setShowOpportunities(false); }}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!showOpportunities && selectedCompetitor === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${!showOpportunities && selectedCompetitor === 'all' ? 'bg-zinc-700/80 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}>
           All Posts ({posts.length})
         </button>
         <button onClick={() => setShowOpportunities(true)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${showOpportunities ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1.5 ${showOpportunities ? 'bg-amber-500/15 text-amber-400 border border-amber-500/20' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}>
           <Lightbulb className="w-3 h-3" /> Opportunities ({opportunities.length})
         </button>
       </div>
 
       {/* Posts table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 text-left">
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Competitor</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Post</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Engagement</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden md:table-cell">Topic</th>
-                {showOpportunities && <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Opportunity</th>}
+              <tr className="border-b border-zinc-800/60 text-left">
+                <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Competitor</th>
+                <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Post</th>
+                <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Engagement</th>
+                <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider hidden md:table-cell">Topic</th>
+                {showOpportunities && <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Opportunity</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-zinc-800/50">
               {displayPosts.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-zinc-500 text-center">No posts found</td></tr>
+                <tr><td colSpan={5} className="px-4 py-10 text-zinc-600 text-center">No posts found</td></tr>
               ) : (
                 displayPosts.map((p) => (
-                  <tr key={p.id} className="hover:bg-zinc-800/50 transition-colors">
+                  <tr key={p.id} className="hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-zinc-300 truncate max-w-xs">{p.postText.slice(0, 80)}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
+                      <p className="text-[11px] text-zinc-600 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-400">
-                      <span>{p.likesCount}❤ {p.commentsCount}💬 {p.repostsCount}🔄</span>
-                      {p.isTopPerformer && <span className="ml-1 text-amber-400">★</span>}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5 text-[11px]">
+                        <span className="flex items-center gap-0.5 text-pink-400/70"><Heart className="w-3 h-3" />{p.likesCount}</span>
+                        <span className="flex items-center gap-0.5 text-blue-400/70"><MessageCircle className="w-3 h-3" />{p.commentsCount}</span>
+                        <span className="flex items-center gap-0.5 text-zinc-500"><Repeat2 className="w-3 h-3" />{p.repostsCount}</span>
+                        {p.isTopPerformer && <Star className="w-3 h-3 text-amber-400" />}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 hidden md:table-cell">{p.topicCategory || '—'}</td>
+                    <td className="px-4 py-3 text-[11px] text-zinc-500 hidden md:table-cell">{p.topicCategory || '—'}</td>
                     {showOpportunities && (
                       <td className="px-4 py-3">
-                        <p className="text-xs text-amber-300 max-w-xs">{p.theOpportunity}</p>
-                        {p.suggestedAngle && <p className="text-xs text-zinc-500 mt-0.5">Angle: {p.suggestedAngle}</p>}
+                        <p className="text-xs text-amber-300/90 max-w-xs">{p.theOpportunity}</p>
+                        {p.suggestedAngle && <p className="text-[11px] text-zinc-500 mt-0.5">Angle: {p.suggestedAngle}</p>}
                       </td>
                     )}
                   </tr>

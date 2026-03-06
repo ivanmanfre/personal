@@ -9,13 +9,14 @@ interface Props {
 }
 
 const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue }) => (
-  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+  <div className="group relative bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all duration-200 overflow-hidden">
+    <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-current to-transparent opacity-0 group-hover:opacity-40 transition-opacity duration-300" style={{ color: 'var(--accent)' }} />
     <div className="flex items-center justify-between mb-2">
-      <span className="text-xs text-zinc-500 uppercase tracking-wide">{label}</span>
-      <span className={color}>{icon}</span>
+      <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">{label}</span>
+      <span className={`${color} opacity-60 group-hover:opacity-100 transition-opacity`}>{icon}</span>
     </div>
-    <p className="text-2xl font-bold">{value}</p>
-    {subValue && <p className="text-xs text-zinc-500 mt-1">{subValue}</p>}
+    <p className="text-2xl font-bold tracking-tight">{value}</p>
+    {subValue && <p className="text-[11px] text-zinc-500 mt-1.5">{subValue}</p>}
   </div>
 );
 
