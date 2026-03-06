@@ -44,7 +44,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         </button>
         <div className="flex items-center gap-2.5">
           <div className="w-6 h-6 rounded-md bg-emerald-600/90 flex items-center justify-center text-[10px] font-bold text-white">IM</div>
-          <span className="text-sm font-semibold text-zinc-200">Content System</span>
+          <span className="text-sm font-semibold text-zinc-200">Ivan System</span>
           <StatusDot status={healthStatus} pulse />
         </div>
         <div className="w-5" />
@@ -64,7 +64,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-[13px] font-semibold text-white leading-tight truncate">Content System</p>
+                <p className="text-[13px] font-semibold text-white leading-tight truncate">Ivan System</p>
                 <StatusDot status={healthStatus} pulse />
               </div>
               <p className="text-[11px] text-zinc-500">Ivan Manfredi</p>

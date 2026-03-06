@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { Lead } from '../types/dashboard';
 
 function mapLead(row: any): Lead {
@@ -47,5 +48,10 @@ export function useLeads(statusFilter?: string) {
     else icpDistribution.high++;
   });
 
-  return { leads, statusCounts, icpDistribution, loading, refresh: fetch };
+  const updateStatus = async (id: string, status: string) => {
+    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+    await dashboardAction('leads', id, 'status', status);
+  };
+
+  return { leads, statusCounts, icpDistribution, loading, refresh: fetch, updateStatus };
 }

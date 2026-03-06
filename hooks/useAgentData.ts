@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { ProactiveAlert, Reminder, ChatMessage, DailySummary } from '../types/dashboard';
 
 export function useAgentData() {
@@ -56,5 +57,15 @@ export function useAgentData() {
     return acc;
   }, {});
 
-  return { alerts, reminders, messageStats, summaries, alertsByType, loading, refresh: fetch };
+  const acknowledgeAlert = async (id: string) => {
+    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, sent: true } : a)));
+    await dashboardAction('n8nclaw_proactive_alerts', id, 'sent', 'true');
+  };
+
+  const completeReminder = async (id: number) => {
+    setReminders((prev) => prev.filter((r) => r.id !== id));
+    await dashboardAction('n8nclaw_reminders', String(id), 'status', 'completed');
+  };
+
+  return { alerts, reminders, messageStats, summaries, alertsByType, loading, refresh: fetch, acknowledgeAlert, completeReminder };
 }

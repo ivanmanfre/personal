@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { ClientInstance, ClientWorkflowError } from '../types/dashboard';
 
 function mapClient(row: any): ClientInstance {
@@ -83,6 +84,16 @@ export function useClientMonitoring() {
     return 'healthy';
   };
 
+  const toggleClient = async (id: string, isActive: boolean) => {
+    setClients((prev) => prev.map((c) => (c.id === id ? { ...c, isActive } : c)));
+    await dashboardAction('client_instances', id, 'is_active', String(isActive));
+  };
+
+  const resolveError = async (id: string) => {
+    setErrors((prev) => prev.filter((e) => e.id !== id));
+    await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
+  };
+
   return {
     clients,
     errors,
@@ -97,5 +108,7 @@ export function useClientMonitoring() {
     },
     errorsPerClient,
     getClientHealth,
+    toggleClient,
+    resolveError,
   };
 }

@@ -47,7 +47,7 @@ const DashboardAuth: React.FC<Props> = ({ onSuccess }) => {
 
           {/* Title */}
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Content System</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">Ivan System</h1>
             <p className="text-zinc-500 text-sm mt-1.5">Enter password to access dashboard</p>
           </div>
 

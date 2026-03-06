@@ -24,7 +24,7 @@ const severityColors: Record<string, string> = {
 };
 
 const ClientsPanel: React.FC = () => {
-  const { clients, errors, stats, loading, refresh, errorsPerClient, getClientHealth } = useClientMonitoring();
+  const { clients, errors, stats, loading, refresh, errorsPerClient, getClientHealth, toggleClient, resolveError } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [expandedError, setExpandedError] = useState<string | null>(null);
@@ -67,6 +67,8 @@ const ClientsPanel: React.FC = () => {
                 errors={errorsPerClient(client.id)}
                 expandedError={expandedError}
                 onToggleError={(id) => setExpandedError(expandedError === id ? null : id)}
+                onToggleActive={(id, active) => toggleClient(id, active)}
+                onResolveError={(id) => resolveError(id)}
               />
             ))}
           </div>
@@ -122,9 +124,17 @@ const ClientsPanel: React.FC = () => {
                               {err.aiAnalysis}
                             </div>
                           )}
-                          <div className="flex items-center gap-3 text-[11px] text-zinc-500">
-                            <span>First seen: {new Date(err.firstSeen).toLocaleString()}</span>
-                            <span>Workflow: <span className="font-mono">{err.workflowId}</span></span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+                              <span>First seen: {new Date(err.firstSeen).toLocaleString()}</span>
+                              <span>Workflow: <span className="font-mono">{err.workflowId}</span></span>
+                            </div>
+                            <button
+                              onClick={() => resolveError(err.id)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                            >
+                              <CheckCircle2 className="w-3 h-3" /> Resolve
+                            </button>
                           </div>
                         </div>
                       )}
@@ -149,9 +159,11 @@ interface ClientCardProps {
   errors: any[];
   expandedError: string | null;
   onToggleError: (id: string) => void;
+  onToggleActive: (id: string, active: boolean) => void;
+  onResolveError: (id: string) => void;
 }
 
-const ClientCard: React.FC<ClientCardProps> = ({ client, health, errorCount, isExpanded, onToggle, errors, expandedError, onToggleError }) => {
+const ClientCard: React.FC<ClientCardProps> = ({ client, health, errorCount, isExpanded, onToggle, errors, expandedError, onToggleError, onToggleActive, onResolveError }) => {
   const healthColors: Record<string, string> = {
     healthy: 'border-emerald-500/20',
     warning: 'border-orange-500/20',
@@ -176,9 +188,13 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, health, errorCount, isE
           {errorCount > 0 && (
             <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-medium">{errorCount}</span>
           )}
-          <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${client.isActive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700/50'}`}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleActive(client.id, !client.isActive); }}
+            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${client.isActive ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-red-500/15 hover:text-red-400 hover:border-red-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700/50 hover:bg-emerald-500/15 hover:text-emerald-400 hover:border-emerald-500/20'}`}
+            title={client.isActive ? 'Click to disable' : 'Click to enable'}
+          >
             {client.isActive ? 'Active' : 'Disabled'}
-          </span>
+          </button>
           <a
             href={client.n8nUrl}
             target="_blank"
@@ -233,6 +249,12 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, health, errorCount, isE
                             <span className="text-blue-400/70 font-medium">Analysis: </span>{err.aiAnalysis}
                           </div>
                         )}
+                        <button
+                          onClick={() => onResolveError(err.id)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <CheckCircle2 className="w-3 h-3" /> Resolve
+                        </button>
                       </div>
                     )}
                   </div>

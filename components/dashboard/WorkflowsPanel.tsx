@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -138,6 +138,14 @@ const WorkflowsPanel: React.FC = () => {
                           {wf.lastErrorMessage}
                         </div>
                       )}
+                      <a
+                        href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Open in n8n
+                      </a>
                     </div>
                   )}
                 </div>

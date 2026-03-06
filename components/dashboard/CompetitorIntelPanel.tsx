@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star } from 'lucide-react';
+import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star, CheckCircle2 } from 'lucide-react';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -7,7 +7,7 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 
 const CompetitorIntelPanel: React.FC = () => {
-  const { posts, competitorStats, opportunities, loading, refresh } = useCompetitors();
+  const { posts, competitorStats, opportunities, loading, refresh, markOpportunityActioned } = useCompetitors();
   const { lastRefreshed } = useAutoRefresh(refresh);
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>('all');
   const [showOpportunities, setShowOpportunities] = useState(false);
@@ -97,6 +97,12 @@ const CompetitorIntelPanel: React.FC = () => {
                       <td className="px-4 py-3">
                         <p className="text-xs text-amber-300/90 max-w-xs">{p.theOpportunity}</p>
                         {p.suggestedAngle && <p className="text-[11px] text-zinc-500 mt-0.5">Angle: {p.suggestedAngle}</p>}
+                        <button
+                          onClick={() => markOpportunityActioned(p.id)}
+                          className="mt-1.5 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <CheckCircle2 className="w-2.5 h-2.5" /> Done
+                        </button>
                       </td>
                     )}
                   </tr>

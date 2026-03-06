@@ -46,6 +46,7 @@ export interface CompetitorPost {
   theOpportunity: string | null;
   suggestedAngle: string | null;
   suggestedFormat: string | null;
+  opportunityActioned: boolean;
 }
 
 export interface CompetitorPattern {

@@ -27,7 +27,7 @@ const funnelColors: Record<string, string> = {
 
 const LeadsPanel: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
-  const { leads, statusCounts, icpDistribution, loading, refresh } = useLeads(filter);
+  const { leads, statusCounts, icpDistribution, loading, refresh, updateStatus } = useLeads(filter);
   const { lastRefreshed } = useAutoRefresh(refresh);
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
@@ -152,9 +152,15 @@ const LeadsPanel: React.FC = () => {
                       {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs">{lead.headline}</p>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}>
-                        {lead.status || 'unknown'}
-                      </span>
+                      <select
+                        value={lead.status || 'unknown'}
+                        onChange={(e) => updateStatus(lead.id, e.target.value)}
+                        className={`px-2 py-0.5 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
+                      >
+                        {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
+                          <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>

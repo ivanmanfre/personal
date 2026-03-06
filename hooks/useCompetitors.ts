@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { CompetitorPost, CompetitorPattern } from '../types/dashboard';
 
 function mapPost(row: any): CompetitorPost {
@@ -19,6 +20,7 @@ function mapPost(row: any): CompetitorPost {
     theOpportunity: row.the_opportunity,
     suggestedAngle: row.suggested_angle,
     suggestedFormat: row.suggested_format,
+    opportunityActioned: row.opportunity_actioned || false,
   };
 }
 
@@ -42,7 +44,7 @@ export function useCompetitors() {
     const [postsRes, patternsRes] = await Promise.all([
       supabase
         .from('competitor_posts')
-        .select('id, competitor_name, post_text, post_date, likes_count, comments_count, reposts_count, post_type, topic_category, hook_pattern, is_top_performer, has_opportunity, the_opportunity, suggested_angle, suggested_format')
+        .select('id, competitor_name, post_text, post_date, likes_count, comments_count, reposts_count, post_type, topic_category, hook_pattern, is_top_performer, has_opportunity, the_opportunity, suggested_angle, suggested_format, opportunity_actioned')
         .order('post_date', { ascending: false })
         .limit(200),
       supabase
@@ -65,7 +67,12 @@ export function useCompetitors() {
     return { ...p, avgLikes, avgComments, recentPostCount: cPosts.length };
   });
 
-  const opportunities = posts.filter((p) => p.hasOpportunity);
+  const opportunities = posts.filter((p) => p.hasOpportunity && !p.opportunityActioned);
 
-  return { posts, patterns, competitorStats, opportunities, loading, refresh: fetch };
+  const markOpportunityActioned = async (id: string) => {
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, opportunityActioned: true } : p)));
+    await dashboardAction('competitor_posts', id, 'opportunity_actioned', 'true');
+  };
+
+  return { posts, patterns, competitorStats, opportunities, loading, refresh: fetch, markOpportunityActioned };
 }

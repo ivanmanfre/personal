@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TrendingUp, Eye, Heart, MessageSquare, Activity, Bell, Clock, Zap } from 'lucide-react';
+import { TrendingUp, Eye, Heart, MessageSquare, Activity, Bell, Clock, Zap, CheckCircle2 } from 'lucide-react';
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAgentData } from '../../hooks/useAgentData';
@@ -27,7 +27,7 @@ function timeAgo(ts: string): string {
 const OverviewPanel: React.FC = () => {
   const { posts, stats: postStats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(30);
   const { stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
-  const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent } = useAgentData();
+  const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData();
   const { setSystemHealth, setLastRefreshed } = useDashboard();
 
   const refreshAll = async () => {
@@ -131,6 +131,11 @@ const OverviewPanel: React.FC = () => {
                       <p className="text-sm text-zinc-300 truncate">{a.title}</p>
                       <p className="text-[11px] text-zinc-500">{a.alertType.replace(/_/g, ' ')} · {timeAgo(a.createdAt)}</p>
                     </div>
+                    {!a.sent && (
+                      <button onClick={() => acknowledgeAlert(a.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Acknowledge">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -156,6 +161,9 @@ const OverviewPanel: React.FC = () => {
                       <p className="text-sm text-zinc-300 truncate">{r.reminderText}</p>
                       <p className="text-[11px] text-zinc-500">{new Date(r.remindAt).toLocaleString()}</p>
                     </div>
+                    <button onClick={() => completeReminder(r.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))
               )}
