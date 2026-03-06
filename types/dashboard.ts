@@ -104,6 +104,34 @@ export interface DailySummary {
   createdAt: string;
 }
 
+export interface ClientInstance {
+  id: string;
+  clientName: string;
+  n8nUrl: string;
+  isActive: boolean;
+  lastCheckedAt: string | null;
+  consecutiveFailures: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientWorkflowError {
+  id: string;
+  clientId: string;
+  clientName?: string;
+  workflowId: string;
+  workflowName: string | null;
+  errorHash: string;
+  errorMessage: string | null;
+  aiAnalysis: string | null;
+  severity: string;
+  firstSeen: string;
+  lastSeen: string;
+  occurrenceCount: number;
+  isResolved: boolean;
+  createdAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'settings';
+export type Tab = 'overview' | 'performance' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
