@@ -18,30 +18,30 @@ function mapLead(row: any): Lead {
 }
 
 export function useLeads(statusFilter?: string) {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
-    if (statusFilter && statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
-    }
-    const { data } = await query;
-    setLeads((data || []).map(mapLead));
+    const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
+    setAllLeads((data || []).map(mapLead));
     setLoading(false);
-  }, [statusFilter]);
+  }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const statusCounts = leads.reduce((acc: Record<string, number>, l) => {
+  const leads = statusFilter && statusFilter !== 'all'
+    ? allLeads.filter((l) => l.status === statusFilter)
+    : allLeads;
+
+  const statusCounts = allLeads.reduce((acc: Record<string, number>, l) => {
     const s = l.status || 'unknown';
     acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
 
   const icpDistribution = { low: 0, medium: 0, high: 0 };
-  leads.forEach((l) => {
+  allLeads.forEach((l) => {
     if (l.icpScore == null) return;
     if (l.icpScore <= 3) icpDistribution.low++;
     else if (l.icpScore <= 6) icpDistribution.medium++;
@@ -49,7 +49,7 @@ export function useLeads(statusFilter?: string) {
   });
 
   const updateStatus = async (id: string, status: string) => {
-    setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
+    setAllLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
     await dashboardAction('leads', id, 'status', status);
   };
 
