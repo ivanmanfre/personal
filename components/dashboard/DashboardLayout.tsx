@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server } from 'lucide-react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
 import StatusDot from './shared/StatusDot';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -20,6 +20,7 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
   { id: 'leads', label: 'Leads', icon: <Users className="w-[18px] h-[18px]" /> },
   { id: 'agent', label: 'Agent', icon: <Bot className="w-[18px] h-[18px]" /> },
+  { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-[18px] h-[18px]" /> },
   { id: 'clients', label: 'Clients', icon: <Server className="w-[18px] h-[18px]" /> },
   { id: 'settings', label: 'Settings', icon: <Settings className="w-[18px] h-[18px]" /> },
 ];

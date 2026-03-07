@@ -10,6 +10,7 @@ import CompetitorIntelPanel from './CompetitorIntelPanel';
 import LeadsPanel from './LeadsPanel';
 import AgentPanel from './AgentPanel';
 import ClientsPanel from './ClientsPanel';
+import TasksPanel from './TasksPanel';
 import SettingsPanel from './SettingsPanel';
 import type { Tab } from '../../types/dashboard';
 
@@ -29,6 +30,7 @@ const Dashboard: React.FC = () => {
     leads: <LeadsPanel />,
     agent: <AgentPanel />,
     clients: <ClientsPanel />,
+    tasks: <TasksPanel />,
     settings: <SettingsPanel />,
   };
 

@@ -133,6 +133,20 @@ export interface ClientWorkflowError {
   createdAt: string;
 }
 
+export interface PipelineTask {
+  id: string;
+  source: 'clickup' | 'reminder';
+  sourceId: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string | null;
+  dueDate: string | null;
+  listName: string | null;
+  metadata: Record<string, any>;
+  updatedAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'settings';
+export type Tab = 'overview' | 'performance' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
