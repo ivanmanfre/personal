@@ -10,6 +10,7 @@ import CompetitorIntelPanel from './CompetitorIntelPanel';
 import LeadsPanel from './LeadsPanel';
 import AgentPanel from './AgentPanel';
 import ClientsPanel from './ClientsPanel';
+import ContentPanel from './ContentPanel';
 import TasksPanel from './TasksPanel';
 import SettingsPanel from './SettingsPanel';
 import type { Tab } from '../../types/dashboard';
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
   const panels: Record<Tab, React.ReactNode> = {
     overview: <OverviewPanel />,
     performance: <PerformancePanel />,
+    content: <ContentPanel />,
     workflows: <WorkflowsPanel />,
     competitors: <CompetitorIntelPanel />,
     leads: <LeadsPanel />,

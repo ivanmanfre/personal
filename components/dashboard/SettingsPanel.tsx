@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Bell, Hash, Database, Clock } from 'lucide-react';
+import { Bell, Hash, Database, Clock, Plus, Trash2 } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -32,6 +32,10 @@ const SettingsPanel: React.FC = () => {
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newChannelId, setNewChannelId] = useState('');
+  const [newChannelName, setNewChannelName] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -57,6 +61,26 @@ const SettingsPanel: React.FC = () => {
   const toggleChannel = async (id: string, field: 'enabled' | 'mute_bots', value: boolean) => {
     setChannels((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
     await supabase.rpc('toggle_slack_channel', { p_id: id, p_field: field, p_value: value });
+  };
+
+  const addChannel = async () => {
+    if (!newChannelId.trim() || !newChannelName.trim()) return;
+    setAdding(true);
+    await supabase.rpc('add_slack_channel', {
+      p_channel_id: newChannelId.trim(),
+      p_channel_name: newChannelName.trim(),
+    });
+    setNewChannelId('');
+    setNewChannelName('');
+    setShowAddForm(false);
+    setAdding(false);
+    fetchData();
+  };
+
+  const removeChannel = async (id: string, name: string) => {
+    if (!confirm(`Remove #${name} from notifications?`)) return;
+    setChannels((prev) => prev.filter((c) => c.id !== id));
+    await supabase.rpc('remove_slack_channel', { p_id: id });
   };
 
   if (loading) return <LoadingSkeleton cards={2} rows={4} />;
@@ -86,13 +110,56 @@ const SettingsPanel: React.FC = () => {
 
       {/* Slack Notifications */}
       <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
-          <Bell className="w-3.5 h-3.5 text-zinc-500" />
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Slack Channel Notifications</h2>
+        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell className="w-3.5 h-3.5 text-zinc-500" />
+            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Slack Channel Notifications</h2>
+          </div>
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+          >
+            <Plus className="w-3 h-3" /> Add Channel
+          </button>
         </div>
-        {channels.length === 0 ? (
+
+        {/* Add form */}
+        {showAddForm && (
+          <div className="px-4 py-3 border-b border-zinc-800/60 bg-zinc-800/20">
+            <div className="flex items-end gap-3">
+              <div className="flex-1">
+                <label className="text-[11px] text-zinc-500 block mb-1">Channel ID</label>
+                <input
+                  value={newChannelId}
+                  onChange={(e) => setNewChannelId(e.target.value)}
+                  placeholder="C01ABC123"
+                  className="w-full px-3 py-1.5 bg-zinc-900/80 border border-zinc-700/60 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[11px] text-zinc-500 block mb-1">Channel Name</label>
+                <input
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
+                  placeholder="general"
+                  className="w-full px-3 py-1.5 bg-zinc-900/80 border border-zinc-700/60 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                  onKeyDown={(e) => e.key === 'Enter' && addChannel()}
+                />
+              </div>
+              <button
+                onClick={addChannel}
+                disabled={adding || !newChannelId.trim() || !newChannelName.trim()}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {adding ? 'Adding...' : 'Add'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {channels.length === 0 && !showAddForm ? (
           <div className="p-10 text-center text-zinc-600 text-sm">
-            No Slack channels configured. Add channels via WhatsApp.
+            No Slack channels configured. Click &quot;Add Channel&quot; to get started.
           </div>
         ) : (
           <div className="divide-y divide-zinc-800/50">
@@ -117,6 +184,13 @@ const SettingsPanel: React.FC = () => {
                     onChange={(v) => toggleChannel(ch.id, 'enabled', v)}
                     activeColor="bg-emerald-500"
                   />
+                  <button
+                    onClick={() => removeChannel(ch.id, ch.channel_name)}
+                    className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Remove channel"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -138,14 +212,6 @@ const SettingsPanel: React.FC = () => {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Info */}
-      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-        <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Managing Settings</h3>
-        <p className="text-[11px] text-zinc-600 leading-relaxed">
-          Most settings can be managed via WhatsApp commands through n8nClaw. Use &quot;manage slack notifications&quot; to add/remove channels, or toggle them directly here.
-        </p>
       </div>
     </div>
   );

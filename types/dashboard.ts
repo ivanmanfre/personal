@@ -148,5 +148,5 @@ export interface PipelineTask {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
