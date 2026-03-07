@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Bell, Hash, Database, Clock, Plus, Trash2 } from 'lucide-react';
+import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -13,6 +13,13 @@ interface SlackChannel {
   enabled: boolean;
   notify_on_keywords: string[] | null;
   mute_bots: boolean;
+}
+
+interface AvailableChannel {
+  channel_id: string;
+  channel_name: string;
+  is_private: boolean;
+  num_members: number;
 }
 
 interface TableInfo {
@@ -29,19 +36,20 @@ const refreshOptions: { label: string; value: RefreshRate }[] = [
 const SettingsPanel: React.FC = () => {
   const { refreshRate, setRefreshRate } = useDashboard();
   const [channels, setChannels] = useState<SlackChannel[]>([]);
+  const [availableChannels, setAvailableChannels] = useState<AvailableChannel[]>([]);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newChannelId, setNewChannelId] = useState('');
-  const [newChannelName, setNewChannelName] = useState('');
+  const [channelSearch, setChannelSearch] = useState('');
   const [adding, setAdding] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
 
-    const [channelsRes, tablesRes] = await Promise.all([
+    const [channelsRes, availableRes, tablesRes] = await Promise.all([
       supabase.from('slack_notification_channels').select('*').order('channel_name'),
+      supabase.from('slack_available_channels').select('channel_id, channel_name, is_private, num_members').order('channel_name'),
       Promise.all(
         ['own_posts', 'competitor_posts', 'leads', 'n8nclaw_chat_messages', 'n8nclaw_proactive_alerts', 'dashboard_workflow_stats', 'transcripts', 'generated_posts'].map(async (name) => {
           const { count } = await supabase.from(name).select('*', { count: 'exact', head: true });
@@ -51,6 +59,7 @@ const SettingsPanel: React.FC = () => {
     ]);
 
     setChannels(channelsRes.data || []);
+    setAvailableChannels(availableRes.data || []);
     setTables(tablesRes);
     setLoading(false);
     setLastRefreshed(new Date());
@@ -63,16 +72,14 @@ const SettingsPanel: React.FC = () => {
     await supabase.rpc('toggle_slack_channel', { p_id: id, p_field: field, p_value: value });
   };
 
-  const addChannel = async () => {
-    if (!newChannelId.trim() || !newChannelName.trim()) return;
+  const addChannel = async (channelId: string, channelName: string) => {
     setAdding(true);
     await supabase.rpc('add_slack_channel', {
-      p_channel_id: newChannelId.trim(),
-      p_channel_name: newChannelName.trim(),
+      p_channel_id: channelId,
+      p_channel_name: channelName,
     });
-    setNewChannelId('');
-    setNewChannelName('');
     setShowAddForm(false);
+    setChannelSearch('');
     setAdding(false);
     fetchData();
   };
@@ -82,6 +89,15 @@ const SettingsPanel: React.FC = () => {
     setChannels((prev) => prev.filter((c) => c.id !== id));
     await supabase.rpc('remove_slack_channel', { p_id: id });
   };
+
+  // Filter available channels: exclude already added ones, apply search
+  const activeChannelIds = useMemo(() => new Set(channels.map((c) => c.channel_id)), [channels]);
+  const filteredAvailable = useMemo(() => {
+    const q = channelSearch.toLowerCase();
+    return availableChannels
+      .filter((c) => !activeChannelIds.has(c.channel_id))
+      .filter((c) => !q || c.channel_name.toLowerCase().includes(q));
+  }, [availableChannels, activeChannelIds, channelSearch]);
 
   if (loading) return <LoadingSkeleton cards={2} rows={4} />;
 
@@ -123,36 +139,54 @@ const SettingsPanel: React.FC = () => {
           </button>
         </div>
 
-        {/* Add form */}
+        {/* Channel picker */}
         {showAddForm && (
-          <div className="px-4 py-3 border-b border-zinc-800/60 bg-zinc-800/20">
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <label className="text-[11px] text-zinc-500 block mb-1">Channel ID</label>
+          <div className="border-b border-zinc-800/60 bg-zinc-800/20">
+            <div className="px-4 py-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
                 <input
-                  value={newChannelId}
-                  onChange={(e) => setNewChannelId(e.target.value)}
-                  placeholder="C01ABC123"
-                  className="w-full px-3 py-1.5 bg-zinc-900/80 border border-zinc-700/60 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                  value={channelSearch}
+                  onChange={(e) => setChannelSearch(e.target.value)}
+                  placeholder="Search channels..."
+                  autoFocus
+                  className="w-full pl-9 pr-3 py-2 bg-zinc-900/80 border border-zinc-700/60 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
                 />
               </div>
-              <div className="flex-1">
-                <label className="text-[11px] text-zinc-500 block mb-1">Channel Name</label>
-                <input
-                  value={newChannelName}
-                  onChange={(e) => setNewChannelName(e.target.value)}
-                  placeholder="general"
-                  className="w-full px-3 py-1.5 bg-zinc-900/80 border border-zinc-700/60 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
-                  onKeyDown={(e) => e.key === 'Enter' && addChannel()}
-                />
-              </div>
-              <button
-                onClick={addChannel}
-                disabled={adding || !newChannelId.trim() || !newChannelName.trim()}
-                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {adding ? 'Adding...' : 'Add'}
-              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto divide-y divide-zinc-800/30">
+              {availableChannels.length === 0 ? (
+                <div className="px-4 py-6 text-center text-zinc-600 text-xs">
+                  No channels loaded yet. Channels sync every 5 minutes via Dashboard Data Sync.
+                </div>
+              ) : filteredAvailable.length === 0 ? (
+                <div className="px-4 py-4 text-center text-zinc-600 text-xs">
+                  {channelSearch ? 'No matching channels found' : 'All available channels already added'}
+                </div>
+              ) : (
+                filteredAvailable.slice(0, 20).map((ch) => (
+                  <button
+                    key={ch.channel_id}
+                    onClick={() => addChannel(ch.channel_id, ch.channel_name)}
+                    disabled={adding}
+                    className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-700/30 transition-colors text-left disabled:opacity-40"
+                  >
+                    <Hash className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-zinc-300">{ch.channel_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {ch.is_private && <Lock className="w-3 h-3 text-zinc-600" />}
+                      <span className="text-[10px] text-zinc-600">{ch.num_members} members</span>
+                    </div>
+                  </button>
+                ))
+              )}
+              {filteredAvailable.length > 20 && (
+                <div className="px-4 py-2 text-center text-[11px] text-zinc-600">
+                  +{filteredAvailable.length - 20} more &mdash; type to search
+                </div>
+              )}
             </div>
           </div>
         )}

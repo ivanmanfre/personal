@@ -27,7 +27,7 @@ export function useContentPipeline() {
     const { data } = await supabase
       .from('dashboard_tasks')
       .select('*')
-      .eq('source', 'clickup')
+      .eq('source', 'leadshark')
       .order('due_date', { ascending: true, nullsFirst: false });
     setTasks((data || []).map(mapTask));
     setLoading(false);
