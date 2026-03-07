@@ -31,6 +31,7 @@ export function useWorkflowStats() {
     const { data } = await supabase
       .from('dashboard_workflow_stats')
       .select('*')
+      .eq('is_active', true)
       .order('workflow_name');
     setWorkflows((data || []).map(mapWf));
     setLoading(false);
