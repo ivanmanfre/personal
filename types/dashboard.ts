@@ -147,6 +147,19 @@ export interface PipelineTask {
   updatedAt: string;
 }
 
+export interface ClientMonitoredWorkflow {
+  id: string;
+  clientId: string;
+  clientName: string;
+  workflowId: string;
+  workflowName: string;
+  isActive: boolean;
+  notificationsEnabled: boolean;
+  lastErrorAt: string | null;
+  errorCount: number;
+  updatedAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
 export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
-import type { ClientInstance, ClientWorkflowError } from '../types/dashboard';
+import type { ClientInstance, ClientWorkflowError, ClientMonitoredWorkflow } from '../types/dashboard';
 
 function mapClient(row: any): ClientInstance {
   return {
@@ -35,14 +35,30 @@ function mapError(row: any): ClientWorkflowError {
   };
 }
 
+function mapWorkflow(row: any): ClientMonitoredWorkflow {
+  return {
+    id: row.id,
+    clientId: row.client_id,
+    clientName: row.client_name || '',
+    workflowId: row.workflow_id,
+    workflowName: row.workflow_name,
+    isActive: row.is_active,
+    notificationsEnabled: row.notifications_enabled,
+    lastErrorAt: row.last_error_at,
+    errorCount: row.error_count || 0,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function useClientMonitoring() {
   const [clients, setClients] = useState<ClientInstance[]>([]);
   const [errors, setErrors] = useState<ClientWorkflowError[]>([]);
+  const [workflows, setWorkflows] = useState<ClientMonitoredWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const [clientsRes, errorsRes] = await Promise.all([
+    const [clientsRes, errorsRes, workflowsRes] = await Promise.all([
       supabase.from('client_instances_safe').select('*').order('client_name'),
       supabase
         .from('client_workflow_errors')
@@ -50,6 +66,10 @@ export function useClientMonitoring() {
         .eq('is_resolved', false)
         .order('last_seen', { ascending: false })
         .limit(50),
+      supabase
+        .from('client_monitored_workflows_view')
+        .select('*')
+        .order('workflow_name'),
     ]);
 
     const clientList = (clientsRes.data || []).map(mapClient);
@@ -62,6 +82,7 @@ export function useClientMonitoring() {
         clientName: clientNameMap.get(row.client_id) || '',
       }))
     );
+    setWorkflows((workflowsRes.data || []).map(mapWorkflow));
     setLoading(false);
   }, []);
 
@@ -74,6 +95,9 @@ export function useClientMonitoring() {
 
   const errorsPerClient = (clientId: string) =>
     errors.filter((e) => e.clientId === clientId);
+
+  const workflowsPerClient = (clientId: string) =>
+    workflows.filter((w) => w.clientId === clientId);
 
   const getClientHealth = (client: ClientInstance): 'healthy' | 'warning' | 'error' | 'inactive' => {
     if (!client.isActive) return 'inactive';
@@ -94,9 +118,17 @@ export function useClientMonitoring() {
     await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
   };
 
+  const toggleWorkflowNotifications = async (id: string, enabled: boolean) => {
+    setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: enabled } : w)));
+    await dashboardAction('client_monitored_workflows', id, 'notifications_enabled', String(enabled));
+  };
+
+  const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;
+
   return {
     clients,
     errors,
+    workflows,
     loading,
     refresh: fetch,
     stats: {
@@ -105,10 +137,13 @@ export function useClientMonitoring() {
       unresolvedErrors: unresolvedErrors.length,
       criticalErrors: criticalErrors.length,
       clientsWithErrors,
+      monitoredWorkflows: monitoredCount,
     },
     errorsPerClient,
+    workflowsPerClient,
     getClientHealth,
     toggleClient,
     resolveError,
+    toggleWorkflowNotifications,
   };
 }
