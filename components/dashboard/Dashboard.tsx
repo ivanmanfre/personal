@@ -12,6 +12,7 @@ import AgentPanel from './AgentPanel';
 import ClientsPanel from './ClientsPanel';
 import ContentPanel from './ContentPanel';
 import TasksPanel from './TasksPanel';
+import UpworkPanel from './UpworkPanel';
 import SettingsPanel from './SettingsPanel';
 import type { Tab } from '../../types/dashboard';
 
@@ -33,6 +34,7 @@ const Dashboard: React.FC = () => {
     agent: <AgentPanel />,
     clients: <ClientsPanel />,
     tasks: <TasksPanel />,
+    upwork: <UpworkPanel />,
     settings: <SettingsPanel />,
   };
 

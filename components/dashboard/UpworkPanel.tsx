@@ -1,0 +1,416 @@
+import React, { useState } from 'react';
+import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy } from 'lucide-react';
+import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import StatCard from './shared/StatCard';
+import LoadingSkeleton from './shared/LoadingSkeleton';
+import RefreshIndicator from './shared/RefreshIndicator';
+import EmptyState from './shared/EmptyState';
+import type { UpworkJob, UpworkProposal } from '../../types/dashboard';
+
+function timeAgo(ts: string | null): string {
+  if (!ts) return 'never';
+  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+  return `${Math.floor(secs / 86400)}d ago`;
+}
+
+function formatBudget(job: UpworkJob): string {
+  if (!job.budgetMin && !job.budgetMax) return '--';
+  if (job.budgetType === 'hourly') {
+    return `$${job.budgetMin || 0}-$${job.budgetMax || 0}/hr`;
+  }
+  if (job.budgetMax) return `$${job.budgetMax.toLocaleString()}`;
+  if (job.budgetMin) return `$${job.budgetMin.toLocaleString()}+`;
+  return '--';
+}
+
+const statusColors: Record<string, string> = {
+  new: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+  assessed: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  drafted: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  pending_approval: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  approved: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  submitted: 'bg-green-500/20 text-green-400 border-green-500/30',
+  won: 'bg-green-500/25 text-green-300 border-green-500/40',
+  skipped: 'bg-zinc-500/15 text-zinc-500 border-zinc-600/30',
+  rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
+
+function icpColor(score: number | null): string {
+  if (score == null) return 'text-zinc-500';
+  if (score >= 8) return 'text-emerald-400';
+  if (score >= 6) return 'text-amber-400';
+  return 'text-red-400';
+}
+
+function icpBg(score: number | null): string {
+  if (score == null) return 'bg-zinc-500/15 border-zinc-600/30';
+  if (score >= 8) return 'bg-emerald-500/15 border-emerald-500/30';
+  if (score >= 6) return 'bg-amber-500/15 border-amber-500/30';
+  return 'bg-red-500/15 border-red-500/30';
+}
+
+const UpworkPanel: React.FC = () => {
+  const { jobs, proposals, stats, loading, refresh, skipJob, approveProposal, rejectProposal } = useUpworkPipeline();
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_jobs', 'upwork_proposals'] });
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'proposals'>('pipeline');
+  const [expandedJob, setExpandedJob] = useState<string | null>(null);
+  const [expandedProposal, setExpandedProposal] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  if (loading) return <LoadingSkeleton cards={5} rows={6} />;
+
+  if (jobs.length === 0 && proposals.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
+        <EmptyState title="No Upwork jobs yet" description="The Upwork scraping workflow will populate this panel as new jobs are discovered and assessed." icon={<Briefcase className="w-10 h-10" />} />
+      </div>
+    );
+  }
+
+  const filteredJobs = statusFilter === 'all' ? jobs : jobs.filter((j) => j.status === statusFilter);
+  const jobMap = new Map(jobs.map((j) => [j.id, j]));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
+        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard label="New Jobs" value={stats.new} icon={<Briefcase className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Assessed" value={stats.assessed} icon={<Zap className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Drafted" value={stats.drafted} icon={<FileText className="w-5 h-5" />} color="text-purple-400" />
+        <StatCard label="Pending Approval" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="Submitted" value={stats.submitted} icon={<Trophy className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex border-b border-zinc-800/60">
+        <button
+          onClick={() => setActiveTab('pipeline')}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'pipeline' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Pipeline ({jobs.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('proposals')}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'proposals' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Proposals ({proposals.length})
+        </button>
+      </div>
+
+      {activeTab === 'pipeline' ? (
+        <PipelineTab
+          jobs={filteredJobs}
+          statusFilter={statusFilter}
+          onStatusFilter={setStatusFilter}
+          expandedJob={expandedJob}
+          onToggleJob={(id) => setExpandedJob(expandedJob === id ? null : id)}
+          onSkip={skipJob}
+          stats={stats}
+        />
+      ) : (
+        <ProposalsTab
+          proposals={proposals}
+          jobMap={jobMap}
+          expandedProposal={expandedProposal}
+          onToggleProposal={(id) => setExpandedProposal(expandedProposal === id ? null : id)}
+          onApprove={approveProposal}
+          onReject={rejectProposal}
+        />
+      )}
+    </div>
+  );
+};
+
+/* ── Pipeline Tab ────────────────────────────────────────── */
+
+interface PipelineTabProps {
+  jobs: UpworkJob[];
+  statusFilter: string;
+  onStatusFilter: (s: string) => void;
+  expandedJob: string | null;
+  onToggleJob: (id: string) => void;
+  onSkip: (id: string, reason?: string) => void;
+  stats: { totalJobs: number; new: number; assessed: number; drafted: number; submitted: number; won: number; skipped: number };
+}
+
+const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusFilter, expandedJob, onToggleJob, onSkip, stats }) => {
+  const filters = [
+    { key: 'all', label: 'All', count: stats.totalJobs },
+    { key: 'new', label: 'New', count: stats.new },
+    { key: 'assessed', label: 'Assessed', count: stats.assessed },
+    { key: 'drafted', label: 'Drafted', count: stats.drafted },
+    { key: 'submitted', label: 'Submitted', count: stats.submitted },
+    { key: 'won', label: 'Won', count: stats.won },
+    { key: 'skipped', label: 'Skipped', count: stats.skipped },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Status filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => onStatusFilter(f.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f.key ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+          >
+            {f.label} ({f.count})
+          </button>
+        ))}
+      </div>
+
+      {/* Jobs list */}
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        {jobs.length === 0 ? (
+          <p className="px-4 py-8 text-zinc-500 text-center text-sm">No jobs match this filter</p>
+        ) : (
+          <div className="divide-y divide-zinc-800/50">
+            {jobs.map((job) => {
+              const isExpanded = expandedJob === job.id;
+              const isSkipped = job.status === 'skipped';
+              return (
+                <div key={job.id}>
+                  <button
+                    onClick={() => onToggleJob(job.id)}
+                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors text-left ${isSkipped ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`text-sm font-medium text-zinc-200 truncate ${isSkipped ? 'line-through' : ''}`}>
+                          {job.title}
+                        </p>
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColors[job.status] || statusColors.new}`}>
+                          {job.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <span className="text-xs text-zinc-400">{formatBudget(job)}</span>
+                        {job.icpScore != null && (
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${icpBg(job.icpScore)} ${icpColor(job.icpScore)}`}>
+                            ICP {job.icpScore}
+                          </span>
+                        )}
+                        {job.skills.slice(0, 3).map((skill) => (
+                          <span key={skill} className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{skill}</span>
+                        ))}
+                        {job.skills.length > 3 && (
+                          <span className="text-[10px] text-zinc-600">+{job.skills.length - 3}</span>
+                        )}
+                        <span className="text-[10px] text-zinc-600">{timeAgo(job.postedAt)}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 mt-1">
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600" /> : <ChevronRight className="w-4 h-4 text-zinc-600" />}
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 space-y-3">
+                      {/* Description */}
+                      {job.description && (
+                        <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                          {job.description}
+                        </div>
+                      )}
+
+                      {/* AI Reasoning */}
+                      {job.icpReasoning && (
+                        <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed">
+                          <span className="text-blue-400/70 font-medium">AI Reasoning: </span>
+                          {job.icpReasoning}
+                        </div>
+                      )}
+
+                      {/* Fit tags & matched projects */}
+                      {(job.fitTags.length > 0 || job.matchedProjects.length > 0) && (
+                        <div className="flex flex-wrap gap-2">
+                          {job.fitTags.map((tag) => (
+                            <span key={tag} className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{tag}</span>
+                          ))}
+                          {job.matchedProjects.map((proj) => (
+                            <span key={proj} className="text-[10px] text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">{proj}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* All skills */}
+                      {job.skills.length > 3 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {job.skills.map((skill) => (
+                            <span key={skill} className="text-[10px] text-zinc-400 bg-zinc-800/60 px-1.5 py-0.5 rounded">{skill}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <a
+                          href={job.upworkUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-700 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" /> View on Upwork
+                        </a>
+                        {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
+                          <button
+                            onClick={() => onSkip(job.id)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/50 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-colors"
+                          >
+                            <XCircle className="w-3 h-3" /> Skip
+                          </button>
+                        )}
+                        {(job.status === 'new' || job.status === 'assessed') && (
+                          <button
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors opacity-70 cursor-not-allowed"
+                            title="Draft generation coming soon"
+                            disabled
+                          >
+                            <FileText className="w-3 h-3" /> Draft
+                          </button>
+                        )}
+                      </div>
+
+                      {job.skipReason && (
+                        <p className="text-[11px] text-zinc-500 italic">Skip reason: {job.skipReason}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Proposals Tab ───────────────────────────────────────── */
+
+interface ProposalsTabProps {
+  proposals: UpworkProposal[];
+  jobMap: Map<string, UpworkJob>;
+  expandedProposal: string | null;
+  onToggleProposal: (id: string) => void;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}
+
+const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expandedProposal, onToggleProposal, onApprove, onReject }) => {
+  if (proposals.length === 0) {
+    return (
+      <EmptyState title="No proposals yet" description="Proposals will appear here as the AI drafts them for assessed jobs." icon={<FileText className="w-10 h-10" />} />
+    );
+  }
+
+  return (
+    <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden divide-y divide-zinc-800/50">
+      {proposals.map((prop) => {
+        const job = jobMap.get(prop.jobId);
+        const isExpanded = expandedProposal === prop.id;
+        return (
+          <div key={prop.id}>
+            <button
+              onClick={() => onToggleProposal(prop.id)}
+              className="w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium text-zinc-200 truncate">{job?.title || prop.jobId}</p>
+                  <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColors[prop.status] || statusColors.new}`}>
+                    {prop.status}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">v{prop.version}</span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{prop.proposalText.slice(0, 200)}{prop.proposalText.length > 200 ? '...' : ''}</p>
+                <div className="flex items-center gap-3 mt-1.5 text-[10px] text-zinc-500">
+                  {prop.rateAmount != null && (
+                    <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>
+                  )}
+                  {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
+                  <span>{prop.aiModel}</span>
+                  <span>{timeAgo(prop.createdAt)}</span>
+                </div>
+              </div>
+              <div className="shrink-0 mt-1">
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600" /> : <ChevronRight className="w-4 h-4 text-zinc-600" />}
+              </div>
+            </button>
+
+            {isExpanded && (
+              <div className="px-4 pb-4 space-y-3">
+                {/* Full proposal text */}
+                <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
+                  {prop.proposalText}
+                </div>
+
+                {/* Cover letter if different */}
+                {prop.coverLetter && prop.coverLetter !== prop.proposalText && (
+                  <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                    <span className="text-blue-400/70 font-medium block mb-1">Cover Letter:</span>
+                    {prop.coverLetter}
+                  </div>
+                )}
+
+                {/* Portfolio refs */}
+                {prop.portfolioRefs.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {prop.portfolioRefs.map((ref) => (
+                      <span key={ref} className="text-[10px] text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-full">{ref}</span>
+                    ))}
+                  </div>
+                )}
+
+                {/* PDF link */}
+                {prop.pdfUrl && (
+                  <a
+                    href={prop.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-emerald-400 transition-colors"
+                  >
+                    <FileText className="w-3 h-3" /> View PDF
+                  </a>
+                )}
+
+                {/* Actions */}
+                {(prop.status === 'draft' || prop.status === 'pending_approval') && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => onApprove(prop.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      <CheckCircle2 className="w-3 h-3" /> Approve
+                    </button>
+                    <button
+                      onClick={() => onReject(prop.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                    >
+                      <XCircle className="w-3 h-3" /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default UpworkPanel;

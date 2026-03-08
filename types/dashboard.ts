@@ -160,6 +160,57 @@ export interface ClientMonitoredWorkflow {
   updatedAt: string;
 }
 
+export interface UpworkJob {
+  id: string;
+  upworkUrl: string;
+  title: string;
+  description: string | null;
+  budgetType: string | null;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  skills: string[];
+  clientHistory: Record<string, any> | null;
+  postedAt: string | null;
+  scrapedAt: string;
+  icpScore: number | null;
+  icpReasoning: string | null;
+  fitTags: string[];
+  matchedProjects: string[];
+  status: string;
+  skipReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpworkProposal {
+  id: string;
+  jobId: string;
+  proposalText: string;
+  coverLetter: string | null;
+  rateAmount: number | null;
+  rateType: string | null;
+  estimatedHours: number | null;
+  portfolioRefs: string[];
+  aiModel: string;
+  pdfUrl: string | null;
+  version: number;
+  status: string;
+  submittedAt: string | null;
+  createdAt: string;
+}
+
+export interface UpworkPipelineStats {
+  totalJobs: number;
+  new: number;
+  assessed: number;
+  drafted: number;
+  pendingApproval: number;
+  submitted: number;
+  won: number;
+  skipped: number;
+  submissionsToday: number;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
