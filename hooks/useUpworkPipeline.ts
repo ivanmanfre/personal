@@ -126,9 +126,10 @@ export function useUpworkPipeline() {
   };
 
   const editProposal = async (id: string, field: 'proposal_text' | 'cover_letter', value: string) => {
-    const key = field === 'proposal_text' ? 'proposalText' : 'coverLetter';
-    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
-    await dashboardAction('upwork_proposals', id, field, value);
+    // Sync both columns — there's only one cover letter on Upwork
+    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, proposalText: value, coverLetter: value } : p)));
+    await dashboardAction('upwork_proposals', id, 'proposal_text', value);
+    await dashboardAction('upwork_proposals', id, 'cover_letter', value);
   };
 
   const submitProposal = async (id: string) => {

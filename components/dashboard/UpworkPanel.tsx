@@ -396,7 +396,7 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                 {/* Proposal text - editable */}
                 <div className="relative">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Cover Letter / Proposal</span>
+                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Cover Letter</span>
                     {isEditable && !isEditingThis && (
                       <button
                         onClick={() => startEdit(prop.id, 'proposal_text', prop.proposalText)}
@@ -430,44 +430,6 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                   )}
                 </div>
 
-                {/* Cover letter if different */}
-                {prop.coverLetter && prop.coverLetter !== prop.proposalText && (
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Short Cover Letter</span>
-                      {isEditable && !(isEditingThis && editingField.field === 'cover_letter') && (
-                        <button
-                          onClick={() => startEdit(prop.id, 'cover_letter', prop.coverLetter || '')}
-                          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
-                        >
-                          <Edit3 className="w-3 h-3" /> Edit
-                        </button>
-                      )}
-                    </div>
-                    {isEditingThis && editingField.field === 'cover_letter' ? (
-                      <div className="space-y-2">
-                        <textarea
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="w-full p-3 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-blue-200 leading-relaxed min-h-[120px] focus:outline-none focus:border-emerald-500/50 resize-y"
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <button onClick={saveEdit} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
-                            <Save className="w-3 h-3" /> Save
-                          </button>
-                          <button onClick={cancelEdit} className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors">
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
-                        {prop.coverLetter}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Screening Q&A */}
                 {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
