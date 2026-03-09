@@ -109,7 +109,7 @@ const UpworkPanel: React.FC = () => {
           onClick={() => setActiveTab('proposals')}
           className={`px-4 py-2.5 text-sm font-medium transition-colors ${activeTab === 'proposals' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
-          Proposals ({proposals.length})
+          Invites ({proposals.length})
         </button>
       </div>
 
