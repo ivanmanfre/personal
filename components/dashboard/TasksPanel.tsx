@@ -41,10 +41,10 @@ const TasksPanel: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Reminders</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
-        <EmptyState title="No personal tasks" description="Personal reminders from n8nClaw will appear here once synced." icon={<CheckSquare className="w-10 h-10" />} />
+        <EmptyState title="No reminders" description="Reminders from n8nClaw will appear here once synced." icon={<CheckSquare className="w-10 h-10" />} />
       </div>
     );
   }
@@ -52,7 +52,7 @@ const TasksPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Reminders</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
@@ -67,7 +67,7 @@ const TasksPanel: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800 text-left">
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Task</th>
+                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Reminder</th>
                 <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Status</th>
                 <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Due</th>
                 <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden md:table-cell">Recurrence</th>
@@ -76,7 +76,7 @@ const TasksPanel: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {activeTasks.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-zinc-500 text-center">All tasks completed</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-zinc-500 text-center">All reminders completed</td></tr>
               ) : (
                 activeTasks.map((task) => {
                   const due = task.dueDate ? timeUntil(task.dueDate) : null;

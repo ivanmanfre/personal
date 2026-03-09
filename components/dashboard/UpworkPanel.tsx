@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
-import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useAutoRefresh, pauseRefresh, resumeRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -331,6 +331,7 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
   const startEdit = (id: string, field: 'proposal_text' | 'cover_letter', currentValue: string) => {
     setEditingField({ id, field });
     setEditValue(currentValue);
+    pauseRefresh();
   };
 
   const saveEdit = () => {
@@ -338,11 +339,13 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
       onEdit(editingField.id, editingField.field, editValue);
       setEditingField(null);
     }
+    resumeRefresh();
   };
 
   const cancelEdit = () => {
     setEditingField(null);
     setEditValue('');
+    resumeRefresh();
   };
 
   return (
