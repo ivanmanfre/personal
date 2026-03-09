@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy } from 'lucide-react';
+import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -33,10 +33,12 @@ const statusColors: Record<string, string> = {
   drafted: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   pending_approval: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   approved: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+  submitting: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   submitted: 'bg-green-500/20 text-green-400 border-green-500/30',
   won: 'bg-green-500/25 text-green-300 border-green-500/40',
   skipped: 'bg-zinc-500/15 text-zinc-500 border-zinc-600/30',
   rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+  draft: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
 };
 
 function icpColor(score: number | null): string {
@@ -54,7 +56,7 @@ function icpBg(score: number | null): string {
 }
 
 const UpworkPanel: React.FC = () => {
-  const { jobs, proposals, stats, loading, refresh, skipJob, approveProposal, rejectProposal } = useUpworkPipeline();
+  const { jobs, proposals, stats, loading, refresh, skipJob, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_jobs', 'upwork_proposals'] });
   const [activeTab, setActiveTab] = useState<'pipeline' | 'proposals'>('pipeline');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
@@ -86,11 +88,12 @@ const UpworkPanel: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <StatCard label="New Jobs" value={stats.new} icon={<Briefcase className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Invites" value={stats.invites} icon={<Mail className="w-5 h-5" />} color="text-purple-400" />
         <StatCard label="Assessed" value={stats.assessed} icon={<Zap className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Drafted" value={stats.drafted} icon={<FileText className="w-5 h-5" />} color="text-purple-400" />
-        <StatCard label="Pending Approval" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="Pending" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
         <StatCard label="Submitted" value={stats.submitted} icon={<Trophy className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
       </div>
 
@@ -128,6 +131,8 @@ const UpworkPanel: React.FC = () => {
           onToggleProposal={(id) => setExpandedProposal(expandedProposal === id ? null : id)}
           onApprove={approveProposal}
           onReject={rejectProposal}
+          onEdit={editProposal}
+          onSubmit={submitProposal}
         />
       )}
     </div>
@@ -181,6 +186,7 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
             {jobs.map((job) => {
               const isExpanded = expandedJob === job.id;
               const isSkipped = job.status === 'skipped';
+              const isInvite = job.source === 'invite';
               return (
                 <div key={job.id}>
                   <button
@@ -189,6 +195,11 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {isInvite && (
+                          <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                            Invite
+                          </span>
+                        )}
                         <p className={`text-sm font-medium text-zinc-200 truncate ${isSkipped ? 'line-through' : ''}`}>
                           {job.title}
                         </p>
@@ -219,14 +230,12 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
 
                   {isExpanded && (
                     <div className="px-4 pb-4 space-y-3">
-                      {/* Description */}
                       {job.description && (
                         <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
                           {job.description}
                         </div>
                       )}
 
-                      {/* AI Reasoning */}
                       {job.icpReasoning && (
                         <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed">
                           <span className="text-blue-400/70 font-medium">AI Reasoning: </span>
@@ -234,7 +243,15 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                         </div>
                       )}
 
-                      {/* Fit tags & matched projects */}
+                      {job.screeningQuestions && job.screeningQuestions.length > 0 && (
+                        <div className="p-3 bg-amber-950/20 border border-amber-500/15 rounded-lg">
+                          <span className="text-amber-400/70 font-medium text-xs block mb-1.5">Screening Questions:</span>
+                          {job.screeningQuestions.map((q, i) => (
+                            <p key={i} className="text-xs text-amber-300/80 ml-2 mb-1">{i + 1}. {q.question}</p>
+                          ))}
+                        </div>
+                      )}
+
                       {(job.fitTags.length > 0 || job.matchedProjects.length > 0) && (
                         <div className="flex flex-wrap gap-2">
                           {job.fitTags.map((tag) => (
@@ -246,7 +263,6 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                         </div>
                       )}
 
-                      {/* All skills */}
                       {job.skills.length > 3 && (
                         <div className="flex flex-wrap gap-1.5">
                           {job.skills.map((skill) => (
@@ -255,7 +271,6 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                         </div>
                       )}
 
-                      {/* Actions */}
                       <div className="flex items-center gap-2 pt-1">
                         <a
                           href={job.upworkUrl}
@@ -271,15 +286,6 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700/50 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 transition-colors"
                           >
                             <XCircle className="w-3 h-3" /> Skip
-                          </button>
-                        )}
-                        {(job.status === 'new' || job.status === 'assessed') && (
-                          <button
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors opacity-70 cursor-not-allowed"
-                            title="Draft generation coming soon"
-                            disabled
-                          >
-                            <FileText className="w-3 h-3" /> Draft
                           </button>
                         )}
                       </div>
@@ -308,20 +314,46 @@ interface ProposalsTabProps {
   onToggleProposal: (id: string) => void;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onEdit: (id: string, field: 'proposal_text' | 'cover_letter', value: string) => void;
+  onSubmit: (id: string) => void;
 }
 
-const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expandedProposal, onToggleProposal, onApprove, onReject }) => {
+const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expandedProposal, onToggleProposal, onApprove, onReject, onEdit, onSubmit }) => {
+  const [editingField, setEditingField] = useState<{ id: string; field: 'proposal_text' | 'cover_letter' } | null>(null);
+  const [editValue, setEditValue] = useState('');
+
   if (proposals.length === 0) {
     return (
       <EmptyState title="No proposals yet" description="Proposals will appear here as the AI drafts them for assessed jobs." icon={<FileText className="w-10 h-10" />} />
     );
   }
 
+  const startEdit = (id: string, field: 'proposal_text' | 'cover_letter', currentValue: string) => {
+    setEditingField({ id, field });
+    setEditValue(currentValue);
+  };
+
+  const saveEdit = () => {
+    if (editingField) {
+      onEdit(editingField.id, editingField.field, editValue);
+      setEditingField(null);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingField(null);
+    setEditValue('');
+  };
+
   return (
     <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden divide-y divide-zinc-800/50">
       {proposals.map((prop) => {
         const job = jobMap.get(prop.jobId);
         const isExpanded = expandedProposal === prop.id;
+        const isEditable = prop.status === 'draft' || prop.status === 'pending_approval';
+        const isSubmittable = prop.status === 'pending_approval' || prop.status === 'approved';
+        const isEditingThis = editingField?.id === prop.id;
+
         return (
           <div key={prop.id}>
             <button
@@ -330,9 +362,14 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
+                  {job?.source === 'invite' && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                      Invite
+                    </span>
+                  )}
                   <p className="text-sm font-medium text-zinc-200 truncate">{job?.title || prop.jobId}</p>
                   <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColors[prop.status] || statusColors.new}`}>
-                    {prop.status}
+                    {prop.status === 'pending_approval' ? 'pending' : prop.status}
                   </span>
                   <span className="text-[10px] text-zinc-600">v{prop.version}</span>
                 </div>
@@ -353,16 +390,92 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
 
             {isExpanded && (
               <div className="px-4 pb-4 space-y-3">
-                {/* Full proposal text */}
-                <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
-                  {prop.proposalText}
+                {/* Proposal text - editable */}
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Cover Letter / Proposal</span>
+                    {isEditable && !isEditingThis && (
+                      <button
+                        onClick={() => startEdit(prop.id, 'proposal_text', prop.proposalText)}
+                        className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
+                      >
+                        <Edit3 className="w-3 h-3" /> Edit
+                      </button>
+                    )}
+                  </div>
+                  {isEditingThis && editingField.field === 'proposal_text' ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-full p-3 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-zinc-200 leading-relaxed min-h-[200px] focus:outline-none focus:border-emerald-500/50 resize-y"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button onClick={saveEdit} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
+                          <Save className="w-3 h-3" /> Save
+                        </button>
+                        <button onClick={cancelEdit} className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
+                      {prop.proposalText}
+                    </div>
+                  )}
                 </div>
 
                 {/* Cover letter if different */}
                 {prop.coverLetter && prop.coverLetter !== prop.proposalText && (
-                  <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
-                    <span className="text-blue-400/70 font-medium block mb-1">Cover Letter:</span>
-                    {prop.coverLetter}
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Short Cover Letter</span>
+                      {isEditable && !(isEditingThis && editingField.field === 'cover_letter') && (
+                        <button
+                          onClick={() => startEdit(prop.id, 'cover_letter', prop.coverLetter || '')}
+                          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3" /> Edit
+                        </button>
+                      )}
+                    </div>
+                    {isEditingThis && editingField.field === 'cover_letter' ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="w-full p-3 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-blue-200 leading-relaxed min-h-[120px] focus:outline-none focus:border-emerald-500/50 resize-y"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <button onClick={saveEdit} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">
+                            <Save className="w-3 h-3" /> Save
+                          </button>
+                          <button onClick={cancelEdit} className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                        {prop.coverLetter}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Screening Q&A */}
+                {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
+                  <div className="p-3 bg-amber-950/20 border border-amber-500/15 rounded-lg space-y-2">
+                    <span className="text-amber-400/70 font-medium text-xs block">Screening Answers:</span>
+                    {prop.screeningAnswers.map((qa, i) => (
+                      <div key={i} className="ml-2">
+                        <p className="text-[10px] text-amber-400/60 font-medium">Q{i + 1}: {qa.question}</p>
+                        <p className="text-xs text-amber-200/80 mt-0.5">{qa.answer}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -388,22 +501,41 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                 )}
 
                 {/* Actions */}
-                {(prop.status === 'draft' || prop.status === 'pending_approval') && (
-                  <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-2 pt-1">
+                  {isEditable && (
+                    <>
+                      <button
+                        onClick={() => onApprove(prop.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                      >
+                        <CheckCircle2 className="w-3 h-3" /> Approve
+                      </button>
+                      <button
+                        onClick={() => { onApprove(prop.id); setTimeout(() => onSubmit(prop.id), 500); }}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors"
+                      >
+                        <Send className="w-3 h-3" /> Approve & Submit
+                      </button>
+                      <button
+                        onClick={() => onReject(prop.id)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                      >
+                        <XCircle className="w-3 h-3" /> Reject
+                      </button>
+                    </>
+                  )}
+                  {isSubmittable && prop.status !== 'pending_approval' && (
                     <button
-                      onClick={() => onApprove(prop.id)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                      onClick={() => onSubmit(prop.id)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors"
                     >
-                      <CheckCircle2 className="w-3 h-3" /> Approve
+                      <Send className="w-3 h-3" /> Submit
                     </button>
-                    <button
-                      onClick={() => onReject(prop.id)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
-                    >
-                      <XCircle className="w-3 h-3" /> Reject
-                    </button>
-                  </div>
-                )}
+                  )}
+                  {prop.status === 'submitting' && (
+                    <span className="text-[11px] text-yellow-400 animate-pulse">Submitting...</span>
+                  )}
+                </div>
               </div>
             )}
           </div>

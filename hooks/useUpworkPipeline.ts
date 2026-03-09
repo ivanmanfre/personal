@@ -22,6 +22,8 @@ function mapJob(r: any): UpworkJob {
     matchedProjects: r.matched_projects || [],
     status: r.status,
     skipReason: r.skip_reason,
+    source: r.source,
+    screeningQuestions: r.screening_questions,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -42,6 +44,7 @@ function mapProposal(r: any): UpworkProposal {
     version: r.version,
     status: r.status,
     submittedAt: r.submitted_at,
+    screeningAnswers: r.screening_answers,
     createdAt: r.created_at,
   };
 }
@@ -57,6 +60,7 @@ function mapStats(r: any): UpworkPipelineStats {
     won: r.won || 0,
     skipped: r.skipped || 0,
     submissionsToday: r.submissions_today || 0,
+    invites: r.invites || 0,
   };
 }
 
@@ -70,6 +74,7 @@ const emptyStats: UpworkPipelineStats = {
   won: 0,
   skipped: 0,
   submissionsToday: 0,
+  invites: 0,
 };
 
 export function useUpworkPipeline() {
@@ -120,6 +125,31 @@ export function useUpworkPipeline() {
     await dashboardAction('upwork_proposals', id, 'status', 'rejected');
   };
 
+  const editProposal = async (id: string, field: 'proposal_text' | 'cover_letter', value: string) => {
+    const key = field === 'proposal_text' ? 'proposalText' : 'coverLetter';
+    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
+    await dashboardAction('upwork_proposals', id, field, value);
+  };
+
+  const submitProposal = async (id: string) => {
+    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitting' } : p)));
+    try {
+      const res = await window.fetch('https://n8n.intelligents.agency/webhook/upwork-submit-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposal_id: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitted', submittedAt: new Date().toISOString() } : p)));
+      } else {
+        setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
+      }
+    } catch {
+      setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
+    }
+  };
+
   return {
     jobs,
     proposals,
@@ -129,5 +159,7 @@ export function useUpworkPipeline() {
     skipJob,
     approveProposal,
     rejectProposal,
+    editProposal,
+    submitProposal,
   };
 }

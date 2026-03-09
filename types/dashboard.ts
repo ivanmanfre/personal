@@ -178,6 +178,8 @@ export interface UpworkJob {
   matchedProjects: string[];
   status: string;
   skipReason: string | null;
+  source: string | null;
+  screeningQuestions: { question: string; required?: boolean }[] | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -196,6 +198,7 @@ export interface UpworkProposal {
   version: number;
   status: string;
   submittedAt: string | null;
+  screeningAnswers: { question: string; answer: string }[] | null;
   createdAt: string;
 }
 
@@ -209,6 +212,7 @@ export interface UpworkPipelineStats {
   won: number;
   skipped: number;
   submissionsToday: number;
+  invites: number;
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
