@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Server, AlertTriangle, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search } from 'lucide-react';
 import { useClientMonitoring } from '../../hooks/useClientMonitoring';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -205,9 +205,9 @@ const ClientCard: React.FC<ClientCardProps> = ({
     inactive: 'border-zinc-700/50',
   };
 
-  const filteredWorkflows = search
+  const filteredWorkflows = useMemo(() => search
     ? workflows.filter((w) => w.workflowName.toLowerCase().includes(search.toLowerCase()))
-    : workflows;
+    : workflows, [workflows, search]);
 
   return (
     <div className={`bg-zinc-900/80 border rounded-xl overflow-hidden transition-colors ${healthColors[health]}`}>

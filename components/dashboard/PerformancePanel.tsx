@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -41,59 +41,67 @@ const PerformancePanel: React.FC = () => {
   const loading = postsLoading || compLoading;
   if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
-  const chartData = [...posts].reverse().map((p) => ({
+  const chartData = useMemo(() => [...posts].reverse().map((p) => ({
     date: new Date(p.postedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     impressions: p.impressions,
     likes: p.likes,
     comments: p.comments,
     shares: p.shares,
-  }));
+  })), [posts]);
 
-  const typeMap: Record<string, { count: number; impressions: number; likes: number }> = {};
-  posts.forEach((p) => {
-    const t = p.postType || 'unknown';
-    if (!typeMap[t]) typeMap[t] = { count: 0, impressions: 0, likes: 0 };
-    typeMap[t].count++;
-    typeMap[t].impressions += p.impressions;
-    typeMap[t].likes += p.likes;
-  });
-  const typeData = Object.entries(typeMap).map(([name, d]) => ({
-    name, count: d.count, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
-  }));
+  const typeData = useMemo(() => {
+    const typeMap: Record<string, { count: number; impressions: number; likes: number }> = {};
+    posts.forEach((p) => {
+      const t = p.postType || 'unknown';
+      if (!typeMap[t]) typeMap[t] = { count: 0, impressions: 0, likes: 0 };
+      typeMap[t].count++;
+      typeMap[t].impressions += p.impressions;
+      typeMap[t].likes += p.likes;
+    });
+    return Object.entries(typeMap).map(([name, d]) => ({
+      name, count: d.count, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
+    }));
+  }, [posts]);
 
-  const topPosts = [...posts].sort((a, b) => (b[metric] || 0) - (a[metric] || 0)).slice(0, 5);
+  const topPosts = useMemo(() =>
+    [...posts].sort((a, b) => (b[metric] || 0) - (a[metric] || 0)).slice(0, 5),
+  [posts, metric]);
 
-  // Topic performance breakdown
-  const topicMap: Record<string, { count: number; impressions: number; likes: number; comments: number }> = {};
-  posts.forEach((p) => {
-    const t = p.topicCategory || 'Uncategorized';
-    if (!topicMap[t]) topicMap[t] = { count: 0, impressions: 0, likes: 0, comments: 0 };
-    topicMap[t].count++;
-    topicMap[t].impressions += p.impressions;
-    topicMap[t].likes += p.likes;
-    topicMap[t].comments += p.comments;
-  });
-  const topicData = Object.entries(topicMap)
-    .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
-    .sort((a, b) => b.avgImpressions - a.avgImpressions);
+  const topicData = useMemo(() => {
+    const topicMap: Record<string, { count: number; impressions: number; likes: number; comments: number }> = {};
+    posts.forEach((p) => {
+      const t = p.topicCategory || 'Uncategorized';
+      if (!topicMap[t]) topicMap[t] = { count: 0, impressions: 0, likes: 0, comments: 0 };
+      topicMap[t].count++;
+      topicMap[t].impressions += p.impressions;
+      topicMap[t].likes += p.likes;
+      topicMap[t].comments += p.comments;
+    });
+    return Object.entries(topicMap)
+      .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
+      .sort((a, b) => b.avgImpressions - a.avgImpressions);
+  }, [posts]);
 
-  // Hook pattern breakdown
-  const hookMap: Record<string, { count: number; impressions: number; likes: number }> = {};
-  posts.forEach((p) => {
-    const h = p.hookPattern || 'Unknown';
-    if (!hookMap[h]) hookMap[h] = { count: 0, impressions: 0, likes: 0 };
-    hookMap[h].count++;
-    hookMap[h].impressions += p.impressions;
-    hookMap[h].likes += p.likes;
-  });
-  const hookData = Object.entries(hookMap)
-    .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
-    .sort((a, b) => b.avgImpressions - a.avgImpressions);
-  const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
-  const benchmarkData = [
-    { name: 'You', avgLikes: yourAvgLikes },
-    ...competitorStats.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
-  ];
+  const hookData = useMemo(() => {
+    const hookMap: Record<string, { count: number; impressions: number; likes: number }> = {};
+    posts.forEach((p) => {
+      const h = p.hookPattern || 'Unknown';
+      if (!hookMap[h]) hookMap[h] = { count: 0, impressions: 0, likes: 0 };
+      hookMap[h].count++;
+      hookMap[h].impressions += p.impressions;
+      hookMap[h].likes += p.likes;
+    });
+    return Object.entries(hookMap)
+      .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
+      .sort((a, b) => b.avgImpressions - a.avgImpressions);
+  }, [posts]);
+  const benchmarkData = useMemo(() => {
+    const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
+    return [
+      { name: 'You', avgLikes: yourAvgLikes },
+      ...competitorStats.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
+    ];
+  }, [posts, stats.totalLikes, competitorStats]);
 
   return (
     <div className="space-y-6">

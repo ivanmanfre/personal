@@ -6,6 +6,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
 
 const alertTypeColors: Record<string, string> = {
@@ -20,6 +21,18 @@ const AgentPanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['n8nclaw_proactive_alerts'] });
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
+
+  if (alerts.length === 0 && reminders.length === 0 && summaries.length === 0 && messageStats.total === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Agent (n8nClaw)</h1>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
+        <EmptyState title="No agent data" description="n8nClaw alerts, reminders, and chat summaries will appear here once the agent is active." icon={<Bot className="w-10 h-10" />} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
