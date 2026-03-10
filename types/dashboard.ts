@@ -137,7 +137,7 @@ export interface ClientWorkflowError {
 
 export interface PipelineTask {
   id: string;
-  source: 'clickup' | 'reminder';
+  source: 'clickup' | 'reminder' | 'agent' | 'leadshark';
   sourceId: string;
   title: string;
   description: string | null;
