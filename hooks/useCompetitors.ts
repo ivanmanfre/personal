@@ -41,6 +41,7 @@ export function useCompetitors() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    try {
     const [postsRes, patternsRes] = await Promise.all([
       supabase
         .from('competitor_posts')
@@ -54,7 +55,11 @@ export function useCompetitors() {
     ]);
     setPosts((postsRes.data || []).map(mapPost));
     setPatterns((patternsRes.data || []).map(mapPattern));
-    setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch competitors:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

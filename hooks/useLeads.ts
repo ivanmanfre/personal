@@ -23,9 +23,14 @@ export function useLeads(statusFilter?: string) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
-    setAllLeads((data || []).map(mapLead));
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
+      setAllLeads((data || []).map(mapLead));
+    } catch (err) {
+      console.error('Failed to fetch leads:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

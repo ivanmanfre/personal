@@ -24,14 +24,19 @@ export function useOwnPosts(days: number = 30) {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const since = new Date(Date.now() - days * 86400000).toISOString();
-    const { data } = await supabase
-      .from('own_posts')
-      .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern')
-      .gte('posted_at', since)
-      .order('posted_at', { ascending: false });
-    setPosts((data || []).map(mapPost));
-    setLoading(false);
+    try {
+      const since = new Date(Date.now() - days * 86400000).toISOString();
+      const { data } = await supabase
+        .from('own_posts')
+        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern')
+        .gte('posted_at', since)
+        .order('posted_at', { ascending: false });
+      setPosts((data || []).map(mapPost));
+    } catch (err) {
+      console.error('Failed to fetch posts:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [days]);
 
   useEffect(() => { fetch(); }, [fetch]);

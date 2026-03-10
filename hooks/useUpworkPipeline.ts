@@ -85,25 +85,30 @@ export function useUpworkPipeline() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const [jobsRes, proposalsRes, statsRes] = await Promise.all([
-      supabase
-        .from('upwork_jobs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100),
-      supabase
-        .from('upwork_proposals')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100),
-      supabase.rpc('upwork_pipeline_stats'),
-    ]);
+    try {
+      const [jobsRes, proposalsRes, statsRes] = await Promise.all([
+        supabase
+          .from('upwork_jobs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase
+          .from('upwork_proposals')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase.rpc('upwork_pipeline_stats'),
+      ]);
 
-    setJobs((jobsRes.data || []).map(mapJob));
-    setProposals((proposalsRes.data || []).map(mapProposal));
-    const rawStats = statsRes.data;
-    setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
-    setLoading(false);
+      setJobs((jobsRes.data || []).map(mapJob));
+      setProposals((proposalsRes.data || []).map(mapProposal));
+      const rawStats = statsRes.data;
+      setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
+    } catch (err) {
+      console.error('Failed to fetch upwork data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

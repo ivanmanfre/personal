@@ -24,13 +24,18 @@ export function useContentPipeline() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('dashboard_tasks')
-      .select('*')
-      .eq('source', 'leadshark')
-      .order('due_date', { ascending: true, nullsFirst: false });
-    setTasks((data || []).map(mapTask));
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('dashboard_tasks')
+        .select('*')
+        .eq('source', 'leadshark')
+        .order('due_date', { ascending: true, nullsFirst: false });
+      setTasks((data || []).map(mapTask));
+    } catch (err) {
+      console.error('Failed to fetch content pipeline:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

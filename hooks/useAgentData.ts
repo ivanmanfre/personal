@@ -12,6 +12,7 @@ export function useAgentData() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
@@ -47,7 +48,11 @@ export function useAgentData() {
       id: r.id, date: r.date, summary: r.summary, topics: r.topics || [],
       actionItems: r.action_items || [], messageCount: r.message_count || 0, createdAt: r.created_at,
     })));
-    setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch agent data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

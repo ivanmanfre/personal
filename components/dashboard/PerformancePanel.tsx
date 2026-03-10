@@ -62,6 +62,33 @@ const PerformancePanel: React.FC = () => {
   }));
 
   const topPosts = [...posts].sort((a, b) => (b[metric] || 0) - (a[metric] || 0)).slice(0, 5);
+
+  // Topic performance breakdown
+  const topicMap: Record<string, { count: number; impressions: number; likes: number; comments: number }> = {};
+  posts.forEach((p) => {
+    const t = p.topicCategory || 'Uncategorized';
+    if (!topicMap[t]) topicMap[t] = { count: 0, impressions: 0, likes: 0, comments: 0 };
+    topicMap[t].count++;
+    topicMap[t].impressions += p.impressions;
+    topicMap[t].likes += p.likes;
+    topicMap[t].comments += p.comments;
+  });
+  const topicData = Object.entries(topicMap)
+    .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
+    .sort((a, b) => b.avgImpressions - a.avgImpressions);
+
+  // Hook pattern breakdown
+  const hookMap: Record<string, { count: number; impressions: number; likes: number }> = {};
+  posts.forEach((p) => {
+    const h = p.hookPattern || 'Unknown';
+    if (!hookMap[h]) hookMap[h] = { count: 0, impressions: 0, likes: 0 };
+    hookMap[h].count++;
+    hookMap[h].impressions += p.impressions;
+    hookMap[h].likes += p.likes;
+  });
+  const hookData = Object.entries(hookMap)
+    .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
+    .sort((a, b) => b.avgImpressions - a.avgImpressions);
   const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
   const benchmarkData = [
     { name: 'You', avgLikes: yourAvgLikes },
@@ -164,6 +191,53 @@ const PerformancePanel: React.FC = () => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : <p className="text-zinc-600 text-sm">No competitor data</p>}
+            </div>
+          </div>
+
+          {/* Topic & Hook breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
+              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">By Topic</h3>
+              {topicData.length > 0 ? (
+                <div className="space-y-2">
+                  {topicData.slice(0, 6).map((t) => {
+                    const maxImp = topicData[0].avgImpressions || 1;
+                    return (
+                      <div key={t.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{t.name}</span>
+                          <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="text-zinc-600 text-sm">No topic data</p>}
+            </div>
+
+            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
+              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">By Hook Pattern</h3>
+              {hookData.length > 0 ? (
+                <div className="space-y-2">
+                  {hookData.slice(0, 6).map((h) => {
+                    const maxImp = hookData[0].avgImpressions || 1;
+                    return (
+                      <div key={h.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{h.name}</span>
+                          <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{h.count} posts · ~{formatNum(h.avgImpressions)} imp</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-500/60 rounded-full" style={{ width: `${(h.avgImpressions / maxImp) * 100}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="text-zinc-600 text-sm">No hook data</p>}
             </div>
           </div>
 

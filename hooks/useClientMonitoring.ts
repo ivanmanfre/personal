@@ -59,6 +59,7 @@ export function useClientMonitoring() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    try {
     const [clientsRes, errorsRes, workflowsRes] = await Promise.all([
       supabase.from('client_instances_safe').select('*').order('client_name'),
       supabase
@@ -86,7 +87,11 @@ export function useClientMonitoring() {
       }))
     );
     setWorkflows((workflowsRes.data || []).map(mapWorkflow));
-    setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch client monitoring data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);

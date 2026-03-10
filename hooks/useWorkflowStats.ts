@@ -28,13 +28,18 @@ export function useWorkflowStats() {
 
   const fetch = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('dashboard_workflow_stats')
-      .select('*')
-      .eq('is_active', true)
-      .order('workflow_name');
-    setWorkflows((data || []).map(mapWf));
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('dashboard_workflow_stats')
+        .select('*')
+        .eq('is_active', true)
+        .order('workflow_name');
+      setWorkflows((data || []).map(mapWf));
+    } catch (err) {
+      console.error('Failed to fetch workflow stats:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
