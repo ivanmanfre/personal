@@ -6,16 +6,8 @@ import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
+import { timeAgo } from './shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../types/dashboard';
-
-function timeAgo(ts: string | null): string {
-  if (!ts) return 'never';
-  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
 
 function formatBudget(job: UpworkJob): string {
   if (!job.budgetMin && !job.budgetMax) return '--';
@@ -476,7 +468,7 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                         <CheckCircle2 className="w-3 h-3" /> Approve
                       </button>
                       <button
-                        onClick={() => { onApprove(prop.id); setTimeout(() => onSubmit(prop.id), 500); }}
+                        onClick={async () => { await onApprove(prop.id); onSubmit(prop.id); }}
                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors"
                       >
                         <Send className="w-3 h-3" /> Approve & Submit

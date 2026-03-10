@@ -6,16 +6,8 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import { timeAgo } from './shared/utils';
 import type { ClientInstance, ClientMonitoredWorkflow } from '../../types/dashboard';
-
-function timeAgo(ts: string | null): string {
-  if (!ts) return 'never';
-  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
 
 const severityColors: Record<string, string> = {
   high: 'bg-red-500/15 text-red-400 border-red-500/20',

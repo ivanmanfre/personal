@@ -13,18 +13,37 @@ interface Props {
   children: React.ReactNode;
 }
 
-const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
-  { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-[18px] h-[18px]" /> },
-  { id: 'content', label: 'Content', icon: <Calendar className="w-[18px] h-[18px]" /> },
-  { id: 'workflows', label: 'Workflows', icon: <Activity className="w-[18px] h-[18px]" /> },
-  { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
-  { id: 'leads', label: 'Leads', icon: <Users className="w-[18px] h-[18px]" /> },
-  { id: 'agent', label: 'Agent', icon: <Bot className="w-[18px] h-[18px]" /> },
-  { id: 'tasks', label: 'Reminders', icon: <CheckSquare className="w-[18px] h-[18px]" /> },
-  { id: 'clients', label: 'Clients', icon: <Server className="w-[18px] h-[18px]" /> },
-  { id: 'upwork', label: 'Upwork', icon: <Briefcase className="w-[18px] h-[18px]" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings className="w-[18px] h-[18px]" /> },
+const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: React.ReactNode }[] }[] = [
+  {
+    label: null,
+    tabs: [
+      { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
+    ],
+  },
+  {
+    label: 'Content',
+    tabs: [
+      { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-[18px] h-[18px]" /> },
+      { id: 'content', label: 'Content', icon: <Calendar className="w-[18px] h-[18px]" /> },
+      { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
+    ],
+  },
+  {
+    label: 'Systems',
+    tabs: [
+      { id: 'workflows', label: 'Workflows', icon: <Activity className="w-[18px] h-[18px]" /> },
+      { id: 'leads', label: 'Leads', icon: <Users className="w-[18px] h-[18px]" /> },
+      { id: 'agent', label: 'Agent', icon: <Bot className="w-[18px] h-[18px]" /> },
+    ],
+  },
+  {
+    label: 'Operations',
+    tabs: [
+      { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-[18px] h-[18px]" /> },
+      { id: 'clients', label: 'Clients', icon: <Server className="w-[18px] h-[18px]" /> },
+      { id: 'upwork', label: 'Upwork', icon: <Briefcase className="w-[18px] h-[18px]" /> },
+    ],
+  },
 ];
 
 const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, children }) => {
@@ -75,30 +94,55 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           </div>
         </div>
 
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
-                  isActive
-                    ? 'bg-zinc-800/80 text-white'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
-                }`}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 rounded-r-full" />
-                )}
-                <span className={isActive ? 'text-emerald-400' : ''}>{tab.icon}</span>
-                {tab.label}
-              </button>
-            );
-          })}
+        <nav className="flex-1 px-2 py-2 overflow-y-auto">
+          {tabGroups.map((group, gi) => (
+            <div key={gi} className={gi > 0 ? 'mt-3' : ''}>
+              {group.label && (
+                <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">{group.label}</p>
+              )}
+              <div className="space-y-0.5">
+                {group.tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
+                        isActive
+                          ? 'bg-zinc-800/80 text-white'
+                          : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 rounded-r-full" />
+                      )}
+                      <span className={isActive ? 'text-emerald-400' : ''}>{tab.icon}</span>
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="px-2 pb-3 pt-2 border-t border-zinc-800/80 space-y-1.5">
+          <button
+            onClick={() => { onTabChange('settings'); setSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
+              activeTab === 'settings'
+                ? 'bg-zinc-800/80 text-white'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
+            }`}
+          >
+            {activeTab === 'settings' && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 rounded-r-full" />
+            )}
+            <span className={activeTab === 'settings' ? 'text-emerald-400' : ''}>
+              <Settings className="w-[18px] h-[18px]" />
+            </span>
+            Settings
+          </button>
           <div className="px-3 py-1">
             <RefreshIndicator lastRefreshed={lastRefreshed} />
           </div>

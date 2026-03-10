@@ -10,6 +10,7 @@ import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import { formatNum } from './shared/utils';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
@@ -37,7 +38,7 @@ const PerformancePanel: React.FC = () => {
   const refreshAll = async () => { await Promise.all([refreshPosts(), refreshComp()]); };
   const { lastRefreshed } = useAutoRefresh(refreshAll, { realtimeTables: ['own_posts'] });
 
-  const loading = postsLoading && compLoading;
+  const loading = postsLoading || compLoading;
   if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
   const chartData = [...posts].reverse().map((p) => ({
@@ -197,11 +198,5 @@ const PerformancePanel: React.FC = () => {
     </div>
   );
 };
-
-function formatNum(n: number): string {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return n.toString();
-}
 
 export default PerformancePanel;

@@ -6,6 +6,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import { timeAgo } from './shared/utils';
 import type { WorkflowStat } from '../../types/dashboard';
 
 type Group = 'all' | 'schedule' | 'event' | 'webhook' | 'sub-workflow' | 'manual';
@@ -15,15 +16,6 @@ function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 
   if (wf.lastExecutionStatus === 'error' || wf.errorCount24h > 3) return 'error';
   if (wf.errorCount24h > 0) return 'warning';
   return 'healthy';
-}
-
-function timeAgo(ts: string | null): string {
-  if (!ts) return 'never';
-  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
 }
 
 const WorkflowsPanel: React.FC = () => {

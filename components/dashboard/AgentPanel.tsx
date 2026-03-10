@@ -6,14 +6,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
-
-function timeAgo(ts: string): string {
-  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
+import { timeAgo } from './shared/utils';
 
 const alertTypeColors: Record<string, string> = {
   performance_spike: 'bg-blue-500/15 text-blue-400 border-blue-500/20',

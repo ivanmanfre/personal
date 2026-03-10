@@ -101,7 +101,8 @@ export function useUpworkPipeline() {
 
     setJobs((jobsRes.data || []).map(mapJob));
     setProposals((proposalsRes.data || []).map(mapProposal));
-    setStats(statsRes.data ? mapStats(statsRes.data) : emptyStats);
+    const rawStats = statsRes.data;
+    setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
     setLoading(false);
   }, []);
 

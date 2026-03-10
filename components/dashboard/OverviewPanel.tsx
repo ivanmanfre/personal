@@ -9,20 +9,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
-
-function formatNum(n: number): string {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return n.toString();
-}
-
-function timeAgo(ts: string): string {
-  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
-  if (secs < 60) return 'just now';
-  if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-  return `${Math.floor(secs / 86400)}d ago`;
-}
+import { timeAgo, formatNum } from './shared/utils';
 
 const OverviewPanel: React.FC = () => {
   const { posts, stats: postStats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(30);
@@ -41,7 +28,7 @@ const OverviewPanel: React.FC = () => {
 
   useEffect(() => { setSystemHealth(wfStats.health); }, [wfStats.health, setSystemHealth]);
 
-  const loading = postsLoading && wfLoading && agentLoading;
+  const loading = postsLoading || wfLoading || agentLoading;
   if (loading) return <LoadingSkeleton cards={8} rows={5} />;
 
   const recentAlerts = alerts.slice(0, 4);

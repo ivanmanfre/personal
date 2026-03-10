@@ -48,10 +48,12 @@ export function useAutoRefresh(
     return () => clearInterval(id);
   }, [rate, refresh]);
 
-  // Realtime subscriptions — skips when editing
+  // Stabilize realtimeTables ref via string key to prevent channel churn
+  const tablesKey = (options?.realtimeTables || []).join(',');
+
   useEffect(() => {
-    const tables = options?.realtimeTables;
-    if (!tables?.length) return;
+    if (!tablesKey) return;
+    const tables = tablesKey.split(',');
     const channels = tables.map((table) =>
       supabase
         .channel(`dash-${table}`)
@@ -63,7 +65,7 @@ export function useAutoRefresh(
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [options?.realtimeTables, refresh]);
+  }, [tablesKey, refresh]);
 
   return { rate, setRate, lastRefreshed, refresh };
 }
