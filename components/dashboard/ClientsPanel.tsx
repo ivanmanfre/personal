@@ -146,6 +146,17 @@ const ClientsPanel: React.FC = () => {
                             <div className="flex items-center gap-3 text-[11px] text-zinc-500">
                               <span>First seen: {new Date(err.firstSeen).toLocaleString()}</span>
                               <span>Workflow: <span className="font-mono">{err.workflowId}</span></span>
+                              {err.executionId && err.n8nUrl && (
+                                <a
+                                  href={`${err.n8nUrl}/workflow/${err.workflowId}/executions/${err.executionId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Execution
+                                </a>
+                              )}
                             </div>
                             <button
                               onClick={() => resolveError(err.id)}
@@ -365,12 +376,24 @@ const ClientCard: React.FC<ClientCardProps> = ({
                                 <span className="text-blue-400/70 font-medium">Analysis: </span>{err.aiAnalysis}
                               </div>
                             )}
-                            <button
-                              onClick={() => onResolveError(err.id)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                            >
-                              <CheckCircle2 className="w-3 h-3" /> Resolve
-                            </button>
+                            <div className="flex items-center justify-between">
+                              {err.executionId && err.n8nUrl && (
+                                <a
+                                  href={`${err.n8nUrl}/workflow/${err.workflowId}/executions/${err.executionId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+                                >
+                                  <ExternalLink className="w-3 h-3" /> Open Execution
+                                </a>
+                              )}
+                              <button
+                                onClick={() => onResolveError(err.id)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Resolve
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

@@ -32,6 +32,7 @@ function mapError(row: any): ClientWorkflowError {
     occurrenceCount: row.occurrence_count || 1,
     isResolved: row.is_resolved,
     createdAt: row.created_at,
+    executionId: row.execution_id || '',
   };
 }
 
@@ -74,12 +75,14 @@ export function useClientMonitoring() {
 
     const clientList = (clientsRes.data || []).map(mapClient);
     const clientNameMap = new Map(clientList.map((c) => [c.id, c.clientName]));
+    const clientUrlMap = new Map(clientList.map((c) => [c.id, c.n8nUrl]));
 
     setClients(clientList);
     setErrors(
       (errorsRes.data || []).map((row: any) => ({
         ...mapError(row),
         clientName: clientNameMap.get(row.client_id) || '',
+        n8nUrl: clientUrlMap.get(row.client_id) || '',
       }))
     );
     setWorkflows((workflowsRes.data || []).map(mapWorkflow));

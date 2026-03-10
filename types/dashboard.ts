@@ -131,6 +131,8 @@ export interface ClientWorkflowError {
   occurrenceCount: number;
   isResolved: boolean;
   createdAt: string;
+  executionId?: string;
+  n8nUrl?: string;
 }
 
 export interface PipelineTask {
