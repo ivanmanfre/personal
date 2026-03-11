@@ -147,6 +147,9 @@ export interface PipelineTask {
   listName: string | null;
   metadata: Record<string, any>;
   updatedAt: string;
+  parentTaskId: string | null;
+  isRecurring: boolean;
+  subtasks?: PipelineTask[];
 }
 
 export interface ClientMonitoredWorkflow {

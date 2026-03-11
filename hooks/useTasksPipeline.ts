@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { PipelineTask } from '../types/dashboard';
 
 function mapTask(row: any): PipelineTask {
@@ -15,14 +16,38 @@ function mapTask(row: any): PipelineTask {
     listName: row.list_name,
     metadata: row.metadata || {},
     updatedAt: row.updated_at,
+    parentTaskId: row.parent_task_id,
+    isRecurring: row.is_recurring ?? false,
   };
+}
+
+function groupWithSubtasks(tasks: PipelineTask[]): PipelineTask[] {
+  const parentMap = new Map<string, PipelineTask>();
+  const subtasks: PipelineTask[] = [];
+
+  for (const t of tasks) {
+    if (t.parentTaskId) {
+      subtasks.push(t);
+    } else {
+      parentMap.set(t.id, { ...t, subtasks: [] });
+    }
+  }
+
+  for (const sub of subtasks) {
+    const parent = parentMap.get(sub.parentTaskId!);
+    if (parent) {
+      parent.subtasks!.push(sub);
+    }
+  }
+
+  return Array.from(parentMap.values());
 }
 
 export function useTasksPipeline(sourceFilter?: string) {
   const [allTasks, setAllTasks] = useState<PipelineTask[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await supabase
@@ -37,11 +62,13 @@ export function useTasksPipeline(sourceFilter?: string) {
     }
   }, []);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
   const tasks = sourceFilter && sourceFilter !== 'all'
     ? allTasks.filter((t) => t.source === sourceFilter)
     : allTasks;
+
+  const parentTasks = groupWithSubtasks(tasks);
 
   const tasksByStatus = allTasks.reduce((acc: Record<string, number>, t) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
@@ -62,14 +89,38 @@ export function useTasksPipeline(sourceFilter?: string) {
     (t) => t.status === 'generating' || t.status === 'review'
   ).length;
 
+  const updateTask = useCallback(async (id: string, field: string, value: string) => {
+    await dashboardAction('dashboard_tasks', id, field, value);
+    await fetchTasks();
+  }, [fetchTasks]);
+
+  const createTask = useCallback(async (title: string, description?: string, parentTaskId?: string) => {
+    const { error } = await supabase.rpc('dashboard_create_task', {
+      p_title: title,
+      p_description: description || null,
+      p_parent_task_id: parentTaskId || null,
+    });
+    if (error) throw error;
+    await fetchTasks();
+  }, [fetchTasks]);
+
+  const deleteTask = useCallback(async (id: string) => {
+    await dashboardAction('dashboard_tasks', id, 'status', 'cancelled');
+    await fetchTasks();
+  }, [fetchTasks]);
+
   return {
     tasks,
     allTasks,
+    parentTasks,
     tasksByStatus,
     tasksBySource,
     overdueTasks,
     inProgress,
     loading,
-    refresh: fetch,
+    refresh: fetchTasks,
+    updateTask,
+    createTask,
+    deleteTask,
   };
 }

@@ -15,6 +15,8 @@ function mapTask(row: any): PipelineTask {
     listName: row.list_name,
     metadata: row.metadata || {},
     updatedAt: row.updated_at,
+    parentTaskId: row.parent_task_id,
+    isRecurring: row.is_recurring ?? false,
   };
 }
 
