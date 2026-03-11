@@ -221,6 +221,25 @@ export interface UpworkPipelineStats {
   invites: number;
 }
 
+export interface ExecutionLog {
+  id: string;
+  executionId: string;
+  workflowId: string;
+  workflowName: string | null;
+  status: string;
+  mode: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+  durationMs: number | null;
+  isFinished: boolean;
+  errorMessage: string | null;
+  errorNode: string | null;
+  lastNodeExecuted: string | null;
+  nodesExecuted: string[] | null;
+  retryOf: string | null;
+  retrySuccessId: string | null;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
 export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

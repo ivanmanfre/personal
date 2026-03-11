@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, LayoutGrid, ArrowUpDown, Clock, Hash } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, LayoutGrid, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
+import { useExecutionLogs } from '../../hooks/useExecutionLogs';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import { timeAgo } from './shared/utils';
-import type { WorkflowStat } from '../../types/dashboard';
+import type { WorkflowStat, ExecutionLog } from '../../types/dashboard';
+import type { StatusFilter, ExecSortKey } from '../../hooks/useExecutionLogs';
 
 type Group = 'all' | 'issues' | 'schedule' | 'event' | 'webhook' | 'sub-workflow' | 'manual';
-type View = 'list' | 'map';
+type View = 'list' | 'map' | 'logs';
 type SortKey = 'health' | 'name' | 'lastRun' | 'errors';
 
 function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
@@ -197,6 +199,13 @@ const WorkflowsPanel: React.FC = () => {
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setView('logs')}
+              className={`p-1.5 rounded-md transition-colors ${view === 'logs' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Execution logs"
+            >
+              <ScrollText className="w-4 h-4" />
+            </button>
           </div>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
@@ -227,7 +236,9 @@ const WorkflowsPanel: React.FC = () => {
         </div>
       </div>
 
-      {view === 'list' ? (
+      {view === 'logs' ? (
+        <ExecutionLogsView workflows={workflows} />
+      ) : view === 'list' ? (
         <>
           {/* Filters + Sort */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -356,6 +367,270 @@ const WorkflowsPanel: React.FC = () => {
       ) : (
         <DependencyMap workflows={workflows} />
       )}
+    </div>
+  );
+};
+
+/* ── Execution Logs View ── */
+
+const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows }) => {
+  const { logs, loading, refresh, filters, updateFilter, page, setPage, stats, workflowNames } = useExecutionLogs();
+  const [expandedExec, setExpandedExec] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Build workflow dropdown from all known workflows (not just current page)
+  const allWorkflows = useMemo(() => {
+    const map = new Map<string, string>();
+    workflows.forEach((w) => map.set(w.workflowId, w.workflowName));
+    workflowNames.forEach(([id, name]) => map.set(id, name));
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [workflows, workflowNames]);
+
+  const statusFilters: { id: StatusFilter; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'success', label: 'Success' },
+    { id: 'error', label: 'Errors' },
+    { id: 'waiting', label: 'Waiting' },
+  ];
+
+  const statusColors: Record<string, string> = {
+    success: 'text-emerald-400 bg-emerald-500/10',
+    error: 'text-red-400 bg-red-500/10',
+    waiting: 'text-amber-400 bg-amber-500/10',
+    canceled: 'text-zinc-400 bg-zinc-500/10',
+    unknown: 'text-zinc-500 bg-zinc-800/60',
+  };
+
+  const formatDuration = (ms: number | null) => {
+    if (ms == null) return '—';
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${(ms / 60000).toFixed(1)}m`;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Search + filter toggle */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+          <input
+            value={filters.search}
+            onChange={(e) => updateFilter('search', e.target.value)}
+            placeholder="Search errors, workflow names, nodes..."
+            className="w-full pl-9 pr-3 py-2 bg-zinc-900/80 border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+          />
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${showFilters ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20' : 'text-zinc-500 hover:text-zinc-300 bg-zinc-900/80 border border-zinc-800/80'}`}
+        >
+          <Filter className="w-3.5 h-3.5" /> Filters
+        </button>
+        <button onClick={refresh} className="px-3 py-2 rounded-lg text-xs font-medium text-zinc-500 hover:text-zinc-300 bg-zinc-900/80 border border-zinc-800/80 transition-colors">
+          Refresh
+        </button>
+      </div>
+
+      {/* Expanded filters */}
+      {showFilters && (
+        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Status */}
+            <div>
+              <label className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-1.5">Status</label>
+              <div className="flex gap-1 flex-wrap">
+                {statusFilters.map((sf) => (
+                  <button key={sf.id} onClick={() => updateFilter('status', sf.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${filters.status === sf.id ? 'bg-zinc-700/80 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}>
+                    {sf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Workflow */}
+            <div>
+              <label className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-1.5">Workflow</label>
+              <select
+                value={filters.workflowId}
+                onChange={(e) => updateFilter('workflowId', e.target.value)}
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 py-1.5 px-2 focus:outline-none focus:border-zinc-600"
+              >
+                <option value="">All workflows</option>
+                {allWorkflows.map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date range */}
+            <div>
+              <label className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-1.5">From</label>
+              <input type="date" value={filters.dateFrom} onChange={(e) => updateFilter('dateFrom', e.target.value)}
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 py-1.5 px-2 focus:outline-none focus:border-zinc-600" />
+            </div>
+            <div>
+              <label className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-1.5">To</label>
+              <input type="date" value={filters.dateTo} onChange={(e) => updateFilter('dateTo', e.target.value)}
+                className="w-full bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 py-1.5 px-2 focus:outline-none focus:border-zinc-600" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-600" />
+              <select
+                value={filters.sort}
+                onChange={(e) => updateFilter('sort', e.target.value as ExecSortKey)}
+                className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-400 py-1.5 px-2 focus:outline-none focus:border-zinc-600"
+              >
+                <option value="date">Most Recent</option>
+                <option value="duration">Slowest First</option>
+              </select>
+            </div>
+            {(filters.status !== 'all' || filters.workflowId || filters.search || filters.dateFrom || filters.dateTo) && (
+              <button
+                onClick={() => {
+                  updateFilter('status', 'all');
+                  updateFilter('workflowId', '');
+                  updateFilter('search', '');
+                  updateFilter('dateFrom', '');
+                  updateFilter('dateTo', '');
+                }}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                Clear all filters
+              </button>
+            )}
+            <span className="ml-auto text-[11px] text-zinc-500">
+              {stats.total.toLocaleString()} execution{stats.total !== 1 ? 's' : ''} found
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-zinc-600 text-sm">Loading executions...</div>
+        ) : logs.length === 0 ? (
+          <div className="p-8 text-center">
+            <ScrollText className="w-6 h-6 text-zinc-700 mx-auto mb-2" />
+            <p className="text-sm text-zinc-500">No executions found</p>
+            <p className="text-[11px] text-zinc-600 mt-1">
+              {stats.total === 0 ? 'Waiting for sync workflow to populate data...' : 'Try adjusting your filters'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-zinc-800/50">
+            {logs.map((exec) => {
+              const isExpanded = expandedExec === exec.executionId;
+              const colors = statusColors[exec.status] || statusColors.unknown;
+              return (
+                <div key={exec.executionId}>
+                  <button
+                    onClick={() => setExpandedExec(isExpanded ? null : exec.executionId)}
+                    className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors text-left"
+                  >
+                    <StatusDot status={exec.status === 'error' ? 'error' : exec.status === 'waiting' ? 'warning' : exec.status === 'success' ? 'healthy' : 'inactive'} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-zinc-200 truncate" title={exec.workflowName || exec.workflowId}>
+                          {exec.workflowName || exec.workflowId}
+                        </p>
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium ${colors}`}>
+                          {exec.status}
+                        </span>
+                        {exec.mode && (
+                          <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1 py-0.5 rounded hidden sm:inline">
+                            {exec.mode}
+                          </span>
+                        )}
+                      </div>
+                      {exec.status === 'error' && exec.errorMessage && (
+                        <p className="text-[11px] text-red-400/70 mt-0.5 truncate" title={exec.errorMessage}>
+                          {exec.errorNode ? `[${exec.errorNode}] ` : ''}{exec.errorMessage}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-[11px] text-zinc-500">{timeAgo(exec.startedAt)}</p>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">{formatDuration(exec.durationMs)}</p>
+                      </div>
+                      <span className="text-[11px] text-zinc-600 font-mono">#{exec.executionId}</span>
+                      {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600" /> : <ChevronRight className="w-4 h-4 text-zinc-600" />}
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-3 pl-9 space-y-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <div><span className="text-zinc-500">Started:</span> <span className="text-zinc-300 ml-1">{new Date(exec.startedAt).toLocaleString()}</span></div>
+                        <div><span className="text-zinc-500">Duration:</span> <span className="text-zinc-300 ml-1">{formatDuration(exec.durationMs)}</span></div>
+                        <div><span className="text-zinc-500">Mode:</span> <span className="text-zinc-300 ml-1">{exec.mode || '—'}</span></div>
+                        <div><span className="text-zinc-500">Last Node:</span> <span className="text-zinc-300 ml-1">{exec.lastNodeExecuted || '—'}</span></div>
+                      </div>
+                      {exec.errorMessage && (
+                        <div className="p-2.5 bg-red-950/30 border border-red-500/15 rounded-lg text-xs text-red-300/90 font-mono leading-relaxed break-words">
+                          {exec.errorNode && <span className="text-red-400/70 font-semibold">[{exec.errorNode}] </span>}
+                          {exec.errorMessage}
+                        </div>
+                      )}
+                      {exec.nodesExecuted && exec.nodesExecuted.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-[11px] text-zinc-500 mr-1">Nodes:</span>
+                          {exec.nodesExecuted.map((node, i) => (
+                            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${node === exec.errorNode ? 'bg-red-500/15 text-red-400 border border-red-500/20' : 'bg-zinc-800/60 text-zinc-400'}`}>
+                              {node}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={`https://n8n.intelligents.agency/workflow/${exec.workflowId}/executions/${exec.executionId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" /> Open in n8n
+                        </a>
+                        {exec.retryOf && (
+                          <span className="text-[11px] text-zinc-500">Retry of #{exec.retryOf}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {stats.pages > 1 && (
+          <div className="border-t border-zinc-800/50 px-4 py-2.5 flex items-center justify-between">
+            <button
+              onClick={() => setPage(Math.max(0, page - 1))}
+              disabled={page === 0}
+              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Previous
+            </button>
+            <span className="text-[11px] text-zinc-500">
+              Page {page + 1} of {stats.pages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(stats.pages - 1, page + 1))}
+              disabled={page >= stats.pages - 1}
+              className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed transition-colors"
+            >
+              Next <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
