@@ -54,8 +54,13 @@ export function useLeads(statusFilter?: string) {
   });
 
   const updateStatus = async (id: string, status: string) => {
-    setAllLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
-    await dashboardAction('leads', id, 'status', status);
+    const prev = allLeads.find((l) => l.id === id);
+    setAllLeads((p) => p.map((l) => (l.id === id ? { ...l, status } : l)));
+    try {
+      await dashboardAction('leads', id, 'status', status);
+    } catch {
+      if (prev) setAllLeads((p) => p.map((l) => (l.id === id ? { ...l, status: prev.status } : l)));
+    }
   };
 
   return { leads, statusCounts, icpDistribution, loading, refresh: fetch, updateStatus };

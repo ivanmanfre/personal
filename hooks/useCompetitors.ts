@@ -76,7 +76,11 @@ export function useCompetitors() {
 
   const markOpportunityActioned = async (id: string) => {
     setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, opportunityActioned: true } : p)));
-    await dashboardAction('competitor_posts', id, 'opportunity_actioned', 'true');
+    try {
+      await dashboardAction('competitor_posts', id, 'opportunity_actioned', 'true');
+    } catch {
+      setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, opportunityActioned: false } : p)));
+    }
   };
 
   return { posts, patterns, competitorStats, opportunities, loading, refresh: fetch, markOpportunityActioned };

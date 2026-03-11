@@ -64,12 +64,21 @@ export function useAgentData() {
 
   const acknowledgeAlert = async (id: string) => {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, sent: true } : a)));
-    await dashboardAction('n8nclaw_proactive_alerts', id, 'sent', 'true');
+    try {
+      await dashboardAction('n8nclaw_proactive_alerts', id, 'sent', 'true');
+    } catch {
+      setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, sent: false } : a)));
+    }
   };
 
   const completeReminder = async (id: number) => {
-    setReminders((prev) => prev.filter((r) => r.id !== id));
-    await dashboardAction('n8nclaw_reminders', String(id), 'status', 'completed');
+    const prev = reminders.find((r) => r.id === id);
+    setReminders((p) => p.filter((r) => r.id !== id));
+    try {
+      await dashboardAction('n8nclaw_reminders', String(id), 'status', 'completed');
+    } catch {
+      if (prev) setReminders((p) => [...p, prev]);
+    }
   };
 
   return { alerts, reminders, messageStats, summaries, alertsByType, loading, refresh: fetch, acknowledgeAlert, completeReminder };

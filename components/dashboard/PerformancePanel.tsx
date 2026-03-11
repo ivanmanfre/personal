@@ -39,7 +39,6 @@ const PerformancePanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refreshAll, { realtimeTables: ['own_posts'] });
 
   const loading = postsLoading || compLoading;
-  if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
   const chartData = useMemo(() => [...posts].reverse().map((p) => ({
     date: new Date(p.postedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -102,6 +101,8 @@ const PerformancePanel: React.FC = () => {
       ...competitorStats.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
     ];
   }, [posts, stats.totalLikes, competitorStats]);
+
+  if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
   return (
     <div className="space-y-6">

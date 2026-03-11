@@ -91,7 +91,7 @@ export function useUpworkPipeline() {
           .from('upwork_jobs')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100),
+          .limit(500),
         supabase
           .from('upwork_proposals')
           .select('*')
@@ -114,28 +114,45 @@ export function useUpworkPipeline() {
   useEffect(() => { fetch(); }, [fetch]);
 
   const skipJob = async (id: string, reason?: string) => {
-    setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: 'skipped', skipReason: reason || null } : j)));
-    await dashboardAction('upwork_jobs', id, 'status', 'skipped');
-    if (reason) {
-      await dashboardAction('upwork_jobs', id, 'skip_reason', reason);
+    const prev = jobs.find((j) => j.id === id);
+    setJobs((p) => p.map((j) => (j.id === id ? { ...j, status: 'skipped', skipReason: reason || null } : j)));
+    try {
+      await dashboardAction('upwork_jobs', id, 'status', 'skipped');
+      if (reason) await dashboardAction('upwork_jobs', id, 'skip_reason', reason);
+    } catch {
+      if (prev) setJobs((p) => p.map((j) => (j.id === id ? { ...j, status: prev.status, skipReason: prev.skipReason } : j)));
     }
   };
 
   const approveProposal = async (id: string) => {
-    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p)));
-    await dashboardAction('upwork_proposals', id, 'status', 'approved');
+    const prev = proposals.find((p) => p.id === id);
+    setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: 'approved' } : x)));
+    try {
+      await dashboardAction('upwork_proposals', id, 'status', 'approved');
+    } catch {
+      if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
+    }
   };
 
   const rejectProposal = async (id: string) => {
-    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'rejected' } : p)));
-    await dashboardAction('upwork_proposals', id, 'status', 'rejected');
+    const prev = proposals.find((p) => p.id === id);
+    setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: 'rejected' } : x)));
+    try {
+      await dashboardAction('upwork_proposals', id, 'status', 'rejected');
+    } catch {
+      if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
+    }
   };
 
   const editProposal = async (id: string, field: 'proposal_text' | 'cover_letter', value: string) => {
-    // Sync both columns — there's only one cover letter on Upwork
-    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, proposalText: value, coverLetter: value } : p)));
-    await dashboardAction('upwork_proposals', id, 'proposal_text', value);
-    await dashboardAction('upwork_proposals', id, 'cover_letter', value);
+    const prev = proposals.find((p) => p.id === id);
+    setProposals((p) => p.map((x) => (x.id === id ? { ...x, proposalText: value, coverLetter: value } : x)));
+    try {
+      await dashboardAction('upwork_proposals', id, 'proposal_text', value);
+      await dashboardAction('upwork_proposals', id, 'cover_letter', value);
+    } catch {
+      if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, proposalText: prev.proposalText, coverLetter: prev.coverLetter } : x)));
+    }
   };
 
   const submitProposal = async (id: string) => {

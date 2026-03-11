@@ -118,17 +118,30 @@ export function useClientMonitoring() {
 
   const toggleClient = async (id: string, isActive: boolean) => {
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, isActive } : c)));
-    await dashboardAction('client_instances', id, 'is_active', String(isActive));
+    try {
+      await dashboardAction('client_instances', id, 'is_active', String(isActive));
+    } catch {
+      setClients((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c)));
+    }
   };
 
   const resolveError = async (id: string) => {
-    setErrors((prev) => prev.filter((e) => e.id !== id));
-    await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
+    const prev = errors.find((e) => e.id === id);
+    setErrors((p) => p.filter((e) => e.id !== id));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
+    } catch {
+      if (prev) setErrors((p) => [...p, prev]);
+    }
   };
 
   const toggleWorkflowNotifications = async (id: string, enabled: boolean) => {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: enabled } : w)));
-    await dashboardAction('client_monitored_workflows', id, 'notifications_enabled', String(enabled));
+    try {
+      await dashboardAction('client_monitored_workflows', id, 'notifications_enabled', String(enabled));
+    } catch {
+      setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: !enabled } : w)));
+    }
   };
 
   const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;

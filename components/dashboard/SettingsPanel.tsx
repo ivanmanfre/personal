@@ -46,23 +46,26 @@ const SettingsPanel: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-
-    const [channelsRes, availableRes, tablesRes] = await Promise.all([
-      supabase.from('slack_notification_channels').select('*').order('channel_name'),
-      supabase.from('slack_available_channels').select('channel_id, channel_name, is_private, num_members').order('channel_name'),
-      Promise.all(
-        ['own_posts', 'competitor_posts', 'leads', 'n8nclaw_chat_messages', 'n8nclaw_proactive_alerts', 'dashboard_workflow_stats', 'transcripts', 'generated_posts'].map(async (name) => {
-          const { count } = await supabase.from(name).select('*', { count: 'exact', head: true });
-          return { name, count: count || 0 };
-        })
-      ),
-    ]);
-
-    setChannels(channelsRes.data || []);
-    setAvailableChannels(availableRes.data || []);
-    setTables(tablesRes);
-    setLoading(false);
-    setLastRefreshed(new Date());
+    try {
+      const [channelsRes, availableRes, tablesRes] = await Promise.all([
+        supabase.from('slack_notification_channels').select('*').order('channel_name'),
+        supabase.from('slack_available_channels').select('channel_id, channel_name, is_private, num_members').order('channel_name'),
+        Promise.all(
+          ['own_posts', 'competitor_posts', 'leads', 'n8nclaw_chat_messages', 'n8nclaw_proactive_alerts', 'dashboard_workflow_stats', 'transcripts', 'generated_posts'].map(async (name) => {
+            const { count } = await supabase.from(name).select('*', { count: 'exact', head: true });
+            return { name, count: count || 0 };
+          })
+        ),
+      ]);
+      setChannels(channelsRes.data || []);
+      setAvailableChannels(availableRes.data || []);
+      setTables(tablesRes);
+    } catch (err) {
+      console.error('Failed to fetch settings data:', err);
+    } finally {
+      setLoading(false);
+      setLastRefreshed(new Date());
+    }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { RefreshRate } from '../types/dashboard';
+import { useDashboard } from '../contexts/DashboardContext';
 
 // Global editing state — when any component is editing, all auto-refreshes pause
 let editingCount = 0;
@@ -19,10 +19,9 @@ export function resumeRefresh() {
 
 export function useAutoRefresh(
   fetchFn: () => Promise<void>,
-  options?: { realtimeTables?: string[]; defaultRate?: RefreshRate }
+  options?: { realtimeTables?: string[] }
 ) {
-  const [rate, setRate] = useState<RefreshRate>(options?.defaultRate || 60000);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const { refreshRate: rate, lastRefreshed, setLastRefreshed } = useDashboard();
   const [, forceUpdate] = useState(0);
   const fetchRef = useRef(fetchFn);
   fetchRef.current = fetchFn;
@@ -38,7 +37,7 @@ export function useAutoRefresh(
     if (isEditing()) return;
     await fetchRef.current();
     setLastRefreshed(new Date());
-  }, []);
+  }, [setLastRefreshed]);
 
   // Polling — skips when editing
   useEffect(() => {
@@ -67,5 +66,5 @@ export function useAutoRefresh(
     };
   }, [tablesKey, refresh]);
 
-  return { rate, setRate, lastRefreshed, refresh };
+  return { lastRefreshed, refresh };
 }

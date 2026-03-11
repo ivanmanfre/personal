@@ -32,10 +32,21 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   settings: SettingsPanel,
 };
 
+const validTabs = new Set<Tab>(Object.keys(panelComponents) as Tab[]);
+
+function getInitialTab(): Tab {
+  if (typeof window !== 'undefined') {
+    const param = new URLSearchParams(window.location.search).get('tab');
+    if (param && validTabs.has(param as Tab)) return param as Tab;
+  }
+  return 'overview';
+}
+
 const Dashboard: React.FC = () => {
   const [authed, setAuthed] = useState(isAuthenticated());
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set(['overview']));
+  const initialTab = getInitialTab();
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set([initialTab]));
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
