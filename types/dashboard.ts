@@ -27,6 +27,7 @@ export interface WorkflowStat {
   totalExecutions24h: number;
   lastErrorMessage: string | null;
   nodeCount: number;
+  errorAcknowledged: boolean;
   updatedAt: string;
 }
 

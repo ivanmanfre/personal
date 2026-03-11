@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { dashboardAction } from '../lib/dashboardActions';
 import type { WorkflowStat, SystemHealth } from '../types/dashboard';
 
 function mapWf(row: any): WorkflowStat {
@@ -18,6 +19,7 @@ function mapWf(row: any): WorkflowStat {
     totalExecutions24h: row.total_executions_24h || 0,
     lastErrorMessage: row.last_error_message,
     nodeCount: row.node_count || 0,
+    errorAcknowledged: row.error_acknowledged ?? false,
     updatedAt: row.updated_at,
   };
 }
@@ -57,11 +59,21 @@ export function useWorkflowStats() {
 
   const byType = (type: string) => workflows.filter((w) => w.triggerType === type);
 
+  const acknowledgeError = async (id: string) => {
+    setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: true } : w)));
+    try {
+      await dashboardAction('dashboard_workflow_stats', id, 'error_acknowledged', 'true');
+    } catch {
+      setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: false } : w)));
+    }
+  };
+
   return {
     workflows,
     loading,
     refresh: fetch,
     stats: { total: workflows.length, active: active.length, totalErrors24h, totalSuccess24h, errorRate, health },
     byType,
+    acknowledgeError,
   };
 }

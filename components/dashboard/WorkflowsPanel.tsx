@@ -15,6 +15,7 @@ type SortKey = 'health' | 'name' | 'lastRun' | 'errors';
 
 function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
   if (!wf.isActive) return 'inactive';
+  if (wf.errorAcknowledged) return 'healthy';
   if (wf.lastExecutionStatus === 'error' || wf.errorCount24h > 3) return 'error';
   if (wf.errorCount24h > 0) return 'warning';
   return 'healthy';
@@ -113,7 +114,7 @@ function matchWorkflow(wf: WorkflowStat, patterns: string[]): boolean {
 /* ── Component ── */
 
 const WorkflowsPanel: React.FC = () => {
-  const { workflows, stats, loading, refresh } = useWorkflowStats();
+  const { workflows, stats, loading, refresh, acknowledgeError } = useWorkflowStats();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_workflow_stats'] });
   const [view, setView] = useState<View>('list');
   const [group, setGroup] = useState<Group>('all');
@@ -322,14 +323,27 @@ const WorkflowsPanel: React.FC = () => {
                               {wf.lastErrorMessage}
                             </div>
                           )}
-                          <a
-                            href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 transition-colors"
-                          >
-                            <ExternalLink className="w-3 h-3" /> Open in n8n
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Open in n8n
+                            </a>
+                            {wf.errorCount24h > 0 && !wf.errorAcknowledged && (
+                              <button
+                                onClick={() => acknowledgeError(wf.id)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Mark Resolved
+                              </button>
+                            )}
+                            {wf.errorAcknowledged && (
+                              <span className="text-[11px] text-zinc-500 italic">Acknowledged</span>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
