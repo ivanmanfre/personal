@@ -174,6 +174,25 @@ export function useUpworkPipeline() {
     }
   };
 
+  const generateProposal = async (jobId: string) => {
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'drafted' } : j)));
+    try {
+      const res = await window.fetch('https://n8n.intelligents.agency/webhook/upwork-draft-proposal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+      const data = await res.json();
+      if (!data.success && !data.proposal_id) {
+        setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'assessed' } : j)));
+      } else {
+        await fetch();
+      }
+    } catch {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'assessed' } : j)));
+    }
+  };
+
   return {
     jobs,
     proposals,
@@ -181,6 +200,7 @@ export function useUpworkPipeline() {
     loading,
     refresh: fetch,
     skipJob,
+    generateProposal,
     approveProposal,
     rejectProposal,
     editProposal,

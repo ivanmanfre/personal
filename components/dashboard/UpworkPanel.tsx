@@ -48,7 +48,7 @@ function icpBg(score: number | null): string {
 }
 
 const UpworkPanel: React.FC = () => {
-  const { jobs, proposals, stats, loading, refresh, skipJob, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
+  const { jobs, proposals, stats, loading, refresh, skipJob, generateProposal, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_jobs', 'upwork_proposals'] });
   const [activeTab, setActiveTab] = useState<'pipeline' | 'proposals'>('pipeline');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
@@ -69,7 +69,7 @@ const UpworkPanel: React.FC = () => {
     );
   }
 
-  const filteredJobs = statusFilter === 'all' ? jobs : jobs.filter((j) => j.status === statusFilter);
+  const filteredJobs = statusFilter === 'all' ? jobs : statusFilter === 'invites' ? jobs.filter((j) => j.source === 'invite') : jobs.filter((j) => j.status === statusFilter);
   const jobMap = new Map(jobs.map((j) => [j.id, j]));
 
   return (
@@ -113,6 +113,7 @@ const UpworkPanel: React.FC = () => {
           expandedJob={expandedJob}
           onToggleJob={(id) => setExpandedJob(expandedJob === id ? null : id)}
           onSkip={skipJob}
+          onGenerateProposal={generateProposal}
           stats={stats}
         />
       ) : (
@@ -140,12 +141,14 @@ interface PipelineTabProps {
   expandedJob: string | null;
   onToggleJob: (id: string) => void;
   onSkip: (id: string, reason?: string) => void;
-  stats: { totalJobs: number; new: number; assessed: number; drafted: number; submitted: number; won: number; skipped: number };
+  onGenerateProposal: (id: string) => void;
+  stats: { totalJobs: number; new: number; assessed: number; drafted: number; submitted: number; won: number; skipped: number; invites: number };
 }
 
-const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusFilter, expandedJob, onToggleJob, onSkip, stats }) => {
+const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusFilter, expandedJob, onToggleJob, onSkip, onGenerateProposal, stats }) => {
   const filters = [
     { key: 'all', label: 'All', count: stats.totalJobs },
+    { key: 'invites', label: 'Invites', count: stats.invites },
     { key: 'new', label: 'New', count: stats.new },
     { key: 'assessed', label: 'Assessed', count: stats.assessed },
     { key: 'drafted', label: 'Drafted', count: stats.drafted },
@@ -272,6 +275,19 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                         >
                           <ExternalLink className="w-3 h-3" /> View on Upwork
                         </a>
+                        {(job.status === 'assessed' || job.status === 'new') && job.icpScore != null && (
+                          <button
+                            onClick={() => onGenerateProposal(job.id)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                          >
+                            <FileText className="w-3 h-3" /> Generate Proposal
+                          </button>
+                        )}
+                        {job.status === 'drafted' && (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-purple-400 animate-pulse">
+                            <Zap className="w-3 h-3" /> Generating...
+                          </span>
+                        )}
                         {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
                           <button
                             onClick={() => onSkip(job.id)}
