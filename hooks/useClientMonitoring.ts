@@ -135,6 +135,19 @@ export function useClientMonitoring() {
     }
   };
 
+  const resolveAllForClient = async (clientId: string) => {
+    const clientErrors = errors.filter((e) => e.clientId === clientId);
+    if (clientErrors.length === 0) return;
+    setErrors((p) => p.filter((e) => e.clientId !== clientId));
+    try {
+      await Promise.all(
+        clientErrors.map((e) => dashboardAction('client_workflow_errors', e.id, 'is_resolved', 'true'))
+      );
+    } catch {
+      setErrors((p) => [...p, ...clientErrors]);
+    }
+  };
+
   const toggleWorkflowNotifications = async (id: string, enabled: boolean) => {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: enabled } : w)));
     try {
@@ -165,6 +178,7 @@ export function useClientMonitoring() {
     getClientHealth,
     toggleClient,
     resolveError,
+    resolveAllForClient,
     toggleWorkflowNotifications,
   };
 }

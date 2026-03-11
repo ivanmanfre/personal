@@ -19,7 +19,7 @@ const ClientsPanel: React.FC = () => {
   const {
     clients, errors, workflows, stats, loading, refresh,
     errorsPerClient, workflowsPerClient, getClientHealth,
-    toggleClient, resolveError, toggleWorkflowNotifications,
+    toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications,
   } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -75,8 +75,13 @@ const ClientsPanel: React.FC = () => {
                   workflows={clientWorkflows}
                   expandedError={expandedError}
                   onToggleError={(id) => setExpandedError(expandedError === id ? null : id)}
-                  onToggleActive={(id, active) => toggleClient(id, active)}
+                  onToggleActive={(id, active) => {
+                    if (active || confirm(`Disable monitoring for ${client.clientName}?`)) {
+                      toggleClient(id, active);
+                    }
+                  }}
                   onResolveError={(id) => resolveError(id)}
+                  onResolveAll={() => resolveAllForClient(client.id)}
                   onToggleNotifications={(id, enabled) => toggleWorkflowNotifications(id, enabled)}
                 />
               );
@@ -106,12 +111,12 @@ const ClientsPanel: React.FC = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{err.clientName}</span>
-                            <p className="text-sm text-zinc-300 truncate">{err.workflowName || err.workflowId}</p>
+                            <p className="text-sm text-zinc-300 truncate" title={err.workflowName || err.workflowId}>{err.workflowName || err.workflowId}</p>
                             <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
                               {err.severity}
                             </span>
                           </div>
-                          <p className="text-[11px] text-zinc-500 mt-1 line-clamp-1">{err.errorMessage}</p>
+                          <p className="text-[11px] text-zinc-500 mt-1 line-clamp-1" title={err.errorMessage}>{err.errorMessage}</p>
                           <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-600">
                             <span>{timeAgo(err.lastSeen)}</span>
                             {err.occurrenceCount > 1 && (
@@ -187,6 +192,7 @@ interface ClientCardProps {
   onToggleError: (id: string) => void;
   onToggleActive: (id: string, active: boolean) => void;
   onResolveError: (id: string) => void;
+  onResolveAll: () => void;
   onToggleNotifications: (id: string, enabled: boolean) => void;
 }
 
@@ -194,7 +200,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
   client, health, errorCount, workflowCount, monitoredCount,
   isExpanded, onToggle, tab, onTabChange,
   errors, workflows, expandedError, onToggleError,
-  onToggleActive, onResolveError, onToggleNotifications,
+  onToggleActive, onResolveError, onResolveAll, onToggleNotifications,
 }) => {
   const [search, setSearch] = useState('');
 
@@ -214,15 +220,15 @@ const ClientCard: React.FC<ClientCardProps> = ({
       <button onClick={onToggle} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/20 transition-colors text-left">
         <StatusDot status={health} pulse={health === 'error'} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-200">{client.clientName}</p>
-          <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-sm font-medium text-zinc-200 truncate" title={client.clientName}>{client.clientName}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[11px] text-zinc-500">Checked {timeAgo(client.lastCheckedAt)}</span>
             {client.consecutiveFailures > 0 && (
               <span className="text-[11px] text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded">{client.consecutiveFailures} failures</span>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap justify-end">
           {workflowCount > 0 && (
             <span className="text-[11px] text-zinc-400 bg-zinc-800/60 px-2 py-0.5 rounded-full">
               {workflowCount} wf
@@ -234,7 +240,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
             </span>
           )}
           {errorCount > 0 && (
-            <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-medium">{errorCount}</span>
+            <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full font-medium" title={`${errorCount} unresolved error${errorCount > 1 ? 's' : ''}`}>{errorCount}</span>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onToggleActive(client.id, !client.isActive); }}
@@ -275,6 +281,17 @@ const ClientCard: React.FC<ClientCardProps> = ({
             </button>
           </div>
 
+          {tab === 'errors' && errors.length > 1 && (
+            <div className="px-3 pt-2 flex justify-end">
+              <button
+                onClick={() => { if (confirm(`Resolve all ${errors.length} errors for ${client.clientName}?`)) onResolveAll(); }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+              >
+                <CheckCircle2 className="w-3 h-3" /> Resolve All ({errors.length})
+              </button>
+            </div>
+          )}
+
           {tab === 'workflows' ? (
             <div>
               {workflows.length > 8 && (
@@ -301,7 +318,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
                     <div key={wf.id} className="px-4 py-2 flex items-center gap-2 hover:bg-zinc-800/20 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs text-zinc-300 truncate">{wf.workflowName}</p>
+                          <p className="text-xs text-zinc-300 truncate" title={wf.workflowName}>{wf.workflowName}</p>
                           {!wf.isActive && (
                             <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1 py-0.5 rounded">inactive</span>
                           )}
@@ -344,14 +361,14 @@ const ClientCard: React.FC<ClientCardProps> = ({
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-xs text-zinc-300 truncate">{err.workflowName || err.workflowId}</p>
+                              <p className="text-xs text-zinc-300 truncate" title={err.workflowName || err.workflowId}>{err.workflowName || err.workflowId}</p>
                               <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${colors}`}>{err.severity}</span>
                               {err.occurrenceCount > 1 && (
                                 <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1 py-0.5 rounded">{err.occurrenceCount}x</span>
                               )}
                             </div>
                             {err.aiAnalysis && (
-                              <p className="text-[11px] text-blue-300/70 mt-0.5 line-clamp-1">{err.aiAnalysis}</p>
+                              <p className="text-[11px] text-blue-300/70 mt-0.5 line-clamp-1" title={err.aiAnalysis}>{err.aiAnalysis}</p>
                             )}
                           </div>
                           <span className="text-[10px] text-zinc-600 shrink-0 mt-0.5">{timeAgo(err.lastSeen)}</span>
