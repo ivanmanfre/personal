@@ -81,7 +81,7 @@ const CompetitorIntelPanel: React.FC = () => {
                   <tr key={p.id} className="hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-zinc-300 truncate max-w-xs">{p.postText.slice(0, 80)}</p>
+                      <p className="text-sm text-zinc-300 truncate max-w-xs" title={p.postText.slice(0, 200)}>{p.postText.slice(0, 80)}</p>
                       <p className="text-[11px] text-zinc-600 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
                     </td>
                     <td className="px-4 py-3">

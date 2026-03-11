@@ -192,7 +192,7 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                             Invite
                           </span>
                         )}
-                        <p className={`text-sm font-medium text-zinc-200 truncate ${isSkipped ? 'line-through' : ''}`}>
+                        <p className={`text-sm font-medium text-zinc-200 truncate ${isSkipped ? 'line-through' : ''}`} title={job.title}>
                           {job.title}
                         </p>
                         <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColors[job.status] || statusColors.new}`}>
@@ -362,7 +362,7 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                       Invite
                     </span>
                   )}
-                  <p className="text-sm font-medium text-zinc-200 truncate">{job?.title || prop.jobId}</p>
+                  <p className="text-sm font-medium text-zinc-200 truncate" title={job?.title || prop.jobId}>{job?.title || prop.jobId}</p>
                   <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusColors[prop.status] || statusColors.new}`}>
                     {prop.status === 'pending_approval' ? 'pending' : prop.status}
                   </span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Repeat, CheckCircle2, Bot, Bell, Zap, ChevronRight, ChevronDown, Plus, Pencil, X, Trash2 } from 'lucide-react';
+import { CheckSquare, Repeat, CheckCircle2, Bot, Bell, Zap, ChevronRight, ChevronDown, Plus, Pencil, X, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTasksPipeline } from '../../hooks/useTasksPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { timeAgo } from './shared/utils';
@@ -33,6 +33,7 @@ const TasksPanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_tasks'] });
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [expandedDescs, setExpandedDescs] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -40,6 +41,15 @@ const TasksPanel: React.FC = () => {
 
   const toggleExpanded = (id: string) => {
     setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleDesc = (id: string) => {
+    setExpandedDescs((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -82,6 +92,7 @@ const TasksPanel: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Delete this task?')) return;
     try {
       await deleteTask(id);
     } catch {
@@ -163,20 +174,34 @@ const TasksPanel: React.FC = () => {
                 ) : (
                   <p
                     onClick={() => isAgent && handleEdit(task.id, 'title', task.title)}
+                    title={task.title}
                     className={`font-medium truncate max-w-md ${isCompleted ? 'text-zinc-500 line-through' : 'text-zinc-200'} ${isAgent ? 'cursor-pointer hover:text-cyan-300' : ''}`}
                   >
                     {task.title}
                     {task.isRecurring && <Repeat className="w-3 h-3 inline ml-1.5 text-zinc-500" />}
                   </p>
                 )}
-                {task.description && !editing?.id && (
-                  <p className="text-xs text-zinc-500 truncate max-w-md mt-0.5">{task.description}</p>
+                {task.description && editing?.id !== task.id && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleDesc(task.id); }}
+                    className="text-left mt-0.5 group/desc"
+                  >
+                    <p className={`text-xs text-zinc-500 max-w-md ${expandedDescs.has(task.id) ? 'whitespace-pre-wrap' : 'truncate'}`}>
+                      {task.description}
+                    </p>
+                    {task.description.length > 60 && (
+                      <span className="text-[10px] text-zinc-600 group-hover/desc:text-zinc-400 transition-colors">
+                        {expandedDescs.has(task.id) ? 'Show less' : 'Show more'}
+                      </span>
+                    )}
+                  </button>
                 )}
                 {hasSubtasks && (
                   <span className="text-xs text-zinc-600 ml-0.5">
                     {task.subtasks!.filter((s) => s.status === 'completed').length}/{task.subtasks!.length} subtasks done
                   </span>
                 )}
+                <span className="md:hidden text-[10px] text-zinc-600 mt-0.5 block">{timeAgo(task.updatedAt)}</span>
               </div>
             </div>
           </td>

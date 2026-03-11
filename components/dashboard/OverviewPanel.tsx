@@ -87,7 +87,7 @@ const OverviewPanel: React.FC = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-300 truncate">{item.text}</p>
+                    <p className="text-sm text-zinc-300 truncate" title={item.text}>{item.text}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[11px] text-zinc-500">{timeAgo(item.time)}</span>
                       <span className="text-[11px] text-zinc-600 bg-zinc-800/60 px-1.5 py-0.5 rounded">{item.meta}</span>
@@ -115,7 +115,7 @@ const OverviewPanel: React.FC = () => {
                   <div key={a.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/20 transition-colors">
                     <StatusDot status={a.sent ? 'healthy' : 'warning'} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-300 truncate">{a.title}</p>
+                      <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
                       <p className="text-[11px] text-zinc-500">{a.alertType.replace(/_/g, ' ')} · {timeAgo(a.createdAt)}</p>
                     </div>
                     {!a.sent && (
@@ -145,7 +145,7 @@ const OverviewPanel: React.FC = () => {
                       <Clock className="w-3.5 h-3.5 text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-300 truncate">{r.reminderText}</p>
+                      <p className="text-sm text-zinc-300 truncate" title={r.reminderText}>{r.reminderText}</p>
                       <p className="text-[11px] text-zinc-500">{new Date(r.remindAt).toLocaleString()}</p>
                     </div>
                     <button onClick={() => completeReminder(r.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
