@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save } from 'lucide-react';
+import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save, RefreshCw } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
 import { useAutoRefresh, pauseRefresh, resumeRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -69,7 +69,7 @@ const UpworkPanel: React.FC = () => {
     );
   }
 
-  const filteredJobs = statusFilter === 'all' ? jobs : statusFilter === 'invites' ? jobs.filter((j) => j.source === 'invite') : jobs.filter((j) => j.status === statusFilter);
+  const filteredJobs = statusFilter === 'all' ? jobs.filter((j) => j.status !== 'skipped') : statusFilter === 'invites' ? jobs.filter((j) => j.source === 'invite') : jobs.filter((j) => j.status === statusFilter);
   const jobMap = new Map(jobs.map((j) => [j.id, j]));
 
   return (
@@ -126,6 +126,7 @@ const UpworkPanel: React.FC = () => {
           onReject={rejectProposal}
           onEdit={editProposal}
           onSubmit={submitProposal}
+          onGenerateProposal={generateProposal}
         />
       )}
     </div>
@@ -275,19 +276,25 @@ const PipelineTab: React.FC<PipelineTabProps> = ({ jobs, statusFilter, onStatusF
                         >
                           <ExternalLink className="w-3 h-3" /> View on Upwork
                         </a>
-                        {(job.status === 'assessed' || job.status === 'new') && job.icpScore != null && (
+                        {job.status === 'drafted' ? (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-purple-400 animate-pulse">
+                            <Zap className="w-3 h-3" /> Generating...
+                          </span>
+                        ) : (job.status === 'assessed' || job.status === 'new') && job.icpScore != null ? (
                           <button
                             onClick={() => onGenerateProposal(job.id)}
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                           >
                             <FileText className="w-3 h-3" /> Generate Proposal
                           </button>
-                        )}
-                        {job.status === 'drafted' && (
-                          <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-purple-400 animate-pulse">
-                            <Zap className="w-3 h-3" /> Generating...
-                          </span>
-                        )}
+                        ) : job.status !== 'skipped' && job.status !== 'won' ? (
+                          <button
+                            onClick={() => onGenerateProposal(job.id)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                          >
+                            <RefreshCw className="w-3 h-3" /> Regenerate
+                          </button>
+                        ) : null}
                         {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
                           <button
                             onClick={() => onSkip(job.id)}
@@ -324,9 +331,10 @@ interface ProposalsTabProps {
   onReject: (id: string) => void;
   onEdit: (id: string, field: 'proposal_text' | 'cover_letter', value: string) => void;
   onSubmit: (id: string) => void;
+  onGenerateProposal: (jobId: string) => void;
 }
 
-const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expandedProposal, onToggleProposal, onApprove, onReject, onEdit, onSubmit }) => {
+const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expandedProposal, onToggleProposal, onApprove, onReject, onEdit, onSubmit, onGenerateProposal }) => {
   const [editingField, setEditingField] = useState<{ id: string; field: 'proposal_text' | 'cover_letter' } | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -356,9 +364,23 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
     resumeRefresh();
   };
 
+  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const visibleProposals = proposals.filter((p) => {
+    const job = jobMap.get(p.jobId);
+    if (job?.source === 'invite') return true;
+    if (p.status === 'pending_approval' || p.status === 'draft') return true;
+    return p.createdAt >= sixHoursAgo;
+  });
+
+  if (visibleProposals.length === 0) {
+    return (
+      <EmptyState title="No recent proposals" description="Proposals older than 6 hours are hidden. Invite proposals always stay visible." icon={<FileText className="w-10 h-10" />} />
+    );
+  }
+
   return (
     <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden divide-y divide-zinc-800/50">
-      {proposals.map((prop) => {
+      {visibleProposals.map((prop) => {
         const job = jobMap.get(prop.jobId);
         const isExpanded = expandedProposal === prop.id;
         const isEditable = prop.status === 'draft' || prop.status === 'pending_approval';
@@ -503,6 +525,14 @@ const ProposalsTab: React.FC<ProposalsTabProps> = ({ proposals, jobMap, expanded
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors"
                     >
                       <Send className="w-3 h-3" /> Submit
+                    </button>
+                  )}
+                  {prop.status !== 'submitting' && prop.status !== 'submitted' && (
+                    <button
+                      onClick={() => onGenerateProposal(prop.jobId)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Regenerate
                     </button>
                   )}
                   {prop.status === 'submitting' && (
