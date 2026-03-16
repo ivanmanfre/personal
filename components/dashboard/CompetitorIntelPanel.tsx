@@ -61,11 +61,11 @@ const CompetitorIntelPanel: React.FC = () => {
       </div>
 
       {/* Posts table */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800/60 text-left">
+              <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
                 <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Competitor</th>
                 <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Post</th>
                 <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Engagement</th>
@@ -73,12 +73,12 @@ const CompetitorIntelPanel: React.FC = () => {
                 {showOpportunities && <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Opportunity</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/50">
+            <tbody className="divide-y divide-zinc-800/40">
               {displayPosts.length === 0 ? (
                 <tr><td colSpan={5} className="px-4 py-10 text-zinc-600 text-center">No posts found</td></tr>
               ) : (
                 displayPosts.map((p) => (
-                  <tr key={p.id} className="hover:bg-zinc-800/20 transition-colors">
+                  <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-zinc-300 truncate max-w-xs" title={p.postText.slice(0, 200)}>{p.postText.slice(0, 80)}</p>

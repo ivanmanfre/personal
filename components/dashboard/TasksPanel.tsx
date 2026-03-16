@@ -272,7 +272,7 @@ const TasksPanel: React.FC = () => {
       {creating && <CreateForm newTitle={newTitle} setNewTitle={setNewTitle} newDesc={newDesc} setNewDesc={setNewDesc} onCreate={handleCreate} onCancel={() => { setCreating(false); setNewTitle(''); setNewDesc(''); }} />}
 
       {/* Source tabs */}
-      <div className="flex items-center justify-between border-b border-zinc-800/60">
+      <div className="flex items-center justify-between border-b border-zinc-800/40 bg-zinc-800/20">
         <div className="flex">
           {([
             { key: 'agent' as SourceTab, label: 'Agent Tasks', count: agentCount },
@@ -296,19 +296,19 @@ const TasksPanel: React.FC = () => {
         </button>
       </div>
 
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 text-left">
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Task</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden md:table-cell">Updated</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden md:table-cell">Source</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide w-24"></th>
+              <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
+                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Task</th>
+                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Status</th>
+                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">Updated</th>
+                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">Source</th>
+                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] w-24"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-zinc-800/40">
               {displayTasks.length === 0 ? (
                 <tr><td colSpan={5} className="px-4 py-8 text-zinc-500 text-center">No {showCompleted ? '' : 'active '}tasks</td></tr>
               ) : (

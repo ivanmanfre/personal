@@ -137,11 +137,11 @@ const PerformancePanel: React.FC = () => {
       </div>
 
       {posts.length === 0 ? (
-        <div className="h-72 bg-zinc-900/80 border border-zinc-800/80 rounded-xl flex items-center justify-center text-zinc-600">No data for this period</div>
+        <div className="h-72 bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 flex items-center justify-center text-zinc-600">No data for this period</div>
       ) : (
         <>
           {/* Area chart */}
-          <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 pt-5">
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4 pt-5">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chartData}>
                 <defs>
@@ -161,8 +161,8 @@ const PerformancePanel: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Content type breakdown */}
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">By Content Type</h3>
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">By Content Type</h3>
               {typeData.length > 0 ? (
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={120} height={120}>
@@ -185,8 +185,8 @@ const PerformancePanel: React.FC = () => {
             </div>
 
             {/* Competitor benchmark */}
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">vs Competitors (Avg Likes)</h3>
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors (Avg Likes)</h3>
               {benchmarkData.length > 1 ? (
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={benchmarkData} layout="vertical">
@@ -205,8 +205,8 @@ const PerformancePanel: React.FC = () => {
 
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">By Topic</h3>
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic</h3>
               {topicData.length > 0 ? (
                 <div className="space-y-2">
                   {topicData.slice(0, 6).map((t) => {
@@ -227,8 +227,8 @@ const PerformancePanel: React.FC = () => {
               ) : <p className="text-zinc-600 text-sm">No topic data</p>}
             </div>
 
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">By Hook Pattern</h3>
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern</h3>
               {hookData.length > 0 ? (
                 <div className="space-y-2">
                   {hookData.slice(0, 6).map((h) => {
@@ -251,14 +251,14 @@ const PerformancePanel: React.FC = () => {
           </div>
 
           {/* Top posts */}
-          <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+            <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-zinc-500" />
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Top Posts by {METRIC_LABELS[metric]}</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Top Posts by {METRIC_LABELS[metric]}</h3>
             </div>
-            <div className="divide-y divide-zinc-800/50">
+            <div className="divide-y divide-zinc-800/40">
               {topPosts.map((post, i) => (
-                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors">
+                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
                   <span className="text-[11px] font-bold text-zinc-600 w-5 pt-0.5 text-center">#{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-zinc-300 truncate">{post.text.slice(0, 100)}</p>

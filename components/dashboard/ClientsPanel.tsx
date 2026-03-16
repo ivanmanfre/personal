@@ -47,7 +47,7 @@ const ClientsPanel: React.FC = () => {
       </div>
 
       {clients.length === 0 ? (
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-12 text-center">
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-12 text-center">
           <Server className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
           <p className="text-sm text-zinc-500 mb-1">No clients registered</p>
           <p className="text-[11px] text-zinc-600">Send a WhatsApp message to n8nClaw: &quot;register client [name] [n8n-url] [api-key]&quot;</p>
@@ -90,12 +90,12 @@ const ClientsPanel: React.FC = () => {
 
           {/* Recent Errors */}
           {errors.length > 0 && (
-            <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+              <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-zinc-500" />
-                <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Recent Errors Across All Clients</h2>
+                <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Recent Errors Across All Clients</h2>
               </div>
-              <div className="max-h-96 overflow-y-auto divide-y divide-zinc-800/50">
+              <div className="max-h-96 overflow-y-auto divide-y divide-zinc-800/40">
                 {errors.slice(0, 20).map((err) => {
                   const colors = severityColors[err.severity] || severityColors.medium;
                   const isExpanded = expandedError === err.id;
@@ -103,7 +103,7 @@ const ClientsPanel: React.FC = () => {
                     <div key={err.id}>
                       <button
                         onClick={() => setExpandedError(isExpanded ? null : err.id)}
-                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors text-left"
+                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors text-left"
                       >
                         <div className="mt-1">
                           <StatusDot status={err.severity === 'high' ? 'error' : 'warning'} />
@@ -217,7 +217,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
 
   return (
     <div className={`bg-zinc-900/80 border rounded-xl overflow-hidden transition-colors ${healthColors[health]}`}>
-      <button onClick={onToggle} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/20 transition-colors text-left">
+      <button onClick={onToggle} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors text-left">
         <StatusDot status={health} pulse={health === 'error'} size="md" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-zinc-200 truncate" title={client.clientName}>{client.clientName}</p>
@@ -315,7 +315,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
               ) : (
                 <div className="max-h-64 overflow-y-auto divide-y divide-zinc-800/30">
                   {filteredWorkflows.map((wf) => (
-                    <div key={wf.id} className="px-4 py-2 flex items-center gap-2 hover:bg-zinc-800/20 transition-colors">
+                    <div key={wf.id} className="px-4 py-2 flex items-center gap-2 hover:bg-zinc-800/30 transition-colors">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-xs text-zinc-300 truncate" title={wf.workflowName}>{wf.workflowName}</p>
@@ -357,7 +357,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
                       <div key={err.id}>
                         <button
                           onClick={() => onToggleError(err.id)}
-                          className="w-full px-4 py-2.5 flex items-start gap-2 hover:bg-zinc-800/20 transition-colors text-left"
+                          className="w-full px-4 py-2.5 flex items-start gap-2 hover:bg-zinc-800/30 transition-colors text-left"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">

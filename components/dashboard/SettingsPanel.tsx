@@ -112,10 +112,10 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Auto-refresh interval */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-zinc-500" />
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Auto-Refresh Interval</h2>
+          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Auto-Refresh Interval</h2>
         </div>
         <div className="px-4 py-4 flex items-center gap-2">
           {refreshOptions.map((opt) => (
@@ -128,11 +128,11 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Slack Notifications */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center justify-between">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="w-3.5 h-3.5 text-zinc-500" />
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Slack Channel Notifications</h2>
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Slack Channel Notifications</h2>
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -144,7 +144,7 @@ const SettingsPanel: React.FC = () => {
 
         {/* Channel picker */}
         {showAddForm && (
-          <div className="border-b border-zinc-800/60 bg-zinc-800/20">
+          <div className="border-b border-zinc-800/40 bg-zinc-800/20">
             <div className="px-4 py-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
@@ -199,9 +199,9 @@ const SettingsPanel: React.FC = () => {
             No Slack channels configured. Click &quot;Add Channel&quot; to get started.
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-zinc-800/40">
             {channels.map((ch) => (
-              <div key={ch.id} className="px-4 py-3 flex items-center gap-4 hover:bg-zinc-800/20 transition-colors">
+              <div key={ch.id} className="px-4 py-3 flex items-center gap-4 hover:bg-zinc-800/30 transition-colors">
                 <Hash className="w-4 h-4 text-zinc-600 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-zinc-200">{ch.channel_name}</p>
@@ -236,14 +236,14 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* System Info */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Database className="w-3.5 h-3.5 text-zinc-500" />
-          <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">System Info</h2>
+          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">System Info</h2>
         </div>
-        <div className="divide-y divide-zinc-800/50">
+        <div className="divide-y divide-zinc-800/40">
           {tables.map((t) => (
-            <div key={t.name} className="px-4 py-2.5 flex items-center justify-between hover:bg-zinc-800/20 transition-colors">
+            <div key={t.name} className="px-4 py-2.5 flex items-center justify-between hover:bg-zinc-800/30 transition-colors">
               <span className="text-sm text-zinc-400 font-mono text-[13px]">{t.name}</span>
               <span className="text-sm text-zinc-300 font-medium tabular-nums">{t.count.toLocaleString()} rows</span>
             </div>

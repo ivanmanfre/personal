@@ -239,11 +239,11 @@ const UpworkPanel: React.FC = () => {
       </div>
 
       {/* Jobs list */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
         {filteredJobs.length === 0 ? (
           <p className="px-4 py-8 text-zinc-500 text-center text-sm">No jobs match this filter</p>
         ) : (
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-zinc-800/40">
             {filteredJobs.map((job) => {
               const isExpanded = expandedJob === job.id;
               const isSkipped = job.status === 'skipped';
@@ -260,7 +260,7 @@ const UpworkPanel: React.FC = () => {
                   {/* Job row */}
                   <button
                     onClick={() => setExpandedJob(isExpanded ? null : job.id)}
-                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors text-left ${isSkipped ? 'opacity-60' : ''}`}
+                    className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors text-left ${isSkipped ? 'opacity-60' : ''}`}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">

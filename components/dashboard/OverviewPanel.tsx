@@ -9,6 +9,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import PanelCard from './shared/PanelCard';
 import { timeAgo, formatNum } from './shared/utils';
 
 const OverviewPanel: React.FC = () => {
@@ -64,24 +65,20 @@ const OverviewPanel: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity Feed */}
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-zinc-500" />
-            <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Recent Activity</h2>
-          </div>
-          <div className="divide-y divide-zinc-800/50">
+        <PanelCard title="Recent Activity" icon={<Activity className="w-3.5 h-3.5" />} badge={activityItems.length}>
+          <div className="divide-y divide-zinc-800/40">
             {activityItems.length === 0 ? (
               <p className="px-4 py-8 text-zinc-600 text-sm text-center">No recent activity</p>
             ) : (
               activityItems.map((item, i) => (
-                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors">
+                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
                   <div className="mt-0.5">
                     {item.type === 'post' ? (
-                      <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
                         <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
                       </div>
                     ) : (
-                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
                         <Bell className="w-3.5 h-3.5 text-orange-400" />
                       </div>
                     )}
@@ -97,29 +94,25 @@ const OverviewPanel: React.FC = () => {
               ))
             )}
           </div>
-        </div>
+        </PanelCard>
 
         {/* Right column */}
         <div className="space-y-4">
           {/* Alert breakdown */}
-          <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
-              <Bell className="w-3.5 h-3.5 text-zinc-500" />
-              <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Recent Alerts</h2>
-            </div>
-            <div className="divide-y divide-zinc-800/50">
+          <PanelCard title="Recent Alerts" icon={<Bell className="w-3.5 h-3.5" />} badge={recentAlerts.length}>
+            <div className="divide-y divide-zinc-800/40">
               {recentAlerts.length === 0 ? (
                 <p className="px-4 py-6 text-zinc-600 text-sm text-center">No alerts</p>
               ) : (
                 recentAlerts.map((a) => (
-                  <div key={a.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/20 transition-colors">
+                  <div key={a.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors">
                     <StatusDot status={a.sent ? 'healthy' : 'warning'} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
                       <p className="text-[11px] text-zinc-500">{a.alertType.replace(/_/g, ' ')} · {timeAgo(a.createdAt)}</p>
                     </div>
                     {!a.sent && (
-                      <button onClick={() => acknowledgeAlert(a.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Acknowledge">
+                      <button onClick={() => acknowledgeAlert(a.id)} className="shrink-0 p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Acknowledge">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -127,35 +120,31 @@ const OverviewPanel: React.FC = () => {
                 ))
               )}
             </div>
-          </div>
+          </PanelCard>
 
           {/* Upcoming reminders */}
-          <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/60 flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-zinc-500" />
-              <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Upcoming Reminders</h2>
-            </div>
-            <div className="divide-y divide-zinc-800/50">
+          <PanelCard title="Upcoming Reminders" icon={<Clock className="w-3.5 h-3.5" />} badge={pendingReminders.length}>
+            <div className="divide-y divide-zinc-800/40">
               {pendingReminders.length === 0 ? (
                 <p className="px-4 py-6 text-zinc-600 text-sm text-center">No pending reminders</p>
               ) : (
                 pendingReminders.map((r) => (
-                  <div key={r.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/20 transition-colors">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <div key={r.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                       <Clock className="w-3.5 h-3.5 text-emerald-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-zinc-300 truncate" title={r.reminderText}>{r.reminderText}</p>
                       <p className="text-[11px] text-zinc-500" title={new Date(r.remindAt).toLocaleString()}>{timeAgo(r.remindAt)}</p>
                     </div>
-                    <button onClick={() => completeReminder(r.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
+                    <button onClick={() => completeReminder(r.id)} className="shrink-0 p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))
               )}
             </div>
-          </div>
+          </PanelCard>
         </div>
       </div>
     </div>

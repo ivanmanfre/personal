@@ -219,7 +219,7 @@ const WorkflowsPanel: React.FC = () => {
       </div>
 
       {/* Health summary bar */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-3">
         <div className="flex items-center gap-3 mb-2">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">System Health</span>
           <div className="flex items-center gap-3 ml-auto text-[11px]">
@@ -278,8 +278,8 @@ const WorkflowsPanel: React.FC = () => {
           </div>
 
           {/* Workflow list */}
-          <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
-            <div className="divide-y divide-zinc-800/50">
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+            <div className="divide-y divide-zinc-800/40">
               {sorted.length === 0 ? (
                 <p className="px-4 py-10 text-zinc-600 text-sm text-center">No workflows found</p>
               ) : (
@@ -435,7 +435,7 @@ const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows 
 
       {/* Expanded filters */}
       {showFilters && (
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 space-y-3">
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {/* Status */}
             <div>
@@ -512,7 +512,7 @@ const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows 
       )}
 
       {/* Results */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-zinc-600 text-sm">Loading executions...</div>
         ) : logs.length === 0 ? (
@@ -524,7 +524,7 @@ const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows 
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-zinc-800/50">
+          <div className="divide-y divide-zinc-800/40">
             {logs.map((exec) => {
               const isExpanded = expandedExec === exec.executionId;
               const colors = statusColors[exec.status] || statusColors.unknown;

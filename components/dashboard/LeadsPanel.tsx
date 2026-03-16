@@ -64,8 +64,8 @@ const LeadsPanel: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Funnel */}
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">Lead Funnel</h2>
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+          <h2 className="text-sm font-bold text-zinc-300 mb-4">Lead Funnel</h2>
           <div className="space-y-3">
             {funnelStages.map((stage) => {
               const count = statusCounts[stage] || 0;
@@ -89,8 +89,8 @@ const LeadsPanel: React.FC = () => {
         </div>
 
         {/* ICP Distribution */}
-        <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 lg:col-span-2">
-          <h2 className="text-sm font-semibold text-zinc-300 mb-4">ICP Score Distribution</h2>
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 lg:col-span-2 shadow-sm shadow-black/10">
+          <h2 className="text-sm font-bold text-zinc-300 mb-4">ICP Score Distribution</h2>
           <div className="flex items-end gap-4 h-32">
             {([
               { label: 'Low (1-3)', value: icpDistribution.low, color: 'bg-zinc-600' },
@@ -128,25 +128,25 @@ const LeadsPanel: React.FC = () => {
       </div>
 
       {/* Leads table */}
-      <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 text-left">
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Name</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden md:table-cell">ICP</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide hidden lg:table-cell">Source</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide">Date</th>
-                <th className="px-4 py-3 text-xs text-zinc-500 font-medium uppercase tracking-wide w-10"></th>
+              <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Name</th>
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Status</th>
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">ICP</th>
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden lg:table-cell">Source</th>
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Date</th>
+                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] w-10"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-zinc-800/40">
               {leads.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-zinc-500 text-center">No leads match filter</td></tr>
               ) : (
                 leads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-zinc-800/50 transition-colors">
+                  <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-zinc-200">{lead.name || '—'}</p>
                       {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs" title={lead.headline}>{lead.headline}</p>}
