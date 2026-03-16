@@ -66,12 +66,20 @@ const LeadsPanel: React.FC = () => {
         {/* Funnel */}
         <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
           <h2 className="text-sm font-bold text-zinc-300 mb-4">Lead Funnel</h2>
-          <div className="space-y-3">
-            {funnelStages.map((stage) => {
+          <div className="space-y-1">
+            {funnelStages.map((stage, i) => {
               const count = statusCounts[stage] || 0;
               const pct = (count / funnelMax) * 100;
+              const prevCount = i > 0 ? (statusCounts[funnelStages[i - 1]] || 0) : 0;
+              const convRate = i > 0 && prevCount > 0 ? Math.round((count / prevCount) * 100) : null;
               return (
                 <div key={stage}>
+                  {convRate != null && (
+                    <div className="flex items-center gap-1.5 py-0.5 pl-2">
+                      <div className="w-px h-3 bg-zinc-700" />
+                      <span className="text-[10px] text-zinc-600">{convRate}% conversion</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-zinc-400 capitalize">{stage}</span>
                     <span className="text-zinc-300 font-medium">{count}</span>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, FileText, ChevronLeft, ChevronRight, Image, FileType } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, FileText, ChevronLeft, ChevronRight, Image, FileType, Clock, ArrowRight } from 'lucide-react';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -53,6 +53,24 @@ function formatTime(dateStr: string): string {
   return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+function useCountdown() {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return 'Now';
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  if (h > 24) { const d = Math.floor(h / 24); return `${d}d ${h % 24}h`; }
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 const ContentPanel: React.FC = () => {
   const { tasks, statusCounts, listCounts, tasksByDate, unscheduled, loading, refresh } = useContentPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_tasks'] });
@@ -82,8 +100,16 @@ const ContentPanel: React.FC = () => {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToday = () => setCurrentDate(new Date());
 
+  const now = useCountdown();
   const scheduled = tasks.filter((t) => t.dueDate);
   const pending = tasks.filter((t) => t.status === 'pending');
+
+  const upcomingQueue = useMemo(() => {
+    return tasks
+      .filter((t) => t.dueDate && new Date(t.dueDate).getTime() > now && (t.status === 'pending' || t.status === 'scheduled'))
+      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+      .slice(0, 5);
+  }, [tasks, now]);
 
   const filteredList = filter === 'all'
     ? tasks
@@ -103,6 +129,38 @@ const ContentPanel: React.FC = () => {
         <StatCard label="Published" value={statusCounts['published'] || 0} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />
         <StatCard label="Scheduled" value={scheduled.length} icon={<Calendar className="w-5 h-5" />} color="text-cyan-400" />
       </div>
+
+      {/* Publishing Queue */}
+      {upcomingQueue.length > 0 && (
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Publishing Queue</span>
+          </div>
+          <div className="space-y-2">
+            {upcomingQueue.map((t, i) => {
+              const ms = new Date(t.dueDate!).getTime() - now;
+              const isNext = i === 0;
+              return (
+                <div key={t.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isNext ? 'bg-cyan-500/5 border border-cyan-500/15' : 'bg-zinc-800/30'}`}>
+                  <div className={`shrink-0 text-right w-16 ${isNext ? 'text-cyan-400' : 'text-zinc-500'}`}>
+                    <span className="text-sm font-bold">{formatCountdown(ms)}</span>
+                  </div>
+                  <ArrowRight className={`w-3 h-3 shrink-0 ${isNext ? 'text-cyan-400/60' : 'text-zinc-700'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{t.description || t.title}</p>
+                    <p className="text-[10px] text-zinc-600">
+                      {new Date(t.dueDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(t.dueDate!)}
+                      {t.listName && ` · ${t.listName}`}
+                    </p>
+                  </div>
+                  <div className={`shrink-0 w-2 h-2 rounded-full ${statusColors[t.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Calendar */}
       <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">

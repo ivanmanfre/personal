@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Props {
   label: string;
@@ -6,6 +7,7 @@ interface Props {
   icon: React.ReactNode;
   color: string;
   subValue?: string;
+  trend?: { value: number; label?: string }; // percentage change — positive = up, negative = down
 }
 
 // Map text color classes to background tint classes
@@ -76,7 +78,7 @@ function useCountUp(target: number, duration = 600): number {
   return current;
 }
 
-const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue }) => {
+const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue, trend }) => {
   const bgClass = colorToBg[color] || 'bg-zinc-500/15 border-zinc-500/20';
   const accentClass = colorToAccent[color] || 'from-zinc-500';
 
@@ -100,6 +102,13 @@ const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue }) => {
         <div className="flex-1 min-w-0">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-2">{label}</span>
           <p className="text-[28px] font-bold tracking-tight leading-none animate-count-up">{displayValue}</p>
+          {trend && (
+            <div className={`flex items-center gap-1 mt-1.5 ${trend.value > 0 ? 'text-emerald-400' : trend.value < 0 ? 'text-red-400' : 'text-zinc-500'}`}>
+              {trend.value > 0 ? <TrendingUp className="w-3 h-3" /> : trend.value < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+              <span className="text-[11px] font-medium">{trend.value > 0 ? '+' : ''}{trend.value}%</span>
+              {trend.label && <span className="text-[10px] text-zinc-600">{trend.label}</span>}
+            </div>
+          )}
           {subValue && <p className="text-[11px] text-zinc-500 mt-2">{subValue}</p>}
         </div>
         <div className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center ${bgClass} ${color} transition-all duration-300 group-hover:scale-110`}>

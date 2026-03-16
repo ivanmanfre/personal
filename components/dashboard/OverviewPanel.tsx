@@ -48,6 +48,32 @@ const OverviewPanel: React.FC = () => {
     });
   }, [workflows]);
 
+  // Week-over-week trends
+  const trends = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = new Date(now); thisWeekStart.setDate(now.getDate() - 7);
+    const lastWeekStart = new Date(now); lastWeekStart.setDate(now.getDate() - 14);
+
+    const thisWeek = posts.filter((p) => new Date(p.postedAt) >= thisWeekStart);
+    const lastWeek = posts.filter((p) => { const d = new Date(p.postedAt); return d >= lastWeekStart && d < thisWeekStart; });
+
+    const pct = (curr: number, prev: number) => prev === 0 ? (curr > 0 ? 100 : 0) : Math.round(((curr - prev) / prev) * 100);
+
+    const twImpressions = thisWeek.reduce((s, p) => s + (p.impressions || 0), 0);
+    const lwImpressions = lastWeek.reduce((s, p) => s + (p.impressions || 0), 0);
+    const twLikes = thisWeek.reduce((s, p) => s + (p.likes || 0), 0);
+    const lwLikes = lastWeek.reduce((s, p) => s + (p.likes || 0), 0);
+    const twComments = thisWeek.reduce((s, p) => s + (p.comments || 0), 0);
+    const lwComments = lastWeek.reduce((s, p) => s + (p.comments || 0), 0);
+
+    return {
+      posts: { value: pct(thisWeek.length, lastWeek.length), label: 'vs last week' },
+      impressions: { value: pct(twImpressions, lwImpressions), label: 'vs last week' },
+      likes: { value: pct(twLikes, lwLikes), label: 'vs last week' },
+      comments: { value: pct(twComments, lwComments), label: 'vs last week' },
+    };
+  }, [posts]);
+
   const loading = postsLoading || wfLoading || agentLoading;
   if (loading) return <LoadingSkeleton cards={8} rows={5} />;
 
@@ -69,10 +95,10 @@ const OverviewPanel: React.FC = () => {
       {/* Top stat cards */}
       <AnimateIn delay={0}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Posts (30d)" value={postStats.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
-          <StatCard label="Impressions" value={formatNum(postStats.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
-          <StatCard label="Likes" value={formatNum(postStats.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" />
-          <StatCard label="Comments" value={formatNum(postStats.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" />
+          <StatCard label="Posts (30d)" value={postStats.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" trend={trends.posts} />
+          <StatCard label="Impressions" value={formatNum(postStats.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" trend={trends.impressions} />
+          <StatCard label="Likes" value={formatNum(postStats.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" trend={trends.likes} />
+          <StatCard label="Comments" value={formatNum(postStats.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" trend={trends.comments} />
         </div>
       </AnimateIn>
 
