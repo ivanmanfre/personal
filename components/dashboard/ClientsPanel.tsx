@@ -95,7 +95,7 @@ const ClientsPanel: React.FC = () => {
                 <Shield className="w-3.5 h-3.5 text-zinc-500" />
                 <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Recent Errors Across All Clients</h2>
               </div>
-              <div className="max-h-96 overflow-y-auto divide-y divide-zinc-800/40">
+              <div className="max-h-96 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/40">
                 {errors.slice(0, 20).map((err) => {
                   const colors = severityColors[err.severity] || severityColors.medium;
                   const isExpanded = expandedError === err.id;
@@ -313,7 +313,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
                   {workflows.length === 0 ? 'No workflows synced yet' : 'No matching workflows'}
                 </p>
               ) : (
-                <div className="max-h-64 overflow-y-auto divide-y divide-zinc-800/30">
+                <div className="max-h-64 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/30">
                   {filteredWorkflows.map((wf) => (
                     <div key={wf.id} className="px-4 py-2 flex items-center gap-2 hover:bg-zinc-800/30 transition-colors">
                       <div className="flex-1 min-w-0">
@@ -349,7 +349,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
               {errors.length === 0 ? (
                 <p className="px-4 py-4 text-zinc-600 text-xs text-center">No open errors</p>
               ) : (
-                <div className="max-h-64 overflow-y-auto divide-y divide-zinc-800/30">
+                <div className="max-h-64 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/30">
                   {errors.map((err) => {
                     const colors = severityColors[err.severity] || severityColors.medium;
                     const isErrExpanded = expandedError === err.id;

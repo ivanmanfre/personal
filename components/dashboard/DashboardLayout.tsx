@@ -98,7 +98,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         {/* Separator */}
         <div className="mx-4 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
 
-        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto dashboard-scroll">
           {tabGroups.map((group, gi) => (
             <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
               {group.label && (
@@ -164,7 +164,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-0 mt-14 md:mt-0">
+      <main className="flex-1 md:ml-0 mt-14 md:mt-0 dashboard-grid-bg">
         <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

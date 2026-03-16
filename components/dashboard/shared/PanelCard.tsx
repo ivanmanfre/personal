@@ -22,7 +22,7 @@ const PanelCard: React.FC<Props> = ({ title, icon, badge, headerRight, children,
       </div>
       {headerRight}
     </div>
-    <div className={scrollable ? 'max-h-96 overflow-y-auto' : ''}>
+    <div className={scrollable ? 'max-h-96 overflow-y-auto dashboard-scroll' : ''}>
       {children}
     </div>
   </div>

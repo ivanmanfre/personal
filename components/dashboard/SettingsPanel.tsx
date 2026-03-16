@@ -157,7 +157,7 @@ const SettingsPanel: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="max-h-48 overflow-y-auto divide-y divide-zinc-800/30">
+            <div className="max-h-48 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/30">
               {availableChannels.length === 0 ? (
                 <div className="px-4 py-6 text-center text-zinc-600 text-xs">
                   No channels loaded yet. Channels sync every 5 minutes via Dashboard Data Sync.

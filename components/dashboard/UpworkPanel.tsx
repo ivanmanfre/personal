@@ -300,7 +300,7 @@ const UpworkPanel: React.FC = () => {
                     <div className="px-4 pb-4 space-y-3">
                       {/* Job description */}
                       {job.description && (
-                        <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                        <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-40 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
                           {job.description}
                         </div>
                       )}
@@ -394,7 +394,7 @@ const UpworkPanel: React.FC = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
+                            <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
                               {prop.coverLetter || prop.proposalText}
                             </div>
                           )}
