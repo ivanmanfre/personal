@@ -241,5 +241,5 @@ export interface ExecutionLog {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'system-map' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

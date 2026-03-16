@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { TrendingUp, Eye, Heart, MessageSquare, Activity, Bell, Clock, Zap, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { TrendingUp, Eye, Heart, MessageSquare, Activity, Bell, Clock, Zap, CheckCircle2, Network, ArrowRight } from 'lucide-react';
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAgentData } from '../../hooks/useAgentData';
@@ -11,13 +11,15 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
 import AnimateIn from './shared/AnimateIn';
+import { pipelineConfig } from './system-map/config';
 import { timeAgo, formatNum } from './shared/utils';
+import type { WorkflowStat } from '../../types/dashboard';
 
 const OverviewPanel: React.FC = () => {
   const { posts, stats: postStats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(30);
-  const { stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
+  const { workflows, stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
   const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData();
-  const { setSystemHealth, setLastRefreshed } = useDashboard();
+  const { setSystemHealth, setLastRefreshed, navigateToTab } = useDashboard();
 
   const refreshAll = async () => {
     await Promise.all([refreshPosts(), refreshWf(), refreshAgent()]);
@@ -29,6 +31,22 @@ const OverviewPanel: React.FC = () => {
   });
 
   useEffect(() => { setSystemHealth(wfStats.health); }, [wfStats.health, setSystemHealth]);
+
+  const pipelineHealth = useMemo(() => {
+    return pipelineConfig.map((p) => {
+      const matched = workflows.filter((wf: WorkflowStat) => {
+        const name = wf.workflowName.toLowerCase();
+        return p.workflows.some((pat) => name.includes(pat.toLowerCase()));
+      });
+      const errors = matched.reduce((s: number, w: WorkflowStat) => s + w.errorCount24h, 0);
+      const health = matched.some((w: WorkflowStat) => !w.isActive ? false : !w.errorAcknowledged && (w.lastExecutionStatus === 'error' || w.errorCount24h > 3))
+        ? 'error' as const
+        : matched.some((w: WorkflowStat) => w.isActive && w.errorCount24h > 0 && !w.errorAcknowledged)
+          ? 'warning' as const
+          : 'healthy' as const;
+      return { id: p.id, name: p.name, color: p.color, count: matched.length, errors, health };
+    });
+  }, [workflows]);
 
   const loading = postsLoading || wfLoading || agentLoading;
   if (loading) return <LoadingSkeleton cards={8} rows={5} />;
@@ -68,7 +86,42 @@ const OverviewPanel: React.FC = () => {
         </div>
       </AnimateIn>
 
-      <AnimateIn delay={160}>
+      {/* Pipeline Health Strip */}
+      <AnimateIn delay={120}>
+        <button
+          onClick={() => navigateToTab('system-map')}
+          className="w-full bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-3 hover:bg-zinc-900 hover:border-zinc-700/60 transition-all duration-200 group cursor-pointer text-left"
+        >
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <Network className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Health</span>
+            </div>
+            <span className="flex items-center gap-1 text-[11px] text-zinc-600 group-hover:text-zinc-400 transition-colors">
+              Open System Map <ArrowRight className="w-3 h-3" />
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            {pipelineHealth.map((p) => {
+              const dotColor = p.health === 'error' ? 'bg-red-500' : p.health === 'warning' ? 'bg-amber-500' : 'bg-emerald-500';
+              const pipeColors: Record<string, string> = {
+                blue: 'text-blue-400', purple: 'text-purple-400', emerald: 'text-emerald-400',
+                cyan: 'text-cyan-400', orange: 'text-orange-400', green: 'text-green-400',
+                amber: 'text-amber-400', zinc: 'text-zinc-400',
+              };
+              return (
+                <div key={p.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-800/40 border border-zinc-700/20">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+                  <span className={`text-[10px] font-medium truncate ${pipeColors[p.color] || 'text-zinc-400'}`}>{p.name.replace(' Pipeline', '').replace(' & Backups', '')}</span>
+                  {p.errors > 0 && <span className="text-[9px] text-red-400 shrink-0">{p.errors}e</span>}
+                </div>
+              );
+            })}
+          </div>
+        </button>
+      </AnimateIn>
+
+      <AnimateIn delay={200}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity Feed */}
         <PanelCard title="Recent Activity" icon={<Activity className="w-3.5 h-3.5" />} badge={activityItems.length} accent="blue">

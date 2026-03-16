@@ -1,6 +1,6 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { isAuthenticated } from '../../lib/dashboardAuth';
-import { DashboardProvider } from '../../contexts/DashboardContext';
+import { DashboardProvider, useDashboard } from '../../contexts/DashboardContext';
 import DashboardAuth from './DashboardAuth';
 import DashboardLayout from './DashboardLayout';
 import OverviewPanel from './OverviewPanel';
@@ -12,6 +12,7 @@ import ClientsPanel from './ClientsPanel';
 import ContentPanel from './ContentPanel';
 import TasksPanel from './TasksPanel';
 import UpworkPanel from './UpworkPanel';
+import SystemMapPanel from './SystemMapPanel';
 import SettingsPanel from './SettingsPanel';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import type { Tab } from '../../types/dashboard';
@@ -23,6 +24,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   performance: LazyPerformancePanel as unknown as React.ComponentType,
   content: ContentPanel,
   workflows: WorkflowsPanel,
+  'system-map': SystemMapPanel,
   competitors: CompetitorIntelPanel,
   leads: LeadsPanel,
   agent: AgentPanel,
@@ -68,6 +70,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <DashboardProvider>
+      <TabNavBridge onTabChange={handleTabChange} />
       <DashboardLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -86,6 +89,13 @@ const Dashboard: React.FC = () => {
       </DashboardLayout>
     </DashboardProvider>
   );
+};
+
+/* Registers the tab change handler with DashboardContext */
+const TabNavBridge: React.FC<{ onTabChange: (tab: import('../../types/dashboard').Tab) => void }> = ({ onTabChange }) => {
+  const { setTabNavigator } = useDashboard();
+  useEffect(() => { setTabNavigator(onTabChange); }, [onTabChange, setTabNavigator]);
+  return null;
 };
 
 export default Dashboard;

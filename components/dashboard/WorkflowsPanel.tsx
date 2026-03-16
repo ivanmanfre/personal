@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, Map, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -7,13 +7,12 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
-import { SystemMap } from './system-map';
 import { timeAgo } from './shared/utils';
 import type { WorkflowStat, ExecutionLog } from '../../types/dashboard';
 import type { StatusFilter, ExecSortKey } from '../../hooks/useExecutionLogs';
 
 type Group = 'all' | 'issues' | 'schedule' | 'event' | 'webhook' | 'sub-workflow' | 'manual';
-type View = 'list' | 'map' | 'logs';
+type View = 'list' | 'logs';
 type SortKey = 'health' | 'name' | 'lastRun' | 'errors';
 
 function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
@@ -108,13 +107,6 @@ const WorkflowsPanel: React.FC = () => {
               <List className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setView('map')}
-              className={`p-1.5 rounded-md transition-colors ${view === 'map' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="System map"
-            >
-              <Map className="w-4 h-4" />
-            </button>
-            <button
               onClick={() => setView('logs')}
               className={`p-1.5 rounded-md transition-colors ${view === 'logs' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Execution logs"
@@ -153,7 +145,7 @@ const WorkflowsPanel: React.FC = () => {
 
       {view === 'logs' ? (
         <ExecutionLogsView workflows={workflows} />
-      ) : view === 'list' ? (
+      ) : (
         <>
           {/* Filters + Sort */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -280,8 +272,6 @@ const WorkflowsPanel: React.FC = () => {
             </div>
           </div>
         </>
-      ) : (
-        <SystemMap workflows={workflows} />
       )}
     </div>
   );
