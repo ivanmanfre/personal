@@ -215,20 +215,6 @@ export const UpworkKanban: React.FC<Props> = ({
                             <span className="text-[10px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
                           </div>
 
-                          {/* Proposal status badge */}
-                          {prop && (
-                            <div className="mt-2 flex items-center gap-1.5">
-                              <span className="text-[10px] text-zinc-500">Proposal:</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
-                                prop.status === 'submitted' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                prop.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                                prop.status === 'pending_approval' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                                'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
-                              }`}>
-                                {prop.status === 'pending_approval' ? 'review' : prop.status}
-                              </span>
-                            </div>
-                          )}
                         </button>
 
                         {/* Expanded content */}
