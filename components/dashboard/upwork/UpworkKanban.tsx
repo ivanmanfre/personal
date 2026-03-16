@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Edit3, Save } from 'lucide-react';
+import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
 
@@ -12,12 +12,11 @@ interface Column {
 }
 
 const columns: Column[] = [
-  { id: 'new', label: 'New', color: 'border-zinc-600/40 bg-zinc-600/5', dotColor: 'bg-zinc-400' },
+  { id: 'invites', label: 'Invites', color: 'border-purple-500/30 bg-purple-500/5', dotColor: 'bg-purple-400' },
   { id: 'assessed', label: 'Assessed', color: 'border-blue-500/30 bg-blue-500/5', dotColor: 'bg-blue-400' },
-  { id: 'proposal', label: 'Proposal', color: 'border-purple-500/30 bg-purple-500/5', dotColor: 'bg-purple-400' },
+  { id: 'proposal', label: 'Proposal', color: 'border-violet-500/30 bg-violet-500/5', dotColor: 'bg-violet-400' },
   { id: 'review', label: 'Review', color: 'border-amber-500/30 bg-amber-500/5', dotColor: 'bg-amber-400' },
   { id: 'submitted', label: 'Submitted', color: 'border-green-500/30 bg-green-500/5', dotColor: 'bg-green-400' },
-  { id: 'outcome', label: 'Won', color: 'border-emerald-500/30 bg-emerald-500/5', dotColor: 'bg-emerald-400' },
 ];
 
 function icpColor(score: number | null): string {
@@ -41,16 +40,19 @@ function formatClientSpend(amount: number): string {
   return `$${Math.round(amount)}`;
 }
 
-function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string {
-  if (job.status === 'won') return 'outcome';
-  if (job.status === 'skipped' || job.status === 'rejected') return 'outcome';
+function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string | null {
+  // Filter out terminal states
+  if (job.status === 'won' || job.status === 'skipped' || job.status === 'rejected') return null;
+  // Invites get their own column
+  if (job.source === 'invite' && !proposal) return 'invites';
+  if (job.source === 'invite' && proposal && proposal.status !== 'submitted') return 'invites';
   if (proposal?.status === 'submitted' || job.status === 'submitted' || job.status === 'submitting') return 'submitted';
   if (proposal?.status === 'approved') return 'review';
   if (proposal?.status === 'pending_approval' || proposal?.status === 'draft') return 'review';
   if (proposal && !['submitted', 'approved', 'pending_approval', 'draft'].includes(proposal.status)) return 'proposal';
   if (job.status === 'drafted') return 'proposal';
   if (job.status === 'assessed' || (job.status === 'new' && job.icpScore != null)) return 'assessed';
-  return 'new';
+  return 'assessed';
 }
 
 interface Props {
@@ -86,14 +88,22 @@ export const UpworkKanban: React.FC<Props> = ({
     const groups: Record<string, { job: UpworkJob; proposal?: UpworkProposal }[]> = {};
     columns.forEach((c) => { groups[c.id] = []; });
 
-    const visibleJobs = jobs.filter((j) => j.status !== 'skipped');
-    for (const job of visibleJobs) {
+    for (const job of jobs) {
       const prop = proposalMap.get(job.id);
       const col = getColumn(job, prop);
-      if (groups[col]) groups[col].push({ job, proposal: prop });
+      if (col && groups[col]) groups[col].push({ job, proposal: prop });
     }
     return groups;
   }, [jobs, proposalMap]);
+
+  // Which column has the expanded card?
+  const expandedColId = useMemo(() => {
+    if (!expandedCard) return null;
+    for (const col of columns) {
+      if ((grouped[col.id] || []).some(({ job }) => job.id === expandedCard)) return col.id;
+    }
+    return null;
+  }, [expandedCard, grouped]);
 
   const handleSubmit = async (propId: string) => {
     setActionLoading(propId);
@@ -102,11 +112,15 @@ export const UpworkKanban: React.FC<Props> = ({
 
   return (
     <LayoutGroup>
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 min-h-[500px]">
+      <div className="flex gap-3 min-h-[500px]">
         {columns.map((col) => {
           const items = grouped[col.id] || [];
+          const hasExpanded = expandedColId === col.id;
           return (
-            <div key={col.id} className={`rounded-xl border ${col.color} p-2 flex flex-col`}>
+            <div
+              key={col.id}
+              className={`rounded-xl border ${col.color} p-2 flex flex-col min-w-0 transition-all duration-300 ease-out ${hasExpanded ? 'flex-[2.5]' : 'flex-1'}`}
+            >
               {/* Column header */}
               <div className="flex items-center justify-between px-1 pb-2">
                 <div className="flex items-center gap-1.5">
@@ -149,7 +163,9 @@ export const UpworkKanban: React.FC<Props> = ({
                           {/* Tags row */}
                           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             {isInvite && (
-                              <span className="px-1 py-0.5 rounded text-[9px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">Invite</span>
+                              <span className="px-1 py-0.5 rounded text-[9px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5">
+                                <Mail className="w-2.5 h-2.5" /> Invite
+                              </span>
                             )}
                             {job.icpScore != null && (
                               <span className={`px-1 py-0.5 rounded text-[9px] font-bold border ${icpColor(job.icpScore)}`}>
@@ -203,7 +219,7 @@ export const UpworkKanban: React.FC<Props> = ({
                               <div className="px-2.5 pb-2.5 space-y-2 border-t border-zinc-800/40 pt-2">
                                 {/* Description */}
                                 {job.description && (
-                                  <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-4">{job.description}</p>
+                                  <p className="text-[10px] text-zinc-400 leading-relaxed max-h-32 overflow-y-auto dashboard-scroll whitespace-pre-wrap">{job.description}</p>
                                 )}
 
                                 {/* ICP reasoning */}
@@ -213,11 +229,37 @@ export const UpworkKanban: React.FC<Props> = ({
                                   </div>
                                 )}
 
+                                {/* Client details */}
+                                {job.clientHistory && Object.keys(job.clientHistory).length > 0 && (
+                                  <div className="flex items-center gap-3 text-[10px] text-zinc-500 flex-wrap">
+                                    {job.clientHistory.total_spent != null && job.clientHistory.total_spent > 0 && (
+                                      <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" />{formatClientSpend(job.clientHistory.total_spent)} spent</span>
+                                    )}
+                                    {job.clientHistory.total_hires != null && (
+                                      <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />{job.clientHistory.total_hires} hires</span>
+                                    )}
+                                    {job.clientHistory.rating != null && job.clientHistory.rating > 0 && (
+                                      <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5" />{job.clientHistory.rating.toFixed(1)}</span>
+                                    )}
+                                    {job.clientHistory.country && <span>{job.clientHistory.country}</span>}
+                                  </div>
+                                )}
+
                                 {/* Skills */}
                                 {job.skills.length > 0 && (
                                   <div className="flex flex-wrap gap-1">
-                                    {job.skills.slice(0, 5).map((s) => (
+                                    {job.skills.map((s) => (
                                       <span key={s} className="text-[9px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s}</span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Screening questions */}
+                                {job.screeningQuestions && job.screeningQuestions.length > 0 && (
+                                  <div className="p-2 bg-amber-950/20 border border-amber-500/15 rounded">
+                                    <span className="text-amber-400/70 font-medium text-[10px] block mb-1">Screening:</span>
+                                    {job.screeningQuestions.map((q, i) => (
+                                      <p key={i} className="text-[10px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
                                     ))}
                                   </div>
                                 )}
@@ -225,18 +267,33 @@ export const UpworkKanban: React.FC<Props> = ({
                                 {/* Proposal preview */}
                                 {prop && (
                                   <div className="p-2 bg-emerald-950/10 border border-emerald-500/15 rounded space-y-1.5">
-                                    <p className="text-[10px] text-zinc-300 leading-relaxed line-clamp-6 whitespace-pre-wrap">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[9px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
+                                      <span className="text-[9px] text-zinc-600">v{prop.version}</span>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-300 leading-relaxed max-h-40 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
                                       {prop.coverLetter || prop.proposalText}
                                     </p>
                                     <div className="flex items-center gap-2 text-[9px] text-zinc-500">
                                       {prop.rateAmount != null && <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>}
+                                      {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
                                       {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
                                         <span className="flex items-center gap-0.5 text-amber-400/60">
                                           <MessageSquare className="w-2.5 h-2.5" />{prop.screeningAnswers.length} answers
                                         </span>
                                       )}
-                                      <span>v{prop.version}</span>
                                     </div>
+                                    {/* Screening answers */}
+                                    {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
+                                      <div className="space-y-1 pt-1 border-t border-emerald-500/10">
+                                        {prop.screeningAnswers.map((qa, i) => (
+                                          <div key={i}>
+                                            <p className="text-[9px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
+                                            <p className="text-[10px] text-zinc-300/80 mt-0.5">{qa.answer}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
 
