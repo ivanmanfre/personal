@@ -13,12 +13,6 @@ const CompetitorIntelPanel: React.FC = () => {
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>('all');
   const [tab, setTab] = useState<'posts' | 'opportunities' | 'patterns'>('opportunities');
 
-  if (loading) return <LoadingSkeleton cards={4} rows={6} />;
-
-  if (competitorStats.length === 0) {
-    return <EmptyState title="No competitor data" description="Competitor scraping workflow will populate this panel." icon={<Swords className="w-10 h-10" />} />;
-  }
-
   // Top hook patterns across all competitors
   const topHooks = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -32,6 +26,12 @@ const CompetitorIntelPanel: React.FC = () => {
     posts.forEach((p) => { if (p.topicCategory) counts[p.topicCategory] = (counts[p.topicCategory] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [posts]);
+
+  if (loading) return <LoadingSkeleton cards={4} rows={6} />;
+
+  if (competitorStats.length === 0) {
+    return <EmptyState title="No competitor data" description="Competitor scraping workflow will populate this panel." icon={<Swords className="w-10 h-10" />} />;
+  }
 
   const displayPosts = tab === 'opportunities'
     ? opportunities
