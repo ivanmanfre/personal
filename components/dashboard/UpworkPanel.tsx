@@ -371,14 +371,14 @@ const UpworkPanel: React.FC = () => {
                               )}
                             </div>
                             {propEditable && !isEditingThis && (
-                              <button onClick={() => startEdit(prop.id, 'proposal_text', prop.proposalText)} className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors">
+                              <button onClick={() => startEdit(prop.id, 'cover_letter', prop.coverLetter || prop.proposalText)} className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors">
                                 <Edit3 className="w-3 h-3" /> Edit
                               </button>
                             )}
                           </div>
 
                           {/* Cover letter */}
-                          {isEditingThis && editingField!.field === 'proposal_text' ? (
+                          {isEditingThis && editingField!.field === 'cover_letter' ? (
                             <div className="space-y-2">
                               <textarea
                                 value={editValue}
@@ -395,7 +395,7 @@ const UpworkPanel: React.FC = () => {
                             </div>
                           ) : (
                             <div className="p-3 bg-zinc-800/40 border border-zinc-700/40 rounded-lg text-xs text-zinc-300 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap">
-                              {prop.proposalText}
+                              {prop.coverLetter || prop.proposalText}
                             </div>
                           )}
 
