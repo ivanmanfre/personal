@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckSquare, Repeat, CheckCircle2, Bot, Bell, Zap, ChevronRight, ChevronDown, Plus, Pencil, X, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTasksPipeline } from '../../hooks/useTasksPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -9,13 +10,15 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import type { PipelineTask } from '../../types/dashboard';
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  open: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  cancelled: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
-  'in progress': 'bg-violet-500/20 text-violet-400 border-violet-500/30',
+const statusConfig: Record<string, { color: string; bg: string; border: string; dot: string }> = {
+  pending: { color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', dot: 'bg-orange-400' },
+  open: { color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', dot: 'bg-orange-400' },
+  completed: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-400' },
+  cancelled: { color: 'text-zinc-500', bg: 'bg-zinc-500/10', border: 'border-zinc-600/20', dot: 'bg-zinc-500' },
+  'in progress': { color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', dot: 'bg-violet-400' },
 };
+
+const defaultStatus = { color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-600/20', dot: 'bg-zinc-400' };
 
 type SourceTab = 'agent' | 'reminder' | 'all';
 
@@ -24,6 +27,12 @@ interface EditingState {
   field: string;
   value: string;
 }
+
+const cardVariants = {
+  initial: { opacity: 0, y: 12, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, scale: 0.96, transition: { duration: 0.15 } },
+};
 
 const TasksPanel: React.FC = () => {
   const [sourceTab, setSourceTab] = useState<SourceTab>('agent');
@@ -105,7 +114,6 @@ const TasksPanel: React.FC = () => {
   const agentCount = tasksBySource['agent'] || 0;
   const reminderCount = tasksBySource['reminder'] || 0;
 
-  // Filter parentTasks for display
   const filtered = sourceTab === 'all'
     ? parentTasks.filter((t) => t.source === 'agent' || t.source === 'reminder')
     : parentTasks.filter((t) => t.source === sourceTab);
@@ -135,119 +143,181 @@ const TasksPanel: React.FC = () => {
     );
   }
 
-  const renderTask = (task: PipelineTask, isSubtask = false) => {
+  const renderCard = (task: PipelineTask, isSubtask = false) => {
     const isAgent = task.source === 'agent';
     const isCompleted = task.status === 'completed';
     const hasSubtasks = !isSubtask && (task.subtasks?.length || 0) > 0;
     const isExpanded = expandedTasks.has(task.id);
+    const sc = statusConfig[task.status] || defaultStatus;
 
     return (
-      <React.Fragment key={task.id}>
-        <tr className={`hover:bg-zinc-800/50 transition-colors ${isCompleted ? 'opacity-50' : ''} ${isSubtask ? 'bg-zinc-900/40' : ''}`}>
-          <td className="px-4 py-3">
-            <div className="flex items-center gap-2">
-              {isSubtask && <div className="w-4 border-l-2 border-b-2 border-zinc-700 h-4 ml-2 rounded-bl" />}
-              {hasSubtasks && (
-                <button onClick={() => toggleExpanded(task.id)} className="p-0.5 text-zinc-500 hover:text-zinc-300 transition-colors">
-                  {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                </button>
-              )}
-              {!hasSubtasks && !isSubtask && <div className="w-4" />}
-              {isAgent ? (
-                <Bot className="w-3.5 h-3.5 text-cyan-400/60 shrink-0" />
-              ) : (
-                <Bell className="w-3.5 h-3.5 text-orange-400/60 shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                {editing?.id === task.id && editing.field === 'title' ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      autoFocus
-                      value={editing.value}
-                      onChange={(e) => setEditing({ ...editing, value: e.target.value })}
-                      onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
-                      className="bg-zinc-800 border border-zinc-600 rounded px-2 py-0.5 text-sm text-zinc-200 w-full"
-                    />
-                    <button onClick={saveEdit} className="text-emerald-400 hover:text-emerald-300 text-xs">Save</button>
-                    <button onClick={() => setEditing(null)} className="text-zinc-500 hover:text-zinc-300"><X className="w-3 h-3" /></button>
-                  </div>
-                ) : (
-                  <p
-                    onClick={() => isAgent && handleEdit(task.id, 'title', task.title)}
-                    title={task.title}
-                    className={`font-medium truncate max-w-md ${isCompleted ? 'text-zinc-500 line-through' : 'text-zinc-200'} ${isAgent ? 'cursor-pointer hover:text-cyan-300' : ''}`}
+      <motion.div
+        key={task.id}
+        layout
+        variants={cardVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        className={`group ${isSubtask ? 'ml-6' : ''}`}
+      >
+        <div className={`bg-zinc-900/80 border rounded-xl overflow-hidden transition-colors ${isCompleted ? 'border-zinc-800/30 opacity-60' : 'border-zinc-800/50 hover:border-zinc-700/60'}`}>
+          {/* Card body */}
+          <div className="p-3">
+            <div className="flex items-start gap-3">
+              {/* Status dot + complete button */}
+              <div className="flex flex-col items-center gap-1 pt-0.5">
+                {!isCompleted ? (
+                  <button
+                    onClick={() => handleComplete(task.id)}
+                    className={`w-5 h-5 rounded-full border-2 ${sc.border} ${sc.bg} hover:${sc.dot} transition-all flex items-center justify-center group/check`}
+                    title="Complete"
                   >
-                    {task.title}
-                    {task.isRecurring && <Repeat className="w-3 h-3 inline ml-1.5 text-zinc-500" />}
-                  </p>
+                    <CheckCircle2 className={`w-3 h-3 ${sc.color} opacity-0 group-hover/check:opacity-100 transition-opacity`} />
+                  </button>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 border-2 border-emerald-500/30 flex items-center justify-center">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  </div>
                 )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  {/* Source icon */}
+                  {isAgent ? (
+                    <Bot className="w-3.5 h-3.5 text-cyan-400/60 shrink-0" />
+                  ) : (
+                    <Bell className="w-3.5 h-3.5 text-orange-400/60 shrink-0" />
+                  )}
+
+                  {/* Title */}
+                  {editing?.id === task.id && editing.field === 'title' ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        autoFocus
+                        value={editing.value}
+                        onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditing(null); }}
+                        className="bg-zinc-800 border border-zinc-600 rounded-lg px-2.5 py-1 text-sm text-zinc-200 w-full focus:outline-none focus:border-cyan-500/50"
+                      />
+                      <button onClick={saveEdit} className="text-emerald-400 hover:text-emerald-300 text-xs font-medium">Save</button>
+                      <button onClick={() => setEditing(null)} className="text-zinc-500 hover:text-zinc-300"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ) : (
+                    <p
+                      onClick={() => isAgent && handleEdit(task.id, 'title', task.title)}
+                      className={`text-sm font-medium truncate ${isCompleted ? 'text-zinc-500 line-through' : 'text-zinc-200'} ${isAgent ? 'cursor-pointer hover:text-cyan-300 transition-colors' : ''}`}
+                    >
+                      {task.title}
+                    </p>
+                  )}
+
+                  {task.isRecurring && <Repeat className="w-3 h-3 text-zinc-600 shrink-0" />}
+                </div>
+
+                {/* Description */}
                 {task.description && editing?.id !== task.id && (
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleDesc(task.id); }}
-                    className="text-left mt-0.5 group/desc"
+                    className="text-left mt-1 group/desc block"
                   >
-                    <p className={`text-xs text-zinc-500 max-w-md ${expandedDescs.has(task.id) ? 'whitespace-pre-wrap' : 'truncate'}`}>
+                    <p className={`text-xs text-zinc-500 leading-relaxed ${expandedDescs.has(task.id) ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
                       {task.description}
                     </p>
-                    {task.description.length > 60 && (
+                    {task.description.length > 80 && (
                       <span className="text-[10px] text-zinc-600 group-hover/desc:text-zinc-400 transition-colors">
                         {expandedDescs.has(task.id) ? 'Show less' : 'Show more'}
                       </span>
                     )}
                   </button>
                 )}
-                {hasSubtasks && (
-                  <span className="text-xs text-zinc-600 ml-0.5">
-                    {task.subtasks!.filter((s) => s.status === 'completed').length}/{task.subtasks!.length} subtasks done
+
+                {/* Meta row */}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${sc.bg} ${sc.color} ${sc.border}`}>
+                    {task.status}
                   </span>
+
+                  {isAgent ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-cyan-400/50">
+                      <Zap className="w-2.5 h-2.5" />n8nClaw
+                    </span>
+                  ) : task.metadata?.recurrence ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-zinc-500">
+                      <Repeat className="w-2.5 h-2.5" />{task.metadata.recurrence}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-orange-400/40">Reminder</span>
+                  )}
+
+                  <span className="text-[10px] text-zinc-600">{timeAgo(task.updatedAt)}</span>
+
+                  {hasSubtasks && (
+                    <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">
+                      {task.subtasks!.filter((s) => s.status === 'completed').length}/{task.subtasks!.length} subtasks
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                {isAgent && !isCompleted && (
+                  <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-1.5 rounded-lg text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
                 )}
-                <span className="md:hidden text-[10px] text-zinc-600 mt-0.5 block">{timeAgo(task.updatedAt)}</span>
+                {isAgent && (
+                  <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {hasSubtasks && (
+                  <button onClick={() => toggleExpanded(task.id)} className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 transition-colors" title="Toggle subtasks">
+                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  </button>
+                )}
               </div>
             </div>
-          </td>
-          <td className="px-4 py-3">
-            <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusColors[task.status] || statusColors.open}`}>
-              {task.status}
-            </span>
-          </td>
-          <td className="px-4 py-3 hidden md:table-cell">
-            <span className="text-xs text-zinc-500">{timeAgo(task.updatedAt)}</span>
-          </td>
-          <td className="px-4 py-3 hidden md:table-cell">
-            {isAgent ? (
-              <span className="inline-flex items-center gap-1 text-xs text-cyan-400/60">
-                <Zap className="w-3 h-3" />n8nClaw
-              </span>
-            ) : task.metadata?.recurrence ? (
-              <span className="inline-flex items-center gap-1 text-xs text-zinc-500">
-                <Repeat className="w-3 h-3" />{task.metadata.recurrence}
-              </span>
-            ) : (
-              <span className="text-xs text-orange-400/50">Reminder</span>
+          </div>
+
+          {/* Subtasks (expanded) */}
+          <AnimatePresence>
+            {hasSubtasks && isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="overflow-hidden border-t border-zinc-800/30"
+              >
+                <div className="p-2 space-y-1.5">
+                  {task.subtasks!.map((sub) => {
+                    const subSc = statusConfig[sub.status] || defaultStatus;
+                    const subCompleted = sub.status === 'completed';
+                    return (
+                      <div key={sub.id} className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg ${subCompleted ? 'opacity-50' : 'hover:bg-zinc-800/30'} transition-colors`}>
+                        {!subCompleted ? (
+                          <button
+                            onClick={() => handleComplete(sub.id)}
+                            className={`w-4 h-4 rounded-full border ${subSc.border} ${subSc.bg} hover:bg-emerald-500/20 transition-all shrink-0`}
+                          />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400/50 shrink-0" />
+                        )}
+                        <p className={`text-xs flex-1 ${subCompleted ? 'text-zinc-600 line-through' : 'text-zinc-300'}`}>{sub.title}</p>
+                        <span className={`px-1 py-0.5 rounded text-[9px] font-medium ${subSc.bg} ${subSc.color} border ${subSc.border}`}>{sub.status}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
             )}
-          </td>
-          <td className="px-4 py-3">
-            <div className="flex items-center gap-0.5">
-              {!isCompleted && (
-                <button onClick={() => handleComplete(task.id)} className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
-                  <CheckCircle2 className="w-4 h-4" />
-                </button>
-              )}
-              {isAgent && !isCompleted && (
-                <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-1.5 rounded-lg text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-              )}
-              {isAgent && (
-                <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </td>
-        </tr>
-        {hasSubtasks && isExpanded && task.subtasks!.map((sub) => renderTask(sub, true))}
-      </React.Fragment>
+          </AnimatePresence>
+        </div>
+      </motion.div>
     );
   };
 
@@ -272,51 +342,48 @@ const TasksPanel: React.FC = () => {
       {creating && <CreateForm newTitle={newTitle} setNewTitle={setNewTitle} newDesc={newDesc} setNewDesc={setNewDesc} onCreate={handleCreate} onCancel={() => { setCreating(false); setNewTitle(''); setNewDesc(''); }} />}
 
       {/* Source tabs */}
-      <div className="flex items-center justify-between border-b border-zinc-800/40 bg-zinc-800/20">
-        <div className="flex">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
           {([
-            { key: 'agent' as SourceTab, label: 'Agent Tasks', count: agentCount },
-            { key: 'reminder' as SourceTab, label: 'Reminders', count: reminderCount },
-            { key: 'all' as SourceTab, label: 'All', count: agentCount + reminderCount },
+            { key: 'agent' as SourceTab, label: 'Agent', icon: <Bot className="w-3.5 h-3.5" />, count: agentCount },
+            { key: 'reminder' as SourceTab, label: 'Reminders', icon: <Bell className="w-3.5 h-3.5" />, count: reminderCount },
+            { key: 'all' as SourceTab, label: 'All', icon: null, count: agentCount + reminderCount },
           ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setSourceTab(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors ${sourceTab === tab.key ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${sourceTab === tab.key ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
+              {tab.icon}
               {tab.label} ({tab.count})
             </button>
           ))}
         </div>
         <button
           onClick={() => setShowCompleted(!showCompleted)}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${showCompleted ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showCompleted ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
         >
+          {showCompleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           {showCompleted ? 'Hide completed' : 'Show completed'}
         </button>
       </div>
 
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
-                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Task</th>
-                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Status</th>
-                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">Updated</th>
-                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">Source</th>
-                <th className="px-4 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] w-24"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/40">
-              {displayTasks.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-zinc-500 text-center">No {showCompleted ? '' : 'active '}tasks</td></tr>
-              ) : (
-                displayTasks.map((task) => renderTask(task))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Task cards */}
+      <div className="space-y-2">
+        <AnimatePresence mode="popLayout">
+          {displayTasks.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="py-12 text-center"
+            >
+              <p className="text-sm text-zinc-500">No {showCompleted ? '' : 'active '}tasks</p>
+            </motion.div>
+          ) : (
+            displayTasks.map((task) => renderCard(task))
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -328,7 +395,12 @@ function CreateForm({ newTitle, setNewTitle, newDesc, setNewDesc, onCreate, onCa
   onCreate: () => void; onCancel: () => void;
 }) {
   return (
-    <div className="bg-zinc-900/80 border border-cyan-500/30 rounded-xl p-4 space-y-3">
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      className="bg-zinc-900/80 border border-cyan-500/30 rounded-xl p-4 space-y-3"
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-zinc-300">New Task</h3>
         <button onClick={onCancel} className="text-zinc-500 hover:text-zinc-300"><X className="w-4 h-4" /></button>
@@ -339,20 +411,20 @@ function CreateForm({ newTitle, setNewTitle, newDesc, setNewDesc, onCreate, onCa
         value={newTitle}
         onChange={(e) => setNewTitle(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onCreate(); if (e.key === 'Escape') onCancel(); }}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-cyan-500/50 focus:outline-none"
+        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-cyan-500/50 focus:outline-none"
       />
       <input
         placeholder="Description (optional)"
         value={newDesc}
         onChange={(e) => setNewDesc(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onCreate(); if (e.key === 'Escape') onCancel(); }}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-cyan-500/50 focus:outline-none"
+        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-cyan-500/50 focus:outline-none"
       />
       <div className="flex justify-end gap-2">
         <button onClick={onCancel} className="px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors">Cancel</button>
-        <button onClick={onCreate} disabled={!newTitle.trim()} className="px-3 py-1.5 text-xs font-medium rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Create</button>
+        <button onClick={onCreate} disabled={!newTitle.trim()} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Create</button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
