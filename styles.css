@@ -201,3 +201,31 @@ body {
 .dashboard-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.15);
 }
+
+/* React Flow system map overrides */
+.react-flow.dark {
+  --xy-background-color: transparent;
+  --xy-node-border-radius: 12px;
+}
+
+.react-flow.dark .react-flow__controls {
+  background: rgba(39,39,42,0.8);
+  border: 1px solid rgba(63,63,70,0.4);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.react-flow.dark .react-flow__controls button {
+  background: transparent;
+  border-bottom: 1px solid rgba(63,63,70,0.3);
+  color: #a1a1aa;
+}
+
+.react-flow.dark .react-flow__controls button:hover {
+  background: rgba(63,63,70,0.5);
+  color: #fff;
+}
+
+.react-flow.dark .react-flow__controls button svg {
+  fill: currentColor;
+}

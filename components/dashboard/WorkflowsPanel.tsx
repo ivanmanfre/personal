@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, LayoutGrid, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, Map, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -7,6 +7,7 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import { SystemMap } from './system-map';
 import { timeAgo } from './shared/utils';
 import type { WorkflowStat, ExecutionLog } from '../../types/dashboard';
 import type { StatusFilter, ExecSortKey } from '../../hooks/useExecutionLogs';
@@ -25,93 +26,7 @@ function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 
 
 const healthPriority: Record<string, number> = { error: 0, warning: 1, healthy: 2, inactive: 3 };
 
-/* ── Pipeline definitions for dependency map ── */
-
-interface PipelineGroup {
-  name: string;
-  color: string;
-  borderColor: string;
-  workflows: string[];
-}
-
-const pipelineGroups: PipelineGroup[] = [
-  {
-    name: 'Content Pipeline',
-    color: 'bg-blue-500/10 border-blue-500/25',
-    borderColor: 'border-blue-500/40',
-    workflows: [
-      'Editorial Agent', 'Post Generation', 'Carousel Generation', 'Carousel Slide Re-gen',
-      'Post Ready', 'Own Post Performance', 'Content Manager Agent', 'Execute Content Plan',
-      'Weekly Topic Research',
-    ],
-  },
-  {
-    name: 'Competitor Intel',
-    color: 'bg-purple-500/10 border-purple-500/25',
-    borderColor: 'border-purple-500/40',
-    workflows: [
-      'Competitors Scraping', 'Extract Patterns', 'Competitor Alert Monitor',
-    ],
-  },
-  {
-    name: 'Lead Pipeline',
-    color: 'bg-emerald-500/10 border-emerald-500/25',
-    borderColor: 'border-emerald-500/40',
-    workflows: [
-      'Lead Pipeline', 'Leadshark', 'Email Outreach', 'Email Personalization',
-      'Lead Magnets',
-    ],
-  },
-  {
-    name: 'Agent System',
-    color: 'bg-cyan-500/10 border-cyan-500/25',
-    borderColor: 'border-cyan-500/40',
-    workflows: [
-      'n8nClaw', 'Reminder Scheduler', 'Daily Conversation Summarizer',
-      'Proactive Notifications', 'Daily Standup', 'Daily Night Brief',
-    ],
-  },
-  {
-    name: 'Client Operations',
-    color: 'bg-orange-500/10 border-orange-500/25',
-    borderColor: 'border-orange-500/40',
-    workflows: [
-      'Client Health Monitor', 'Error Handler', 'CLIENT BACKUPS', 'Connect Client Calendar',
-      'Call Transcription',
-    ],
-  },
-  {
-    name: 'Upwork',
-    color: 'bg-green-500/10 border-green-500/25',
-    borderColor: 'border-green-500/40',
-    workflows: [
-      'Upwork Job Assessor', 'Upwork Invite Handler', 'Upwork Cookies', 'Zenfl',
-    ],
-  },
-  {
-    name: 'Proposals',
-    color: 'bg-amber-500/10 border-amber-500/25',
-    borderColor: 'border-amber-500/40',
-    workflows: [
-      'Proposal Generator', 'Proposal Comment', 'Send Proposal', 'Portfolio Embeddings',
-    ],
-  },
-  {
-    name: 'System & Backups',
-    color: 'bg-zinc-500/10 border-zinc-500/25',
-    borderColor: 'border-zinc-500/40',
-    workflows: [
-      'Dashboard Data Sync', 'Supabase Schema Backup', 'ClickUp Prompts Backup',
-      'Slack Channel Notifier', 'Backup Health Check', 'GITHUB BACKUPS',
-      'Apple Health Sync',
-    ],
-  },
-];
-
-function matchWorkflow(wf: WorkflowStat, patterns: string[]): boolean {
-  const name = wf.workflowName.toLowerCase();
-  return patterns.some((p) => name.includes(p.toLowerCase()));
-}
+/* Pipeline definitions moved to system-map/config.ts */
 
 /* ── Component ── */
 
@@ -195,9 +110,9 @@ const WorkflowsPanel: React.FC = () => {
             <button
               onClick={() => setView('map')}
               className={`p-1.5 rounded-md transition-colors ${view === 'map' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="Pipeline map"
+              title="System map"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <Map className="w-4 h-4" />
             </button>
             <button
               onClick={() => setView('logs')}
@@ -366,7 +281,7 @@ const WorkflowsPanel: React.FC = () => {
           </div>
         </>
       ) : (
-        <DependencyMap workflows={workflows} />
+        <SystemMap workflows={workflows} />
       )}
     </div>
   );
@@ -629,103 +544,6 @@ const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows 
             >
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* ── Pipeline Map View ── */
-
-const DependencyMap: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows }) => {
-  const grouped = pipelineGroups.map((pg) => {
-    const matched = workflows.filter((wf) => matchWorkflow(wf, pg.workflows));
-    return { ...pg, matched };
-  });
-
-  const assigned = new Set(grouped.flatMap((g) => g.matched.map((w) => w.workflowId)));
-  const ungrouped = workflows.filter((wf) => !assigned.has(wf.workflowId));
-
-  return (
-    <div className="space-y-4">
-      <p className="text-xs text-zinc-500">Workflows grouped by pipeline. Health dot shows 24h status. Click to open in n8n.</p>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {grouped.map((pg) => {
-          if (pg.matched.length === 0) return null;
-          const errors = pg.matched.reduce((sum, w) => sum + w.errorCount24h, 0);
-          const hasErrors = errors > 0;
-          const allHealthy = pg.matched.every((wf) => getWorkflowHealth(wf) === 'healthy');
-          return (
-            <div key={pg.name} className={`rounded-xl border p-4 space-y-3 ${pg.color}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusDot status={hasErrors ? 'error' : allHealthy ? 'healthy' : 'warning'} />
-                  <h3 className="text-sm font-semibold text-zinc-200">{pg.name}</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-zinc-400">{pg.matched.length} workflows</span>
-                  {hasErrors && (
-                    <span className="text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
-                      {errors} errors
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {pg.matched.map((wf) => {
-                  const health = getWorkflowHealth(wf);
-                  return (
-                    <a
-                      key={wf.workflowId}
-                      href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-zinc-900/60 border border-zinc-700/40 hover:bg-zinc-800/80 transition-colors group"
-                      title={`${wf.workflowName} — ${wf.triggerType} — ${wf.successCount24h} ok / ${wf.errorCount24h} err (24h)`}
-                    >
-                      <StatusDot status={health} pulse={health === 'error'} />
-                      <span className="text-zinc-300 group-hover:text-white truncate flex-1">
-                        {wf.workflowName.replace(/^\[.*?\]\s*/, '')}
-                      </span>
-                      <span className="text-[9px] text-zinc-600 shrink-0">{wf.triggerType}</span>
-                      {wf.errorCount24h > 0 && (
-                        <span className="text-[9px] text-red-400 shrink-0">{wf.errorCount24h}err</span>
-                      )}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-
-        {ungrouped.length > 0 && (
-          <div className="rounded-xl border bg-zinc-800/10 border-zinc-700/30 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-400">Other</h3>
-              <span className="text-[10px] text-zinc-500">{ungrouped.length} workflows</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              {ungrouped.map((wf) => {
-                const health = getWorkflowHealth(wf);
-                return (
-                  <a
-                    key={wf.workflowId}
-                    href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-zinc-900/60 border border-zinc-700/40 hover:bg-zinc-800/80 transition-colors group"
-                    title={`${wf.workflowName} — ${wf.triggerType}`}
-                  >
-                    <StatusDot status={health} />
-                    <span className="text-zinc-300 group-hover:text-white truncate flex-1">
-                      {wf.workflowName.replace(/^\[.*?\]\s*/, '')}
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
           </div>
         )}
       </div>

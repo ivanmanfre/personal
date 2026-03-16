@@ -23,6 +23,7 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-recharts': ['recharts'],
           'vendor-motion': ['framer-motion'],
+          'vendor-xyflow': ['@xyflow/react', '@dagrejs/dagre'],
         },
       },
     },
