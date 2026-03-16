@@ -56,6 +56,10 @@ const Dashboard: React.FC = () => {
       next.add(tab);
       return next;
     });
+    // Sync tab to URL so refresh preserves position
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
   };
 
   if (!authed) {

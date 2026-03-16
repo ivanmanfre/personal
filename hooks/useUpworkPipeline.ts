@@ -1,7 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
 import type { UpworkJob, UpworkProposal, UpworkPipelineStats } from '../types/dashboard';
+
+// Tracks optimistic status overrides so auto-refresh doesn't stomp them
+interface OptimisticLock {
+  status: string;
+  expiry: number; // timestamp when the lock expires
+}
+
+const LOCK_TTL = 2 * 60 * 1000; // 2 minutes
 
 function mapJob(r: any): UpworkJob {
   return {
@@ -82,9 +90,24 @@ export function useUpworkPipeline() {
   const [proposals, setProposals] = useState<UpworkProposal[]>([]);
   const [stats, setStats] = useState<UpworkPipelineStats>(emptyStats);
   const [loading, setLoading] = useState(true);
+  const [generatingJobs, setGeneratingJobs] = useState<Set<string>>(new Set());
+
+  // Optimistic locks — prevent auto-refresh from overwriting in-flight states
+  const jobLocks = useRef<Map<string, OptimisticLock>>(new Map());
+  const proposalLocks = useRef<Map<string, OptimisticLock>>(new Map());
+
+  const lockJob = (id: string, status: string) => {
+    jobLocks.current.set(id, { status, expiry: Date.now() + LOCK_TTL });
+  };
+  const lockProposal = (id: string, status: string) => {
+    proposalLocks.current.set(id, { status, expiry: Date.now() + LOCK_TTL });
+  };
+  const clearJobLock = (id: string) => { jobLocks.current.delete(id); };
+  const clearProposalLock = (id: string) => { proposalLocks.current.delete(id); };
+  const hasLoaded = useRef(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     try {
       const [jobsRes, proposalsRes, statsRes] = await Promise.all([
         supabase
@@ -100,10 +123,41 @@ export function useUpworkPipeline() {
         supabase.rpc('upwork_pipeline_stats'),
       ]);
 
-      setJobs((jobsRes.data || []).map(mapJob));
-      setProposals((proposalsRes.data || []).map(mapProposal));
+      const now = Date.now();
+      const serverJobs = (jobsRes.data || []).map(mapJob);
+      const serverProposals = (proposalsRes.data || []).map(mapProposal);
+
+      // Apply optimistic locks: keep local status if server hasn't caught up
+      setJobs(serverJobs.map((j) => {
+        const lock = jobLocks.current.get(j.id);
+        if (lock && now < lock.expiry) {
+          // Server caught up (status changed) — release lock
+          if (j.status !== 'assessed' && j.status !== 'new') {
+            jobLocks.current.delete(j.id);
+            return j;
+          }
+          return { ...j, status: lock.status };
+        }
+        jobLocks.current.delete(j.id);
+        return j;
+      }));
+
+      setProposals(serverProposals.map((p) => {
+        const lock = proposalLocks.current.get(p.id);
+        if (lock && now < lock.expiry) {
+          if (p.status !== lock.status && p.status !== 'pending_approval' && p.status !== 'draft') {
+            proposalLocks.current.delete(p.id);
+            return p;
+          }
+          return { ...p, status: lock.status };
+        }
+        proposalLocks.current.delete(p.id);
+        return p;
+      }));
+
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
+      hasLoaded.current = true;
     } catch (err) {
       console.error('Failed to fetch upwork data:', err);
     } finally {
@@ -115,47 +169,60 @@ export function useUpworkPipeline() {
 
   const skipJob = async (id: string, reason?: string) => {
     const prev = jobs.find((j) => j.id === id);
+    lockJob(id, 'skipped');
     setJobs((p) => p.map((j) => (j.id === id ? { ...j, status: 'skipped', skipReason: reason || null } : j)));
     try {
       await dashboardAction('upwork_jobs', id, 'status', 'skipped');
       if (reason) await dashboardAction('upwork_jobs', id, 'skip_reason', reason);
+      clearJobLock(id);
     } catch {
+      clearJobLock(id);
       if (prev) setJobs((p) => p.map((j) => (j.id === id ? { ...j, status: prev.status, skipReason: prev.skipReason } : j)));
     }
   };
 
   const approveProposal = async (id: string) => {
     const prev = proposals.find((p) => p.id === id);
+    lockProposal(id, 'approved');
     setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: 'approved' } : x)));
     try {
       await dashboardAction('upwork_proposals', id, 'status', 'approved');
+      clearProposalLock(id);
     } catch {
+      clearProposalLock(id);
       if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
     }
   };
 
   const rejectProposal = async (id: string) => {
     const prev = proposals.find((p) => p.id === id);
+    lockProposal(id, 'rejected');
     setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: 'rejected' } : x)));
     try {
       await dashboardAction('upwork_proposals', id, 'status', 'rejected');
+      clearProposalLock(id);
     } catch {
+      clearProposalLock(id);
       if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
     }
   };
 
   const editProposal = async (id: string, field: 'proposal_text' | 'cover_letter', value: string) => {
     const prev = proposals.find((p) => p.id === id);
-    setProposals((p) => p.map((x) => (x.id === id ? { ...x, proposalText: value, coverLetter: value } : x)));
+    const optimistic = field === 'proposal_text' ? { proposalText: value } : { coverLetter: value };
+    setProposals((p) => p.map((x) => (x.id === id ? { ...x, ...optimistic } : x)));
     try {
-      await dashboardAction('upwork_proposals', id, 'proposal_text', value);
-      await dashboardAction('upwork_proposals', id, 'cover_letter', value);
+      await dashboardAction('upwork_proposals', id, field, value);
     } catch {
-      if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, proposalText: prev.proposalText, coverLetter: prev.coverLetter } : x)));
+      if (prev) {
+        const rollback = field === 'proposal_text' ? { proposalText: prev.proposalText } : { coverLetter: prev.coverLetter };
+        setProposals((p) => p.map((x) => (x.id === id ? { ...x, ...rollback } : x)));
+      }
     }
   };
 
   const submitProposal = async (id: string) => {
+    lockProposal(id, 'submitting');
     setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitting' } : p)));
     try {
       const res = await window.fetch('https://n8n.intelligents.agency/webhook/upwork-submit-proposal', {
@@ -163,34 +230,44 @@ export function useUpworkPipeline() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ proposal_id: id }),
       });
-      const data = await res.json();
-      if (data.success) {
+      const raw = await res.json();
+      const data = Array.isArray(raw) ? raw[0] : raw;
+      if (data?.success) {
+        clearProposalLock(id);
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitted', submittedAt: new Date().toISOString() } : p)));
       } else {
+        clearProposalLock(id);
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
       }
     } catch {
+      clearProposalLock(id);
       setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
     }
   };
 
-  const generateProposal = async (jobId: string) => {
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'drafted' } : j)));
-    try {
-      const res = await window.fetch('https://n8n.intelligents.agency/webhook/upwork-draft-proposal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: jobId }),
-      });
-      const data = await res.json();
-      if (!data.success && !data.proposal_id) {
-        setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'assessed' } : j)));
-      } else {
-        await fetch();
-      }
-    } catch {
-      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: 'assessed' } : j)));
-    }
+  const cancelGeneration = useCallback((jobId: string) => {
+    setGeneratingJobs((prev) => { const next = new Set(prev); next.delete(jobId); return next; });
+  }, []);
+
+  const generateProposal = (jobId: string, comment?: string) => {
+    // Fire-and-forget: send webhook, show spinner briefly, then clear.
+    // The n8n webhook is synchronous and can block for minutes — never await it.
+    const payload: Record<string, string> = { job_id: jobId };
+    if (comment) payload.comment = comment;
+
+    setGeneratingJobs((prev) => new Set(prev).add(jobId));
+
+    window.fetch('https://n8n.intelligents.agency/webhook/upwork-draft-proposal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch((err) => console.error('Proposal generation error:', err));
+
+    // Clear spinner after 3s — auto-refresh will pick up the new proposal
+    setTimeout(() => {
+      setGeneratingJobs((prev) => { const next = new Set(prev); next.delete(jobId); return next; });
+      fetch();
+    }, 3000);
   };
 
   return {
@@ -198,9 +275,11 @@ export function useUpworkPipeline() {
     proposals,
     stats,
     loading,
+    generatingJobs,
     refresh: fetch,
     skipJob,
     generateProposal,
+    cancelGeneration,
     approveProposal,
     rejectProposal,
     editProposal,
