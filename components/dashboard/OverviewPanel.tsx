@@ -146,7 +146,7 @@ const OverviewPanel: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-zinc-300 truncate" title={r.reminderText}>{r.reminderText}</p>
-                      <p className="text-[11px] text-zinc-500">{new Date(r.remindAt).toLocaleString()}</p>
+                      <p className="text-[11px] text-zinc-500" title={new Date(r.remindAt).toLocaleString()}>{timeAgo(r.remindAt)}</p>
                     </div>
                     <button onClick={() => completeReminder(r.id)} className="shrink-0 p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
                       <CheckCircle2 className="w-3.5 h-3.5" />

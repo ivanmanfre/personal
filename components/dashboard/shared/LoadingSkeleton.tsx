@@ -31,7 +31,7 @@ const LoadingSkeleton: React.FC<Props> = ({ rows = 0, cards = 4 }) => (
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
         animation: shimmer 1.8s ease-in-out infinite;
       }
       @keyframes shimmer {

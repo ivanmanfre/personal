@@ -231,7 +231,7 @@ const UpworkPanel: React.FC = () => {
           <button
             key={f.key}
             onClick={() => handleFilterChange(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f.key ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f.key ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
           >
             {f.label} ({f.count})
           </button>
@@ -280,7 +280,7 @@ const UpworkPanel: React.FC = () => {
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                         <span className="text-xs text-zinc-400">{formatBudget(job)}</span>
                         {job.icpScore != null && (
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${icpBg(job.icpScore)} ${icpColor(job.icpScore)}`}>ICP {job.icpScore}</span>
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${icpBg(job.icpScore)} ${icpColor(job.icpScore)}`} title={`ICP Score: ${job.icpScore}/10 — ${job.icpScore >= 8 ? 'Strong fit' : job.icpScore >= 6 ? 'Moderate fit' : 'Weak fit'}`}>ICP {job.icpScore}</span>
                         )}
                         <ClientBadge history={job.clientHistory} />
                         {job.skills.slice(0, 3).map((skill) => (
@@ -431,15 +431,6 @@ const UpworkPanel: React.FC = () => {
                                 {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit to Upwork
                               </button>
                             )}
-                            {propEditable && (
-                              <button
-                                onClick={() => handleReject(prop.id)}
-                                disabled={!!isLoading}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                              >
-                                {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />} Reject
-                              </button>
-                            )}
                             {prop.status !== 'submitting' && prop.status !== 'submitted' && (
                               <RegenButton onGenerate={(comment) => generateProposal(job.id, comment)} />
                             )}
@@ -447,6 +438,15 @@ const UpworkPanel: React.FC = () => {
                               <a href={prop.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[11px] text-zinc-400 hover:text-emerald-400 transition-colors">
                                 <FileText className="w-3 h-3" /> PDF
                               </a>
+                            )}
+                            {propEditable && (
+                              <button
+                                onClick={() => handleReject(prop.id)}
+                                disabled={!!isLoading}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50"
+                              >
+                                {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />} Reject
+                              </button>
                             )}
                           </div>
                         </div>

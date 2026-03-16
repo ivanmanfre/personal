@@ -15,10 +15,10 @@ const statusColors: Record<string, string> = {
 };
 
 const statusBadgeColors: Record<string, string> = {
-  pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  published: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-  failed: 'bg-red-500/20 text-red-400 border-red-500/30',
-  scheduled: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  pending: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  published: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  failed: 'bg-red-500/20 text-red-300 border-red-500/30',
+  scheduled: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
 };
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -171,8 +171,8 @@ const ContentPanel: React.FC = () => {
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => setFilter('all')}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-            filter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            filter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
           }`}
         >
           All ({tasks.length})
@@ -181,8 +181,8 @@ const ContentPanel: React.FC = () => {
           <button
             key={status}
             onClick={() => setFilter(filter === status ? 'all' : status)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-              filter === status ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filter === status ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
             }`}
           >
             <div className={`w-2 h-2 rounded-sm ${statusColors[status]?.split(' ')[0] || 'bg-zinc-600'}`} />

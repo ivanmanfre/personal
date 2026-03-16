@@ -78,7 +78,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[220px] bg-zinc-900/95 backdrop-blur-md border-r border-zinc-800/80 flex flex-col transition-transform duration-200 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[220px] bg-zinc-900/95 backdrop-blur-md border-r border-zinc-800/80 flex flex-col transition-transform duration-300 ease-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 pb-3 border-b border-zinc-800/80">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-emerald-500/10">
@@ -98,7 +98,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           {tabGroups.map((group, gi) => (
             <div key={gi} className={gi > 0 ? 'mt-3' : ''}>
               {group.label && (
-                <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">{group.label}</p>
+                <p className="px-3 pt-1 pb-1.5 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">{group.label}</p>
               )}
               <div className="space-y-0.5">
                 {group.tabs.map((tab) => {
@@ -109,12 +109,12 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
                       onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
                         isActive
-                          ? 'bg-zinc-800/80 text-white'
+                          ? 'bg-zinc-800 text-white'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
                       }`}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-emerald-400 rounded-r-full" />
                       )}
                       <span className={isActive ? 'text-emerald-400' : ''}>{tab.icon}</span>
                       {tab.label}
@@ -131,12 +131,12 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
             onClick={() => { onTabChange('settings'); setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
               activeTab === 'settings'
-                ? 'bg-zinc-800/80 text-white'
+                ? 'bg-zinc-800 text-white'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/40'
             }`}
           >
             {activeTab === 'settings' && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-emerald-500 rounded-r-full" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-emerald-400 rounded-r-full" />
             )}
             <span className={activeTab === 'settings' ? 'text-emerald-400' : ''}>
               <Settings className="w-[18px] h-[18px]" />
@@ -158,7 +158,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
       {/* Main content */}
       <main className="flex-1 md:ml-0 mt-14 md:mt-0">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-5 md:p-6 lg:p-8 max-w-7xl mx-auto">
           {children}
         </div>
       </main>

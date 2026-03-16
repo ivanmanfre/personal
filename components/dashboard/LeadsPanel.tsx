@@ -116,12 +116,12 @@ const LeadsPanel: React.FC = () => {
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         <button onClick={() => setFilter('all')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}>
           All ({totalLeads})
         </button>
         {Object.entries(statusCounts).map(([status, count]) => (
           <button key={status} onClick={() => setFilter(status)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === status ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === status ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}>
             {status} ({count})
           </button>
         ))}
@@ -149,7 +149,7 @@ const LeadsPanel: React.FC = () => {
                   <tr key={lead.id} className="hover:bg-zinc-800/50 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-zinc-200">{lead.name || '—'}</p>
-                      {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs">{lead.headline}</p>}
+                      {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs" title={lead.headline}>{lead.headline}</p>}
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -163,9 +163,16 @@ const LeadsPanel: React.FC = () => {
                       </select>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                        {lead.icpScore ?? '—'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                          {lead.icpScore != null ? `${lead.icpScore}/10` : '—'}
+                        </span>
+                        {lead.icpScore != null && (
+                          <div className="w-12 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${lead.icpScore >= 7 ? 'bg-emerald-500' : lead.icpScore >= 4 ? 'bg-amber-500' : 'bg-zinc-600'}`} style={{ width: `${(lead.icpScore / 10) * 100}%` }} />
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className="text-zinc-400 text-xs">{lead.source || '—'}</span>

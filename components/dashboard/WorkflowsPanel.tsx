@@ -249,8 +249,8 @@ const WorkflowsPanel: React.FC = () => {
                     group === g.id
                       ? g.id === 'issues'
                         ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                        : 'bg-zinc-700/80 text-white'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                        : 'bg-zinc-700 text-white'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
                   }`}>
                   {g.label}{g.count != null ? ` (${g.count})` : ''}
                 </button>
@@ -331,6 +331,7 @@ const WorkflowsPanel: React.FC = () => {
                           </div>
                           {wf.lastErrorMessage && (
                             <div className="p-2.5 bg-red-950/30 border border-red-500/15 rounded-lg text-xs text-red-300/90 font-mono leading-relaxed">
+                              <span className="text-red-400/50 text-[10px] font-sans block mb-1">{timeAgo(wf.lastExecutionAt)}</span>
                               {wf.lastErrorMessage}
                             </div>
                           )}
@@ -442,7 +443,7 @@ const ExecutionLogsView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows 
               <div className="flex gap-1 flex-wrap">
                 {statusFilters.map((sf) => (
                   <button key={sf.id} onClick={() => updateFilter('status', sf.id)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${filters.status === sf.id ? 'bg-zinc-700/80 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}>
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${filters.status === sf.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}>
                     {sf.label}
                   </button>
                 ))}

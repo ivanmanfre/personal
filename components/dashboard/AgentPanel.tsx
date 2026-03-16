@@ -66,18 +66,18 @@ const AgentPanel: React.FC = () => {
                   return (
                     <div key={a.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/20 transition-colors">
                       <div className="mt-1">
-                        <StatusDot status={a.sent ? 'healthy' : 'warning'} />
+                        <StatusDot status={a.sent ? 'healthy' : 'inactive'} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm text-zinc-300 truncate">{a.title}</p>
+                          <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
                           <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
                             {a.alertType.replace(/_/g, ' ')}
                           </span>
                         </div>
                         <p className="text-[11px] text-zinc-500 mt-1 line-clamp-2">{a.body}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <p className="text-[11px] text-zinc-600">{timeAgo(a.createdAt)} · {a.sent ? 'Sent' : 'Unsent'}</p>
+                          <p className="text-[11px] text-zinc-600">{timeAgo(a.createdAt)} · {a.sent ? 'Delivered' : 'Pending'}</p>
                           {!a.sent && (
                             <button
                               onClick={() => acknowledgeAlert(a.id)}
@@ -113,7 +113,7 @@ const AgentPanel: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-zinc-300">{r.reminderText}</p>
                       <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-500">
-                        <span>{new Date(r.remindAt).toLocaleString()}</span>
+                        <span title={new Date(r.remindAt).toLocaleString()}>{timeAgo(r.remindAt)}</span>
                         {r.recurrence && <span className="bg-zinc-800/60 px-1.5 py-0.5 rounded">Repeats: {r.recurrence}</span>}
                       </div>
                     </div>

@@ -227,19 +227,19 @@ const TasksPanel: React.FC = () => {
             )}
           </td>
           <td className="px-4 py-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {!isCompleted && (
-                <button onClick={() => handleComplete(task.id)} className="p-1 rounded text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
+                <button onClick={() => handleComplete(task.id)} className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors" title="Complete">
                   <CheckCircle2 className="w-4 h-4" />
                 </button>
               )}
               {isAgent && !isCompleted && (
-                <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-1 rounded text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
+                <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-1.5 rounded-lg text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
               )}
               {isAgent && (
-                <button onClick={() => handleDelete(task.id)} className="p-1 rounded text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
+                <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
