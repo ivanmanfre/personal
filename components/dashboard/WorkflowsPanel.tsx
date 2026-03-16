@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench } from 'lucide-react';
+import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -37,6 +38,14 @@ const WorkflowsPanel: React.FC = () => {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('health');
+  const [sentToEngineer, setSentToEngineer] = useState<Record<string, 'sending' | 'sent'>>({});
+
+  const handleSendToEngineer = useCallback(async (wf: WorkflowStat) => {
+    setSentToEngineer((prev) => ({ ...prev, [wf.workflowId]: 'sending' }));
+    const ok = await sendToEngineer(wf.workflowName, wf.workflowId, wf.lastErrorMessage, wf.errorCount24h);
+    setSentToEngineer((prev) => ({ ...prev, [wf.workflowId]: ok ? 'sent' : 'sending' }));
+    if (!ok) setTimeout(() => setSentToEngineer((prev) => { const n = { ...prev }; delete n[wf.workflowId]; return n; }), 2000);
+  }, []);
 
   // Health counts for the summary bar
   const healthCounts = useMemo(() => {
@@ -259,7 +268,23 @@ const WorkflowsPanel: React.FC = () => {
                                 <CheckCircle2 className="w-3 h-3" /> Mark Resolved
                               </button>
                             )}
-                            {wf.errorAcknowledged && (
+                            {wf.errorCount24h > 0 && (
+                              <button
+                                onClick={() => handleSendToEngineer(wf)}
+                                disabled={!!sentToEngineer[wf.workflowId]}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                                  sentToEngineer[wf.workflowId] === 'sent'
+                                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                                    : sentToEngineer[wf.workflowId] === 'sending'
+                                      ? 'bg-zinc-800/60 text-zinc-500 border border-zinc-700/40 cursor-wait'
+                                      : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20'
+                                }`}
+                              >
+                                <Wrench className="w-3 h-3" />
+                                {sentToEngineer[wf.workflowId] === 'sent' ? 'Sent' : sentToEngineer[wf.workflowId] === 'sending' ? 'Sending...' : 'Send to Engineer'}
+                              </button>
+                            )}
+                            {wf.errorAcknowledged && !wf.errorCount24h && (
                               <span className="text-[11px] text-zinc-500 italic">Acknowledged</span>
                             )}
                           </div>
