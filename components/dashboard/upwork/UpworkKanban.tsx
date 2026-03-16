@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
@@ -18,6 +18,26 @@ const columns: Column[] = [
   { id: 'review', label: 'Review', color: 'border-amber-500/30 bg-amber-500/5', dotColor: 'bg-amber-400' },
   { id: 'submitted', label: 'Submitted', color: 'border-green-500/30 bg-green-500/5', dotColor: 'bg-green-400' },
 ];
+
+const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+function jobAge(job: UpworkJob): number {
+  const ts = job.postedAt || job.createdAt;
+  return Date.now() - new Date(ts).getTime();
+}
+
+/** Returns true if the job is too stale for the kanban */
+function isStale(job: UpworkJob, proposal: UpworkProposal | undefined): boolean {
+  // Jobs with proposals in progress or submitted are never stale
+  if (proposal) return false;
+  const age = jobAge(job);
+  // Invites: keep for 24h
+  if (job.source === 'invite') return age > TWENTY_FOUR_HOURS;
+  // Assessed jobs without a proposal: hide after 8h
+  if (job.status === 'assessed' || job.status === 'new') return age > EIGHT_HOURS;
+  return false;
+}
 
 function icpColor(score: number | null): string {
   if (score == null) return 'text-zinc-500 bg-zinc-500/15 border-zinc-600/30';
@@ -41,9 +61,7 @@ function formatClientSpend(amount: number): string {
 }
 
 function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string | null {
-  // Filter out terminal states
   if (job.status === 'won' || job.status === 'skipped' || job.status === 'rejected') return null;
-  // Invites get their own column
   if (job.source === 'invite' && !proposal) return 'invites';
   if (job.source === 'invite' && proposal && proposal.status !== 'submitted') return 'invites';
   if (proposal?.status === 'submitted' || job.status === 'submitted' || job.status === 'submitting') return 'submitted';
@@ -74,6 +92,13 @@ export const UpworkKanban: React.FC<Props> = ({
 }) => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+
+  // Re-render every 5 min so stale jobs get pruned continuously
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const proposalMap = useMemo(() => {
     const map = new Map<string, UpworkProposal>();
@@ -90,13 +115,13 @@ export const UpworkKanban: React.FC<Props> = ({
 
     for (const job of jobs) {
       const prop = proposalMap.get(job.id);
+      if (isStale(job, prop)) continue;
       const col = getColumn(job, prop);
       if (col && groups[col]) groups[col].push({ job, proposal: prop });
     }
     return groups;
   }, [jobs, proposalMap]);
 
-  // Which column has the expanded card?
   const expandedColId = useMemo(() => {
     if (!expandedCard) return null;
     for (const col of columns) {
@@ -119,15 +144,15 @@ export const UpworkKanban: React.FC<Props> = ({
           return (
             <div
               key={col.id}
-              className={`rounded-xl border ${col.color} p-2 flex flex-col min-w-0 transition-all duration-300 ease-out ${hasExpanded ? 'flex-[2.5]' : 'flex-1'}`}
+              className={`rounded-xl border ${col.color} p-2.5 flex flex-col min-w-0 transition-all duration-300 ease-out ${hasExpanded ? 'flex-[2.5]' : 'flex-1'}`}
             >
               {/* Column header */}
-              <div className="flex items-center justify-between px-1 pb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${col.dotColor}`} />
-                  <span className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider">{col.label}</span>
+              <div className="flex items-center justify-between px-1 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
+                  <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">{col.label}</span>
                 </div>
-                <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{items.length}</span>
+                <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-md font-medium">{items.length}</span>
               </div>
 
               {/* Cards */}
@@ -150,51 +175,51 @@ export const UpworkKanban: React.FC<Props> = ({
                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         className="bg-zinc-900/80 border border-zinc-700/30 rounded-lg overflow-hidden hover:border-zinc-600/50 transition-colors"
                       >
-                        {/* Card header - always visible */}
+                        {/* Card header */}
                         <button
                           onClick={() => setExpandedCard(isExpanded ? null : job.id)}
-                          className="w-full p-2.5 text-left"
+                          className="w-full p-3 text-left"
                         >
-                          <div className="flex items-start justify-between gap-1">
-                            <p className="text-xs font-medium text-zinc-200 line-clamp-2 leading-tight">{job.title}</p>
-                            {isExpanded ? <ChevronUp className="w-3 h-3 text-zinc-600 shrink-0 mt-0.5" /> : <ChevronDown className="w-3 h-3 text-zinc-600 shrink-0 mt-0.5" />}
+                          <div className="flex items-start justify-between gap-1.5">
+                            <p className="text-[13px] font-medium text-zinc-200 line-clamp-2 leading-snug">{job.title}</p>
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-zinc-600 shrink-0 mt-0.5" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-600 shrink-0 mt-0.5" />}
                           </div>
 
                           {/* Tags row */}
-                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                             {isInvite && (
-                              <span className="px-1 py-0.5 rounded text-[9px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5">
-                                <Mail className="w-2.5 h-2.5" /> Invite
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5">
+                                <Mail className="w-3 h-3" /> Invite
                               </span>
                             )}
                             {job.icpScore != null && (
-                              <span className={`px-1 py-0.5 rounded text-[9px] font-bold border ${icpColor(job.icpScore)}`}>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${icpColor(job.icpScore)}`}>
                                 ICP {job.icpScore}
                               </span>
                             )}
                             {budget && (
-                              <span className="text-[9px] text-zinc-500">{budget}</span>
+                              <span className="text-[10px] text-zinc-400 font-medium">{budget}</span>
                             )}
                           </div>
 
                           {/* Client + time */}
-                          <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex items-center gap-2 mt-2">
                             {job.clientHistory?.total_spent != null && job.clientHistory.total_spent > 0 && (
-                              <span className="text-[9px] text-zinc-500 flex items-center gap-0.5">
-                                <DollarSign className="w-2.5 h-2.5" />{formatClientSpend(job.clientHistory.total_spent)}
+                              <span className="text-[10px] text-zinc-500 flex items-center gap-0.5">
+                                <DollarSign className="w-3 h-3" />{formatClientSpend(job.clientHistory.total_spent)}
                               </span>
                             )}
                             {job.clientHistory?.payment_verified && (
-                              <span className="text-[9px] text-emerald-500">verified</span>
+                              <span className="text-[10px] text-emerald-500 font-medium">verified</span>
                             )}
-                            <span className="text-[9px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
+                            <span className="text-[10px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
                           </div>
 
                           {/* Proposal status badge */}
                           {prop && (
-                            <div className="mt-1.5 flex items-center gap-1.5">
-                              <span className="text-[9px] text-zinc-500">Proposal:</span>
-                              <span className={`px-1 py-0.5 rounded text-[9px] font-medium border ${
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <span className="text-[10px] text-zinc-500">Proposal:</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                                 prop.status === 'submitted' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
                                 prop.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
                                 prop.status === 'pending_approval' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
@@ -216,30 +241,30 @@ export const UpworkKanban: React.FC<Props> = ({
                               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                               className="overflow-hidden"
                             >
-                              <div className="px-2.5 pb-2.5 space-y-2 border-t border-zinc-800/40 pt-2">
+                              <div className="px-3 pb-3 space-y-2.5 border-t border-zinc-800/40 pt-2.5">
                                 {/* Description */}
                                 {job.description && (
-                                  <p className="text-[10px] text-zinc-400 leading-relaxed max-h-32 overflow-y-auto dashboard-scroll whitespace-pre-wrap">{job.description}</p>
+                                  <p className="text-xs text-zinc-400 leading-relaxed max-h-36 overflow-y-auto dashboard-scroll whitespace-pre-wrap">{job.description}</p>
                                 )}
 
                                 {/* ICP reasoning */}
                                 {job.icpReasoning && (
-                                  <div className="p-2 bg-blue-950/20 border border-blue-500/15 rounded text-[10px] text-blue-300/80 leading-relaxed">
+                                  <div className="p-2.5 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/80 leading-relaxed">
                                     <span className="text-blue-400/60 font-medium">AI: </span>{job.icpReasoning}
                                   </div>
                                 )}
 
                                 {/* Client details */}
                                 {job.clientHistory && Object.keys(job.clientHistory).length > 0 && (
-                                  <div className="flex items-center gap-3 text-[10px] text-zinc-500 flex-wrap">
+                                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 flex-wrap">
                                     {job.clientHistory.total_spent != null && job.clientHistory.total_spent > 0 && (
-                                      <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" />{formatClientSpend(job.clientHistory.total_spent)} spent</span>
+                                      <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" />{formatClientSpend(job.clientHistory.total_spent)} spent</span>
                                     )}
                                     {job.clientHistory.total_hires != null && (
-                                      <span className="flex items-center gap-0.5"><Users className="w-2.5 h-2.5" />{job.clientHistory.total_hires} hires</span>
+                                      <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{job.clientHistory.total_hires} hires</span>
                                     )}
                                     {job.clientHistory.rating != null && job.clientHistory.rating > 0 && (
-                                      <span className="flex items-center gap-0.5"><Star className="w-2.5 h-2.5" />{job.clientHistory.rating.toFixed(1)}</span>
+                                      <span className="flex items-center gap-0.5"><Star className="w-3 h-3" />{job.clientHistory.rating.toFixed(1)}</span>
                                     )}
                                     {job.clientHistory.country && <span>{job.clientHistory.country}</span>}
                                   </div>
@@ -249,47 +274,46 @@ export const UpworkKanban: React.FC<Props> = ({
                                 {job.skills.length > 0 && (
                                   <div className="flex flex-wrap gap-1">
                                     {job.skills.map((s) => (
-                                      <span key={s} className="text-[9px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s}</span>
+                                      <span key={s} className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s}</span>
                                     ))}
                                   </div>
                                 )}
 
                                 {/* Screening questions */}
                                 {job.screeningQuestions && job.screeningQuestions.length > 0 && (
-                                  <div className="p-2 bg-amber-950/20 border border-amber-500/15 rounded">
-                                    <span className="text-amber-400/70 font-medium text-[10px] block mb-1">Screening:</span>
+                                  <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg">
+                                    <span className="text-amber-400/70 font-medium text-[11px] block mb-1">Screening:</span>
                                     {job.screeningQuestions.map((q, i) => (
-                                      <p key={i} className="text-[10px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
+                                      <p key={i} className="text-[11px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
                                     ))}
                                   </div>
                                 )}
 
                                 {/* Proposal preview */}
                                 {prop && (
-                                  <div className="p-2 bg-emerald-950/10 border border-emerald-500/15 rounded space-y-1.5">
+                                  <div className="p-2.5 bg-emerald-950/10 border border-emerald-500/15 rounded-lg space-y-2">
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-[9px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
-                                      <span className="text-[9px] text-zinc-600">v{prop.version}</span>
+                                      <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
+                                      <span className="text-[10px] text-zinc-600">v{prop.version}</span>
                                     </div>
-                                    <p className="text-[10px] text-zinc-300 leading-relaxed max-h-40 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
+                                    <p className="text-xs text-zinc-300 leading-relaxed max-h-44 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
                                       {prop.coverLetter || prop.proposalText}
                                     </p>
-                                    <div className="flex items-center gap-2 text-[9px] text-zinc-500">
+                                    <div className="flex items-center gap-2.5 text-[10px] text-zinc-500">
                                       {prop.rateAmount != null && <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>}
                                       {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
                                       {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
                                         <span className="flex items-center gap-0.5 text-amber-400/60">
-                                          <MessageSquare className="w-2.5 h-2.5" />{prop.screeningAnswers.length} answers
+                                          <MessageSquare className="w-3 h-3" />{prop.screeningAnswers.length} answers
                                         </span>
                                       )}
                                     </div>
-                                    {/* Screening answers */}
                                     {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
-                                      <div className="space-y-1 pt-1 border-t border-emerald-500/10">
+                                      <div className="space-y-1.5 pt-1.5 border-t border-emerald-500/10">
                                         {prop.screeningAnswers.map((qa, i) => (
                                           <div key={i}>
-                                            <p className="text-[9px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
-                                            <p className="text-[10px] text-zinc-300/80 mt-0.5">{qa.answer}</p>
+                                            <p className="text-[10px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
+                                            <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
                                           </div>
                                         ))}
                                       </div>
@@ -298,27 +322,27 @@ export const UpworkKanban: React.FC<Props> = ({
                                 )}
 
                                 {/* Actions */}
-                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                <div className="flex flex-wrap gap-2 pt-1">
                                   <a
                                     href={job.upworkUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-700 transition-colors"
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-700 transition-colors"
                                   >
-                                    <ExternalLink className="w-2.5 h-2.5" /> Upwork
+                                    <ExternalLink className="w-3 h-3" /> Upwork
                                   </a>
 
                                   {isGenerating ? (
-                                    <span className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-purple-400 animate-pulse">
-                                      <Loader2 className="w-2.5 h-2.5 animate-spin" /> Generating...
-                                      <button onClick={() => onCancelGeneration(job.id)} className="text-zinc-500 hover:text-red-400 ml-0.5"><XCircle className="w-2.5 h-2.5" /></button>
+                                    <span className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-purple-400 animate-pulse">
+                                      <Loader2 className="w-3 h-3 animate-spin" /> Generating...
+                                      <button onClick={() => onCancelGeneration(job.id)} className="text-zinc-500 hover:text-red-400 ml-0.5"><XCircle className="w-3 h-3" /></button>
                                     </span>
                                   ) : !prop && job.icpScore != null ? (
                                     <button
                                       onClick={() => onGenerate(job.id)}
-                                      className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                                     >
-                                      <FileText className="w-2.5 h-2.5" /> Generate
+                                      <FileText className="w-3 h-3" /> Generate
                                     </button>
                                   ) : null}
 
@@ -326,27 +350,27 @@ export const UpworkKanban: React.FC<Props> = ({
                                     <button
                                       onClick={() => handleSubmit(prop.id)}
                                       disabled={!!isLoading}
-                                      className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-50"
                                     >
-                                      {isLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Send className="w-2.5 h-2.5" />} Submit
+                                      {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit
                                     </button>
                                   )}
 
                                   {prop && prop.status !== 'submitted' && (
                                     <button
                                       onClick={() => onGenerate(job.id)}
-                                      className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+                                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
                                     >
-                                      <RefreshCw className="w-2.5 h-2.5" /> Regen
+                                      <RefreshCw className="w-3 h-3" /> Regen
                                     </button>
                                   )}
 
                                   {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
                                     <button
                                       onClick={() => onSkip(job.id)}
-                                      className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
                                     >
-                                      <XCircle className="w-2.5 h-2.5" /> Skip
+                                      <XCircle className="w-3 h-3" /> Skip
                                     </button>
                                   )}
                                 </div>
@@ -360,7 +384,7 @@ export const UpworkKanban: React.FC<Props> = ({
                 </AnimatePresence>
 
                 {items.length === 0 && (
-                  <p className="text-[10px] text-zinc-600 text-center py-4">Empty</p>
+                  <p className="text-xs text-zinc-600 text-center py-6">Empty</p>
                 )}
               </div>
             </div>
