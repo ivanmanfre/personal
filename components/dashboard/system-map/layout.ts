@@ -30,13 +30,14 @@ export function buildGraphData(
   pipelines: PipelineConfig[],
   edgeDefs: PipelineEdge[],
 ): { nodes: Node[]; edges: Edge[] } {
-  // Group workflows
-  const grouped = pipelines.map((p) => ({
-    ...p,
-    matched: workflows.filter((wf) => matchWf(wf, p.workflows)),
-  }));
+  // Group workflows (first-match-wins to avoid duplicate nodes)
+  const assigned = new Set<string>();
+  const grouped = pipelines.map((p) => {
+    const matched = workflows.filter((wf) => !assigned.has(wf.workflowId) && matchWf(wf, p.workflows));
+    matched.forEach((wf) => assigned.add(wf.workflowId));
+    return { ...p, matched };
+  });
 
-  const assigned = new Set(grouped.flatMap((g) => g.matched.map((w) => w.workflowId)));
   const ungrouped = workflows.filter((wf) => !assigned.has(wf.workflowId));
   if (ungrouped.length > 0) {
     grouped.push({ id: 'other', name: 'Other', color: 'zinc', workflows: [], matched: ungrouped });

@@ -11,63 +11,65 @@ export interface PipelineEdge {
   label?: string;
 }
 
+// Order matters: first-match-wins. Put specific groups before generic ones.
 export const pipelineConfig: PipelineConfig[] = [
   {
     id: 'content',
     name: 'Content Pipeline',
     color: 'blue',
     workflows: [
-      'Editorial Agent', 'Post Generation', 'Carousel Generation', 'Carousel Slide Re-gen',
-      'Post Ready', 'Own Post Performance', 'Content Manager Agent', 'Execute Content Plan',
-      'Weekly Topic Research',
+      'Editorial Agent', 'Post Generation', 'Carousel', 'Re-run Image',
+      'Post Ready', 'Own Post Performance', 'Content Manager', 'Execute Content Plan',
+      'Weekly Topic Research', 'Weekly Suggestions', 'Weekly Trends',
     ],
   },
   {
     id: 'competitors',
     name: 'Competitor Intel',
     color: 'purple',
-    workflows: ['Competitors Scraping', 'Extract Patterns', 'Competitor Alert Monitor'],
+    workflows: ['Competitors Scraping', 'Extract Patterns', 'Competitor Alert', 'Process Single Post'],
   },
   {
     id: 'leads',
     name: 'Lead Pipeline',
     color: 'emerald',
-    workflows: ['Lead Pipeline', 'Leadshark', 'Email Outreach', 'Email Personalization', 'Lead Magnets'],
+    workflows: ['Lead Pipeline', 'Leadshark', 'Email Outreach', 'Email Personalization', 'Lead Magnets', 'Unipile'],
   },
   {
     id: 'agent',
     name: 'Agent System',
     color: 'cyan',
     workflows: [
-      'n8nClaw', 'Reminder Scheduler', 'Daily Conversation Summarizer',
-      'Proactive Notifications', 'Daily Standup', 'Daily Night Brief',
+      'n8nClaw', 'Reminder Scheduler', 'Daily Conversation',
+      'Proactive Notifications', 'Daily Standup', 'Daily Night',
     ],
   },
   {
     id: 'clients',
     name: 'Client Operations',
     color: 'orange',
-    workflows: ['Client Health Monitor', 'Error Handler', 'CLIENT BACKUPS', 'Connect Client Calendar', 'Call Transcription'],
+    workflows: ['Client Health Monitor', 'Error Handler', 'CLIENT BACKUPS', 'Connect Client', 'Call Transcription', 'Post-Payment', 'Onboarding'],
   },
   {
+    // Before Proposals so "Upwork Proposal*" matches here first
     id: 'upwork',
     name: 'Upwork',
     color: 'green',
-    workflows: ['Upwork Job Assessor', 'Upwork Invite Handler', 'Upwork Cookies', 'Zenfl'],
+    workflows: ['Upwork'],
   },
   {
     id: 'proposals',
     name: 'Proposals',
     color: 'amber',
-    workflows: ['Proposal Generator', 'Proposal Comment', 'Send Proposal', 'Portfolio Embeddings'],
+    workflows: ['Proposal', 'Portfolio Embeddings', 'Send Proposal'],
   },
   {
     id: 'system',
     name: 'System & Backups',
     color: 'zinc',
     workflows: [
-      'Dashboard Data Sync', 'Supabase Schema Backup', 'ClickUp Prompts Backup',
-      'Slack Channel Notifier', 'Backup Health Check', 'GITHUB BACKUPS', 'Apple Health Sync',
+      'Dashboard Data Sync', 'Execution Log Sync', 'Supabase Schema', 'ClickUp Prompts',
+      'Slack Channel Notifier', 'Backup Health', 'GITHUB BACKUPS', 'Apple Health',
     ],
   },
 ];
