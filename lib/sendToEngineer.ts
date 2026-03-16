@@ -1,6 +1,5 @@
-const EVOLUTION_URL = 'http://24.199.118.135:8080';
-const EVOLUTION_KEY = 'evo_ivan_n8nclaw_2026';
-const IVAN_NUMBER = '5491159385939';
+const N8NCLAW_WEBHOOK = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
+const IVAN_JID = '5491159385939@s.whatsapp.net';
 
 export async function sendToEngineer(workflowName: string, workflowId: string, errorMessage: string | null, errorCount: number): Promise<boolean> {
   const message = [
@@ -13,11 +12,28 @@ export async function sendToEngineer(workflowName: string, workflowId: string, e
     `Please fetch this workflow, diagnose the issue, and fix it.`,
   ].filter(Boolean).join('\n');
 
+  // Send as Evolution-formatted WhatsApp message directly to n8nClaw's active webhook
+  const payload = {
+    event: 'messages.upsert',
+    instance: 'ivan-wa',
+    data: {
+      key: {
+        remoteJid: IVAN_JID,
+        fromMe: false,
+        id: `DASHBOARD_${Date.now()}`,
+      },
+      pushName: 'Dashboard',
+      message: { conversation: message },
+      messageType: 'conversation',
+      messageTimestamp: Math.floor(Date.now() / 1000),
+    },
+  };
+
   try {
-    const res = await fetch(`${EVOLUTION_URL}/message/sendText/ivan-wa`, {
+    const res = await fetch(N8NCLAW_WEBHOOK, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', apikey: EVOLUTION_KEY },
-      body: JSON.stringify({ number: IVAN_NUMBER, text: message }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     return res.ok;
   } catch {
