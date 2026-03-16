@@ -8,10 +8,24 @@ interface Props {
   children: React.ReactNode;
   className?: string;
   scrollable?: boolean;
+  accent?: string; // optional accent color class e.g. 'emerald', 'blue'
 }
 
-const PanelCard: React.FC<Props> = ({ title, icon, badge, headerRight, children, className = '', scrollable = false }) => (
-  <div className={`bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10 ${className}`}>
+const accentMap: Record<string, string> = {
+  emerald: 'from-emerald-500/40 via-transparent to-transparent',
+  blue: 'from-blue-500/40 via-transparent to-transparent',
+  purple: 'from-purple-500/40 via-transparent to-transparent',
+  amber: 'from-amber-500/40 via-transparent to-transparent',
+  red: 'from-red-500/40 via-transparent to-transparent',
+  cyan: 'from-cyan-500/40 via-transparent to-transparent',
+};
+
+const PanelCard: React.FC<Props> = ({ title, icon, badge, headerRight, children, className = '', scrollable = false, accent }) => (
+  <div className={`group/panel relative bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10 hover:border-zinc-700/60 transition-colors duration-300 ${className}`}>
+    {/* Top accent gradient line */}
+    {accent && accentMap[accent] && (
+      <div className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${accentMap[accent]} opacity-60`} />
+    )}
     <div className="px-4 py-3.5 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
       <div className="flex items-center gap-2.5">
         {icon && <span className="text-zinc-500">{icon}</span>}

@@ -58,7 +58,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
   const healthStatus = systemHealth === 'healthy' ? 'healthy' : systemHealth === 'degraded' ? 'warning' : 'error';
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex">
+    <div className="min-h-screen dashboard-mesh-bg dashboard-noise text-white flex">
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 flex items-center justify-between">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-400 hover:text-white transition-colors">
@@ -78,7 +78,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] bg-zinc-900 border-r border-zinc-800/60 flex flex-col transition-transform duration-300 ease-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] dashboard-sidebar-glass border-r border-zinc-800/40 flex flex-col transition-transform duration-300 ease-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand */}
         <div className="p-5 pb-4">
           <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
                       onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative ${
                         isActive
-                          ? 'bg-emerald-500/10 text-white'
+                          ? 'bg-emerald-500/10 text-white sidebar-active-glow'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
                       }`}
                     >
@@ -164,7 +164,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-0 mt-14 md:mt-0 dashboard-grid-bg">
+      <main className="flex-1 md:ml-0 mt-14 md:mt-0 dashboard-grid-bg relative z-[1]">
         <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>

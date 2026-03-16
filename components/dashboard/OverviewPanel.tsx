@@ -10,6 +10,7 @@ import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
+import AnimateIn from './shared/AnimateIn';
 import { timeAgo, formatNum } from './shared/utils';
 
 const OverviewPanel: React.FC = () => {
@@ -43,29 +44,34 @@ const OverviewPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+        <h1 className="text-2xl font-bold tracking-tight animate-count-up">Overview</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refreshAll} />
       </div>
 
       {/* Top stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Posts (30d)" value={postStats.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
-        <StatCard label="Impressions" value={formatNum(postStats.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Likes" value={formatNum(postStats.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" />
-        <StatCard label="Comments" value={formatNum(postStats.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" />
-      </div>
+      <AnimateIn delay={0}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Posts (30d)" value={postStats.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
+          <StatCard label="Impressions" value={formatNum(postStats.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
+          <StatCard label="Likes" value={formatNum(postStats.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" />
+          <StatCard label="Comments" value={formatNum(postStats.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" />
+        </div>
+      </AnimateIn>
 
       {/* Second row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Engagement" value={`${postStats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" subValue={`${formatNum(postStats.avgImpressions)} avg imp`} />
-        <StatCard label="Workflows" value={`${wfStats.active}/${wfStats.total}`} icon={<Activity className="w-5 h-5" />} color={wfStats.totalErrors24h > 3 ? 'text-red-400' : 'text-emerald-400'} subValue={`${wfStats.totalErrors24h} errors 24h`} />
-        <StatCard label="Alerts" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={alerts.filter((a) => !a.sent).length + ' unsent'} />
-        <StatCard label="Agent Msgs" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" subValue={`${messageStats.today} today`} />
-      </div>
+      <AnimateIn delay={80}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <StatCard label="Engagement" value={`${postStats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" subValue={`${formatNum(postStats.avgImpressions)} avg imp`} />
+          <StatCard label="Workflows" value={`${wfStats.active}/${wfStats.total}`} icon={<Activity className="w-5 h-5" />} color={wfStats.totalErrors24h > 3 ? 'text-red-400' : 'text-emerald-400'} subValue={`${wfStats.totalErrors24h} errors 24h`} />
+          <StatCard label="Alerts" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={alerts.filter((a) => !a.sent).length + ' unsent'} />
+          <StatCard label="Agent Msgs" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" subValue={`${messageStats.today} today`} />
+        </div>
+      </AnimateIn>
 
+      <AnimateIn delay={160}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity Feed */}
-        <PanelCard title="Recent Activity" icon={<Activity className="w-3.5 h-3.5" />} badge={activityItems.length}>
+        <PanelCard title="Recent Activity" icon={<Activity className="w-3.5 h-3.5" />} badge={activityItems.length} accent="blue">
           <div className="divide-y divide-zinc-800/40">
             {activityItems.length === 0 ? (
               <p className="px-4 py-8 text-zinc-600 text-sm text-center">No recent activity</p>
@@ -99,7 +105,7 @@ const OverviewPanel: React.FC = () => {
         {/* Right column */}
         <div className="space-y-4">
           {/* Alert breakdown */}
-          <PanelCard title="Recent Alerts" icon={<Bell className="w-3.5 h-3.5" />} badge={recentAlerts.length}>
+          <PanelCard title="Recent Alerts" icon={<Bell className="w-3.5 h-3.5" />} badge={recentAlerts.length} accent="amber">
             <div className="divide-y divide-zinc-800/40">
               {recentAlerts.length === 0 ? (
                 <p className="px-4 py-6 text-zinc-600 text-sm text-center">No alerts</p>
@@ -123,7 +129,7 @@ const OverviewPanel: React.FC = () => {
           </PanelCard>
 
           {/* Upcoming reminders */}
-          <PanelCard title="Upcoming Reminders" icon={<Clock className="w-3.5 h-3.5" />} badge={pendingReminders.length}>
+          <PanelCard title="Upcoming Reminders" icon={<Clock className="w-3.5 h-3.5" />} badge={pendingReminders.length} accent="emerald">
             <div className="divide-y divide-zinc-800/40">
               {pendingReminders.length === 0 ? (
                 <p className="px-4 py-6 text-zinc-600 text-sm text-center">No pending reminders</p>
@@ -147,6 +153,7 @@ const OverviewPanel: React.FC = () => {
           </PanelCard>
         </div>
       </div>
+      </AnimateIn>
     </div>
   );
 };

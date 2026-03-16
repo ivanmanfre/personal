@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Props {
   label: string;
@@ -33,9 +33,60 @@ const colorToAccent: Record<string, string> = {
   'text-purple-400': 'from-purple-500',
 };
 
+/** Extract a numeric value and its prefix/suffix for animated counting */
+function parseValue(val: string | number): { num: number; prefix: string; suffix: string } | null {
+  const str = String(val);
+  const match = str.match(/^([^0-9]*)([\d,.]+)(.*)$/);
+  if (!match) return null;
+  const num = parseFloat(match[2].replace(/,/g, ''));
+  if (isNaN(num)) return null;
+  return { prefix: match[1], num, suffix: match[3] };
+}
+
+function formatWithCommas(n: number, hasDecimal: boolean): string {
+  if (hasDecimal) return n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return Math.round(n).toLocaleString('en-US');
+}
+
+function useCountUp(target: number, duration = 600): number {
+  const [current, setCurrent] = useState(0);
+  const prevTarget = useRef(target);
+
+  useEffect(() => {
+    const from = prevTarget.current === target ? 0 : prevTarget.current;
+    prevTarget.current = target;
+    if (target === 0) { setCurrent(0); return; }
+
+    const start = performance.now();
+    let raf: number;
+
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCurrent(from + (target - from) * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+
+  return current;
+}
+
 const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue }) => {
   const bgClass = colorToBg[color] || 'bg-zinc-500/15 border-zinc-500/20';
   const accentClass = colorToAccent[color] || 'from-zinc-500';
+
+  const parsed = parseValue(value);
+  const animated = useCountUp(parsed?.num ?? 0);
+  const hasDecimal = String(value).includes('.');
+
+  const displayValue = parsed
+    ? `${parsed.prefix}${formatWithCommas(animated, hasDecimal)}${parsed.suffix}`
+    : value;
 
   return (
     <div className="group relative bg-zinc-900/90 border border-zinc-800/80 rounded-xl p-4 hover:border-zinc-700/80 transition-all duration-300 overflow-hidden hover:shadow-lg hover:shadow-black/20">
@@ -48,7 +99,7 @@ const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue }) => {
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-2">{label}</span>
-          <p className="text-[28px] font-bold tracking-tight leading-none">{value}</p>
+          <p className="text-[28px] font-bold tracking-tight leading-none animate-count-up">{displayValue}</p>
           {subValue && <p className="text-[11px] text-zinc-500 mt-2">{subValue}</p>}
         </div>
         <div className={`shrink-0 w-10 h-10 rounded-xl border flex items-center justify-center ${bgClass} ${color} transition-all duration-300 group-hover:scale-110`}>
