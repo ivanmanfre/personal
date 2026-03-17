@@ -84,3 +84,27 @@ export const pipelineEdges: PipelineEdge[] = [
   { source: 'system', target: 'agent', label: 'sync' },
   { source: 'system', target: 'clients', label: 'sync' },
 ];
+
+/** Map pipeline IDs to GitHub repo name patterns (first-match-wins) */
+export const pipelineRepoMapping: Record<string, string[]> = {
+  content: ['content', 'editorial', 'carousel', 'post-gen', 'linkedin'],
+  competitors: ['competitor', 'scraping', 'scraper'],
+  leads: ['lead', 'outreach', 'email', 'leadshark'],
+  agent: ['n8nclaw', 'claw', 'agent', 'reminder'],
+  clients: ['client', 'onboarding'],
+  upwork: ['upwork'],
+  proposals: ['proposal', 'portfolio'],
+  system: ['dashboard', 'personal-site', 'ivan-system', 'github-backup', 'supabase'],
+};
+
+/** Fixed SVG positions for topology map (viewBox 800x350) */
+export const pipelinePositions: Record<string, { x: number; y: number }> = {
+  content: { x: 400, y: 175 },
+  competitors: { x: 150, y: 80 },
+  leads: { x: 150, y: 270 },
+  agent: { x: 560, y: 175 },
+  clients: { x: 720, y: 175 },
+  upwork: { x: 150, y: 175 },
+  proposals: { x: 560, y: 280 },
+  system: { x: 560, y: 70 },
+};
