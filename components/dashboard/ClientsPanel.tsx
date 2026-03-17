@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box } from 'lucide-react';
-import { useClientMonitoring, type ClientInfrastructure } from '../../hooks/useClientMonitoring';
+import { useClientMonitoring, type ClientInfrastructure, type GitHubRepo } from '../../hooks/useClientMonitoring';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
@@ -22,7 +22,7 @@ const ClientsPanel: React.FC = () => {
     clients, errors, workflows, stats, loading, refresh,
     errorsPerClient, workflowsPerClient, getClientHealth,
     toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications, resolveAllErrors,
-    infrastructure, updateInfrastructure,
+    infrastructure, updateInfrastructure, reposPerClient,
   } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -88,6 +88,7 @@ const ClientsPanel: React.FC = () => {
                   onToggleNotifications={(id, enabled) => toggleWorkflowNotifications(id, enabled)}
                   infra={infrastructure[client.id]}
                   onUpdateInfra={(data) => updateInfrastructure(client.id, data)}
+                  repos={reposPerClient(client.clientName)}
                 />
               );
             })}
@@ -207,6 +208,7 @@ interface ClientCardProps {
   onToggleNotifications: (id: string, enabled: boolean) => void;
   infra?: ClientInfrastructure;
   onUpdateInfra: (data: ClientInfrastructure) => void;
+  repos: GitHubRepo[];
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({
@@ -214,7 +216,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
   isExpanded, onToggle, tab, onTabChange,
   errors, workflows, expandedError, onToggleError,
   onToggleActive, onResolveError, onResolveAll, onToggleNotifications,
-  infra, onUpdateInfra,
+  infra, onUpdateInfra, repos,
 }) => {
   const [search, setSearch] = useState('');
 
@@ -317,6 +319,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
               client={client}
               infra={infra}
               onUpdate={onUpdateInfra}
+              repos={repos}
             />
           ) : tab === 'workflows' ? (
             <div>
@@ -449,8 +452,9 @@ const InfrastructureTab: React.FC<{
   client: ClientInstance;
   infra?: ClientInfrastructure;
   onUpdate: (data: ClientInfrastructure) => void;
-}> = ({ client, infra, onUpdate }) => {
-  const [editing, setEditing] = useState(false);
+  repos: GitHubRepo[];
+}> = ({ client, infra, onUpdate, repos }) => {
+  const [editingNotes, setEditingNotes] = useState(false);
   const [draft, setDraft] = useState<ClientInfrastructure>({
     client_name: client.clientName,
     services: [],
@@ -467,94 +471,24 @@ const InfrastructureTab: React.FC<{
       supabase_url: '',
       notes: '',
     });
-    setEditing(true);
+    setEditingNotes(true);
   };
 
   const save = () => {
     onUpdate(draft);
-    setEditing(false);
+    setEditingNotes(false);
   };
 
-  if (editing) {
-    return (
-      <div className="p-3 space-y-3">
-        <div>
-          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Services (comma-separated)</label>
-          <input
-            type="text"
-            value={draft.services.join(', ')}
-            onChange={(e) => setDraft({ ...draft, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-            placeholder="e.g. n8n, API, Worker, Postgres"
-            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">GitHub Repos (comma-separated)</label>
-          <input
-            type="text"
-            value={draft.github_repos.join(', ')}
-            onChange={(e) => setDraft({ ...draft, github_repos: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-            placeholder="e.g. org/repo-1, org/repo-2"
-            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Supabase URL</label>
-          <input
-            type="text"
-            value={draft.supabase_url}
-            onChange={(e) => setDraft({ ...draft, supabase_url: e.target.value })}
-            placeholder="https://xxx.supabase.co"
-            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Notes</label>
-          <textarea
-            value={draft.notes}
-            onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-            placeholder="Any other details: custom domains, Railway project, APIs used, credentials location..."
-            rows={3}
-            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
-          />
-        </div>
-        <div className="flex items-center gap-2 justify-end">
-          <button
-            onClick={() => setEditing(false)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-          >
-            <X className="w-3 h-3" /> Cancel
-          </button>
-          <button
-            onClick={save}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20 hover:bg-violet-500/25 transition-colors"
-          >
-            <Save className="w-3 h-3" /> Save
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const hasData = infra && (infra.services.length > 0 || infra.github_repos.length > 0 || infra.supabase_url || infra.notes);
-
-  if (!hasData) {
-    return (
-      <div className="px-4 py-6 text-center">
-        <Info className="w-5 h-5 text-zinc-700 mx-auto mb-2" />
-        <p className="text-[11px] text-zinc-500 mb-3">No infrastructure info yet</p>
-        <button
-          onClick={startEdit}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20 hover:bg-violet-500/25 transition-colors mx-auto"
-        >
-          <Pencil className="w-3 h-3" /> Add Details
-        </button>
-      </div>
-    );
-  }
+  const langColors: Record<string, string> = {
+    TypeScript: 'bg-blue-500/15 text-blue-400',
+    JavaScript: 'bg-yellow-500/15 text-yellow-400',
+    Python: 'bg-green-500/15 text-green-400',
+    HTML: 'bg-orange-500/15 text-orange-400',
+    CSS: 'bg-purple-500/15 text-purple-400',
+  };
 
   return (
-    <div className="p-3 space-y-2.5">
+    <div className="p-3 space-y-3">
       {/* n8n URL */}
       <div className="flex items-center gap-2">
         <Box className="w-3 h-3 text-orange-400 shrink-0" />
@@ -564,8 +498,55 @@ const InfrastructureTab: React.FC<{
         </a>
       </div>
 
-      {/* Services */}
-      {infra.services.length > 0 && (
+      {/* GitHub Repos — auto-synced */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Github className="w-3 h-3 text-zinc-400 shrink-0" />
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Repositories</span>
+          {repos.length > 0 && (
+            <span className="text-[10px] text-zinc-600">{repos.length}</span>
+          )}
+        </div>
+        {repos.length === 0 ? (
+          <p className="text-[11px] text-zinc-600 pl-5">No repos matched for this client</p>
+        ) : (
+          <div className="space-y-1.5 pl-5">
+            {repos.map((repo) => (
+              <a
+                key={repo.name}
+                href={repo.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/40 border border-zinc-700/30 hover:border-zinc-600/50 transition-colors group"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-zinc-200 font-medium truncate group-hover:text-blue-400 transition-colors">{repo.name}</span>
+                    {repo.private && (
+                      <span className="text-[9px] text-zinc-500 bg-zinc-700/50 px-1 py-0.5 rounded">private</span>
+                    )}
+                    {repo.language && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${langColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
+                        {repo.language}
+                      </span>
+                    )}
+                  </div>
+                  {repo.description && (
+                    <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{repo.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] text-zinc-600">{timeAgo(repo.pushed_at)}</span>
+                  <ExternalLink className="w-3 h-3 text-zinc-700 group-hover:text-blue-400 transition-colors" />
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Manual services + Supabase + notes */}
+      {infra?.services && infra.services.length > 0 && (
         <div className="flex items-start gap-2">
           <Server className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
           <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">Services</span>
@@ -579,29 +560,7 @@ const InfrastructureTab: React.FC<{
         </div>
       )}
 
-      {/* GitHub */}
-      {infra.github_repos.length > 0 && (
-        <div className="flex items-start gap-2">
-          <Github className="w-3 h-3 text-zinc-400 shrink-0 mt-0.5" />
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">GitHub</span>
-          <div className="flex flex-wrap gap-1">
-            {infra.github_repos.map((repo) => (
-              <a
-                key={repo}
-                href={repo.startsWith('http') ? repo : `https://github.com/${repo}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/60 text-blue-400 hover:text-blue-300 border border-zinc-700/40 transition-colors"
-              >
-                {repo.replace('https://github.com/', '')}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Supabase */}
-      {infra.supabase_url && (
+      {infra?.supabase_url && (
         <div className="flex items-center gap-2">
           <Database className="w-3 h-3 text-cyan-400 shrink-0" />
           <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">Supa</span>
@@ -611,22 +570,70 @@ const InfrastructureTab: React.FC<{
         </div>
       )}
 
-      {/* Notes */}
-      {infra.notes && (
-        <div className="mt-1 p-2 bg-zinc-800/40 border border-zinc-700/30 rounded-lg">
+      {infra?.notes && !editingNotes && (
+        <div className="p-2 bg-zinc-800/40 border border-zinc-700/30 rounded-lg">
           <p className="text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap">{infra.notes}</p>
         </div>
       )}
 
-      {/* Edit button */}
-      <div className="flex justify-end pt-1">
-        <button
-          onClick={startEdit}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10 transition-colors"
-        >
-          <Pencil className="w-3 h-3" /> Edit
-        </button>
-      </div>
+      {/* Notes editor */}
+      {editingNotes ? (
+        <div className="space-y-2 border-t border-zinc-800/40 pt-2">
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Services (comma-separated)</label>
+            <input
+              type="text"
+              value={draft.services.join(', ')}
+              onChange={(e) => setDraft({ ...draft, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+              placeholder="e.g. n8n, API, Worker, Postgres"
+              className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Supabase URL</label>
+            <input
+              type="text"
+              value={draft.supabase_url}
+              onChange={(e) => setDraft({ ...draft, supabase_url: e.target.value })}
+              placeholder="https://xxx.supabase.co"
+              className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Notes</label>
+            <textarea
+              value={draft.notes}
+              onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+              placeholder="Custom domains, Railway project, APIs used, credentials location..."
+              rows={3}
+              className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
+            />
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={() => setEditingNotes(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            >
+              <X className="w-3 h-3" /> Cancel
+            </button>
+            <button
+              onClick={save}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20 hover:bg-violet-500/25 transition-colors"
+            >
+              <Save className="w-3 h-3" /> Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={startEdit}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10 transition-colors"
+          >
+            <Pencil className="w-3 h-3" /> Edit Notes
+          </button>
+        </div>
+      )}
     </div>
   );
 };

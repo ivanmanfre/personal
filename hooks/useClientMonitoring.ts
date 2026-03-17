@@ -59,17 +59,40 @@ export interface ClientInfrastructure {
   notes: string;
 }
 
+export interface GitHubRepo {
+  name: string;
+  full_name: string;
+  private: boolean;
+  description: string;
+  language: string;
+  default_branch: string;
+  pushed_at: string;
+  created_at: string;
+  html_url: string;
+  topics: string[];
+}
+
+/** Map client names to GitHub repo name patterns */
+const CLIENT_REPO_PATTERNS: Record<string, string[]> = {
+  'ProSWPPP': ['proswppp', 'swppp'],
+  'SecondMile': ['secondmile', 'second-mile'],
+  'Lemonade': ['lemonade'],
+  'Agency Ops': ['agencyops', 'agency-ops'],
+  'The Reeder': ['the-reeder', 'thereeder', 'reeder'],
+};
+
 export function useClientMonitoring() {
   const [clients, setClients] = useState<ClientInstance[]>([]);
   const [errors, setErrors] = useState<ClientWorkflowError[]>([]);
   const [workflows, setWorkflows] = useState<ClientMonitoredWorkflow[]>([]);
   const [infrastructure, setInfrastructure] = useState<Record<string, ClientInfrastructure>>({});
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-    const [clientsRes, errorsRes, workflowsRes, infraRes] = await Promise.all([
+    const [clientsRes, errorsRes, workflowsRes, infraRes, reposRes] = await Promise.all([
       supabase.from('client_instances_safe').select('*').order('client_name'),
       supabase
         .from('client_workflow_errors')
@@ -85,6 +108,11 @@ export function useClientMonitoring() {
         .from('system_settings')
         .select('value')
         .eq('key', 'client_infrastructure')
+        .single(),
+      supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'github_repos')
         .single(),
     ]);
 
@@ -103,6 +131,9 @@ export function useClientMonitoring() {
     setWorkflows((workflowsRes.data || []).map(mapWorkflow));
     if (infraRes.data?.value) {
       setInfrastructure(infraRes.data.value as Record<string, ClientInfrastructure>);
+    }
+    if (reposRes.data?.value) {
+      setGithubRepos(reposRes.data.value as GitHubRepo[]);
     }
     } catch (err) {
       console.error('Failed to fetch client monitoring data:', err);
@@ -199,6 +230,14 @@ export function useClientMonitoring() {
     }
   };
 
+  const reposPerClient = (clientName: string): GitHubRepo[] => {
+    const patterns = CLIENT_REPO_PATTERNS[clientName];
+    if (!patterns) return [];
+    return githubRepos.filter((repo) =>
+      patterns.some((p) => repo.name.toLowerCase().includes(p))
+    );
+  };
+
   const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;
 
   return {
@@ -225,5 +264,7 @@ export function useClientMonitoring() {
     resolveAllErrors,
     infrastructure,
     updateInfrastructure,
+    githubRepos,
+    reposPerClient,
   };
 }
