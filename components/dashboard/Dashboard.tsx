@@ -12,7 +12,6 @@ import ClientsPanel from './ClientsPanel';
 import ContentPanel from './ContentPanel';
 import TasksPanel from './TasksPanel';
 import UpworkPanel from './UpworkPanel';
-import SystemMapPanel from './SystemMapPanel';
 import SettingsPanel from './SettingsPanel';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import ErrorBoundary from './shared/ErrorBoundary';
@@ -25,7 +24,6 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   performance: LazyPerformancePanel as unknown as React.ComponentType,
   content: ContentPanel,
   workflows: WorkflowsPanel,
-  'system-map': SystemMapPanel,
   competitors: CompetitorIntelPanel,
   leads: LeadsPanel,
   agent: AgentPanel,

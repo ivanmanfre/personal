@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench, Github, Lock, Folder, FileText } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench, Github, Lock, Folder, FileText, Network } from 'lucide-react';
 import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
@@ -10,12 +10,14 @@ import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import { timeAgo } from './shared/utils';
+import { SystemMap } from './system-map';
+import { pipelineConfig } from './system-map/config';
 import type { WorkflowStat, ExecutionLog } from '../../types/dashboard';
 import type { StatusFilter, ExecSortKey } from '../../hooks/useExecutionLogs';
 import type { GitHubRepo } from '../../hooks/useClientMonitoring';
 
 type Group = 'all' | 'issues' | 'schedule' | 'event' | 'webhook' | 'sub-workflow' | 'manual';
-type View = 'list' | 'logs' | 'repos';
+type View = 'list' | 'logs' | 'repos' | 'map';
 type SortKey = 'health' | 'name' | 'lastRun' | 'errors';
 
 function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
@@ -29,6 +31,14 @@ function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 
 const healthPriority: Record<string, number> = { error: 0, warning: 1, healthy: 2, inactive: 3 };
 
 /* Pipeline definitions moved to system-map/config.ts */
+
+/** Repo name patterns that belong to clients — exclude from personal repos view */
+const CLIENT_REPO_PATTERNS = ['proswppp', 'swppp', 'secondmile', 'second-mile', 'lemonade', 'agencyops', 'agency-ops', 'the-reeder', 'thereeder', 'reeder', 'client-config-template', 'test-co'];
+
+function isClientRepo(repoName: string): boolean {
+  const lower = repoName.toLowerCase();
+  return CLIENT_REPO_PATTERNS.some((p) => lower.includes(p));
+}
 
 /* ── Component ── */
 
@@ -137,6 +147,13 @@ const WorkflowsPanel: React.FC = () => {
               <ScrollText className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setView('map')}
+              className={`p-1.5 rounded-md transition-colors ${view === 'map' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="System map"
+            >
+              <Network className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setView('repos')}
               className={`p-1.5 rounded-md transition-colors ${view === 'repos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="GitHub repositories"
@@ -173,8 +190,10 @@ const WorkflowsPanel: React.FC = () => {
         </div>
       </div>
 
-      {view === 'repos' ? (
-        <ReposView repos={repos} />
+      {view === 'map' ? (
+        <MapView workflows={workflows} />
+      ) : view === 'repos' ? (
+        <ReposView repos={repos.filter((r) => !isClientRepo(r.name))} />
       ) : view === 'logs' ? (
         <ExecutionLogsView workflows={workflows} />
       ) : (
@@ -452,6 +471,54 @@ const ReposView: React.FC<{ repos: GitHubRepo[] }> = ({ repos }) => {
           <p className="text-sm text-zinc-500">{repos.length === 0 ? 'No repos synced yet' : 'No matching repos'}</p>
         </div>
       )}
+    </div>
+  );
+};
+
+/* ── Map View ── */
+
+const chipBg: Record<string, string> = {
+  blue: 'bg-blue-500/10 border-blue-500/20', purple: 'bg-purple-500/10 border-purple-500/20',
+  emerald: 'bg-emerald-500/10 border-emerald-500/20', cyan: 'bg-cyan-500/10 border-cyan-500/20',
+  orange: 'bg-orange-500/10 border-orange-500/20', green: 'bg-green-500/10 border-green-500/20',
+  amber: 'bg-amber-500/10 border-amber-500/20', zinc: 'bg-zinc-500/10 border-zinc-600/20',
+};
+const chipDot: Record<string, string> = {
+  blue: 'bg-blue-400', purple: 'bg-purple-400', emerald: 'bg-emerald-400', cyan: 'bg-cyan-400',
+  orange: 'bg-orange-400', green: 'bg-green-400', amber: 'bg-amber-400', zinc: 'bg-zinc-400',
+};
+const chipText: Record<string, string> = {
+  blue: 'text-blue-400', purple: 'text-purple-400', emerald: 'text-emerald-400', cyan: 'text-cyan-400',
+  orange: 'text-orange-400', green: 'text-green-400', amber: 'text-amber-400', zinc: 'text-zinc-400',
+};
+
+const MapView: React.FC<{ workflows: WorkflowStat[] }> = ({ workflows }) => {
+  const pipelineStats = useMemo(() => {
+    return pipelineConfig.map((p) => {
+      const matched = workflows.filter((wf) => {
+        const name = wf.workflowName.toLowerCase();
+        return p.workflows.some((pat) => name.includes(pat.toLowerCase()));
+      });
+      const errors = matched.reduce((s, w) => s + w.errorCount24h, 0);
+      const hasError = matched.some((w) => getWorkflowHealth(w) === 'error');
+      const hasWarn = matched.some((w) => getWorkflowHealth(w) === 'warning');
+      return { ...p, count: matched.length, errors, hasError, hasWarn };
+    });
+  }, [workflows]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {pipelineStats.map((p) => (
+          <div key={p.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${chipBg[p.color] || chipBg.zinc}`}>
+            <span className={`w-2 h-2 rounded-full ${p.hasError ? 'bg-red-500' : p.hasWarn ? 'bg-amber-500' : chipDot[p.color] || 'bg-zinc-400'}`} />
+            <span className={`text-xs font-medium ${chipText[p.color] || 'text-zinc-400'}`}>{p.name}</span>
+            <span className="text-[10px] text-zinc-500">{p.count}</span>
+            {p.errors > 0 && <span className="text-[10px] text-red-400 font-medium">{p.errors}e</span>}
+          </div>
+        ))}
+      </div>
+      <SystemMap workflows={workflows} />
     </div>
   );
 };
