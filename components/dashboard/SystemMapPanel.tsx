@@ -1,14 +1,17 @@
-import React, { useMemo } from 'react';
-import { Activity, AlertTriangle, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Activity, AlertTriangle, CheckCircle2, XCircle, Zap, Github, ExternalLink, Lock, ChevronDown, ChevronRight } from 'lucide-react';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { supabase } from '../../lib/supabase';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import AnimateIn from './shared/AnimateIn';
 import { SystemMap } from './system-map';
 import { pipelineConfig } from './system-map/config';
+import { timeAgo } from './shared/utils';
 import type { WorkflowStat } from '../../types/dashboard';
+import type { GitHubRepo } from '../../hooks/useClientMonitoring';
 
 function getHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
   if (!wf.isActive) return 'inactive';
@@ -37,9 +40,36 @@ const colorText: Record<string, string> = {
   amber: 'text-amber-400', zinc: 'text-zinc-400',
 };
 
+const CLIENT_PATTERNS = ['proswppp', 'swppp', 'secondmile', 'second-mile', 'lemonade', 'agencyops', 'agency-ops', 'the-reeder', 'thereeder', 'reeder'];
+
+const langColors: Record<string, string> = {
+  TypeScript: 'bg-blue-500/15 text-blue-400',
+  JavaScript: 'bg-yellow-500/15 text-yellow-400',
+  Python: 'bg-green-500/15 text-green-400',
+  HTML: 'bg-orange-500/15 text-orange-400',
+  CSS: 'bg-purple-500/15 text-purple-400',
+  Shell: 'bg-zinc-500/15 text-zinc-400',
+};
+
 const SystemMapPanel: React.FC = () => {
   const { workflows, stats, loading, refresh } = useWorkflowStats();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_workflow_stats'] });
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [reposOpen, setReposOpen] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'github_repos')
+      .single()
+      .then(({ data }) => {
+        if (data?.value) {
+          const all = data.value as GitHubRepo[];
+          setRepos(all.filter((r) => !CLIENT_PATTERNS.some((p) => r.name.toLowerCase().includes(p))));
+        }
+      });
+  }, []);
 
   const pipelineStats = useMemo(() => {
     return pipelineConfig.map((p) => {
@@ -109,6 +139,57 @@ const SystemMapPanel: React.FC = () => {
       <AnimateIn delay={120}>
         <SystemMap workflows={workflows} />
       </AnimateIn>
+
+      {/* GitHub Repositories */}
+      {repos.length > 0 && (
+        <AnimateIn delay={180}>
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+            <button
+              onClick={() => setReposOpen(!reposOpen)}
+              className="w-full px-4 py-3 flex items-center gap-2 hover:bg-zinc-800/20 transition-colors"
+            >
+              <Github className="w-4 h-4 text-zinc-400" />
+              <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1 text-left">
+                Repositories
+              </h2>
+              <span className="text-[11px] text-zinc-500">{repos.length}</span>
+              {reposOpen ? <ChevronDown className="w-4 h-4 text-zinc-600" /> : <ChevronRight className="w-4 h-4 text-zinc-600" />}
+            </button>
+            {reposOpen && (
+              <div className="border-t border-zinc-800/40 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-3">
+                {repos.map((repo) => (
+                  <a
+                    key={repo.name}
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-2.5 p-2.5 rounded-lg bg-zinc-800/40 border border-zinc-700/30 hover:border-zinc-600/50 transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-zinc-200 font-medium truncate group-hover:text-blue-400 transition-colors">{repo.name}</span>
+                        {repo.private && <Lock className="w-2.5 h-2.5 text-zinc-600 shrink-0" />}
+                      </div>
+                      {repo.description && (
+                        <p className="text-[10px] text-zinc-500 mt-0.5 line-clamp-1">{repo.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        {repo.language && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${langColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
+                            {repo.language}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-zinc-600">{timeAgo(repo.pushed_at)}</span>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-3 h-3 text-zinc-700 group-hover:text-blue-400 transition-colors shrink-0 mt-0.5" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </AnimateIn>
+      )}
     </div>
   );
 };

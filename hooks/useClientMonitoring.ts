@@ -232,19 +232,10 @@ export function useClientMonitoring() {
 
   const reposPerClient = (clientName: string): GitHubRepo[] => {
     const patterns = CLIENT_REPO_PATTERNS[clientName];
-    if (patterns) {
-      return githubRepos.filter((repo) =>
-        patterns.some((p) => repo.name.toLowerCase().includes(p))
-      );
-    }
-    // Ivan System = everything that doesn't match any client pattern
-    if (clientName === 'Ivan System') {
-      const allClientPatterns = Object.values(CLIENT_REPO_PATTERNS).flat();
-      return githubRepos.filter((repo) =>
-        !allClientPatterns.some((p) => repo.name.toLowerCase().includes(p))
-      );
-    }
-    return [];
+    if (!patterns) return [];
+    return githubRepos.filter((repo) =>
+      patterns.some((p) => repo.name.toLowerCase().includes(p))
+    );
   };
 
   const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;
