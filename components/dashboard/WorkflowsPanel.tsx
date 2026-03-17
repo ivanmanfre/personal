@@ -108,11 +108,24 @@ const WorkflowsPanel: React.FC = () => {
   }, []);
 
   const pipelineStats = useMemo((): PipelineStat[] => {
-    return pipelineConfig.map((p) => {
-      const matched = workflows.filter((wf) => {
+    // First-match-wins: each workflow belongs to exactly ONE pipeline
+    const claimed = new Set<string>();
+    const pipelineWorkflows = new Map<string, WorkflowStat[]>();
+    pipelineConfig.forEach((p) => pipelineWorkflows.set(p.id, []));
+
+    for (const p of pipelineConfig) {
+      for (const wf of workflows) {
+        if (claimed.has(wf.workflowId)) continue;
         const name = wf.workflowName.toLowerCase();
-        return p.workflows.some((pat) => name.includes(pat.toLowerCase()));
-      });
+        if (p.workflows.some((pat) => name.includes(pat.toLowerCase()))) {
+          pipelineWorkflows.get(p.id)!.push(wf);
+          claimed.add(wf.workflowId);
+        }
+      }
+    }
+
+    return pipelineConfig.map((p) => {
+      const matched = pipelineWorkflows.get(p.id) || [];
       const pRepos = repos.filter((r) => {
         const patterns = pipelineRepoMapping[p.id] || [];
         return patterns.some((pat) => r.name.toLowerCase().includes(pat));
@@ -216,8 +229,7 @@ const WorkflowsPanel: React.FC = () => {
           const sortedWfs = [...p.workflows].sort((a, b) => healthPriority[getWorkflowHealth(a)] - healthPriority[getWorkflowHealth(b)]);
 
           return (
-            <AnimateIn key={p.id} delay={40 + i * 30}>
-              <div className={`rounded-xl border border-t-2 bg-zinc-900/80 overflow-hidden transition-all duration-300 hover:border-zinc-700/60 ${
+            <div key={p.id} className={`rounded-xl border border-t-2 bg-zinc-900/80 overflow-hidden transition-all duration-300 hover:border-zinc-700/60 ${
                 p.hasError
                   ? 'ring-1 ring-red-500/20 border-zinc-800/60 border-t-red-500/60'
                   : `border-zinc-800/60 ${accentBorder[p.color] || 'border-t-zinc-700/50'}`
@@ -391,7 +403,6 @@ const WorkflowsPanel: React.FC = () => {
                   </div>
                 )}
               </div>
-            </AnimateIn>
           );
         })}
       </div>

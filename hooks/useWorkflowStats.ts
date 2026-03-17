@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
 import type { WorkflowStat, SystemHealth } from '../types/dashboard';
@@ -27,9 +27,11 @@ function mapWf(row: any): WorkflowStat {
 export function useWorkflowStats() {
   const [workflows, setWorkflows] = useState<WorkflowStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    // Only show loading skeleton on initial load, not on refreshes
+    if (!hasFetched.current) setLoading(true);
     try {
       const { data } = await supabase
         .from('dashboard_workflow_stats')
@@ -41,6 +43,7 @@ export function useWorkflowStats() {
       console.error('Failed to fetch workflow stats:', err);
     } finally {
       setLoading(false);
+      hasFetched.current = true;
     }
   }, []);
 
