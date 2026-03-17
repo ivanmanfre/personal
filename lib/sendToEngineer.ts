@@ -1,7 +1,7 @@
 const N8NCLAW_WEBHOOK = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
 const IVAN_JID = '5491159385939@s.whatsapp.net';
 
-export async function sendToEngineer(workflowName: string, workflowId: string, errorMessage: string | null, errorCount: number): Promise<boolean> {
+export async function sendToEngineer(workflowName: string, workflowId: string, errorMessage: string | null, errorCount: number, supabaseRowId?: string): Promise<boolean> {
   const message = [
     `[ENGINEER REQUEST from Dashboard]`,
     `Workflow: ${workflowName}`,
@@ -10,6 +10,9 @@ export async function sendToEngineer(workflowName: string, workflowId: string, e
     errorMessage ? `Last error: ${errorMessage}` : '',
     '',
     `Please fetch this workflow, diagnose the issue, and fix it.`,
+    '',
+    `After fixing, mark resolved on dashboard by calling Supabase RPC:`,
+    `supabase.rpc('dashboard_action', { p_table: 'dashboard_workflow_stats', p_id: '${supabaseRowId || workflowId}', p_field: 'error_acknowledged', p_value: 'true' })`,
   ].filter(Boolean).join('\n');
 
   // Send as Evolution-formatted WhatsApp message directly to n8nClaw's active webhook

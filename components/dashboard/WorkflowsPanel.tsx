@@ -42,7 +42,7 @@ const WorkflowsPanel: React.FC = () => {
 
   const handleSendToEngineer = useCallback(async (wf: WorkflowStat) => {
     setSentToEngineer((prev) => ({ ...prev, [wf.workflowId]: 'sending' }));
-    const ok = await sendToEngineer(wf.workflowName, wf.workflowId, wf.lastErrorMessage, wf.errorCount24h);
+    const ok = await sendToEngineer(wf.workflowName, wf.workflowId, wf.lastErrorMessage, wf.errorCount24h, wf.id);
     setSentToEngineer((prev) => ({ ...prev, [wf.workflowId]: ok ? 'sent' : 'sending' }));
     if (!ok) setTimeout(() => setSentToEngineer((prev) => { const n = { ...prev }; delete n[wf.workflowId]; return n; }), 2000);
   }, []);
