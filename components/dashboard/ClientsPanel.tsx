@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box } from 'lucide-react';
+import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box, Folder, FileText } from 'lucide-react';
 import { useClientMonitoring, type ClientInfrastructure, type GitHubRepo } from '../../hooks/useClientMonitoring';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -447,6 +447,120 @@ const ClientCard: React.FC<ClientCardProps> = ({
   );
 };
 
+/* ─── Repo List with expandable file tree ─── */
+const formatSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+};
+
+const RepoList: React.FC<{ repos: GitHubRepo[]; langColors: Record<string, string> }> = ({ repos, langColors }) => {
+  const [expandedRepo, setExpandedRepo] = useState<string | null>(null);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <Github className="w-3 h-3 text-zinc-400 shrink-0" />
+        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Repositories</span>
+        {repos.length > 0 && (
+          <span className="text-[10px] text-zinc-600">{repos.length}</span>
+        )}
+      </div>
+      {repos.length === 0 ? (
+        <p className="text-[11px] text-zinc-600 pl-5">No repos matched for this client</p>
+      ) : (
+        <div className="space-y-1 pl-5">
+          {repos.map((repo) => {
+            const isOpen = expandedRepo === repo.name;
+            const hasContents = repo.contents && repo.contents.length > 0;
+            const dirs = (repo.contents || []).filter((f) => f.type === 'dir').sort((a, b) => a.name.localeCompare(b.name));
+            const files = (repo.contents || []).filter((f) => f.type === 'file').sort((a, b) => a.name.localeCompare(b.name));
+            return (
+              <div key={repo.name} className="rounded-lg bg-zinc-800/40 border border-zinc-700/30 overflow-hidden">
+                <div className="flex items-center gap-2 p-2">
+                  {hasContents ? (
+                    <button
+                      onClick={() => setExpandedRepo(isOpen ? null : repo.name)}
+                      className="p-0.5 hover:bg-zinc-700/50 rounded transition-colors"
+                    >
+                      {isOpen ? <ChevronDown className="w-3 h-3 text-zinc-500" /> : <ChevronRight className="w-3 h-3 text-zinc-500" />}
+                    </button>
+                  ) : (
+                    <span className="w-4" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={repo.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-zinc-200 font-medium truncate hover:text-blue-400 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {repo.name}
+                      </a>
+                      {repo.private && (
+                        <span className="text-[9px] text-zinc-500 bg-zinc-700/50 px-1 py-0.5 rounded">private</span>
+                      )}
+                      {repo.language && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${langColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
+                          {repo.language}
+                        </span>
+                      )}
+                    </div>
+                    {repo.description && (
+                      <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{repo.description}</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-zinc-600 shrink-0">{timeAgo(repo.pushed_at)}</span>
+                  <a
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-zinc-700 hover:text-blue-400 transition-colors shrink-0"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                {isOpen && hasContents && (
+                  <div className="border-t border-zinc-700/30 px-3 py-2 grid grid-cols-2 gap-x-3 gap-y-0.5">
+                    {dirs.map((f) => (
+                      <a
+                        key={f.path}
+                        href={`${repo.html_url}/tree/${repo.default_branch}/${f.path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 py-0.5 text-[10px] text-zinc-300 hover:text-blue-400 transition-colors"
+                      >
+                        <Folder className="w-3 h-3 text-blue-400/60 shrink-0" />
+                        <span className="truncate">{f.name}</span>
+                      </a>
+                    ))}
+                    {files.map((f) => (
+                      <a
+                        key={f.path}
+                        href={`${repo.html_url}/blob/${repo.default_branch}/${f.path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 py-0.5 text-[10px] text-zinc-400 hover:text-blue-400 transition-colors"
+                      >
+                        <FileText className="w-3 h-3 text-zinc-600 shrink-0" />
+                        <span className="truncate">{f.name}</span>
+                        {f.size > 0 && <span className="text-[9px] text-zinc-600 shrink-0">{formatSize(f.size)}</span>}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ─── Infrastructure Tab ─── */
 const InfrastructureTab: React.FC<{
   client: ClientInstance;
@@ -499,51 +613,7 @@ const InfrastructureTab: React.FC<{
       </div>
 
       {/* GitHub Repos — auto-synced */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Github className="w-3 h-3 text-zinc-400 shrink-0" />
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Repositories</span>
-          {repos.length > 0 && (
-            <span className="text-[10px] text-zinc-600">{repos.length}</span>
-          )}
-        </div>
-        {repos.length === 0 ? (
-          <p className="text-[11px] text-zinc-600 pl-5">No repos matched for this client</p>
-        ) : (
-          <div className="space-y-1.5 pl-5">
-            {repos.map((repo) => (
-              <a
-                key={repo.name}
-                href={repo.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-lg bg-zinc-800/40 border border-zinc-700/30 hover:border-zinc-600/50 transition-colors group"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-zinc-200 font-medium truncate group-hover:text-blue-400 transition-colors">{repo.name}</span>
-                    {repo.private && (
-                      <span className="text-[9px] text-zinc-500 bg-zinc-700/50 px-1 py-0.5 rounded">private</span>
-                    )}
-                    {repo.language && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${langColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
-                        {repo.language}
-                      </span>
-                    )}
-                  </div>
-                  {repo.description && (
-                    <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{repo.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] text-zinc-600">{timeAgo(repo.pushed_at)}</span>
-                  <ExternalLink className="w-3 h-3 text-zinc-700 group-hover:text-blue-400 transition-colors" />
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
+      <RepoList repos={repos} langColors={langColors} />
 
       {/* Manual services + Supabase + notes */}
       {infra?.services && infra.services.length > 0 && (

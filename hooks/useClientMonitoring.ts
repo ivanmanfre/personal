@@ -59,6 +59,13 @@ export interface ClientInfrastructure {
   notes: string;
 }
 
+export interface GitHubRepoFile {
+  name: string;
+  type: 'file' | 'dir';
+  size: number;
+  path: string;
+}
+
 export interface GitHubRepo {
   name: string;
   full_name: string;
@@ -70,6 +77,7 @@ export interface GitHubRepo {
   created_at: string;
   html_url: string;
   topics: string[];
+  contents?: GitHubRepoFile[];
 }
 
 /** Map client names to GitHub repo name patterns */

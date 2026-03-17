@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench, Github, Lock } from 'lucide-react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench, Github, Lock, Folder, FileText } from 'lucide-react';
 import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
@@ -336,8 +336,15 @@ const repoLangColors: Record<string, string> = {
   Shell: 'bg-zinc-500/15 text-zinc-400',
 };
 
+const formatSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+};
+
 const ReposView: React.FC<{ repos: GitHubRepo[] }> = ({ repos }) => {
   const [search, setSearch] = useState('');
+  const [expandedRepo, setExpandedRepo] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     if (!search) return repos;
@@ -365,35 +372,78 @@ const ReposView: React.FC<{ repos: GitHubRepo[] }> = ({ repos }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        {filtered.map((repo) => (
-          <a
-            key={repo.name}
-            href={repo.html_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/90 border border-zinc-800/60 hover:border-zinc-600/50 transition-colors group"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm text-zinc-200 font-medium truncate group-hover:text-blue-400 transition-colors">{repo.name}</span>
-                {repo.private && <Lock className="w-3 h-3 text-zinc-600 shrink-0" />}
-              </div>
-              {repo.description && (
-                <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{repo.description}</p>
-              )}
-              <div className="flex items-center gap-2 mt-1.5">
-                {repo.language && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${repoLangColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
-                    {repo.language}
-                  </span>
+        {filtered.map((repo) => {
+          const isOpen = expandedRepo === repo.name;
+          const hasContents = repo.contents && repo.contents.length > 0;
+          const dirs = (repo.contents || []).filter((f) => f.type === 'dir').sort((a, b) => a.name.localeCompare(b.name));
+          const files = (repo.contents || []).filter((f) => f.type === 'file').sort((a, b) => a.name.localeCompare(b.name));
+          return (
+            <div key={repo.name} className="rounded-xl bg-zinc-900/90 border border-zinc-800/60 hover:border-zinc-600/50 transition-colors overflow-hidden">
+              <div className="flex items-start gap-2.5 p-3">
+                {hasContents ? (
+                  <button
+                    onClick={() => setExpandedRepo(isOpen ? null : repo.name)}
+                    className="p-0.5 hover:bg-zinc-700/50 rounded transition-colors mt-0.5"
+                  >
+                    {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />}
+                  </button>
+                ) : (
+                  <span className="w-4.5" />
                 )}
-                <span className="text-[10px] text-zinc-600">{repo.default_branch}</span>
-                <span className="text-[10px] text-zinc-600">pushed {timeAgo(repo.pushed_at)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <a href={repo.html_url} target="_blank" rel="noopener noreferrer" className="text-sm text-zinc-200 font-medium truncate hover:text-blue-400 transition-colors">{repo.name}</a>
+                    {repo.private && <Lock className="w-3 h-3 text-zinc-600 shrink-0" />}
+                  </div>
+                  {repo.description && (
+                    <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{repo.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {repo.language && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${repoLangColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
+                        {repo.language}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-zinc-600">{repo.default_branch}</span>
+                    <span className="text-[10px] text-zinc-600">pushed {timeAgo(repo.pushed_at)}</span>
+                  </div>
+                </div>
+                <a href={repo.html_url} target="_blank" rel="noopener noreferrer" className="text-zinc-700 hover:text-blue-400 transition-colors shrink-0 mt-0.5">
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
+              {isOpen && hasContents && (
+                <div className="border-t border-zinc-800/40 px-3 py-2 space-y-0.5">
+                  {dirs.map((f) => (
+                    <a
+                      key={f.path}
+                      href={`${repo.html_url}/tree/${repo.default_branch}/${f.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 py-0.5 text-[10px] text-zinc-300 hover:text-blue-400 transition-colors"
+                    >
+                      <Folder className="w-3 h-3 text-blue-400/60 shrink-0" />
+                      <span className="truncate">{f.name}/</span>
+                    </a>
+                  ))}
+                  {files.map((f) => (
+                    <a
+                      key={f.path}
+                      href={`${repo.html_url}/blob/${repo.default_branch}/${f.path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 py-0.5 text-[10px] text-zinc-400 hover:text-blue-400 transition-colors"
+                    >
+                      <FileText className="w-3 h-3 text-zinc-600 shrink-0" />
+                      <span className="truncate">{f.name}</span>
+                      {f.size > 0 && <span className="text-[9px] text-zinc-600 ml-auto shrink-0">{formatSize(f.size)}</span>}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
-            <ExternalLink className="w-3.5 h-3.5 text-zinc-700 group-hover:text-blue-400 transition-colors shrink-0 mt-0.5" />
-          </a>
-        ))}
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (
