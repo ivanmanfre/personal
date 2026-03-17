@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Server, AlertTriangle, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search } from 'lucide-react';
-import { useClientMonitoring } from '../../hooks/useClientMonitoring';
+import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box } from 'lucide-react';
+import { useClientMonitoring, type ClientInfrastructure } from '../../hooks/useClientMonitoring';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
@@ -15,21 +15,24 @@ const severityColors: Record<string, string> = {
   low: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20',
 };
 
+type ClientTabType = 'workflows' | 'errors' | 'info';
+
 const ClientsPanel: React.FC = () => {
   const {
     clients, errors, workflows, stats, loading, refresh,
     errorsPerClient, workflowsPerClient, getClientHealth,
-    toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications,
+    toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications, resolveAllErrors,
+    infrastructure, updateInfrastructure,
   } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [expandedError, setExpandedError] = useState<string | null>(null);
-  const [clientTab, setClientTab] = useState<Record<string, 'workflows' | 'errors'>>({});
+  const [clientTab, setClientTab] = useState<Record<string, ClientTabType>>({});
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
-  const getTab = (id: string) => clientTab[id] || 'workflows';
-  const setTab = (id: string, tab: 'workflows' | 'errors') => setClientTab((p) => ({ ...p, [id]: tab }));
+  const getTab = (id: string): ClientTabType => clientTab[id] || 'workflows';
+  const setTab = (id: string, tab: ClientTabType) => setClientTab((p) => ({ ...p, [id]: tab }));
 
   return (
     <div className="space-y-6">
@@ -83,6 +86,8 @@ const ClientsPanel: React.FC = () => {
                   onResolveError={(id) => resolveError(id)}
                   onResolveAll={() => resolveAllForClient(client.id)}
                   onToggleNotifications={(id, enabled) => toggleWorkflowNotifications(id, enabled)}
+                  infra={infrastructure[client.id]}
+                  onUpdateInfra={(data) => updateInfrastructure(client.id, data)}
                 />
               );
             })}
@@ -93,7 +98,13 @@ const ClientsPanel: React.FC = () => {
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
               <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-zinc-500" />
-                <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Recent Errors Across All Clients</h2>
+                <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1">Recent Errors Across All Clients</h2>
+                <button
+                  onClick={() => { if (confirm(`Clear all ${errors.length} errors across all clients?`)) resolveAllErrors(); }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                >
+                  <CheckCircle2 className="w-3 h-3" /> Clear All
+                </button>
               </div>
               <div className="max-h-96 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/40">
                 {errors.slice(0, 20).map((err) => {
@@ -184,8 +195,8 @@ interface ClientCardProps {
   monitoredCount: number;
   isExpanded: boolean;
   onToggle: () => void;
-  tab: 'workflows' | 'errors';
-  onTabChange: (tab: 'workflows' | 'errors') => void;
+  tab: ClientTabType;
+  onTabChange: (tab: ClientTabType) => void;
   errors: any[];
   workflows: ClientMonitoredWorkflow[];
   expandedError: string | null;
@@ -194,6 +205,8 @@ interface ClientCardProps {
   onResolveError: (id: string) => void;
   onResolveAll: () => void;
   onToggleNotifications: (id: string, enabled: boolean) => void;
+  infra?: ClientInfrastructure;
+  onUpdateInfra: (data: ClientInfrastructure) => void;
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({
@@ -201,6 +214,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
   isExpanded, onToggle, tab, onTabChange,
   errors, workflows, expandedError, onToggleError,
   onToggleActive, onResolveError, onResolveAll, onToggleNotifications,
+  infra, onUpdateInfra,
 }) => {
   const [search, setSearch] = useState('');
 
@@ -279,6 +293,12 @@ const ClientCard: React.FC<ClientCardProps> = ({
             >
               Errors ({errorCount})
             </button>
+            <button
+              onClick={() => onTabChange('info')}
+              className={`flex-1 px-3 py-2 text-[11px] font-medium transition-colors ${tab === 'info' ? 'text-violet-400 border-b-2 border-violet-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              Info
+            </button>
           </div>
 
           {tab === 'errors' && errors.length > 1 && (
@@ -292,7 +312,13 @@ const ClientCard: React.FC<ClientCardProps> = ({
             </div>
           )}
 
-          {tab === 'workflows' ? (
+          {tab === 'info' ? (
+            <InfrastructureTab
+              client={client}
+              infra={infra}
+              onUpdate={onUpdateInfra}
+            />
+          ) : tab === 'workflows' ? (
             <div>
               {workflows.length > 8 && (
                 <div className="px-3 pt-2">
@@ -414,6 +440,193 @@ const ClientCard: React.FC<ClientCardProps> = ({
           )}
         </div>
       )}
+    </div>
+  );
+};
+
+/* ─── Infrastructure Tab ─── */
+const InfrastructureTab: React.FC<{
+  client: ClientInstance;
+  infra?: ClientInfrastructure;
+  onUpdate: (data: ClientInfrastructure) => void;
+}> = ({ client, infra, onUpdate }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<ClientInfrastructure>({
+    client_name: client.clientName,
+    services: [],
+    github_repos: [],
+    supabase_url: '',
+    notes: '',
+  });
+
+  const startEdit = () => {
+    setDraft(infra || {
+      client_name: client.clientName,
+      services: [],
+      github_repos: [],
+      supabase_url: '',
+      notes: '',
+    });
+    setEditing(true);
+  };
+
+  const save = () => {
+    onUpdate(draft);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="p-3 space-y-3">
+        <div>
+          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Services (comma-separated)</label>
+          <input
+            type="text"
+            value={draft.services.join(', ')}
+            onChange={(e) => setDraft({ ...draft, services: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+            placeholder="e.g. n8n, API, Worker, Postgres"
+            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">GitHub Repos (comma-separated)</label>
+          <input
+            type="text"
+            value={draft.github_repos.join(', ')}
+            onChange={(e) => setDraft({ ...draft, github_repos: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+            placeholder="e.g. org/repo-1, org/repo-2"
+            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Supabase URL</label>
+          <input
+            type="text"
+            value={draft.supabase_url}
+            onChange={(e) => setDraft({ ...draft, supabase_url: e.target.value })}
+            placeholder="https://xxx.supabase.co"
+            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1 block">Notes</label>
+          <textarea
+            value={draft.notes}
+            onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            placeholder="Any other details: custom domains, Railway project, APIs used, credentials location..."
+            rows={3}
+            className="w-full bg-zinc-800/50 border border-zinc-700/40 rounded-lg px-3 py-1.5 text-[11px] text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 resize-none"
+          />
+        </div>
+        <div className="flex items-center gap-2 justify-end">
+          <button
+            onClick={() => setEditing(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+          >
+            <X className="w-3 h-3" /> Cancel
+          </button>
+          <button
+            onClick={save}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20 hover:bg-violet-500/25 transition-colors"
+          >
+            <Save className="w-3 h-3" /> Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasData = infra && (infra.services.length > 0 || infra.github_repos.length > 0 || infra.supabase_url || infra.notes);
+
+  if (!hasData) {
+    return (
+      <div className="px-4 py-6 text-center">
+        <Info className="w-5 h-5 text-zinc-700 mx-auto mb-2" />
+        <p className="text-[11px] text-zinc-500 mb-3">No infrastructure info yet</p>
+        <button
+          onClick={startEdit}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-violet-500/15 text-violet-400 border border-violet-500/20 hover:bg-violet-500/25 transition-colors mx-auto"
+        >
+          <Pencil className="w-3 h-3" /> Add Details
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-2.5">
+      {/* n8n URL */}
+      <div className="flex items-center gap-2">
+        <Box className="w-3 h-3 text-orange-400 shrink-0" />
+        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">n8n</span>
+        <a href={client.n8nUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 truncate transition-colors">
+          {client.n8nUrl}
+        </a>
+      </div>
+
+      {/* Services */}
+      {infra.services.length > 0 && (
+        <div className="flex items-start gap-2">
+          <Server className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">Services</span>
+          <div className="flex flex-wrap gap-1">
+            {infra.services.map((s) => (
+              <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">
+                {s}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* GitHub */}
+      {infra.github_repos.length > 0 && (
+        <div className="flex items-start gap-2">
+          <Github className="w-3 h-3 text-zinc-400 shrink-0 mt-0.5" />
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">GitHub</span>
+          <div className="flex flex-wrap gap-1">
+            {infra.github_repos.map((repo) => (
+              <a
+                key={repo}
+                href={repo.startsWith('http') ? repo : `https://github.com/${repo}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800/60 text-blue-400 hover:text-blue-300 border border-zinc-700/40 transition-colors"
+              >
+                {repo.replace('https://github.com/', '')}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Supabase */}
+      {infra.supabase_url && (
+        <div className="flex items-center gap-2">
+          <Database className="w-3 h-3 text-cyan-400 shrink-0" />
+          <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium w-14 shrink-0">Supa</span>
+          <a href={infra.supabase_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 truncate transition-colors">
+            {infra.supabase_url}
+          </a>
+        </div>
+      )}
+
+      {/* Notes */}
+      {infra.notes && (
+        <div className="mt-1 p-2 bg-zinc-800/40 border border-zinc-700/30 rounded-lg">
+          <p className="text-[11px] text-zinc-400 leading-relaxed whitespace-pre-wrap">{infra.notes}</p>
+        </div>
+      )}
+
+      {/* Edit button */}
+      <div className="flex justify-end pt-1">
+        <button
+          onClick={startEdit}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium text-zinc-500 hover:text-violet-400 hover:bg-violet-500/10 transition-colors"
+        >
+          <Pencil className="w-3 h-3" /> Edit
+        </button>
+      </div>
     </div>
   );
 };

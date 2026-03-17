@@ -33,15 +33,15 @@ const DashboardAuth: React.FC<Props> = ({ onSuccess }) => {
         <div className="absolute bottom-1/4 left-1/3 w-[300px] h-[300px] bg-blue-600/5 rounded-full blur-[100px]" />
       </div>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm relative">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm relative animate-auth-enter">
         <div className="flex flex-col items-center gap-8">
           {/* Logo */}
           <div className="relative">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-xl shadow-emerald-500/15">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/20">
               <Lock className="w-7 h-7 text-white/90" />
             </div>
             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-950 flex items-center justify-center">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping-slow" />
             </div>
           </div>
 

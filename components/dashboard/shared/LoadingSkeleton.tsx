@@ -22,23 +22,6 @@ const LoadingSkeleton: React.FC<Props> = ({ rows = 0, cards = 4 }) => (
         ))}
       </div>
     )}
-    <style>{`
-      .shimmer {
-        position: relative;
-        overflow: hidden;
-      }
-      .shimmer::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
-        animation: shimmer 1.8s ease-in-out infinite;
-      }
-      @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-    `}</style>
   </div>
 );
 

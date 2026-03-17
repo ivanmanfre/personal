@@ -51,16 +51,25 @@ function mapWorkflow(row: any): ClientMonitoredWorkflow {
   };
 }
 
+export interface ClientInfrastructure {
+  client_name: string;
+  services: string[];
+  github_repos: string[];
+  supabase_url: string;
+  notes: string;
+}
+
 export function useClientMonitoring() {
   const [clients, setClients] = useState<ClientInstance[]>([]);
   const [errors, setErrors] = useState<ClientWorkflowError[]>([]);
   const [workflows, setWorkflows] = useState<ClientMonitoredWorkflow[]>([]);
+  const [infrastructure, setInfrastructure] = useState<Record<string, ClientInfrastructure>>({});
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-    const [clientsRes, errorsRes, workflowsRes] = await Promise.all([
+    const [clientsRes, errorsRes, workflowsRes, infraRes] = await Promise.all([
       supabase.from('client_instances_safe').select('*').order('client_name'),
       supabase
         .from('client_workflow_errors')
@@ -72,6 +81,11 @@ export function useClientMonitoring() {
         .from('client_monitored_workflows_view')
         .select('*')
         .order('workflow_name'),
+      supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'client_infrastructure')
+        .single(),
     ]);
 
     const clientList = (clientsRes.data || []).map(mapClient);
@@ -87,6 +101,9 @@ export function useClientMonitoring() {
       }))
     );
     setWorkflows((workflowsRes.data || []).map(mapWorkflow));
+    if (infraRes.data?.value) {
+      setInfrastructure(infraRes.data.value as Record<string, ClientInfrastructure>);
+    }
     } catch (err) {
       console.error('Failed to fetch client monitoring data:', err);
     } finally {
@@ -148,6 +165,31 @@ export function useClientMonitoring() {
     }
   };
 
+  const resolveAllErrors = async () => {
+    if (errors.length === 0) return;
+    const prev = [...errors];
+    setErrors([]);
+    try {
+      await Promise.all(
+        prev.map((e) => dashboardAction('client_workflow_errors', e.id, 'is_resolved', 'true'))
+      );
+    } catch {
+      setErrors(prev);
+    }
+  };
+
+  const updateInfrastructure = async (clientId: string, data: ClientInfrastructure) => {
+    const updated = { ...infrastructure, [clientId]: data };
+    setInfrastructure(updated);
+    try {
+      await supabase
+        .from('system_settings')
+        .upsert({ key: 'client_infrastructure', value: updated }, { onConflict: 'key' });
+    } catch {
+      setInfrastructure(infrastructure);
+    }
+  };
+
   const toggleWorkflowNotifications = async (id: string, enabled: boolean) => {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: enabled } : w)));
     try {
@@ -180,5 +222,8 @@ export function useClientMonitoring() {
     resolveError,
     resolveAllForClient,
     toggleWorkflowNotifications,
+    resolveAllErrors,
+    infrastructure,
+    updateInfrastructure,
   };
 }

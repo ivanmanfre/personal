@@ -15,7 +15,18 @@ function App() {
 
   if (isDashboard) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-500/25 animate-pulse">
+              IS
+            </div>
+            <div className="w-32 h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500/60 rounded-full animate-loading-bar" />
+            </div>
+          </div>
+        </div>
+      }>
         <Dashboard />
       </Suspense>
     );

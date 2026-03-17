@@ -15,6 +15,7 @@ import UpworkPanel from './UpworkPanel';
 import SystemMapPanel from './SystemMapPanel';
 import SettingsPanel from './SettingsPanel';
 import LoadingSkeleton from './shared/LoadingSkeleton';
+import ErrorBoundary from './shared/ErrorBoundary';
 import type { Tab } from '../../types/dashboard';
 
 const LazyPerformancePanel = lazy(() => import('./PerformancePanel'));
@@ -80,9 +81,11 @@ const Dashboard: React.FC = () => {
           const Panel = panelComponents[tab];
           return (
             <div key={tab} style={{ display: tab === activeTab ? undefined : 'none' }}>
-              <Suspense fallback={<LoadingSkeleton cards={4} rows={5} />}>
-                <Panel />
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<LoadingSkeleton cards={4} rows={5} />}>
+                  <Panel />
+                </Suspense>
+              </ErrorBoundary>
             </div>
           );
         })}
