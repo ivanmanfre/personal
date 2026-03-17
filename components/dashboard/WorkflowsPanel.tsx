@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Activity, ChevronDown, ChevronRight, Search, CheckCircle2, XCircle, AlertTriangle, ExternalLink, List, ArrowUpDown, Clock, Hash, ScrollText, ChevronLeft, Filter, Wrench, Github, Lock } from 'lucide-react';
 import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useExecutionLogs } from '../../hooks/useExecutionLogs';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { supabase } from '../../lib/supabase';
 import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -11,9 +12,10 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import { timeAgo } from './shared/utils';
 import type { WorkflowStat, ExecutionLog } from '../../types/dashboard';
 import type { StatusFilter, ExecSortKey } from '../../hooks/useExecutionLogs';
+import type { GitHubRepo } from '../../hooks/useClientMonitoring';
 
 type Group = 'all' | 'issues' | 'schedule' | 'event' | 'webhook' | 'sub-workflow' | 'manual';
-type View = 'list' | 'logs';
+type View = 'list' | 'logs' | 'repos';
 type SortKey = 'health' | 'name' | 'lastRun' | 'errors';
 
 function getWorkflowHealth(wf: WorkflowStat): 'healthy' | 'warning' | 'error' | 'inactive' {
@@ -34,6 +36,18 @@ const WorkflowsPanel: React.FC = () => {
   const { workflows, stats, loading, refresh, acknowledgeError } = useWorkflowStats();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_workflow_stats'] });
   const [view, setView] = useState<View>('list');
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'github_repos')
+      .single()
+      .then(({ data }) => {
+        if (data?.value) setRepos(data.value as GitHubRepo[]);
+      });
+  }, []);
   const [group, setGroup] = useState<Group>('all');
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -122,6 +136,13 @@ const WorkflowsPanel: React.FC = () => {
             >
               <ScrollText className="w-4 h-4" />
             </button>
+            <button
+              onClick={() => setView('repos')}
+              className={`p-1.5 rounded-md transition-colors ${view === 'repos' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="GitHub repositories"
+            >
+              <Github className="w-4 h-4" />
+            </button>
           </div>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
@@ -152,7 +173,9 @@ const WorkflowsPanel: React.FC = () => {
         </div>
       </div>
 
-      {view === 'logs' ? (
+      {view === 'repos' ? (
+        <ReposView repos={repos} />
+      ) : view === 'logs' ? (
         <ExecutionLogsView workflows={workflows} />
       ) : (
         <>
@@ -297,6 +320,87 @@ const WorkflowsPanel: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+    </div>
+  );
+};
+
+/* ── Repos View ── */
+
+const repoLangColors: Record<string, string> = {
+  TypeScript: 'bg-blue-500/15 text-blue-400',
+  JavaScript: 'bg-yellow-500/15 text-yellow-400',
+  Python: 'bg-green-500/15 text-green-400',
+  HTML: 'bg-orange-500/15 text-orange-400',
+  CSS: 'bg-purple-500/15 text-purple-400',
+  Shell: 'bg-zinc-500/15 text-zinc-400',
+};
+
+const ReposView: React.FC<{ repos: GitHubRepo[] }> = ({ repos }) => {
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!search) return repos;
+    const q = search.toLowerCase();
+    return repos.filter((r) =>
+      r.name.toLowerCase().includes(q) ||
+      (r.description || '').toLowerCase().includes(q) ||
+      (r.language || '').toLowerCase().includes(q)
+    );
+  }, [repos, search]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search repositories..."
+            className="w-full pl-9 pr-3 py-2 bg-zinc-900/80 border border-zinc-800/80 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors"
+          />
+        </div>
+        <span className="text-[11px] text-zinc-500">{filtered.length} repos</span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {filtered.map((repo) => (
+          <a
+            key={repo.name}
+            href={repo.html_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900/90 border border-zinc-800/60 hover:border-zinc-600/50 transition-colors group"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-zinc-200 font-medium truncate group-hover:text-blue-400 transition-colors">{repo.name}</span>
+                {repo.private && <Lock className="w-3 h-3 text-zinc-600 shrink-0" />}
+              </div>
+              {repo.description && (
+                <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-2">{repo.description}</p>
+              )}
+              <div className="flex items-center gap-2 mt-1.5">
+                {repo.language && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${repoLangColors[repo.language] || 'bg-zinc-700/50 text-zinc-400'}`}>
+                    {repo.language}
+                  </span>
+                )}
+                <span className="text-[10px] text-zinc-600">{repo.default_branch}</span>
+                <span className="text-[10px] text-zinc-600">pushed {timeAgo(repo.pushed_at)}</span>
+              </div>
+            </div>
+            <ExternalLink className="w-3.5 h-3.5 text-zinc-700 group-hover:text-blue-400 transition-colors shrink-0 mt-0.5" />
+          </a>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-8">
+          <Github className="w-6 h-6 text-zinc-700 mx-auto mb-2" />
+          <p className="text-sm text-zinc-500">{repos.length === 0 ? 'No repos synced yet' : 'No matching repos'}</p>
+        </div>
       )}
     </div>
   );
