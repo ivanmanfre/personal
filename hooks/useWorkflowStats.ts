@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
 import type { WorkflowStat, SystemHealth } from '../types/dashboard';
@@ -49,34 +49,32 @@ export function useWorkflowStats() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const active = workflows.filter((w) => w.isActive);
-  const totalErrors24h = workflows.reduce((s, w) => s + w.errorCount24h, 0);
-  const totalSuccess24h = workflows.reduce((s, w) => s + w.successCount24h, 0);
-  const errorRate = (totalSuccess24h + totalErrors24h) > 0
-    ? (totalErrors24h / (totalSuccess24h + totalErrors24h) * 100).toFixed(1)
-    : '0';
+  const stats = useMemo(() => {
+    const active = workflows.filter((w) => w.isActive);
+    const totalErrors24h = workflows.reduce((s, w) => s + w.errorCount24h, 0);
+    const totalSuccess24h = workflows.reduce((s, w) => s + w.successCount24h, 0);
+    const errorRate = (totalSuccess24h + totalErrors24h) > 0
+      ? (totalErrors24h / (totalSuccess24h + totalErrors24h) * 100).toFixed(1)
+      : '0';
+    const health: SystemHealth =
+      totalErrors24h > 10 ? 'critical' :
+      totalErrors24h > 3 ? 'degraded' : 'healthy';
+    return { total: workflows.length, active: active.length, totalErrors24h, totalSuccess24h, errorRate, health };
+  }, [workflows]);
 
-  const health: SystemHealth =
-    totalErrors24h > 10 ? 'critical' :
-    totalErrors24h > 3 ? 'degraded' : 'healthy';
+  const byType = useCallback(
+    (type: string) => workflows.filter((w) => w.triggerType === type),
+    [workflows]
+  );
 
-  const byType = (type: string) => workflows.filter((w) => w.triggerType === type);
-
-  const acknowledgeError = async (id: string) => {
+  const acknowledgeError = useCallback(async (id: string) => {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: true } : w)));
     try {
       await dashboardAction('dashboard_workflow_stats', id, 'error_acknowledged', 'true');
     } catch {
       setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: false } : w)));
     }
-  };
+  }, []);
 
-  return {
-    workflows,
-    loading,
-    refresh: fetch,
-    stats: { total: workflows.length, active: active.length, totalErrors24h, totalSuccess24h, errorRate, health },
-    byType,
-    acknowledgeError,
-  };
+  return { workflows, loading, refresh: fetch, stats, byType, acknowledgeError };
 }
