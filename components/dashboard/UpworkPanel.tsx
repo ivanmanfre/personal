@@ -117,7 +117,7 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
 
 const UpworkPanel: React.FC = () => {
   const { jobs, proposals, stats, loading, generatingJobs, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
-  const { lastRefreshed } = useAutoRefresh(refresh);
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>(getUrlParam('filter', 'action'));

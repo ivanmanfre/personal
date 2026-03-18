@@ -155,6 +155,16 @@ export function useUpworkPipeline() {
         return p;
       }));
 
+      // Clear generating spinners for jobs that now have new proposals
+      setGeneratingJobs((prev) => {
+        if (prev.size === 0) return prev;
+        const next = new Set(prev);
+        for (const jobId of prev) {
+          if (serverProposals.some((p) => p.jobId === jobId)) next.delete(jobId);
+        }
+        return next.size === prev.size ? prev : next;
+      });
+
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
       hasLoaded.current = true;
@@ -250,8 +260,8 @@ export function useUpworkPipeline() {
   }, []);
 
   const generateProposal = (jobId: string, comment?: string) => {
-    // Fire-and-forget: send webhook, show spinner briefly, then clear.
-    // The n8n webhook is synchronous and can block for minutes — never await it.
+    // Fire-and-forget: send webhook. Realtime subscription on upwork_proposals
+    // will trigger auto-refresh when the new proposal row is inserted.
     const payload: Record<string, string> = { job_id: jobId };
     if (comment) payload.comment = comment;
 
@@ -263,11 +273,11 @@ export function useUpworkPipeline() {
       body: JSON.stringify(payload),
     }).catch((err) => console.error('Proposal generation error:', err));
 
-    // Clear spinner after 3s — auto-refresh will pick up the new proposal
+    // Safety timeout: clear spinner after 5 min max if realtime doesn't fire
     setTimeout(() => {
       setGeneratingJobs((prev) => { const next = new Set(prev); next.delete(jobId); return next; });
       fetch();
-    }, 3000);
+    }, 300_000);
   };
 
   return {
