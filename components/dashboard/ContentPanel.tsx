@@ -76,6 +76,14 @@ const ContentPanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_tasks'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
+  const now = useCountdown();
+
+  const upcomingQueue = useMemo(() => {
+    return tasks
+      .filter((t) => t.dueDate && new Date(t.dueDate).getTime() > now && (t.status === 'pending' || t.status === 'scheduled'))
+      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+      .slice(0, 5);
+  }, [tasks, now]);
 
   if (loading) return <LoadingSkeleton cards={4} rows={8} />;
 
@@ -100,16 +108,8 @@ const ContentPanel: React.FC = () => {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToday = () => setCurrentDate(new Date());
 
-  const now = useCountdown();
   const scheduled = tasks.filter((t) => t.dueDate);
   const pending = tasks.filter((t) => t.status === 'pending');
-
-  const upcomingQueue = useMemo(() => {
-    return tasks
-      .filter((t) => t.dueDate && new Date(t.dueDate).getTime() > now && (t.status === 'pending' || t.status === 'scheduled'))
-      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
-      .slice(0, 5);
-  }, [tasks, now]);
 
   const filteredList = filter === 'all'
     ? tasks
