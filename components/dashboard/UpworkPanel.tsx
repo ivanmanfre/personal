@@ -37,6 +37,7 @@ const statusColors: Record<string, string> = {
   skipped: 'bg-zinc-500/15 text-zinc-500 border-zinc-600/30',
   rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
   draft: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+  superseded: 'bg-zinc-500/10 text-zinc-600 border-zinc-700/30',
 };
 
 const statusLabels: Record<string, string> = {
