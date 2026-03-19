@@ -118,6 +118,7 @@ export function useUpworkPipeline() {
         supabase
           .from('upwork_proposals')
           .select('*')
+          .neq('status', 'superseded')
           .order('created_at', { ascending: false })
           .limit(100),
         supabase.rpc('upwork_pipeline_stats'),
@@ -284,6 +285,7 @@ export function useUpworkPipeline() {
         .from('upwork_proposals')
         .select('id')
         .eq('job_id', jobId)
+        .neq('status', 'superseded')
         .order('created_at', { ascending: false })
         .limit(1);
       const latestId = data?.[0]?.id;
