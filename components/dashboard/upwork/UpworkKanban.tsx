@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail } from 'lucide-react';
+import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
 
@@ -92,6 +92,8 @@ export const UpworkKanban: React.FC<Props> = ({
 }) => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
   const [, setTick] = useState(0);
 
   // Re-render every 5 min so stale jobs get pruned continuously
@@ -278,13 +280,49 @@ export const UpworkKanban: React.FC<Props> = ({
                                 {/* Proposal preview */}
                                 {prop && (
                                   <div className="p-2.5 bg-emerald-950/10 border border-emerald-500/15 rounded-lg space-y-2">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
-                                      <span className="text-[10px] text-zinc-600">v{prop.version}</span>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
+                                        <span className="text-[10px] text-zinc-600">v{prop.version}</span>
+                                      </div>
+                                      {(prop.status === 'pending_approval' || prop.status === 'draft') && editingId !== prop.id && (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setEditingId(prop.id); setEditValue(prop.coverLetter || prop.proposalText); }}
+                                          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
+                                        >
+                                          <Edit3 className="w-3 h-3" /> Edit
+                                        </button>
+                                      )}
                                     </div>
-                                    <p className="text-xs text-zinc-300 leading-relaxed max-h-44 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
-                                      {prop.coverLetter || prop.proposalText}
-                                    </p>
+                                    {editingId === prop.id ? (
+                                      <div className="space-y-2">
+                                        <textarea
+                                          value={editValue}
+                                          onChange={(e) => setEditValue(e.target.value)}
+                                          className="w-full p-2.5 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-zinc-200 leading-relaxed min-h-[160px] focus:outline-none focus:border-emerald-500/50 resize-y"
+                                          autoFocus
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <div className="flex gap-2">
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); onEdit(prop.id, 'cover_letter', editValue); setEditingId(null); }}
+                                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                                          >
+                                            <Save className="w-3 h-3" /> Save
+                                          </button>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); setEditingId(null); setEditValue(''); }}
+                                            className="px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors"
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-zinc-300 leading-relaxed max-h-44 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
+                                        {prop.coverLetter || prop.proposalText}
+                                      </p>
+                                    )}
                                     <div className="flex items-center gap-2.5 text-[10px] text-zinc-500">
                                       {prop.rateAmount != null && <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>}
                                       {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
