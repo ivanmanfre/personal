@@ -260,10 +260,13 @@ export function useUpworkPipeline() {
   }, []);
 
   const generateProposal = (jobId: string, comment?: string) => {
-    // Fire-and-forget: send webhook. Realtime subscription on upwork_proposals
-    // will trigger auto-refresh when the new proposal row is inserted.
     const payload: Record<string, string> = { job_id: jobId };
     if (comment) payload.comment = comment;
+
+    // Snapshot current latest proposal ID for this job so we can detect a new one
+    const currentLatest = proposals
+      .filter((p) => p.jobId === jobId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.id;
 
     setGeneratingJobs((prev) => new Set(prev).add(jobId));
 
@@ -273,11 +276,23 @@ export function useUpworkPipeline() {
       body: JSON.stringify(payload),
     }).catch((err) => console.error('Proposal generation error:', err));
 
-    // Safety timeout: clear spinner after 5 min max if realtime doesn't fire
-    setTimeout(() => {
-      setGeneratingJobs((prev) => { const next = new Set(prev); next.delete(jobId); return next; });
-      fetch();
-    }, 300_000);
+    // Poll every 10s until a new proposal appears for this job (up to 5 min)
+    let polls = 0;
+    const pollId = setInterval(async () => {
+      polls++;
+      const { data } = await supabase
+        .from('upwork_proposals')
+        .select('id')
+        .eq('job_id', jobId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const latestId = data?.[0]?.id;
+      if ((latestId && latestId !== currentLatest) || polls >= 30) {
+        clearInterval(pollId);
+        setGeneratingJobs((prev) => { const next = new Set(prev); next.delete(jobId); return next; });
+        fetch();
+      }
+    }, 10_000);
   };
 
   return {
