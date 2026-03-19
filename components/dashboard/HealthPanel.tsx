@@ -19,13 +19,11 @@ const HealthPanel: React.FC = () => {
     weightLogs,
     inventory,
     trainingSchedule,
-    trainingLogs,
     loading,
     refresh,
     stats,
     logMedication,
     logWeight,
-    logTraining,
     updateInventory,
     addMedication,
     deleteMedication,
@@ -41,7 +39,7 @@ const HealthPanel: React.FC = () => {
       'health_medication_logs',
       'health_weight_logs',
       'health_inventory',
-      'health_training_logs',
+      'health_training_schedule',
     ],
   });
 
@@ -69,7 +67,7 @@ const HealthPanel: React.FC = () => {
             value={stats.currentWeight > 0 ? `${stats.currentWeight} kg` : '—'}
             icon={<Scale className="w-5 h-5" />}
             color="text-cyan-400"
-            trend={stats.weightTrend !== 0 ? { value: stats.weightTrend, label: 'vs 7d ago' } : undefined}
+            subValue={stats.weightTrend !== 0 ? `${stats.weightTrend > 0 ? '+' : ''}${stats.weightTrend} kg vs 7d ago` : undefined}
           />
           <StatCard
             label="Streak"
@@ -92,10 +90,7 @@ const HealthPanel: React.FC = () => {
           todaysMeds={stats.todaysMeds}
           todaysWorkout={stats.todaysWorkout}
           medicationLogs={medicationLogs}
-          trainingLogs={trainingLogs}
-          todayTrainingDone={stats.todayTrainingDone}
           logMedication={logMedication}
-          logTraining={logTraining}
         />
       </AnimateIn>
 
@@ -122,8 +117,6 @@ const HealthPanel: React.FC = () => {
       <AnimateIn delay={400}>
         <TrainingSchedule
           trainingSchedule={trainingSchedule}
-          trainingLogs={trainingLogs}
-          logTraining={logTraining}
           updateTrainingSchedule={updateTrainingSchedule}
         />
       </AnimateIn>

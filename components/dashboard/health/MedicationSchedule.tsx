@@ -222,6 +222,13 @@ const MedicationSchedule: React.FC<Props> = ({ medications, medicationLogs, addM
                 </tr>
               );
             })}
+            {displayMeds.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-4 py-6 text-center text-sm text-zinc-500">
+                  No medications — click + to add one
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

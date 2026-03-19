@@ -1,31 +1,20 @@
 import React, { useState } from 'react';
 import { Dumbbell, Pencil, Check, X } from 'lucide-react';
 import PanelCard from '../shared/PanelCard';
-import type { TrainingDay, TrainingLog } from '../../../types/dashboard';
+import type { TrainingDay } from '../../../types/dashboard';
 
 interface Props {
   trainingSchedule: TrainingDay[];
-  trainingLogs: TrainingLog[];
-  logTraining: (scheduleId: string) => Promise<void>;
   updateTrainingSchedule: (dayOfWeek: number, routineName: string, exercises?: string) => Promise<void>;
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const TrainingSchedule: React.FC<Props> = ({ trainingSchedule, trainingLogs, logTraining, updateTrainingSchedule }) => {
+const TrainingSchedule: React.FC<Props> = ({ trainingSchedule, updateTrainingSchedule }) => {
   const [editing, setEditing] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ routineName: '', exercises: '' });
 
   const todayDow = (() => { const d = new Date().getDay(); return d === 0 ? 7 : d; })();
-  const todayStr = new Date().toDateString();
-
-  const isDoneOnDay = (scheduleId: string, dayOffset: number) => {
-    const checkDate = new Date();
-    checkDate.setDate(checkDate.getDate() - dayOffset);
-    return trainingLogs.some(l =>
-      l.scheduleId === scheduleId && new Date(l.completedAt).toDateString() === checkDate.toDateString()
-    );
-  };
 
   const startEdit = (day: TrainingDay) => {
     setEditing(day.dayOfWeek);
@@ -49,7 +38,6 @@ const TrainingSchedule: React.FC<Props> = ({ trainingSchedule, trainingLogs, log
           const day = trainingSchedule.find(t => t.dayOfWeek === dow);
           const isToday = dow === todayDow;
           const isRest = day?.routineName === 'Rest';
-          const done = day ? isDoneOnDay(day.id, todayDow - dow) : false;
 
           return (
             <div
@@ -104,12 +92,6 @@ const TrainingSchedule: React.FC<Props> = ({ trainingSchedule, trainingLogs, log
                     <p className="text-[10px] text-zinc-600 mt-0.5 leading-tight line-clamp-2">
                       {day.exercises}
                     </p>
-                  )}
-                  {!isRest && done && (
-                    <div className="mt-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
-                      <Check className="w-2.5 h-2.5 text-emerald-400" />
-                      <span className="text-[9px] text-emerald-400 font-medium">Done</span>
-                    </div>
                   )}
                   <Pencil className="w-2.5 h-2.5 text-zinc-600 mx-auto mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>

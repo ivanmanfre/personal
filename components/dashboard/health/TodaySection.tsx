@@ -1,34 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Dumbbell, Pill, Clock } from 'lucide-react';
 import PanelCard from '../shared/PanelCard';
-import type { HealthMedication, MedicationLog, TrainingDay, TrainingLog } from '../../../types/dashboard';
+import type { HealthMedication, MedicationLog, TrainingDay } from '../../../types/dashboard';
 
 interface Props {
   todaysMeds: HealthMedication[];
   todaysWorkout: TrainingDay | null;
   medicationLogs: MedicationLog[];
-  trainingLogs: TrainingLog[];
-  todayTrainingDone: boolean;
   logMedication: (id: string) => Promise<void>;
-  logTraining: (scheduleId: string) => Promise<void>;
 }
 
 const TodaySection: React.FC<Props> = ({
   todaysMeds,
   todaysWorkout,
   medicationLogs,
-  trainingLogs,
-  todayTrainingDone,
   logMedication,
-  logTraining,
 }) => {
+  const [loggingId, setLoggingId] = useState<string | null>(null);
   const todayStr = new Date().toDateString();
 
   const isTakenToday = (medId: string) =>
     medicationLogs.some(l => l.medicationId === medId && new Date(l.takenAt).toDateString() === todayStr);
 
   const takenCount = todaysMeds.filter(m => isTakenToday(m.id)).length;
+
+  const handleLog = async (medId: string) => {
+    if (loggingId) return; // prevent double-click
+    setLoggingId(medId);
+    try {
+      await logMedication(medId);
+    } finally {
+      setLoggingId(null);
+    }
+  };
 
   return (
     <PanelCard
@@ -50,14 +55,14 @@ const TodaySection: React.FC<Props> = ({
               className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors"
             >
               <button
-                onClick={() => !taken && logMedication(med.id)}
-                disabled={taken}
+                onClick={() => !taken && handleLog(med.id)}
+                disabled={taken || loggingId === med.id}
                 className="shrink-0"
               >
                 {taken ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 ) : (
-                  <Circle className="w-5 h-5 text-zinc-600 hover:text-emerald-400 transition-colors" />
+                  <Circle className={`w-5 h-5 transition-colors ${loggingId === med.id ? 'text-emerald-400/50 animate-pulse' : 'text-zinc-600 hover:text-emerald-400'}`} />
                 )}
               </button>
               <Pill className={`w-3.5 h-3.5 shrink-0 ${taken ? 'text-emerald-400/50' : 'text-zinc-500'}`} />
@@ -76,23 +81,12 @@ const TodaySection: React.FC<Props> = ({
           );
         })}
 
-        {/* Today's Workout */}
-        {todaysWorkout && (
-          <div className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors">
-            <button
-              onClick={() => !todayTrainingDone && logTraining(todaysWorkout.id)}
-              disabled={todayTrainingDone}
-              className="shrink-0"
-            >
-              {todayTrainingDone ? (
-                <CheckCircle2 className="w-5 h-5 text-violet-400" />
-              ) : (
-                <Circle className="w-5 h-5 text-zinc-600 hover:text-violet-400 transition-colors" />
-              )}
-            </button>
-            <Dumbbell className={`w-3.5 h-3.5 shrink-0 ${todayTrainingDone ? 'text-violet-400/50' : 'text-violet-400'}`} />
+        {/* Today's Workout — display only, no check/done */}
+        {todaysWorkout && todaysWorkout.routineName !== 'Rest' && (
+          <div className="flex items-center gap-3 px-4 py-3">
+            <Dumbbell className="w-4 h-4 shrink-0 text-violet-400" />
             <div className="flex-1 min-w-0">
-              <span className={`text-sm font-medium ${todayTrainingDone ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+              <span className="text-sm font-medium text-zinc-200">
                 {todaysWorkout.routineName}
               </span>
               {todaysWorkout.exercises && (

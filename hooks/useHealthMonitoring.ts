@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
-import type { HealthMedication, MedicationLog, WeightLog, InventoryItem, TrainingDay, TrainingLog } from '../types/dashboard';
+import type { HealthMedication, MedicationLog, WeightLog, InventoryItem, TrainingDay } from '../types/dashboard';
 
 function mapMedication(row: any): HealthMedication {
   return {
@@ -62,18 +62,14 @@ function mapTrainingDay(row: any): TrainingDay {
   };
 }
 
-function mapTrainingLog(row: any): TrainingLog {
-  return {
-    id: row.id,
-    scheduleId: row.schedule_id,
-    completedAt: row.completed_at,
-    notes: row.notes,
-  };
-}
-
 function getIsoDow(): number {
   const d = new Date().getDay();
   return d === 0 ? 7 : d;
+}
+
+/** Check Supabase RPC response and throw on error */
+function checkRpc(result: { error: any }) {
+  if (result.error) throw result.error;
 }
 
 export function useHealthMonitoring() {
@@ -82,21 +78,20 @@ export function useHealthMonitoring() {
   const [weightLogs, setWeightLogs] = useState<WeightLog[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [trainingSchedule, setTrainingSchedule] = useState<TrainingDay[]>([]);
-  const [trainingLogs, setTrainingLogs] = useState<TrainingLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      // Fetch 30 days of med logs for streak calculation
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-      const [medsRes, logsRes, weightRes, inventoryRes, scheduleRes, trainingLogsRes] = await Promise.all([
+      const [medsRes, logsRes, weightRes, inventoryRes, scheduleRes] = await Promise.all([
         supabase.from('health_medications').select('*').order('name'),
-        supabase.from('health_medication_logs').select('*').gte('taken_at', sevenDaysAgo).order('taken_at', { ascending: false }),
+        supabase.from('health_medication_logs').select('*').gte('taken_at', thirtyDaysAgo).order('taken_at', { ascending: false }),
         supabase.from('health_weight_logs').select('*').order('logged_at', { ascending: false }).limit(90),
         supabase.from('health_inventory').select('*').eq('is_active', true).order('name'),
         supabase.from('health_training_schedule').select('*').eq('is_active', true).order('day_of_week'),
-        supabase.from('health_training_logs').select('*').gte('completed_at', sevenDaysAgo).order('completed_at', { ascending: false }),
       ]);
 
       setMedications((medsRes.data || []).map(mapMedication));
@@ -104,7 +99,6 @@ export function useHealthMonitoring() {
       setWeightLogs((weightRes.data || []).map(mapWeightLog));
       setInventory((inventoryRes.data || []).map(mapInventory));
       setTrainingSchedule((scheduleRes.data || []).map(mapTrainingDay));
-      setTrainingLogs((trainingLogsRes.data || []).map(mapTrainingLog));
     } catch (err) {
       console.error('Failed to fetch health data:', err);
     } finally {
@@ -116,30 +110,26 @@ export function useHealthMonitoring() {
 
   const stats = useMemo(() => {
     const todayDow = getIsoDow();
-    const activeMeds = medications.filter(m => m.isActive);
+    const activeMeds = medications.filter(m => m.isActive && m.frequency !== 'as_needed');
 
-    // Today's medications
-    const todaysMeds = activeMeds.filter(m =>
-      m.frequency === 'daily' || m.scheduleDays.includes(todayDow)
+    // Today's medications (include as_needed in display but not compliance)
+    const todaysMeds = medications.filter(m =>
+      m.isActive && (m.frequency === 'daily' || m.scheduleDays.includes(todayDow))
     );
 
     // Today's workout
     const todaysWorkout = trainingSchedule.find(t => t.dayOfWeek === todayDow) || null;
 
-    // Check if today's workout is done
-    const todayStr = new Date().toDateString();
-    const todayTrainingDone = todaysWorkout
-      ? trainingLogs.some(l => l.scheduleId === todaysWorkout.id && new Date(l.completedAt).toDateString() === todayStr)
-      : false;
-
     // Compliance rate (7d): expected vs actual doses
+    const sevenDaysAgo = Date.now() - 7 * 86400000;
+    const recentLogs = medicationLogs.filter(l => new Date(l.takenAt).getTime() >= sevenDaysAgo);
     const expectedDoses7d = activeMeds.reduce((sum, med) => {
       if (med.frequency === 'daily') return sum + 7;
       if (med.frequency === 'weekly') return sum + 1;
       if (med.frequency === 'twice_weekly') return sum + 2;
       return sum;
     }, 0);
-    const actualDoses7d = medicationLogs.filter(l =>
+    const actualDoses7d = recentLogs.filter(l =>
       activeMeds.some(m => m.id === l.medicationId)
     ).length;
     const complianceRate = expectedDoses7d > 0 ? Math.min(100, Math.round((actualDoses7d / expectedDoses7d) * 100)) : 100;
@@ -155,7 +145,7 @@ export function useHealthMonitoring() {
     // Low stock
     const lowStockItems = inventory.filter(i => i.quantity <= i.lowStockThreshold).length;
 
-    // Streak: consecutive days where all scheduled active meds were taken
+    // Streak: consecutive days where all scheduled active meds were taken (up to 30d)
     let streakDays = 0;
     for (let d = 0; d < 30; d++) {
       const checkDate = new Date(Date.now() - d * 86400000);
@@ -179,11 +169,10 @@ export function useHealthMonitoring() {
       lowStockItems,
       todaysMeds,
       todaysWorkout,
-      todayTrainingDone,
       streakDays,
       activeMedCount: activeMeds.length,
     };
-  }, [medications, medicationLogs, weightLogs, inventory, trainingSchedule, trainingLogs]);
+  }, [medications, medicationLogs, weightLogs, inventory, trainingSchedule]);
 
   // ─── Mutations ───
 
@@ -199,8 +188,9 @@ export function useHealthMonitoring() {
     setMedications(prev => prev.map(m => m.id === medicationId ? { ...m, lastTakenAt: new Date().toISOString() } : m));
 
     try {
-      await supabase.rpc('health_log_medication', { p_medication_id: medicationId, p_source: 'dashboard', p_notes: notes || null });
-    } catch {
+      checkRpc(await supabase.rpc('health_log_medication', { p_medication_id: medicationId, p_source: 'dashboard', p_notes: notes || null }));
+    } catch (err) {
+      console.error('Failed to log medication:', err);
       setMedicationLogs(prev => prev.filter(l => l.id !== tempLog.id));
       await fetchAll();
     }
@@ -217,48 +207,33 @@ export function useHealthMonitoring() {
     setWeightLogs(prev => [tempLog, ...prev]);
 
     try {
-      await supabase.rpc('health_log_weight', { p_weight_kg: weightKg, p_source: 'dashboard', p_notes: notes || null });
-    } catch {
+      checkRpc(await supabase.rpc('health_log_weight', { p_weight_kg: weightKg, p_source: 'dashboard', p_notes: notes || null }));
+    } catch (err) {
+      console.error('Failed to log weight:', err);
       setWeightLogs(prev => prev.filter(l => l.id !== tempLog.id));
     }
   }, []);
 
-  const logTraining = useCallback(async (scheduleId: string, notes?: string) => {
-    const tempLog: TrainingLog = {
-      id: crypto.randomUUID(),
-      scheduleId,
-      completedAt: new Date().toISOString(),
-      notes: notes || null,
-    };
-    setTrainingLogs(prev => [tempLog, ...prev]);
-
-    try {
-      await supabase.rpc('health_log_training', { p_schedule_id: scheduleId, p_notes: notes || null });
-    } catch {
-      setTrainingLogs(prev => prev.filter(l => l.id !== tempLog.id));
-    }
-  }, []);
-
   const updateInventory = useCallback(async (id: string, quantity: number) => {
-    const prev = inventory.find(i => i.id === id);
-    setInventory(items => items.map(i => i.id === id ? { ...i, quantity } : i));
+    setInventory(prev => prev.map(i => i.id === id ? { ...i, quantity } : i));
     try {
       await dashboardAction('health_inventory', id, 'quantity', String(quantity));
-    } catch {
-      if (prev) setInventory(items => items.map(i => i.id === id ? prev : i));
+    } catch (err) {
+      console.error('Failed to update inventory:', err);
+      await fetchAll();
     }
-  }, [inventory]);
+  }, [fetchAll]);
 
   const addMedication = useCallback(async (name: string, dosage: string, frequency: string, scheduleDays: number[], scheduleTime: string, notes?: string) => {
     try {
-      await supabase.rpc('health_add_medication', {
+      checkRpc(await supabase.rpc('health_add_medication', {
         p_name: name,
         p_dosage: dosage,
         p_frequency: frequency,
         p_schedule_days: scheduleDays,
         p_schedule_time: scheduleTime,
         p_notes: notes || null,
-      });
+      }));
       await fetchAll();
     } catch (err) {
       console.error('Failed to add medication:', err);
@@ -266,10 +241,12 @@ export function useHealthMonitoring() {
   }, [fetchAll]);
 
   const deleteMedication = useCallback(async (id: string) => {
+    if (!confirm('Delete this medication and all its logs?')) return;
     setMedications(prev => prev.filter(m => m.id !== id));
     try {
-      await supabase.rpc('health_delete_medication', { p_id: id });
-    } catch {
+      checkRpc(await supabase.rpc('health_delete_medication', { p_id: id }));
+    } catch (err) {
+      console.error('Failed to delete medication:', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -278,20 +255,21 @@ export function useHealthMonitoring() {
     setMedications(prev => prev.map(m => m.id === id ? { ...m, isActive } : m));
     try {
       await dashboardAction('health_medications', id, 'is_active', String(isActive));
-    } catch {
+    } catch (err) {
+      console.error('Failed to toggle medication:', err);
       setMedications(prev => prev.map(m => m.id === id ? { ...m, isActive: !isActive } : m));
     }
   }, []);
 
   const addInventoryItem = useCallback(async (name: string, quantity: number, unit: string, lowStockThreshold: number, notes?: string) => {
     try {
-      await supabase.rpc('health_add_inventory', {
+      checkRpc(await supabase.rpc('health_add_inventory', {
         p_name: name,
         p_quantity: quantity,
         p_unit: unit,
         p_low_stock_threshold: lowStockThreshold,
         p_notes: notes || null,
-      });
+      }));
       await fetchAll();
     } catch (err) {
       console.error('Failed to add inventory item:', err);
@@ -299,10 +277,12 @@ export function useHealthMonitoring() {
   }, [fetchAll]);
 
   const deleteInventoryItem = useCallback(async (id: string) => {
+    if (!confirm('Delete this inventory item?')) return;
     setInventory(prev => prev.filter(i => i.id !== id));
     try {
-      await supabase.rpc('health_delete_inventory', { p_id: id });
-    } catch {
+      checkRpc(await supabase.rpc('health_delete_inventory', { p_id: id }));
+    } catch (err) {
+      console.error('Failed to delete inventory item:', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -310,12 +290,13 @@ export function useHealthMonitoring() {
   const updateTrainingSchedule = useCallback(async (dayOfWeek: number, routineName: string, exercises?: string) => {
     setTrainingSchedule(prev => prev.map(t => t.dayOfWeek === dayOfWeek ? { ...t, routineName, exercises: exercises || null } : t));
     try {
-      await supabase.rpc('health_update_training', {
+      checkRpc(await supabase.rpc('health_update_training', {
         p_day_of_week: dayOfWeek,
         p_routine_name: routineName,
         p_exercises: exercises || null,
-      });
-    } catch {
+      }));
+    } catch (err) {
+      console.error('Failed to update training schedule:', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -326,13 +307,11 @@ export function useHealthMonitoring() {
     weightLogs,
     inventory,
     trainingSchedule,
-    trainingLogs,
     loading,
     refresh: fetchAll,
     stats,
     logMedication,
     logWeight,
-    logTraining,
     updateInventory,
     addMedication,
     deleteMedication,
