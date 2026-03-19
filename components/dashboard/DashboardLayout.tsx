@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase } from 'lucide-react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
 import StatusDot from './shared/StatusDot';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -42,6 +42,12 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
       { id: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-[18px] h-[18px]" /> },
       { id: 'clients', label: 'Clients', icon: <Server className="w-[18px] h-[18px]" /> },
       { id: 'upwork', label: 'Upwork', icon: <Briefcase className="w-[18px] h-[18px]" /> },
+    ],
+  },
+  {
+    label: 'Personal',
+    tabs: [
+      { id: 'health', label: 'Health', icon: <Heart className="w-[18px] h-[18px]" /> },
     ],
   },
 ];

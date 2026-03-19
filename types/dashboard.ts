@@ -240,6 +240,64 @@ export interface ExecutionLog {
   retrySuccessId: string | null;
 }
 
+// ─── Health Types ───
+
+export interface HealthMedication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  scheduleDays: number[];
+  scheduleTime: string;
+  lastTakenAt: string | null;
+  nextDueAt: string | null;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface MedicationLog {
+  id: string;
+  medicationId: string;
+  takenAt: string;
+  source: string;
+  notes: string | null;
+}
+
+export interface WeightLog {
+  id: string;
+  weightKg: number;
+  loggedAt: string;
+  source: string;
+  notes: string | null;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  lowStockThreshold: number;
+  isActive: boolean;
+  lastUpdatedAt: string;
+  notes: string | null;
+}
+
+export interface TrainingDay {
+  id: string;
+  dayOfWeek: number;
+  routineName: string;
+  exercises: string | null;
+  isActive: boolean;
+}
+
+export interface TrainingLog {
+  id: string;
+  scheduleId: string;
+  completedAt: string;
+  notes: string | null;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

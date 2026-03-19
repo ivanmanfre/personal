@@ -18,6 +18,7 @@ import ErrorBoundary from './shared/ErrorBoundary';
 import type { Tab } from '../../types/dashboard';
 
 const LazyPerformancePanel = lazy(() => import('./PerformancePanel'));
+const LazyHealthPanel = lazy(() => import('./HealthPanel'));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -30,6 +31,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   clients: ClientsPanel,
   tasks: TasksPanel,
   upwork: UpworkPanel,
+  health: LazyHealthPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 
