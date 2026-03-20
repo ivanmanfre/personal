@@ -1,44 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save } from 'lucide-react';
+import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
-
-function KanbanDiagramPreview({ html }: { html: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  const handleLoad = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument?.body) return;
-    const h = iframe.contentDocument.body.scrollHeight;
-    iframe.style.height = Math.min(h, expanded ? 600 : 200) + 'px';
-  }, [expanded]);
-
-  return (
-    <div className="rounded-lg border border-purple-500/20 overflow-hidden mt-2">
-      <div className="flex items-center justify-between px-2 py-1 bg-purple-950/20 border-b border-purple-500/15">
-        <span className="text-[9px] text-purple-400/70 font-medium uppercase tracking-wider">Diagram</span>
-        <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="text-[9px] text-purple-400/50 hover:text-purple-400 transition-colors">
-          {expanded ? 'Collapse' : 'Expand'}
-        </button>
-      </div>
-      <div className={`relative ${expanded ? 'max-h-[600px]' : 'max-h-[200px]'} overflow-hidden transition-all duration-300`}>
-        <iframe
-          ref={iframeRef}
-          srcDoc={html}
-          onLoad={handleLoad}
-          sandbox="allow-scripts"
-          className="w-full border-0 bg-white"
-          style={{ height: expanded ? 600 : 200, minHeight: 150 }}
-        />
-        {!expanded && (
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
-        )}
-      </div>
-    </div>
-  );
-}
 
 interface Column {
   id: string;
@@ -108,8 +73,8 @@ function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string
   return 'assessed';
 }
 
-/* ─── Full-width expanded detail panel ─── */
-function ExpandedDetailPanel({
+/* ─── Modal overlay for job details ─── */
+function DetailModal({
   job, proposal: prop, generatingJobs, actionLoading, editingId, editValue,
   onClose, onSkip, onGenerate, onCancelGeneration, onSubmit, onEdit,
   onStartEdit, onCancelEdit, onEditChange,
@@ -125,13 +90,40 @@ function ExpandedDetailPanel({
   const isGenerating = generatingJobs.has(job.id);
   const isLoading = prop && actionLoading === prop.id;
   const budget = formatBudget(job);
+  const diagramRef = useRef<HTMLIFrameElement>(null);
+  const [diagramHeight, setDiagramHeight] = useState(400);
+
+  const handleDiagramLoad = useCallback(() => {
+    const iframe = diagramRef.current;
+    if (!iframe?.contentDocument?.body) return;
+    const h = iframe.contentDocument.body.scrollHeight;
+    setDiagramHeight(Math.max(300, Math.min(h + 20, 1200)));
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   return (
-    <div className="mt-3 rounded-xl border border-zinc-700/40 bg-zinc-900/90 p-4">
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+    <div className="fixed inset-0 z-50 flex items-start justify-center" onClick={onClose}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-[95vw] max-w-5xl max-h-[90vh] mt-[5vh] rounded-2xl border border-zinc-700/50 bg-zinc-900 shadow-2xl shadow-black/40 flex flex-col overflow-hidden"
+      >
+        {/* Sticky header */}
+        <div className="flex items-center justify-between gap-3 px-5 py-3.5 border-b border-zinc-800/60 bg-zinc-900/95 backdrop-blur shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             {job.source === 'invite' && (
               <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5 shrink-0">
                 <Mail className="w-3 h-3" /> Invite
@@ -143,187 +135,202 @@ function ExpandedDetailPanel({
               </span>
             )}
             {budget && <span className="text-[11px] text-zinc-400 font-medium shrink-0">{budget}</span>}
-            <span className="text-[10px] text-zinc-600">{timeAgo(job.postedAt)}</span>
+            <h3 className="text-sm font-semibold text-zinc-100 truncate">{job.title}</h3>
+            <span className="text-[10px] text-zinc-600 shrink-0">{timeAgo(job.postedAt)}</span>
           </div>
-          <h3 className="text-sm font-semibold text-zinc-100 leading-snug">{job.title}</h3>
-        </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors shrink-0">
-          <XCircle className="w-4 h-4 text-zinc-500 hover:text-zinc-300" />
-        </button>
-      </div>
-
-      {/* Two-column layout: left = job info, right = proposal */}
-      <div className={`grid gap-4 ${prop ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-        {/* Left: Job details */}
-        <div className="space-y-3">
-          {job.description && (
-            <p className="text-xs text-zinc-400 leading-relaxed max-h-48 overflow-y-auto dashboard-scroll whitespace-pre-wrap">{job.description}</p>
-          )}
-
-          {job.icpReasoning && (
-            <div className="p-2.5 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/80 leading-relaxed">
-              <span className="text-blue-400/60 font-medium">AI: </span>{job.icpReasoning}
-            </div>
-          )}
-
-          {job.clientHistory && Object.keys(job.clientHistory).length > 0 && (
-            <div className="flex items-center gap-3 text-[11px] text-zinc-500 flex-wrap">
-              {job.clientHistory.total_spent != null && job.clientHistory.total_spent > 0 && (
-                <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" />{formatClientSpend(job.clientHistory.total_spent)} spent</span>
-              )}
-              {job.clientHistory.total_hires != null && (
-                <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{job.clientHistory.total_hires} hires</span>
-              )}
-              {job.clientHistory.rating != null && job.clientHistory.rating > 0 && (
-                <span className="flex items-center gap-0.5"><Star className="w-3 h-3" />{job.clientHistory.rating.toFixed(1)}</span>
-              )}
-              {job.clientHistory.country && <span>{job.clientHistory.country}</span>}
-            </div>
-          )}
-
-          {job.skills.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {job.skills.map((s) => (
-                <span key={s} className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s}</span>
-              ))}
-            </div>
-          )}
-
-          {job.screeningQuestions && job.screeningQuestions.length > 0 && (
-            <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg">
-              <span className="text-amber-400/70 font-medium text-[11px] block mb-1">Screening:</span>
-              {job.screeningQuestions.map((q, i) => (
-                <p key={i} className="text-[11px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
-              ))}
-            </div>
-          )}
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors shrink-0">
+            <X className="w-4 h-4 text-zinc-400 hover:text-zinc-200" />
+          </button>
         </div>
 
-        {/* Right: Proposal */}
-        {prop && (
-          <div className="space-y-3">
-            <div className="p-3 bg-emerald-950/10 border border-emerald-500/15 rounded-lg space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
-                  <span className="text-[10px] text-zinc-600">v{prop.version}</span>
-                  <span className="text-[10px] text-zinc-500 px-1.5 py-0.5 bg-zinc-800/60 rounded">{prop.status}</span>
-                </div>
-                {(prop.status === 'pending_approval' || prop.status === 'draft') && editingId !== prop.id && (
-                  <button
-                    onClick={() => onStartEdit(prop.id, prop.coverLetter || prop.proposalText)}
-                    className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
-                  >
-                    <Edit3 className="w-3 h-3" /> Edit
-                  </button>
-                )}
-              </div>
-              {editingId === prop.id ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editValue}
-                    onChange={(e) => onEditChange(e.target.value)}
-                    className="w-full p-2.5 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-zinc-200 leading-relaxed min-h-[200px] focus:outline-none focus:border-emerald-500/50 resize-y"
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => { onEdit(prop.id, 'cover_letter', editValue); onCancelEdit(); }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                    >
-                      <Save className="w-3 h-3" /> Save
-                    </button>
-                    <button
-                      onClick={onCancelEdit}
-                      className="px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-zinc-300 leading-relaxed max-h-56 overflow-y-auto dashboard-scroll whitespace-pre-wrap">
-                  {prop.coverLetter || prop.proposalText}
-                </p>
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto dashboard-scroll p-5 space-y-5">
+          {/* Two-column: job info + proposal */}
+          <div className={`grid gap-5 ${prop ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            {/* Left: Job details */}
+            <div className="space-y-3">
+              {job.description && (
+                <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">{job.description}</p>
               )}
-              <div className="flex items-center gap-2.5 text-[10px] text-zinc-500">
-                {prop.rateAmount != null && <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>}
-                {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
-              </div>
-              {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
-                <div className="space-y-1.5 pt-2 border-t border-emerald-500/10">
-                  <span className="text-[10px] text-amber-400/60 font-medium">Screening Answers:</span>
-                  {prop.screeningAnswers.map((qa, i) => (
-                    <div key={i}>
-                      <p className="text-[10px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
-                      <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
-                    </div>
+
+              {job.icpReasoning && (
+                <div className="p-2.5 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/80 leading-relaxed">
+                  <span className="text-blue-400/60 font-medium">AI: </span>{job.icpReasoning}
+                </div>
+              )}
+
+              {job.clientHistory && Object.keys(job.clientHistory).length > 0 && (
+                <div className="flex items-center gap-3 text-[11px] text-zinc-500 flex-wrap">
+                  {job.clientHistory.total_spent != null && job.clientHistory.total_spent > 0 && (
+                    <span className="flex items-center gap-0.5"><DollarSign className="w-3 h-3" />{formatClientSpend(job.clientHistory.total_spent)} spent</span>
+                  )}
+                  {job.clientHistory.total_hires != null && (
+                    <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{job.clientHistory.total_hires} hires</span>
+                  )}
+                  {job.clientHistory.rating != null && job.clientHistory.rating > 0 && (
+                    <span className="flex items-center gap-0.5"><Star className="w-3 h-3" />{job.clientHistory.rating.toFixed(1)}</span>
+                  )}
+                  {job.clientHistory.country && <span>{job.clientHistory.country}</span>}
+                </div>
+              )}
+
+              {job.skills.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {job.skills.map((s) => (
+                    <span key={s} className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s}</span>
+                  ))}
+                </div>
+              )}
+
+              {job.screeningQuestions && job.screeningQuestions.length > 0 && (
+                <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg">
+                  <span className="text-amber-400/70 font-medium text-[11px] block mb-1">Screening:</span>
+                  {job.screeningQuestions.map((q, i) => (
+                    <p key={i} className="text-[11px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Diagram — full width */}
-            {prop.diagramData?.html && (
-              <KanbanDiagramPreview html={prop.diagramData.html} />
+            {/* Right: Proposal */}
+            {prop && (
+              <div className="space-y-3">
+                <div className="p-3 bg-emerald-950/10 border border-emerald-500/15 rounded-lg space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
+                      <span className="text-[10px] text-zinc-600">v{prop.version}</span>
+                      <span className="text-[10px] text-zinc-500 px-1.5 py-0.5 bg-zinc-800/60 rounded">{prop.status}</span>
+                    </div>
+                    {(prop.status === 'pending_approval' || prop.status === 'draft') && editingId !== prop.id && (
+                      <button
+                        onClick={() => onStartEdit(prop.id, prop.coverLetter || prop.proposalText)}
+                        className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-emerald-400 transition-colors"
+                      >
+                        <Edit3 className="w-3 h-3" /> Edit
+                      </button>
+                    )}
+                  </div>
+                  {editingId === prop.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editValue}
+                        onChange={(e) => onEditChange(e.target.value)}
+                        className="w-full p-2.5 bg-zinc-800/60 border border-emerald-500/30 rounded-lg text-xs text-zinc-200 leading-relaxed min-h-[200px] focus:outline-none focus:border-emerald-500/50 resize-y"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { onEdit(prop.id, 'cover_letter', editValue); onCancelEdit(); }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                        >
+                          <Save className="w-3 h-3" /> Save
+                        </button>
+                        <button
+                          onClick={onCancelEdit}
+                          className="px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                      {prop.coverLetter || prop.proposalText}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2.5 text-[10px] text-zinc-500">
+                    {prop.rateAmount != null && <span>${prop.rateAmount}{prop.rateType === 'hourly' ? '/hr' : ' fixed'}</span>}
+                    {prop.estimatedHours != null && <span>{prop.estimatedHours}h est.</span>}
+                  </div>
+                  {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-emerald-500/10">
+                      <span className="text-[10px] text-amber-400/60 font-medium">Screening Answers:</span>
+                      {prop.screeningAnswers.map((qa, i) => (
+                        <div key={i}>
+                          <p className="text-[10px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
+                          <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Actions bar */}
-      <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-zinc-800/40">
-        <a
-          href={job.upworkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-700 transition-colors"
-        >
-          <ExternalLink className="w-3 h-3" /> Upwork
-        </a>
+          {/* Diagram — full width, auto-height */}
+          {prop?.diagramData?.html && (
+            <div className="rounded-xl border border-purple-500/20 overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-purple-950/20 border-b border-purple-500/15">
+                <span className="text-[10px] text-purple-400/70 font-medium uppercase tracking-wider">Workflow Diagram</span>
+              </div>
+              <iframe
+                ref={diagramRef}
+                srcDoc={prop.diagramData.html}
+                onLoad={handleDiagramLoad}
+                sandbox="allow-scripts"
+                className="w-full border-0 bg-white"
+                style={{ height: diagramHeight }}
+              />
+            </div>
+          )}
+        </div>
 
-        {isGenerating ? (
-          <span className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-purple-400 animate-pulse">
-            <Loader2 className="w-3 h-3 animate-spin" /> Generating...
-            <button onClick={() => onCancelGeneration(job.id)} className="text-zinc-500 hover:text-red-400 ml-0.5"><XCircle className="w-3 h-3" /></button>
-          </span>
-        ) : !prop && job.icpScore != null ? (
-          <button
-            onClick={() => onGenerate(job.id)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+        {/* Sticky actions bar */}
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-t border-zinc-800/60 bg-zinc-900/95 backdrop-blur shrink-0">
+          <a
+            href={job.upworkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-700 transition-colors"
           >
-            <FileText className="w-3 h-3" /> Generate
-          </button>
-        ) : null}
+            <ExternalLink className="w-3 h-3" /> Upwork
+          </a>
 
-        {prop && (prop.status === 'pending_approval' || prop.status === 'approved' || prop.status === 'draft') && (
-          <button
-            onClick={() => onSubmit(prop.id)}
-            disabled={!!isLoading}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-          >
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit
-          </button>
-        )}
+          {isGenerating ? (
+            <span className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-purple-400 animate-pulse">
+              <Loader2 className="w-3 h-3 animate-spin" /> Generating...
+              <button onClick={() => onCancelGeneration(job.id)} className="text-zinc-500 hover:text-red-400 ml-0.5"><XCircle className="w-3 h-3" /></button>
+            </span>
+          ) : !prop && job.icpScore != null ? (
+            <button
+              onClick={() => onGenerate(job.id)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+            >
+              <FileText className="w-3 h-3" /> Generate
+            </button>
+          ) : null}
 
-        {prop && prop.status !== 'submitted' && (
-          <button
-            onClick={() => onGenerate(job.id)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" /> Regen
-          </button>
-        )}
+          {prop && (prop.status === 'pending_approval' || prop.status === 'approved' || prop.status === 'draft') && (
+            <button
+              onClick={() => onSubmit(prop.id)}
+              disabled={!!isLoading}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+            >
+              {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit
+            </button>
+          )}
 
-        {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
-          <button
-            onClick={() => onSkip(job.id)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-          >
-            <XCircle className="w-3 h-3" /> Skip
-          </button>
-        )}
-      </div>
+          {prop && prop.status !== 'submitted' && (
+            <button
+              onClick={() => onGenerate(job.id)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" /> Regen
+            </button>
+          )}
+
+          {job.status !== 'skipped' && job.status !== 'submitted' && job.status !== 'won' && (
+            <button
+              onClick={() => onSkip(job.id)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            >
+              <XCircle className="w-3 h-3" /> Skip
+            </button>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -395,109 +402,102 @@ export const UpworkKanban: React.FC<Props> = ({
   }, [expandedCard, grouped]);
 
   return (
-    <LayoutGroup>
-      {/* Kanban columns — compact cards only */}
-      <div className="flex gap-3 overflow-x-auto pb-2 dashboard-scroll" style={{ minHeight: expandedCard ? 200 : 500 }}>
-        {columns.map((col) => {
-          const items = grouped[col.id] || [];
-          return (
-            <div
-              key={col.id}
-              className={`rounded-xl border ${col.color} p-2.5 flex flex-col flex-1 min-w-[200px]`}
-            >
-              {/* Column header */}
-              <div className="flex items-center justify-between px-1 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
-                  <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">{col.label}</span>
+    <>
+      <LayoutGroup>
+        <div className="flex gap-3 min-h-[500px] overflow-x-auto pb-2 dashboard-scroll">
+          {columns.map((col) => {
+            const items = grouped[col.id] || [];
+            return (
+              <div
+                key={col.id}
+                className={`rounded-xl border ${col.color} p-2.5 flex flex-col flex-1 min-w-[200px]`}
+              >
+                {/* Column header */}
+                <div className="flex items-center justify-between px-1 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
+                    <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">{col.label}</span>
+                  </div>
+                  <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-md font-medium">{items.length}</span>
                 </div>
-                <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-md font-medium">{items.length}</span>
-              </div>
 
-              {/* Compact cards */}
-              <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[600px] dashboard-scroll">
-                <AnimatePresence mode="popLayout">
-                  {items.map(({ job, proposal: prop }) => {
-                    const isExpanded = expandedCard === job.id;
-                    const isGenerating = generatingJobs.has(job.id);
-                    const isInvite = job.source === 'invite';
-                    const budget = formatBudget(job);
+                {/* Compact cards */}
+                <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[600px] dashboard-scroll">
+                  <AnimatePresence mode="popLayout">
+                    {items.map(({ job, proposal: prop }) => {
+                      const isExpanded = expandedCard === job.id;
+                      const isGenerating = generatingJobs.has(job.id);
+                      const isInvite = job.source === 'invite';
+                      const budget = formatBudget(job);
 
-                    return (
-                      <motion.div
-                        key={job.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        className={`rounded-lg overflow-hidden cursor-pointer transition-colors ${isExpanded ? 'bg-zinc-800/90 border-2 border-blue-500/50 ring-1 ring-blue-500/20' : 'bg-zinc-900/80 border border-zinc-700/30 hover:border-zinc-600/50'}`}
-                        onClick={() => setExpandedCard(isExpanded ? null : job.id)}
-                      >
-                        <div className="p-2.5">
-                          <p className="text-[12px] font-medium text-zinc-200 line-clamp-2 leading-snug">{job.title}</p>
-                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            {isInvite && (
-                              <span className="px-1 py-0.5 rounded text-[9px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5">
-                                <Mail className="w-2.5 h-2.5" /> Invite
-                              </span>
-                            )}
-                            {job.icpScore != null && (
-                              <span className={`px-1 py-0.5 rounded text-[9px] font-bold border ${icpColor(job.icpScore)}`}>
-                                {job.icpScore}
-                              </span>
-                            )}
-                            {budget && <span className="text-[9px] text-zinc-500">{budget}</span>}
-                            {isGenerating && <Loader2 className="w-3 h-3 text-purple-400 animate-spin" />}
-                            {prop && <span className="text-[9px] text-emerald-500/70">{prop.status}</span>}
-                            <span className="text-[9px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
+                      return (
+                        <motion.div
+                          key={job.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          className={`rounded-lg overflow-hidden cursor-pointer transition-colors ${isExpanded ? 'bg-zinc-800/90 border-2 border-blue-500/50 ring-1 ring-blue-500/20' : 'bg-zinc-900/80 border border-zinc-700/30 hover:border-zinc-600/50'}`}
+                          onClick={() => setExpandedCard(isExpanded ? null : job.id)}
+                        >
+                          <div className="p-2.5">
+                            <p className="text-[12px] font-medium text-zinc-200 line-clamp-2 leading-snug">{job.title}</p>
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              {isInvite && (
+                                <span className="px-1 py-0.5 rounded text-[9px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-0.5">
+                                  <Mail className="w-2.5 h-2.5" /> Invite
+                                </span>
+                              )}
+                              {job.icpScore != null && (
+                                <span className={`px-1 py-0.5 rounded text-[9px] font-bold border ${icpColor(job.icpScore)}`}>
+                                  {job.icpScore}
+                                </span>
+                              )}
+                              {budget && <span className="text-[9px] text-zinc-500">{budget}</span>}
+                              {isGenerating && <Loader2 className="w-3 h-3 text-purple-400 animate-spin" />}
+                              {prop && <span className="text-[9px] text-emerald-500/70">{prop.status}</span>}
+                              <span className="text-[9px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
 
-                {items.length === 0 && (
-                  <p className="text-xs text-zinc-600 text-center py-6">Empty</p>
-                )}
+                  {items.length === 0 && (
+                    <p className="text-xs text-zinc-600 text-center py-6">Empty</p>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </LayoutGroup>
 
-      {/* Full-width detail panel below columns */}
-      <AnimatePresence>
-        {expandedData && (
-          <motion.div
-            key={expandedData.job.id}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="overflow-hidden"
-          >
-            <ExpandedDetailPanel
-              job={expandedData.job}
-              proposal={expandedData.proposal}
-              generatingJobs={generatingJobs}
-              actionLoading={actionLoading}
-              editingId={editingId}
-              editValue={editValue}
-              onClose={() => setExpandedCard(null)}
-              onSkip={onSkip}
-              onGenerate={onGenerate}
-              onCancelGeneration={onCancelGeneration}
-              onSubmit={handleSubmit}
-              onEdit={onEdit}
-              onStartEdit={(id, text) => { setEditingId(id); setEditValue(text); }}
-              onCancelEdit={() => { setEditingId(null); setEditValue(''); }}
-              onEditChange={setEditValue}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </LayoutGroup>
+      {/* Modal overlay — portaled to body */}
+      {expandedData && createPortal(
+        <AnimatePresence>
+          <DetailModal
+            job={expandedData.job}
+            proposal={expandedData.proposal}
+            generatingJobs={generatingJobs}
+            actionLoading={actionLoading}
+            editingId={editingId}
+            editValue={editValue}
+            onClose={() => setExpandedCard(null)}
+            onSkip={onSkip}
+            onGenerate={onGenerate}
+            onCancelGeneration={onCancelGeneration}
+            onSubmit={handleSubmit}
+            onEdit={onEdit}
+            onStartEdit={(id, text) => { setEditingId(id); setEditValue(text); }}
+            onCancelEdit={() => { setEditingId(null); setEditValue(''); }}
+            onEditChange={setEditValue}
+          />
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 };
