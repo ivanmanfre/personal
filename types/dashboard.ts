@@ -205,6 +205,7 @@ export interface UpworkProposal {
   status: string;
   submittedAt: string | null;
   screeningAnswers: { question: string; answer: string }[] | null;
+  diagramData: { html: string; json: any } | null;
   createdAt: string;
 }
 

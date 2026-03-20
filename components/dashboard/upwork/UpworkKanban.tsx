@@ -1,8 +1,44 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
+
+function KanbanDiagramPreview({ html }: { html: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument?.body) return;
+    const h = iframe.contentDocument.body.scrollHeight;
+    iframe.style.height = Math.min(h, expanded ? 600 : 200) + 'px';
+  }, [expanded]);
+
+  return (
+    <div className="rounded-lg border border-purple-500/20 overflow-hidden mt-2">
+      <div className="flex items-center justify-between px-2 py-1 bg-purple-950/20 border-b border-purple-500/15">
+        <span className="text-[9px] text-purple-400/70 font-medium uppercase tracking-wider">Diagram</span>
+        <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }} className="text-[9px] text-purple-400/50 hover:text-purple-400 transition-colors">
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      <div className={`relative ${expanded ? 'max-h-[600px]' : 'max-h-[200px]'} overflow-hidden transition-all duration-300`}>
+        <iframe
+          ref={iframeRef}
+          srcDoc={html}
+          onLoad={handleLoad}
+          sandbox="allow-scripts"
+          className="w-full border-0 bg-white"
+          style={{ height: expanded ? 600 : 200, minHeight: 150 }}
+        />
+        {!expanded && (
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface Column {
   id: string;
@@ -341,6 +377,9 @@ export const UpworkKanban: React.FC<Props> = ({
                                           </div>
                                         ))}
                                       </div>
+                                    )}
+                                    {prop.diagramData?.html && (
+                                      <KanbanDiagramPreview html={prop.diagramData.html} />
                                     )}
                                   </div>
                                 )}

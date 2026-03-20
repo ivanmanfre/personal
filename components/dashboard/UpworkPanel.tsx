@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save, RefreshCw, Loader2, MessageSquare, DollarSign, Star, Users, LayoutList, Columns3 } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
 import { useAutoRefresh, pauseRefresh, resumeRefresh } from '../../hooks/useAutoRefresh';
@@ -23,6 +23,42 @@ function formatClientSpend(amount: number): string {
   if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
   if (amount >= 1000) return `$${(amount / 1000).toFixed(1)}K`;
   return `$${Math.round(amount)}`;
+}
+
+function DiagramPreview({ html }: { html: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument?.body) return;
+    const h = iframe.contentDocument.body.scrollHeight;
+    iframe.style.height = Math.min(h, expanded ? 800 : 300) + 'px';
+  }, [expanded]);
+
+  return (
+    <div className="rounded-lg border border-purple-500/20 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-purple-950/20 border-b border-purple-500/15">
+        <span className="text-[10px] text-purple-400/70 font-medium uppercase tracking-wider">Workflow Diagram</span>
+        <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-purple-400/50 hover:text-purple-400 transition-colors">
+          {expanded ? 'Collapse' : 'Expand'}
+        </button>
+      </div>
+      <div className={`relative ${expanded ? 'max-h-[800px]' : 'max-h-[300px]'} overflow-hidden transition-all duration-300`}>
+        <iframe
+          ref={iframeRef}
+          srcDoc={html}
+          onLoad={handleLoad}
+          sandbox="allow-scripts"
+          className="w-full border-0 bg-white"
+          style={{ height: expanded ? 800 : 300, minHeight: 200 }}
+        />
+        {!expanded && (
+          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+        )}
+      </div>
+    </div>
+  );
 }
 
 const statusColors: Record<string, string> = {
@@ -452,6 +488,11 @@ const UpworkPanel: React.FC = () => {
                                 </div>
                               ))}
                             </div>
+                          )}
+
+                          {/* Diagram */}
+                          {prop.diagramData?.html && (
+                            <DiagramPreview html={prop.diagramData.html} />
                           )}
 
                           {/* Rate info */}
