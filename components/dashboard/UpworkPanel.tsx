@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save, RefreshCw, Loader2, MessageSquare, DollarSign, Star, Users, LayoutList, Columns3 } from 'lucide-react';
+import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save, RefreshCw, Loader2, MessageSquare, DollarSign, Star, Users, LayoutList, Columns3, Maximize2, Minimize2 } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
 import { useAutoRefresh, pauseRefresh, resumeRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -7,7 +7,7 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
-import { UpworkKanban } from './upwork/UpworkKanban';
+// Kanban removed — list-only view
 import { UpworkFunnel } from './upwork/UpworkFunnel';
 import type { UpworkJob, UpworkProposal } from '../../types/dashboard';
 
@@ -26,36 +26,36 @@ function formatClientSpend(amount: number): string {
 }
 
 function DiagramPreview({ html }: { html: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
-  const handleLoad = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument?.body) return;
-    const h = iframe.contentDocument.body.scrollHeight;
-    iframe.style.height = Math.min(h, expanded ? 800 : 300) + 'px';
-  }, [expanded]);
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setFullscreen(false)}>
+        <div className="relative w-full h-full max-w-[95vw] max-h-[90vh] bg-white rounded-xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => setFullscreen(false)}
+            className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-zinc-800/80 text-white hover:bg-zinc-700 transition-colors"
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+          <iframe srcDoc={html} sandbox="allow-scripts" className="w-full h-full border-0" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-purple-500/20 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 bg-purple-950/20 border-b border-purple-500/15">
         <span className="text-[10px] text-purple-400/70 font-medium uppercase tracking-wider">Workflow Diagram</span>
-        <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-purple-400/50 hover:text-purple-400 transition-colors">
-          {expanded ? 'Collapse' : 'Expand'}
+        <button onClick={() => setFullscreen(true)} className="flex items-center gap-1 text-[10px] text-purple-400/50 hover:text-purple-400 transition-colors">
+          <Maximize2 className="w-3 h-3" /> Expand
         </button>
       </div>
-      <div className={`relative ${expanded ? 'max-h-[800px]' : 'max-h-[300px]'} overflow-hidden transition-all duration-300`}>
-        <iframe
-          ref={iframeRef}
-          srcDoc={html}
-          onLoad={handleLoad}
-          sandbox="allow-scripts"
-          className="w-full border-0 bg-white"
-          style={{ height: expanded ? 800 : 300, minHeight: 200 }}
-        />
-        {!expanded && (
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
-        )}
+      <div className="relative max-h-[250px] overflow-hidden">
+        <iframe srcDoc={html} sandbox="allow-scripts" className="w-full border-0 bg-white" style={{ height: 250 }} />
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+        <button onClick={() => setFullscreen(true)} className="absolute inset-0 cursor-pointer" />
       </div>
     </div>
   );
@@ -155,8 +155,8 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
 const UpworkPanel: React.FC = () => {
   const { jobs, proposals, stats, loading, generatingJobs, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
+  const [statsCollapsed, setStatsCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>(getUrlParam('filter', 'action'));
   const [editingField, setEditingField] = useState<{ id: string; field: 'proposal_text' | 'cover_letter' } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -255,54 +255,33 @@ const UpworkPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
-          <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
-            <button
-              onClick={() => setView('kanban')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${view === 'kanban' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              <Columns3 className="w-3.5 h-3.5" /> Kanban
-            </button>
-            <button
-              onClick={() => setView('list')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${view === 'list' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              <LayoutList className="w-3.5 h-3.5" /> List
-            </button>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
-      {/* Stats + Funnel */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <StatCard label="Action Needed" value={actionCount} icon={<Zap className="w-5 h-5" />} color="text-amber-400" />
-          <StatCard label="Invites" value={stats.invites} icon={<Mail className="w-5 h-5" />} color="text-purple-400" />
-          <StatCard label="Pending Review" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
-          <StatCard label="Submitted" value={stats.submitted} icon={<Send className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
-          <StatCard label="Total Jobs" value={stats.totalJobs} icon={<Briefcase className="w-5 h-5" />} color="text-zinc-400" />
-        </div>
-        <UpworkFunnel stats={stats} />
+      {/* Stats + Funnel (collapsible) */}
+      <div>
+        <button
+          onClick={() => setStatsCollapsed(!statsCollapsed)}
+          className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2"
+        >
+          {statsCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          {statsCollapsed ? `Stats — ${actionCount} action, ${stats.pendingApproval} review, ${stats.submitted} submitted` : 'Stats'}
+        </button>
+        {!statsCollapsed && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <StatCard label="Action Needed" value={actionCount} icon={<Zap className="w-5 h-5" />} color="text-amber-400" />
+              <StatCard label="Invites" value={stats.invites} icon={<Mail className="w-5 h-5" />} color="text-purple-400" />
+              <StatCard label="Pending Review" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
+              <StatCard label="Submitted" value={stats.submitted} icon={<Send className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
+              <StatCard label="Total Jobs" value={stats.totalJobs} icon={<Briefcase className="w-5 h-5" />} color="text-zinc-400" />
+            </div>
+            <UpworkFunnel stats={stats} />
+          </div>
+        )}
       </div>
 
-      {/* Kanban or List view */}
-      {view === 'kanban' ? (
-        <UpworkKanban
-          jobs={jobs}
-          proposals={proposals}
-          generatingJobs={generatingJobs}
-          onSkip={skipJob}
-          onGenerate={generateProposal}
-          onCancelGeneration={cancelGeneration}
-          onApprove={approveProposal}
-          onReject={rejectProposal}
-          onSubmit={submitProposal}
-          onEdit={editProposal}
-        />
-      ) : (
-      <>
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => (
@@ -585,8 +564,6 @@ const UpworkPanel: React.FC = () => {
           </div>
         )}
       </div>
-      </>
-      )}
     </div>
   );
 };
