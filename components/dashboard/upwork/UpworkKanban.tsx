@@ -380,6 +380,8 @@ export const UpworkKanban: React.FC<Props> = ({
     for (const job of jobs) {
       const prop = proposalMap.get(job.id);
       if (isStale(job, prop)) continue;
+      // Only show jobs scored 7+ (unless they already have a proposal in progress)
+      if (!prop && (job.icpScore == null || job.icpScore < 7)) continue;
       const col = getColumn(job, prop);
       if (col && groups[col]) groups[col].push({ job, proposal: prop });
     }
