@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X } from 'lucide-react';
@@ -90,15 +90,11 @@ function DetailModal({
   const isGenerating = generatingJobs.has(job.id);
   const isLoading = prop && actionLoading === prop.id;
   const budget = formatBudget(job);
-  const diagramRef = useRef<HTMLIFrameElement>(null);
-  const [diagramHeight, setDiagramHeight] = useState(400);
-
-  const handleDiagramLoad = useCallback(() => {
-    const iframe = diagramRef.current;
-    if (!iframe?.contentDocument?.body) return;
-    const h = iframe.contentDocument.body.scrollHeight;
-    setDiagramHeight(Math.max(300, Math.min(h + 20, 1200)));
-  }, []);
+  const diagramHeight = useMemo(() => {
+    const html = prop?.diagramData?.html || '';
+    const m = html.match(/height:(\d+)px;overflow/);
+    return m ? parseInt(m[1], 10) + 16 : 700;
+  }, [prop?.diagramData?.html]);
 
   // Close on Escape
   useEffect(() => {
@@ -266,11 +262,9 @@ function DetailModal({
                 <span className="text-[10px] text-purple-400/70 font-medium uppercase tracking-wider">Workflow Diagram</span>
               </div>
               <iframe
-                ref={diagramRef}
                 srcDoc={prop.diagramData.html}
-                onLoad={handleDiagramLoad}
-                sandbox="allow-scripts"
-                className="w-full border-0 bg-white"
+                sandbox="allow-scripts allow-same-origin"
+                className="w-full border-0 bg-[#111116]"
                 style={{ height: diagramHeight }}
               />
             </div>

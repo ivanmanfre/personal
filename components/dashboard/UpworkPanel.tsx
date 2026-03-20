@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Briefcase, ExternalLink, ChevronDown, ChevronRight, XCircle, CheckCircle2, FileText, Zap, Trophy, Mail, Send, Edit3, Save, RefreshCw, Loader2, MessageSquare, DollarSign, Star, Users, LayoutList, Columns3, Maximize2, Minimize2 } from 'lucide-react';
 import { useUpworkPipeline } from '../../hooks/useUpworkPipeline';
 import { useAutoRefresh, pauseRefresh, resumeRefresh } from '../../hooks/useAutoRefresh';
@@ -25,20 +25,26 @@ function formatClientSpend(amount: number): string {
   return `$${Math.round(amount)}`;
 }
 
+function parseDiagramHeight(html: string): number {
+  const m = html.match(/height:(\d+)px;overflow/);
+  return m ? parseInt(m[1], 10) + 16 : 700;
+}
+
 function DiagramPreview({ html }: { html: string }) {
   const [fullscreen, setFullscreen] = useState(false);
+  const height = useMemo(() => parseDiagramHeight(html), [html]);
 
   if (fullscreen) {
     return (
       <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setFullscreen(false)}>
-        <div className="relative w-full h-full max-w-[95vw] max-h-[90vh] bg-white rounded-xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-full h-full max-w-[95vw] max-h-[90vh] bg-[#111116] rounded-xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => setFullscreen(false)}
             className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-zinc-800/80 text-white hover:bg-zinc-700 transition-colors"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
-          <iframe srcDoc={html} sandbox="allow-scripts" className="w-full h-full border-0" />
+          <iframe srcDoc={html} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0 bg-[#111116]" />
         </div>
       </div>
     );
@@ -52,11 +58,7 @@ function DiagramPreview({ html }: { html: string }) {
           <Maximize2 className="w-3 h-3" /> Expand
         </button>
       </div>
-      <div className="relative max-h-[250px] overflow-hidden">
-        <iframe srcDoc={html} sandbox="allow-scripts" className="w-full border-0 bg-white" style={{ height: 250 }} />
-        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
-        <button onClick={() => setFullscreen(true)} className="absolute inset-0 cursor-pointer" />
-      </div>
+      <iframe srcDoc={html} sandbox="allow-scripts allow-same-origin" className="w-full border-0 bg-[#111116]" style={{ height }} />
     </div>
   );
 }
@@ -226,9 +228,9 @@ const UpworkPanel: React.FC = () => {
     pauseRefresh();
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingField) {
-      editProposal(editingField.id, editingField.field, editValue);
+      await editProposal(editingField.id, editingField.field, editValue);
       setEditingField(null);
     }
     resumeRefresh();

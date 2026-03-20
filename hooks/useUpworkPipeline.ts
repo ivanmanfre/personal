@@ -96,6 +96,7 @@ export function useUpworkPipeline() {
   // Optimistic locks — prevent auto-refresh from overwriting in-flight states
   const jobLocks = useRef<Map<string, OptimisticLock>>(new Map());
   const proposalLocks = useRef<Map<string, OptimisticLock>>(new Map());
+  const proposalTextLocks = useRef<Map<string, { field: string; value: string; expiry: number }>>(new Map());
 
   const lockJob = (id: string, status: string) => {
     jobLocks.current.set(id, { status, expiry: Date.now() + LOCK_TTL });
@@ -103,8 +104,12 @@ export function useUpworkPipeline() {
   const lockProposal = (id: string, status: string) => {
     proposalLocks.current.set(id, { status, expiry: Date.now() + LOCK_TTL });
   };
+  const lockProposalText = (id: string, field: string, value: string) => {
+    proposalTextLocks.current.set(`${id}:${field}`, { field, value, expiry: Date.now() + LOCK_TTL });
+  };
   const clearJobLock = (id: string) => { jobLocks.current.delete(id); };
   const clearProposalLock = (id: string) => { proposalLocks.current.delete(id); };
+  const clearProposalTextLock = (id: string, field: string) => { proposalTextLocks.current.delete(`${id}:${field}`); };
   const hasLoaded = useRef(false);
 
   const fetch = useCallback(async () => {
@@ -145,16 +150,31 @@ export function useUpworkPipeline() {
       }));
 
       setProposals(serverProposals.map((p) => {
+        let result = p;
         const lock = proposalLocks.current.get(p.id);
         if (lock && now < lock.expiry) {
           if (p.status !== lock.status && p.status !== 'pending_approval' && p.status !== 'draft') {
             proposalLocks.current.delete(p.id);
-            return p;
+          } else {
+            result = { ...result, status: lock.status };
           }
-          return { ...p, status: lock.status };
+        } else {
+          proposalLocks.current.delete(p.id);
         }
-        proposalLocks.current.delete(p.id);
-        return p;
+        // Preserve locked text fields during refresh
+        const ptLock = proposalTextLocks.current.get(`${p.id}:proposal_text`);
+        if (ptLock && now < ptLock.expiry) {
+          result = { ...result, proposalText: ptLock.value };
+        } else {
+          proposalTextLocks.current.delete(`${p.id}:proposal_text`);
+        }
+        const clLock = proposalTextLocks.current.get(`${p.id}:cover_letter`);
+        if (clLock && now < clLock.expiry) {
+          result = { ...result, coverLetter: clLock.value };
+        } else {
+          proposalTextLocks.current.delete(`${p.id}:cover_letter`);
+        }
+        return result;
       }));
 
       // Clear generating spinners for jobs that now have new proposals
@@ -222,10 +242,13 @@ export function useUpworkPipeline() {
   const editProposal = async (id: string, field: 'proposal_text' | 'cover_letter', value: string) => {
     const prev = proposals.find((p) => p.id === id);
     const optimistic = field === 'proposal_text' ? { proposalText: value } : { coverLetter: value };
+    lockProposalText(id, field, value);
     setProposals((p) => p.map((x) => (x.id === id ? { ...x, ...optimistic } : x)));
     try {
       await dashboardAction('upwork_proposals', id, field, value);
+      clearProposalTextLock(id, field);
     } catch {
+      clearProposalTextLock(id, field);
       if (prev) {
         const rollback = field === 'proposal_text' ? { proposalText: prev.proposalText } : { coverLetter: prev.coverLetter };
         setProposals((p) => p.map((x) => (x.id === id ? { ...x, ...rollback } : x)));
