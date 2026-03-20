@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X } from 'lucide-react';
+import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X, Trash2 } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
 
@@ -19,8 +19,7 @@ const columns: Column[] = [
   { id: 'submitted', label: 'Submitted', color: 'border-green-500/30 bg-green-500/5', dotColor: 'bg-green-400' },
 ];
 
-const EIGHT_HOURS = 8 * 60 * 60 * 1000;
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const SIX_HOURS = 6 * 60 * 60 * 1000;
 
 function jobAge(job: UpworkJob): number {
   const ts = job.postedAt || job.createdAt;
@@ -31,12 +30,7 @@ function jobAge(job: UpworkJob): number {
 function isStale(job: UpworkJob, proposal: UpworkProposal | undefined): boolean {
   // Jobs with proposals in progress or submitted are never stale
   if (proposal) return false;
-  const age = jobAge(job);
-  // Invites: keep for 24h
-  if (job.source === 'invite') return age > TWENTY_FOUR_HOURS;
-  // Assessed jobs without a proposal: hide after 8h
-  if (job.status === 'assessed' || job.status === 'new') return age > EIGHT_HOURS;
-  return false;
+  return jobAge(job) > SIX_HOURS;
 }
 
 function icpColor(score: number | null): string {
@@ -414,7 +408,18 @@ export const UpworkKanban: React.FC<Props> = ({
                     <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
                     <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">{col.label}</span>
                   </div>
-                  <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-md font-medium">{items.length}</span>
+                  <div className="flex items-center gap-1.5">
+                    {items.length > 0 && (
+                      <button
+                        onClick={() => items.forEach(({ job }) => onSkip(job.id))}
+                        className="text-zinc-600 hover:text-red-400 transition-colors p-0.5 rounded hover:bg-red-500/10"
+                        title={`Clear all ${items.length} items`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                    <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-md font-medium">{items.length}</span>
+                  </div>
                 </div>
 
                 {/* Compact cards */}
