@@ -7,7 +7,7 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
-// Kanban removed — list-only view
+import { UpworkKanban } from './upwork/UpworkKanban';
 import { UpworkFunnel } from './upwork/UpworkFunnel';
 import type { UpworkJob, UpworkProposal } from '../../types/dashboard';
 
@@ -155,6 +155,7 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
 const UpworkPanel: React.FC = () => {
   const { jobs, proposals, stats, loading, generatingJobs, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
+  const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [statsCollapsed, setStatsCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>(getUrlParam('filter', 'action'));
@@ -255,7 +256,23 @@ const UpworkPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
+          <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
+            <button
+              onClick={() => setView('kanban')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${view === 'kanban' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              <Columns3 className="w-3.5 h-3.5" /> Kanban
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${view === 'list' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              <LayoutList className="w-3.5 h-3.5" /> List
+            </button>
+          </div>
+        </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
@@ -282,6 +299,22 @@ const UpworkPanel: React.FC = () => {
         )}
       </div>
 
+      {/* Kanban or List view */}
+      {view === 'kanban' ? (
+        <UpworkKanban
+          jobs={jobs}
+          proposals={proposals}
+          generatingJobs={generatingJobs}
+          onSkip={skipJob}
+          onGenerate={generateProposal}
+          onCancelGeneration={cancelGeneration}
+          onApprove={approveProposal}
+          onReject={rejectProposal}
+          onSubmit={submitProposal}
+          onEdit={editProposal}
+        />
+      ) : (
+      <>
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => (
@@ -564,6 +597,8 @@ const UpworkPanel: React.FC = () => {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 };

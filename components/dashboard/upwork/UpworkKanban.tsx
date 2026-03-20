@@ -50,7 +50,6 @@ interface Column {
 const columns: Column[] = [
   { id: 'invites', label: 'Invites', color: 'border-purple-500/30 bg-purple-500/5', dotColor: 'bg-purple-400' },
   { id: 'assessed', label: 'Assessed', color: 'border-blue-500/30 bg-blue-500/5', dotColor: 'bg-blue-400' },
-  { id: 'proposal', label: 'Proposal', color: 'border-violet-500/30 bg-violet-500/5', dotColor: 'bg-violet-400' },
   { id: 'review', label: 'Review', color: 'border-amber-500/30 bg-amber-500/5', dotColor: 'bg-amber-400' },
   { id: 'submitted', label: 'Submitted', color: 'border-green-500/30 bg-green-500/5', dotColor: 'bg-green-400' },
 ];
@@ -103,8 +102,8 @@ function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string
   if (proposal?.status === 'submitted' || job.status === 'submitted' || job.status === 'submitting') return 'submitted';
   if (proposal?.status === 'approved') return 'review';
   if (proposal?.status === 'pending_approval' || proposal?.status === 'draft') return 'review';
-  if (proposal && !['submitted', 'approved', 'pending_approval', 'draft'].includes(proposal.status)) return 'proposal';
-  if (job.status === 'drafted') return 'proposal';
+  if (proposal && !['submitted', 'approved', 'pending_approval', 'draft'].includes(proposal.status)) return 'review';
+  if (job.status === 'drafted') return 'review';
   if (job.status === 'assessed' || (job.status === 'new' && job.icpScore != null)) return 'assessed';
   return 'assessed';
 }
@@ -175,14 +174,14 @@ export const UpworkKanban: React.FC<Props> = ({
 
   return (
     <LayoutGroup>
-      <div className="flex gap-3 min-h-[500px]">
+      <div className="flex gap-3 min-h-[500px] overflow-x-auto pb-2 dashboard-scroll">
         {columns.map((col) => {
           const items = grouped[col.id] || [];
           const hasExpanded = expandedColId === col.id;
           return (
             <div
               key={col.id}
-              className={`rounded-xl border ${col.color} p-2.5 flex flex-col min-w-0 transition-all duration-300 ease-out ${hasExpanded ? 'flex-[2.5]' : 'flex-1'}`}
+              className={`rounded-xl border ${col.color} p-2.5 flex flex-col transition-all duration-300 ease-out ${hasExpanded ? 'flex-[2.5] min-w-[320px]' : 'flex-1 min-w-[220px]'}`}
             >
               {/* Column header */}
               <div className="flex items-center justify-between px-1 pb-2.5">
