@@ -294,7 +294,7 @@ const UpworkPanel: React.FC = () => {
               <StatCard label="Invites" value={stats.invites} icon={<Mail className="w-5 h-5" />} color="text-purple-400" />
               <StatCard label="Pending Review" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
               <StatCard label="Submitted" value={stats.submitted} icon={<Send className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
-              <StatCard label="Total Jobs" value={stats.totalJobs} icon={<Briefcase className="w-5 h-5" />} color="text-zinc-400" />
+              <StatCard label="Active Jobs" value={stats.totalJobs - stats.skipped} icon={<Briefcase className="w-5 h-5" />} color="text-zinc-400" />
             </div>
             <UpworkFunnel stats={stats} />
           </div>
