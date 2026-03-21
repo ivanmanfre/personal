@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { PipelineTask } from '../types/dashboard';
 
 function mapTask(row: any): PipelineTask {
@@ -46,6 +46,9 @@ function groupWithSubtasks(tasks: PipelineTask[]): PipelineTask[] {
 export function useTasksPipeline(sourceFilter?: string) {
   const [allTasks, setAllTasks] = useState<PipelineTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mutating, setMutating] = useState<Set<string>>(new Set());
+  const startMutating = (id: string) => setMutating((s) => new Set(s).add(id));
+  const stopMutating = (id: string) => setMutating((s) => { const n = new Set(s); n.delete(id); return n; });
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -56,7 +59,7 @@ export function useTasksPipeline(sourceFilter?: string) {
         .order('due_date', { ascending: true, nullsFirst: false });
       setAllTasks((data || []).map(mapTask));
     } catch (err) {
-      console.error('Failed to fetch tasks:', err);
+      toastError('load tasks', err);
     } finally {
       setLoading(false);
     }
@@ -64,49 +67,86 @@ export function useTasksPipeline(sourceFilter?: string) {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  const tasks = sourceFilter && sourceFilter !== 'all'
-    ? allTasks.filter((t) => t.source === sourceFilter)
-    : allTasks;
-
-  const parentTasks = groupWithSubtasks(tasks);
-
-  const tasksByStatus = allTasks.reduce((acc: Record<string, number>, t) => {
-    acc[t.status] = (acc[t.status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const tasksBySource = allTasks.reduce((acc: Record<string, number>, t) => {
-    acc[t.source] = (acc[t.source] || 0) + 1;
-    return acc;
-  }, {});
-
-  const now = new Date();
-  const overdueTasks = allTasks.filter(
-    (t) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed' && t.status !== 'ready'
+  const tasks = useMemo(() =>
+    sourceFilter && sourceFilter !== 'all'
+      ? allTasks.filter((t) => t.source === sourceFilter)
+      : allTasks,
+    [allTasks, sourceFilter]
   );
 
-  const inProgress = allTasks.filter(
-    (t) => t.status === 'generating' || t.status === 'review'
-  ).length;
+  const parentTasks = useMemo(() => groupWithSubtasks(tasks), [tasks]);
+
+  const tasksByStatus = useMemo(() =>
+    allTasks.reduce((acc: Record<string, number>, t) => {
+      acc[t.status] = (acc[t.status] || 0) + 1;
+      return acc;
+    }, {}),
+    [allTasks]
+  );
+
+  const tasksBySource = useMemo(() =>
+    allTasks.reduce((acc: Record<string, number>, t) => {
+      acc[t.source] = (acc[t.source] || 0) + 1;
+      return acc;
+    }, {}),
+    [allTasks]
+  );
+
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return allTasks.filter(
+      (t) => t.dueDate && new Date(t.dueDate) < now && t.status !== 'completed' && t.status !== 'ready'
+    );
+  }, [allTasks]);
+
+  const inProgress = useMemo(() =>
+    allTasks.filter(
+      (t) => t.status === 'generating' || t.status === 'review'
+    ).length,
+    [allTasks]
+  );
 
   const updateTask = useCallback(async (id: string, field: string, value: string) => {
-    await dashboardAction('dashboard_tasks', id, field, value);
-    await fetchTasks();
+    startMutating(id);
+    try {
+      await dashboardAction('dashboard_tasks', id, field, value);
+      await fetchTasks();
+    } catch (err) {
+      toastError('update task', err);
+    } finally {
+      stopMutating(id);
+    }
   }, [fetchTasks]);
 
   const createTask = useCallback(async (title: string, description?: string, parentTaskId?: string) => {
-    const { error } = await supabase.rpc('dashboard_create_task', {
-      p_title: title,
-      p_description: description || null,
-      p_parent_task_id: parentTaskId || null,
-    });
-    if (error) throw error;
-    await fetchTasks();
+    startMutating('_create');
+    try {
+      const { error } = await supabase.rpc('dashboard_create_task', {
+        p_title: title,
+        p_description: description || null,
+        p_parent_task_id: parentTaskId || null,
+      });
+      if (error) throw error;
+      await fetchTasks();
+      toastSuccess('Task created');
+    } catch (error) {
+      toastError('create task', error);
+    } finally {
+      stopMutating('_create');
+    }
   }, [fetchTasks]);
 
   const deleteTask = useCallback(async (id: string) => {
-    await dashboardAction('dashboard_tasks', id, 'status', 'cancelled');
-    await fetchTasks();
+    startMutating(id);
+    try {
+      await dashboardAction('dashboard_tasks', id, 'status', 'cancelled');
+      await fetchTasks();
+      toastSuccess('Task deleted');
+    } catch (err) {
+      toastError('delete task', err);
+    } finally {
+      stopMutating(id);
+    }
   }, [fetchTasks]);
 
   return {
@@ -118,6 +158,7 @@ export function useTasksPipeline(sourceFilter?: string) {
     overdueTasks,
     inProgress,
     loading,
+    mutating,
     refresh: fetchTasks,
     updateTask,
     createTask,

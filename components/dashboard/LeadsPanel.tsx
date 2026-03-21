@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Users, ExternalLink } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -6,6 +6,7 @@ import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
+import FilterBar from './shared/FilterBar';
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -27,8 +28,20 @@ const funnelColors: Record<string, string> = {
 
 const LeadsPanel: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const { leads, statusCounts, icpDistribution, loading, refresh, updateStatus } = useLeads(filter);
-  const { lastRefreshed } = useAutoRefresh(refresh);
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['leads'] });
+
+  const filteredLeads = useMemo(() => {
+    if (!search.trim()) return leads;
+    const q = search.toLowerCase();
+    return leads.filter(
+      (l) =>
+        (l.name && l.name.toLowerCase().includes(q)) ||
+        (l.headline && l.headline.toLowerCase().includes(q)) ||
+        (l.company && l.company.toLowerCase().includes(q))
+    );
+  }, [leads, search]);
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
@@ -135,6 +148,12 @@ const LeadsPanel: React.FC = () => {
         ))}
       </div>
 
+      <FilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search leads..."
+      />
+
       {/* Leads table */}
       <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
         <div className="overflow-x-auto">
@@ -150,10 +169,10 @@ const LeadsPanel: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
-              {leads.length === 0 ? (
+              {filteredLeads.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-zinc-500 text-center">No leads match filter</td></tr>
               ) : (
-                leads.map((lead) => (
+                filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-medium text-zinc-200">{lead.name || '—'}</p>

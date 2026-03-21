@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { subscribeToTable } from '../lib/subscriptionManager';
 import { useDashboard } from '../contexts/DashboardContext';
 
 // Global editing state — when any component is editing, all auto-refreshes pause
@@ -53,17 +53,12 @@ export function useAutoRefresh(
   useEffect(() => {
     if (!tablesKey) return;
     const tables = tablesKey.split(',');
-    const channels = tables.map((table) =>
-      supabase
-        .channel(`dash-${table}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-          if (!isEditing()) refresh();
-        })
-        .subscribe()
+    const unsubs = tables.map((table) =>
+      subscribeToTable(table, () => {
+        if (!isEditing()) refresh();
+      })
     );
-    return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch));
-    };
+    return () => { unsubs.forEach((u) => u()); };
   }, [tablesKey, refresh]);
 
   return { lastRefreshed, refresh };

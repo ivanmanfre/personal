@@ -67,7 +67,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
     <div className="min-h-screen dashboard-mesh-bg dashboard-noise text-white flex">
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 flex items-center justify-between">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-400 hover:text-white transition-colors">
+        <button aria-label={sidebarOpen ? 'Close menu' : 'Open menu'} onClick={() => setSidebarOpen(!sidebarOpen)} className="text-zinc-400 hover:text-white transition-colors">
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
         <div className="flex items-center gap-2.5">
@@ -106,9 +106,10 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto dashboard-scroll">
           {tabGroups.map((group, gi) => (
-            <div key={gi} className={gi > 0 ? 'mt-5' : ''}>
+            <div key={gi}>
+              {gi > 0 && <div className="mx-3 my-3 h-px bg-zinc-800/60" />}
               {group.label && (
-                <p className="px-3 pb-2 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.15em]">{group.label}</p>
+                <p className="px-3 pb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em]">{group.label}</p>
               )}
               <div className="space-y-0.5">
                 {group.tabs.map((tab) => {
@@ -116,6 +117,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
                   return (
                     <button
                       key={tab.id}
+                      title={tab.label}
                       onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative ${
                         isActive
@@ -160,6 +162,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
             <RefreshIndicator lastRefreshed={lastRefreshed} />
           </div>
           <button
+            aria-label="Logout"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
           >

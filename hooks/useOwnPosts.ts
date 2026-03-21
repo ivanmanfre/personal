@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { toastError } from '../lib/dashboardActions';
 import type { OwnPost } from '../types/dashboard';
 
 function mapPost(row: any): OwnPost {
@@ -33,7 +34,7 @@ export function useOwnPosts(days: number = 30) {
         .order('posted_at', { ascending: false });
       setPosts((data || []).map(mapPost));
     } catch (err) {
-      console.error('Failed to fetch posts:', err);
+      toastError('load posts', err);
     } finally {
       setLoading(false);
     }

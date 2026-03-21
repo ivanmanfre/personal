@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError } from '../lib/dashboardActions';
 import type { ProactiveAlert, Reminder, ChatMessage, DailySummary } from '../types/dashboard';
 
 export function useAgentData() {
@@ -49,7 +49,7 @@ export function useAgentData() {
       actionItems: r.action_items || [], messageCount: r.message_count || 0, createdAt: r.created_at,
     })));
     } catch (err) {
-      console.error('Failed to fetch agent data:', err);
+      toastError('load agent data', err);
     } finally {
       setLoading(false);
     }
@@ -57,29 +57,36 @@ export function useAgentData() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const alertsByType = alerts.reduce((acc: Record<string, number>, a) => {
-    acc[a.alertType] = (acc[a.alertType] || 0) + 1;
-    return acc;
-  }, {});
+  const alertsByType = useMemo(() =>
+    alerts.reduce((acc: Record<string, number>, a) => {
+      acc[a.alertType] = (acc[a.alertType] || 0) + 1;
+      return acc;
+    }, {}),
+    [alerts]
+  );
 
-  const acknowledgeAlert = async (id: string) => {
+  const acknowledgeAlert = useCallback(async (id: string) => {
     setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, sent: true } : a)));
     try {
       await dashboardAction('n8nclaw_proactive_alerts', id, 'sent', 'true');
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('acknowledge alert', err);
       setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, sent: false } : a)));
     }
-  };
+  }, [fetch]);
 
-  const completeReminder = async (id: number) => {
+  const completeReminder = useCallback(async (id: number) => {
     const prev = reminders.find((r) => r.id === id);
     setReminders((p) => p.filter((r) => r.id !== id));
     try {
       await dashboardAction('n8nclaw_reminders', String(id), 'status', 'completed');
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('complete reminder', err);
       if (prev) setReminders((p) => [...p, prev]);
     }
-  };
+  }, [fetch, reminders]);
 
   return { alerts, reminders, messageStats, summaries, alertsByType, loading, refresh: fetch, acknowledgeAlert, completeReminder };
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { UpworkJob, UpworkProposal, UpworkPipelineStats } from '../types/dashboard';
 
 // Tracks optimistic status overrides so auto-refresh doesn't stomp them
@@ -191,7 +191,7 @@ export function useUpworkPipeline() {
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
       hasLoaded.current = true;
     } catch (err) {
-      console.error('Failed to fetch upwork data:', err);
+      toastError('load Upwork data', err);
     } finally {
       setLoading(false);
     }
@@ -207,7 +207,8 @@ export function useUpworkPipeline() {
       await dashboardAction('upwork_jobs', id, 'status', 'skipped');
       if (reason) await dashboardAction('upwork_jobs', id, 'skip_reason', reason);
       clearJobLock(id);
-    } catch {
+    } catch (err) {
+      toastError('skip job', err);
       clearJobLock(id);
       if (prev) setJobs((p) => p.map((j) => (j.id === id ? { ...j, status: prev.status, skipReason: prev.skipReason } : j)));
     }
@@ -220,7 +221,8 @@ export function useUpworkPipeline() {
     try {
       await dashboardAction('upwork_proposals', id, 'status', 'approved');
       clearProposalLock(id);
-    } catch {
+    } catch (err) {
+      toastError('approve proposal', err);
       clearProposalLock(id);
       if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
     }
@@ -233,7 +235,8 @@ export function useUpworkPipeline() {
     try {
       await dashboardAction('upwork_proposals', id, 'status', 'rejected');
       clearProposalLock(id);
-    } catch {
+    } catch (err) {
+      toastError('reject proposal', err);
       clearProposalLock(id);
       if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, status: prev.status } : x)));
     }
@@ -247,7 +250,8 @@ export function useUpworkPipeline() {
     try {
       await dashboardAction('upwork_proposals', id, field, value);
       clearProposalTextLock(id, field);
-    } catch {
+    } catch (err) {
+      toastError('save proposal edit', err);
       clearProposalTextLock(id, field);
       if (prev) {
         const rollback = field === 'proposal_text' ? { proposalText: prev.proposalText } : { coverLetter: prev.coverLetter };
@@ -270,11 +274,14 @@ export function useUpworkPipeline() {
       if (data?.success) {
         clearProposalLock(id);
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitted', submittedAt: new Date().toISOString() } : p)));
+        toastSuccess('Proposal submitted!');
       } else {
         clearProposalLock(id);
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
+        toastError('submit proposal — server rejected');
       }
-    } catch {
+    } catch (err) {
+      toastError('submit proposal', err);
       clearProposalLock(id);
       setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
     }
@@ -299,7 +306,7 @@ export function useUpworkPipeline() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    }).catch((err) => console.error('Proposal generation error:', err));
+    }).catch((err) => toastError('generate proposal', err));
 
     // Poll every 10s until a new proposal appears for this job (up to 5 min)
     let polls = 0;

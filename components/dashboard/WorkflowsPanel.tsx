@@ -10,6 +10,7 @@ import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import AnimateIn from './shared/AnimateIn';
+import FilterBar from './shared/FilterBar';
 import { timeAgo } from './shared/utils';
 import { pipelineConfig } from './system-map/config';
 import type { WorkflowStat } from '../../types/dashboard';
@@ -68,6 +69,7 @@ const WorkflowsPanel: React.FC = () => {
 
   const [expandedWorkflows, setExpandedWorkflows] = useState<Set<string>>(new Set());
   const [sentToEngineer, setSentToEngineer] = useState<Record<string, 'sending' | 'sent'>>({});
+  const [search, setSearch] = useState('');
 
   const toggleWorkflow = useCallback((id: string) => {
     setExpandedWorkflows(prev => {
@@ -131,6 +133,18 @@ const WorkflowsPanel: React.FC = () => {
         return score(a) - score(b);
       });
   }, [pipelineStats]);
+
+  // Filter pipelines by search term (match workflowName within each pipeline)
+  const searchFilteredPipelines = useMemo(() => {
+    if (!search.trim()) return sortedPipelines;
+    const q = search.toLowerCase();
+    return sortedPipelines
+      .map((p) => ({
+        ...p,
+        workflows: p.workflows.filter((wf) => wf.workflowName.toLowerCase().includes(q)),
+      }))
+      .filter((p) => p.workflows.length > 0);
+  }, [sortedPipelines, search]);
 
   if (loading) return <LoadingSkeleton cards={4} rows={8} />;
 
@@ -208,9 +222,15 @@ const WorkflowsPanel: React.FC = () => {
         </div>
       </AnimateIn>
 
+      <FilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search workflows..."
+      />
+
       {/* ── Command Center Grid (sorted: errors first) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
-        {sortedPipelines.map((p) => {
+        {searchFilteredPipelines.map((p) => {
           const errorWfCount = p.workflows.filter((w) => getWorkflowHealth(w) === 'error').length;
           const warnWfCount = p.workflows.filter((w) => getWorkflowHealth(w) === 'warning').length;
           const sortedWfs = [...p.workflows].sort((a, b) => healthPriority[getWorkflowHealth(a)] - healthPriority[getWorkflowHealth(b)]);

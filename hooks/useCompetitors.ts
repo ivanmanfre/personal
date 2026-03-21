@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError } from '../lib/dashboardActions';
 import type { CompetitorPost, CompetitorPattern } from '../types/dashboard';
 
 function mapPost(row: any): CompetitorPost {
@@ -56,7 +56,7 @@ export function useCompetitors() {
     setPosts((postsRes.data || []).map(mapPost));
     setPatterns((patternsRes.data || []).map(mapPattern));
     } catch (err) {
-      console.error('Failed to fetch competitors:', err);
+      toastError('load competitors', err);
     } finally {
       setLoading(false);
     }
@@ -65,20 +65,28 @@ export function useCompetitors() {
   useEffect(() => { fetch(); }, [fetch]);
 
   // Aggregate stats per competitor
-  const competitorStats = patterns.map((p) => {
-    const cPosts = posts.filter((cp) => cp.competitorName === p.competitorName);
-    const avgLikes = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.likesCount, 0) / cPosts.length) : 0;
-    const avgComments = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.commentsCount, 0) / cPosts.length) : 0;
-    return { ...p, avgLikes, avgComments, recentPostCount: cPosts.length };
-  });
+  const competitorStats = useMemo(() =>
+    patterns.map((p) => {
+      const cPosts = posts.filter((cp) => cp.competitorName === p.competitorName);
+      const avgLikes = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.likesCount, 0) / cPosts.length) : 0;
+      const avgComments = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.commentsCount, 0) / cPosts.length) : 0;
+      return { ...p, avgLikes, avgComments, recentPostCount: cPosts.length };
+    }),
+    [patterns, posts]
+  );
 
-  const opportunities = posts.filter((p) => p.hasOpportunity && !p.opportunityActioned);
+  const opportunities = useMemo(() =>
+    posts.filter((p) => p.hasOpportunity && !p.opportunityActioned),
+    [posts]
+  );
 
   const markOpportunityActioned = async (id: string) => {
     setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, opportunityActioned: true } : p)));
     try {
       await dashboardAction('competitor_posts', id, 'opportunity_actioned', 'true');
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('mark opportunity', err);
       setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, opportunityActioned: false } : p)));
     }
   };

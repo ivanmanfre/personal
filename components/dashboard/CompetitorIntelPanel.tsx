@@ -9,7 +9,7 @@ import PanelCard from './shared/PanelCard';
 
 const CompetitorIntelPanel: React.FC = () => {
   const { posts, patterns, competitorStats, opportunities, loading, refresh, markOpportunityActioned } = useCompetitors();
-  const { lastRefreshed } = useAutoRefresh(refresh);
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['competitor_posts'] });
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>('all');
   const [tab, setTab] = useState<'posts' | 'opportunities' | 'patterns'>('opportunities');
 

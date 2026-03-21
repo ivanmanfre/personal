@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError } from '../lib/dashboardActions';
 import type { WorkflowStat, SystemHealth } from '../types/dashboard';
 
 function mapWf(row: any): WorkflowStat {
@@ -40,7 +40,7 @@ export function useWorkflowStats() {
         .order('workflow_name');
       setWorkflows((data || []).map(mapWf));
     } catch (err) {
-      console.error('Failed to fetch workflow stats:', err);
+      toastError('load workflows', err);
     } finally {
       setLoading(false);
       hasFetched.current = true;
@@ -71,7 +71,9 @@ export function useWorkflowStats() {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: true } : w)));
     try {
       await dashboardAction('dashboard_workflow_stats', id, 'error_acknowledged', 'true');
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('acknowledge error', err);
       setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, errorAcknowledged: false } : w)));
     }
   }, []);

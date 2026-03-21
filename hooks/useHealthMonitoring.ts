@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { HealthMedication, MedicationLog, WeightLog, InventoryItem, TrainingDay } from '../types/dashboard';
 
 function mapMedication(row: any): HealthMedication {
@@ -100,7 +100,7 @@ export function useHealthMonitoring() {
       setInventory((inventoryRes.data || []).map(mapInventory));
       setTrainingSchedule((scheduleRes.data || []).map(mapTrainingDay));
     } catch (err) {
-      console.error('Failed to fetch health data:', err);
+      toastError('load health data', err);
     } finally {
       setLoading(false);
     }
@@ -190,7 +190,7 @@ export function useHealthMonitoring() {
     try {
       checkRpc(await supabase.rpc('health_log_medication', { p_medication_id: medicationId, p_source: 'dashboard', p_notes: notes || null }));
     } catch (err) {
-      console.error('Failed to log medication:', err);
+      toastError('log medication', err);
       setMedicationLogs(prev => prev.filter(l => l.id !== tempLog.id));
       await fetchAll();
     }
@@ -209,7 +209,7 @@ export function useHealthMonitoring() {
     try {
       checkRpc(await supabase.rpc('health_log_weight', { p_weight_kg: weightKg, p_source: 'dashboard', p_notes: notes || null }));
     } catch (err) {
-      console.error('Failed to log weight:', err);
+      toastError('log weight', err);
       setWeightLogs(prev => prev.filter(l => l.id !== tempLog.id));
     }
   }, []);
@@ -219,7 +219,7 @@ export function useHealthMonitoring() {
     try {
       await dashboardAction('health_inventory', id, 'quantity', String(quantity));
     } catch (err) {
-      console.error('Failed to update inventory:', err);
+      toastError('update inventory', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -235,8 +235,9 @@ export function useHealthMonitoring() {
         p_notes: notes || null,
       }));
       await fetchAll();
+      toastSuccess('Medication added');
     } catch (err) {
-      console.error('Failed to add medication:', err);
+      toastError('add medication', err);
     }
   }, [fetchAll]);
 
@@ -245,8 +246,9 @@ export function useHealthMonitoring() {
     setMedications(prev => prev.filter(m => m.id !== id));
     try {
       checkRpc(await supabase.rpc('health_delete_medication', { p_id: id }));
+      toastSuccess('Medication deleted');
     } catch (err) {
-      console.error('Failed to delete medication:', err);
+      toastError('delete medication', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -256,7 +258,7 @@ export function useHealthMonitoring() {
     try {
       await dashboardAction('health_medications', id, 'is_active', String(isActive));
     } catch (err) {
-      console.error('Failed to toggle medication:', err);
+      toastError('toggle medication', err);
       setMedications(prev => prev.map(m => m.id === id ? { ...m, isActive: !isActive } : m));
     }
   }, []);
@@ -271,8 +273,9 @@ export function useHealthMonitoring() {
         p_notes: notes || null,
       }));
       await fetchAll();
+      toastSuccess('Inventory item added');
     } catch (err) {
-      console.error('Failed to add inventory item:', err);
+      toastError('add inventory item', err);
     }
   }, [fetchAll]);
 
@@ -281,8 +284,9 @@ export function useHealthMonitoring() {
     setInventory(prev => prev.filter(i => i.id !== id));
     try {
       checkRpc(await supabase.rpc('health_delete_inventory', { p_id: id }));
+      toastSuccess('Inventory item deleted');
     } catch (err) {
-      console.error('Failed to delete inventory item:', err);
+      toastError('delete inventory item', err);
       await fetchAll();
     }
   }, [fetchAll]);
@@ -296,7 +300,7 @@ export function useHealthMonitoring() {
         p_exercises: exercises || null,
       }));
     } catch (err) {
-      console.error('Failed to update training schedule:', err);
+      toastError('update training schedule', err);
       await fetchAll();
     }
   }, [fetchAll]);

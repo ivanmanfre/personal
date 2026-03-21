@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { toastError } from '../lib/dashboardActions';
 import type { PipelineTask } from '../types/dashboard';
 
 function mapTask(row: any): PipelineTask {
@@ -34,7 +35,7 @@ export function useContentPipeline() {
         .order('due_date', { ascending: true, nullsFirst: false });
       setTasks((data || []).map(mapTask));
     } catch (err) {
-      console.error('Failed to fetch content pipeline:', err);
+      toastError('load content pipeline', err);
     } finally {
       setLoading(false);
     }

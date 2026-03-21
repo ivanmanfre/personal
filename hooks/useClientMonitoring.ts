@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import { pauseRefresh, resumeRefresh } from './useAutoRefresh';
 import type { ClientInstance, ClientWorkflowError, ClientMonitoredWorkflow } from '../types/dashboard';
 
@@ -97,6 +97,9 @@ export function useClientMonitoring() {
   const [infrastructure, setInfrastructure] = useState<Record<string, ClientInfrastructure>>({});
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mutating, setMutating] = useState<Set<string>>(new Set());
+  const startMutating = (id: string) => setMutating((s) => new Set(s).add(id));
+  const stopMutating = (id: string) => setMutating((s) => { const n = new Set(s); n.delete(id); return n; });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -145,7 +148,7 @@ export function useClientMonitoring() {
       setGithubRepos(reposRes.data.value as GitHubRepo[]);
     }
     } catch (err) {
-      console.error('Failed to fetch client monitoring data:', err);
+      toastError('load client data', err);
     } finally {
       setLoading(false);
     }
@@ -153,10 +156,21 @@ export function useClientMonitoring() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const activeClients = clients.filter((c) => c.isActive);
-  const unresolvedErrors = errors.filter((e) => !e.isResolved);
-  const criticalErrors = unresolvedErrors.filter((e) => e.severity === 'high');
-  const clientsWithErrors = new Set(unresolvedErrors.map((e) => e.clientId)).size;
+  const stats = useMemo(() => {
+    const activeClients = clients.filter((c) => c.isActive);
+    const unresolvedErrors = errors.filter((e) => !e.isResolved);
+    const criticalErrors = unresolvedErrors.filter((e) => e.severity === 'high');
+    const clientsWithErrors = new Set(unresolvedErrors.map((e) => e.clientId)).size;
+    const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;
+    return {
+      total: clients.length,
+      active: activeClients.length,
+      unresolvedErrors: unresolvedErrors.length,
+      criticalErrors: criticalErrors.length,
+      clientsWithErrors,
+      monitoredWorkflows: monitoredCount,
+    };
+  }, [clients, errors, workflows]);
 
   const errorsPerClient = (clientId: string) =>
     errors.filter((e) => e.clientId === clientId);
@@ -174,56 +188,73 @@ export function useClientMonitoring() {
   };
 
   const toggleClient = async (id: string, isActive: boolean) => {
+    startMutating(id);
     setClients((prev) => prev.map((c) => (c.id === id ? { ...c, isActive } : c)));
     try {
       await dashboardAction('client_instances', id, 'is_active', String(isActive));
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('toggle client', err);
       setClients((prev) => prev.map((c) => (c.id === id ? { ...c, isActive: !isActive } : c)));
+    } finally {
+      stopMutating(id);
     }
   };
 
   const resolveError = async (id: string) => {
     const prev = errors.find((e) => e.id === id);
+    startMutating(id);
     pauseRefresh();
     setErrors((p) => p.filter((e) => e.id !== id));
     try {
       await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('resolve error', err);
       if (prev) setErrors((p) => [...p, prev]);
     } finally {
       resumeRefresh();
+      stopMutating(id);
     }
   };
 
   const resolveAllForClient = async (clientId: string) => {
     const clientErrors = errors.filter((e) => e.clientId === clientId);
     if (clientErrors.length === 0) return;
+    startMutating(clientId);
     pauseRefresh();
     setErrors((p) => p.filter((e) => e.clientId !== clientId));
     try {
       await Promise.all(
         clientErrors.map((e) => dashboardAction('client_workflow_errors', e.id, 'is_resolved', 'true'))
       );
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('resolve client errors', err);
       setErrors((p) => [...p, ...clientErrors]);
     } finally {
       resumeRefresh();
+      stopMutating(clientId);
     }
   };
 
   const resolveAllErrors = async () => {
     if (errors.length === 0) return;
     const prev = [...errors];
+    startMutating('_all');
     pauseRefresh();
     setErrors([]);
     try {
       await Promise.all(
         prev.map((e) => dashboardAction('client_workflow_errors', e.id, 'is_resolved', 'true'))
       );
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('resolve all errors', err);
       setErrors(prev);
     } finally {
       resumeRefresh();
+      stopMutating('_all');
     }
   };
 
@@ -234,7 +265,8 @@ export function useClientMonitoring() {
       await supabase
         .from('system_settings')
         .upsert({ key: 'client_infrastructure', value: updated }, { onConflict: 'key' });
-    } catch {
+    } catch (err) {
+      toastError('save infrastructure', err);
       setInfrastructure(infrastructure);
     }
   };
@@ -243,7 +275,9 @@ export function useClientMonitoring() {
     setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: enabled } : w)));
     try {
       await dashboardAction('client_monitored_workflows', id, 'notifications_enabled', String(enabled));
-    } catch {
+      await fetch();
+    } catch (err) {
+      toastError('toggle notifications', err);
       setWorkflows((prev) => prev.map((w) => (w.id === id ? { ...w, notificationsEnabled: !enabled } : w)));
     }
   };
@@ -256,22 +290,14 @@ export function useClientMonitoring() {
     );
   };
 
-  const monitoredCount = workflows.filter((w) => w.notificationsEnabled).length;
-
   return {
     clients,
     errors,
     workflows,
     loading,
+    mutating,
     refresh: fetch,
-    stats: {
-      total: clients.length,
-      active: activeClients.length,
-      unresolvedErrors: unresolvedErrors.length,
-      criticalErrors: criticalErrors.length,
-      clientsWithErrors,
-      monitoredWorkflows: monitoredCount,
-    },
+    stats,
     errorsPerClient,
     workflowsPerClient,
     getClientHealth,

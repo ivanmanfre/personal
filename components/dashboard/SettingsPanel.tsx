@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
+import { toastError, toastSuccess } from '../../lib/dashboardActions';
 import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -61,7 +62,7 @@ const SettingsPanel: React.FC = () => {
       setAvailableChannels(availableRes.data || []);
       setTables(tablesRes);
     } catch (err) {
-      console.error('Failed to fetch settings data:', err);
+      toastError('load settings', err);
     } finally {
       setLoading(false);
       setLastRefreshed(new Date());
@@ -71,26 +72,45 @@ const SettingsPanel: React.FC = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const toggleChannel = async (id: string, field: 'enabled' | 'mute_bots', value: boolean) => {
-    setChannels((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
-    await supabase.rpc('toggle_slack_channel', { p_id: id, p_field: field, p_value: value });
+    const prev = channels.find((c) => c.id === id);
+    setChannels((p) => p.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+    try {
+      await supabase.rpc('toggle_slack_channel', { p_id: id, p_field: field, p_value: value });
+    } catch (err) {
+      toastError('toggle channel', err);
+      if (prev) setChannels((p) => p.map((c) => (c.id === id ? { ...c, [field]: prev[field] } : c)));
+    }
   };
 
   const addChannel = async (channelId: string, channelName: string) => {
     setAdding(true);
-    await supabase.rpc('add_slack_channel', {
-      p_channel_id: channelId,
-      p_channel_name: channelName,
-    });
-    setShowAddForm(false);
-    setChannelSearch('');
-    setAdding(false);
-    fetchData();
+    try {
+      await supabase.rpc('add_slack_channel', {
+        p_channel_id: channelId,
+        p_channel_name: channelName,
+      });
+      toastSuccess(`Added #${channelName}`);
+      setShowAddForm(false);
+      setChannelSearch('');
+      fetchData();
+    } catch (err) {
+      toastError('add channel', err);
+    } finally {
+      setAdding(false);
+    }
   };
 
   const removeChannel = async (id: string, name: string) => {
     if (!confirm(`Remove #${name} from notifications?`)) return;
-    setChannels((prev) => prev.filter((c) => c.id !== id));
-    await supabase.rpc('remove_slack_channel', { p_id: id });
+    const prev = [...channels];
+    setChannels((p) => p.filter((c) => c.id !== id));
+    try {
+      await supabase.rpc('remove_slack_channel', { p_id: id });
+      toastSuccess(`Removed #${name}`);
+    } catch (err) {
+      toastError('remove channel', err);
+      setChannels(prev);
+    }
   };
 
   // Filter available channels: exclude already added ones, apply search
@@ -148,7 +168,9 @@ const SettingsPanel: React.FC = () => {
             <div className="px-4 py-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                <label htmlFor="channel-search" className="sr-only">Search channels</label>
                 <input
+                  id="channel-search"
                   value={channelSearch}
                   onChange={(e) => setChannelSearch(e.target.value)}
                   placeholder="Search channels..."
@@ -262,6 +284,8 @@ interface ToggleProps {
 
 const Toggle: React.FC<ToggleProps> = ({ checked, onChange, activeColor = 'bg-emerald-500' }) => (
   <button
+    role="switch"
+    aria-checked={checked}
     onClick={() => onChange(!checked)}
     className={`relative w-10 h-[22px] rounded-full transition-colors duration-200 ${checked ? activeColor : 'bg-zinc-700'}`}
   >

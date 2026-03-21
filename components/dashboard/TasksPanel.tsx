@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckSquare, Repeat, CheckCircle2, Bot, Bell, Zap, ChevronRight, ChevronDown, Plus, Pencil, X, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useTasksPipeline } from '../../hooks/useTasksPipeline';
@@ -8,6 +8,7 @@ import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
+import FilterBar from './shared/FilterBar';
 import type { PipelineTask } from '../../types/dashboard';
 
 const statusConfig: Record<string, { color: string; bg: string; border: string; dot: string }> = {
@@ -47,6 +48,8 @@ const TasksPanel: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('due_date');
 
   const toggleExpanded = (id: string) => {
     setExpandedTasks((prev) => {
@@ -118,9 +121,42 @@ const TasksPanel: React.FC = () => {
     ? parentTasks.filter((t) => t.source === 'agent' || t.source === 'reminder')
     : parentTasks.filter((t) => t.source === sourceTab);
 
-  const pendingTasks = filtered.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
-  const completedTasks = filtered.filter((t) => t.status === 'completed');
-  const displayTasks = showCompleted ? filtered.filter((t) => t.status !== 'cancelled') : pendingTasks;
+  const searchFiltered = useMemo(() => {
+    if (!search.trim()) return filtered;
+    const q = search.toLowerCase();
+    return filtered.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description && t.description.toLowerCase().includes(q))
+    );
+  }, [filtered, search]);
+
+  const sortedFiltered = useMemo(() => {
+    const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+    return [...searchFiltered].sort((a, b) => {
+      if (sortBy === 'due_date') {
+        const aDate = a.dueDate ?? '';
+        const bDate = b.dueDate ?? '';
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate.localeCompare(bDate);
+      }
+      if (sortBy === 'updated_at') {
+        return (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '');
+      }
+      if (sortBy === 'priority') {
+        const aP = priorityOrder[(a.priority ?? 'normal').toLowerCase()] ?? 2;
+        const bP = priorityOrder[(b.priority ?? 'normal').toLowerCase()] ?? 2;
+        return aP - bP;
+      }
+      return 0;
+    });
+  }, [searchFiltered, sortBy]);
+
+  const pendingTasks = sortedFiltered.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
+  const completedTasks = sortedFiltered.filter((t) => t.status === 'completed');
+  const displayTasks = showCompleted ? sortedFiltered.filter((t) => t.status !== 'cancelled') : pendingTasks;
 
   const agentPending = rawAll.filter((t) => t.source === 'agent' && t.status !== 'completed' && !t.parentTaskId).length;
   const reminderPending = rawAll.filter((t) => t.source === 'reminder' && t.status !== 'completed').length;
@@ -367,6 +403,19 @@ const TasksPanel: React.FC = () => {
           {showCompleted ? 'Hide completed' : 'Show completed'}
         </button>
       </div>
+
+      <FilterBar
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search tasks..."
+        sortOptions={[
+          { label: 'Due date', value: 'due_date' },
+          { label: 'Updated', value: 'updated_at' },
+          { label: 'Priority', value: 'priority' },
+        ]}
+        sortValue={sortBy}
+        onSortChange={setSortBy}
+      />
 
       {/* Task cards */}
       <div className="space-y-2">

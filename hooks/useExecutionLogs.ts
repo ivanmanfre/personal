@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { toastError } from '../lib/dashboardActions';
 import type { ExecutionLog } from '../types/dashboard';
 
 function mapRow(row: any): ExecutionLog {
@@ -90,7 +91,7 @@ export function useExecutionLogs() {
       setLogs((data || []).map(mapRow));
       setTotalCount(count || 0);
     } catch (err) {
-      console.error('Failed to fetch execution logs:', err);
+      toastError('load execution logs', err);
     } finally {
       setLoading(false);
     }

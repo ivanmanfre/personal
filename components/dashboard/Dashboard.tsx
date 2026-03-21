@@ -1,4 +1,5 @@
 import React, { useState, lazy, Suspense, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import { isAuthenticated } from '../../lib/dashboardAuth';
 import { DashboardProvider, useDashboard } from '../../contexts/DashboardContext';
 import DashboardAuth from './DashboardAuth';
@@ -71,6 +72,15 @@ const Dashboard: React.FC = () => {
 
   return (
     <DashboardProvider>
+      <Toaster
+        position="bottom-right"
+        theme="dark"
+        toastOptions={{
+          style: { background: '#18181b', border: '1px solid rgba(63,63,70,0.6)', color: '#e4e4e7' },
+        }}
+        richColors
+        closeButton
+      />
       <TabNavBridge onTabChange={handleTabChange} />
       <DashboardLayout
         activeTab={activeTab}
