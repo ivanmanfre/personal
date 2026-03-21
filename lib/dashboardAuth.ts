@@ -13,16 +13,16 @@ async function sha256(message: string): Promise<string> {
 export async function verifyPassword(password: string): Promise<boolean> {
   const hash = await sha256(password);
   if (hash === DASHBOARD_HASH) {
-    sessionStorage.setItem(SESSION_KEY, hash);
+    localStorage.setItem(SESSION_KEY, hash);
     return true;
   }
   return false;
 }
 
 export function isAuthenticated(): boolean {
-  return sessionStorage.getItem(SESSION_KEY) === DASHBOARD_HASH;
+  return localStorage.getItem(SESSION_KEY) === DASHBOARD_HASH;
 }
 
 export function logout(): void {
-  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY);
 }

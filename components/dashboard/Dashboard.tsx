@@ -58,10 +58,12 @@ const lazyImports = [
 
 function usePrefetchPanels() {
   useEffect(() => {
-    const id = requestIdleCallback(() => {
+    const schedule = typeof requestIdleCallback === 'function' ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 2000);
+    const cancel = typeof cancelIdleCallback === 'function' ? cancelIdleCallback : clearTimeout;
+    const id = schedule(() => {
       lazyImports.forEach((fn) => fn());
     });
-    return () => cancelIdleCallback(id);
+    return () => cancel(id);
   }, []);
 }
 
