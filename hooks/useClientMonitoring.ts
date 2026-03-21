@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction } from '../lib/dashboardActions';
+import { pauseRefresh, resumeRefresh } from './useAutoRefresh';
 import type { ClientInstance, ClientWorkflowError, ClientMonitoredWorkflow } from '../types/dashboard';
 
 function mapClient(row: any): ClientInstance {
@@ -124,7 +125,7 @@ export function useClientMonitoring() {
         .single(),
     ]);
 
-    const clientList = (clientsRes.data || []).map(mapClient);
+    const clientList = (clientsRes.data || []).filter((r: any) => r.client_name !== 'Ivan System').map(mapClient);
     const clientNameMap = new Map(clientList.map((c) => [c.id, c.clientName]));
     const clientUrlMap = new Map(clientList.map((c) => [c.id, c.n8nUrl]));
 
@@ -183,17 +184,21 @@ export function useClientMonitoring() {
 
   const resolveError = async (id: string) => {
     const prev = errors.find((e) => e.id === id);
+    pauseRefresh();
     setErrors((p) => p.filter((e) => e.id !== id));
     try {
       await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
     } catch {
       if (prev) setErrors((p) => [...p, prev]);
+    } finally {
+      resumeRefresh();
     }
   };
 
   const resolveAllForClient = async (clientId: string) => {
     const clientErrors = errors.filter((e) => e.clientId === clientId);
     if (clientErrors.length === 0) return;
+    pauseRefresh();
     setErrors((p) => p.filter((e) => e.clientId !== clientId));
     try {
       await Promise.all(
@@ -201,12 +206,15 @@ export function useClientMonitoring() {
       );
     } catch {
       setErrors((p) => [...p, ...clientErrors]);
+    } finally {
+      resumeRefresh();
     }
   };
 
   const resolveAllErrors = async () => {
     if (errors.length === 0) return;
     const prev = [...errors];
+    pauseRefresh();
     setErrors([]);
     try {
       await Promise.all(
@@ -214,6 +222,8 @@ export function useClientMonitoring() {
       );
     } catch {
       setErrors(prev);
+    } finally {
+      resumeRefresh();
     }
   };
 
