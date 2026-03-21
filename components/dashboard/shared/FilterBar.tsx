@@ -37,9 +37,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const sortId = `${id}-sort`;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
       {/* Search input */}
-      <div className="relative flex-1 min-w-[180px]">
+      <div className="relative flex-1 sm:min-w-[180px]">
         <label htmlFor={searchId} className="sr-only">
           {searchPlaceholder}
         </label>
@@ -50,7 +50,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full bg-zinc-900/80 border border-zinc-700/60 rounded-lg pl-8 pr-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors"
+          className="w-full bg-zinc-900/80 border border-zinc-700/60 rounded-lg pl-8 pr-3 py-2.5 sm:py-1.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-zinc-600 transition-colors"
         />
       </div>
 
@@ -61,7 +61,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
             <button
               key={f.value}
               onClick={f.onClick}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2.5 py-1.5 sm:py-1 rounded-md text-xs font-medium transition-colors ${
                 f.active
                   ? 'bg-zinc-700 text-white shadow-sm'
                   : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -83,7 +83,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
             id={sortId}
             value={sortValue}
             onChange={(e) => onSortChange(e.target.value)}
-            className="appearance-none bg-zinc-900 border border-zinc-700/60 rounded-lg px-3 py-1.5 pr-7 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer"
+            className="appearance-none bg-zinc-900 border border-zinc-700/60 rounded-lg px-3 py-2.5 sm:py-1.5 pr-7 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600 transition-colors cursor-pointer"
           >
             {sortOptions.map((opt) => (
               <option key={opt.value} value={opt.value} className="bg-zinc-900 text-zinc-300">

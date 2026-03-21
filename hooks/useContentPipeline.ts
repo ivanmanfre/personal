@@ -1,41 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
-import type { PipelineTask } from '../types/dashboard';
+import type { ScheduledPost } from '../types/dashboard';
 
-function mapTask(row: any): PipelineTask {
+function mapPost(row: any): ScheduledPost {
   return {
     id: row.id,
-    source: row.source,
-    sourceId: row.source_id,
-    title: row.title,
-    description: row.description,
-    status: row.status,
-    priority: row.priority,
-    dueDate: row.due_date,
-    listName: row.list_name,
-    metadata: row.metadata || {},
-    updatedAt: row.updated_at,
-    parentTaskId: row.parent_task_id,
-    isRecurring: row.is_recurring ?? false,
+    clickupTaskId: row.clickup_task_id,
+    postText: row.post_text || '',
+    postFormat: row.post_format,
+    mediaUrls: row.media_urls || [],
+    scheduledAt: row.scheduled_at,
+    status: row.status || 'pending',
+    errorMessage: row.error_message,
+    createdAt: row.created_at,
+    postedAt: row.posted_at,
   };
 }
 
 export function useContentPipeline() {
-  const [tasks, setTasks] = useState<PipelineTask[]>([]);
+  const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await supabase
-        .from('dashboard_tasks')
+        .from('scheduled_posts')
         .select('*')
-        .eq('source', 'leadshark')
-        .order('due_date', { ascending: true, nullsFirst: false });
-      setTasks((data || []).map(mapTask));
+        .order('scheduled_at', { ascending: true });
+      setPosts((data || []).map(mapPost));
     } catch (err) {
-      toastError('load content pipeline', err);
+      toastError('load scheduled posts', err);
     } finally {
       setLoading(false);
     }
@@ -43,35 +39,29 @@ export function useContentPipeline() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const statusCounts = tasks.reduce((acc: Record<string, number>, t) => {
-    acc[t.status] = (acc[t.status] || 0) + 1;
-    return acc;
-  }, {});
+  const statusCounts = useMemo(() =>
+    posts.reduce((acc: Record<string, number>, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {}),
+    [posts]
+  );
 
-  const listCounts = tasks.reduce((acc: Record<string, number>, t) => {
-    const list = t.listName || 'Other';
-    acc[list] = (acc[list] || 0) + 1;
-    return acc;
-  }, {});
-
-  // Group tasks by date for calendar view
-  const tasksByDate = tasks.reduce((acc: Record<string, PipelineTask[]>, t) => {
-    if (t.dueDate) {
-      const dateKey = new Date(t.dueDate).toISOString().split('T')[0];
+  // Group posts by date for calendar view
+  const postsByDate = useMemo(() =>
+    posts.reduce((acc: Record<string, ScheduledPost[]>, p) => {
+      const dateKey = new Date(p.scheduledAt).toISOString().split('T')[0];
       if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(t);
-    }
-    return acc;
-  }, {});
-
-  const unscheduled = tasks.filter((t) => !t.dueDate);
+      acc[dateKey].push(p);
+      return acc;
+    }, {}),
+    [posts]
+  );
 
   return {
-    tasks,
+    posts,
     statusCounts,
-    listCounts,
-    tasksByDate,
-    unscheduled,
+    postsByDate,
     loading,
     refresh: fetch,
   };

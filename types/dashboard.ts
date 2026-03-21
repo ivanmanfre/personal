@@ -136,6 +136,19 @@ export interface ClientWorkflowError {
   n8nUrl?: string;
 }
 
+export interface ScheduledPost {
+  id: string;
+  clickupTaskId: string | null;
+  postText: string;
+  postFormat: string | null;
+  mediaUrls: string[];
+  scheduledAt: string;
+  status: string;
+  errorMessage: string | null;
+  createdAt: string;
+  postedAt: string | null;
+}
+
 export interface PipelineTask {
   id: string;
   source: 'clickup' | 'reminder' | 'agent' | 'leadshark';

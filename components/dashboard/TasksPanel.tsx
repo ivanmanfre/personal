@@ -298,21 +298,21 @@ const TasksPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              {/* Actions — always visible on mobile, hover-reveal on desktop */}
+              <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                 {isAgent && !isCompleted && (
-                  <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-1.5 rounded-lg text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
-                    <Pencil className="w-3.5 h-3.5" />
+                  <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
+                    <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   </button>
                 )}
                 {isAgent && (
-                  <button onClick={() => handleDelete(task.id)} className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
-                    <Trash2 className="w-3.5 h-3.5" />
+                  <button onClick={() => handleDelete(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
+                    <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   </button>
                 )}
                 {hasSubtasks && (
-                  <button onClick={() => toggleExpanded(task.id)} className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 transition-colors" title="Toggle subtasks">
-                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  <button onClick={() => toggleExpanded(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-zinc-300 transition-colors" title="Toggle subtasks">
+                    {isExpanded ? <ChevronDown className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> : <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
                   </button>
                 )}
               </div>
@@ -369,7 +369,7 @@ const TasksPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <StatCard label="Agent Tasks" value={agentPending} icon={<Bot className="w-5 h-5" />} color="text-cyan-400" subValue={`${agentCount} total`} />
         <StatCard label="Reminders" value={reminderPending} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={`${reminderCount} total`} />
         <StatCard label="Completed" value={completedTasks.length} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
@@ -378,7 +378,7 @@ const TasksPanel: React.FC = () => {
       {creating && <CreateForm newTitle={newTitle} setNewTitle={setNewTitle} newDesc={newDesc} setNewDesc={setNewDesc} onCreate={handleCreate} onCancel={() => { setCreating(false); setNewTitle(''); setNewDesc(''); }} />}
 
       {/* Source tabs */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
           {([
             { key: 'agent' as SourceTab, label: 'Agent', icon: <Bot className="w-3.5 h-3.5" />, count: agentCount },
@@ -388,7 +388,7 @@ const TasksPanel: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setSourceTab(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${sourceTab === tab.key ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md text-xs font-medium transition-colors ${sourceTab === tab.key ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               {tab.icon}
               {tab.label} ({tab.count})
@@ -397,7 +397,7 @@ const TasksPanel: React.FC = () => {
         </div>
         <button
           onClick={() => setShowCompleted(!showCompleted)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showCompleted ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
+          className={`flex items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors ${showCompleted ? 'bg-zinc-700 text-zinc-200' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
         >
           {showCompleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           {showCompleted ? 'Hide completed' : 'Show completed'}

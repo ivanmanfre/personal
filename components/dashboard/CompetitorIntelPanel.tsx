@@ -191,46 +191,70 @@ const CompetitorIntelPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Posts table (all posts / filtered by competitor) */}
+      {/* Posts — cards on mobile, table on md+ */}
       {tab === 'posts' && (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
-                  <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Competitor</th>
-                  <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Post</th>
-                  <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Engagement</th>
-                  <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider hidden md:table-cell">Topic</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/40">
-                {displayPosts.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-10 text-zinc-600 text-center">No posts found</td></tr>
-                ) : (
-                  displayPosts.map((p) => (
-                    <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-zinc-300 truncate max-w-xs" title={p.postText.slice(0, 200)}>{p.postText.slice(0, 80)}</p>
-                        <p className="text-[11px] text-zinc-600 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5 text-[11px]">
-                          <span className="flex items-center gap-0.5 text-pink-400/70"><Heart className="w-3 h-3" />{p.likesCount}</span>
-                          <span className="flex items-center gap-0.5 text-blue-400/70"><MessageCircle className="w-3 h-3" />{p.commentsCount}</span>
-                          <span className="flex items-center gap-0.5 text-zinc-500"><Repeat2 className="w-3 h-3" />{p.repostsCount}</span>
-                          {p.isTopPerformer && <Star className="w-3 h-3 text-amber-400" />}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-[11px] text-zinc-500 hidden md:table-cell">{p.topicCategory || '—'}</td>
+        displayPosts.length === 0 ? (
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-10 text-zinc-600 text-center text-sm">No posts found</div>
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {displayPosts.map((p) => (
+                <div key={p.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-xs font-medium text-zinc-400">{p.competitorName.split(' ')[0]}</span>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="flex items-center gap-0.5 text-pink-400/70"><Heart className="w-3 h-3" />{p.likesCount}</span>
+                      <span className="flex items-center gap-0.5 text-blue-400/70"><MessageCircle className="w-3 h-3" />{p.commentsCount}</span>
+                      {p.isTopPerformer && <Star className="w-3 h-3 text-amber-400" />}
+                    </div>
+                  </div>
+                  <p className="text-sm text-zinc-300 line-clamp-2">{p.postText.slice(0, 120)}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[11px] text-zinc-600">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</span>
+                    {p.topicCategory && <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{p.topicCategory}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
+                      <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Competitor</th>
+                      <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Post</th>
+                      <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Engagement</th>
+                      <th className="px-4 py-3 text-[11px] text-zinc-500 font-medium uppercase tracking-wider">Topic</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/40">
+                    {displayPosts.map((p) => (
+                      <tr key={p.id} className="hover:bg-zinc-800/30 transition-colors">
+                        <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
+                        <td className="px-4 py-3">
+                          <p className="text-sm text-zinc-300 truncate max-w-xs" title={p.postText.slice(0, 200)}>{p.postText.slice(0, 80)}</p>
+                          <p className="text-[11px] text-zinc-600 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5 text-[11px]">
+                            <span className="flex items-center gap-0.5 text-pink-400/70"><Heart className="w-3 h-3" />{p.likesCount}</span>
+                            <span className="flex items-center gap-0.5 text-blue-400/70"><MessageCircle className="w-3 h-3" />{p.commentsCount}</span>
+                            <span className="flex items-center gap-0.5 text-zinc-500"><Repeat2 className="w-3 h-3" />{p.repostsCount}</span>
+                            {p.isTopPerformer && <Star className="w-3 h-3 text-amber-400" />}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-[11px] text-zinc-500">{p.topicCategory || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )
       )}
     </div>
   );

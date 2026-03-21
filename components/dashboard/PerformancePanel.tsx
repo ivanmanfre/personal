@@ -120,7 +120,7 @@ const PerformancePanel: React.FC = () => {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="Engagement Rate" value={`${stats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" />
         <StatCard label="Avg Impressions" value={formatNum(stats.avgImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Total Posts" value={stats.count} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />

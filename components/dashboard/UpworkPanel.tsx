@@ -289,7 +289,7 @@ const UpworkPanel: React.FC = () => {
         </button>
         {!statsCollapsed && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <StatCard label="Action Needed" value={actionCount} icon={<Zap className="w-5 h-5" />} color="text-amber-400" />
               <StatCard label="Invites" value={stats.invites} icon={<Mail className="w-5 h-5" />} color="text-purple-400" />
               <StatCard label="Pending Review" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />

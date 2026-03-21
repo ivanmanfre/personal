@@ -68,7 +68,7 @@ const LeadsPanel: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Leads" value={totalLeads} icon={<Users className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Qualified" value={statusCounts['qualified'] || 0} icon={<span className="text-sm">✅</span>} color="text-emerald-400" />
         <StatCard label="Converted" value={statusCounts['converted'] || 0} icon={<span className="text-sm">🎯</span>} color="text-purple-400" />
@@ -154,73 +154,113 @@ const LeadsPanel: React.FC = () => {
         searchPlaceholder="Search leads..."
       />
 
-      {/* Leads table */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Name</th>
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Status</th>
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden md:table-cell">ICP</th>
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden lg:table-cell">Source</th>
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Date</th>
-                <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/40">
-              {filteredLeads.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-zinc-500 text-center">No leads match filter</td></tr>
-              ) : (
-                filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-zinc-200">{lead.name || '—'}</p>
-                      {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs" title={lead.headline}>{lead.headline}</p>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={lead.status || 'unknown'}
-                        onChange={(e) => updateStatus(lead.id, e.target.value)}
-                        className={`px-2 py-0.5 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
-                      >
-                        {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
-                          <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                          {lead.icpScore != null ? `${lead.icpScore}/10` : '—'}
-                        </span>
-                        {lead.icpScore != null && (
-                          <div className="w-12 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all ${lead.icpScore >= 7 ? 'bg-emerald-500' : lead.icpScore >= 4 ? 'bg-amber-500' : 'bg-zinc-600'}`} style={{ width: `${(lead.icpScore / 10) * 100}%` }} />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-zinc-400 text-xs">{lead.source || '—'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs">
-                      {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {lead.linkedinUrl && (
-                        <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-emerald-400">
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
-                    </td>
+      {/* Leads — cards on mobile, table on md+ */}
+      {filteredLeads.length === 0 ? (
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-8 text-zinc-500 text-center text-sm">No leads match filter</div>
+      ) : (
+        <>
+          {/* Mobile cards */}
+          <div className="space-y-2 md:hidden">
+            {filteredLeads.map((lead) => (
+              <div key={lead.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-zinc-200 text-sm">{lead.name || '—'}</p>
+                    {lead.headline && <p className="text-xs text-zinc-500 truncate mt-0.5">{lead.headline}</p>}
+                  </div>
+                  {lead.linkedinUrl && (
+                    <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 p-2 -mr-1 -mt-1 text-zinc-400 hover:text-emerald-400">
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                  <select
+                    value={lead.status || 'unknown'}
+                    onChange={(e) => updateStatus(lead.id, e.target.value)}
+                    className={`px-2 py-1 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
+                  >
+                    {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
+                      <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>
+                    ))}
+                  </select>
+                  {lead.icpScore != null && (
+                    <span className={`text-xs font-medium ${lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                      ICP {lead.icpScore}/10
+                    </span>
+                  )}
+                  {lead.source && <span className="text-[11px] text-zinc-500">{lead.source}</span>}
+                  <span className="text-[11px] text-zinc-600 ml-auto">{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : ''}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800/40 bg-zinc-800/20 text-left">
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Name</th>
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Status</th>
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">ICP</th>
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] hidden lg:table-cell">Source</th>
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Date</th>
+                    <th className="px-4 py-3.5 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] w-10"></th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/40">
+                  {filteredLeads.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-zinc-200">{lead.name || '—'}</p>
+                        {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs" title={lead.headline}>{lead.headline}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={lead.status || 'unknown'}
+                          onChange={(e) => updateStatus(lead.id, e.target.value)}
+                          className={`px-2 py-0.5 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
+                        >
+                          {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
+                            <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
+                            {lead.icpScore != null ? `${lead.icpScore}/10` : '—'}
+                          </span>
+                          {lead.icpScore != null && (
+                            <div className="w-12 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${lead.icpScore >= 7 ? 'bg-emerald-500' : lead.icpScore >= 4 ? 'bg-amber-500' : 'bg-zinc-600'}`} style={{ width: `${(lead.icpScore / 10) * 100}%` }} />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <span className="text-zinc-400 text-xs">{lead.source || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400 text-xs">
+                        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {lead.linkedinUrl && (
+                          <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-400 hover:text-emerald-400">
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

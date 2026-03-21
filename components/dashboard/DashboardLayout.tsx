@@ -174,7 +174,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
       {/* Main content */}
       <main className="flex-1 md:ml-0 mt-14 md:mt-0 dashboard-grid-bg relative z-[1]">
-        <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto">
           {children}
         </div>
       </main>

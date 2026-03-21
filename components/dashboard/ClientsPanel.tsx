@@ -42,7 +42,7 @@ const ClientsPanel: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Clients" value={stats.total} icon={<Server className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
         <StatCard label="Open Errors" value={stats.unresolvedErrors} icon={<XCircle className="w-5 h-5" />} color={stats.unresolvedErrors > 0 ? 'text-red-400' : 'text-zinc-500'} />

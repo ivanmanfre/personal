@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, FileText, ChevronLeft, ChevronRight, Image, FileType, Clock, ArrowRight } from 'lucide-react';
+import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send } from 'lucide-react';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -10,16 +10,16 @@ import PanelCard from './shared/PanelCard';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500 border-amber-600',
-  published: 'bg-emerald-500 border-emerald-600',
+  posting: 'bg-cyan-500 border-cyan-600',
+  posted: 'bg-emerald-500 border-emerald-600',
   failed: 'bg-red-500 border-red-600',
-  scheduled: 'bg-cyan-500 border-cyan-600',
 };
 
 const statusBadgeColors: Record<string, string> = {
   pending: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  published: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+  posting: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+  posted: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   failed: 'bg-red-500/20 text-red-300 border-red-500/30',
-  scheduled: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
 };
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -72,29 +72,29 @@ function formatCountdown(ms: number): string {
 }
 
 const ContentPanel: React.FC = () => {
-  const { tasks, statusCounts, listCounts, tasksByDate, unscheduled, loading, refresh } = useContentPipeline();
-  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_tasks'] });
+  const { posts, statusCounts, postsByDate, loading, refresh } = useContentPipeline();
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_posts'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
   const now = useCountdown();
 
   const upcomingQueue = useMemo(() => {
-    return tasks
-      .filter((t) => t.dueDate && new Date(t.dueDate).getTime() > now && (t.status === 'pending' || t.status === 'scheduled'))
-      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+    return posts
+      .filter((p) => new Date(p.scheduledAt).getTime() > now && p.status === 'pending')
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime())
       .slice(0, 5);
-  }, [tasks, now]);
+  }, [posts, now]);
 
   if (loading) return <LoadingSkeleton cards={4} rows={8} />;
 
-  if (tasks.length === 0) {
+  if (posts.length === 0) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Content</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
-        <EmptyState title="No scheduled posts" description="Scheduled posts from LeadShark will appear here once Dashboard Data Sync runs." icon={<Calendar className="w-10 h-10" />} />
+        <EmptyState title="No scheduled posts" description="Posts scheduled via the content pipeline will appear here." icon={<Calendar className="w-10 h-10" />} />
       </div>
     );
   }
@@ -108,12 +108,13 @@ const ContentPanel: React.FC = () => {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToday = () => setCurrentDate(new Date());
 
-  const scheduled = tasks.filter((t) => t.dueDate);
-  const pending = tasks.filter((t) => t.status === 'pending');
+  const pendingCount = statusCounts['pending'] || 0;
+  const postedCount = statusCounts['posted'] || 0;
+  const failedCount = statusCounts['failed'] || 0;
 
   const filteredList = filter === 'all'
-    ? tasks
-    : tasks.filter((t) => t.status === filter);
+    ? posts
+    : posts.filter((p) => p.status === filter);
 
   return (
     <div className="space-y-6">
@@ -123,11 +124,11 @@ const ContentPanel: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Posts" value={tasks.length} icon={<FileText className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Pending" value={pending.length} icon={<Calendar className="w-5 h-5" />} color="text-amber-400" />
-        <StatCard label="Published" value={statusCounts['published'] || 0} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />
-        <StatCard label="Scheduled" value={scheduled.length} icon={<Calendar className="w-5 h-5" />} color="text-cyan-400" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Total Posts" value={posts.length} icon={<FileText className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Pending" value={pendingCount} icon={<Clock className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="Posted" value={postedCount} icon={<Send className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Failed" value={failedCount} icon={<AlertTriangle className="w-5 h-5" />} color="text-red-400" />
       </div>
 
       {/* Publishing Queue */}
@@ -138,23 +139,30 @@ const ContentPanel: React.FC = () => {
             <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Publishing Queue</span>
           </div>
           <div className="space-y-2">
-            {upcomingQueue.map((t, i) => {
-              const ms = new Date(t.dueDate!).getTime() - now;
+            {upcomingQueue.map((p, i) => {
+              const ms = new Date(p.scheduledAt).getTime() - now;
               const isNext = i === 0;
               return (
-                <div key={t.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isNext ? 'bg-cyan-500/5 border border-cyan-500/15' : 'bg-zinc-800/30'}`}>
+                <div key={p.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isNext ? 'bg-cyan-500/5 border border-cyan-500/15' : 'bg-zinc-800/30'}`}>
                   <div className={`shrink-0 text-right w-16 ${isNext ? 'text-cyan-400' : 'text-zinc-500'}`}>
                     <span className="text-sm font-bold">{formatCountdown(ms)}</span>
                   </div>
                   <ArrowRight className={`w-3 h-3 shrink-0 ${isNext ? 'text-cyan-400/60' : 'text-zinc-700'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{t.description || t.title}</p>
-                    <p className="text-[10px] text-zinc-600">
-                      {new Date(t.dueDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(t.dueDate!)}
-                      {t.listName && ` · ${t.listName}`}
-                    </p>
+                    <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{p.postText.slice(0, 80)}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-zinc-600">
+                        {new Date(p.scheduledAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(p.scheduledAt)}
+                      </span>
+                      {p.postFormat && <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1 py-0.5 rounded">{p.postFormat}</span>}
+                      {p.mediaUrls.length > 0 && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-zinc-600">
+                          <Image className="w-3 h-3" />{p.mediaUrls.length}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className={`shrink-0 w-2 h-2 rounded-full ${statusColors[t.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+                  <div className={`shrink-0 w-2 h-2 rounded-full ${statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
                 </div>
               );
             })}
@@ -188,13 +196,13 @@ const ContentPanel: React.FC = () => {
           <div className="grid grid-cols-7 gap-px bg-zinc-800/30 rounded-lg overflow-hidden">
             {monthDays.map(({ date, inMonth }, i) => {
               const dateKey = date.toISOString().split('T')[0];
-              const dayTasks = tasksByDate[dateKey] || [];
+              const dayPosts = postsByDate[dateKey] || [];
               const isToday = dateKey === today;
 
               return (
                 <div
                   key={i}
-                  className={`min-h-[80px] p-1.5 transition-colors ${
+                  className={`min-h-[48px] sm:min-h-[80px] p-1 sm:p-1.5 transition-colors ${
                     inMonth ? 'bg-zinc-900/60' : 'bg-zinc-950/40'
                   } ${isToday ? 'ring-1 ring-emerald-500/40 ring-inset' : ''}`}
                 >
@@ -203,22 +211,30 @@ const ContentPanel: React.FC = () => {
                   }`}>
                     {date.getDate()}
                   </div>
-                  <div className="space-y-0.5">
-                    {dayTasks.slice(0, 3).map((t) => (
+                  <div className="space-y-0.5 hidden sm:block">
+                    {dayPosts.slice(0, 3).map((p) => (
                       <div
-                        key={t.id}
+                        key={p.id}
                         className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 bg-zinc-800/60 text-zinc-300 ${
-                          statusColors[t.status] || 'border-zinc-600'
+                          statusColors[p.status] || 'border-zinc-600'
                         }`}
-                        title={`${t.description || t.title} (${t.listName || t.status})${t.dueDate ? ' @ ' + formatTime(t.dueDate) : ''}`}
+                        title={`${p.postText.slice(0, 80)} (${p.status}) @ ${formatTime(p.scheduledAt)}`}
                       >
-                        {t.listName ? `${t.listName}` : t.title}
+                        {formatTime(p.scheduledAt)}{p.postFormat ? ` · ${p.postFormat}` : ''}
                       </div>
                     ))}
-                    {dayTasks.length > 3 && (
-                      <div className="text-[10px] text-zinc-600 px-1">+{dayTasks.length - 3} more</div>
+                    {dayPosts.length > 3 && (
+                      <div className="text-[10px] text-zinc-600 px-1">+{dayPosts.length - 3} more</div>
                     )}
                   </div>
+                  {/* Mobile: dot indicators */}
+                  {dayPosts.length > 0 && (
+                    <div className="flex gap-0.5 mt-0.5 sm:hidden">
+                      {dayPosts.slice(0, 3).map((p) => (
+                        <div key={p.id} className={`w-1.5 h-1.5 rounded-full ${statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -234,7 +250,7 @@ const ContentPanel: React.FC = () => {
             filter === 'all' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
           }`}
         >
-          All ({tasks.length})
+          All ({posts.length})
         </button>
         {Object.entries(statusCounts).map(([status, count]) => (
           <button
@@ -256,24 +272,29 @@ const ContentPanel: React.FC = () => {
           {filteredList.length === 0 ? (
             <div className="px-4 py-8 text-zinc-600 text-sm text-center">No posts match filter</div>
           ) : (
-            filteredList.map((task) => (
-              <div key={task.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
-                <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusColors[task.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+            filteredList.map((post) => (
+              <div key={post.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
+                <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusColors[post.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-zinc-300 line-clamp-2">{task.description || task.title}</p>
+                  <p className="text-sm text-zinc-300 line-clamp-2">{post.postText}</p>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusBadgeColors[task.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
-                      {task.status}
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusBadgeColors[post.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
+                      {post.status}
                     </span>
-                    {task.dueDate && (
-                      <span className="text-[11px] text-zinc-500">
-                        {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(task.dueDate)}
+                    <span className="text-[11px] text-zinc-500">
+                      {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(post.scheduledAt)}
+                    </span>
+                    {post.postFormat && (
+                      <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
+                    )}
+                    {post.mediaUrls.length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
+                        <Image className="w-3 h-3" /> {post.mediaUrls.length} media
                       </span>
                     )}
-                    {task.listName && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
-                        {task.metadata?.attachment_type === 'pdf' ? <FileType className="w-3 h-3" /> : task.metadata?.has_attachment ? <Image className="w-3 h-3" /> : null}
-                        {task.listName}
+                    {post.errorMessage && (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-red-400">
+                        <AlertTriangle className="w-3 h-3" /> {post.errorMessage.slice(0, 50)}
                       </span>
                     )}
                   </div>
@@ -283,17 +304,6 @@ const ContentPanel: React.FC = () => {
           )}
         </div>
       </PanelCard>
-
-      {/* Format breakdown */}
-      {Object.keys(listCounts).length > 1 && (
-        <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
-          {Object.entries(listCounts).map(([list, count]) => (
-            <span key={list} className="px-2 py-1 bg-zinc-900/60 border border-zinc-800/60 rounded-lg">
-              {list}: {count}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

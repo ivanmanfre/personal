@@ -97,7 +97,7 @@ const SystemMapPanel: React.FC = () => {
 
       {/* Stats row */}
       <AnimateIn delay={60}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard label="Pipelines" value={pipelineStats.length} icon={<Zap className="w-5 h-5" />} color="text-cyan-400" />
           <StatCard label="Active Workflows" value={stats.active} icon={<Activity className="w-5 h-5" />} color="text-emerald-400" />
           <StatCard label="Errors (24h)" value={stats.totalErrors24h} icon={<XCircle className="w-5 h-5" />} color={stats.totalErrors24h > 0 ? 'text-red-400' : 'text-zinc-500'} />
