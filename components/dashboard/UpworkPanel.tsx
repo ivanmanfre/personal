@@ -157,7 +157,9 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
 const UpworkPanel: React.FC = () => {
   const { jobs, proposals, stats, loading, generatingJobs, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [view, setView] = useState<'kanban' | 'list'>(
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'kanban'
+  );
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [statsCollapsed, setStatsCollapsed] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>(getUrlParam('filter', 'action'));
@@ -260,7 +262,7 @@ const UpworkPanel: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">Upwork Pipeline</h1>
-          <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
+          <div className="hidden md:flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-zinc-700/30">
             <button
               onClick={() => setView('kanban')}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${view === 'kanban' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -323,7 +325,7 @@ const UpworkPanel: React.FC = () => {
           <button
             key={f.key}
             onClick={() => handleFilterChange(f.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f.key ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+            className={`px-3 py-2 sm:py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f.key ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
           >
             {f.label} ({f.count})
           </button>
