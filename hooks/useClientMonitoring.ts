@@ -131,7 +131,7 @@ export function useClientMonitoring() {
 
     setClients(clientList);
     setErrors(
-      (errorsRes.data || []).map((row: any) => ({
+      (errorsRes.data || []).filter((row: any) => clientNameMap.has(row.client_id)).map((row: any) => ({
         ...mapError(row),
         clientName: clientNameMap.get(row.client_id) || '',
         n8nUrl: clientUrlMap.get(row.client_id) || '',
