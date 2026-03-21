@@ -58,7 +58,7 @@ const ClientsPanel: React.FC = () => {
       ) : (
         <>
           {/* Client Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {clients.map((client) => {
               const clientWorkflows = workflowsPerClient(client.id);
               const monitoredCount = clientWorkflows.filter((w) => w.notificationsEnabled).length;

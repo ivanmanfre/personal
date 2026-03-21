@@ -195,6 +195,7 @@ const TasksPanel: React.FC = () => {
         animate="animate"
         exit="exit"
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        role="listitem"
         className={`group ${isSubtask ? 'ml-6' : ''}`}
       >
         <div className={`bg-zinc-900/80 border rounded-xl overflow-hidden transition-colors ${isCompleted ? 'border-zinc-800/30 opacity-60' : 'border-zinc-800/50 hover:border-zinc-700/60'}`}>
@@ -206,8 +207,9 @@ const TasksPanel: React.FC = () => {
                 {!isCompleted ? (
                   <button
                     onClick={() => handleComplete(task.id)}
-                    className={`w-5 h-5 rounded-full border-2 ${sc.border} ${sc.bg} hover:${sc.dot} transition-all flex items-center justify-center group/check`}
+                    className={`w-5 h-5 rounded-full border-2 ${sc.border} ${sc.bg} hover:${sc.dot} transition-all flex items-center justify-center group/check focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none`}
                     title="Complete"
+                    aria-label={`Complete task: ${task.title}`}
                   >
                     <CheckCircle2 className={`w-3 h-3 ${sc.color} opacity-0 group-hover/check:opacity-100 transition-opacity`} />
                   </button>
@@ -301,17 +303,17 @@ const TasksPanel: React.FC = () => {
               {/* Actions — always visible on mobile, hover-reveal on desktop */}
               <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                 {isAgent && !isCompleted && (
-                  <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors" title="Edit">
+                  <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:outline-none" title="Edit" aria-label={`Edit task: ${task.title}`}>
                     <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   </button>
                 )}
                 {isAgent && (
-                  <button onClick={() => handleDelete(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
+                  <button onClick={() => handleDelete(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:outline-none" title="Delete" aria-label={`Delete task: ${task.title}`}>
                     <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                   </button>
                 )}
                 {hasSubtasks && (
-                  <button onClick={() => toggleExpanded(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-zinc-300 transition-colors" title="Toggle subtasks">
+                  <button onClick={() => toggleExpanded(task.id)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-zinc-300 transition-colors focus-visible:ring-2 focus-visible:ring-zinc-500/50 focus-visible:outline-none" title="Toggle subtasks" aria-label={`${isExpanded ? 'Collapse' : 'Expand'} subtasks for: ${task.title}`}>
                     {isExpanded ? <ChevronDown className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> : <ChevronRight className="w-4 h-4 sm:w-3.5 sm:h-3.5" />}
                   </button>
                 )}
@@ -418,7 +420,7 @@ const TasksPanel: React.FC = () => {
       />
 
       {/* Task cards */}
-      <div className="space-y-2">
+      <div className="space-y-2" role="list" aria-label="Task list">
         <AnimatePresence mode="popLayout">
           {displayTasks.length === 0 ? (
             <motion.div

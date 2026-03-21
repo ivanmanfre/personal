@@ -75,7 +75,7 @@ const LeadsPanel: React.FC = () => {
         <StatCard label="High ICP" value={icpDistribution.high} icon={<span className="text-sm">⭐</span>} color="text-amber-400" subValue={`${icpDistribution.medium} medium`} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Funnel */}
         <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
           <h2 className="text-sm font-bold text-zinc-300 mb-4">Lead Funnel</h2>

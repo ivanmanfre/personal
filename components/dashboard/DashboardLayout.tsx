@@ -104,7 +104,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         {/* Separator */}
         <div className="mx-4 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
 
-        <nav className="flex-1 px-3 py-4 overflow-y-auto dashboard-scroll">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto dashboard-scroll" role="navigation" aria-label="Dashboard navigation">
           {tabGroups.map((group, gi) => (
             <div key={gi}>
               {gi > 0 && <div className="mx-3 my-3 h-px bg-zinc-800/60" />}
@@ -119,7 +119,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
                       key={tab.id}
                       title={tab.label}
                       onClick={() => { onTabChange(tab.id); setSidebarOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
                         isActive
                           ? 'bg-emerald-500/10 text-white sidebar-active-glow'
                           : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -144,7 +144,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         <div className="px-3 pb-4 pt-3 space-y-1">
           <button
             onClick={() => { onTabChange('settings'); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
               activeTab === 'settings'
                 ? 'bg-emerald-500/10 text-white'
                 : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
@@ -164,7 +164,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           <button
             aria-label="Logout"
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:outline-none"
           >
             <LogOut className="w-[18px] h-[18px]" />
             Logout

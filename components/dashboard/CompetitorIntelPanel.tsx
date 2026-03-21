@@ -129,7 +129,7 @@ const CompetitorIntelPanel: React.FC = () => {
 
       {/* Patterns tab */}
       {tab === 'patterns' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Hook patterns */}
           <PanelCard title="Top Hook Patterns" icon={<Zap className="w-3.5 h-3.5" />} badge={topHooks.length} accent="cyan">
             <div className="p-4 space-y-2">

@@ -6,13 +6,9 @@ import DashboardAuth from './DashboardAuth';
 import DashboardLayout from './DashboardLayout';
 import OverviewPanel from './OverviewPanel';
 import WorkflowsPanel from './WorkflowsPanel';
-import CompetitorIntelPanel from './CompetitorIntelPanel';
-import LeadsPanel from './LeadsPanel';
-import AgentPanel from './AgentPanel';
-import ClientsPanel from './ClientsPanel';
 import ContentPanel from './ContentPanel';
+import LeadsPanel from './LeadsPanel';
 import TasksPanel from './TasksPanel';
-import UpworkPanel from './UpworkPanel';
 import SettingsPanel from './SettingsPanel';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import ErrorBoundary from './shared/ErrorBoundary';
@@ -20,18 +16,22 @@ import type { Tab } from '../../types/dashboard';
 
 const LazyPerformancePanel = lazy(() => import('./PerformancePanel'));
 const LazyHealthPanel = lazy(() => import('./HealthPanel'));
+const LazyCompetitorIntelPanel = lazy(() => import('./CompetitorIntelPanel'));
+const LazyAgentPanel = lazy(() => import('./AgentPanel'));
+const LazyClientsPanel = lazy(() => import('./ClientsPanel'));
+const LazyUpworkPanel = lazy(() => import('./UpworkPanel'));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
   performance: LazyPerformancePanel as unknown as React.ComponentType,
   content: ContentPanel,
   workflows: WorkflowsPanel,
-  competitors: CompetitorIntelPanel,
+  competitors: LazyCompetitorIntelPanel as unknown as React.ComponentType,
   leads: LeadsPanel,
-  agent: AgentPanel,
-  clients: ClientsPanel,
+  agent: LazyAgentPanel as unknown as React.ComponentType,
+  clients: LazyClientsPanel as unknown as React.ComponentType,
   tasks: TasksPanel,
-  upwork: UpworkPanel,
+  upwork: LazyUpworkPanel as unknown as React.ComponentType,
   health: LazyHealthPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
@@ -46,11 +46,31 @@ function getInitialTab(): Tab {
   return 'overview';
 }
 
+// Prefetch lazy-loaded panel chunks after initial render
+const lazyImports = [
+  () => import('./PerformancePanel'),
+  () => import('./HealthPanel'),
+  () => import('./CompetitorIntelPanel'),
+  () => import('./AgentPanel'),
+  () => import('./ClientsPanel'),
+  () => import('./UpworkPanel'),
+];
+
+function usePrefetchPanels() {
+  useEffect(() => {
+    const id = requestIdleCallback(() => {
+      lazyImports.forEach((fn) => fn());
+    });
+    return () => cancelIdleCallback(id);
+  }, []);
+}
+
 const Dashboard: React.FC = () => {
   const [authed, setAuthed] = useState(isAuthenticated());
   const initialTab = getInitialTab();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(new Set([initialTab]));
+  usePrefetchPanels();
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);

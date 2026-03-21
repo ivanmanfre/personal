@@ -127,7 +127,7 @@ const OverviewPanel: React.FC = () => {
               Open System Map <ArrowRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
             {pipelineHealth.map((p) => {
               const dotColor = p.health === 'error' ? 'bg-red-500' : p.health === 'warning' ? 'bg-amber-500' : 'bg-emerald-500';
               const pipeColors: Record<string, string> = {
@@ -148,7 +148,7 @@ const OverviewPanel: React.FC = () => {
       </AnimateIn>
 
       <AnimateIn delay={200}>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Activity Feed */}
         <PanelCard title="Recent Activity" icon={<Activity className="w-3.5 h-3.5" />} badge={activityItems.length} accent="blue">
           <div className="divide-y divide-zinc-800/40">
