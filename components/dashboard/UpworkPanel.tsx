@@ -152,10 +152,27 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
   );
 }
 
+/* ── Cookie Freshness ────────────────────────────────── */
+
+function CookieFreshness({ updatedAt }: { updatedAt: string }) {
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  const ageH = ageMs / 3_600_000;
+  const dotColor = ageH < 5 ? 'bg-emerald-400' : ageH < 8 ? 'bg-amber-400' : 'bg-red-400';
+  const textColor = ageH < 5 ? 'text-zinc-500' : ageH < 8 ? 'text-amber-400' : 'text-red-400';
+  const label = ageH < 1 ? `${Math.round(ageMs / 60_000)}m ago` : `${Math.round(ageH)}h ago`;
+
+  return (
+    <span className={`flex items-center gap-1.5 text-[11px] ${textColor}`} title={`Upwork cookies last refreshed: ${new Date(updatedAt).toLocaleString()}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+      Cookies {label}
+    </span>
+  );
+}
+
 /* ── Main Panel ──────────────────────────────────────── */
 
 const UpworkPanel: React.FC = () => {
-  const { jobs, proposals, stats, loading, generatingJobs, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
+  const { jobs, proposals, stats, loading, generatingJobs, cookiesUpdatedAt, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
   const [view, setView] = useState<'kanban' | 'list'>(
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'kanban'
@@ -277,7 +294,10 @@ const UpworkPanel: React.FC = () => {
             </button>
           </div>
         </div>
-        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        <div className="flex items-center gap-3">
+          {cookiesUpdatedAt && <CookieFreshness updatedAt={cookiesUpdatedAt} />}
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
 
       {/* Stats + Funnel (collapsible) */}

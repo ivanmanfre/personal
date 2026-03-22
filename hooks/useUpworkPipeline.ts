@@ -93,6 +93,7 @@ export function useUpworkPipeline() {
   const [stats, setStats] = useState<UpworkPipelineStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [generatingJobs, setGeneratingJobs] = useState<Set<string>>(new Set());
+  const [cookiesUpdatedAt, setCookiesUpdatedAt] = useState<string | null>(null);
 
   // Optimistic locks — prevent auto-refresh from overwriting in-flight states
   const jobLocks = useRef<Map<string, OptimisticLock>>(new Map());
@@ -117,7 +118,7 @@ export function useUpworkPipeline() {
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const [jobsRes, proposalsRes, statsRes] = await Promise.all([
+      const [jobsRes, proposalsRes, statsRes, cookiesRes] = await Promise.all([
         supabase
           .from('upwork_jobs')
           .select('*')
@@ -130,6 +131,11 @@ export function useUpworkPipeline() {
           .order('created_at', { ascending: false })
           .limit(100),
         supabase.rpc('upwork_pipeline_stats'),
+        supabase
+          .from('system_settings')
+          .select('updated_at')
+          .eq('key', 'upwork_cookies')
+          .single(),
       ]);
 
       const now = Date.now();
@@ -191,6 +197,7 @@ export function useUpworkPipeline() {
 
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
+      if (cookiesRes.data?.updated_at) setCookiesUpdatedAt(cookiesRes.data.updated_at);
 
       // Detect new assessed jobs and play notification sound
       const currentAssessedIds = new Set(
@@ -356,6 +363,7 @@ export function useUpworkPipeline() {
     stats,
     loading,
     generatingJobs,
+    cookiesUpdatedAt,
     refresh: fetch,
     skipJob,
     generateProposal,
