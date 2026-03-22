@@ -55,6 +55,7 @@ function mapProposal(r: any): UpworkProposal {
     submittedAt: r.submitted_at,
     screeningAnswers: r.screening_answers,
     diagramData: r.diagram_data || null,
+    qaResult: r.qa_result || null,
     createdAt: r.created_at,
   };
 }

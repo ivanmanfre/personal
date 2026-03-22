@@ -219,6 +219,13 @@ export interface UpworkProposal {
   submittedAt: string | null;
   screeningAnswers: { question: string; answer: string }[] | null;
   diagramData: { html: string; json: any } | null;
+  qaResult: {
+    status: 'pass' | 'rewrite' | 'skip' | 'skip_parse_error';
+    checks: { name: string; result: string; detail: string | null }[];
+    original_cover_letter?: string;
+    original_screening?: { question: string; answer: string }[];
+    rewrite_model?: string;
+  } | null;
   createdAt: string;
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X, Trash2 } from 'lucide-react';
+import { ExternalLink, XCircle, FileText, Loader2, ChevronDown, ChevronUp, DollarSign, Users, Star, MessageSquare, Send, RefreshCw, Mail, Edit3, Save, X, Trash2, CheckCircle, AlertTriangle, Eye } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
 import type { UpworkJob, UpworkProposal } from '../../../types/dashboard';
 
@@ -84,6 +84,8 @@ function DetailModal({
   const isGenerating = generatingJobs.has(job.id);
   const isLoading = prop && actionLoading === prop.id;
   const budget = formatBudget(job);
+  const [qaExpanded, setQaExpanded] = useState(false);
+  const [qaShowOriginal, setQaShowOriginal] = useState(false);
   const diagramHeight = useMemo(() => {
     const html = prop?.diagramData?.html || '';
     const m = html.match(/height:(\d+)px;overflow/);
@@ -191,6 +193,18 @@ function DetailModal({
                       <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
                       <span className="text-[10px] text-zinc-600">v{prop.version}</span>
                       <span className="text-[10px] text-zinc-500 px-1.5 py-0.5 bg-zinc-800/60 rounded">{prop.status}</span>
+                      {prop.qaResult && (
+                        <span className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded ${
+                          prop.qaResult.status === 'pass'
+                            ? 'text-emerald-400 bg-emerald-500/10'
+                            : prop.qaResult.status === 'rewrite'
+                            ? 'text-amber-400 bg-amber-500/10'
+                            : 'text-zinc-500 bg-zinc-800/40'
+                        }`}>
+                          {prop.qaResult.status === 'pass' ? <CheckCircle className="w-2.5 h-2.5" /> : <AlertTriangle className="w-2.5 h-2.5" />}
+                          QA {prop.qaResult.status}
+                        </span>
+                      )}
                     </div>
                     {(prop.status === 'pending_approval' || prop.status === 'draft') && editingId !== prop.id && (
                       <button
@@ -242,6 +256,50 @@ function DetailModal({
                           <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {prop.qaResult && (
+                    <div className="pt-2 border-t border-emerald-500/10">
+                      <button
+                        onClick={() => setQaExpanded(!qaExpanded)}
+                        className="flex items-center gap-1 text-[10px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors w-full"
+                      >
+                        {qaExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        QA Checks ({prop.qaResult.checks.filter(c => c.result === 'pass').length}/{prop.qaResult.checks.length} passed)
+                      </button>
+                      {qaExpanded && (
+                        <div className="mt-2 space-y-1">
+                          {prop.qaResult.checks.map((check, i) => (
+                            <div key={i} className="flex items-start gap-1.5 text-[10px]">
+                              {check.result === 'pass' ? (
+                                <CheckCircle className="w-3 h-3 text-emerald-500/60 mt-0.5 shrink-0" />
+                              ) : check.result === 'fail' ? (
+                                <XCircle className="w-3 h-3 text-red-400/70 mt-0.5 shrink-0" />
+                              ) : (
+                                <AlertTriangle className="w-3 h-3 text-amber-400/60 mt-0.5 shrink-0" />
+                              )}
+                              <span className="text-zinc-400">{check.name}</span>
+                              {check.detail && <span className="text-zinc-600 truncate">{check.detail}</span>}
+                            </div>
+                          ))}
+                          {prop.qaResult.status === 'rewrite' && prop.qaResult.original_cover_letter && (
+                            <div className="mt-2 pt-2 border-t border-zinc-800/60">
+                              <button
+                                onClick={() => setQaShowOriginal(!qaShowOriginal)}
+                                className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                              >
+                                <Eye className="w-3 h-3" />
+                                {qaShowOriginal ? 'Hide' : 'Show'} original (pre-QA)
+                              </button>
+                              {qaShowOriginal && (
+                                <p className="mt-1.5 text-[11px] text-zinc-500 leading-relaxed whitespace-pre-wrap bg-zinc-900/50 p-2 rounded border border-zinc-800/50">
+                                  {prop.qaResult.original_cover_letter}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
