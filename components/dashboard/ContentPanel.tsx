@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send } from 'lucide-react';
+import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X } from 'lucide-react';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import type { ScheduledPost } from '../../types/dashboard';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -71,11 +72,65 @@ function formatCountdown(ms: number): string {
   return `${m}m`;
 }
 
+const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ post, onClose }) => {
+  const imageUrl = post.mediaUrls?.[0] || null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800/60">
+          <div className="flex items-center gap-3">
+            <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${statusBadgeColors[post.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
+              {post.status}
+            </span>
+            <span className="text-sm text-zinc-400">
+              {new Date(post.scheduledAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {formatTime(post.scheduledAt)}
+            </span>
+            {post.postFormat && (
+              <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {imageUrl && (
+            <div className="rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950">
+              <img
+                src={imageUrl}
+                alt="Post media"
+                className="w-full max-h-[400px] object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
+          )}
+          <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{post.postText}</div>
+          {post.errorMessage && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <span className="text-sm text-red-300">{post.errorMessage}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ContentPanel: React.FC = () => {
   const { posts, statusCounts, postsByDate, loading, refresh } = useContentPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_posts'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
+  const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const now = useCountdown();
 
   const upcomingQueue = useMemo(() => {
@@ -215,10 +270,11 @@ const ContentPanel: React.FC = () => {
                     {dayPosts.slice(0, 3).map((p) => (
                       <div
                         key={p.id}
-                        className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 bg-zinc-800/60 text-zinc-300 ${
+                        className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 bg-zinc-800/60 text-zinc-300 cursor-pointer hover:bg-zinc-700/60 transition-colors ${
                           statusColors[p.status] || 'border-zinc-600'
                         }`}
                         title={`${p.postText.slice(0, 80)} (${p.status}) @ ${formatTime(p.scheduledAt)}`}
+                        onClick={() => setSelectedPost(p)}
                       >
                         {formatTime(p.scheduledAt)}{p.postFormat ? ` · ${p.postFormat}` : ''}
                       </div>
@@ -273,7 +329,7 @@ const ContentPanel: React.FC = () => {
             <div className="px-4 py-8 text-zinc-600 text-sm text-center">No posts match filter</div>
           ) : (
             filteredList.map((post) => (
-              <div key={post.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
+              <div key={post.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors cursor-pointer" onClick={() => setSelectedPost(post)}>
                 <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusColors[post.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-zinc-300 line-clamp-2">{post.postText}</p>
@@ -304,6 +360,8 @@ const ContentPanel: React.FC = () => {
           )}
         </div>
       </PanelCard>
+
+      {selectedPost && <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />}
     </div>
   );
 };

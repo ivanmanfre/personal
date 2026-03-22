@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
+import { playNotificationSound } from '../lib/notificationSound';
 import type { UpworkJob, UpworkProposal, UpworkPipelineStats } from '../types/dashboard';
 
 // Tracks optimistic status overrides so auto-refresh doesn't stomp them
@@ -111,6 +112,7 @@ export function useUpworkPipeline() {
   const clearProposalLock = (id: string) => { proposalLocks.current.delete(id); };
   const clearProposalTextLock = (id: string, field: string) => { proposalTextLocks.current.delete(`${id}:${field}`); };
   const hasLoaded = useRef(false);
+  const prevAssessedIds = useRef<Set<string>>(new Set());
 
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
@@ -189,6 +191,26 @@ export function useUpworkPipeline() {
 
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
+
+      // Detect new assessed jobs and play notification sound
+      const currentAssessedIds = new Set(
+        serverJobs.filter((j) => j.status === 'assessed').map((j) => j.id)
+      );
+      if (hasLoaded.current && prevAssessedIds.current.size > 0) {
+        const newAssessed = serverJobs.filter(
+          (j) => j.status === 'assessed' && !prevAssessedIds.current.has(j.id)
+        );
+        if (newAssessed.length > 0) {
+          playNotificationSound();
+          toastSuccess(
+            newAssessed.length === 1
+              ? `New assessed job: ${newAssessed[0].title.slice(0, 60)}`
+              : `${newAssessed.length} new assessed jobs`
+          );
+        }
+      }
+      prevAssessedIds.current = currentAssessedIds;
+
       hasLoaded.current = true;
     } catch (err) {
       toastError('load Upwork data', err);
