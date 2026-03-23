@@ -319,6 +319,112 @@ export interface TrainingLog {
   notes: string | null;
 }
 
+// ─── Outreach Types ───
+
+export interface OutreachCampaign {
+  id: string;
+  name: string;
+  description: string | null;
+  apolloFilters: Record<string, any>;
+  nicheTags: string[];
+  isActive: boolean;
+  maxProspects: number;
+  warmupDays: number;
+  prospectCount: number;
+  connectedCount: number;
+  repliedCount: number;
+  lastImportAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachProspect {
+  id: string;
+  campaignId: string | null;
+  campaignName?: string;
+  campaignTags?: string[];
+  linkedinUrl: string;
+  linkedinProfileId: string | null;
+  apolloId: string | null;
+  name: string;
+  headline: string | null;
+  company: string | null;
+  location: string | null;
+  industry: string | null;
+  profilePhotoUrl: string | null;
+  icpScore: number | null;
+  icpReasoning: string | null;
+  activityScore: number | null;
+  lastPostDate: string | null;
+  lastEngagementDate: string | null;
+  postCount30d: number | null;
+  recentTopics: string[];
+  stage: string;
+  profileViewedAt: string | null;
+  postsLiked: number;
+  postsCommented: number;
+  lastEngagedAt: string | null;
+  connectionSentAt: string | null;
+  connectionNote: string | null;
+  connectedAt: string | null;
+  lastDmSentAt: string | null;
+  dmCount: number;
+  lastReplyAt: string | null;
+  replyCount: number;
+  needsManualReply: boolean;
+  nextTouchAfter: string | null;
+  blacklisted: boolean;
+  notes: string | null;
+  skipReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachMessage {
+  id: string;
+  prospectId: string;
+  direction: string;
+  messageText: string;
+  messageType: string;
+  sequenceStep: number | null;
+  unipileMessageId: string | null;
+  unipileChatId: string | null;
+  sentAt: string;
+  createdAt: string;
+}
+
+export interface OutreachEngagementLog {
+  id: string;
+  prospectId: string;
+  actionType: string;
+  targetUrl: string | null;
+  commentText: string | null;
+  success: boolean;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface OutreachPipelineStats {
+  totalProspects: number;
+  identified: number;
+  enriched: number;
+  warming: number;
+  engaged: number;
+  connectionSent: number;
+  connected: number;
+  dmSent: number;
+  replied: number;
+  converted: number;
+  archived: number;
+  activeCampaigns: number;
+  avgIcpScore: number;
+  replyRate: number;
+  connectionRate: number;
+  engagementsToday: number;
+  dmsToday: number;
+  needsAttention: number;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
