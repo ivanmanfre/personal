@@ -147,6 +147,7 @@ export function useOutreachPipeline() {
   const [recentActivity, setRecentActivity] = useState<OutreachEngagementLog[]>([]);
   const [rateLimits, setRateLimits] = useState<Record<string, { count: number; daily_limit: number }>>({});
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
+  const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
 
   // Optimistic locks
   const locks = useRef<Map<string, OptimisticLock>>(new Map());
@@ -160,7 +161,8 @@ export function useOutreachPipeline() {
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes] = await Promise.all([
+      const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5'];
+      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes] = await Promise.all([
         supabase
           .from('outreach_prospects')
           .select('*, outreach_campaigns(name, niche_tags)')
@@ -184,6 +186,10 @@ export function useOutreachPipeline() {
           .from('integration_config')
           .select('key, value')
           .like('key', 'outreach_%'),
+        supabase
+          .from('dashboard_workflow_stats')
+          .select('workflow_id, is_active')
+          .in('workflow_id', outreachWfIds),
       ]);
 
       const now = Date.now();
@@ -224,6 +230,13 @@ export function useOutreachPipeline() {
         ff[r.key] = r.value === 'true';
       });
       setFeatureFlags(ff);
+
+      // Workflow statuses
+      const ws: Record<string, boolean> = {};
+      (wfStatusRes.data || []).forEach((r: any) => {
+        ws[r.workflow_id] = r.is_active === true;
+      });
+      setWorkflowStatuses(ws);
 
       hasLoaded.current = true;
     } catch (err) {
@@ -413,6 +426,29 @@ export function useOutreachPipeline() {
     }
   }, [featureFlags]);
 
+  // Workflow activation toggle (via Supabase edge function)
+  const toggleWorkflow = useCallback(async (workflowId: string) => {
+    const current = workflowStatuses[workflowId] ?? true;
+    const newActive = !current;
+    setWorkflowStatuses((prev) => ({ ...prev, [workflowId]: newActive }));
+    try {
+      const res = await window.fetch(
+        'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/n8n-workflow-control',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workflow_id: workflowId, action: newActive ? 'activate' : 'deactivate' }),
+        }
+      );
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Failed');
+      toastSuccess(`Workflow ${newActive ? 'activated' : 'deactivated'}`);
+    } catch (err) {
+      toastError('toggle workflow', err);
+      setWorkflowStatuses((prev) => ({ ...prev, [workflowId]: current }));
+    }
+  }, [workflowStatuses]);
+
   // Webhook triggers
   const importProspects = useCallback(async (campaignId: string) => {
     try {
@@ -488,6 +524,8 @@ export function useOutreachPipeline() {
     createCampaign,
     deleteCampaign,
     toggleFeatureFlag,
+    workflowStatuses,
+    toggleWorkflow,
     importProspects,
     sendManualDm,
   };

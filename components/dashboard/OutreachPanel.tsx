@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle } from 'lucide-react';
+import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle, Clock, Search, Send, Eye, BookOpen, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -61,7 +61,8 @@ const OutreachPanel: React.FC = () => {
     refresh, fetchMessages, fetchEngagementLog,
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
-    createCampaign, deleteCampaign, toggleFeatureFlag, importProspects, sendManualDm,
+    createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses,
+    toggleWorkflow, importProspects, sendManualDm,
   } = pipeline;
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
@@ -76,6 +77,8 @@ const OutreachPanel: React.FC = () => {
   const [showCampaigns, setShowCampaigns] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
+  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
 
   // Filtered + sorted prospects
   const filtered = useMemo(() => {
@@ -427,29 +430,79 @@ const OutreachPanel: React.FC = () => {
         </button>
         {showSettings && (
           <PanelCard title="Automation Settings" accent="emerald">
-            <div className="space-y-3">
-              {/* Feature flags */}
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-4">
+              {/* Workflow Controls */}
+              <div className="space-y-2">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Workflows</span>
                 {[
-                  { key: 'outreach_enabled', label: 'Master Switch' },
-                  { key: 'outreach_auto_warmup', label: 'Auto Warm-up' },
-                  { key: 'outreach_auto_connect', label: 'Auto Connect' },
-                  { key: 'outreach_auto_dm', label: 'Auto DM' },
-                ].map((flag) => (
-                  <div key={flag.key} className="flex items-center justify-between bg-zinc-800/40 rounded-lg px-3 py-2">
-                    <span className="text-xs text-zinc-400">{flag.label}</span>
-                    <button
-                      onClick={() => toggleFeatureFlag(flag.key)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
-                        featureFlags[flag.key]
-                          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
-                          : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
-                      }`}
-                    >
-                      {featureFlags[flag.key] ? 'ON' : 'OFF'}
-                    </button>
-                  </div>
-                ))}
+                  { id: '35HJE7eOpvEdxRwq', name: 'Apollo Import + Enrichment', schedule: 'Webhook', flag: null, desc: 'Fetches prospects from Apollo, enriches via UniPile, AI-scores ICP fit' },
+                  { id: 'kr2lSH1eRGZcDWmO', name: 'Natural Warm-up', schedule: 'Every 4h', flag: 'outreach_auto_warmup', desc: 'Likes, comments, profile views with anti-detection randomization' },
+                  { id: '5ZXtArhobWrDDpfJ', name: 'Connection Requests', schedule: 'Every 6h', flag: 'outreach_auto_connect', desc: 'Sends personalized connection requests to engaged prospects' },
+                  { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: 'Every 30m', flag: 'outreach_auto_dm', desc: '3-step DM sequence after connection accepted' },
+                  { id: 'KWxb6JFdpvb3y8w5', name: 'Conversation Monitor', schedule: 'Every 15m', flag: null, desc: 'Detects replies, alerts via WhatsApp + Slack' },
+                ].map((wf) => {
+                  const isActive = workflowStatuses[wf.id] ?? false;
+                  const flagOn = wf.flag ? (featureFlags[wf.flag] ?? false) : true;
+                  const fullyOn = isActive && flagOn;
+                  const dotColor = fullyOn ? 'bg-emerald-400' : isActive && !flagOn ? 'bg-amber-400' : 'bg-zinc-600';
+                  const dotPulse = fullyOn ? 'animate-pulse' : '';
+
+                  return (
+                    <div key={wf.id} className="bg-zinc-800/40 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-2 h-2 rounded-full ${dotColor} ${dotPulse} shrink-0`} />
+                          <span className="text-xs text-zinc-300 font-medium truncate">{wf.name}</span>
+                          <span className="text-[10px] text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded shrink-0">{wf.schedule}</span>
+                        </div>
+                        <button
+                          onClick={() => toggleWorkflow(wf.id)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors shrink-0 ${
+                            isActive
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
+                              : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
+                          }`}
+                        >
+                          {isActive ? 'ACTIVE' : 'INACTIVE'}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 leading-relaxed">{wf.desc}</p>
+                      {wf.flag && (
+                        <div className="flex items-center justify-between pt-1 border-t border-zinc-800">
+                          <span className="text-[10px] text-zinc-500">Feature Flag: {wf.flag.replace('outreach_auto_', '')}</span>
+                          <button
+                            onClick={() => toggleFeatureFlag(wf.flag!)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                              featureFlags[wf.flag]
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
+                                : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
+                            }`}
+                          >
+                            {featureFlags[wf.flag] ? 'ON' : 'OFF'}
+                          </button>
+                        </div>
+                      )}
+                      {isActive && wf.flag && !featureFlags[wf.flag] && (
+                        <p className="text-[10px] text-amber-500/80">Workflow active but flag off — cron fires but logic skips</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Master Switch */}
+              <div className="flex items-center justify-between bg-zinc-800/40 rounded-lg px-3 py-2">
+                <span className="text-xs text-zinc-400">Master Switch</span>
+                <button
+                  onClick={() => toggleFeatureFlag('outreach_enabled')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                    featureFlags['outreach_enabled']
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
+                      : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
+                  }`}
+                >
+                  {featureFlags['outreach_enabled'] ? 'ON' : 'OFF'}
+                </button>
               </div>
 
               {/* Rate limits */}
@@ -509,6 +562,230 @@ const OutreachPanel: React.FC = () => {
                 })}
               </div>
             )}
+          </PanelCard>
+        )}
+      </div>
+
+      {/* Section 11: How It Works */}
+      <div>
+        <button
+          onClick={() => setShowDocs(!showDocs)}
+          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2 flex items-center gap-1"
+        >
+          {showDocs ? '▼' : '▶'} How It Works
+        </button>
+        {showDocs && (
+          <PanelCard title="How It Works" accent="blue">
+            <div className="space-y-3">
+              {/* Pipeline Stages */}
+              <div>
+                <button
+                  onClick={() => setExpandedDoc(expandedDoc === 'pipeline' ? null : 'pipeline')}
+                  className="text-xs text-zinc-300 hover:text-zinc-100 font-medium flex items-center gap-1 w-full"
+                >
+                  {expandedDoc === 'pipeline' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Pipeline Stages
+                </button>
+                {expandedDoc === 'pipeline' && (
+                  <div className="mt-2 space-y-1.5 pl-4 border-l border-zinc-800">
+                    {[
+                      { from: 'identified', to: 'enriched', trigger: 'Apollo import + UniPile profile/posts fetch + Opus 4.6 ICP scoring' },
+                      { from: 'enriched', to: 'warming', trigger: 'First engagement action (like, comment, or profile view)' },
+                      { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days with at least 1 comment or 2+ likes' },
+                      { from: 'engaged', to: 'connection_sent', trigger: 'Connection request sent (with or without note)' },
+                      { from: 'connection_sent', to: 'connected', trigger: 'Connection accepted (detected via UniPile chat polling)' },
+                      { from: 'connected', to: 'dm_sent', trigger: 'DM Step 1 sent (2h after connection)' },
+                      { from: 'dm_sent', to: 'replied', trigger: 'Reply detected by Conversation Monitor' },
+                      { from: 'replied', to: 'converted', trigger: 'Manual — mark after successful conversation' },
+                      { from: 'any', to: 'archived', trigger: 'Manual skip/archive, or auto-archive after 3 DMs with no reply' },
+                    ].map((s, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${stageColors[s.from] || 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30'}`}>
+                            {s.from}
+                          </span>
+                          <span className="text-zinc-600 text-[10px]">&rarr;</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${stageColors[s.to] || 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30'}`}>
+                            {s.to}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 leading-relaxed">{s.trigger}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Workflow Details */}
+              <div>
+                <button
+                  onClick={() => setExpandedDoc(expandedDoc === 'workflows' ? null : 'workflows')}
+                  className="text-xs text-zinc-300 hover:text-zinc-100 font-medium flex items-center gap-1 w-full"
+                >
+                  {expandedDoc === 'workflows' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Workflow Details
+                </button>
+                {expandedDoc === 'workflows' && (
+                  <div className="mt-2 space-y-3 pl-4 border-l border-zinc-800">
+                    {[
+                      {
+                        name: 'Apollo Import + Enrichment',
+                        schedule: 'Webhook (triggered from Import button)',
+                        details: [
+                          'Triggered when you click "Import Prospects" on a campaign',
+                          'Searches Apollo API with campaign filters, deduplicates by LinkedIn URL',
+                          'Enriches each prospect via UniPile: profile data + last 10 posts',
+                          'Dead profile filter: no posts in 60 days = activity_score 1, skipped',
+                          'Opus 4.6 scores ICP fit (1-10) using ClickUp prompt, extracts topics',
+                          'Inserts prospects as "enriched", updates campaign counts',
+                        ],
+                      },
+                      {
+                        name: 'Natural Warm-up Engagement',
+                        schedule: 'Every 4 hours (with 30% skip chance)',
+                        details: [
+                          'Anti-detection: 30% of runs skip entirely, random 0-20min start delay',
+                          'Picks 2-4 prospects randomly (not all), WHERE next_touch_after <= now',
+                          'Fetches prospect recent posts via UniPile, then decides action:',
+                          '  - 10% chance: profile view only (natural browsing)',
+                          '  - 15% chance: skip this round if already touched',
+                          '  - 25% chance: Opus 4.6 AI comment on posts < 3 days old',
+                          '  - 50% chance: like/react with varied reactions (like, praise, appreciation)',
+                          'Sets next_touch_after to random 2-5 days, so no daily engagement per person',
+                          'Graduation: 3+ touches, 10+ days, 1+ comment or 2+ likes = "engaged"',
+                          '30-120s random delay between each prospect',
+                        ],
+                      },
+                      {
+                        name: 'Connection Request Sender',
+                        schedule: 'Every 6 hours (with 40% skip chance)',
+                        details: [
+                          'Queries "engaged" prospects, ordered by ICP score, limit 1-3 random',
+                          'Opus 4.6 generates personalized connection note referencing engagement history',
+                          '20% of requests sent WITHOUT a note (more natural)',
+                          'Notes are max 300 characters (LinkedIn limit)',
+                          'Rate limited via linkedin_check_and_increment RPC (15/day)',
+                          '60-180s random delay between each request',
+                        ],
+                      },
+                      {
+                        name: 'DM Sequence',
+                        schedule: 'Every 30 minutes',
+                        details: [
+                          'Phase 1: Detects accepted connections by polling UniPile chats',
+                          'Phase 2: Sends 3-step DM sequence via Opus 4.6:',
+                          '  - Step 1 (2h after connect): value-first intro, no pitch',
+                          '  - Step 2 (3 days later): share relevant resource/insight',
+                          '  - Step 3 (4 days later): soft ask for chat',
+                          'Fetches previous DMs for context on steps 2+3',
+                          'Auto-archives after step 3 with no reply',
+                          'Rate limited: 30 DMs/day max',
+                        ],
+                      },
+                      {
+                        name: 'Conversation Monitor',
+                        schedule: 'Every 15 minutes',
+                        details: [
+                          'Queries prospects in "dm_sent" or "replied" stages',
+                          'Polls UniPile chats for new inbound messages',
+                          'On reply: advances to "replied", sets needs_manual_reply = true',
+                          'Sends WhatsApp notification (Evolution API) + Slack alert',
+                          'Prospect shows in "Action Needed" banner on dashboard',
+                          'No feature flag — always runs when workflow is active',
+                        ],
+                      },
+                    ].map((wf) => (
+                      <div key={wf.name} className="space-y-1">
+                        <p className="text-[11px] text-zinc-300 font-medium">{wf.name}</p>
+                        <p className="text-[10px] text-zinc-500">{wf.schedule}</p>
+                        <ul className="space-y-0.5">
+                          {wf.details.map((d, i) => (
+                            <li key={i} className="text-[10px] text-zinc-500 leading-relaxed">
+                              {d.startsWith('  -') ? <span className="pl-3">{d.trim()}</span> : d}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Controls Guide */}
+              <div>
+                <button
+                  onClick={() => setExpandedDoc(expandedDoc === 'controls' ? null : 'controls')}
+                  className="text-xs text-zinc-300 hover:text-zinc-100 font-medium flex items-center gap-1 w-full"
+                >
+                  {expandedDoc === 'controls' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Controls Guide
+                </button>
+                {expandedDoc === 'controls' && (
+                  <div className="mt-2 space-y-2 pl-4 border-l border-zinc-800">
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-zinc-300 font-medium">Two-Layer Control System</p>
+                      <p className="text-[10px] text-zinc-500">Each workflow has two independent controls:</p>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div className="bg-zinc-800/60 rounded p-2">
+                          <p className="text-[10px] text-emerald-400 font-medium">Workflow Active/Inactive</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5">Controls whether the n8n cron/trigger fires at all. When INACTIVE, the workflow never runs.</p>
+                        </div>
+                        <div className="bg-zinc-800/60 rounded p-2">
+                          <p className="text-[10px] text-amber-400 font-medium">Feature Flag ON/OFF</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5">Controls whether the code logic executes. When OFF, the cron fires but the code exits immediately.</p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 mt-1">Both must be ON for automation to execute. Use flags for quick pause/resume without touching n8n workflow state.</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[11px] text-zinc-300 font-medium">Status Indicators</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-[10px] text-zinc-500">Green pulse = workflow active + flag on (fully operational)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span className="text-[10px] text-zinc-500">Amber = workflow active but flag off (cron fires, logic skips)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                          <span className="text-[10px] text-zinc-500">Gray = workflow inactive (nothing runs)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Rate Limits Reference */}
+              <div>
+                <button
+                  onClick={() => setExpandedDoc(expandedDoc === 'limits' ? null : 'limits')}
+                  className="text-xs text-zinc-300 hover:text-zinc-100 font-medium flex items-center gap-1 w-full"
+                >
+                  {expandedDoc === 'limits' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                  Rate Limits Reference
+                </button>
+                {expandedDoc === 'limits' && (
+                  <div className="mt-2 space-y-1.5 pl-4 border-l border-zinc-800">
+                    {[
+                      { action: 'Profile Views', limit: '50/day', desc: 'Viewing prospect LinkedIn profiles' },
+                      { action: 'Likes/Reactions', limit: '20/day', desc: 'Liking or reacting to posts' },
+                      { action: 'Comments', limit: '8/day', desc: 'AI-generated comments on prospect posts' },
+                      { action: 'Connection Requests', limit: '15/day', desc: 'Sending connection requests (shared with organic)' },
+                      { action: 'DMs', limit: '30/day', desc: 'Direct messages (shared with comment monitor auto-DMs)' },
+                    ].map((r) => (
+                      <div key={r.action} className="flex items-start gap-2">
+                        <span className="text-[10px] text-zinc-400 font-medium w-32 shrink-0">{r.action} ({r.limit})</span>
+                        <span className="text-[10px] text-zinc-500">{r.desc}</span>
+                      </div>
+                    ))}
+                    <p className="text-[10px] text-zinc-600 mt-1">Limits are enforced atomically via linkedin_check_and_increment RPC. When a limit is hit, the action is skipped (not queued).</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </PanelCard>
         )}
       </div>
