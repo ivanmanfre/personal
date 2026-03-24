@@ -9,7 +9,7 @@ import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
 import { UpworkKanban } from './upwork/UpworkKanban';
 import { UpworkFunnel } from './upwork/UpworkFunnel';
-import type { UpworkJob, UpworkProposal, UpworkConversation } from '../../types/dashboard';
+import type { UpworkJob, UpworkProposal } from '../../types/dashboard';
 
 function formatBudget(job: UpworkJob): string {
   if (!job.budgetMin && !job.budgetMax) return '--';
@@ -172,14 +172,13 @@ function CookieFreshness({ updatedAt }: { updatedAt: string }) {
 /* ── Main Panel ──────────────────────────────────────── */
 
 const UpworkPanel: React.FC = () => {
-  const { jobs, proposals, conversations, stats, loading, generatingJobs, cookiesUpdatedAt, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
+  const { jobs, proposals, stats, loading, generatingJobs, cookiesUpdatedAt, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
   const [view, setView] = useState<'kanban' | 'list'>(
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'kanban'
   );
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [statsCollapsed, setStatsCollapsed] = useState(false);
-  const [convosCollapsed, setConvosCollapsed] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>(getUrlParam('filter', 'action'));
   const [editingField, setEditingField] = useState<{ id: string; field: 'proposal_text' | 'cover_letter' } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -318,54 +317,11 @@ const UpworkPanel: React.FC = () => {
               <StatCard label="Pending Review" value={stats.pendingApproval} icon={<CheckCircle2 className="w-5 h-5" />} color="text-amber-400" />
               <StatCard label="Submitted" value={stats.submitted} icon={<Send className="w-5 h-5" />} color="text-green-400" subValue={stats.submissionsToday > 0 ? `${stats.submissionsToday} today` : undefined} />
               <StatCard label="Active Jobs" value={stats.totalJobs - stats.skipped} icon={<Briefcase className="w-5 h-5" />} color="text-zinc-400" />
-              {stats.unreadConversations > 0 && (
-                <StatCard label="Unread" value={stats.unreadConversations} icon={<MessageSquare className="w-5 h-5" />} color="text-blue-400" />
-              )}
             </div>
             <UpworkFunnel stats={stats} />
           </div>
         )}
       </div>
-
-      {/* Conversations */}
-      {conversations.length > 0 && (
-        <div>
-          <button
-            onClick={() => setConvosCollapsed(!convosCollapsed)}
-            className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2"
-          >
-            {convosCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            Messages
-            {conversations.filter(c => c.isUnread).length > 0 && (
-              <span className="bg-blue-500/20 text-blue-400 rounded-full px-1.5 text-[10px] font-medium">
-                {conversations.filter(c => c.isUnread).length}
-              </span>
-            )}
-          </button>
-          {!convosCollapsed && (
-            <div className="space-y-1">
-              {conversations.map((c) => (
-                <a
-                  key={c.id}
-                  href={`https://www.upwork.com/ab/messages/rooms/${c.roomId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors"
-                >
-                  {c.isUnread && <div className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium text-zinc-200 truncate">{c.clientName || 'Unknown'}</div>
-                    {c.lastMessagePreview && (
-                      <div className="text-[10px] text-zinc-500 truncate">{c.lastMessagePreview}</div>
-                    )}
-                  </div>
-                  {c.lastMessageAt && <div className="text-[10px] text-zinc-600 shrink-0">{timeAgo(c.lastMessageAt)}</div>}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Kanban or List view */}
       {view === 'kanban' ? (
