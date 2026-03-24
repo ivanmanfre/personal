@@ -364,12 +364,12 @@ const OutreachPanel: React.FC = () => {
                   </th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Name & Title</th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Company</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Location</th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('icp_score')}>
                     ICP {sortKey === 'icp_score' && (sortAsc ? '↑' : '↓')}
                   </th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Stage</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Industry</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Last Action</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Next Action</th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Campaign</th>
                 </tr>
               </thead>
@@ -405,9 +405,6 @@ const OutreachPanel: React.FC = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
-                      {p.city && p.state ? `${p.city}, ${p.state}` : p.location?.split(',').slice(0, 2).join(',') || '—'}
-                    </td>
                     <td className="px-3 py-2.5 text-center">
                       <span className={`font-medium ${icpColor(p.icpScore)}`}>
                         {p.icpScore ?? '—'}
@@ -423,9 +420,49 @@ const OutreachPanel: React.FC = () => {
                       </select>
                     </td>
                     <td className="px-3 py-2.5 text-center">
-                      {p.industry ? (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-zinc-700/50 text-zinc-400 border border-zinc-600/30 capitalize">{p.industry}</span>
-                      ) : '—'}
+                      {(() => {
+                        const actions: { label: string; date: string }[] = [];
+                        if (p.profileViewedAt) actions.push({ label: 'Profile view', date: p.profileViewedAt });
+                        if (p.lastEngagedAt) actions.push({ label: `${p.postsLiked} like${p.postsLiked !== 1 ? 's' : ''}`, date: p.lastEngagedAt });
+                        if (p.connectionSentAt) actions.push({ label: 'Connection sent', date: p.connectionSentAt });
+                        if (p.connectedAt) actions.push({ label: 'Connected', date: p.connectedAt });
+                        if (p.lastDmSentAt) actions.push({ label: `DM${p.dmCount > 1 ? ` (${p.dmCount})` : ''}`, date: p.lastDmSentAt });
+                        if (p.lastReplyAt) actions.push({ label: 'Replied', date: p.lastReplyAt });
+                        const last = actions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                        if (!last) return <span className="text-zinc-600 text-[10px]">—</span>;
+                        return (
+                          <div className="text-center">
+                            <p className="text-[10px] text-zinc-300">{last.label}</p>
+                            <p className="text-[9px] text-zinc-600">{timeAgo(last.date)}</p>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      {(() => {
+                        const stageNext: Record<string, string> = {
+                          identified: 'Enrich',
+                          enriched: 'Warm up',
+                          warming: 'Continue warming',
+                          engaged: 'Send connection',
+                          connection_sent: 'Waiting acceptance',
+                          connected: 'Send DM',
+                          dm_sent: 'Waiting reply',
+                          replied: 'Manual follow-up',
+                          converted: 'Done',
+                          archived: 'Archived',
+                        };
+                        const label = stageNext[p.stage] || '—';
+                        const waiting = ['connection_sent', 'dm_sent'].includes(p.stage);
+                        const manual = p.stage === 'replied' || p.needsManualReply;
+                        const scheduled = p.nextTouchAfter && new Date(p.nextTouchAfter) > new Date();
+                        return (
+                          <div className="text-center">
+                            <p className={`text-[10px] ${manual ? 'text-emerald-400 font-medium' : waiting ? 'text-zinc-500 italic' : 'text-zinc-400'}`}>{label}</p>
+                            {scheduled && <p className="text-[9px] text-zinc-600">{timeAgo(p.nextTouchAfter!)}</p>}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       {p.campaignName ? (
