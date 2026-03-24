@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import { playNotificationSound } from '../lib/notificationSound';
-import type { UpworkJob, UpworkProposal, UpworkPipelineStats } from '../types/dashboard';
+import type { UpworkJob, UpworkProposal, UpworkPipelineStats, UpworkConversation } from '../types/dashboard';
 
 // Tracks optimistic status overrides so auto-refresh doesn't stomp them
 interface OptimisticLock {
@@ -56,7 +56,24 @@ function mapProposal(r: any): UpworkProposal {
     screeningAnswers: r.screening_answers,
     diagramData: r.diagram_data || null,
     qaResult: r.qa_result || null,
+    submissionMethod: r.submission_method || null,
     createdAt: r.created_at,
+  };
+}
+
+function mapConversation(r: any): UpworkConversation {
+  return {
+    id: r.id,
+    roomId: r.room_id,
+    clientName: r.client_name,
+    jobTitle: r.job_title,
+    jobId: r.job_id,
+    lastMessagePreview: r.last_message_preview,
+    lastMessageAt: r.last_message_at,
+    isUnread: r.is_unread || false,
+    unreadCount: r.unread_count || 0,
+    status: r.status || 'active',
+    firstSeenAt: r.first_seen_at || r.created_at,
   };
 }
 
@@ -72,6 +89,7 @@ function mapStats(r: any): UpworkPipelineStats {
     skipped: r.skipped || 0,
     submissionsToday: r.submissions_today || 0,
     invites: r.invites || 0,
+    unreadConversations: r.unread_conversations || 0,
   };
 }
 
@@ -86,11 +104,13 @@ const emptyStats: UpworkPipelineStats = {
   skipped: 0,
   submissionsToday: 0,
   invites: 0,
+  unreadConversations: 0,
 };
 
 export function useUpworkPipeline() {
   const [jobs, setJobs] = useState<UpworkJob[]>([]);
   const [proposals, setProposals] = useState<UpworkProposal[]>([]);
+  const [conversations, setConversations] = useState<UpworkConversation[]>([]);
   const [stats, setStats] = useState<UpworkPipelineStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [generatingJobs, setGeneratingJobs] = useState<Set<string>>(new Set());
@@ -119,7 +139,7 @@ export function useUpworkPipeline() {
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const [jobsRes, proposalsRes, statsRes, cookiesRes] = await Promise.all([
+      const [jobsRes, proposalsRes, statsRes, cookiesRes, convosRes] = await Promise.all([
         supabase
           .from('upwork_jobs')
           .select('*')
@@ -137,6 +157,12 @@ export function useUpworkPipeline() {
           .select('updated_at')
           .eq('key', 'upwork_cookies')
           .single(),
+        supabase
+          .from('upwork_conversations')
+          .select('*')
+          .eq('status', 'active')
+          .order('last_message_at', { ascending: false })
+          .limit(50),
       ]);
 
       const now = Date.now();
@@ -199,6 +225,14 @@ export function useUpworkPipeline() {
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
       if (cookiesRes.data?.updated_at) setCookiesUpdatedAt(cookiesRes.data.updated_at);
+
+      // Update conversations (unread first, then by recency)
+      const serverConvos = (convosRes.data || []).map(mapConversation);
+      serverConvos.sort((a, b) => {
+        if (a.isUnread !== b.isUnread) return a.isUnread ? -1 : 1;
+        return (b.lastMessageAt || '').localeCompare(a.lastMessageAt || '');
+      });
+      setConversations(serverConvos);
 
       // Detect new assessed jobs and play notification sound
       const currentAssessedIds = new Set(
@@ -361,6 +395,7 @@ export function useUpworkPipeline() {
   return {
     jobs,
     proposals,
+    conversations,
     stats,
     loading,
     generatingJobs,

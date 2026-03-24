@@ -193,6 +193,8 @@ function DetailModal({
                       <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider">Proposal</span>
                       <span className="text-[10px] text-zinc-600">v{prop.version}</span>
                       <span className="text-[10px] text-zinc-500 px-1.5 py-0.5 bg-zinc-800/60 rounded">{prop.status}</span>
+                      {prop.submissionMethod === 'local' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 border border-green-500/30">Local</span>}
+                      {prop.submissionMethod === 'cloud' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">Cloud</span>}
                       {prop.qaResult && (
                         <span className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded ${
                           prop.qaResult.status === 'pass'
@@ -516,6 +518,8 @@ export const UpworkKanban: React.FC<Props> = ({
                               {budget && <span className="text-[9px] text-zinc-500">{budget}</span>}
                               {isGenerating && <Loader2 className="w-3 h-3 text-purple-400 animate-spin" />}
                               {prop && <span className="text-[9px] text-emerald-500/70">{prop.status}</span>}
+                              {prop?.submissionMethod === 'local' && <span className="text-[9px] px-1 py-0.5 rounded bg-green-500/15 text-green-400 border border-green-500/30">Local</span>}
+                              {prop?.submissionMethod === 'cloud' && <span className="text-[9px] px-1 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">Cloud</span>}
                               <span className="text-[9px] text-zinc-600 ml-auto">{timeAgo(job.postedAt)}</span>
                             </div>
                           </div>

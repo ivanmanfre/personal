@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toastError, toastSuccess } from '../../lib/dashboardActions';
-import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock } from 'lucide-react';
+import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock, Cpu } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -44,11 +44,12 @@ const SettingsPanel: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [channelSearch, setChannelSearch] = useState('');
   const [adding, setAdding] = useState(false);
+  const [localSubmission, setLocalSubmission] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [channelsRes, availableRes, tablesRes] = await Promise.all([
+      const [channelsRes, availableRes, tablesRes, localSubRes] = await Promise.all([
         supabase.from('slack_notification_channels').select('*').order('channel_name'),
         supabase.from('slack_available_channels').select('channel_id, channel_name, is_private, num_members').order('channel_name'),
         Promise.all(
@@ -57,7 +58,9 @@ const SettingsPanel: React.FC = () => {
             return { name, count: count || 0 };
           })
         ),
+        supabase.from('integration_config').select('value').eq('key', 'upwork_local_submission').single(),
       ]);
+      if (localSubRes.data) setLocalSubmission(localSubRes.data.value === 'true');
       setChannels(channelsRes.data || []);
       setAvailableChannels(availableRes.data || []);
       setTables(tablesRes);
@@ -113,6 +116,20 @@ const SettingsPanel: React.FC = () => {
     }
   };
 
+  const toggleLocalSubmission = async (value: boolean) => {
+    setLocalSubmission(value);
+    try {
+      const { error } = await supabase
+        .from('integration_config')
+        .update({ value: String(value), updated_at: new Date().toISOString() })
+        .eq('key', 'upwork_local_submission');
+      if (error) throw error;
+    } catch (err) {
+      toastError('toggle local submission', err);
+      setLocalSubmission(!value);
+    }
+  };
+
   // Filter available channels: exclude already added ones, apply search
   const activeChannelIds = useMemo(() => new Set(channels.map((c) => c.channel_id)), [channels]);
   const filteredAvailable = useMemo(() => {
@@ -144,6 +161,21 @@ const SettingsPanel: React.FC = () => {
               {opt.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Upwork Local Submission */}
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
+          <Cpu className="w-3.5 h-3.5 text-zinc-500" />
+          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Upwork Local Submission</h2>
+        </div>
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-zinc-300">Submit proposals via local Chrome</p>
+            <p className="text-[11px] text-zinc-500 mt-0.5">When enabled, proposals are submitted through your laptop&apos;s Chrome browser. Falls back to cloud BQL when off.</p>
+          </div>
+          <Toggle checked={localSubmission} onChange={toggleLocalSubmission} activeColor="bg-emerald-500" />
         </div>
       </div>
 

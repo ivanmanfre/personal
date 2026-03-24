@@ -226,7 +226,22 @@ export interface UpworkProposal {
     original_screening?: { question: string; answer: string }[];
     rewrite_model?: string;
   } | null;
+  submissionMethod: 'local' | 'cloud' | null;
   createdAt: string;
+}
+
+export interface UpworkConversation {
+  id: string;
+  roomId: string;
+  clientName: string | null;
+  jobTitle: string | null;
+  jobId: string | null;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+  isUnread: boolean;
+  unreadCount: number;
+  status: string;
+  firstSeenAt: string;
 }
 
 export interface UpworkPipelineStats {
@@ -240,6 +255,7 @@ export interface UpworkPipelineStats {
   skipped: number;
   submissionsToday: number;
   invites: number;
+  unreadConversations: number;
 }
 
 export interface ExecutionLog {
