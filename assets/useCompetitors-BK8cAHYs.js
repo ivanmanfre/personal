@@ -1,4 +1,4 @@
-import{c as l}from"./index-CiQyIceB.js";import{r as n}from"./vendor-react-Bid9vi73.js";import{s as _,t as d,d as k}from"./Dashboard-BbObIM8i.js";/**
+import{c as l}from"./index-BuNMzHZU.js";import{r as n}from"./vendor-react-Bid9vi73.js";import{s as _,t as d,d as k}from"./Dashboard-DHe_yI2E.js";/**
  * @license lucide-react v0.554.0 - ISC
  *
  * This source code is licensed under the ISC license.
