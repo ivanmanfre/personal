@@ -336,7 +336,7 @@ const OutreachPanel: React.FC = () => {
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('updated_at')}>
                     Last Action {sortKey === 'updated_at' && (sortAsc ? '↑' : '↓')}
                   </th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Next Touch</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Last Post</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/40">
@@ -390,7 +390,7 @@ const OutreachPanel: React.FC = () => {
                     </td>
                     <td className="px-3 py-2.5 text-center text-xs text-zinc-500">{timeAgo(p.updatedAt)}</td>
                     <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
-                      {p.nextTouchAfter ? new Date(p.nextTouchAfter).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                      {p.lastPostDate ? timeAgo(p.lastPostDate) : '—'}
                     </td>
                   </tr>
                 ))}
