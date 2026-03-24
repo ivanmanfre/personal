@@ -358,6 +358,11 @@ export interface OutreachProspect {
   foundedYear: number | null;
   companyDomain: string | null;
   companyLinkedinUrl: string | null;
+  companyDescription: string | null;
+  companyKeywords: string[];
+  annualRevenue: string | null;
+  email: string | null;
+  phone: string | null;
   emailStatus: string | null;
   city: string | null;
   state: string | null;

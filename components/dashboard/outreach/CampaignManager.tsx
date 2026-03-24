@@ -12,25 +12,44 @@ interface Props {
   onImport: (campaignId: string) => void;
 }
 
+const INDUSTRY_PRESETS: { label: string; tags: string[]; filters: Record<string, any> }[] = [
+  { label: 'Construction & Trades', tags: ['construction', 'trades'], filters: { q_organization_keyword_tags: ['construction'], person_titles: ['CEO', 'President', 'COO', 'Owner', 'Founder', 'VP Operations'], person_seniorities: ['c_suite', 'founder', 'owner', 'vp'] } },
+  { label: 'Manufacturing', tags: ['manufacturing'], filters: { q_organization_keyword_tags: ['manufacturing'], person_titles: ['CEO', 'President', 'COO', 'Owner', 'VP Operations', 'Plant Manager'], person_seniorities: ['c_suite', 'founder', 'owner', 'vp'] } },
+  { label: 'Professional Services', tags: ['professional-services'], filters: { q_organization_keyword_tags: ['accounting', 'law firm', 'insurance', 'staffing'], person_titles: ['CEO', 'Managing Partner', 'President', 'Owner', 'Founder'], person_seniorities: ['c_suite', 'founder', 'owner', 'partner'] } },
+  { label: 'Real Estate & Property', tags: ['real-estate'], filters: { q_organization_keyword_tags: ['real estate', 'property management'], person_titles: ['CEO', 'President', 'Owner', 'Managing Partner', 'Broker'], person_seniorities: ['c_suite', 'founder', 'owner', 'partner'] } },
+  { label: 'Healthcare Operations', tags: ['healthcare'], filters: { q_organization_keyword_tags: ['dental', 'clinic', 'medical practice', 'healthcare'], person_titles: ['CEO', 'Owner', 'Practice Manager', 'COO', 'Administrator'], person_seniorities: ['c_suite', 'founder', 'owner'] } },
+  { label: 'Logistics & Field Services', tags: ['logistics', 'field-services'], filters: { q_organization_keyword_tags: ['logistics', 'transportation', 'field services'], person_titles: ['CEO', 'President', 'COO', 'Owner', 'VP Operations'], person_seniorities: ['c_suite', 'founder', 'owner', 'vp'] } },
+];
+
 export const CampaignManager: React.FC<Props> = ({ campaigns, onToggle, onUpdate, onCreate, onDelete, onImport }) => {
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newTags, setNewTags] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const handlePresetSelect = (idx: number) => {
+    const preset = INDUSTRY_PRESETS[idx];
+    setSelectedPreset(idx);
+    setNewName(preset.label);
+    setNewTags(preset.tags.join(', '));
+  };
 
   const handleCreate = () => {
     if (!newName.trim()) return;
+    const filters = selectedPreset !== null ? INDUSTRY_PRESETS[selectedPreset].filters : {};
     onCreate(
       newName.trim(),
       newDesc.trim(),
       newTags.split(',').map((t) => t.trim()).filter(Boolean),
-      {}
+      filters
     );
     setNewName('');
     setNewDesc('');
     setNewTags('');
+    setSelectedPreset(null);
     setShowCreate(false);
   };
 
@@ -49,13 +68,28 @@ export const CampaignManager: React.FC<Props> = ({ campaigns, onToggle, onUpdate
       {/* Create form */}
       {showCreate && (
         <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-3 mb-3 space-y-2">
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Quick start — pick an industry</p>
+          <div className="flex flex-wrap gap-1.5">
+            {INDUSTRY_PRESETS.map((preset, idx) => (
+              <button
+                key={idx}
+                onClick={() => handlePresetSelect(idx)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                  selectedPreset === idx
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                    : 'bg-zinc-800/60 text-zinc-400 border-zinc-700/40 hover:border-zinc-600'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => { setNewName(e.target.value); setSelectedPreset(null); }}
             placeholder="Campaign name..."
             className="w-full px-3 py-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-purple-500/40"
-            autoFocus
           />
           <input
             type="text"
@@ -64,16 +98,11 @@ export const CampaignManager: React.FC<Props> = ({ campaigns, onToggle, onUpdate
             placeholder="Description (optional)..."
             className="w-full px-3 py-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
           />
-          <input
-            type="text"
-            value={newTags}
-            onChange={(e) => setNewTags(e.target.value)}
-            placeholder="Tags (comma separated): ai, agency, automation..."
-            className="w-full px-3 py-1.5 bg-zinc-800/60 border border-zinc-700/40 rounded-lg text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
-          />
           <div className="flex gap-2">
-            <button onClick={handleCreate} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors">Create</button>
-            <button onClick={() => setShowCreate(false)} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">Cancel</button>
+            <button onClick={handleCreate} className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors">
+              Create{selectedPreset !== null ? ` (${INDUSTRY_PRESETS[selectedPreset].label})` : ''}
+            </button>
+            <button onClick={() => { setShowCreate(false); setSelectedPreset(null); }} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">Cancel</button>
           </div>
         </div>
       )}
