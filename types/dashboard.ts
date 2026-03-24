@@ -351,6 +351,17 @@ export interface OutreachProspect {
   company: string | null;
   location: string | null;
   industry: string | null;
+  seniority: string | null;
+  department: string | null;
+  title: string | null;
+  employeeCount: string | null;
+  foundedYear: number | null;
+  companyDomain: string | null;
+  companyLinkedinUrl: string | null;
+  emailStatus: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
   profilePhotoUrl: string | null;
   icpScore: number | null;
   icpReasoning: string | null;

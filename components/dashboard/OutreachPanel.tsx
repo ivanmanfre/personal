@@ -324,19 +324,15 @@ const OutreachPanel: React.FC = () => {
                       className="rounded border-zinc-600"
                     />
                   </th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Name & Company</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Campaign</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Name & Title</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Company</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Location</th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('icp_score')}>
                     ICP {sortKey === 'icp_score' && (sortAsc ? '↑' : '↓')}
                   </th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('activity_score')}>
-                    Activity {sortKey === 'activity_score' && (sortAsc ? '↑' : '↓')}
-                  </th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Stage</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('updated_at')}>
-                    Last Action {sortKey === 'updated_at' && (sortAsc ? '↑' : '↓')}
-                  </th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Last Post</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Industry</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Campaign</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/40">
@@ -359,25 +355,25 @@ const OutreachPanel: React.FC = () => {
                         {p.needsManualReply && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
                         <div>
                           <p className="font-medium text-zinc-200">{p.name}</p>
-                          <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">{p.headline || p.company || ''}</p>
+                          <p className="text-[11px] text-zinc-500 truncate max-w-[180px]">{p.title || p.headline || ''}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-center">
-                      {p.campaignName ? (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/15">{p.campaignName}</span>
-                      ) : '—'}
+                    <td className="px-3 py-2.5">
+                      <div>
+                        <p className="text-zinc-300 text-xs truncate max-w-[160px]">{p.company || '—'}</p>
+                        <p className="text-[10px] text-zinc-600">
+                          {[p.employeeCount, p.foundedYear ? `est. ${p.foundedYear}` : null].filter(Boolean).join(' · ') || ''}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
+                      {p.city && p.state ? `${p.city}, ${p.state}` : p.location?.split(',').slice(0, 2).join(',') || '—'}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span className={`font-medium ${icpColor(p.icpScore)}`}>
                         {p.icpScore ?? '—'}
                       </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <span className={`w-2 h-2 rounded-full ${icpDot(p.activityScore)}`} />
-                        <span className="text-zinc-400">{p.activityScore ?? '—'}</span>
-                      </div>
                     </td>
                     <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <select
@@ -388,9 +384,15 @@ const OutreachPanel: React.FC = () => {
                         {allStages.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-center text-xs text-zinc-500">{timeAgo(p.updatedAt)}</td>
-                    <td className="px-3 py-2.5 text-center text-xs text-zinc-500">
-                      {p.lastPostDate ? timeAgo(p.lastPostDate) : '—'}
+                    <td className="px-3 py-2.5 text-center">
+                      {p.industry ? (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-zinc-700/50 text-zinc-400 border border-zinc-600/30 capitalize">{p.industry}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      {p.campaignName ? (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/15">{p.campaignName}</span>
+                      ) : '—'}
                     </td>
                   </tr>
                 ))}
