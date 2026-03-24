@@ -717,7 +717,7 @@ const OutreachPanel: React.FC = () => {
                 <p className="text-xs text-zinc-500 mb-2">Each stage transition is automatic. Only "converted" requires your manual action.</p>
                 {[
                   { from: 'enriched', to: 'warming', trigger: 'WF2 first touch — profile view or post like', auto: true },
-                  { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days (2+ likes/reacts)', auto: true },
+                  { from: 'warming', to: 'engaged', trigger: '3+ touches (views + likes) over 10+ days, with 2+ likes/reacts', auto: true },
                   { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection request (highest ICP first)', auto: true },
                   { from: 'connection_sent', to: 'connected', trigger: 'WF4 detects accepted connection via UniPile', auto: true },
                   { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connection)', auto: true },
@@ -767,7 +767,7 @@ const OutreachPanel: React.FC = () => {
                       'Random action: 70% like/react, 15% profile view, 15% natural skip',
                       'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
                       'Sets next touch 2-5 days out — max 1 touch every few days per person',
-                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, 2+ likes',
+                      'Graduates to "engaged" after: 3+ total touches (views + likes count), 10+ days elapsed, 2+ likes',
                       'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
                     ],
                   },
