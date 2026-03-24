@@ -46,7 +46,7 @@ function icpDot(score: number | null): string {
 const actionTypeIcons: Record<string, string> = {
   profile_view: 'Viewed profile',
   like: 'Liked post',
-  comment: 'Commented',
+  react: 'Reacted to post',
   connection_request: 'Connection sent',
   dm: 'DM sent',
 };
@@ -164,13 +164,51 @@ const OutreachPanel: React.FC = () => {
       )}
 
       {/* Section 2: Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Prospects" value={stats.totalProspects} icon={<Users className="w-5 h-5" />} color="text-blue-400" />
         <StatCard label="Campaigns" value={stats.activeCampaigns} icon={<Target className="w-5 h-5" />} color="text-purple-400" />
         <StatCard label="Warming" value={stats.warming + stats.engaged} icon={<Zap className="w-5 h-5" />} color="text-amber-400" />
         <StatCard label="Pending" value={stats.connectionSent} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" />
         <StatCard label="Reply Rate" value={`${stats.replyRate}%`} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
-        <StatCard label="Today" value={stats.engagementsToday} icon={<Activity className="w-5 h-5" />} color="text-pink-400" />
+      </div>
+
+      {/* Section 2b: Daily Activity Limits */}
+      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-zinc-200">Today&apos;s Activity</span>
+          </div>
+          <span className="text-[10px] text-zinc-600">Daily limits enforced by LinkedIn safety layer</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {([
+            { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁' },
+            { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️' },
+            { key: 'connection_request', label: 'Connections', defaultLimit: 15, icon: '🤝' },
+            { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬' },
+          ] as const).map(({ key, label, defaultLimit, icon }) => {
+            const rl = rateLimits[key];
+            const count = rl?.count || 0;
+            const limit = rl?.daily_limit || defaultLimit;
+            const pct = Math.min((count / limit) * 100, 100);
+            const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
+            const textColor = pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-zinc-300';
+
+            return (
+              <div key={key} className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] text-zinc-400">{icon} {label}</span>
+                  <span className={`text-sm font-mono font-semibold ${textColor}`}>{count}<span className="text-zinc-600">/{limit}</span></span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                </div>
+                {count >= limit && <p className="text-[9px] text-red-400 mt-1">Limit reached — skipping until tomorrow</p>}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Section 3: Funnel */}
@@ -472,9 +510,9 @@ const OutreachPanel: React.FC = () => {
                   <tbody className="divide-y divide-zinc-800/60">
                     {[
                       { id: '35HJE7eOpvEdxRwq', name: 'Import + Enrich', schedule: 'Webhook', flag: null, desc: 'Apollo search, UniPile enrich, AI scoring' },
-                      { id: 'kr2lSH1eRGZcDWmO', name: 'Warm-up', schedule: '4h', flag: 'outreach_auto_warmup', desc: 'Likes, comments, profile views' },
+                      { id: 'kr2lSH1eRGZcDWmO', name: 'Warm-up', schedule: '4h', flag: 'outreach_auto_warmup', desc: 'Likes, reacts, profile views' },
                       { id: '5ZXtArhobWrDDpfJ', name: 'Connect', schedule: '6h', flag: 'outreach_auto_connect', desc: 'AI connection requests' },
-                      { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '3-step AI DM flow' },
+                      { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '1 DM + 7-day archive' },
                       { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection + alerts' },
                     ].map((wf) => {
                       const isActive = workflowStatuses[wf.id] ?? false;
@@ -541,13 +579,13 @@ const OutreachPanel: React.FC = () => {
               </p>
             </PanelCard>
 
-            {/* Rate limits */}
+            {/* Rate limits (detail view — summary shown above) */}
             <PanelCard title="Rate Limits" accent="blue">
               <div className="space-y-2">
-                {['profile_view', 'like', 'comment', 'connection_request', 'dm'].map((action) => {
+                {['profile_view', 'like', 'connection_request', 'dm'].map((action) => {
                   const rl = rateLimits[action];
                   const count = rl?.count || 0;
-                  const limit = rl?.daily_limit || (action === 'profile_view' ? 50 : action === 'like' ? 20 : action === 'comment' ? 8 : action === 'connection_request' ? 15 : 30);
+                  const limit = rl?.daily_limit || (action === 'profile_view' ? 50 : action === 'like' ? 20 : action === 'connection_request' ? 15 : 30);
                   const pct = Math.min((count / limit) * 100, 100);
                   const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
 
@@ -621,7 +659,7 @@ const OutreachPanel: React.FC = () => {
                     { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on your enriched prospects. You\'ll see prospects move to "warming" stage.' },
                     { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" — highest ICP scores first.' },
                     { time: 'Days 5-14', desc: 'Connection requests go out to "engaged" prospects (1-2/day). You\'ll see "connection_sent" stages appear.' },
-                    { time: 'Days 7-21', desc: 'Accepted connections get a 3-step DM sequence over ~7 days. Replies trigger WhatsApp + Slack alerts.' },
+                    { time: 'Days 7-21', desc: 'Accepted connections get 1 personalized DM. If no reply after 7 days, prospect is archived. Replies trigger WhatsApp + Slack alerts.' },
                     { time: 'Ongoing', desc: 'Pipeline runs continuously. Import more prospects when enriched/warming pool drops below ~20.' },
                   ].map((t, i) => (
                     <div key={i} className="flex gap-3">
@@ -642,13 +680,13 @@ const OutreachPanel: React.FC = () => {
                 <p className="text-xs text-zinc-500 mb-2">Each stage transition is automatic. Only "converted" requires your manual action.</p>
                 {[
                   { from: 'enriched', to: 'warming', trigger: 'WF2 first touch — profile view or post like', auto: true },
-                  { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days (1 comment or 2+ likes)', auto: true },
+                  { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days (2+ likes/reacts)', auto: true },
                   { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection request (highest ICP first)', auto: true },
                   { from: 'connection_sent', to: 'connected', trigger: 'WF4 detects accepted connection via UniPile', auto: true },
                   { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connection)', auto: true },
                   { from: 'dm_sent', to: 'replied', trigger: 'WF5 detects inbound reply', auto: true },
                   { from: 'replied', to: 'converted', trigger: 'You mark it after the conversation converts', auto: false },
-                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after 3 unanswered DMs (~8 days)', auto: true },
+                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after 7 days with no reply', auto: true },
                 ].map((s, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
@@ -689,10 +727,10 @@ const OutreachPanel: React.FC = () => {
                     schedule: 'Every 4h — 30% random skip',
                     bullets: [
                       'Picks 2-4 enriched/warming prospects with ICP ≥ 6',
-                      'Random action: 50% like post, 25% AI comment, 15% skip, 10% profile view',
-                      'AI comments written by Claude, checked for duplicates. Sounds natural, not salesy',
+                      'Random action: 70% like/react, 15% profile view, 15% natural skip',
+                      'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
                       'Sets next touch 2-5 days out — max 1 touch every few days per person',
-                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, at least 1 comment or 2+ likes',
+                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, 2+ likes',
                       'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
                     ],
                   },
@@ -712,11 +750,10 @@ const OutreachPanel: React.FC = () => {
                     schedule: 'Every 30 min',
                     bullets: [
                       'Checks for accepted connections by polling UniPile',
-                      'Step 1 (2h after connect): value-first intro referencing their work — no pitch',
-                      'Step 2 (3 days later): share a relevant resource, case study, or insight',
-                      'Step 3 (4 days later): soft ask for a quick chat about their operations',
-                      'All DMs written by Claude with full context (previous messages, their industry, topics)',
-                      'After 3 DMs with no reply → auto-archived',
+                      'Sends 1 personalized DM (2h after connection accepted): value-first intro referencing their work — no pitch',
+                      'DM written by Claude with full context (their industry, topics, headline)',
+                      'If no reply after 7 days → auto-archived with reason "no_reply_after_7_days"',
+                      'No follow-up DMs — one shot only to avoid being pushy',
                     ],
                   },
                   {
@@ -768,7 +805,7 @@ const OutreachPanel: React.FC = () => {
                       <li>LinkedIn provider_id (required for actions)</li>
                       <li>Recent post content (for AI personalization)</li>
                       <li>Activity scoring (post frequency)</li>
-                      <li>Sends connections, DMs, likes, comments</li>
+                      <li>Sends connections, DMs, likes/reacts</li>
                       <li>Detects replies and accepted connections</li>
                     </ul>
                   </div>
@@ -799,7 +836,7 @@ const OutreachPanel: React.FC = () => {
                     {[
                       'Random delays before each action (1-16 minutes)',
                       '30-40% chance of skipping entire execution (looks human)',
-                      'Varied action types (not just likes — views, comments, skips)',
+                      'Varied action types (likes, reacts, profile views, skips)',
                       '2-5 day gap between touches on same person',
                       'Random connection note omission (20%)',
                       'Server-side daily rate limits enforced per action type',
@@ -816,8 +853,7 @@ const OutreachPanel: React.FC = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
                       { action: 'Profile Views', limit: '50/day' },
-                      { action: 'Likes', limit: '20/day' },
-                      { action: 'Comments', limit: '8/day' },
+                      { action: 'Likes & Reacts', limit: '20/day' },
                       { action: 'Connections', limit: '15/day' },
                       { action: 'DMs', limit: '30/day' },
                     ].map((r) => (
