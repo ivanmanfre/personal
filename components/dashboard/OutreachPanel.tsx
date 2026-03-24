@@ -612,19 +612,43 @@ const OutreachPanel: React.FC = () => {
         </button>
         {showDocs && (
           <div className="space-y-3">
-            {/* Pipeline Stages */}
+            {/* What to Expect */}
+            <PanelCard title="What to Expect" accent="emerald">
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-300 font-medium">Timeline after enabling all workflows:</p>
+                <div className="space-y-2">
+                  {[
+                    { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on your enriched prospects. You\'ll see prospects move to "warming" stage.' },
+                    { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" — highest ICP scores first.' },
+                    { time: 'Days 5-14', desc: 'Connection requests go out to "engaged" prospects (1-2/day). You\'ll see "connection_sent" stages appear.' },
+                    { time: 'Days 7-21', desc: 'Accepted connections get a 3-step DM sequence over ~7 days. Replies trigger WhatsApp + Slack alerts.' },
+                    { time: 'Ongoing', desc: 'Pipeline runs continuously. Import more prospects when enriched/warming pool drops below ~20.' },
+                  ].map((t, i) => (
+                    <div key={i} className="flex gap-3">
+                      <span className="text-[11px] text-emerald-400 font-medium shrink-0 w-[72px]">{t.time}</span>
+                      <span className="text-xs text-zinc-400">{t.desc}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-zinc-800/40 rounded-lg p-2.5 mt-2">
+                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Typical throughput:</strong> ~1-2 connection requests/day, ~10-15 connections/month. At 30-40% accept rate, expect 3-6 new connections/month leading to DM conversations.</p>
+                </div>
+              </div>
+            </PanelCard>
+
+            {/* Pipeline Flow */}
             <PanelCard title="Pipeline Stages" accent="purple">
               <div className="space-y-3">
+                <p className="text-xs text-zinc-500 mb-2">Each stage transition is automatic. Only "converted" requires your manual action.</p>
                 {[
-                  { from: 'identified', to: 'enriched', trigger: 'Apollo import + UniPile profile/posts fetch + Opus 4.6 ICP scoring' },
-                  { from: 'enriched', to: 'warming', trigger: 'First engagement action (like, comment, or profile view)' },
-                  { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days, with at least 1 comment or 2+ likes' },
-                  { from: 'engaged', to: 'connection_sent', trigger: 'Connection request sent (with or without personalized note)' },
-                  { from: 'connection_sent', to: 'connected', trigger: 'Connection accepted (detected by UniPile chat polling)' },
-                  { from: 'connected', to: 'dm_sent', trigger: 'DM Step 1 sent (2 hours after connection)' },
-                  { from: 'dm_sent', to: 'replied', trigger: 'Reply detected by Conversation Monitor' },
-                  { from: 'replied', to: 'converted', trigger: 'Manual — mark when conversation converts' },
-                  { from: 'any', to: 'archived', trigger: 'Manual skip/archive, or auto-archive after 3 unanswered DMs' },
+                  { from: 'enriched', to: 'warming', trigger: 'WF2 first touch — profile view or post like', auto: true },
+                  { from: 'warming', to: 'engaged', trigger: '3+ touches over 10+ days (1 comment or 2+ likes)', auto: true },
+                  { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection request (highest ICP first)', auto: true },
+                  { from: 'connection_sent', to: 'connected', trigger: 'WF4 detects accepted connection via UniPile', auto: true },
+                  { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connection)', auto: true },
+                  { from: 'dm_sent', to: 'replied', trigger: 'WF5 detects inbound reply', auto: true },
+                  { from: 'replied', to: 'converted', trigger: 'You mark it after the conversation converts', auto: false },
+                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after 3 unanswered DMs (~8 days)', auto: true },
                 ].map((s, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
@@ -636,66 +660,73 @@ const OutreachPanel: React.FC = () => {
                         {s.to}
                       </span>
                     </div>
-                    <span className="text-xs text-zinc-400 leading-relaxed">{s.trigger}</span>
+                    <div>
+                      <span className="text-xs text-zinc-400 leading-relaxed">{s.trigger}</span>
+                      {!s.auto && <span className="ml-1.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">manual</span>}
+                    </div>
                   </div>
                 ))}
               </div>
             </PanelCard>
 
-            {/* Workflow Details */}
-            <PanelCard title="Workflow Details" accent="emerald">
+            {/* The 5 Workflows */}
+            <PanelCard title="The 5 Workflows" accent="emerald">
               <div className="space-y-4">
                 {[
                   {
-                    name: 'Import + Enrichment',
-                    schedule: 'Webhook (triggered from Import button)',
+                    name: '1. Import + Enrichment (WF1)',
+                    schedule: 'Manual — click Import on a campaign',
                     bullets: [
-                      'Searches Apollo API with campaign filters, deduplicates by LinkedIn URL',
-                      'Enriches via UniPile: profile data + last 10 posts',
-                      'Dead profile filter: no posts in 60 days = skipped',
-                      'Opus 4.6 scores ICP fit (1-10) + extracts topics from post content',
+                      'Searches Apollo API using campaign filters (industry, titles, seniority)',
+                      'Deduplicates by LinkedIn URL — won\'t re-import existing prospects',
+                      'UniPile enrichment: gets LinkedIn provider_id (needed for DMs/connections), recent posts, activity data',
+                      'Claude Sonnet scores ICP fit (1-10) using prompt from ClickUp. Industries scored: construction, manufacturing, trades, professional services, real estate, healthcare ops',
+                      'Stores: name, title, company, seniority, employee count, revenue, industry, location, email',
                     ],
                   },
                   {
-                    name: 'Natural Warm-up',
-                    schedule: 'Every 4h (30% skip chance, 0-20min random delay)',
+                    name: '2. Natural Warm-up (WF2)',
+                    schedule: 'Every 4h — 30% random skip',
                     bullets: [
-                      'Picks 2-4 random prospects where next_touch_after has passed',
-                      '10% profile view, 15% skip, 25% AI comment (posts < 3 days), 50% like/react',
-                      'Comments generated by Opus 4.6, checks existing comments to avoid duplicates',
-                      'Sets next touch to random 2-5 days — no daily engagement per person',
-                      'Graduation to "engaged": 3+ touches, 10+ days, 1+ comment or 2+ likes',
+                      'Picks 2-4 enriched/warming prospects with ICP ≥ 6',
+                      'Random action: 50% like post, 25% AI comment, 15% skip, 10% profile view',
+                      'AI comments written by Claude, checked for duplicates. Sounds natural, not salesy',
+                      'Sets next touch 2-5 days out — max 1 touch every few days per person',
+                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, at least 1 comment or 2+ likes',
+                      'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
                     ],
                   },
                   {
-                    name: 'Connection Requests',
-                    schedule: 'Every 6h (40% skip chance)',
+                    name: '3. Connection Requests (WF3)',
+                    schedule: 'Every 6h — 40% random skip',
                     bullets: [
-                      'Picks 1-3 "engaged" prospects by highest ICP score',
-                      'Opus 4.6 writes personalized 300-char note referencing engagement history',
-                      '20% sent without a note (more natural)',
-                      '60-180s delay between requests, 15/day rate limit',
+                      'Picks 1-3 "engaged" prospects, sorted by highest ICP score',
+                      'No minimum ICP threshold — it simply takes the best available',
+                      'Claude writes a 300-char personalized connection note. 20% sent with no note (more natural)',
+                      'Rate limit: 15 connections/day (enforced server-side)',
+                      'Random delay 60-960 seconds before first request',
                     ],
                   },
                   {
-                    name: 'DM Sequence',
+                    name: '4. DM Sequence (WF4)',
                     schedule: 'Every 30 min',
                     bullets: [
-                      'Detects accepted connections by polling UniPile chats',
-                      'Step 1 (2h after connect): value-first intro, no pitch',
-                      'Step 2 (3 days later): share relevant resource or insight',
-                      'Step 3 (4 days later): soft ask for a chat',
-                      'All DMs written by Opus 4.6, with context from previous messages',
-                      'Auto-archives after step 3 with no reply',
+                      'Checks for accepted connections by polling UniPile',
+                      'Step 1 (2h after connect): value-first intro referencing their work — no pitch',
+                      'Step 2 (3 days later): share a relevant resource, case study, or insight',
+                      'Step 3 (4 days later): soft ask for a quick chat about their operations',
+                      'All DMs written by Claude with full context (previous messages, their industry, topics)',
+                      'After 3 DMs with no reply → auto-archived',
                     ],
                   },
                   {
-                    name: 'Conversation Monitor',
-                    schedule: 'Every 15 min (no feature flag — always on when active)',
+                    name: '5. Conversation Monitor (WF5)',
+                    schedule: 'Every 15 min — always on (no feature flag)',
                     bullets: [
-                      'Polls UniPile chats for new inbound messages from prospects',
-                      'On reply: sets needs_manual_reply, advances to "replied" stage',
-                      'Sends WhatsApp + Slack notification so you can take over',
+                      'Polls UniPile for new inbound messages from known prospects',
+                      'When reply detected: marks "needs_manual_reply", moves to "replied" stage',
+                      'Sends WhatsApp + Slack notification so you can respond personally',
+                      'From this point, YOU take over the conversation — no more automation',
                     ],
                   },
                 ].map((wf) => (
@@ -717,39 +748,71 @@ const OutreachPanel: React.FC = () => {
               </div>
             </PanelCard>
 
-            {/* Controls Guide */}
-            <PanelCard title="Controls Guide" accent="amber">
+            {/* Data Sources */}
+            <PanelCard title="Where Data Comes From" accent="blue">
               <div className="space-y-3">
-                <p className="text-xs text-zinc-400">Each workflow has two independent controls. Both must be on for automation to run.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-zinc-800/40 rounded-lg p-3">
+                    <p className="text-xs text-blue-400 font-medium mb-1.5">Apollo (Lead Source)</p>
+                    <ul className="space-y-0.5 text-[11px] text-zinc-400">
+                      <li>Name, title, headline</li>
+                      <li>Company, industry, employee count, revenue</li>
+                      <li>Location (city, state, country)</li>
+                      <li>LinkedIn URL, seniority level</li>
+                      <li>Email (when verified), company domain</li>
+                    </ul>
+                  </div>
+                  <div className="bg-zinc-800/40 rounded-lg p-3">
+                    <p className="text-xs text-purple-400 font-medium mb-1.5">UniPile (LinkedIn Bridge)</p>
+                    <ul className="space-y-0.5 text-[11px] text-zinc-400">
+                      <li>LinkedIn provider_id (required for actions)</li>
+                      <li>Recent post content (for AI personalization)</li>
+                      <li>Activity scoring (post frequency)</li>
+                      <li>Sends connections, DMs, likes, comments</li>
+                      <li>Detects replies and accepted connections</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="bg-zinc-800/40 rounded-lg p-2.5">
+                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Note:</strong> UniPile can only see posts from people you&apos;re connected to or who post publicly. Most enriched prospects will show activity_score 3 and no post data until you connect with them.</p>
+                </div>
+              </div>
+            </PanelCard>
+
+            {/* Controls Guide */}
+            <PanelCard title="Controls & Safety" accent="amber">
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-400">Each workflow has two independent controls. Both must be ON for automation to run.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-zinc-800/60 rounded-lg p-3">
-                    <p className="text-xs text-emerald-400 font-medium mb-1">n8n Toggle (Workflow)</p>
-                    <p className="text-xs text-zinc-400">Controls whether the cron trigger fires. When OFF, the workflow never runs at all.</p>
+                    <p className="text-xs text-emerald-400 font-medium mb-1">n8n Toggle</p>
+                    <p className="text-xs text-zinc-400">Controls whether the cron fires at all. OFF = completely stopped.</p>
                   </div>
                   <div className="bg-zinc-800/60 rounded-lg p-3">
                     <p className="text-xs text-amber-400 font-medium mb-1">Feature Flag</p>
-                    <p className="text-xs text-zinc-400">Controls whether the code logic executes. When OFF, the cron fires but exits immediately. Use this for quick pause/resume.</p>
+                    <p className="text-xs text-zinc-400">Controls whether code logic executes. OFF = cron fires but exits immediately. Quick pause/resume.</p>
                   </div>
                 </div>
                 <div className="space-y-2 mt-2">
-                  <p className="text-xs text-zinc-300 font-medium">Status Indicators</p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-xs text-zinc-400"><strong className="text-emerald-400">Running</strong> — workflow active + flag on (fully operational)</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                      <span className="text-xs text-zinc-400"><strong className="text-amber-400">Paused</strong> — workflow active but flag off (cron fires, logic skips)</span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-zinc-600" />
-                      <span className="text-xs text-zinc-400"><strong className="text-zinc-400">Off</strong> — workflow inactive (nothing runs)</span>
-                    </div>
-                  </div>
+                  <p className="text-xs text-zinc-300 font-medium">Anti-Detection Features</p>
+                  <ul className="space-y-1 ml-3">
+                    {[
+                      'Random delays before each action (1-16 minutes)',
+                      '30-40% chance of skipping entire execution (looks human)',
+                      'Varied action types (not just likes — views, comments, skips)',
+                      '2-5 day gap between touches on same person',
+                      'Random connection note omission (20%)',
+                      'Server-side daily rate limits enforced per action type',
+                    ].map((b, i) => (
+                      <li key={i} className="text-xs text-zinc-400 flex items-start gap-2">
+                        <span className="text-zinc-600 mt-1.5 shrink-0">&#8226;</span>
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <div className="space-y-2 mt-2">
-                  <p className="text-xs text-zinc-300 font-medium">Rate Limits</p>
+                  <p className="text-xs text-zinc-300 font-medium">Daily Rate Limits</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
                       { action: 'Profile Views', limit: '50/day' },
@@ -764,7 +827,7 @@ const OutreachPanel: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). Shared with organic LinkedIn activity.</p>
+                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). Counts are shared with your organic LinkedIn activity.</p>
                 </div>
               </div>
             </PanelCard>
