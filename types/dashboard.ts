@@ -457,6 +457,122 @@ export interface OutreachPipelineStats {
   needsAttention: number;
 }
 
+// ─── Recording Types ───
+
+export interface Recording {
+  id: string;
+  title: string;
+  description: string | null;
+  originalPath: string;
+  processedPath: string | null;
+  thumbnailPath: string | null;
+  audioPath: string | null;
+  durationSeconds: number | null;
+  fileSizeBytes: number | null;
+  resolution: string | null;
+  hasWebcam: boolean;
+  hasAudio: boolean;
+  status: string;
+  processingError: string | null;
+  shareToken: string | null;
+  shareExpiresAt: string | null;
+  isPublic: boolean;
+  viewCount: number;
+  expiresAt: string | null;
+  keepTranscript: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecordingSegment {
+  id: string;
+  recordingId: string;
+  segmentType: string;
+  startTime: number;
+  endTime: number;
+  confidence: number | null;
+  label: string | null;
+  isIncluded: boolean;
+}
+
+export interface RecordingTranscript {
+  id: string;
+  recordingId: string;
+  fullText: string | null;
+  language: string;
+  words: TranscriptWord[];
+}
+
+export interface TranscriptWord {
+  id: string;
+  word: string;
+  startTime: number;
+  endTime: number;
+  confidence: number | null;
+  wordIndex: number;
+}
+
+export interface RecordingComment {
+  id: string;
+  recordingId: string;
+  authorName: string;
+  commentText: string;
+  timestampSeconds: number | null;
+  parentId: string | null;
+  createdAt: string;
+}
+
+export interface RecordingStats {
+  total: number;
+  uploading: number;
+  processing: number;
+  ready: number;
+  shared: number;
+  totalViews: number;
+  totalComments: number;
+  expiringSoon: number;
+  totalSizeBytes: number;
+}
+
+// ─── Auto Research Types ───
+
+export interface AutoResearchSession {
+  id: string;
+  name: string;
+  description: string | null;
+  targetType: 'prompt' | 'workflow_config' | 'parameter';
+  targetRef: string;
+  workflowId: string | null;
+  promptPageId: string | null;
+  metricName: string;
+  metricUnit: string;
+  metricDirection: 'lower_is_better' | 'higher_is_better';
+  baselineValue: number | null;
+  currentBestValue: number | null;
+  improvementPct: number | null;
+  totalRuns: number;
+  keptRuns: number;
+  status: 'idle' | 'running' | 'paused' | 'completed' | 'failed';
+  category: 'content' | 'outreach' | 'operations';
+  config: Record<string, any>;
+  lastRunAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutoResearchIteration {
+  id: string;
+  sessionId: string;
+  runNumber: number;
+  changeDescription: string;
+  metricBefore: number | null;
+  metricAfter: number | null;
+  improvementPct: number | null;
+  kept: boolean;
+  details: Record<string, any>;
+  createdAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

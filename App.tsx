@@ -8,10 +8,27 @@ import ProductDetail from './components/ProductDetail';
 import ScrollToTop from './components/ScrollToTop';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const VideoViewer = lazy(() => import('./components/VideoViewer'));
 
 function App() {
   const location = useLocation();
   const isDashboard = location.pathname.startsWith('/dashboard');
+  const isViewer = location.pathname.startsWith('/v/');
+
+  // Public video viewer — full-screen, no nav/footer
+  if (isViewer) {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+        </div>
+      }>
+        <Routes>
+          <Route path="/v/:token" element={<VideoViewer />} />
+        </Routes>
+      </Suspense>
+    );
+  }
 
   if (isDashboard) {
     return (

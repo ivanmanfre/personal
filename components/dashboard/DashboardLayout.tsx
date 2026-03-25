@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target } from 'lucide-react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target, Video, FlaskConical } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
 import StatusDot from './shared/StatusDot';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -26,6 +26,7 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
       { id: 'performance', label: 'Performance', icon: <BarChart3 className="w-[18px] h-[18px]" /> },
       { id: 'content', label: 'Content', icon: <Calendar className="w-[18px] h-[18px]" /> },
       { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
+      { id: 'recordings', label: 'Recordings', icon: <Video className="w-[18px] h-[18px]" /> },
     ],
   },
   {
@@ -35,6 +36,7 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
       { id: 'leads', label: 'Leads', icon: <Users className="w-[18px] h-[18px]" /> },
       { id: 'outreach', label: 'Outreach', icon: <Target className="w-[18px] h-[18px]" /> },
       { id: 'agent', label: 'Agent', icon: <Bot className="w-[18px] h-[18px]" /> },
+      { id: 'auto-research', label: 'Auto Research', icon: <FlaskConical className="w-[18px] h-[18px]" /> },
     ],
   },
   {
