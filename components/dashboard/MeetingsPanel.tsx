@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail } from 'lucide-react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { toastSuccess, toastError } from '../../lib/dashboardActions';
@@ -103,6 +103,16 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
 
   const title = meeting.title.replace(/\s*\/\s*$/, ''); // remove trailing /
 
+  // Extract screen context from full_text if present
+  const screenContextSeparator = '--- SCREEN CONTEXT';
+  const hasScreenContext = meeting.transcriptText?.includes(screenContextSeparator);
+  const screenContext = hasScreenContext
+    ? meeting.transcriptText.split(screenContextSeparator)[1]?.replace(/^[^-]*---\n?/, '').trim()
+    : null;
+  const transcriptOnly = hasScreenContext
+    ? meeting.transcriptText.split(screenContextSeparator)[0].trim()
+    : meeting.transcriptText;
+
   const handleCreateProposal = async () => {
     setCreatingProposal(true);
     try {
@@ -183,6 +193,11 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
               {topicCount} topic{topicCount > 1 ? 's' : ''}
             </span>
           )}
+          {hasScreenContext && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center gap-1">
+              <Monitor className="w-3 h-3" /> Screen
+            </span>
+          )}
           {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
         </div>
       </div>
@@ -245,15 +260,27 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
             </div>
           )}
 
+          {/* Screen Context */}
+          {screenContext && (
+            <div className="px-4 py-3 border-t border-zinc-800/40">
+              <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Monitor className="w-3.5 h-3.5" /> Screen Context
+              </h4>
+              <div className="bg-cyan-950/20 rounded-lg p-3 border border-cyan-800/20">
+                <p className="text-xs text-cyan-300/80 whitespace-pre-wrap leading-relaxed">{screenContext}</p>
+              </div>
+            </div>
+          )}
+
           {/* Transcript */}
-          {meeting.transcriptText && (
+          {transcriptOnly && (
             <details className="border-t border-zinc-800/40">
               <summary className="px-4 py-3 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-zinc-300 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" /> Full Transcript
               </summary>
               <div className="px-4 pb-3">
                 <pre className="text-xs text-zinc-500 whitespace-pre-wrap max-h-72 overflow-y-auto bg-zinc-950/80 rounded-lg p-3 border border-zinc-800/60 leading-relaxed">
-                  {meeting.transcriptText}
+                  {transcriptOnly}
                 </pre>
               </div>
             </details>
