@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, ExternalLink } from 'lucide-react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, ExternalLink, Send, Loader2 } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { toastSuccess, toastError } from '../../lib/dashboardActions';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -22,6 +23,34 @@ function timeAgo(dateStr: string): string {
 
 const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
   const [expanded, setExpanded] = useState(false);
+  const [creatingProposal, setCreatingProposal] = useState(false);
+
+  const handleCreateProposal = async () => {
+    setCreatingProposal(true);
+    try {
+      const res = await fetch('https://n8n.intelligents.agency/webhook/proposal-upwork', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: meeting.title,
+          participants: meeting.participants,
+          summary: meeting.summary || '',
+          transcript: meeting.transcriptText || '',
+          action_items: meeting.actionItems.map((a) =>
+            typeof a === 'string' ? a : (a as any).description || (a as any).task || JSON.stringify(a)
+          ),
+          date: meeting.date,
+          source: 'meetings_panel',
+        }),
+      });
+      if (!res.ok) throw new Error(`Webhook returned ${res.status}`);
+      toastSuccess('Proposal creation started');
+    } catch (err) {
+      toastError('create proposal', err);
+    } finally {
+      setCreatingProposal(false);
+    }
+  };
 
   return (
     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-4 hover:border-zinc-700/60 transition-colors">
@@ -128,6 +157,23 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
               className="text-[10px] px-2 py-1 rounded bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
             >
               Copy Summary
+            </button>
+            <button
+              onClick={handleCreateProposal}
+              disabled={creatingProposal}
+              className="text-[10px] px-2 py-1 rounded bg-emerald-900/60 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-800/60 border border-emerald-700/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {creatingProposal ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Send className="w-3 h-3" />
+                  Create Proposal
+                </>
+              )}
             </button>
           </div>
         </div>
