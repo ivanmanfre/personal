@@ -247,9 +247,11 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
   // Custom dot renderer: orange filled for kept, no dot for reverted
   const renderDot = (props: any) => {
     const { cx, cy, payload } = props;
-    if (!payload?.kept) return null;
+    if (cx == null || cy == null || !payload?.kept) return null;
     return <circle cx={cx} cy={cy} r={5} fill="#f97316" stroke="#18181b" strokeWidth={2} />;
   };
+
+  const hasChartData = chartData.length > 0 && chartData.some((d) => d.value != null);
 
   return (
     <div className="space-y-6">
@@ -322,7 +324,7 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
       {/* Chart */}
       <AnimateIn delay={100}>
         <PanelCard title={`${session.metricName} over runs`} icon={<FlaskConical className="w-4 h-4" />} accent="emerald">
-          {iterations.length === 0 ? (
+          {iterations.length === 0 || !hasChartData ? (
             <div className="h-72 flex items-center justify-center text-zinc-600 text-sm">
               {loadingIterations ? 'Loading iterations...' : 'No iterations yet'}
             </div>
@@ -355,8 +357,11 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
                     labelStyle={{ color: '#a1a1aa', fontSize: 12 }}
                     itemStyle={{ color: '#e4e4e7', fontSize: 12 }}
                     formatter={(value: any, _name: string, props: any) => {
-                      const entry = props.payload;
-                      return [`${value}${session.metricUnit ? ' ' + session.metricUnit : ''}`, entry?.kept ? 'Kept' : 'Reverted'];
+                      const entry = props?.payload;
+                      const formatted = value != null && !isNaN(value)
+                        ? `${value}${session.metricUnit ? ' ' + session.metricUnit : ''}`
+                        : '—';
+                      return [formatted, entry?.kept ? 'Kept' : 'Reverted'];
                     }}
                     labelFormatter={(label) => `Run #${label}`}
                   />

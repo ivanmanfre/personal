@@ -51,6 +51,7 @@ export function useAutoResearch() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [loadingIterations, setLoadingIterations] = useState(false);
   const hasFetched = useRef(false);
+  const iterationRequestId = useRef(0);
 
   const fetchSessions = useCallback(async () => {
     if (!hasFetched.current) setLoading(true);
@@ -69,6 +70,7 @@ export function useAutoResearch() {
   }, []);
 
   const fetchIterations = useCallback(async (sessionId: string) => {
+    const requestId = ++iterationRequestId.current;
     setLoadingIterations(true);
     try {
       const { data } = await supabase
@@ -76,11 +78,16 @@ export function useAutoResearch() {
         .select('*')
         .eq('session_id', sessionId)
         .order('run_number', { ascending: true });
-      setIterations((prev) => ({ ...prev, [sessionId]: (data || []).map(mapIteration) }));
+      // Only apply if this is still the latest request (prevents race condition)
+      if (requestId === iterationRequestId.current) {
+        setIterations((prev) => ({ ...prev, [sessionId]: (data || []).map(mapIteration) }));
+      }
     } catch (err) {
       toastError('load iterations', err);
     } finally {
-      setLoadingIterations(false);
+      if (requestId === iterationRequestId.current) {
+        setLoadingIterations(false);
+      }
     }
   }, []);
 
