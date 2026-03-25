@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { Video, Upload, Eye, Share2, Clock, HardDrive, Trash2, Link, Loader2, AlertCircle, Play, Scissors } from 'lucide-react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { Video, Upload, Eye, Share2, Clock, HardDrive, Trash2, Link, Loader2, AlertCircle, Play, Scissors, Circle, Square, Mic, MicOff, Monitor } from 'lucide-react';
 import { useRecordings } from '../../hooks/useRecordings';
 import RecordingEditor from './RecordingEditor';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -53,6 +53,110 @@ const RecordingsPanel: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ─── Screen Recording State ───
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [withMic, setWithMic] = useState(true);
+  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (previewRef.current && previewStream) {
+      previewRef.current.srcObject = previewStream;
+    }
+  }, [previewStream]);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    previewStream?.getTracks().forEach((t) => t.stop());
+  }, []);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 30 },
+        audio: true,
+      });
+
+      let combinedStream = screenStream;
+
+      if (withMic) {
+        try {
+          const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const ctx = new AudioContext();
+          const dest = ctx.createMediaStreamDestination();
+          // Mix system audio (if available) + mic
+          const systemAudio = screenStream.getAudioTracks();
+          if (systemAudio.length > 0) {
+            ctx.createMediaStreamSource(new MediaStream(systemAudio)).connect(dest);
+          }
+          ctx.createMediaStreamSource(micStream).connect(dest);
+          combinedStream = new MediaStream([
+            ...screenStream.getVideoTracks(),
+            ...dest.stream.getAudioTracks(),
+          ]);
+        } catch {
+          // Mic denied — continue with screen only
+        }
+      }
+
+      setPreviewStream(combinedStream);
+      chunksRef.current = [];
+
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : 'video/webm';
+
+      const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 3_000_000 });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+        combinedStream.getTracks().forEach((t) => t.stop());
+        setPreviewStream(null);
+        setIsRecording(false);
+
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        if (blob.size < 1000) return; // too small, user cancelled immediately
+
+        const now = new Date();
+        const title = `Recording ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
+        const file = new File([blob], `recording.${ext}`, { type: mimeType });
+
+        setUploading(true);
+        await uploadRecording(file, title);
+        setUploading(false);
+        setRecordingTime(0);
+      };
+
+      // Stop recording when user stops screen share
+      screenStream.getVideoTracks()[0].onended = () => {
+        if (recorder.state === 'recording') recorder.stop();
+      };
+
+      recorder.start(1000);
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+    } catch {
+      // User cancelled the screen picker
+    }
+  }, [withMic, uploadRecording]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+  }, []);
+
   const filtered = useMemo(() => {
     let list = recordings;
     if (statusFilter !== 'all') list = list.filter((r) => r.status === statusFilter);
@@ -103,9 +207,34 @@ const RecordingsPanel: React.FC = () => {
         <div className="flex items-center gap-3">
           <RefreshIndicator lastRefreshed={lastRefreshed} />
           <button
+            onClick={() => setWithMic((m) => !m)}
+            className={`p-1.5 rounded-lg transition-colors ${withMic ? 'bg-emerald-600/20 text-emerald-400' : 'bg-zinc-800 text-zinc-500'}`}
+            title={withMic ? 'Mic on' : 'Mic off'}
+          >
+            {withMic ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+          </button>
+          {isRecording ? (
+            <button
+              onClick={stopRecording}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-medium text-white transition-colors animate-pulse"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+              Stop {formatDuration(recordingTime)}
+            </button>
+          ) : (
+            <button
+              onClick={startRecording}
+              disabled={uploading}
+              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg text-xs font-medium text-white transition-colors"
+            >
+              <Circle className="w-3.5 h-3.5 fill-current" />
+              Record
+            </button>
+          )}
+          <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-xs font-medium text-white transition-colors"
+            disabled={uploading || isRecording}
+            className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-lg text-xs font-medium text-zinc-300 transition-colors"
           >
             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
             {uploading ? 'Uploading...' : 'Upload'}
@@ -113,6 +242,26 @@ const RecordingsPanel: React.FC = () => {
           <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleUpload} />
         </div>
       </div>
+
+      {/* Recording Preview */}
+      {previewStream && (
+        <div className="relative bg-black rounded-xl overflow-hidden border border-red-500/30">
+          <video ref={previewRef} autoPlay muted playsInline className="w-full max-h-64 object-contain" />
+          <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 bg-red-600/90 backdrop-blur-sm rounded-full">
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-xs font-mono text-white">{formatDuration(recordingTime)}</span>
+          </div>
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            <button
+              onClick={stopRecording}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 rounded-lg text-xs font-medium text-white transition-colors"
+            >
+              <Square className="w-3 h-3 fill-current" />
+              Stop Recording
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stat Cards */}
       <AnimateIn>
