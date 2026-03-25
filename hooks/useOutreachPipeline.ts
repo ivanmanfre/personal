@@ -448,11 +448,16 @@ export function useOutreachPipeline() {
     const newActive = !current;
     setWorkflowStatuses((prev) => ({ ...prev, [workflowId]: newActive }));
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       const res = await window.fetch(
         'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/n8n-workflow-control',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ workflow_id: workflowId, action: newActive ? 'activate' : 'deactivate' }),
         }
       );

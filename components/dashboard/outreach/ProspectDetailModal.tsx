@@ -13,6 +13,7 @@ interface Props {
   onUpdateIcpScore: (id: string, score: number) => void;
   onArchive: (id: string, reason?: string) => void;
   onToggleBlacklist: (id: string) => void;
+  onToggleNeedsReply: (id: string) => void;
   onSendDm: (id: string, text: string) => void;
   onFetchMessages: (id: string) => void;
   onFetchEngagements: (id: string) => void;
@@ -51,7 +52,7 @@ const actionTypeLabels: Record<string, string> = {
 export const ProspectDetailModal: React.FC<Props> = ({
   prospect, messages, engagements, onClose,
   onUpdateStage, onUpdateNotes, onUpdateIcpScore,
-  onArchive, onToggleBlacklist, onSendDm,
+  onArchive, onToggleBlacklist, onToggleNeedsReply, onSendDm,
   onFetchMessages, onFetchEngagements,
 }) => {
   const [notes, setNotes] = useState(prospect.notes || '');
@@ -102,12 +103,33 @@ export const ProspectDetailModal: React.FC<Props> = ({
         </div>
 
         <div className="px-6 py-4 space-y-5">
+          {/* Needs Reply Banner */}
+          {prospect.needsManualReply && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5 flex items-center justify-between">
+              <span className="text-xs font-medium text-emerald-400 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Needs manual reply
+              </span>
+              <button
+                onClick={() => onToggleNeedsReply(prospect.id)}
+                className="text-[10px] text-zinc-400 hover:text-zinc-300 px-2 py-0.5 rounded bg-zinc-800/60"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {/* Profile Info */}
           <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-4 flex-wrap">
               {prospect.company && <span className="text-sm text-zinc-300">{prospect.company}</span>}
-              {prospect.location && <span className="text-xs text-zinc-500">{prospect.location}</span>}
-              {prospect.industry && <span className="text-xs text-zinc-500">{prospect.industry}</span>}
+              {(prospect.title || prospect.headline) && <span className="text-xs text-zinc-400">{prospect.title || prospect.headline}</span>}
+              {prospect.seniority && <span className="text-xs text-zinc-500 capitalize">{prospect.seniority}</span>}
+            </div>
+            <div className="flex items-center gap-3 flex-wrap text-xs text-zinc-500">
+              {prospect.location && <span>{prospect.location}</span>}
+              {prospect.industry && <span>{prospect.industry}</span>}
+              {prospect.employeeCount && <span>{prospect.employeeCount} emp</span>}
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <span className={`text-sm font-medium ${icpColor(prospect.icpScore)}`}>
@@ -124,11 +146,18 @@ export const ProspectDetailModal: React.FC<Props> = ({
                 {allStages.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
             </div>
-            {prospect.campaignName && (
-              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/20">
-                {prospect.campaignName}
-              </span>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {prospect.campaignName && (
+                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                  {prospect.campaignName}
+                </span>
+              )}
+              {prospect.email && (
+                <a href={`mailto:${prospect.email}`} className="inline-flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-300">
+                  {prospect.email}
+                </a>
+              )}
+            </div>
             <a
               href={prospect.linkedinUrl}
               target="_blank"
@@ -138,6 +167,33 @@ export const ProspectDetailModal: React.FC<Props> = ({
               Open LinkedIn <ExternalLink className="w-3 h-3" />
             </a>
           </div>
+
+          {/* Outreach Timeline */}
+          {(prospect.profileViewedAt || prospect.connectionSentAt || prospect.connectedAt || prospect.lastDmSentAt || prospect.lastReplyAt) && (
+            <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-4">
+              <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-3">Outreach Timeline</span>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Profile viewed', date: prospect.profileViewedAt },
+                  { label: 'Last engaged', date: prospect.lastEngagedAt },
+                  { label: 'Connection sent', date: prospect.connectionSentAt },
+                  { label: 'Connected', date: prospect.connectedAt },
+                  { label: `DMs sent (${prospect.dmCount})`, date: prospect.lastDmSentAt },
+                  { label: `Replies (${prospect.replyCount})`, date: prospect.lastReplyAt },
+                ].filter(e => e.date).map((e, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-400">{e.label}</span>
+                    <span className="text-zinc-500">{timeAgo(e.date!)}</span>
+                  </div>
+                ))}
+              </div>
+              {prospect.connectionNote && (
+                <div className="mt-2 pt-2 border-t border-zinc-700/30">
+                  <p className="text-[10px] text-zinc-500">Connection note: <span className="text-zinc-400">"{prospect.connectionNote}"</span></p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Scores */}
           <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-4 space-y-2">

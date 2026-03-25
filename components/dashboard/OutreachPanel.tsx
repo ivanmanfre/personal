@@ -336,12 +336,20 @@ const OutreachPanel: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                {p.campaignName && (
-                  <span className="inline-block mt-1.5 px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400">{p.campaignName}</span>
-                )}
-                {p.needsManualReply && (
-                  <span className="inline-block mt-1.5 ml-1 px-1.5 py-0.5 rounded-full text-[9px] bg-emerald-500/15 text-emerald-400 animate-pulse">Needs reply</span>
-                )}
+                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  {p.campaignName && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400">{p.campaignName}</span>
+                  )}
+                  {p.needsManualReply && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-emerald-500/15 text-emerald-400 animate-pulse">Needs reply</span>
+                  )}
+                  {/* Progress indicators */}
+                  {['warming', 'engaged', 'connection_sent', 'connected', 'dm_sent', 'replied'].includes(p.stage) && (
+                    <span className="text-[9px] text-zinc-500">
+                      {p.profileViewedAt ? '✓ Viewed' : '○ No view'} · {p.postsLiked || 0} likes
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -362,15 +370,16 @@ const OutreachPanel: React.FC = () => {
                       className="rounded border-zinc-600"
                     />
                   </th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Name & Title</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Company</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Prospect</th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('icp_score')}>
                     ICP {sortKey === 'icp_score' && (sortAsc ? '↑' : '↓')}
                   </th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Stage</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Last Action</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Next Action</th>
-                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Campaign</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Progress</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em]">Next Step</th>
+                  <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] cursor-pointer hover:text-zinc-300" onClick={() => handleSort('created_at')}>
+                    Age {sortKey === 'created_at' && (sortAsc ? '↑' : '↓')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/40">
@@ -388,28 +397,35 @@ const OutreachPanel: React.FC = () => {
                         className="rounded border-zinc-600"
                       />
                     </td>
+                    {/* Prospect: name + company + campaign + linkedin */}
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         {p.needsManualReply && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
-                        <div>
-                          <p className="font-medium text-zinc-200">{p.name}</p>
-                          <p className="text-[11px] text-zinc-500 truncate max-w-[180px]">{p.title || p.headline || ''}</p>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-zinc-200 truncate">{p.name}</p>
+                            {p.linkedinUrl && (
+                              <a href={p.linkedinUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400/60 hover:text-blue-400 shrink-0" title="LinkedIn">
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                              </a>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">
+                            {[p.title || p.headline, p.company].filter(Boolean).join(' @ ') || ''}
+                          </p>
+                          {p.campaignName && (
+                            <span className="inline-block mt-0.5 px-1.5 py-0 rounded-full text-[8px] bg-purple-500/10 text-purple-400/70">{p.campaignName}</span>
+                          )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5">
-                      <div>
-                        <p className="text-zinc-300 text-xs truncate max-w-[160px]">{p.company || '—'}</p>
-                        <p className="text-[10px] text-zinc-600">
-                          {[p.employeeCount, p.foundedYear ? `est. ${p.foundedYear}` : null].filter(Boolean).join(' · ') || ''}
-                        </p>
-                      </div>
-                    </td>
+                    {/* ICP */}
                     <td className="px-3 py-2.5 text-center">
                       <span className={`font-medium ${icpColor(p.icpScore)}`}>
                         {p.icpScore ?? '—'}
                       </span>
                     </td>
+                    {/* Stage */}
                     <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <select
                         value={p.stage}
@@ -419,55 +435,98 @@ const OutreachPanel: React.FC = () => {
                         {allStages.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                       </select>
                     </td>
-                    <td className="px-3 py-2.5 text-center">
+                    {/* Progress: visual indicators of completed milestones */}
+                    <td className="px-3 py-2.5">
                       {(() => {
-                        const actions: { label: string; date: string }[] = [];
-                        if (p.profileViewedAt) actions.push({ label: 'Profile view', date: p.profileViewedAt });
-                        if (p.lastEngagedAt) actions.push({ label: `${p.postsLiked} like${p.postsLiked !== 1 ? 's' : ''}`, date: p.lastEngagedAt });
-                        if (p.connectionSentAt) actions.push({ label: 'Connection sent', date: p.connectionSentAt });
-                        if (p.connectedAt) actions.push({ label: 'Connected', date: p.connectedAt });
-                        if (p.lastDmSentAt) actions.push({ label: `DM${p.dmCount > 1 ? ` (${p.dmCount})` : ''}`, date: p.lastDmSentAt });
-                        if (p.lastReplyAt) actions.push({ label: 'Replied', date: p.lastReplyAt });
-                        const last = actions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                        if (!last) return <span className="text-zinc-600 text-[10px]">—</span>;
+                        const viewed = !!p.profileViewedAt;
+                        const likes = p.postsLiked || 0;
+                        const connSent = !!p.connectionSentAt;
+                        const conn = !!p.connectedAt;
+                        const dmSent = p.dmCount || 0;
+                        const replied = !!p.lastReplyAt;
+
+                        // Build milestone dots based on stage progression
+                        const milestones: { label: string; done: boolean; detail?: string }[] = [
+                          { label: 'View', done: viewed, detail: viewed ? timeAgo(p.profileViewedAt!) : undefined },
+                          { label: 'Likes', done: likes >= 2, detail: likes > 0 ? `${likes}` : undefined },
+                        ];
+                        if (['engaged', 'connection_sent', 'connected', 'dm_sent', 'replied', 'converted'].includes(p.stage)) {
+                          milestones.push({ label: 'Req', done: connSent, detail: connSent ? timeAgo(p.connectionSentAt!) : undefined });
+                        }
+                        if (['connected', 'dm_sent', 'replied', 'converted'].includes(p.stage)) {
+                          milestones.push({ label: 'Conn', done: conn, detail: conn ? timeAgo(p.connectedAt!) : undefined });
+                        }
+                        if (['dm_sent', 'replied', 'converted'].includes(p.stage)) {
+                          milestones.push({ label: 'DM', done: dmSent > 0, detail: dmSent > 0 ? `${dmSent}` : undefined });
+                        }
+                        if (['replied', 'converted'].includes(p.stage)) {
+                          milestones.push({ label: 'Reply', done: replied });
+                        }
+
+                        if (p.stage === 'identified' || p.stage === 'enriched') {
+                          return <span className="text-zinc-600 text-[10px]">—</span>;
+                        }
+
                         return (
-                          <div className="text-center">
-                            <p className="text-[10px] text-zinc-300">{last.label}</p>
-                            <p className="text-[9px] text-zinc-600">{timeAgo(last.date)}</p>
+                          <div className="flex items-center gap-1.5">
+                            {milestones.map((m, i) => (
+                              <div key={i} className="flex flex-col items-center" title={`${m.label}${m.detail ? `: ${m.detail}` : ''}`}>
+                                <div className={`w-2 h-2 rounded-full ${m.done ? 'bg-emerald-400' : 'bg-zinc-700'}`} />
+                                <span className={`text-[8px] mt-0.5 ${m.done ? 'text-zinc-400' : 'text-zinc-600'}`}>{m.label}</span>
+                                {m.detail && <span className="text-[7px] text-zinc-500">{m.detail}</span>}
+                              </div>
+                            ))}
                           </div>
                         );
                       })()}
                     </td>
+                    {/* Next Step: specific action needed */}
                     <td className="px-3 py-2.5 text-center">
                       {(() => {
-                        const stageNext: Record<string, string> = {
-                          identified: 'Enrich',
-                          enriched: 'Warm up',
-                          warming: 'Continue warming',
-                          engaged: 'Send connection',
-                          connection_sent: 'Waiting acceptance',
-                          connected: 'Send DM',
-                          dm_sent: 'Waiting reply',
-                          replied: 'Manual follow-up',
-                          converted: 'Done',
-                          archived: 'Archived',
-                        };
-                        const label = stageNext[p.stage] || '—';
-                        const waiting = ['connection_sent', 'dm_sent'].includes(p.stage);
-                        const manual = p.stage === 'replied' || p.needsManualReply;
+                        const viewed = !!p.profileViewedAt;
+                        const likes = p.postsLiked || 0;
                         const scheduled = p.nextTouchAfter && new Date(p.nextTouchAfter) > new Date();
+                        const manual = p.stage === 'replied' || p.needsManualReply;
+
+                        let label = '';
+                        let color = 'text-zinc-400';
+
+                        switch (p.stage) {
+                          case 'identified': label = 'Enrich'; break;
+                          case 'enriched': label = 'Start warm-up'; break;
+                          case 'warming': {
+                            const touches = (viewed ? 1 : 0) + likes + (p.postsCommented || 0);
+                            const daysIn = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000);
+                            if (!viewed) { label = 'Profile view'; color = 'text-amber-400'; }
+                            else if (likes < 2) { label = `Like posts (${likes}/2)`; color = 'text-amber-400'; }
+                            else if (touches < 3) { label = `Engage more (${touches}/3)`; color = 'text-amber-400'; }
+                            else if (daysIn < 10) { label = `Wait ${10 - daysIn}d to graduate`; color = 'text-zinc-500'; }
+                            else { label = 'Ready to graduate'; color = 'text-emerald-400'; }
+                            break;
+                          }
+                          case 'engaged': label = 'Send connection'; color = 'text-cyan-400'; break;
+                          case 'connection_sent': label = 'Awaiting accept'; color = 'text-zinc-500'; break;
+                          case 'connected': label = 'Send DM'; color = 'text-pink-400'; break;
+                          case 'dm_sent': label = 'Awaiting reply'; color = 'text-zinc-500'; break;
+                          case 'replied': label = 'Manual follow-up'; color = 'text-emerald-400'; break;
+                          case 'converted': label = 'Done'; color = 'text-yellow-400'; break;
+                          case 'archived': label = 'Archived'; color = 'text-zinc-600'; break;
+                          default: label = '—';
+                        }
+
                         return (
                           <div className="text-center">
-                            <p className={`text-[10px] ${manual ? 'text-emerald-400 font-medium' : waiting ? 'text-zinc-500 italic' : 'text-zinc-400'}`}>{label}</p>
+                            <p className={`text-[10px] font-medium ${manual ? 'text-emerald-400' : color}`}>{label}</p>
                             {scheduled && <p className="text-[9px] text-zinc-600">{timeAgo(p.nextTouchAfter!)}</p>}
                           </div>
                         );
                       })()}
                     </td>
+                    {/* Age: days since added */}
                     <td className="px-3 py-2.5 text-center">
-                      {p.campaignName ? (
-                        <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/15">{p.campaignName}</span>
-                      ) : '—'}
+                      <span className="text-[10px] text-zinc-500">
+                        {Math.floor((Date.now() - new Date(p.createdAt).getTime()) / 86400000)}d
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -763,7 +822,7 @@ const OutreachPanel: React.FC = () => {
                     name: '2. Natural Warm-up (WF2)',
                     schedule: 'Every 4h — 30% random skip',
                     bullets: [
-                      'Picks 2-4 enriched/warming prospects with ICP ≥ 6',
+                      'Picks 5-8 enriched/warming prospects with ICP ≥ 6',
                       'Random action: 70% like/react, 15% profile view, 15% natural skip',
                       'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
                       'Sets next touch 2-5 days out — max 1 touch every few days per person',
@@ -787,10 +846,10 @@ const OutreachPanel: React.FC = () => {
                     schedule: 'Every 30 min',
                     bullets: [
                       'Checks for accepted connections by polling UniPile',
-                      'Sends 1 personalized DM (2h after connection accepted): value-first intro referencing their work — no pitch',
-                      'DM written by Claude with full context (their industry, topics, headline)',
-                      'If no reply after 7 days → auto-archived with reason "no_reply_after_7_days"',
-                      'No follow-up DMs — one shot only to avoid being pushy',
+                      'Sends up to 3 DMs: initial intro (2h after accept), follow-up 1 (3 days), follow-up 2 (4 days)',
+                      'DMs written by Claude with full context (their industry, topics, headline) — value-first, no pitch',
+                      'If no reply after ~11 days (all 3 DMs sent) → auto-archived with reason "no_reply"',
+                      '3-step sequence: intro → soft follow-up → final touchpoint',
                     ],
                   },
                   {
@@ -920,6 +979,7 @@ const OutreachPanel: React.FC = () => {
           onUpdateIcpScore={updateIcpScore}
           onArchive={archiveProspect}
           onToggleBlacklist={toggleBlacklist}
+          onToggleNeedsReply={toggleNeedsReply}
           onSendDm={sendManualDm}
           onFetchMessages={fetchMessages}
           onFetchEngagements={fetchEngagementLog}
