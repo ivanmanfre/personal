@@ -573,6 +573,33 @@ export interface AutoResearchIteration {
   createdAt: string;
 }
 
+// ─── Meeting/Call Transcript Types ───
+
+export interface MeetingTranscript {
+  id: string;
+  firefliesId: string | null;
+  title: string;
+  date: string;
+  durationMinutes: number;
+  participants: string[];
+  transcriptText: string;
+  summary: string | null;
+  actionItems: string[];
+  topics: string[];
+  followUpDraft: string | null;
+  followUpSent: boolean;
+  source: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MeetingStats {
+  total: number;
+  thisWeek: number;
+  withActionItems: number;
+  avgDurationMinutes: number;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
