@@ -10,6 +10,24 @@ import EmptyState from './shared/EmptyState';
 import FilterBar from './shared/FilterBar';
 import type { MeetingTranscript } from '../../types/dashboard';
 
+function parseItem(item: any): Record<string, any> {
+  if (typeof item === 'string') {
+    try { return JSON.parse(item); } catch { return { text: item }; }
+  }
+  return item || {};
+}
+
+function getActionText(item: any): string {
+  const p = parseItem(item);
+  const action = p.action || p.description || p.task || p.text || JSON.stringify(item);
+  return p.owner ? `${p.owner}: ${action}` : action;
+}
+
+function getTopicTitle(item: any): string {
+  const p = parseItem(item);
+  return p.title || p.topic || p.name || p.text || (typeof item === 'string' ? item : JSON.stringify(item));
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -95,11 +113,14 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
           <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
             {meeting.actionItems.length} action item{meeting.actionItems.length > 1 ? 's' : ''}
           </span>
-          {meeting.topics.slice(0, 3).map((t, i) => (
-            <span key={i} className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">
-              {typeof t === 'string' ? t : (t as any).topic || (t as any).name || JSON.stringify(t)}
-            </span>
-          ))}
+          {meeting.topics.slice(0, 3).map((t, i) => {
+            const title = getTopicTitle(t);
+            return (
+              <span key={i} className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded truncate max-w-[200px]">
+                {title.length > 60 ? title.slice(0, 57) + '...' : title}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -121,7 +142,7 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
                 {meeting.actionItems.map((item, i) => (
                   <li key={i} className="text-xs text-zinc-400 flex items-start gap-2">
                     <span className="text-amber-400 mt-0.5">-</span>
-                    <span>{typeof item === 'string' ? item : (item as any).description || (item as any).task || JSON.stringify(item)}</span>
+                    <span>{getActionText(item)}</span>
                   </li>
                 ))}
               </ul>
