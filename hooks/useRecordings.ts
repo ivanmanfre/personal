@@ -180,7 +180,7 @@ export function useRecordings(statusFilter?: string) {
       // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from('recordings')
-        .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+        .upload(storagePath, file, { cacheControl: '3600', upsert: false, contentType: file.type.split(';')[0] });
       if (uploadError) throw uploadError;
 
       // Insert metadata

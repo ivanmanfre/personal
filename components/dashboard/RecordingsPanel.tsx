@@ -129,7 +129,7 @@ const RecordingsPanel: React.FC = () => {
         const now = new Date();
         const title = `Recording ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
-        const file = new File([blob], `recording.${ext}`, { type: mimeType });
+        const file = new File([blob], `recording.${ext}`, { type: mimeType.split(';')[0] });
 
         setUploading(true);
         await uploadRecording(file, title);
