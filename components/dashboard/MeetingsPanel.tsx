@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, ExternalLink, Send, Loader2 } from 'lucide-react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { toastSuccess, toastError } from '../../lib/dashboardActions';
@@ -17,17 +17,6 @@ function parseItem(item: any): Record<string, any> {
   return item || {};
 }
 
-function getActionText(item: any): string {
-  const p = parseItem(item);
-  const action = p.action || p.description || p.task || p.text || JSON.stringify(item);
-  return p.owner ? `${p.owner}: ${action}` : action;
-}
-
-function getTopicTitle(item: any): string {
-  const p = parseItem(item);
-  return p.title || p.topic || p.name || p.text || (typeof item === 'string' ? item : JSON.stringify(item));
-}
-
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -39,9 +28,80 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+const ownerColors: Record<string, string> = {
+  ivan: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
+  client: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  default: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25',
+};
+
+function getOwnerStyle(owner: string): string {
+  const lower = (owner || '').toLowerCase();
+  if (lower.includes('ivan')) return ownerColors.ivan;
+  if (lower.includes('client')) return ownerColors.client;
+  return ownerColors.default;
+}
+
+const ActionItem: React.FC<{ item: any }> = ({ item }) => {
+  const p = parseItem(item);
+  const action = p.action || p.description || p.task || p.text || (typeof item === 'string' ? item : JSON.stringify(item));
+  const owner = p.owner || '';
+  const deadline = p.deadline;
+
+  return (
+    <div className="flex items-start gap-2 py-1.5 px-2 rounded-md bg-zinc-800/40 border border-zinc-800/60">
+      <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-zinc-300">{action}</p>
+        <div className="flex items-center gap-2 mt-1">
+          {owner && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${getOwnerStyle(owner)}`}>
+              {owner}
+            </span>
+          )}
+          {deadline && (
+            <span className="text-[10px] text-zinc-500">Due: {deadline}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TopicPill: React.FC<{ item: any }> = ({ item }) => {
+  const p = parseItem(item);
+  const title = p.title || p.topic || p.name || p.text || (typeof item === 'string' ? item : '');
+  const isPost = p.is_post;
+  const format = p.post_format;
+  const status = p.status;
+
+  const short = title.length > 80 ? title.slice(0, 77) + '...' : title;
+
+  const statusStyle = status === 'POST-READY'
+    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+    : status === 'LEAD-MAGNET-READY'
+      ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+      : 'bg-zinc-800 text-zinc-400 border-zinc-700/40';
+
+  return (
+    <div className={`text-[11px] px-2 py-1 rounded-md border ${statusStyle} flex items-center gap-1.5`}>
+      {isPost && <MessageSquare className="w-3 h-3 flex-shrink-0" />}
+      {!isPost && format && <FileText className="w-3 h-3 flex-shrink-0" />}
+      <span className="truncate">{short}</span>
+      {format && <span className="text-[9px] opacity-60 flex-shrink-0">{format}</span>}
+    </div>
+  );
+};
+
 const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
   const [expanded, setExpanded] = useState(false);
   const [creatingProposal, setCreatingProposal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const title = meeting.title.replace(/\s*\/\s*$/, ''); // remove trailing /
 
   const handleCreateProposal = async () => {
     setCreatingProposal(true);
@@ -54,9 +114,10 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
           participants: meeting.participants,
           summary: meeting.summary || '',
           transcript: meeting.transcriptText || '',
-          action_items: meeting.actionItems.map((a) =>
-            typeof a === 'string' ? a : (a as any).description || (a as any).task || JSON.stringify(a)
-          ),
+          action_items: meeting.actionItems.map((a) => {
+            const p = parseItem(a);
+            return p.action || p.description || p.task || p.text || JSON.stringify(a);
+          }),
           date: meeting.date,
           source: 'meetings_panel',
         }),
@@ -70,130 +131,152 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
     }
   };
 
+  const handleCopy = () => {
+    const actions = meeting.actionItems.map((a) => {
+      const p = parseItem(a);
+      const text = p.action || p.description || p.task || p.text || JSON.stringify(a);
+      return p.owner ? `- ${p.owner}: ${text}` : `- ${text}`;
+    }).join('\n');
+    const text = `Meeting: ${title}\nDate: ${formatDate(meeting.date)}\nParticipants: ${meeting.participants.join(', ')}\n\nSummary:\n${meeting.summary || 'N/A'}\n\nAction Items:\n${actions || 'None'}`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const actionCount = meeting.actionItems.length;
+  const topicCount = meeting.topics.length;
+
   return (
-    <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-4 hover:border-zinc-700/60 transition-colors">
-      <div className="flex items-start justify-between">
+    <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl overflow-hidden hover:border-zinc-700/60 transition-colors">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-3 cursor-pointer"
+        onClick={() => setExpanded(!expanded)}
+      >
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-zinc-100 truncate">{meeting.title}</h3>
-          <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
-            <span>{timeAgo(meeting.date)}</span>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-zinc-100 truncate">{title}</h3>
             {meeting.durationMinutes > 0 && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400 flex-shrink-0">
                 {meeting.durationMinutes}m
               </span>
             )}
-            {meeting.participants.length > 0 && (
-              <span className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {meeting.participants.join(', ')}
-              </span>
-            )}
-            {meeting.source && (
-              <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 text-[10px] uppercase">
-                {meeting.source}
-              </span>
-            )}
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-[11px] text-zinc-500">
+            <span>{formatDate(meeting.date)}</span>
+            <span className="text-zinc-700">|</span>
+            <span className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {meeting.participants.join(', ')}
+            </span>
           </div>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="ml-2 p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+
+        <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+          {actionCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              {actionCount} action{actionCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {topicCount > 0 && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              {topicCount} topic{topicCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+        </div>
       </div>
 
-      {meeting.summary && (
-        <p className="mt-2 text-xs text-zinc-400 line-clamp-2">{meeting.summary}</p>
-      )}
-
-      {meeting.actionItems.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-            {meeting.actionItems.length} action item{meeting.actionItems.length > 1 ? 's' : ''}
-          </span>
-          {meeting.topics.slice(0, 3).map((t, i) => {
-            const title = getTopicTitle(t);
-            return (
-              <span key={i} className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded truncate max-w-[200px]">
-                {title.length > 60 ? title.slice(0, 57) + '...' : title}
-              </span>
-            );
-          })}
+      {/* Summary preview (always visible) */}
+      {meeting.summary && !expanded && (
+        <div className="px-4 pb-3 -mt-1">
+          <p className="text-xs text-zinc-500 line-clamp-2">{meeting.summary}</p>
         </div>
       )}
 
+      {/* Expanded content */}
       {expanded && (
-        <div className="mt-4 space-y-3 border-t border-zinc-800 pt-3">
+        <div className="border-t border-zinc-800/60">
+          {/* Summary */}
           {meeting.summary && (
-            <div>
-              <h4 className="text-xs font-medium text-zinc-300 mb-1">Summary</h4>
-              <p className="text-xs text-zinc-400 whitespace-pre-wrap">{meeting.summary}</p>
+            <div className="px-4 py-3">
+              <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Summary</h4>
+              <p className="text-[13px] text-zinc-300 leading-relaxed">{meeting.summary}</p>
             </div>
           )}
 
-          {meeting.actionItems.length > 0 && (
-            <div>
-              <h4 className="text-xs font-medium text-zinc-300 mb-1 flex items-center gap-1">
-                <ListChecks className="w-3 h-3" /> Action Items
+          {/* Action Items */}
+          {actionCount > 0 && (
+            <div className="px-4 py-3 border-t border-zinc-800/40">
+              <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <ListChecks className="w-3.5 h-3.5" /> Action Items
               </h4>
-              <ul className="space-y-1">
+              <div className="space-y-1.5">
                 {meeting.actionItems.map((item, i) => (
-                  <li key={i} className="text-xs text-zinc-400 flex items-start gap-2">
-                    <span className="text-amber-400 mt-0.5">-</span>
-                    <span>{getActionText(item)}</span>
-                  </li>
+                  <ActionItem key={i} item={item} />
                 ))}
-              </ul>
+              </div>
             </div>
           )}
 
+          {/* Topics */}
+          {topicCount > 0 && (
+            <div className="px-4 py-3 border-t border-zinc-800/40">
+              <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" /> Content Topics Extracted
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {meeting.topics.map((t, i) => (
+                  <TopicPill key={i} item={t} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Follow-up Draft */}
           {meeting.followUpDraft && (
-            <div>
-              <h4 className="text-xs font-medium text-zinc-300 mb-1">Follow-up Draft</h4>
-              <p className="text-xs text-zinc-400 whitespace-pre-wrap bg-zinc-800/50 rounded p-2">
-                {meeting.followUpDraft}
-              </p>
+            <div className="px-4 py-3 border-t border-zinc-800/40">
+              <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" /> Follow-up Draft
+              </h4>
+              <div className="bg-zinc-800/40 rounded-lg p-3 border border-zinc-700/30">
+                <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">{meeting.followUpDraft}</p>
+              </div>
             </div>
           )}
 
+          {/* Transcript */}
           {meeting.transcriptText && (
-            <details className="group">
-              <summary className="text-xs font-medium text-zinc-300 cursor-pointer flex items-center gap-1 hover:text-zinc-100">
-                <FileText className="w-3 h-3" /> Full Transcript
+            <details className="border-t border-zinc-800/40">
+              <summary className="px-4 py-3 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider cursor-pointer hover:text-zinc-300 flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" /> Full Transcript
               </summary>
-              <pre className="mt-2 text-xs text-zinc-500 whitespace-pre-wrap max-h-64 overflow-y-auto bg-zinc-950 rounded p-2 border border-zinc-800">
-                {meeting.transcriptText}
-              </pre>
+              <div className="px-4 pb-3">
+                <pre className="text-xs text-zinc-500 whitespace-pre-wrap max-h-72 overflow-y-auto bg-zinc-950/80 rounded-lg p-3 border border-zinc-800/60 leading-relaxed">
+                  {meeting.transcriptText}
+                </pre>
+              </div>
             </details>
           )}
 
-          <div className="flex gap-2 pt-1">
+          {/* Actions bar */}
+          <div className="px-4 py-3 border-t border-zinc-800/40 flex gap-2 bg-zinc-900/80">
             <button
-              onClick={() => {
-                const text = `Meeting: ${meeting.title}\nDate: ${new Date(meeting.date).toLocaleDateString()}\nParticipants: ${meeting.participants.join(', ')}\n\nSummary:\n${meeting.summary || 'N/A'}\n\nAction Items:\n${meeting.actionItems.map((a) => `- ${typeof a === 'string' ? a : JSON.stringify(a)}`).join('\n') || 'None'}`;
-                navigator.clipboard.writeText(text);
-              }}
-              className="text-[10px] px-2 py-1 rounded bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
+              onClick={handleCopy}
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors flex items-center gap-1.5"
             >
-              Copy Summary
+              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copied' : 'Copy Summary'}
             </button>
             <button
               onClick={handleCreateProposal}
               disabled={creatingProposal}
-              className="text-[10px] px-2 py-1 rounded bg-emerald-900/60 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-800/60 border border-emerald-700/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-emerald-900/50 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-800/50 border border-emerald-700/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
               {creatingProposal ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Creating...
-                </>
+                <><Loader2 className="w-3 h-3 animate-spin" /> Creating...</>
               ) : (
-                <>
-                  <Send className="w-3 h-3" />
-                  Create Proposal
-                </>
+                <><Send className="w-3 h-3" /> Create Proposal</>
               )}
             </button>
           </div>
@@ -213,10 +296,9 @@ const MeetingsPanel: React.FC = () => {
     const q = search.toLowerCase();
     return meetings.filter(
       (m) =>
-        m.title.toLowerCase().includes(q) ||
+        m.title.replace(/\s*\/\s*$/, '').toLowerCase().includes(q) ||
         m.participants.some((p) => p.toLowerCase().includes(q)) ||
-        (m.summary && m.summary.toLowerCase().includes(q)) ||
-        (m.transcriptText && m.transcriptText.toLowerCase().includes(q))
+        (m.summary && m.summary.toLowerCase().includes(q))
     );
   }, [meetings, search]);
 
@@ -255,7 +337,7 @@ const MeetingsPanel: React.FC = () => {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search meetings, participants, topics..."
+        searchPlaceholder="Search meetings, participants..."
       />
 
       <div className="space-y-3">
@@ -263,7 +345,7 @@ const MeetingsPanel: React.FC = () => {
           <MeetingCard key={m.id} meeting={m} />
         ))}
         {filtered.length === 0 && search && (
-          <p className="text-sm text-zinc-500 text-center py-8">No meetings match "{search}"</p>
+          <p className="text-sm text-zinc-500 text-center py-8">No meetings match &ldquo;{search}&rdquo;</p>
         )}
       </div>
     </div>
