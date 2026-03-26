@@ -133,7 +133,7 @@ export function useAgentData() {
           body: JSON.stringify({
             event: 'messages.upsert',
             data: {
-              key: { fromMe: false, remoteJid: 'dashboard', id: `dash-${Date.now()}` },
+              key: { fromMe: false, remoteJid: '5491159385939@s.whatsapp.net', id: `dash-${Date.now()}` },
               message: { conversation: trimmed },
               pushName: 'Ivan (Dashboard)',
             },
