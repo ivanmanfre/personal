@@ -31,7 +31,7 @@ export function useUpcomingEvents() {
       const { data, error } = await supabase
         .from('calendar_events')
         .select('*')
-        .gte('start_time', now)
+        .gte('end_time', now)
         .lte('start_time', weekFromNow)
         .eq('is_all_day', false)
         .order('start_time', { ascending: true })
