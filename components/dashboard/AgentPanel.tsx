@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Bot, Bell, Clock, MessageSquare, FileText, CheckCircle2, ChevronUp, User } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Bot, Bell, Clock, MessageSquare, FileText, CheckCircle2, ChevronUp, User, Send, ArrowDown } from 'lucide-react';
 import { useAgentData } from '../../hooks/useAgentData';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -42,21 +42,97 @@ function formatDateSeparator(ts: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
+// Typing indicator with animated dots
+const TypingIndicator: React.FC = () => (
+  <div className="flex gap-2.5 justify-start">
+    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/20 flex items-center justify-center">
+      <Bot className="w-4 h-4 text-violet-400" />
+    </div>
+    <div className="bg-zinc-800/60 border border-zinc-700/30 rounded-2xl rounded-bl-md px-4 py-3">
+      <div className="flex gap-1.5 items-center h-4">
+        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_infinite]" />
+        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_0.2s_infinite]" />
+        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_0.4s_infinite]" />
+      </div>
+    </div>
+  </div>
+);
+
+// Collapsible detail section
+const DetailSection: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  badge?: number;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}> = ({ title, icon, badge, defaultOpen = false, children }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800/30 transition-colors"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-zinc-500">{icon}</span>
+          <span className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">{title}</span>
+          {badge != null && badge > 0 && (
+            <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-medium text-zinc-500">{badge}</span>
+          )}
+        </div>
+        <ChevronUp className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? '' : 'rotate-180'}`} />
+      </button>
+      {open && <div className="border-t border-zinc-800/40">{children}</div>}
+    </div>
+  );
+};
+
 const AgentPanel: React.FC = () => {
-  const { alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType, loading, refresh, acknowledgeAlert, completeReminder, loadMoreChat } = useAgentData();
+  const {
+    alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType,
+    loading, refresh, acknowledgeAlert, completeReminder, loadMoreChat,
+    sendMessage, sending, pendingMessage,
+  } = useAgentData();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['n8nclaw_proactive_alerts', 'n8nclaw_chat_messages'] });
+
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [initialScrollDone, setInitialScrollDone] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [input, setInput] = useState('');
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showScrollDown, setShowScrollDown] = useState(false);
 
-  // Scroll to bottom on initial load
+  // Scroll to bottom
+  const scrollToBottom = useCallback((smooth = true) => {
+    chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' });
+  }, []);
+
+  // Initial scroll to bottom
   useEffect(() => {
     if (!loading && chatMessages.length > 0 && !initialScrollDone) {
-      chatEndRef.current?.scrollIntoView();
+      scrollToBottom(false);
       setInitialScrollDone(true);
     }
-  }, [loading, chatMessages.length, initialScrollDone]);
+  }, [loading, chatMessages.length, initialScrollDone, scrollToBottom]);
+
+  // Scroll to bottom when sending or new messages arrive while near bottom
+  useEffect(() => {
+    if (isNearBottom && initialScrollDone) {
+      scrollToBottom();
+    }
+  }, [chatMessages.length, pendingMessage, sending, isNearBottom, initialScrollDone, scrollToBottom]);
+
+  // Track scroll position
+  const handleScroll = useCallback(() => {
+    const el = chatContainerRef.current;
+    if (!el) return;
+    const threshold = 100;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    setIsNearBottom(nearBottom);
+    setShowScrollDown(!nearBottom && el.scrollHeight - el.clientHeight > 200);
+  }, []);
 
   const handleLoadMore = async () => {
     const container = chatContainerRef.current;
@@ -64,7 +140,6 @@ const AgentPanel: React.FC = () => {
     setLoadingMore(true);
     await loadMoreChat();
     setLoadingMore(false);
-    // Preserve scroll position after prepending messages
     if (container) {
       requestAnimationFrame(() => {
         container.scrollTop = container.scrollHeight - prevHeight;
@@ -72,112 +147,222 @@ const AgentPanel: React.FC = () => {
     }
   };
 
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  };
+
+  // Send on Enter, newline on Shift+Enter
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || sending) return;
+    setInput('');
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
+    sendMessage(trimmed);
+    // Ensure scroll after sending
+    setTimeout(() => scrollToBottom(), 50);
+  };
+
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
-  if (alerts.length === 0 && reminders.length === 0 && summaries.length === 0 && messageStats.total === 0) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Agent (n8nClaw)</h1>
-          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
-        </div>
-        <EmptyState title="No agent data" description="n8nClaw alerts, reminders, and chat summaries will appear here once the agent is active." icon={<Bot className="w-10 h-10" />} />
-      </div>
-    );
-  }
+  const hasData = alerts.length > 0 || reminders.length > 0 || summaries.length > 0 || messageStats.total > 0 || chatMessages.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Agent (n8nClaw)</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/25 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-violet-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">n8nClaw</h1>
+            <p className="text-[11px] text-zinc-500 -mt-0.5">AI Agent — WhatsApp + Dashboard</p>
+          </div>
+        </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Total Messages" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" subValue={`${messageStats.today} today`} />
         <StatCard label="This Week" value={messageStats.thisWeek} icon={<Bot className="w-5 h-5" />} color="text-violet-400" />
-        <StatCard label="Alerts Generated" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={`${Object.keys(alertsByType).length} types`} />
-        <StatCard label="Pending Reminders" value={reminders.length} icon={<Clock className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Alerts" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={`${Object.keys(alertsByType).length} types`} />
+        <StatCard label="Reminders" value={reminders.length} icon={<Clock className="w-5 h-5" />} color="text-emerald-400" />
       </div>
 
-      {/* Chat History */}
-      <PanelCard title="Chat History" icon={<MessageSquare className="w-3.5 h-3.5" />} badge={messageStats.total}>
-        {chatMessages.length === 0 ? (
-          <p className="px-4 py-10 text-zinc-600 text-sm text-center">No messages yet</p>
-        ) : (
-          <div ref={chatContainerRef} className="max-h-[500px] overflow-y-auto dashboard-scroll">
-            {/* Load more */}
-            {chatHasMore && (
-              <div className="flex justify-center py-3">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-800/50 hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                >
-                  <ChevronUp className="w-3.5 h-3.5" />
-                  {loadingMore ? 'Loading...' : 'Load older messages'}
-                </button>
-              </div>
-            )}
-
-            <div className="px-4 py-3 space-y-1">
-              {chatMessages.map((msg, i) => {
-                const isUser = msg.role === 'user';
-                const prevTs = i > 0 ? chatMessages[i - 1].createdAt : null;
-                const showDate = shouldShowDateSeparator(msg.createdAt, prevTs);
-
-                return (
-                  <React.Fragment key={msg.id}>
-                    {showDate && (
-                      <div className="flex items-center gap-3 py-3">
-                        <div className="flex-1 h-px bg-zinc-800/60" />
-                        <span className="text-[10px] text-zinc-600 font-medium">{formatDateSeparator(msg.createdAt)}</span>
-                        <div className="flex-1 h-px bg-zinc-800/60" />
-                      </div>
-                    )}
-                    <div className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
-                      {!isUser && (
-                        <div className="shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/20 flex items-center justify-center mt-1">
-                          <Bot className="w-3.5 h-3.5 text-violet-400" />
-                        </div>
-                      )}
-                      <div className={`max-w-[80%] ${isUser ? 'order-first' : ''}`}>
-                        <div
-                          className={`px-3 py-2 rounded-xl text-sm leading-relaxed ${
-                            isUser
-                              ? 'bg-emerald-500/10 border border-emerald-500/15 text-zinc-200 rounded-br-md'
-                              : 'bg-zinc-800/60 border border-zinc-700/30 text-zinc-300 rounded-bl-md'
-                          }`}
-                        >
-                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                        </div>
-                        <p className={`text-[10px] text-zinc-600 mt-0.5 ${isUser ? 'text-right' : ''}`}>
-                          {formatChatTime(msg.createdAt)}
-                        </p>
-                      </div>
-                      {isUser && (
-                        <div className="shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border border-emerald-500/20 flex items-center justify-center mt-1">
-                          <User className="w-3.5 h-3.5 text-emerald-400" />
-                        </div>
-                      )}
-                    </div>
-                  </React.Fragment>
-                );
-              })}
-              <div ref={chatEndRef} />
-            </div>
+      {/* Chat Container */}
+      <div className="relative bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-lg shadow-black/10">
+        {/* Chat Header */}
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <MessageSquare className="w-3.5 h-3.5 text-zinc-500" />
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Chat</h2>
+            <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-medium text-zinc-500">{messageStats.total}</span>
           </div>
-        )}
-      </PanelCard>
+          {sending && (
+            <span className="text-[10px] text-violet-400 font-medium animate-pulse">Processing...</span>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Alerts timeline */}
-        <PanelCard title="Alert Timeline" icon={<Bell className="w-3.5 h-3.5" />} badge={alerts.length} scrollable>
-          {alerts.length === 0 ? (
-            <p className="px-4 py-10 text-zinc-600 text-sm text-center">No alerts</p>
+        {/* Messages Area */}
+        <div
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="h-[500px] sm:h-[560px] overflow-y-auto dashboard-scroll bg-gradient-to-b from-zinc-950/30 to-zinc-900/10"
+        >
+          {chatMessages.length === 0 && !pendingMessage ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/15 flex items-center justify-center mx-auto mb-4">
+                  <Bot className="w-8 h-8 text-violet-400/60" />
+                </div>
+                <p className="text-zinc-500 text-sm font-medium">Start a conversation</p>
+                <p className="text-zinc-600 text-xs mt-1">Messages are synced with WhatsApp</p>
+              </div>
+            </div>
           ) : (
-            <div className="divide-y divide-zinc-800/40">
+            <div className="px-3 sm:px-5 py-3">
+              {/* Load more */}
+              {chatHasMore && (
+                <div className="flex justify-center py-3">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/30 transition-all disabled:opacity-50"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                    {loadingMore ? 'Loading...' : 'Load older messages'}
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                {chatMessages.map((msg, i) => {
+                  const isUser = msg.role === 'user';
+                  const prevTs = i > 0 ? chatMessages[i - 1].createdAt : null;
+                  const showDate = shouldShowDateSeparator(msg.createdAt, prevTs);
+
+                  return (
+                    <React.Fragment key={msg.id}>
+                      {showDate && (
+                        <div className="flex items-center gap-3 py-3">
+                          <div className="flex-1 h-px bg-zinc-800/60" />
+                          <span className="text-[10px] text-zinc-600 font-medium tracking-wide">{formatDateSeparator(msg.createdAt)}</span>
+                          <div className="flex-1 h-px bg-zinc-800/60" />
+                        </div>
+                      )}
+                      <div className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} group`}>
+                        {!isUser && (
+                          <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/20 flex items-center justify-center mt-1">
+                            <Bot className="w-4 h-4 text-violet-400" />
+                          </div>
+                        )}
+                        <div className={`max-w-[85%] sm:max-w-[75%] ${isUser ? 'order-first' : ''}`}>
+                          <div
+                            className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                              isUser
+                                ? 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 border border-emerald-500/15 text-zinc-200 rounded-br-lg'
+                                : 'bg-zinc-800/50 border border-zinc-700/25 text-zinc-300 rounded-bl-lg'
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                          </div>
+                          <p className={`text-[10px] text-zinc-600 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'text-right' : ''}`}>
+                            {formatChatTime(msg.createdAt)}
+                          </p>
+                        </div>
+                        {isUser && (
+                          <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/20 flex items-center justify-center mt-1">
+                            <User className="w-4 h-4 text-emerald-400" />
+                          </div>
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Pending user message (optimistic) */}
+                {pendingMessage && (
+                  <div className="flex gap-2.5 justify-end">
+                    <div className="max-w-[85%] sm:max-w-[75%]">
+                      <div className="px-3.5 py-2.5 rounded-2xl rounded-br-lg text-sm leading-relaxed bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 border border-emerald-500/15 text-zinc-200">
+                        <p className="whitespace-pre-wrap break-words">{pendingMessage}</p>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 mt-1 px-1 text-right">Sending...</p>
+                    </div>
+                    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/20 flex items-center justify-center mt-1">
+                      <User className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Typing indicator */}
+                {sending && <TypingIndicator />}
+              </div>
+
+              <div ref={chatEndRef} className="h-1" />
+            </div>
+          )}
+        </div>
+
+        {/* Scroll to bottom button */}
+        {showScrollDown && (
+          <button
+            onClick={() => scrollToBottom()}
+            className="absolute bottom-[72px] right-4 w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all shadow-lg shadow-black/20 z-10"
+          >
+            <ArrowDown className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Input Bar */}
+        <div className="border-t border-zinc-800/40 bg-zinc-900/80 backdrop-blur-sm p-3">
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Message n8nClaw..."
+              rows={1}
+              disabled={sending}
+              className="flex-1 resize-none bg-zinc-800/40 border border-zinc-700/30 rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-50 max-h-[160px]"
+            />
+            <button
+              onClick={handleSend}
+              disabled={sending || !input.trim()}
+              className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white hover:from-violet-400 hover:to-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-md shadow-violet-500/20 disabled:shadow-none"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-[10px] text-zinc-600 mt-1.5 px-1">
+            Enter to send · Shift+Enter for new line · Synced with WhatsApp
+          </p>
+        </div>
+      </div>
+
+      {/* Detail Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Alerts */}
+        <DetailSection title="Alerts" icon={<Bell className="w-3.5 h-3.5" />} badge={alerts.length} defaultOpen={alerts.some((a) => !a.sent)}>
+          {alerts.length === 0 ? (
+            <p className="px-4 py-8 text-zinc-600 text-sm text-center">No alerts</p>
+          ) : (
+            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
               {alerts.slice(0, 20).map((a) => {
                 const colors = alertTypeColors[a.alertType] || 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20';
                 return (
@@ -186,7 +371,7 @@ const AgentPanel: React.FC = () => {
                       <StatusDot status={a.sent ? 'healthy' : 'inactive'} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
                         <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${colors}`}>
                           {a.alertType.replace(/_/g, ' ')}
@@ -194,7 +379,7 @@ const AgentPanel: React.FC = () => {
                       </div>
                       <p className="text-[11px] text-zinc-500 mt-1 line-clamp-2">{a.body}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[11px] text-zinc-600">{timeAgo(a.createdAt)} · {a.sent ? 'Delivered' : 'Pending'}</p>
+                        <p className="text-[11px] text-zinc-600">{timeAgo(a.createdAt)}</p>
                         {!a.sent && (
                           <button
                             onClick={() => acknowledgeAlert(a.id)}
@@ -210,65 +395,62 @@ const AgentPanel: React.FC = () => {
               })}
             </div>
           )}
-        </PanelCard>
+        </DetailSection>
 
-        {/* Right column */}
-        <div className="space-y-4">
-          {/* Reminders */}
-          <PanelCard title="Pending Reminders" icon={<Clock className="w-3.5 h-3.5" />} badge={reminders.length}>
-            <div className="divide-y divide-zinc-800/40">
-              {reminders.length === 0 ? (
-                <p className="px-4 py-8 text-zinc-600 text-sm text-center">No pending reminders</p>
-              ) : (
-                reminders.map((r) => (
-                  <div key={r.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-300">{r.reminderText}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-500">
-                        <span title={new Date(r.remindAt).toLocaleString()}>{timeAgo(r.remindAt)}</span>
-                        {r.recurrence && <span className="bg-zinc-800/60 px-1.5 py-0.5 rounded">{r.recurrence}</span>}
-                      </div>
+        {/* Reminders */}
+        <DetailSection title="Reminders" icon={<Clock className="w-3.5 h-3.5" />} badge={reminders.length} defaultOpen={reminders.length > 0}>
+          {reminders.length === 0 ? (
+            <p className="px-4 py-8 text-zinc-600 text-sm text-center">No pending reminders</p>
+          ) : (
+            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
+              {reminders.map((r) => (
+                <div key={r.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-300">{r.reminderText}</p>
+                    <div className="flex items-center gap-3 mt-1 text-[11px] text-zinc-500">
+                      <span title={new Date(r.remindAt).toLocaleString()}>{timeAgo(r.remindAt)}</span>
+                      {r.recurrence && <span className="bg-zinc-800/60 px-1.5 py-0.5 rounded">{r.recurrence}</span>}
                     </div>
-                    <button
-                      onClick={() => completeReminder(r.id)}
-                      className="shrink-0 mt-0.5 p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                      title="Mark complete"
-                      aria-label="Mark reminder complete"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                    </button>
                   </div>
-                ))
-              )}
+                  <button
+                    onClick={() => completeReminder(r.id)}
+                    className="shrink-0 mt-0.5 p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                    title="Mark complete"
+                    aria-label="Mark reminder complete"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-          </PanelCard>
+          )}
+        </DetailSection>
 
-          {/* Daily summaries */}
-          <PanelCard title="Daily Summaries" icon={<FileText className="w-3.5 h-3.5" />} badge={summaries.length}>
-            {summaries.length === 0 ? (
-              <p className="px-4 py-8 text-zinc-600 text-sm text-center">No summaries yet</p>
-            ) : (
-              <div className="divide-y divide-zinc-800/40">
-                {summaries.map((s) => (
-                  <div key={s.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[11px] font-medium text-zinc-400">{new Date(s.date).toLocaleDateString()}</p>
-                      <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s.messageCount} msgs</span>
-                    </div>
-                    <p className="text-sm text-zinc-300 line-clamp-2">{s.summary}</p>
-                    {s.topics.length > 0 && (
-                      <div className="flex gap-1.5 mt-2 flex-wrap">
-                        {s.topics.slice(0, 4).map((t, i) => (
-                          <span key={i} className="px-1.5 py-0.5 bg-zinc-800/60 rounded text-[10px] text-zinc-500 border border-zinc-700/30">{t}</span>
-                        ))}
-                      </div>
-                    )}
+        {/* Summaries */}
+        <DetailSection title="Summaries" icon={<FileText className="w-3.5 h-3.5" />} badge={summaries.length}>
+          {summaries.length === 0 ? (
+            <p className="px-4 py-8 text-zinc-600 text-sm text-center">No summaries yet</p>
+          ) : (
+            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
+              {summaries.map((s) => (
+                <div key={s.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] font-medium text-zinc-400">{new Date(s.date).toLocaleDateString()}</p>
+                    <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{s.messageCount} msgs</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </PanelCard>
-        </div>
+                  <p className="text-sm text-zinc-300 line-clamp-2">{s.summary}</p>
+                  {s.topics.length > 0 && (
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      {s.topics.slice(0, 4).map((t, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-zinc-800/60 rounded text-[10px] text-zinc-500 border border-zinc-700/30">{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </DetailSection>
       </div>
     </div>
   );

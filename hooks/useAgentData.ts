@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError } from '../lib/dashboardActions';
 import type { ProactiveAlert, Reminder, ChatMessage, DailySummary } from '../types/dashboard';
 
 const CHAT_PAGE_SIZE = 50;
+const N8NCLAW_WEBHOOK_URL = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
 
 export function useAgentData() {
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);
@@ -13,6 +14,11 @@ export function useAgentData() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatHasMore, setChatHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Chat sending state
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const lastAssistantIdRef = useRef<number>(0);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -58,13 +64,27 @@ export function useAgentData() {
       id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
     }));
     setChatHasMore(chatRows.length > CHAT_PAGE_SIZE);
-    setChatMessages(chatRows.slice(0, CHAT_PAGE_SIZE).reverse());
+    const sorted = chatRows.slice(0, CHAT_PAGE_SIZE).reverse();
+    setChatMessages(sorted);
+
+    // Detect new assistant messages → clear pending/sending state
+    if (sending && sorted.length > 0) {
+      const latestAssistant = [...sorted].reverse().find((m) => m.role === 'assistant');
+      if (latestAssistant && latestAssistant.id > lastAssistantIdRef.current) {
+        setSending(false);
+        setPendingMessage(null);
+        lastAssistantIdRef.current = latestAssistant.id;
+      }
+    } else if (!sending && sorted.length > 0) {
+      const latestAssistant = [...sorted].reverse().find((m) => m.role === 'assistant');
+      if (latestAssistant) lastAssistantIdRef.current = latestAssistant.id;
+    }
     } catch (err) {
       toastError('load agent data', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sending]);
 
   const loadMoreChat = useCallback(async () => {
     if (chatMessages.length === 0) return;
@@ -86,7 +106,54 @@ export function useAgentData() {
     }
   }, [chatMessages]);
 
+  const sendMessage = useCallback(async (content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed || sending) return;
+
+    setPendingMessage(trimmed);
+    setSending(true);
+
+    try {
+      // Try Supabase RPC first (avoids CORS)
+      const { error: rpcError } = await supabase.rpc('n8nclaw_dashboard_send', {
+        p_message: trimmed,
+      });
+
+      if (rpcError) {
+        // RPC not set up — fall back to direct webhook call
+        const resp = await window.fetch(N8NCLAW_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'messages.upsert',
+            data: {
+              key: { fromMe: false, remoteJid: 'dashboard', id: `dash-${Date.now()}` },
+              message: { conversation: trimmed },
+              pushName: 'Ivan (Dashboard)',
+            },
+          }),
+        });
+        if (!resp.ok) throw new Error(`Webhook returned ${resp.status}`);
+      }
+    } catch (err) {
+      toastError('send message', err);
+      setSending(false);
+      setPendingMessage(null);
+    }
+  }, [sending]);
+
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Timeout: if no response after 90s, clear sending state
+  useEffect(() => {
+    if (!sending) return;
+    const timeout = setTimeout(() => {
+      setSending(false);
+      setPendingMessage(null);
+      toastError('get response', new Error('n8nClaw did not respond within 90 seconds'));
+    }, 90_000);
+    return () => clearTimeout(timeout);
+  }, [sending]);
 
   const alertsByType = useMemo(() =>
     alerts.reduce((acc: Record<string, number>, a) => {
@@ -119,5 +186,10 @@ export function useAgentData() {
     }
   }, [fetch, reminders]);
 
-  return { alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType, loading, refresh: fetch, acknowledgeAlert, completeReminder, loadMoreChat };
+  return {
+    alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType,
+    loading, refresh: fetch, acknowledgeAlert, completeReminder, loadMoreChat,
+    // Chat sending
+    sendMessage, sending, pendingMessage,
+  };
 }

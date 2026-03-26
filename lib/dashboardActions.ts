@@ -13,7 +13,14 @@ export async function dashboardAction(table: string, id: string, field: string, 
 
 /** Show a toast error — call this in catch blocks across hooks */
 export function toastError(action: string, err?: unknown) {
-  const msg = err instanceof Error ? err.message : 'Unknown error';
+  let msg = 'Unknown error';
+  if (err instanceof Error) {
+    msg = err.message;
+  } else if (err && typeof err === 'object' && 'message' in err) {
+    msg = String((err as Record<string, unknown>).message);
+  } else if (typeof err === 'string') {
+    msg = err;
+  }
   toast.error(`Failed to ${action}`, { description: msg });
 }
 
