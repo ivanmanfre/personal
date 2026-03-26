@@ -6,7 +6,6 @@ import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
-import EmptyState from './shared/EmptyState';
 import PanelCard from './shared/PanelCard';
 import { timeAgo } from './shared/utils';
 
@@ -42,17 +41,23 @@ function formatDateSeparator(ts: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
+// Check if avatar should be shown (hide on consecutive same-sender messages)
+function shouldShowAvatar(msgs: { role: string }[], index: number): boolean {
+  if (index === 0) return true;
+  return msgs[index].role !== msgs[index - 1].role;
+}
+
 // Typing indicator with animated dots
 const TypingIndicator: React.FC = () => (
-  <div className="flex gap-2.5 justify-start">
-    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/20 flex items-center justify-center">
+  <div className="flex gap-2.5 justify-start mt-1">
+    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/30 flex items-center justify-center">
       <Bot className="w-4 h-4 text-violet-400" />
     </div>
-    <div className="bg-zinc-800/60 border border-zinc-700/30 rounded-2xl rounded-bl-md px-4 py-3">
+    <div className="bg-zinc-800/30 border border-zinc-700/25 rounded-2xl rounded-bl-lg px-4 py-3">
       <div className="flex gap-1.5 items-center h-4">
-        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_infinite]" />
-        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_0.2s_infinite]" />
-        <span className="w-2 h-2 rounded-full bg-zinc-500 animate-[bounce_1.4s_ease-in-out_0.4s_infinite]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-[bounce_1s_ease-in-out_infinite]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-[bounce_1s_ease-in-out_0.15s_infinite]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-[bounce_1s_ease-in-out_0.3s_infinite]" />
       </div>
     </div>
   </div>
@@ -101,36 +106,45 @@ const AgentPanel: React.FC = () => {
   const [initialScrollDone, setInitialScrollDone] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [input, setInput] = useState('');
-  const [isNearBottom, setIsNearBottom] = useState(true);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const isNearBottomRef = useRef(true);
+  const prevMsgLenRef = useRef(0);
 
-  // Scroll to bottom
-  const scrollToBottom = useCallback((smooth = true) => {
+  // Scroll to bottom — instant for auto-scroll, smooth only for manual button
+  const scrollToBottom = useCallback((smooth = false) => {
     chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' });
   }, []);
 
-  // Initial scroll to bottom
+  // Initial scroll to bottom (once)
   useEffect(() => {
     if (!loading && chatMessages.length > 0 && !initialScrollDone) {
-      scrollToBottom(false);
+      scrollToBottom();
       setInitialScrollDone(true);
+      prevMsgLenRef.current = chatMessages.length;
     }
   }, [loading, chatMessages.length, initialScrollDone, scrollToBottom]);
 
-  // Scroll to bottom when sending or new messages arrive while near bottom
+  // Auto-scroll ONLY when new messages actually arrive AND user is near bottom
   useEffect(() => {
-    if (isNearBottom && initialScrollDone) {
+    if (!initialScrollDone) return;
+    const newLen = chatMessages.length;
+    if (newLen > prevMsgLenRef.current && isNearBottomRef.current) {
       scrollToBottom();
     }
-  }, [chatMessages.length, pendingMessage, sending, isNearBottom, initialScrollDone, scrollToBottom]);
+    prevMsgLenRef.current = newLen;
+  }, [chatMessages.length, initialScrollDone, scrollToBottom]);
 
-  // Track scroll position
+  // Scroll when pending message appears (user just sent)
+  useEffect(() => {
+    if (pendingMessage) scrollToBottom();
+  }, [pendingMessage, scrollToBottom]);
+
+  // Track scroll position via ref (no state = no re-renders)
   const handleScroll = useCallback(() => {
     const el = chatContainerRef.current;
     if (!el) return;
-    const threshold = 100;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
-    setIsNearBottom(nearBottom);
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    isNearBottomRef.current = nearBottom;
     setShowScrollDown(!nearBottom && el.scrollHeight - el.clientHeight > 200);
   }, []);
 
@@ -157,7 +171,7 @@ const AgentPanel: React.FC = () => {
 
   // Send on Enter, newline on Shift+Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       handleSend();
     }
@@ -169,18 +183,15 @@ const AgentPanel: React.FC = () => {
     setInput('');
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
+      inputRef.current.focus();
     }
     sendMessage(trimmed);
-    // Ensure scroll after sending
-    setTimeout(() => scrollToBottom(), 50);
   };
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
-  const hasData = alerts.length > 0 || reminders.length > 0 || summaries.length > 0 || messageStats.total > 0 || chatMessages.length > 0;
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -221,7 +232,7 @@ const AgentPanel: React.FC = () => {
         <div
           ref={chatContainerRef}
           onScroll={handleScroll}
-          className="h-[500px] sm:h-[560px] overflow-y-auto dashboard-scroll bg-gradient-to-b from-zinc-950/30 to-zinc-900/10"
+          className="h-[350px] sm:h-[450px] lg:h-[540px] overflow-y-auto dashboard-scroll bg-gradient-to-b from-zinc-950/30 to-zinc-900/10"
         >
           {chatMessages.length === 0 && !pendingMessage ? (
             <div className="flex items-center justify-center h-full">
@@ -234,10 +245,10 @@ const AgentPanel: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="px-3 sm:px-5 py-3">
+            <div className="px-4 sm:px-6 py-4">
               {/* Load more */}
               {chatHasMore && (
-                <div className="flex justify-center py-3">
+                <div className="flex justify-center py-2">
                   <button
                     onClick={handleLoadMore}
                     disabled={loadingMore}
@@ -249,45 +260,58 @@ const AgentPanel: React.FC = () => {
                 </div>
               )}
 
-              <div className="space-y-1.5">
+              <div className="space-y-0.5">
                 {chatMessages.map((msg, i) => {
                   const isUser = msg.role === 'user';
                   const prevTs = i > 0 ? chatMessages[i - 1].createdAt : null;
                   const showDate = shouldShowDateSeparator(msg.createdAt, prevTs);
+                  const showAv = shouldShowAvatar(chatMessages, i);
+                  // Add top margin on role change for visual grouping
+                  const roleChanged = i > 0 && chatMessages[i - 1].role !== msg.role;
 
                   return (
                     <React.Fragment key={msg.id}>
                       {showDate && (
-                        <div className="flex items-center gap-3 py-3">
-                          <div className="flex-1 h-px bg-zinc-800/60" />
-                          <span className="text-[10px] text-zinc-600 font-medium tracking-wide">{formatDateSeparator(msg.createdAt)}</span>
-                          <div className="flex-1 h-px bg-zinc-800/60" />
+                        <div className="flex items-center gap-3 py-2.5">
+                          <div className="flex-1 h-px bg-zinc-700/50" />
+                          <span className="text-[11px] text-zinc-500 font-medium tracking-wide">{formatDateSeparator(msg.createdAt)}</span>
+                          <div className="flex-1 h-px bg-zinc-700/50" />
                         </div>
                       )}
-                      <div className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} group`}>
+                      <div className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} ${roleChanged && !showDate ? 'mt-3' : ''}`}>
                         {!isUser && (
-                          <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/20 flex items-center justify-center mt-1">
-                            <Bot className="w-4 h-4 text-violet-400" />
-                          </div>
+                          showAv ? (
+                            <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-600/20 border border-violet-500/30 flex items-center justify-center mt-0.5">
+                              <Bot className="w-4 h-4 text-violet-400" />
+                            </div>
+                          ) : (
+                            <div className="shrink-0 w-8" />
+                          )
                         )}
-                        <div className={`max-w-[85%] sm:max-w-[75%] ${isUser ? 'order-first' : ''}`}>
+                        <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%] ${isUser ? 'order-first' : ''}`}>
                           <div
-                            className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                            className={`px-4 py-2.5 text-sm leading-relaxed ${
                               isUser
-                                ? 'bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 border border-emerald-500/15 text-zinc-200 rounded-br-lg'
-                                : 'bg-zinc-800/50 border border-zinc-700/25 text-zinc-300 rounded-bl-lg'
+                                ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/12 border border-emerald-500/20 text-zinc-200 rounded-2xl rounded-br-lg'
+                                : 'bg-zinc-800/50 border border-zinc-700/25 text-zinc-300 rounded-2xl rounded-bl-lg'
                             }`}
                           >
                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                           </div>
-                          <p className={`text-[10px] text-zinc-600 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity ${isUser ? 'text-right' : ''}`}>
-                            {formatChatTime(msg.createdAt)}
-                          </p>
+                          {showAv && (
+                            <p className={`text-[10px] text-zinc-600 mt-1 px-1 ${isUser ? 'text-right' : ''}`}>
+                              {formatChatTime(msg.createdAt)}
+                            </p>
+                          )}
                         </div>
                         {isUser && (
-                          <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/20 flex items-center justify-center mt-1">
-                            <User className="w-4 h-4 text-emerald-400" />
-                          </div>
+                          showAv ? (
+                            <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/25 flex items-center justify-center mt-0.5">
+                              <User className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          ) : (
+                            <div className="shrink-0 w-8" />
+                          )
                         )}
                       </div>
                     </React.Fragment>
@@ -296,14 +320,14 @@ const AgentPanel: React.FC = () => {
 
                 {/* Pending user message (optimistic) */}
                 {pendingMessage && (
-                  <div className="flex gap-2.5 justify-end">
-                    <div className="max-w-[85%] sm:max-w-[75%]">
-                      <div className="px-3.5 py-2.5 rounded-2xl rounded-br-lg text-sm leading-relaxed bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 border border-emerald-500/15 text-zinc-200">
+                  <div className={`flex gap-2.5 justify-end ${chatMessages.length > 0 && chatMessages[chatMessages.length - 1].role !== 'user' ? 'mt-3' : ''}`}>
+                    <div className="max-w-[90%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[70%]">
+                      <div className="px-4 py-2.5 rounded-2xl rounded-br-lg text-sm leading-relaxed bg-gradient-to-br from-emerald-500/20 to-emerald-600/12 border border-emerald-500/20 text-zinc-200">
                         <p className="whitespace-pre-wrap break-words">{pendingMessage}</p>
                       </div>
-                      <p className="text-[10px] text-zinc-500 mt-1 px-1 text-right">Sending...</p>
+                      <p className="text-[10px] text-zinc-500 mt-1 px-1 text-right animate-pulse">Sending...</p>
                     </div>
-                    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/20 flex items-center justify-center mt-1">
+                    <div className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-600/15 border border-emerald-500/25 flex items-center justify-center mt-0.5">
                       <User className="w-4 h-4 text-emerald-400" />
                     </div>
                   </div>
@@ -321,7 +345,7 @@ const AgentPanel: React.FC = () => {
         {/* Scroll to bottom button */}
         {showScrollDown && (
           <button
-            onClick={() => scrollToBottom()}
+            onClick={() => scrollToBottom(true)}
             className="absolute bottom-[72px] right-4 w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all shadow-lg shadow-black/20 z-10"
           >
             <ArrowDown className="w-4 h-4" />
@@ -339,12 +363,12 @@ const AgentPanel: React.FC = () => {
               placeholder="Message n8nClaw..."
               rows={1}
               disabled={sending}
-              className="flex-1 resize-none bg-zinc-800/40 border border-zinc-700/30 rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-50 max-h-[160px]"
+              className="flex-1 resize-none bg-zinc-800/40 border border-zinc-700/30 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all disabled:opacity-50 max-h-[160px]"
             />
             <button
               onClick={handleSend}
               disabled={sending || !input.trim()}
-              className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white hover:from-violet-400 hover:to-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-md shadow-violet-500/20 disabled:shadow-none"
+              className="shrink-0 w-11 h-10 sm:w-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white hover:from-violet-400 hover:to-violet-500 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-md shadow-violet-500/20 disabled:shadow-none"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -356,13 +380,13 @@ const AgentPanel: React.FC = () => {
       </div>
 
       {/* Detail Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Alerts */}
         <DetailSection title="Alerts" icon={<Bell className="w-3.5 h-3.5" />} badge={alerts.length} defaultOpen={alerts.some((a) => !a.sent)}>
           {alerts.length === 0 ? (
             <p className="px-4 py-8 text-zinc-600 text-sm text-center">No alerts</p>
           ) : (
-            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
+            <div className="divide-y divide-zinc-800/40 max-h-64 overflow-y-auto dashboard-scroll">
               {alerts.slice(0, 20).map((a) => {
                 const colors = alertTypeColors[a.alertType] || 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20';
                 return (
@@ -402,7 +426,7 @@ const AgentPanel: React.FC = () => {
           {reminders.length === 0 ? (
             <p className="px-4 py-8 text-zinc-600 text-sm text-center">No pending reminders</p>
           ) : (
-            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
+            <div className="divide-y divide-zinc-800/40 max-h-64 overflow-y-auto dashboard-scroll">
               {reminders.map((r) => (
                 <div key={r.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors flex items-start gap-3">
                   <div className="flex-1 min-w-0">
@@ -431,7 +455,7 @@ const AgentPanel: React.FC = () => {
           {summaries.length === 0 ? (
             <p className="px-4 py-8 text-zinc-600 text-sm text-center">No summaries yet</p>
           ) : (
-            <div className="divide-y divide-zinc-800/40 max-h-72 overflow-y-auto dashboard-scroll">
+            <div className="divide-y divide-zinc-800/40 max-h-64 overflow-y-auto dashboard-scroll">
               {summaries.map((s) => (
                 <div key={s.id} className="px-4 py-3 hover:bg-zinc-800/30 transition-colors">
                   <div className="flex items-center justify-between mb-1.5">

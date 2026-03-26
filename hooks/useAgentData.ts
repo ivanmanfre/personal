@@ -151,22 +151,31 @@ export function useAgentData() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  // Poll every 3s while waiting for a response
+  // Poll with backoff while waiting for a response (2s → 3s → 5s)
   useEffect(() => {
     if (!sending) return;
-    const id = setInterval(() => fetch(), 3000);
-    return () => clearInterval(id);
+    let attempt = 0;
+    const delays = [2000, 2000, 3000, 3000, 5000]; // escalating intervals
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = () => {
+      fetch();
+      const delay = delays[Math.min(attempt, delays.length - 1)];
+      attempt++;
+      timer = setTimeout(poll, delay);
+    };
+    timer = setTimeout(poll, delays[0]);
+    return () => clearTimeout(timer);
   }, [sending, fetch]);
 
-  // Timeout: if no response after 90s, clear sending state
+  // Timeout: if no response after 45s, clear sending state
   useEffect(() => {
     if (!sending) return;
     const timeout = setTimeout(() => {
       sendingRef.current = false;
       setSending(false);
       setPendingMessage(null);
-      toastError('get response', new Error('n8nClaw did not respond within 90 seconds'));
-    }, 90_000);
+      toastError('get response', new Error('n8nClaw did not respond within 45 seconds'));
+    }, 45_000);
     return () => clearTimeout(timeout);
   }, [sending]);
 
