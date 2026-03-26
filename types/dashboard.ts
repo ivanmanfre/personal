@@ -600,6 +600,23 @@ export interface MeetingStats {
   avgDurationMinutes: number;
 }
 
+// ─── Calendar Event Types ───
+
+export interface CalendarEvent {
+  id: string;
+  googleEventId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  attendees: string[];
+  meetingUrl: string | null;
+  platform: string | null;
+  location: string | null;
+  description: string | null;
+  isAllDay: boolean;
+  createdAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
 export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

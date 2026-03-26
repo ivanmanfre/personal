@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
+import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { toastSuccess, toastError } from '../../lib/dashboardActions';
 import StatCard from './shared/StatCard';
@@ -8,7 +9,7 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import FilterBar from './shared/FilterBar';
-import type { MeetingTranscript } from '../../types/dashboard';
+import type { MeetingTranscript, CalendarEvent } from '../../types/dashboard';
 
 function parseItem(item: any): Record<string, any> {
   if (typeof item === 'string') {
@@ -313,10 +314,105 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
   );
 };
 
+const CallPlaybook: React.FC = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-gradient-to-r from-amber-950/30 to-zinc-900/60 border border-amber-800/30 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-amber-900/10 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-semibold text-amber-200">Pre-Call Playbook</span>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4 text-amber-400/60" /> : <ChevronDown className="w-4 h-4 text-amber-400/60" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 space-y-2.5 border-t border-amber-800/20">
+          <div className="pt-3 space-y-2">
+            {[
+              { num: '1', text: 'Quantify the pain', detail: '"How long does that take you? How often?" — make them feel the cost before you quote.' },
+              { num: '2', text: 'Who else decides?', detail: '"Is anyone else involved in this decision?" — avoid proposals that stall in someone\'s inbox.' },
+              { num: '3', text: 'Anchor value before price', detail: 'Recap what they\'re losing (time, money, opportunities) THEN give the range.' },
+              { num: '4', text: 'Book the next step', detail: '"When would you like to kick this off? Can we book a follow-up for [day]?" — never end with just "I\'ll send a proposal."' },
+            ].map((item) => (
+              <div key={item.num} className="flex gap-3 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[11px] font-bold flex items-center justify-center mt-0.5">
+                  {item.num}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-200">{item.text}</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const UpcomingCallCard: React.FC<{ event: CalendarEvent }> = ({ event }) => {
+  const start = new Date(event.startTime);
+  const end = new Date(event.endTime);
+  const now = new Date();
+  const diffMs = start.getTime() - now.getTime();
+  const isToday = start.toDateString() === now.toDateString();
+  const isTomorrow = start.toDateString() === new Date(now.getTime() + 86400000).toDateString();
+  const isSoon = diffMs > 0 && diffMs < 3600000; // within 1 hour
+
+  const timeStr = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const endStr = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dayLabel = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  return (
+    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${isSoon ? 'bg-emerald-950/30 border-emerald-700/40' : 'bg-zinc-900/60 border-zinc-800/60 hover:border-zinc-700/60'}`}>
+      <div className="flex-shrink-0 text-center w-12">
+        <p className={`text-[10px] font-semibold uppercase ${isToday ? 'text-emerald-400' : 'text-zinc-500'}`}>{dayLabel}</p>
+        <p className="text-sm font-bold text-zinc-200">{timeStr}</p>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-zinc-200 truncate">{event.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {event.attendees.length > 0 && (
+            <span className="text-[11px] text-zinc-500 flex items-center gap-1 truncate">
+              <Users className="w-3 h-3 flex-shrink-0" />
+              {event.attendees.join(', ')}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-[10px] text-zinc-600">{timeStr}–{endStr}</span>
+        {event.meetingUrl && (
+          <a
+            href={event.meetingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className={`text-[11px] px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors ${isSoon ? 'bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600/50 border border-emerald-600/40' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700'}`}
+          >
+            <ExternalLink className="w-3 h-3" /> Join
+          </a>
+        )}
+        {isSoon && !event.meetingUrl && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 animate-pulse">
+            Soon
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const MeetingsPanel: React.FC = () => {
   const [search, setSearch] = useState('');
   const { meetings, stats, loading, refresh } = useMeetings();
-  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['transcripts'] });
+  const { events: upcomingEvents, todayEvents, refresh: refreshEvents } = useUpcomingEvents();
+  const combinedRefresh = useCallback(async () => { await refresh(); await refreshEvents(); }, [refresh, refreshEvents]);
+  const { lastRefreshed } = useAutoRefresh(combinedRefresh, { realtimeTables: ['transcripts', 'calendar_events'] });
 
   const filtered = useMemo(() => {
     if (!search.trim()) return meetings;
@@ -354,15 +450,36 @@ const MeetingsPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Calls" value={stats.total} icon={<Phone className="w-4 h-4" />} />
-        <StatCard label="This Week" value={stats.thisWeek} icon={<Clock className="w-4 h-4" />} />
-        <StatCard label="With Actions" value={stats.withActionItems} icon={<ListChecks className="w-4 h-4" />} />
-        <StatCard label="Avg Duration" value={`${stats.avgDurationMinutes}m`} icon={<Clock className="w-4 h-4" />} />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard label="Total Calls" value={stats.total} icon={<Phone className="w-4 h-4" />} color="text-blue-400" />
+        <StatCard label="Today" value={todayEvents.length} icon={<Calendar className="w-4 h-4" />} color={todayEvents.length > 0 ? 'text-emerald-400' : 'text-zinc-400'} />
+        <StatCard label="This Week" value={stats.thisWeek} icon={<Clock className="w-4 h-4" />} color="text-cyan-400" />
+        <StatCard label="With Actions" value={stats.withActionItems} icon={<ListChecks className="w-4 h-4" />} color="text-amber-400" />
+        <StatCard label="Avg Duration" value={`${stats.avgDurationMinutes}m`} icon={<Clock className="w-4 h-4" />} color="text-violet-400" />
+      </div>
+
+      {/* Call Playbook + Upcoming Events */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <CallPlaybook />
+        {upcomingEvents.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 px-1">
+              <Calendar className="w-3.5 h-3.5" /> Upcoming Calls
+            </h3>
+            <div className="space-y-1.5">
+              {upcomingEvents.slice(0, 5).map((e) => (
+                <UpcomingCallCard key={e.id} event={e} />
+              ))}
+              {upcomingEvents.length > 5 && (
+                <p className="text-[11px] text-zinc-600 text-center py-1">+{upcomingEvents.length - 5} more this week</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <FilterBar
-        search={search}
+        searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search meetings, participants..."
       />
