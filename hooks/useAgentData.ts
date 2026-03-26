@@ -15,76 +15,81 @@ export function useAgentData() {
   const [chatHasMore, setChatHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Chat sending state
+  // Chat sending state — use refs to avoid dependency issues
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const lastAssistantIdRef = useRef<number>(0);
+  const initialLoadDone = useRef(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    // Only show skeleton on initial load
+    if (!initialLoadDone.current) setLoading(true);
     try {
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
 
-    const [alertsRes, remindersRes, totalRes, todayRes, weekRes, summariesRes, chatRes] = await Promise.all([
-      supabase.from('n8nclaw_proactive_alerts').select('id, alert_type, title, body, sent, sent_at, created_at')
-        .order('created_at', { ascending: false }).limit(50),
-      supabase.from('n8nclaw_reminders').select('id, reminder_text, remind_at, status, recurrence, created_at')
-        .eq('status', 'pending').order('remind_at'),
-      supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true }),
-      supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true })
-        .gte('created_at', todayStart),
-      supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true })
-        .gte('created_at', weekStart),
-      supabase.from('n8nclaw_daily_summaries').select('id, date, summary, topics, action_items, message_count, created_at')
-        .order('date', { ascending: false }).limit(7),
-      supabase.from('n8nclaw_chat_messages').select('id, role, content, created_at')
-        .order('created_at', { ascending: false }).limit(CHAT_PAGE_SIZE + 1),
-    ]);
+      const [alertsRes, remindersRes, totalRes, todayRes, weekRes, summariesRes, chatRes] = await Promise.all([
+        supabase.from('n8nclaw_proactive_alerts').select('id, alert_type, title, body, sent, sent_at, created_at')
+          .order('created_at', { ascending: false }).limit(50),
+        supabase.from('n8nclaw_reminders').select('id, reminder_text, remind_at, status, recurrence, created_at')
+          .eq('status', 'pending').order('remind_at'),
+        supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true }),
+        supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true })
+          .gte('created_at', todayStart),
+        supabase.from('n8nclaw_chat_messages').select('id', { count: 'exact', head: true })
+          .gte('created_at', weekStart),
+        supabase.from('n8nclaw_daily_summaries').select('id, date, summary, topics, action_items, message_count, created_at')
+          .order('date', { ascending: false }).limit(7),
+        supabase.from('n8nclaw_chat_messages').select('id, role, content, created_at')
+          .order('created_at', { ascending: false }).limit(CHAT_PAGE_SIZE + 1),
+      ]);
 
-    setAlerts((alertsRes.data || []).map((r: any) => ({
-      id: r.id, alertType: r.alert_type, title: r.title, body: r.body,
-      sent: r.sent, sentAt: r.sent_at, createdAt: r.created_at,
-    })));
-    setReminders((remindersRes.data || []).map((r: any) => ({
-      id: r.id, reminderText: r.reminder_text, remindAt: r.remind_at,
-      status: r.status, recurrence: r.recurrence, createdAt: r.created_at,
-    })));
-    setMessageStats({
-      total: totalRes.count || 0,
-      today: todayRes.count || 0,
-      thisWeek: weekRes.count || 0,
-    });
-    setSummaries((summariesRes.data || []).map((r: any) => ({
-      id: r.id, date: r.date, summary: r.summary, topics: r.topics || [],
-      actionItems: r.action_items || [], messageCount: r.message_count || 0, createdAt: r.created_at,
-    })));
-    const chatRows = (chatRes.data || []).map((r: any) => ({
-      id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
-    }));
-    setChatHasMore(chatRows.length > CHAT_PAGE_SIZE);
-    const sorted = chatRows.slice(0, CHAT_PAGE_SIZE).reverse();
-    setChatMessages(sorted);
+      setAlerts((alertsRes.data || []).map((r: any) => ({
+        id: r.id, alertType: r.alert_type, title: r.title, body: r.body,
+        sent: r.sent, sentAt: r.sent_at, createdAt: r.created_at,
+      })));
+      setReminders((remindersRes.data || []).map((r: any) => ({
+        id: r.id, reminderText: r.reminder_text, remindAt: r.remind_at,
+        status: r.status, recurrence: r.recurrence, createdAt: r.created_at,
+      })));
+      setMessageStats({
+        total: totalRes.count || 0,
+        today: todayRes.count || 0,
+        thisWeek: weekRes.count || 0,
+      });
+      setSummaries((summariesRes.data || []).map((r: any) => ({
+        id: r.id, date: r.date, summary: r.summary, topics: r.topics || [],
+        actionItems: r.action_items || [], messageCount: r.message_count || 0, createdAt: r.created_at,
+      })));
+      const chatRows = (chatRes.data || []).map((r: any) => ({
+        id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
+      }));
+      setChatHasMore(chatRows.length > CHAT_PAGE_SIZE);
+      const sorted = chatRows.slice(0, CHAT_PAGE_SIZE).reverse();
+      setChatMessages(sorted);
 
-    // Detect new assistant messages → clear pending/sending state
-    if (sending && sorted.length > 0) {
-      const latestAssistant = [...sorted].reverse().find((m) => m.role === 'assistant');
-      if (latestAssistant && latestAssistant.id > lastAssistantIdRef.current) {
-        setSending(false);
-        setPendingMessage(null);
+      // Detect new assistant messages → clear pending/sending state
+      const latestAssistant = sorted.length > 0
+        ? [...sorted].reverse().find((m) => m.role === 'assistant')
+        : null;
+
+      if (latestAssistant) {
+        if (sendingRef.current && latestAssistant.id > lastAssistantIdRef.current) {
+          sendingRef.current = false;
+          setSending(false);
+          setPendingMessage(null);
+        }
         lastAssistantIdRef.current = latestAssistant.id;
       }
-    } else if (!sending && sorted.length > 0) {
-      const latestAssistant = [...sorted].reverse().find((m) => m.role === 'assistant');
-      if (latestAssistant) lastAssistantIdRef.current = latestAssistant.id;
-    }
     } catch (err) {
       toastError('load agent data', err);
     } finally {
       setLoading(false);
+      initialLoadDone.current = true;
     }
-  }, [sending]);
+  }, []); // No dependencies — uses refs for mutable state
 
   const loadMoreChat = useCallback(async () => {
     if (chatMessages.length === 0) return;
@@ -108,10 +113,11 @@ export function useAgentData() {
 
   const sendMessage = useCallback(async (content: string) => {
     const trimmed = content.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sendingRef.current) return;
 
     setPendingMessage(trimmed);
     setSending(true);
+    sendingRef.current = true;
 
     try {
       // Try Supabase RPC first (avoids CORS)
@@ -137,17 +143,26 @@ export function useAgentData() {
       }
     } catch (err) {
       toastError('send message', err);
+      sendingRef.current = false;
       setSending(false);
       setPendingMessage(null);
     }
-  }, [sending]);
+  }, []); // No dependencies — uses refs
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Poll every 3s while waiting for a response
+  useEffect(() => {
+    if (!sending) return;
+    const id = setInterval(() => fetch(), 3000);
+    return () => clearInterval(id);
+  }, [sending, fetch]);
 
   // Timeout: if no response after 90s, clear sending state
   useEffect(() => {
     if (!sending) return;
     const timeout = setTimeout(() => {
+      sendingRef.current = false;
       setSending(false);
       setPendingMessage(null);
       toastError('get response', new Error('n8nClaw did not respond within 90 seconds'));
@@ -189,7 +204,6 @@ export function useAgentData() {
   return {
     alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType,
     loading, refresh: fetch, acknowledgeAlert, completeReminder, loadMoreChat,
-    // Chat sending
     sendMessage, sending, pendingMessage,
   };
 }
