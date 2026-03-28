@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   FlaskConical, TrendingDown, TrendingUp, Play, Pause, RotateCcw, ChevronLeft,
-  Zap, Target, Settings2, Check,
+  Zap, Target, Settings2, Check, AlertTriangle, BarChart3,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -107,8 +107,34 @@ const AutoResearchPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
-      {/* KPI Row */}
+      {/* Data Warning */}
       <AnimateIn>
+        <div className="relative bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+          <div className="flex gap-3">
+            <div className="shrink-0 w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-4.5 h-4.5 text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-300">Insufficient data for meaningful research</p>
+              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                Auto-research requires real engagement data to score prompt variations against. Currently there are ~30 posts with minimal engagement — without this signal, all scoring is LLM self-evaluation (Claude rating its own output), which produces circular results that don't reflect actual audience response.
+              </p>
+              <div className="flex items-center gap-4 mt-2.5">
+                <div className="flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="text-[11px] text-zinc-500">Need ~100+ posts with engagement variance</span>
+                </div>
+                <span className="text-[11px] text-zinc-600">|</span>
+                <span className="text-[11px] text-zinc-500">Sessions are paused until data is available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimateIn>
+
+      {/* KPI Row */}
+      <AnimateIn delay={50}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard label="Active Sessions" value={stats.running} icon={<FlaskConical className="w-5 h-5" />} color="text-emerald-400" subValue={`${stats.total} total`} />
           <StatCard label="Total Runs" value={stats.totalRuns} icon={<RotateCcw className="w-5 h-5" />} color="text-blue-400" subValue={`${stats.totalKept} kept`} />
@@ -146,7 +172,7 @@ const AutoResearchPanel: React.FC = () => {
       {filtered.length === 0 ? (
         <EmptyState title="No research sessions" description="Research sessions will appear here once configured" icon={<FlaskConical className="w-10 h-10" />} />
       ) : (
-        <AnimateIn delay={100}>
+        <AnimateIn delay={150}>
           <PanelCard title="Research Sessions" icon={<FlaskConical className="w-4 h-4" />} badge={filtered.length} accent="emerald">
             <div className="divide-y divide-zinc-800/40">
               {filtered.map((session) => (
