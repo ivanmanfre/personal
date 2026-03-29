@@ -134,6 +134,10 @@ export interface ClientWorkflowError {
   createdAt: string;
   executionId?: string;
   n8nUrl?: string;
+  fixStatus: string | null;
+  fixAnalysis: string | null;
+  fixDescription: string | null;
+  fixAppliedAt: string | null;
 }
 
 export interface ScheduledPost {
@@ -618,5 +622,5 @@ export interface CalendarEvent {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

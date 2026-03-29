@@ -32,6 +32,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
+          VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

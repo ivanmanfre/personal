@@ -24,6 +24,7 @@ const LazyOutreachPanel = lazy(() => import('./OutreachPanel'));
 const LazyRecordingsPanel = lazy(() => import('./RecordingsPanel'));
 const LazyAutoResearchPanel = lazy(() => import('./AutoResearchPanel'));
 const LazyMeetingsPanel = lazy(() => import('./MeetingsPanel'));
+const LazyCodePanel = lazy(() => import('./CodePanel'));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -41,6 +42,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   recordings: LazyRecordingsPanel as unknown as React.ComponentType,
   'auto-research': LazyAutoResearchPanel as unknown as React.ComponentType,
   meetings: LazyMeetingsPanel as unknown as React.ComponentType,
+  code: LazyCodePanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 
@@ -66,6 +68,7 @@ const lazyImports = [
   () => import('./RecordingsPanel'),
   () => import('./AutoResearchPanel'),
   () => import('./MeetingsPanel'),
+  () => import('./CodePanel'),
 ];
 
 function usePrefetchPanels() {
