@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Video, Upload, Eye, Share2, Clock, HardDrive, Trash2, Link, Loader2, AlertCircle, Play, Scissors, Circle, Square, Mic, MicOff, Monitor } from 'lucide-react';
 import { useRecordings } from '../../hooks/useRecordings';
-import RecordingEditor from './RecordingEditor';
+import { useDashboard } from '../../contexts/DashboardContext';
+import TrimEditor from './TrimEditor';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { supabase } from '../../lib/supabase';
 import StatCard from './shared/StatCard';
@@ -10,7 +11,7 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import EmptyState from './shared/EmptyState';
 import AnimateIn from './shared/AnimateIn';
-import { timeAgo } from './shared/utils';
+import { timeAgo, formatDate, formatTime } from './shared/utils';
 import type { Recording } from '../../types/dashboard';
 
 function formatDuration(seconds: number | null): string {
@@ -44,6 +45,7 @@ const RecordingsPanel: React.FC = () => {
     updateTitle, createShare, deleteRecording, uploadRecording, extendExpiry, archiveRecording,
   } = useRecordings();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['recordings'] });
+  const { userTimezone } = useDashboard();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -127,7 +129,7 @@ const RecordingsPanel: React.FC = () => {
         if (blob.size < 1000) return; // too small, user cancelled immediately
 
         const now = new Date();
-        const title = `Recording ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        const title = `Recording ${formatDate(now, {}, userTimezone)} ${formatTime(now, { hour: '2-digit', minute: '2-digit' }, userTimezone)}`;
         const ext = mimeType.includes('webm') ? 'webm' : 'mp4';
         const file = new File([blob], `recording.${ext}`, { type: mimeType.split(';')[0] });
 
@@ -538,29 +540,27 @@ const RecordingDetailView: React.FC<DetailProps> = ({ recording: rec, onClose, o
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {rec.status === 'ready' && (
-              <>
-                <button
-                  onClick={() => setShowEditor(!showEditor)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    showEditor
-                      ? 'bg-violet-600 hover:bg-violet-500 text-white'
-                      : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-                  }`}
-                >
-                  <Scissors className="w-3.5 h-3.5" />
-                  Edit
-                </button>
-                <button
-                  disabled={isMutating}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-xs font-medium text-white transition-colors"
-                  onClick={onShare}
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share
-                </button>
-              </>
+            {rec.durationSeconds && rec.durationSeconds > 0 && (
+              <button
+                onClick={() => setShowEditor(!showEditor)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  showEditor
+                    ? 'bg-violet-600 hover:bg-violet-500 text-white'
+                    : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+                }`}
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                Edit
+              </button>
             )}
+            <button
+              disabled={isMutating}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-xs font-medium text-white transition-colors"
+              onClick={onShare}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share
+            </button>
             {rec.shareToken && (
               <span className="text-[11px] text-zinc-500">
                 Expires {rec.shareExpiresAt ? timeAgo(rec.shareExpiresAt) : 'never'}
@@ -591,13 +591,16 @@ const RecordingDetailView: React.FC<DetailProps> = ({ recording: rec, onClose, o
           </div>
         )}
 
-        {/* Editor (Phase 4) */}
-        {showEditor && rec.status === 'ready' && rec.durationSeconds && (
+        {/* Trim Editor */}
+        {showEditor && rec.durationSeconds && videoUrl && (
           <div className="mt-4 p-4 bg-zinc-800/20 border border-zinc-700/30 rounded-xl">
-            <RecordingEditor
+            <TrimEditor
               recordingId={rec.id}
+              videoUrl={videoUrl}
               duration={rec.durationSeconds}
               videoRef={videoRef}
+              onTrimComplete={() => { setShowEditor(false); }}
+              onCancel={() => setShowEditor(false)}
             />
           </div>
         )}
