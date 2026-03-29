@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
@@ -209,26 +209,19 @@ export default function VideoViewer() {
       {/* Video Player */}
       <div className="bg-black">
         <div className="max-w-5xl mx-auto">
-          <div className="relative aspect-video">
-            {recording.videoUrl ? (
-              <video
-                ref={videoRef}
-                src={recording.videoUrl}
-                controls
-                playsInline
-                autoPlay
-                poster={recording.thumbnailUrl || undefined}
-                className="w-full h-full"
-                onTimeUpdate={() => {
-                  if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                <p className="text-sm text-zinc-600">Video unavailable</p>
-              </div>
-            )}
-          </div>
+          {recording.videoUrl ? (
+            <CustomPlayer
+              src={recording.videoUrl}
+              poster={recording.thumbnailUrl || undefined}
+              knownDuration={recording.durationSeconds || undefined}
+              videoRef={videoRef}
+              onTimeUpdate={setCurrentTime}
+            />
+          ) : (
+            <div className="aspect-video flex items-center justify-center bg-zinc-900">
+              <p className="text-sm text-zinc-600">Video unavailable</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -345,6 +338,307 @@ export default function VideoViewer() {
     </div>
   );
 }
+
+// ─── Custom Video Player (Loom-style) ───
+
+const CustomPlayer: React.FC<{
+  src: string;
+  poster?: string;
+  knownDuration?: number;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  onTimeUpdate: (time: number) => void;
+}> = ({ src, poster, knownDuration, videoRef, onTimeUpdate }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLVideoElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCt] = useState(0);
+  const [duration, setDuration] = useState(knownDuration || 0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverX, setHoverX] = useState(0);
+  const [previewReady, setPreviewReady] = useState(false);
+  const [seeking, setSeeking] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Use known duration from DB, fall back to video metadata
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onMeta = () => {
+      // WebM duration can be Infinity — use known duration if available
+      const vDur = isFinite(v.duration) ? v.duration : 0;
+      setDuration(knownDuration || vDur || 0);
+    };
+    const onTime = () => {
+      setCt(v.currentTime);
+      onTimeUpdate(v.currentTime);
+      // Update duration if it becomes available mid-playback
+      if (isFinite(v.duration) && v.duration > 0 && !knownDuration) {
+        setDuration(v.duration);
+      }
+    };
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onEnded = () => setPlaying(false);
+    v.addEventListener('loadedmetadata', onMeta);
+    v.addEventListener('timeupdate', onTime);
+    v.addEventListener('play', onPlay);
+    v.addEventListener('pause', onPause);
+    v.addEventListener('ended', onEnded);
+    return () => {
+      v.removeEventListener('loadedmetadata', onMeta);
+      v.removeEventListener('timeupdate', onTime);
+      v.removeEventListener('play', onPlay);
+      v.removeEventListener('pause', onPause);
+      v.removeEventListener('ended', onEnded);
+    };
+  }, [knownDuration, onTimeUpdate]);
+
+  // Preview video for hover thumbnails
+  useEffect(() => {
+    const pv = previewRef.current;
+    if (!pv) return;
+    const onCanPlay = () => setPreviewReady(true);
+    pv.addEventListener('canplay', onCanPlay);
+    return () => pv.removeEventListener('canplay', onCanPlay);
+  }, []);
+
+  // Capture preview frame when hover time changes
+  useEffect(() => {
+    if (hoverTime === null || !previewReady) return;
+    const pv = previewRef.current;
+    const canvas = previewCanvasRef.current;
+    if (!pv || !canvas) return;
+    pv.currentTime = hoverTime;
+    const draw = () => {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = 160;
+      canvas.height = 90;
+      ctx.drawImage(pv, 0, 0, 160, 90);
+    };
+    pv.onseeked = draw;
+  }, [hoverTime, previewReady]);
+
+  const togglePlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play(); else v.pause();
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setMuted(v.muted);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const c = containerRef.current;
+    if (!c) return;
+    if (!document.fullscreenElement) {
+      c.requestFullscreen();
+      setFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setFullscreen(false);
+    }
+  }, []);
+
+  const handleProgressClick = useCallback((e: React.MouseEvent) => {
+    const bar = progressRef.current;
+    const v = videoRef.current;
+    if (!bar || !v || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    v.currentTime = pct * duration;
+  }, [duration]);
+
+  const handleProgressHover = useCallback((e: React.MouseEvent) => {
+    const bar = progressRef.current;
+    if (!bar || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverTime(pct * duration);
+    setHoverX(e.clientX - rect.left);
+  }, [duration]);
+
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (playing) {
+      hideTimer.current = setTimeout(() => setShowControls(false), 3000);
+    }
+  }, [playing]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const v = videoRef.current;
+      if (!v) return;
+      switch (e.key) {
+        case ' ': case 'k': e.preventDefault(); togglePlay(); break;
+        case 'ArrowLeft': e.preventDefault(); v.currentTime = Math.max(0, v.currentTime - 5); break;
+        case 'ArrowRight': e.preventDefault(); v.currentTime = Math.min(duration, v.currentTime + 5); break;
+        case 'm': toggleMute(); break;
+        case 'f': toggleFullscreen(); break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [togglePlay, toggleMute, toggleFullscreen, duration]);
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative aspect-video bg-black group cursor-pointer select-none"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => { if (playing) setShowControls(false); }}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        playsInline
+        autoPlay
+        className="w-full h-full"
+        onClick={togglePlay}
+      />
+
+      {/* Hidden preview video for hover thumbnails */}
+      <video ref={previewRef} src={src} preload="auto" muted className="hidden" />
+      <canvas ref={previewCanvasRef} className="hidden" />
+
+      {/* Play/pause overlay (center) */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+            <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <polygon points="6,4 20,12 6,20" />
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* Controls bar */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${
+          showControls ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}
+      >
+        {/* Progress bar */}
+        <div
+          ref={progressRef}
+          className="relative h-1.5 mx-3 group/bar cursor-pointer hover:h-2.5 transition-all"
+          onClick={handleProgressClick}
+          onMouseMove={handleProgressHover}
+          onMouseLeave={() => setHoverTime(null)}
+        >
+          {/* Track */}
+          <div className="absolute inset-0 rounded-full bg-white/20" />
+          {/* Hover fill */}
+          {hoverTime !== null && (
+            <div
+              className="absolute top-0 bottom-0 left-0 rounded-full bg-white/10"
+              style={{ width: `${(hoverTime / duration) * 100}%` }}
+            />
+          )}
+          {/* Played fill */}
+          <div
+            className="absolute top-0 bottom-0 left-0 rounded-full bg-emerald-500"
+            style={{ width: `${progress}%` }}
+          />
+          {/* Scrub handle */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity"
+            style={{ left: `${progress}%`, transform: `translate(-50%, -50%)` }}
+          />
+
+          {/* Hover preview tooltip */}
+          {hoverTime !== null && (
+            <div
+              className="absolute bottom-5 -translate-x-1/2 pointer-events-none"
+              style={{ left: Math.max(80, Math.min(hoverX, (progressRef.current?.clientWidth || 300) - 80)) }}
+            >
+              <div className="rounded-lg overflow-hidden shadow-2xl border border-zinc-700/50 bg-zinc-900">
+                <canvas
+                  ref={previewCanvasRef}
+                  width={160}
+                  height={90}
+                  className="block"
+                  style={{ width: 160, height: 90 }}
+                />
+                <div className="text-center text-[11px] font-mono text-zinc-300 py-1 bg-zinc-900">
+                  {formatTimecode(hoverTime)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Buttons row */}
+        <div className="flex items-center gap-3 px-3 py-2">
+          {/* Play/Pause */}
+          <button onClick={togglePlay} className="text-white hover:text-emerald-400 transition-colors">
+            {playing ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <polygon points="6,4 20,12 6,20" />
+              </svg>
+            )}
+          </button>
+
+          {/* Volume */}
+          <button onClick={toggleMute} className="text-white/70 hover:text-white transition-colors">
+            {muted || volume === 0 ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M11 5L6 9H2v6h4l5 4V5z" />
+                <path strokeLinecap="round" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
+              </svg>
+            )}
+          </button>
+
+          {/* Time */}
+          <span className="text-[12px] font-mono text-zinc-400 tabular-nums">
+            {formatTimecode(currentTime)} / {formatTimecode(duration)}
+          </span>
+
+          <div className="flex-1" />
+
+          {/* Fullscreen */}
+          <button onClick={toggleFullscreen} className="text-white/70 hover:text-white transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {fullscreen ? (
+                <path strokeLinecap="round" d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3" />
+              ) : (
+                <path strokeLinecap="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Comment Component ───
 
