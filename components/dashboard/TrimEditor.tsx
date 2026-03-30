@@ -10,7 +10,7 @@ interface Props {
   onCancel: () => void;
 }
 
-const PROCESSOR_URL = import.meta.env.VITE_PROCESSOR_URL || '';
+const PROCESSOR_URL = import.meta.env.VITE_PROCESSOR_URL || 'https://ivan-recorder-production.up.railway.app';
 const PROCESS_SECRET = '31c815068711a096dc9e426a14be18d94cb381adf11ec742fe7d2410df676763';
 const THUMB_COUNT = 30;
 
