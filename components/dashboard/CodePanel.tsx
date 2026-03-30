@@ -4,14 +4,12 @@ const CLAUDE_CODE_URL = import.meta.env.VITE_CLAUDE_CODE_URL || 'https://claude-
 
 const CodePanel: React.FC = () => {
   return (
-    <div className="h-[calc(100vh-80px)] md:h-screen w-full -m-6 md:-m-8">
-      <iframe
-        src={CLAUDE_CODE_URL}
-        className="w-full h-full border-0"
-        title="Claude Code"
-        allow="clipboard-read; clipboard-write"
-      />
-    </div>
+    <iframe
+      src={CLAUDE_CODE_URL}
+      className="fixed inset-0 w-screen h-screen border-0 md:left-[240px] md:w-[calc(100vw-240px)] mt-14 md:mt-0 z-10"
+      title="Claude Code"
+      allow="clipboard-read; clipboard-write"
+    />
   );
 };
 
