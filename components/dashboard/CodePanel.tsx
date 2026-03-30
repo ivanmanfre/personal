@@ -24,15 +24,13 @@ const CodePanel: React.FC = () => {
       });
   }, []);
 
-  const iframeSrc = `${BASE_URL}#workspace=${activeWorkspace}`;
-
   const activeClient = clients.find(c => c.client_id === activeWorkspace);
   const activeLabel = activeClient?.display_name || activeWorkspace;
 
   return (
-    <>
+    <div className="-m-3 sm:-m-6 md:-m-8 flex flex-col" style={{ height: 'calc(100vh - 3.5rem)' }}>
       {/* Workspace switcher bar */}
-      <div className="fixed top-14 md:top-0 left-0 md:left-[240px] right-0 z-20 bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800/60 px-3 py-1.5 flex items-center gap-2">
+      <div className="bg-zinc-900/95 backdrop-blur-md border-b border-zinc-800/60 px-3 py-1.5 flex items-center gap-2 shrink-0">
         <Terminal className="w-4 h-4 text-emerald-400 shrink-0" />
         <div className="relative">
           <button
@@ -43,21 +41,24 @@ const CodePanel: React.FC = () => {
             <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
           </button>
           {showPicker && (
-            <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 min-w-[180px] z-30">
-              {clients.map(c => (
-                <button
-                  key={c.client_id}
-                  onClick={() => { setActiveWorkspace(c.client_id); setShowPicker(false); }}
-                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                    c.client_id === activeWorkspace
-                      ? 'text-emerald-400 bg-emerald-500/10'
-                      : 'text-zinc-300 hover:bg-zinc-700/80'
-                  }`}
-                >
-                  {c.display_name}
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setShowPicker(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl py-1 min-w-[180px] z-30">
+                {clients.map(c => (
+                  <button
+                    key={c.client_id}
+                    onClick={() => { setActiveWorkspace(c.client_id); setShowPicker(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      c.client_id === activeWorkspace
+                        ? 'text-emerald-400 bg-emerald-500/10'
+                        : 'text-zinc-300 hover:bg-zinc-700/80'
+                    }`}
+                  >
+                    {c.display_name}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
         <span className="text-xs text-zinc-500 hidden sm:inline">
@@ -65,16 +66,15 @@ const CodePanel: React.FC = () => {
         </span>
       </div>
 
-      {/* Iframe - offset for workspace bar */}
+      {/* Iframe */}
       <iframe
         key={activeWorkspace}
-        src={iframeSrc}
-        className="fixed left-0 md:left-[240px] right-0 bottom-0 border-0 z-10"
-        style={{ top: 'calc(3.5rem + 40px)', width: undefined }}
+        src={BASE_URL}
+        className="flex-1 w-full border-0"
         title={`Claude Code — ${activeLabel}`}
         allow="clipboard-read; clipboard-write"
       />
-    </>
+    </div>
   );
 };
 
