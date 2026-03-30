@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Activity, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  Clock, ChevronDown, ChevronRight, Wrench,
+  Clock, ChevronDown, ChevronRight, Wrench, Loader2, Shield,
 } from 'lucide-react';
 import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { supabase } from '../../lib/supabase';
+import { dashboardAction } from '../../lib/dashboardActions';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -61,6 +63,47 @@ interface PipelineStat {
   totalRuns: number;
 }
 
+/* ── Fix Status Badge ── */
+
+const fixStatusConfig: Record<string, { label: string; colors: string; spin?: boolean; pulse?: boolean }> = {
+  requested: { label: 'Queued...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', pulse: true },
+  analyzing: { label: 'Analyzing...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', spin: true },
+  safe_to_fix: { label: 'Fix ready', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+  fixing: { label: 'Fixing...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', spin: true },
+  fixed: { label: 'Fixed', colors: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' },
+  not_fixable: { label: 'Manual needed', colors: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20' },
+  failed: { label: 'Fix failed', colors: 'bg-red-500/15 text-red-400 border-red-500/20' },
+};
+
+const FixStatusBadge: React.FC<{ status: string; appliedAt?: string | null }> = ({ status, appliedAt }) => {
+  const cfg = fixStatusConfig[status];
+  if (!cfg) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${cfg.colors}`}>
+      {cfg.spin && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+      {cfg.pulse && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+      {cfg.label}
+      {status === 'fixed' && appliedAt && <span className="text-[9px] opacity-70 ml-0.5">{timeAgo(appliedAt)}</span>}
+    </span>
+  );
+};
+
+interface IvanError {
+  id: string;
+  workflowId: string;
+  workflowName: string | null;
+  errorMessage: string | null;
+  aiAnalysis: string | null;
+  severity: string;
+  lastSeen: string;
+  occurrenceCount: number;
+  executionId: string;
+  fixStatus: string | null;
+  fixAnalysis: string | null;
+  fixDescription: string | null;
+  fixAppliedAt: string | null;
+}
+
 /* ── Component ── */
 
 const WorkflowsPanel: React.FC = () => {
@@ -70,6 +113,58 @@ const WorkflowsPanel: React.FC = () => {
   const [expandedWorkflows, setExpandedWorkflows] = useState<Set<string>>(new Set());
   const [sentToEngineer, setSentToEngineer] = useState<Record<string, 'sending' | 'sent'>>({});
   const [search, setSearch] = useState('');
+  const [ivanErrors, setIvanErrors] = useState<IvanError[]>([]);
+  const [expandedIvanError, setExpandedIvanError] = useState<string | null>(null);
+
+  // Fetch Ivan System errors from client_workflow_errors
+  const fetchIvanErrors = useCallback(async () => {
+    const { data } = await supabase
+      .from('client_workflow_errors')
+      .select('*, client_instances!inner(client_name)')
+      .eq('client_instances.client_name', 'Ivan System')
+      .eq('is_resolved', false)
+      .order('last_seen', { ascending: false })
+      .limit(20);
+    if (data) {
+      setIvanErrors(data.map((r: any) => ({
+        id: r.id,
+        workflowId: r.workflow_id,
+        workflowName: r.workflow_name,
+        errorMessage: r.error_message,
+        aiAnalysis: r.ai_analysis,
+        severity: r.severity || 'medium',
+        lastSeen: r.last_seen,
+        occurrenceCount: r.occurrence_count || 1,
+        executionId: r.execution_id || '',
+        fixStatus: r.fix_status || null,
+        fixAnalysis: r.fix_analysis || null,
+        fixDescription: r.fix_description || null,
+        fixAppliedAt: r.fix_applied_at || null,
+      })));
+    }
+  }, []);
+
+  useEffect(() => { fetchIvanErrors(); }, [fetchIvanErrors]);
+  // Re-fetch when main refresh fires
+  useEffect(() => { if (lastRefreshed) fetchIvanErrors(); }, [lastRefreshed, fetchIvanErrors]);
+
+  const requestFix = useCallback(async (id: string) => {
+    setIvanErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'requested' } : e)));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'fix_status', 'requested');
+    } catch {
+      setIvanErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: null } : e)));
+    }
+  }, []);
+
+  const resolveIvanError = useCallback(async (id: string) => {
+    setIvanErrors((prev) => prev.filter((e) => e.id !== id));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'is_resolved', 'true');
+    } catch {
+      fetchIvanErrors();
+    }
+  }, [fetchIvanErrors]);
 
   const toggleWorkflow = useCallback((id: string) => {
     setExpandedWorkflows(prev => {
@@ -333,6 +428,105 @@ const WorkflowsPanel: React.FC = () => {
           );
         })}
       </div>
+
+      {/* ── Latest Errors (Ivan System) ── */}
+      {ivanErrors.length > 0 && (
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
+            <Shield className="w-3.5 h-3.5 text-zinc-500" />
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1">Latest Errors</h2>
+            <span className="text-[10px] text-zinc-500">{ivanErrors.length} open</span>
+          </div>
+          <div className="max-h-96 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/40">
+            {ivanErrors.map((err) => {
+              const isExpanded = expandedIvanError === err.id;
+              const sevColors = err.severity === 'high' ? 'bg-red-500/15 text-red-400 border-red-500/20' : err.severity === 'medium' ? 'bg-orange-500/15 text-orange-400 border-orange-500/20' : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20';
+              return (
+                <div key={err.id}>
+                  <button
+                    onClick={() => setExpandedIvanError(isExpanded ? null : err.id)}
+                    className="w-full px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors text-left"
+                  >
+                    <div className="mt-1">
+                      <span className={`block w-2 h-2 rounded-full ${err.severity === 'high' ? 'bg-red-500 animate-pulse' : err.severity === 'medium' ? 'bg-orange-500' : 'bg-zinc-500'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-zinc-300 truncate">{err.workflowName || err.workflowId}</p>
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border ${sevColors}`}>{err.severity}</span>
+                        {err.occurrenceCount > 1 && (
+                          <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{err.occurrenceCount}x</span>
+                        )}
+                        {err.fixStatus && <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />}
+                      </div>
+                      <p className="text-[11px] text-zinc-500 mt-1 line-clamp-1">{err.errorMessage}</p>
+                    </div>
+                    <span className="text-[10px] text-zinc-600 shrink-0 mt-1">{timeAgo(err.lastSeen)}</span>
+                    {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600 mt-1 shrink-0" /> : <ChevronRight className="w-4 h-4 text-zinc-600 mt-1 shrink-0" />}
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-3 pl-9 space-y-2">
+                      {err.errorMessage && (
+                        <div className="p-2.5 bg-red-950/30 border border-red-500/15 rounded-lg text-xs text-red-300/90 font-mono leading-relaxed">
+                          {err.errorMessage}
+                        </div>
+                      )}
+                      {err.aiAnalysis && (
+                        <div className="p-2.5 bg-blue-950/20 border border-blue-500/15 rounded-lg text-xs text-blue-300/90 leading-relaxed">
+                          <span className="text-blue-400/70 font-medium">AI Analysis: </span>
+                          {err.aiAnalysis}
+                        </div>
+                      )}
+                      {err.fixAnalysis && (
+                        <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg text-xs text-amber-300/90 leading-relaxed">
+                          <span className="text-amber-400/70 font-medium">Engineer Analysis: </span>
+                          {err.fixAnalysis}
+                          {err.fixDescription && (
+                            <p className="mt-1 text-amber-400/60">Proposed fix: {err.fixDescription}</p>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+                          <span>Workflow: <span className="font-mono">{err.workflowId}</span></span>
+                          {err.executionId && (
+                            <a
+                              href={`https://n8n.intelligents.agency/workflow/${err.workflowId}/executions/${err.executionId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Execution
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {err.fixStatus ? (
+                            <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                          ) : (
+                            <button
+                              onClick={() => requestFix(err.id)}
+                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                            >
+                              <Wrench className="w-3 h-3" /> Tell Engineer
+                            </button>
+                          )}
+                          <button
+                            onClick={() => resolveIvanError(err.id)}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                          >
+                            <CheckCircle2 className="w-3 h-3" /> Resolve
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

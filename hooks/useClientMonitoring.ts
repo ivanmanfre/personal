@@ -34,6 +34,10 @@ function mapError(row: any): ClientWorkflowError {
     isResolved: row.is_resolved,
     createdAt: row.created_at,
     executionId: row.execution_id || '',
+    fixStatus: row.fix_status || null,
+    fixAnalysis: row.fix_analysis || null,
+    fixDescription: row.fix_description || null,
+    fixAppliedAt: row.fix_applied_at || null,
   };
 }
 
@@ -96,6 +100,7 @@ export function useClientMonitoring() {
   const [workflows, setWorkflows] = useState<ClientMonitoredWorkflow[]>([]);
   const [infrastructure, setInfrastructure] = useState<Record<string, ClientInfrastructure>>({});
   const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [autofixEnabled, setAutofixEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mutating, setMutating] = useState<Set<string>>(new Set());
   const startMutating = (id: string) => setMutating((s) => new Set(s).add(id));
@@ -104,7 +109,7 @@ export function useClientMonitoring() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-    const [clientsRes, errorsRes, workflowsRes, infraRes, reposRes] = await Promise.all([
+    const [clientsRes, errorsRes, workflowsRes, infraRes, reposRes, autofixRes] = await Promise.all([
       supabase.from('client_instances_safe').select('*').order('client_name'),
       supabase
         .from('client_workflow_errors')
@@ -125,6 +130,11 @@ export function useClientMonitoring() {
         .from('system_settings')
         .select('value')
         .eq('key', 'github_repos')
+        .single(),
+      supabase
+        .from('integration_config')
+        .select('value')
+        .eq('key', 'client_autofix_enabled')
         .single(),
     ]);
 
@@ -147,6 +157,7 @@ export function useClientMonitoring() {
     if (reposRes.data?.value) {
       setGithubRepos(reposRes.data.value as GitHubRepo[]);
     }
+    setAutofixEnabled(autofixRes.data?.value === 'true');
     } catch (err) {
       toastError('load client data', err);
     } finally {
@@ -282,6 +293,32 @@ export function useClientMonitoring() {
     }
   };
 
+  const requestFix = async (id: string) => {
+    startMutating(id);
+    setErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'requested' } : e)));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'fix_status', 'requested');
+    } catch (err) {
+      toastError('request fix', err);
+      setErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: null } : e)));
+    } finally {
+      stopMutating(id);
+    }
+  };
+
+  const toggleAutofix = async () => {
+    const newValue = !autofixEnabled;
+    setAutofixEnabled(newValue);
+    try {
+      await supabase
+        .from('integration_config')
+        .upsert({ key: 'client_autofix_enabled', value: String(newValue) }, { onConflict: 'key' });
+    } catch (err) {
+      toastError('toggle autofix', err);
+      setAutofixEnabled(!newValue);
+    }
+  };
+
   const reposPerClient = (clientName: string): GitHubRepo[] => {
     const patterns = CLIENT_REPO_PATTERNS[clientName];
     if (!patterns) return [];
@@ -310,5 +347,8 @@ export function useClientMonitoring() {
     updateInfrastructure,
     githubRepos,
     reposPerClient,
+    requestFix,
+    autofixEnabled,
+    toggleAutofix,
   };
 }

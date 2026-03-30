@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box, Folder, FileText } from 'lucide-react';
+import { Server, CheckCircle2, XCircle, ExternalLink, ChevronDown, ChevronRight, Shield, Bell, BellOff, Search, Info, Pencil, Save, X, Github, Database, Box, Folder, FileText, Wrench, Loader2 } from 'lucide-react';
 import { useClientMonitoring, type ClientInfrastructure, type GitHubRepo } from '../../hooks/useClientMonitoring';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -15,6 +15,29 @@ const severityColors: Record<string, string> = {
   low: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20',
 };
 
+const fixStatusConfig: Record<string, { label: string; colors: string; spin?: boolean; pulse?: boolean }> = {
+  requested: { label: 'Queued...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', pulse: true },
+  analyzing: { label: 'Analyzing...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', spin: true },
+  safe_to_fix: { label: 'Fix ready', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
+  fixing: { label: 'Fixing...', colors: 'bg-amber-500/15 text-amber-400 border-amber-500/20', spin: true },
+  fixed: { label: 'Fixed', colors: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' },
+  not_fixable: { label: 'Manual needed', colors: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20' },
+  failed: { label: 'Fix failed', colors: 'bg-red-500/15 text-red-400 border-red-500/20' },
+};
+
+const FixStatusBadge: React.FC<{ status: string; appliedAt?: string | null }> = ({ status, appliedAt }) => {
+  const cfg = fixStatusConfig[status];
+  if (!cfg) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium border ${cfg.colors}`}>
+      {cfg.spin && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+      {cfg.pulse && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+      {cfg.label}
+      {status === 'fixed' && appliedAt && <span className="text-[9px] opacity-70 ml-0.5">{timeAgo(appliedAt)}</span>}
+    </span>
+  );
+};
+
 type ClientTabType = 'workflows' | 'errors' | 'info';
 
 const ClientsPanel: React.FC = () => {
@@ -23,6 +46,7 @@ const ClientsPanel: React.FC = () => {
     errorsPerClient, workflowsPerClient, getClientHealth,
     toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications, resolveAllErrors,
     infrastructure, updateInfrastructure, reposPerClient,
+    requestFix, autofixEnabled, toggleAutofix,
   } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -38,7 +62,21 @@ const ClientsPanel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
-        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleAutofix}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border"
+            style={{ opacity: 1 }}
+            title={autofixEnabled ? 'Auto-fix ON: safe fixes apply automatically' : 'Auto-fix OFF: fixes require manual approval'}
+          >
+            <Wrench className="w-3 h-3" />
+            <span>Auto-fix</span>
+            <span className={`w-7 h-4 rounded-full relative transition-colors ${autofixEnabled ? 'bg-amber-500/40' : 'bg-zinc-700'}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${autofixEnabled ? 'left-3.5 bg-amber-400' : 'left-0.5 bg-zinc-500'}`} />
+            </span>
+          </button>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
 
       {/* Stats */}
@@ -86,6 +124,7 @@ const ClientsPanel: React.FC = () => {
                   onResolveError={(id) => resolveError(id)}
                   onResolveAll={() => resolveAllForClient(client.id)}
                   onToggleNotifications={(id, enabled) => toggleWorkflowNotifications(id, enabled)}
+                  onRequestFix={(id) => requestFix(id)}
                   infra={infrastructure[client.id]}
                   onUpdateInfra={(data) => updateInfrastructure(client.id, data)}
                   repos={reposPerClient(client.clientName)}
@@ -151,6 +190,15 @@ const ClientsPanel: React.FC = () => {
                               {err.aiAnalysis}
                             </div>
                           )}
+                          {err.fixAnalysis && (
+                            <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg text-xs text-amber-300/90 leading-relaxed">
+                              <span className="text-amber-400/70 font-medium">Engineer Analysis: </span>
+                              {err.fixAnalysis}
+                              {err.fixDescription && (
+                                <p className="mt-1 text-amber-400/60">Proposed fix: {err.fixDescription}</p>
+                              )}
+                            </div>
+                          )}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 text-[11px] text-zinc-500">
                               <span>First seen: {new Date(err.firstSeen).toLocaleString()}</span>
@@ -167,12 +215,24 @@ const ClientsPanel: React.FC = () => {
                                 </a>
                               )}
                             </div>
-                            <button
-                              onClick={() => resolveError(err.id)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                            >
-                              <CheckCircle2 className="w-3 h-3" /> Resolve
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {err.fixStatus ? (
+                                <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                              ) : (
+                                <button
+                                  onClick={() => requestFix(err.id)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                                >
+                                  <Wrench className="w-3 h-3" /> Tell Engineer
+                                </button>
+                              )}
+                              <button
+                                onClick={() => resolveError(err.id)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Resolve
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -206,6 +266,7 @@ interface ClientCardProps {
   onResolveError: (id: string) => void;
   onResolveAll: () => void;
   onToggleNotifications: (id: string, enabled: boolean) => void;
+  onRequestFix: (id: string) => void;
   infra?: ClientInfrastructure;
   onUpdateInfra: (data: ClientInfrastructure) => void;
   repos: GitHubRepo[];
@@ -215,7 +276,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
   client, health, errorCount, workflowCount, monitoredCount,
   isExpanded, onToggle, tab, onTabChange,
   errors, workflows, expandedError, onToggleError,
-  onToggleActive, onResolveError, onResolveAll, onToggleNotifications,
+  onToggleActive, onResolveError, onResolveAll, onToggleNotifications, onRequestFix,
   infra, onUpdateInfra, repos,
 }) => {
   const [search, setSearch] = useState('');
@@ -395,6 +456,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
                               {err.occurrenceCount > 1 && (
                                 <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1 py-0.5 rounded">{err.occurrenceCount}x</span>
                               )}
+                              {err.fixStatus && <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />}
                             </div>
                             {err.aiAnalysis && (
                               <p className="text-[11px] text-blue-300/70 mt-0.5 line-clamp-1" title={err.aiAnalysis}>{err.aiAnalysis}</p>
@@ -414,6 +476,14 @@ const ClientCard: React.FC<ClientCardProps> = ({
                                 <span className="text-blue-400/70 font-medium">Analysis: </span>{err.aiAnalysis}
                               </div>
                             )}
+                            {err.fixAnalysis && (
+                              <div className="p-2 bg-amber-950/20 border border-amber-500/15 rounded-lg text-[11px] text-amber-300/90 leading-relaxed">
+                                <span className="text-amber-400/70 font-medium">Engineer: </span>{err.fixAnalysis}
+                                {err.fixDescription && (
+                                  <p className="mt-1 text-amber-400/60">Fix: {err.fixDescription}</p>
+                                )}
+                              </div>
+                            )}
                             <div className="flex items-center justify-between">
                               {err.executionId && err.n8nUrl && (
                                 <a
@@ -425,12 +495,24 @@ const ClientCard: React.FC<ClientCardProps> = ({
                                   <ExternalLink className="w-3 h-3" /> Open Execution
                                 </a>
                               )}
-                              <button
-                                onClick={() => onResolveError(err.id)}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                              >
-                                <CheckCircle2 className="w-3 h-3" /> Resolve
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {err.fixStatus ? (
+                                  <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                                ) : (
+                                  <button
+                                    onClick={() => onRequestFix(err.id)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                                  >
+                                    <Wrench className="w-3 h-3" /> Tell Engineer
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => onResolveError(err.id)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" /> Resolve
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
