@@ -42,7 +42,17 @@ BEGIN
     RAISE EXCEPTION 'Action not allowed: %.%', p_table, p_field;
   END IF;
 
-  IF p_table = 'n8nclaw_reminders' THEN
+  -- Boolean fields need explicit cast
+  IF p_field IN ('is_resolved', 'is_active', 'sent', 'opportunity_actioned', 'error_acknowledged', 'notifications_enabled', 'needs_manual_reply', 'blacklisted') THEN
+    IF p_table = 'n8nclaw_reminders' THEN
+      EXECUTE format('UPDATE %I SET %I = $1::boolean, updated_at = now() WHERE id = $2', p_table, p_field)
+      USING p_value, p_id::integer;
+    ELSE
+      EXECUTE format('UPDATE %I SET %I = $1::boolean, updated_at = now() WHERE id = $2', p_table, p_field)
+      USING p_value, p_id::uuid;
+    END IF;
+  -- Integer PK table
+  ELSIF p_table = 'n8nclaw_reminders' THEN
     EXECUTE format('UPDATE %I SET %I = $1, updated_at = now() WHERE id = $2', p_table, p_field)
     USING p_value, p_id::integer;
   ELSE

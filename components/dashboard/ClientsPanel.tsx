@@ -46,7 +46,7 @@ const ClientsPanel: React.FC = () => {
     errorsPerClient, workflowsPerClient, getClientHealth,
     toggleClient, resolveError, resolveAllForClient, toggleWorkflowNotifications, resolveAllErrors,
     infrastructure, updateInfrastructure, reposPerClient,
-    requestFix, autofixEnabled, toggleAutofix,
+    requestFix, applyFix, autofixEnabled, toggleAutofix,
   } = useClientMonitoring();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['client_workflow_errors'] });
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -125,6 +125,7 @@ const ClientsPanel: React.FC = () => {
                   onResolveAll={() => resolveAllForClient(client.id)}
                   onToggleNotifications={(id, enabled) => toggleWorkflowNotifications(id, enabled)}
                   onRequestFix={(id) => requestFix(id)}
+                  onApplyFix={(id) => applyFix(id)}
                   infra={infrastructure[client.id]}
                   onUpdateInfra={(data) => updateInfrastructure(client.id, data)}
                   repos={reposPerClient(client.clientName)}
@@ -216,7 +217,17 @@ const ClientsPanel: React.FC = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              {err.fixStatus ? (
+                              {err.fixStatus === 'safe_to_fix' ? (
+                                <>
+                                  <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                                  <button
+                                    onClick={() => applyFix(err.id)}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                                  >
+                                    <Wrench className="w-3 h-3" /> Apply Fix
+                                  </button>
+                                </>
+                              ) : err.fixStatus ? (
                                 <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
                               ) : (
                                 <button
@@ -267,6 +278,7 @@ interface ClientCardProps {
   onResolveAll: () => void;
   onToggleNotifications: (id: string, enabled: boolean) => void;
   onRequestFix: (id: string) => void;
+  onApplyFix: (id: string) => void;
   infra?: ClientInfrastructure;
   onUpdateInfra: (data: ClientInfrastructure) => void;
   repos: GitHubRepo[];
@@ -276,7 +288,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
   client, health, errorCount, workflowCount, monitoredCount,
   isExpanded, onToggle, tab, onTabChange,
   errors, workflows, expandedError, onToggleError,
-  onToggleActive, onResolveError, onResolveAll, onToggleNotifications, onRequestFix,
+  onToggleActive, onResolveError, onResolveAll, onToggleNotifications, onRequestFix, onApplyFix,
   infra, onUpdateInfra, repos,
 }) => {
   const [search, setSearch] = useState('');
@@ -496,7 +508,17 @@ const ClientCard: React.FC<ClientCardProps> = ({
                                 </a>
                               )}
                               <div className="flex items-center gap-2">
-                                {err.fixStatus ? (
+                                {err.fixStatus === 'safe_to_fix' ? (
+                                  <>
+                                    <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                                    <button
+                                      onClick={() => onApplyFix(err.id)}
+                                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                                    >
+                                      <Wrench className="w-3 h-3" /> Apply Fix
+                                    </button>
+                                  </>
+                                ) : err.fixStatus ? (
                                   <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
                                 ) : (
                                   <button

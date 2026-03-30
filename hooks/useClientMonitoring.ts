@@ -306,6 +306,19 @@ export function useClientMonitoring() {
     }
   };
 
+  const applyFix = async (id: string) => {
+    startMutating(id);
+    setErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'fixing' } : e)));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'fix_status', 'force_fix');
+    } catch (err) {
+      toastError('apply fix', err);
+      setErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'safe_to_fix' } : e)));
+    } finally {
+      stopMutating(id);
+    }
+  };
+
   const toggleAutofix = async () => {
     const newValue = !autofixEnabled;
     setAutofixEnabled(newValue);
@@ -348,6 +361,7 @@ export function useClientMonitoring() {
     githubRepos,
     reposPerClient,
     requestFix,
+    applyFix,
     autofixEnabled,
     toggleAutofix,
   };

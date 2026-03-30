@@ -164,6 +164,15 @@ const WorkflowsPanel: React.FC = () => {
     }
   }, []);
 
+  const applyFix = useCallback(async (id: string) => {
+    setIvanErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'fixing' } : e)));
+    try {
+      await dashboardAction('client_workflow_errors', id, 'fix_status', 'force_fix');
+    } catch {
+      setIvanErrors((prev) => prev.map((e) => (e.id === id ? { ...e, fixStatus: 'safe_to_fix' } : e)));
+    }
+  }, []);
+
   const resolveIvanError = useCallback(async (id: string) => {
     setIvanErrors((prev) => prev.filter((e) => e.id !== id));
     try {
@@ -524,7 +533,17 @@ const WorkflowsPanel: React.FC = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {err.fixStatus ? (
+                          {err.fixStatus === 'safe_to_fix' ? (
+                            <>
+                              <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); applyFix(err.id); }}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                              >
+                                <Wrench className="w-3 h-3" /> Apply Fix
+                              </button>
+                            </>
+                          ) : err.fixStatus ? (
                             <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
                           ) : (
                             <button
