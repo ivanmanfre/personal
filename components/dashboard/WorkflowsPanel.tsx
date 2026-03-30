@@ -173,6 +173,16 @@ const WorkflowsPanel: React.FC = () => {
     }
   }, [fetchIvanErrors]);
 
+  const resolveAllIvanErrors = useCallback(async () => {
+    const prev = [...ivanErrors];
+    setIvanErrors([]);
+    try {
+      await Promise.all(prev.map((e) => dashboardAction('client_workflow_errors', e.id, 'is_resolved', 'true')));
+    } catch {
+      setIvanErrors(prev);
+    }
+  }, [ivanErrors]);
+
   const toggleWorkflow = useCallback((id: string) => {
     setExpandedWorkflows(prev => {
       const next = new Set(prev);
@@ -443,6 +453,12 @@ const WorkflowsPanel: React.FC = () => {
             <Shield className="w-3.5 h-3.5 text-zinc-500" />
             <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1">Latest Errors</h2>
             <span className="text-[10px] text-zinc-500">{ivanErrors.length} open</span>
+            <button
+              onClick={() => { if (confirm(`Clear all ${ivanErrors.length} errors?`)) resolveAllIvanErrors(); }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+            >
+              <CheckCircle2 className="w-3 h-3" /> Clear All
+            </button>
           </div>
           <div className="max-h-96 overflow-y-auto dashboard-scroll divide-y divide-zinc-800/40">
             {ivanErrors.map((err) => {
@@ -512,14 +528,14 @@ const WorkflowsPanel: React.FC = () => {
                             <FixStatusBadge status={err.fixStatus} appliedAt={err.fixAppliedAt} />
                           ) : (
                             <button
-                              onClick={() => requestFix(err.id)}
+                              onClick={(e) => { e.stopPropagation(); requestFix(err.id); }}
                               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
                             >
                               <Wrench className="w-3 h-3" /> Tell Engineer
                             </button>
                           )}
                           <button
-                            onClick={() => resolveIvanError(err.id)}
+                            onClick={(e) => { e.stopPropagation(); resolveIvanError(err.id); }}
                             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
                           >
                             <CheckCircle2 className="w-3 h-3" /> Resolve
