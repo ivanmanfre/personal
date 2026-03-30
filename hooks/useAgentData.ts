@@ -6,7 +6,7 @@ import type { ProactiveAlert, Reminder, ChatMessage, DailySummary } from '../typ
 const CHAT_PAGE_SIZE = 50;
 const N8NCLAW_WEBHOOK_URL = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
 
-export function useAgentData() {
+export function useAgentData(timezone?: string) {
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [messageStats, setMessageStats] = useState({ total: 0, today: 0, thisWeek: 0 });
@@ -27,7 +27,19 @@ export function useAgentData() {
     if (!initialLoadDone.current) setLoading(true);
     try {
       const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      // Compute today's start in the user's timezone
+      let todayStart: string;
+      if (timezone) {
+        // Get local midnight by using timezone offset
+        const formatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+        const parts = formatter.formatToParts(now);
+        const year = parseInt(parts.find(p => p.type === 'year')?.value || '2026');
+        const month = parseInt(parts.find(p => p.type === 'month')?.value || '1') - 1;
+        const day = parseInt(parts.find(p => p.type === 'day')?.value || '1');
+        todayStart = new Date(year, month, day).toISOString();
+      } else {
+        todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      }
       const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
 
       const [alertsRes, remindersRes, totalRes, todayRes, weekRes, summariesRes, chatRes] = await Promise.all([
@@ -89,7 +101,7 @@ export function useAgentData() {
       setLoading(false);
       initialLoadDone.current = true;
     }
-  }, []); // No dependencies — uses refs for mutable state
+  }, [timezone]); // timezone affects "today" boundary calculation
 
   const loadMoreChat = useCallback(async () => {
     if (chatMessages.length === 0) return;

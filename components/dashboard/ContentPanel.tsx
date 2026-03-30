@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X } from 'lucide-react';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
+import { formatDate, formatTime as formatTimeUtil } from './shared/utils';
 import type { ScheduledPost } from '../../types/dashboard';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -49,9 +51,8 @@ function getMonthDays(year: number, month: number) {
   return days;
 }
 
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+function formatTime(dateStr: string, timezone?: string): string {
+  return formatTimeUtil(dateStr, { hour: 'numeric', minute: '2-digit', hour12: true }, timezone);
 }
 
 function useCountdown() {
@@ -89,7 +90,7 @@ const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ po
               {post.status}
             </span>
             <span className="text-sm text-zinc-400">
-              {new Date(post.scheduledAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at {formatTime(post.scheduledAt)}
+              {formatDate(post.scheduledAt, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }, userTimezone)} at {formatTime(post.scheduledAt, userTimezone)}
             </span>
             {post.postFormat && (
               <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
@@ -126,7 +127,8 @@ const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ po
 };
 
 const ContentPanel: React.FC = () => {
-  const { posts, statusCounts, postsByDate, loading, refresh } = useContentPipeline();
+  const { userTimezone } = useDashboard();
+  const { posts, statusCounts, postsByDate, loading, refresh } = useContentPipeline(userTimezone);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_posts'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
@@ -207,7 +209,7 @@ const ContentPanel: React.FC = () => {
                     <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{p.postText.slice(0, 80)}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] text-zinc-600">
-                        {new Date(p.scheduledAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {formatTime(p.scheduledAt)}
+                        {formatDate(p.scheduledAt, { weekday: 'short', month: 'short', day: 'numeric' }, userTimezone)} at {formatTime(p.scheduledAt, userTimezone)}
                       </span>
                       {p.postFormat && <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1 py-0.5 rounded">{p.postFormat}</span>}
                       {p.mediaUrls.length > 0 && (
@@ -338,7 +340,7 @@ const ContentPanel: React.FC = () => {
                       {post.status}
                     </span>
                     <span className="text-[11px] text-zinc-500">
-                      {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(post.scheduledAt)}
+                      {formatDate(post.scheduledAt, { month: 'short', day: 'numeric' }, userTimezone)} at {formatTime(post.scheduledAt, userTimezone)}
                     </span>
                     {post.postFormat && (
                       <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle, Clock, Search, Send, Eye, BookOpen, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -54,7 +55,8 @@ const actionTypeIcons: Record<string, string> = {
 type SortKey = 'icp_score' | 'activity_score' | 'updated_at' | 'created_at';
 
 const OutreachPanel: React.FC = () => {
-  const pipeline = useOutreachPipeline();
+  const { userTimezone } = useDashboard();
+  const pipeline = useOutreachPipeline(userTimezone);
   const {
     prospects, campaigns, stats, loading, messages, engagementLog,
     recentActivity, rateLimits, featureFlags, stageCounts, actionNeeded,

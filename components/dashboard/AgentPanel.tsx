@@ -2,12 +2,13 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Bot, Bell, Clock, MessageSquare, FileText, CheckCircle2, ChevronUp, User, Send, ArrowDown } from 'lucide-react';
 import { useAgentData } from '../../hooks/useAgentData';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import StatusDot from './shared/StatusDot';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
-import { timeAgo } from './shared/utils';
+import { timeAgo, formatTime as formatTimeUtil } from './shared/utils';
 
 const alertTypeColors: Record<string, string> = {
   performance_spike: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
@@ -16,29 +17,34 @@ const alertTypeColors: Record<string, string> = {
   competitor_viral_reminder: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
 };
 
-function formatChatTime(ts: string): string {
+function formatChatTime(ts: string, timezone?: string): string {
   const d = new Date(ts);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const time = formatTimeUtil(ts, { hour: 'numeric', minute: '2-digit', hour12: true }, timezone);
   if (diffDays === 0) return time;
   if (diffDays === 1) return `Yesterday ${time}`;
-  if (diffDays < 7) return `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${time}`;
-  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}`;
+  if (diffDays < 7) return `${d.toLocaleDateString('en-US', { weekday: 'short' }, timezone ? { timeZone: timezone } as any : {})} ${time}`;
+  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }, timezone ? { timeZone: timezone } as any : {})} ${time}`;
 }
 
-function shouldShowDateSeparator(current: string, prev: string | null): boolean {
+function shouldShowDateSeparator(current: string, prev: string | null, timezone?: string): boolean {
   if (!prev) return true;
-  return new Date(current).toDateString() !== new Date(prev).toDateString();
+  const toDateString = (ts: string) => {
+    const d = new Date(ts);
+    if (!timezone) return d.toDateString();
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }, { timeZone: timezone } as any);
+  };
+  return toDateString(current) !== toDateString(prev);
 }
 
-function formatDateSeparator(ts: string): string {
+function formatDateSeparator(ts: string, timezone?: string): string {
   const d = new Date(ts);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }, timezone ? { timeZone: timezone } as any : {});
 }
 
 // Check if avatar should be shown (hide on consecutive same-sender messages)
@@ -93,11 +99,12 @@ const DetailSection: React.FC<{
 };
 
 const AgentPanel: React.FC = () => {
+  const { userTimezone } = useDashboard();
   const {
     alerts, reminders, messageStats, summaries, chatMessages, chatHasMore, alertsByType,
     loading, refresh, acknowledgeAlert, completeReminder, loadMoreChat,
     sendMessage, sending, pendingMessage,
-  } = useAgentData();
+  } = useAgentData(userTimezone);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['n8nclaw_proactive_alerts', 'n8nclaw_chat_messages'] });
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -264,7 +271,7 @@ const AgentPanel: React.FC = () => {
                 {chatMessages.map((msg, i) => {
                   const isUser = msg.role === 'user';
                   const prevTs = i > 0 ? chatMessages[i - 1].createdAt : null;
-                  const showDate = shouldShowDateSeparator(msg.createdAt, prevTs);
+                  const showDate = shouldShowDateSeparator(msg.createdAt, prevTs, userTimezone);
                   const showAv = shouldShowAvatar(chatMessages, i);
                   // Add top margin on role change for visual grouping
                   const roleChanged = i > 0 && chatMessages[i - 1].role !== msg.role;
@@ -274,7 +281,7 @@ const AgentPanel: React.FC = () => {
                       {showDate && (
                         <div className="flex items-center gap-3 py-2.5">
                           <div className="flex-1 h-px bg-zinc-700/50" />
-                          <span className="text-[11px] text-zinc-500 font-medium tracking-wide">{formatDateSeparator(msg.createdAt)}</span>
+                          <span className="text-[11px] text-zinc-500 font-medium tracking-wide">{formatDateSeparator(msg.createdAt, userTimezone)}</span>
                           <div className="flex-1 h-px bg-zinc-700/50" />
                         </div>
                       )}
@@ -300,7 +307,7 @@ const AgentPanel: React.FC = () => {
                           </div>
                           {showAv && (
                             <p className={`text-[10px] text-zinc-600 mt-1 px-1 ${isUser ? 'text-right' : ''}`}>
-                              {formatChatTime(msg.createdAt)}
+                              {formatChatTime(msg.createdAt, userTimezone)}
                             </p>
                           )}
                         </div>

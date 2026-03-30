@@ -3,12 +3,14 @@ import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send
 import { useMeetings } from '../../hooks/useMeetings';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import { toastSuccess, toastError } from '../../lib/dashboardActions';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import FilterBar from './shared/FilterBar';
+import { formatDate as formatDateUtil, formatTime } from './shared/utils';
 import type { MeetingTranscript, CalendarEvent } from '../../types/dashboard';
 
 function parseItem(item: any): Record<string, any> {
@@ -29,8 +31,8 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+function formatDateLocal(dateStr: string, timezone?: string): string {
+  return formatDateUtil(dateStr, { weekday: 'short', month: 'short', day: 'numeric' }, timezone);
 }
 
 const ownerColors: Record<string, string> = {
@@ -97,7 +99,7 @@ const TopicPill: React.FC<{ item: any }> = ({ item }) => {
   );
 };
 
-const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
+const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string }> = ({ meeting, userTimezone }) => {
   const [expanded, setExpanded] = useState(false);
   const [creatingProposal, setCreatingProposal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -148,7 +150,7 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
       const text = p.action || p.description || p.task || p.text || JSON.stringify(a);
       return p.owner ? `- ${p.owner}: ${text}` : `- ${text}`;
     }).join('\n');
-    const text = `Meeting: ${title}\nDate: ${formatDate(meeting.date)}\nParticipants: ${meeting.participants.join(', ')}\n\nSummary:\n${meeting.summary || 'N/A'}\n\nAction Items:\n${actions || 'None'}`;
+    const text = `Meeting: ${title}\nDate: ${formatDateLocal(meeting.date, userTimezone)}\nParticipants: ${meeting.participants.join(', ')}\n\nSummary:\n${meeting.summary || 'N/A'}\n\nAction Items:\n${actions || 'None'}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -174,7 +176,7 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript }> = ({ meeting }) => {
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5 text-[11px] text-zinc-500">
-            <span>{formatDate(meeting.date)}</span>
+            <span>{formatDateLocal(meeting.date, userTimezone)}</span>
             <span className="text-zinc-700">|</span>
             <span className="flex items-center gap-1">
               <Users className="w-3 h-3" />
@@ -413,6 +415,7 @@ const MeetingsPanel: React.FC = () => {
   const { events: upcomingEvents, todayEvents, refresh: refreshEvents } = useUpcomingEvents();
   const combinedRefresh = useCallback(async () => { await refresh(); await refreshEvents(); }, [refresh, refreshEvents]);
   const { lastRefreshed } = useAutoRefresh(combinedRefresh, { realtimeTables: ['transcripts', 'calendar_events'] });
+  const { userTimezone } = useDashboard();
 
   const filtered = useMemo(() => {
     if (!search.trim()) return meetings;
@@ -486,7 +489,7 @@ const MeetingsPanel: React.FC = () => {
 
       <div className="space-y-3">
         {filtered.map((m) => (
-          <MeetingCard key={m.id} meeting={m} />
+          <MeetingCard key={m.id} meeting={m} userTimezone={userTimezone} />
         ))}
         {filtered.length === 0 && search && (
           <p className="text-sm text-zinc-500 text-center py-8">No meetings match &ldquo;{search}&rdquo;</p>

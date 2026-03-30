@@ -18,8 +18,8 @@ import type { WorkflowStat } from '../../types/dashboard';
 const OverviewPanel: React.FC = () => {
   const { posts, stats: postStats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(30);
   const { workflows, stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
-  const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData();
-  const { setSystemHealth, setLastRefreshed, navigateToTab } = useDashboard();
+  const { setSystemHealth, setLastRefreshed, navigateToTab, userTimezone } = useDashboard();
+  const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData(userTimezone);
 
   const refreshAll = async () => {
     await Promise.all([refreshPosts(), refreshWf(), refreshAgent()]);

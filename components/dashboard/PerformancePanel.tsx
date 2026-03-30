@@ -7,10 +7,11 @@ import {
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
-import { formatNum } from './shared/utils';
+import { formatNum, formatDate } from './shared/utils';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
@@ -31,6 +32,7 @@ const PerformancePanel: React.FC = () => {
   const [metric, setMetric] = useState<Metric>('impressions');
   const [range, setRange] = useState<Range>('30d');
   const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+  const { userTimezone } = useDashboard();
 
   const { posts, stats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(days);
   const { competitorStats, loading: compLoading, refresh: refreshComp } = useCompetitors();
@@ -41,12 +43,12 @@ const PerformancePanel: React.FC = () => {
   const loading = postsLoading || compLoading;
 
   const chartData = useMemo(() => [...posts].reverse().map((p) => ({
-    date: new Date(p.postedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    date: formatDate(p.postedAt, { month: 'short', day: 'numeric' }, userTimezone),
     impressions: p.impressions,
     likes: p.likes,
     comments: p.comments,
     shares: p.shares,
-  })), [posts]);
+  })), [posts, userTimezone]);
 
   const typeData = useMemo(() => {
     const typeMap: Record<string, { count: number; impressions: number; likes: number }> = {};

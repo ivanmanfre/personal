@@ -19,3 +19,27 @@ export function formatNum(n: number): string {
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
   return n.toString();
 }
+
+export function formatDate(
+  ts: string | number,
+  options: Intl.DateTimeFormatOptions = {},
+  timezone?: string
+): string {
+  const dateObj = typeof ts === 'string' ? new Date(ts) : new Date(ts);
+  return dateObj.toLocaleDateString('en-US', {
+    ...options,
+    ...(timezone && { timeZone: timezone }),
+  });
+}
+
+export function formatTime(
+  ts: string | number,
+  options: Intl.DateTimeFormatOptions = {},
+  timezone?: string
+): string {
+  const dateObj = typeof ts === 'string' ? new Date(ts) : new Date(ts);
+  return dateObj.toLocaleTimeString('en-US', {
+    ...options,
+    ...(timezone && { timeZone: timezone }),
+  });
+}

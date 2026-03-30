@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { toastError, toastSuccess } from '../../lib/dashboardActions';
-import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock, Cpu } from 'lucide-react';
+import { Bell, Hash, Database, Clock, Plus, Trash2, Search, Lock, Cpu, Globe } from 'lucide-react';
 import { useDashboard } from '../../contexts/DashboardContext';
+import { useUserTimezone, TIMEZONE_PRESETS } from '../../hooks/useUserTimezone';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import type { RefreshRate } from '../../types/dashboard';
@@ -35,7 +36,8 @@ const refreshOptions: { label: string; value: RefreshRate }[] = [
 ];
 
 const SettingsPanel: React.FC = () => {
-  const { refreshRate, setRefreshRate } = useDashboard();
+  const { refreshRate, setRefreshRate, setUserTimezone, setUserTimezoneOffset } = useDashboard();
+  const { timezone, offsetHours, setTimezone, loading: tzLoading, error: tzError } = useUserTimezone();
   const [channels, setChannels] = useState<SlackChannel[]>([]);
   const [availableChannels, setAvailableChannels] = useState<AvailableChannel[]>([]);
   const [tables, setTables] = useState<TableInfo[]>([]);
@@ -130,6 +132,17 @@ const SettingsPanel: React.FC = () => {
     }
   };
 
+  const handleTimezoneChange = async (preset: typeof TIMEZONE_PRESETS[keyof typeof TIMEZONE_PRESETS]) => {
+    try {
+      await setTimezone(preset);
+      setUserTimezone(preset.iana);
+      setUserTimezoneOffset(preset.offsetHours);
+      toastSuccess(`Timezone changed to ${preset.label}`);
+    } catch (err) {
+      toastError('change timezone', err);
+    }
+  };
+
   // Filter available channels: exclude already added ones, apply search
   const activeChannelIds = useMemo(() => new Set(channels.map((c) => c.channel_id)), [channels]);
   const filteredAvailable = useMemo(() => {
@@ -161,6 +174,34 @@ const SettingsPanel: React.FC = () => {
               {opt.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Travel Timezone */}
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
+          <Globe className="w-3.5 h-3.5 text-zinc-500" />
+          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Travel Timezone</h2>
+        </div>
+        <div className="px-4 py-4">
+          {tzError && <p className="text-xs text-red-400 mb-3">{tzError}</p>}
+          <p className="text-xs text-zinc-500 mb-3">Current: <span className="text-zinc-300">{timezone}</span> (UTC{offsetHours > 0 ? '+' : ''}{offsetHours})</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {Object.values(TIMEZONE_PRESETS).map((preset) => (
+              <button
+                key={preset.iana}
+                onClick={() => handleTimezoneChange(preset)}
+                disabled={tzLoading}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-center ${
+                  timezone === preset.iana
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                    : 'bg-zinc-800/60 text-zinc-400 border border-zinc-700/40 hover:text-white hover:border-zinc-600 disabled:opacity-40'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -153,7 +153,7 @@ const emptyStats: OutreachPipelineStats = {
   connectionRate: 0, engagementsToday: 0, dmsToday: 0, needsAttention: 0,
 };
 
-export function useOutreachPipeline() {
+export function useOutreachPipeline(timezone?: string) {
   const [prospects, setProspects] = useState<OutreachProspect[]>([]);
   const [campaigns, setCampaigns] = useState<OutreachCampaign[]>([]);
   const [stats, setStats] = useState<OutreachPipelineStats>(emptyStats);
@@ -197,7 +197,16 @@ export function useOutreachPipeline() {
         supabase
           .from('linkedin_daily_actions')
           .select('action_type, count, daily_limit')
-          .eq('date', new Date().toISOString().split('T')[0]),
+          .eq('date', (() => {
+            const now = new Date();
+            if (!timezone) return now.toISOString().split('T')[0];
+            const formatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+            const parts = formatter.formatToParts(now);
+            const year = parts.find(p => p.type === 'year')?.value;
+            const month = parts.find(p => p.type === 'month')?.value;
+            const day = parts.find(p => p.type === 'day')?.value;
+            return `${year}-${month}-${day}`;
+          })()),
         supabase
           .from('integration_config')
           .select('key, value')

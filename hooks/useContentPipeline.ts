@@ -18,7 +18,7 @@ function mapPost(row: any): ScheduledPost {
   };
 }
 
-export function useContentPipeline() {
+export function useContentPipeline(timezone?: string) {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,12 +50,23 @@ export function useContentPipeline() {
   // Group posts by date for calendar view
   const postsByDate = useMemo(() =>
     posts.reduce((acc: Record<string, ScheduledPost[]>, p) => {
-      const dateKey = new Date(p.scheduledAt).toISOString().split('T')[0];
+      let dateKey: string;
+      if (timezone) {
+        const date = new Date(p.scheduledAt);
+        const formatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' });
+        const parts = formatter.formatToParts(date);
+        const year = parts.find(pt => pt.type === 'year')?.value;
+        const month = parts.find(pt => pt.type === 'month')?.value;
+        const day = parts.find(pt => pt.type === 'day')?.value;
+        dateKey = `${year}-${month}-${day}`;
+      } else {
+        dateKey = new Date(p.scheduledAt).toISOString().split('T')[0];
+      }
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(p);
       return acc;
     }, {}),
-    [posts]
+    [posts, timezone]
   );
 
   return {

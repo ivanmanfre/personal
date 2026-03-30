@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Scale, Plus } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { useDashboard } from '../../../contexts/DashboardContext';
 import PanelCard from '../shared/PanelCard';
+import { formatDate } from '../shared/utils';
 import type { WeightLog } from '../../../types/dashboard';
 
 interface Props {
@@ -20,13 +22,14 @@ const tooltipStyle = {
 const WeightChart: React.FC<Props> = ({ weightLogs, logWeight }) => {
   const [inputWeight, setInputWeight] = useState('');
   const [saving, setSaving] = useState(false);
+  const { userTimezone } = useDashboard();
 
   const chartData = useMemo(() =>
     [...weightLogs].reverse().map(w => ({
-      date: new Date(w.loggedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: formatDate(w.loggedAt, { month: 'short', day: 'numeric' }, userTimezone),
       weight: w.weightKg,
     })),
-  [weightLogs]);
+  [weightLogs, userTimezone]);
 
   const handleLog = async () => {
     const val = parseFloat(inputWeight);
