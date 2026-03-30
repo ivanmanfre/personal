@@ -118,10 +118,17 @@ const WorkflowsPanel: React.FC = () => {
 
   // Fetch Ivan System errors from client_workflow_errors
   const fetchIvanErrors = useCallback(async () => {
+    // Look up Ivan System client_id via safe view (anon-accessible)
+    const { data: clientData } = await supabase
+      .from('client_instances_safe')
+      .select('id')
+      .eq('client_name', 'Ivan System')
+      .single();
+    if (!clientData) return;
     const { data } = await supabase
       .from('client_workflow_errors')
-      .select('*, client_instances!inner(client_name)')
-      .eq('client_instances.client_name', 'Ivan System')
+      .select('*')
+      .eq('client_id', clientData.id)
       .eq('is_resolved', false)
       .order('last_seen', { ascending: false })
       .limit(20);
