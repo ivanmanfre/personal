@@ -320,7 +320,8 @@ export function useUpworkPipeline() {
         // Local mode: approve the proposal, daemon polls every 30s
         lockProposal(id, 'approved');
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p)));
-        await dashboardAction('upwork_proposals', id, 'status', 'approved');
+        const { error } = await supabase.from('upwork_proposals').update({ status: 'approved' }).eq('id', id);
+        if (error) throw error;
         clearProposalLock(id);
         toastSuccess('Proposal approved — local daemon will submit within 30s');
         return;
