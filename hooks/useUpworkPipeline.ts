@@ -293,7 +293,43 @@ export function useUpworkPipeline() {
     }
   };
 
+  const editScreeningAnswers = async (id: string, answers: { question: string; answer: string }[]) => {
+    const prev = proposals.find((p) => p.id === id);
+    setProposals((p) => p.map((x) => (x.id === id ? { ...x, screeningAnswers: answers } : x)));
+    try {
+      const { error } = await supabase
+        .from('upwork_proposals')
+        .update({ screening_answers: answers })
+        .eq('id', id);
+      if (error) throw error;
+    } catch (err) {
+      toastError('save screening answers', err);
+      if (prev) setProposals((p) => p.map((x) => (x.id === id ? { ...x, screeningAnswers: prev.screeningAnswers } : x)));
+    }
+  };
+
   const submitProposal = async (id: string) => {
+    // Check if local submission daemon is enabled — if so, just approve and let the daemon pick it up
+    try {
+      const { data: configRows } = await supabase
+        .from('integration_config')
+        .select('value')
+        .eq('key', 'upwork_local_submission')
+        .limit(1);
+      if (configRows?.[0]?.value === 'true') {
+        // Local mode: approve the proposal, daemon polls every 30s
+        lockProposal(id, 'approved');
+        setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p)));
+        await dashboardAction('upwork_proposals', id, 'status', 'approved');
+        clearProposalLock(id);
+        toastSuccess('Proposal approved — local daemon will submit within 30s');
+        return;
+      }
+    } catch {
+      // Fall through to cloud on config check failure
+    }
+
+    // Cloud mode: submit via n8n webhook
     lockProposal(id, 'submitting');
     setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitting' } : p)));
     try {
@@ -375,6 +411,7 @@ export function useUpworkPipeline() {
     approveProposal,
     rejectProposal,
     editProposal,
+    editScreeningAnswers,
     submitProposal,
   };
 }

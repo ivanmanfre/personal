@@ -71,7 +71,7 @@ function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string
 function DetailModal({
   job, proposal: prop, generatingJobs, actionLoading, editingId, editValue,
   onClose, onSkip, onGenerate, onCancelGeneration, onSubmit, onEdit,
-  onStartEdit, onCancelEdit, onEditChange,
+  onStartEdit, onCancelEdit, onEditChange, onEditScreening,
 }: {
   job: UpworkJob; proposal?: UpworkProposal;
   generatingJobs: Set<string>; actionLoading: string | null;
@@ -80,12 +80,15 @@ function DetailModal({
   onSkip: (id: string) => void; onGenerate: (id: string) => void; onCancelGeneration: (id: string) => void;
   onSubmit: (id: string) => void; onEdit: (id: string, field: 'cover_letter' | 'proposal_text', value: string) => void;
   onStartEdit: (id: string, text: string) => void; onCancelEdit: () => void; onEditChange: (v: string) => void;
+  onEditScreening: (id: string, answers: { question: string; answer: string }[]) => void;
 }) {
   const isGenerating = generatingJobs.has(job.id);
   const isLoading = prop && actionLoading === prop.id;
   const budget = formatBudget(job);
   const [qaExpanded, setQaExpanded] = useState(false);
   const [qaShowOriginal, setQaShowOriginal] = useState(false);
+  const [editingScreening, setEditingScreening] = useState(false);
+  const [screeningDraft, setScreeningDraft] = useState<{ question: string; answer: string }[]>([]);
   const diagramHeight = useMemo(() => {
     const html = prop?.diagramData?.html || '';
     const m = html.match(/height:(\d+)px;overflow/);
@@ -251,13 +254,56 @@ function DetailModal({
                   </div>
                   {prop.screeningAnswers && prop.screeningAnswers.length > 0 && (
                     <div className="space-y-1.5 pt-2 border-t border-emerald-500/10">
-                      <span className="text-[10px] text-amber-400/60 font-medium">Screening Answers:</span>
-                      {prop.screeningAnswers.map((qa, i) => (
-                        <div key={i}>
-                          <p className="text-[10px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
-                          <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-amber-400/60 font-medium">Screening Answers:</span>
+                        {(prop.status === 'pending_approval' || prop.status === 'draft') && !editingScreening && (
+                          <button
+                            onClick={() => { setEditingScreening(true); setScreeningDraft(prop.screeningAnswers!.map(qa => ({ ...qa }))); }}
+                            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-amber-400 transition-colors"
+                          >
+                            <Edit3 className="w-3 h-3" /> Edit
+                          </button>
+                        )}
+                      </div>
+                      {editingScreening ? (
+                        <div className="space-y-2">
+                          {screeningDraft.map((qa, i) => (
+                            <div key={i}>
+                              <p className="text-[10px] text-amber-400/50 font-medium mb-1">Q{i + 1}: {qa.question}</p>
+                              <textarea
+                                value={qa.answer}
+                                onChange={(e) => {
+                                  const updated = [...screeningDraft];
+                                  updated[i] = { ...updated[i], answer: e.target.value };
+                                  setScreeningDraft(updated);
+                                }}
+                                className="w-full text-xs text-zinc-200 bg-zinc-800/60 border border-zinc-700/50 rounded-md p-2 min-h-[60px] focus:outline-none focus:border-amber-500/50 resize-y"
+                              />
+                            </div>
+                          ))}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { onEditScreening(prop.id, screeningDraft); setEditingScreening(false); }}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                            >
+                              <Save className="w-3 h-3" /> Save
+                            </button>
+                            <button
+                              onClick={() => setEditingScreening(false)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        prop.screeningAnswers.map((qa, i) => (
+                          <div key={i}>
+                            <p className="text-[10px] text-amber-400/50 font-medium">Q{i + 1}: {qa.question}</p>
+                            <p className="text-xs text-zinc-300/80 mt-0.5">{qa.answer}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
                   {prop.qaResult && (
@@ -394,11 +440,12 @@ interface Props {
   onReject: (proposalId: string) => void;
   onSubmit: (proposalId: string) => Promise<void>;
   onEdit: (proposalId: string, field: 'cover_letter' | 'proposal_text', value: string) => void;
+  onEditScreening: (proposalId: string, answers: { question: string; answer: string }[]) => void;
 }
 
 export const UpworkKanban: React.FC<Props> = ({
   jobs, proposals, generatingJobs,
-  onSkip, onGenerate, onCancelGeneration, onApprove, onReject, onSubmit, onEdit,
+  onSkip, onGenerate, onCancelGeneration, onApprove, onReject, onSubmit, onEdit, onEditScreening,
 }) => {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -557,6 +604,7 @@ export const UpworkKanban: React.FC<Props> = ({
             onStartEdit={(id, text) => { setEditingId(id); setEditValue(text); }}
             onCancelEdit={() => { setEditingId(null); setEditValue(''); }}
             onEditChange={setEditValue}
+            onEditScreening={onEditScreening}
           />
         </AnimatePresence>,
         document.body

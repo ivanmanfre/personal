@@ -172,7 +172,7 @@ function CookieFreshness({ updatedAt }: { updatedAt: string }) {
 /* ── Main Panel ──────────────────────────────────────── */
 
 const UpworkPanel: React.FC = () => {
-  const { jobs, proposals, stats, loading, generatingJobs, cookiesUpdatedAt, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, submitProposal } = useUpworkPipeline();
+  const { jobs, proposals, stats, loading, generatingJobs, cookiesUpdatedAt, refresh, skipJob, generateProposal, cancelGeneration, approveProposal, rejectProposal, editProposal, editScreeningAnswers, submitProposal } = useUpworkPipeline();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['upwork_proposals', 'upwork_jobs'] });
   const [view, setView] = useState<'kanban' | 'list'>(
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'list' : 'kanban'
@@ -336,6 +336,7 @@ const UpworkPanel: React.FC = () => {
           onReject={rejectProposal}
           onSubmit={submitProposal}
           onEdit={editProposal}
+          onEditScreening={editScreeningAnswers}
         />
       ) : (
       <>
