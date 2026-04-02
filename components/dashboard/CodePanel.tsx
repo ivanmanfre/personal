@@ -113,7 +113,7 @@ const CodePanel: React.FC = () => {
                 </button>
               )}
               <iframe
-                src={CLAUDE_CODE_URL}
+                src={`${CLAUDE_CODE_URL}?pane=${pane.id}`}
                 className="w-full h-full border-0"
                 title={`Claude Code ${i + 1}`}
                 allow="clipboard-read; clipboard-write"
