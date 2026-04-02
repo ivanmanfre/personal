@@ -15,6 +15,8 @@ interface Props {
   onToggleBlacklist: (id: string) => void;
   onToggleNeedsReply: (id: string) => void;
   onSendDm: (id: string, text: string) => void;
+  onApproveDraft: (prospectId: string, messageId: string, text: string) => void;
+  onRejectDraft: (prospectId: string, messageId: string) => void;
   onFetchMessages: (id: string) => void;
   onFetchEngagements: (id: string) => void;
 }
@@ -258,15 +260,55 @@ export const ProspectDetailModal: React.FC<Props> = ({
                 {messages.map((m) => (
                   <div key={m.id} className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-2 text-xs ${
-                      m.direction === 'outbound'
+                      m.isDraft
+                        ? 'bg-amber-500/15 text-amber-200 border-2 border-amber-500/40 border-dashed'
+                        : m.direction === 'outbound'
                         ? 'bg-blue-500/15 text-blue-200 border border-blue-500/20'
                         : 'bg-zinc-700/50 text-zinc-300 border border-zinc-600/30'
                     }`}>
+                      {m.isDraft && (
+                        <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block mb-1">Draft — Awaiting Approval</span>
+                      )}
+                      {m.isDraft && m.matchedContentType && (
+                        <div className="mb-2 px-2 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          <span className="text-[10px] font-medium text-blue-400 uppercase tracking-wider">
+                            Matched {m.matchedContentType === 'post' ? 'Post' : 'Lead Magnet'}
+                          </span>
+                          {m.industryCluster && (
+                            <span className="ml-2 px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/20 text-[9px]">
+                              {m.industryCluster}
+                            </span>
+                          )}
+                          <p className="text-blue-300 text-[10px] mt-0.5 line-clamp-2">{m.matchedContentTitle}</p>
+                          {m.matchedContentUrl && (
+                            <a href={m.matchedContentUrl} target="_blank" rel="noopener noreferrer"
+                               className="text-blue-400/70 hover:text-blue-300 underline text-[10px] mt-0.5 inline-block">
+                              View content
+                            </a>
+                          )}
+                        </div>
+                      )}
                       <p className="whitespace-pre-wrap">{m.messageText}</p>
                       <span className="text-[10px] text-zinc-500 mt-1 block">
-                        {timeAgo(m.sentAt)}
+                        {m.isDraft ? `Generated ${timeAgo(m.createdAt)}` : timeAgo(m.sentAt)}
                         {m.sequenceStep != null && ` · Step ${m.sequenceStep}`}
                       </span>
+                      {m.isDraft && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => onApproveDraft(prospect.id, m.id, m.messageText)}
+                            className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[11px] font-medium transition-colors"
+                          >
+                            Approve & Send
+                          </button>
+                          <button
+                            onClick={() => onRejectDraft(prospect.id, m.id)}
+                            className="px-3 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 text-[11px] font-medium transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -64,7 +64,7 @@ const OutreachPanel: React.FC = () => {
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
     createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses,
-    toggleWorkflow, importProspects, sendManualDm,
+    toggleWorkflow, importProspects, sendManualDm, approveDraft, rejectDraft,
   } = pipeline;
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
@@ -983,6 +983,8 @@ const OutreachPanel: React.FC = () => {
           onToggleBlacklist={toggleBlacklist}
           onToggleNeedsReply={toggleNeedsReply}
           onSendDm={sendManualDm}
+          onApproveDraft={approveDraft}
+          onRejectDraft={rejectDraft}
           onFetchMessages={fetchMessages}
           onFetchEngagements={fetchEngagementLog}
         />

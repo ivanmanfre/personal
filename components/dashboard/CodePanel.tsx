@@ -4,6 +4,7 @@ const CLAUDE_CODE_URL = import.meta.env.VITE_CLAUDE_CODE_URL || 'https://claude-
 
 interface Pane {
   id: string;
+  fresh?: boolean;
 }
 
 const CodePanel: React.FC = () => {
@@ -16,7 +17,7 @@ const CodePanel: React.FC = () => {
 
   const addSplit = useCallback(() => {
     if (panes.length < 3) {
-      setPanes(prev => [...prev, { id: Date.now().toString(36) }]);
+      setPanes(prev => [...prev, { id: Date.now().toString(36), fresh: true }]);
       setSplitRatio(50);
     }
   }, [panes.length]);
@@ -113,7 +114,7 @@ const CodePanel: React.FC = () => {
                 </button>
               )}
               <iframe
-                src={`${CLAUDE_CODE_URL}?pane=${pane.id}`}
+                src={`${CLAUDE_CODE_URL}?pane=${pane.id}${pane.fresh ? '&fresh=1' : ''}`}
                 className="w-full h-full border-0"
                 title={`Claude Code ${i + 1}`}
                 allow="clipboard-read; clipboard-write"
