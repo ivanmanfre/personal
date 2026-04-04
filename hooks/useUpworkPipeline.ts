@@ -137,7 +137,7 @@ export function useUpworkPipeline() {
         supabase.rpc('upwork_pipeline_stats'),
         supabase
           .from('system_settings')
-          .select('updated_at')
+          .select('updated_at, value')
           .eq('key', 'upwork_cookies')
           .single(),
       ]);
@@ -201,7 +201,15 @@ export function useUpworkPipeline() {
 
       const rawStats = statsRes.data;
       setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
-      if (cookiesRes.data?.updated_at) setCookiesUpdatedAt(cookiesRes.data.updated_at);
+      if (cookiesRes.data) {
+        // Try value.updated_at first (set by extension), fallback to row's updated_at
+        try {
+          const val = JSON.parse(cookiesRes.data.value);
+          setCookiesUpdatedAt(val.updated_at || cookiesRes.data.updated_at);
+        } catch {
+          if (cookiesRes.data.updated_at) setCookiesUpdatedAt(cookiesRes.data.updated_at);
+        }
+      }
 
       // Detect new assessed jobs and play notification sound
       const currentAssessedIds = new Set(
