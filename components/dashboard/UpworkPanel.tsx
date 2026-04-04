@@ -155,17 +155,61 @@ function RegenButton({ onGenerate }: { onGenerate: (comment?: string) => void })
 /* ── Cookie Freshness ────────────────────────────────── */
 
 function CookieFreshness({ updatedAt }: { updatedAt: string }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<string | null>(null);
   const ageMs = Date.now() - new Date(updatedAt).getTime();
   const ageH = ageMs / 3_600_000;
   const dotColor = ageH < 5 ? 'bg-emerald-400' : ageH < 8 ? 'bg-amber-400' : 'bg-red-400';
   const textColor = ageH < 5 ? 'text-zinc-500' : ageH < 8 ? 'text-amber-400' : 'text-red-400';
   const label = ageH < 1 ? `${Math.round(ageMs / 60_000)}m ago` : `${Math.round(ageH)}h ago`;
 
+  const handleRefreshCookies = async () => {
+    setRefreshing(true);
+    setRefreshResult(null);
+    try {
+      const res = await fetch('https://n8n.intelligents.agency/webhook/c3245c69-8d9a-4bab-8c2c-b7972bdaaf42', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'dashboard', action: 'refresh' }),
+      });
+      if (res.ok) {
+        setRefreshResult('Triggered! Refreshing in background...');
+      } else {
+        setRefreshResult('Failed to trigger refresh');
+      }
+    } catch {
+      setRefreshResult('Network error');
+    } finally {
+      setRefreshing(false);
+      setTimeout(() => setRefreshResult(null), 5000);
+    }
+  };
+
   return (
-    <span className={`flex items-center gap-1.5 text-[11px] ${textColor}`} title={`Upwork cookies last refreshed: ${new Date(updatedAt).toLocaleString()}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-      Cookies {label}
-    </span>
+    <div className="flex items-center gap-2">
+      <span className={`flex items-center gap-1.5 text-[11px] ${textColor}`} title={`Upwork cookies last refreshed: ${new Date(updatedAt).toLocaleString()}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        Cookies {label}
+      </span>
+      <button
+        onClick={handleRefreshCookies}
+        disabled={refreshing}
+        className={`flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-all border ${
+          refreshing
+            ? 'border-zinc-700 text-zinc-500 cursor-wait'
+            : ageH > 5
+              ? 'border-amber-600/40 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50'
+              : 'border-zinc-700/50 text-zinc-500 hover:bg-zinc-700/50 hover:text-zinc-300'
+        }`}
+        title="Trigger cookie refresh via n8n"
+      >
+        <RefreshCw className={`w-2.5 h-2.5 ${refreshing ? 'animate-spin' : ''}`} />
+        {refreshing ? 'Refreshing...' : 'Refresh'}
+      </button>
+      {refreshResult && (
+        <span className="text-[10px] text-emerald-400 animate-pulse">{refreshResult}</span>
+      )}
+    </div>
   );
 }
 
