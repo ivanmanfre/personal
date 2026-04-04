@@ -59,6 +59,7 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
 
 const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { systemHealth, lastRefreshed } = useDashboard();
 
   const handleLogout = () => {
@@ -89,7 +90,17 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] dashboard-sidebar-glass border-r border-zinc-800/40 flex flex-col transition-transform duration-300 ease-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] dashboard-sidebar-glass border-r border-zinc-800/40 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'md:-translate-x-full md:w-0 md:min-w-0 md:overflow-hidden md:border-0' : 'md:translate-x-0'}`}>
+        {/* Collapse toggle (desktop only) */}
+        <button
+          onClick={() => setSidebarCollapsed(c => !c)}
+          className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-50 w-6 h-12 items-center justify-center rounded-r-md bg-zinc-800/90 border border-l-0 border-zinc-700/50 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/90 transition-colors"
+          title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            {sidebarCollapsed ? <path d="M3 1l4 4-4 4"/> : <path d="M7 1l-4 4 4 4"/>}
+          </svg>
+        </button>
         {/* Brand */}
         <div className="p-5 pb-4">
           <div className="flex items-center gap-3">
@@ -176,6 +187,19 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           </button>
         </div>
       </aside>
+
+      {/* Expand sidebar button (shown when collapsed on desktop) */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="hidden md:flex fixed top-1/2 left-0 -translate-y-1/2 z-50 w-6 h-12 items-center justify-center rounded-r-md bg-zinc-800/90 border border-l-0 border-zinc-700/50 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/90 transition-colors"
+          title="Show sidebar"
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M3 1l4 4-4 4"/>
+          </svg>
+        </button>
+      )}
 
       {/* Main content */}
       <main className="flex-1 md:ml-0 mt-14 md:mt-0 dashboard-grid-bg relative z-[1]">

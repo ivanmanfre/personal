@@ -425,8 +425,13 @@ export interface OutreachMessage {
   sequenceStep: number | null;
   unipileMessageId: string | null;
   unipileChatId: string | null;
-  sentAt: string;
+  sentAt: string | null;
   createdAt: string;
+  isDraft?: boolean;
+  matchedContentType: string | null;
+  matchedContentTitle: string | null;
+  matchedContentUrl: string | null;
+  industryCluster: string | null;
 }
 
 export interface OutreachEngagementLog {

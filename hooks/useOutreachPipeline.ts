@@ -107,6 +107,11 @@ function mapMessage(r: any): OutreachMessage {
     unipileChatId: r.unipile_chat_id,
     sentAt: r.sent_at,
     createdAt: r.created_at,
+    isDraft: !r.sent_at,
+    matchedContentType: r.matched_content_type || null,
+    matchedContentTitle: r.matched_content_title || null,
+    matchedContentUrl: r.matched_content_url || null,
+    industryCluster: r.industry_cluster || null,
   };
 }
 
@@ -280,7 +285,7 @@ export function useOutreachPipeline(timezone?: string) {
         .from('outreach_messages')
         .select('*')
         .eq('prospect_id', prospectId)
-        .order('sent_at', { ascending: true });
+        .order('created_at', { ascending: true });
       setMessages((prev) => ({ ...prev, [prospectId]: (data || []).map(mapMessage) }));
     } catch (err) {
       toastError('load messages', err);
@@ -513,6 +518,44 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetch, fetchMessages]);
 
+  const approveDraft = useCallback(async (prospectId: string, messageId: string, messageText: string) => {
+    try {
+      // Send via manual DM webhook
+      const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-manual-dm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prospect_id: prospectId, message: messageText }),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        // Mark draft as sent
+        await supabase.from('outreach_messages').update({ sent_at: new Date().toISOString() }).eq('id', messageId);
+        // Clear needs_manual_reply
+        await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
+        toastSuccess('DM approved & sent');
+        await fetchMessages(prospectId);
+        await fetch();
+      } else {
+        toastError('approve DM — send failed');
+      }
+    } catch (err) {
+      toastError('approve DM', err);
+    }
+  }, [fetch, fetchMessages]);
+
+  const rejectDraft = useCallback(async (prospectId: string, messageId: string) => {
+    try {
+      await supabase.from('outreach_messages').delete().eq('id', messageId);
+      // Revert dm_count so workflow can retry
+      await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
+      toastSuccess('Draft rejected');
+      await fetchMessages(prospectId);
+      await fetch();
+    } catch (err) {
+      toastError('reject draft', err);
+    }
+  }, [fetch, fetchMessages]);
+
   // Derived state
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -558,5 +601,7 @@ export function useOutreachPipeline(timezone?: string) {
     toggleWorkflow,
     importProspects,
     sendManualDm,
+    approveDraft,
+    rejectDraft,
   };
 }
