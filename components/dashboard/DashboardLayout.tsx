@@ -91,15 +91,13 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
       {/* Sidebar */}
       <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] dashboard-sidebar-glass border-r border-zinc-800/40 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'md:-translate-x-full md:w-0 md:min-w-0 md:overflow-hidden md:border-0' : 'md:translate-x-0'}`}>
-        {/* Collapse toggle (desktop only) */}
+        {/* Collapse toggle — subtle sliver on hover */}
         <button
           onClick={() => setSidebarCollapsed(c => !c)}
-          className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-50 w-6 h-12 items-center justify-center rounded-r-md bg-zinc-800/90 border border-l-0 border-zinc-700/50 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/90 transition-colors"
+          className="hidden md:flex absolute -right-[5px] top-1/2 -translate-y-1/2 z-50 w-[10px] h-16 items-center justify-center rounded-r opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity duration-200 group/collapse"
           title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            {sidebarCollapsed ? <path d="M3 1l4 4-4 4"/> : <path d="M7 1l-4 4 4 4"/>}
-          </svg>
+          <div className="w-[3px] h-6 rounded-full bg-zinc-600 group-hover/collapse:bg-zinc-400 transition-colors" />
         </button>
         {/* Brand */}
         <div className="p-5 pb-4">
@@ -188,16 +186,14 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         </div>
       </aside>
 
-      {/* Expand sidebar button (shown when collapsed on desktop) */}
+      {/* Expand sidebar — subtle sliver on left edge when collapsed */}
       {sidebarCollapsed && (
         <button
           onClick={() => setSidebarCollapsed(false)}
-          className="hidden md:flex fixed top-1/2 left-0 -translate-y-1/2 z-50 w-6 h-12 items-center justify-center rounded-r-md bg-zinc-800/90 border border-l-0 border-zinc-700/50 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/90 transition-colors"
+          className="hidden md:flex fixed top-1/2 left-0 -translate-y-1/2 z-50 w-[10px] h-16 items-center justify-center rounded-r opacity-40 hover:opacity-100 transition-opacity duration-200 group/expand"
           title="Show sidebar"
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M3 1l4 4-4 4"/>
-          </svg>
+          <div className="w-[3px] h-6 rounded-full bg-zinc-600 group-hover/expand:bg-emerald-400 transition-colors" />
         </button>
       )}
 
