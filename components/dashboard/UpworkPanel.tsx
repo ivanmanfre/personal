@@ -478,7 +478,7 @@ const UpworkPanel: React.FC = () => {
                         <div className="p-3 bg-amber-950/20 border border-amber-500/15 rounded-lg">
                           <span className="text-amber-400/70 font-medium text-xs block mb-1.5">Screening Questions:</span>
                           {job.screeningQuestions.map((q, i) => (
-                            <p key={i} className="text-xs text-amber-300/80 ml-2 mb-1">{i + 1}. {q.question}</p>
+                            <p key={i} className="text-xs text-amber-300/80 ml-2 mb-1">{i + 1}. {typeof q === 'string' ? q : q.question}</p>
                           ))}
                         </div>
                       )}

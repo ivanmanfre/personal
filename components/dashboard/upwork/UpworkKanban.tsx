@@ -181,7 +181,7 @@ function DetailModal({
                 <div className="p-2.5 bg-amber-950/20 border border-amber-500/15 rounded-lg">
                   <span className="text-amber-400/70 font-medium text-[11px] block mb-1">Screening:</span>
                   {job.screeningQuestions.map((q, i) => (
-                    <p key={i} className="text-[11px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {q.question}</p>
+                    <p key={i} className="text-[11px] text-amber-300/80 ml-1.5 mb-0.5">{i + 1}. {typeof q === 'string' ? q : q.question}</p>
                   ))}
                 </div>
               )}
