@@ -227,11 +227,11 @@ const UpworkPanel: React.FC = () => {
   }
 
   // Action needed: jobs that need user attention
-  const SIX_HOURS = 6 * 60 * 60 * 1000;
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   const actionNeeded = jobs.filter((j) => {
     if (j.status === 'skipped' || j.status === 'submitted' || j.status === 'won') return false;
-    // Auto-hide non-invite jobs older than 6 hours
-    if (j.source !== 'invite' && j.postedAt && Date.now() - new Date(j.postedAt).getTime() > SIX_HOURS) return false;
+    // Auto-hide non-invite jobs older than 24 hours
+    if (j.source !== 'invite' && j.postedAt && Date.now() - new Date(j.postedAt).getTime() > TWENTY_FOUR_HOURS) return false;
     const prop = proposalMap.get(j.id);
     // Assessed jobs with decent ICP (ready to generate)
     if ((j.status === 'assessed' || j.status === 'new') && j.icpScore != null && j.icpScore >= 6) return true;
