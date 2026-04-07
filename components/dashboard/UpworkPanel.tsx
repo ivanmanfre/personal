@@ -241,14 +241,17 @@ const UpworkPanel: React.FC = () => {
   });
 
   const actionCount = actionNeeded.length;
+  const skippedJobs = jobs.filter((j) => j.status === 'skipped');
   const filteredJobs = statusFilter === 'action' ? actionNeeded
-    : statusFilter === 'all' ? jobs.filter((j) => j.status !== 'skipped')
+    : statusFilter === 'all' ? jobs
+    : statusFilter === 'skipped' ? skippedJobs
     : statusFilter === 'invites' ? jobs.filter((j) => j.source === 'invite')
     : jobs.filter((j) => j.status === statusFilter);
 
   const filters = [
     { key: 'action', label: 'Action Needed', count: actionCount },
-    { key: 'all', label: 'All', count: stats.totalJobs - stats.skipped },
+    { key: 'all', label: 'All', count: stats.totalJobs },
+    { key: 'skipped', label: 'Skipped', count: skippedJobs.length },
     { key: 'invites', label: 'Invites', count: stats.invites },
     { key: 'submitted', label: 'Submitted', count: stats.submitted },
     { key: 'skipped', label: 'Skipped', count: stats.skipped },

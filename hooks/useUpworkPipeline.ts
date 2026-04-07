@@ -211,20 +211,20 @@ export function useUpworkPipeline() {
         }
       }
 
-      // Detect new assessed jobs and play notification sound
+      // Detect new assessed jobs — only notify for ICP >= 6
       const currentAssessedIds = new Set(
         serverJobs.filter((j) => j.status === 'assessed').map((j) => j.id)
       );
       if (hasLoaded.current && prevAssessedIds.current.size > 0) {
-        const newAssessed = serverJobs.filter(
-          (j) => j.status === 'assessed' && !prevAssessedIds.current.has(j.id)
+        const newHighFit = serverJobs.filter(
+          (j) => j.status === 'assessed' && !prevAssessedIds.current.has(j.id) && j.icpScore != null && j.icpScore >= 6
         );
-        if (newAssessed.length > 0) {
+        if (newHighFit.length > 0) {
           playNotificationSound();
           toastSuccess(
-            newAssessed.length === 1
-              ? `New assessed job: ${newAssessed[0].title.slice(0, 60)}`
-              : `${newAssessed.length} new assessed jobs`
+            newHighFit.length === 1
+              ? `New high-fit job: ${newHighFit[0].title.slice(0, 60)} (ICP ${newHighFit[0].icpScore})`
+              : `${newHighFit.length} new high-fit jobs`
           );
         }
       }
