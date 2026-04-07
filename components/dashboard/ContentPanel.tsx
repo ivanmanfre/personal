@@ -74,6 +74,7 @@ function formatCountdown(ms: number): string {
 }
 
 const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ post, onClose }) => {
+  const { userTimezone } = useDashboard();
   const imageUrl = post.mediaUrls?.[0] || null;
 
   return (
