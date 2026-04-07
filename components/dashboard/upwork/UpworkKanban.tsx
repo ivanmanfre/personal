@@ -17,9 +17,10 @@ const columns: Column[] = [
   { id: 'assessed', label: 'Assessed', color: 'border-blue-500/30 bg-blue-500/5', dotColor: 'bg-blue-400' },
   { id: 'review', label: 'Review', color: 'border-amber-500/30 bg-amber-500/5', dotColor: 'bg-amber-400' },
   { id: 'submitted', label: 'Submitted', color: 'border-green-500/30 bg-green-500/5', dotColor: 'bg-green-400' },
+  { id: 'skipped', label: 'Skipped', color: 'border-zinc-500/30 bg-zinc-500/5', dotColor: 'bg-zinc-500' },
 ];
 
-const SIX_HOURS = 6 * 60 * 60 * 1000;
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
 function jobAge(job: UpworkJob): number {
   const ts = job.postedAt || job.createdAt;
@@ -30,7 +31,7 @@ function jobAge(job: UpworkJob): number {
 function isStale(job: UpworkJob, proposal: UpworkProposal | undefined): boolean {
   // Jobs with proposals in progress or submitted are never stale
   if (proposal) return false;
-  return jobAge(job) > SIX_HOURS;
+  return jobAge(job) > TWENTY_FOUR_HOURS;
 }
 
 function icpColor(score: number | null): string {
@@ -55,7 +56,8 @@ function formatClientSpend(amount: number): string {
 }
 
 function getColumn(job: UpworkJob, proposal: UpworkProposal | undefined): string | null {
-  if (job.status === 'won' || job.status === 'skipped' || job.status === 'rejected') return null;
+  if (job.status === 'won') return null;
+  if (job.status === 'skipped' || job.status === 'rejected') return 'skipped';
   if (job.source === 'invite' && !proposal) return 'invites';
   if (job.source === 'invite' && proposal && proposal.status !== 'submitted') return 'invites';
   if (proposal?.status === 'submitted' || job.status === 'submitted' || job.status === 'submitting') return 'submitted';
@@ -474,9 +476,8 @@ export const UpworkKanban: React.FC<Props> = ({
 
     for (const job of jobs) {
       const prop = proposalMap.get(job.id);
-      if (isStale(job, prop)) continue;
-      // Only show jobs scored 6+ (unless they already have a proposal in progress)
-      if (!prop && (job.icpScore == null || job.icpScore < 6)) continue;
+      // Skipped jobs don't need staleness check — always show in skipped column
+      if (job.status !== 'skipped' && isStale(job, prop)) continue;
       const col = getColumn(job, prop);
       if (col && groups[col]) groups[col].push({ job, proposal: prop });
     }
