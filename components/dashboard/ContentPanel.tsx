@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X, Pencil, Plus, Trash2, Loader } from 'lucide-react';
+import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X, Pencil, Plus, Trash2, Loader, GripVertical } from 'lucide-react';
+import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -119,6 +120,65 @@ function toISOFromLocal(dateStr: string, timeStr: string, tz?: string): string {
   }
   return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
 }
+
+/** Draggable post pill for the calendar */
+const DraggablePost: React.FC<{
+  post: ScheduledPost;
+  onClick: () => void;
+}> = ({ post, onClick }) => {
+  const isDraggable = post.status === 'pending';
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: post.id,
+    data: { post },
+    disabled: !isDraggable,
+  });
+  const lm = isLeadMagnet(post);
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] truncate border-l-2 cursor-pointer hover:bg-zinc-700/60 transition-colors ${
+        lm ? 'bg-purple-500/10 text-purple-300 border-purple-500' : `bg-zinc-800/60 text-zinc-300 ${statusColors[post.status] || 'border-zinc-600'}`
+      } ${isDragging ? 'opacity-30' : ''}`}
+      title={`${lm ? '🧲 LM: ' : ''}${post.postText.slice(0, 80)} (${post.status}) @ ${formatTime(post.scheduledAt)}`}
+      onClick={onClick}
+    >
+      {isDraggable && (
+        <span {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing shrink-0 text-zinc-600 hover:text-zinc-400" onClick={(e) => e.stopPropagation()}>
+          <GripVertical className="w-3 h-3" />
+        </span>
+      )}
+      <span className="truncate">{lm ? '🧲 ' : ''}{formatTime(post.scheduledAt)}{post.postFormat ? ` · ${post.postFormat}` : ''}</span>
+    </div>
+  );
+};
+
+/** Droppable calendar day cell */
+const DroppableDay: React.FC<{
+  dateKey: string;
+  inMonth: boolean;
+  isToday: boolean;
+  date: Date;
+  children: React.ReactNode;
+}> = ({ dateKey, inMonth, isToday, date, children }) => {
+  const { isOver, setNodeRef } = useDroppable({ id: `day-${dateKey}`, data: { dateKey } });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[48px] sm:min-h-[80px] p-1 sm:p-1.5 transition-colors ${
+        inMonth ? 'bg-zinc-900/60' : 'bg-zinc-950/40'
+      } ${isToday ? 'ring-1 ring-emerald-500/40 ring-inset' : ''} ${isOver ? 'ring-2 ring-cyan-500/60 ring-inset bg-cyan-500/5' : ''}`}
+    >
+      <div className={`text-[11px] font-medium mb-1 ${
+        isToday ? 'text-emerald-400' : inMonth ? 'text-zinc-400' : 'text-zinc-700'
+      }`}>
+        {date.getDate()}
+      </div>
+      {children}
+    </div>
+  );
+};
 
 const PostDetail: React.FC<{
   post: ScheduledPost;
@@ -379,6 +439,30 @@ const ContentPanel: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
+  const [draggedPost, setDraggedPost] = useState<ScheduledPost | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const post = (event.active.data.current as any)?.post as ScheduledPost | undefined;
+    if (post) setDraggedPost(post);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setDraggedPost(null);
+    const { active, over } = event;
+    if (!over) return;
+    const post = (active.data.current as any)?.post as ScheduledPost | undefined;
+    const targetDateKey = (over.data.current as any)?.dateKey as string | undefined;
+    if (!post || !targetDateKey || post.status !== 'pending') return;
+
+    // Keep the same time, change the date
+    const parts = toLocalParts(post.scheduledAt, userTimezone);
+    const newIso = toISOFromLocal(targetDateKey, parts.time, userTimezone);
+    if (newIso !== post.scheduledAt) {
+      updatePost(post.id, 'scheduled_at', newIso);
+    }
+  }, [userTimezone, updatePost]);
   const now = useCountdown();
 
   const upcomingQueue = useMemo(() => {
@@ -489,64 +573,54 @@ const ContentPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-3">
-          <div className="grid grid-cols-7 mb-1">
-            {DAYS.map((d) => (
-              <div key={d} className="text-center text-[11px] text-zinc-600 font-medium py-1">{d}</div>
-            ))}
-          </div>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="p-3">
+            <div className="grid grid-cols-7 mb-1">
+              {DAYS.map((d) => (
+                <div key={d} className="text-center text-[11px] text-zinc-600 font-medium py-1">{d}</div>
+              ))}
+            </div>
 
-          <div className="grid grid-cols-7 gap-px bg-zinc-800/30 rounded-lg overflow-hidden">
-            {monthDays.map(({ date, inMonth }, i) => {
-              const dateKey = date.toISOString().split('T')[0];
-              const dayPosts = postsByDate[dateKey] || [];
-              const isToday = dateKey === today;
+            <div className="grid grid-cols-7 gap-px bg-zinc-800/30 rounded-lg overflow-hidden">
+              {monthDays.map(({ date, inMonth }, i) => {
+                const dateKey = date.toISOString().split('T')[0];
+                const dayPosts = postsByDate[dateKey] || [];
+                const isToday = dateKey === today;
 
-              return (
-                <div
-                  key={i}
-                  className={`min-h-[48px] sm:min-h-[80px] p-1 sm:p-1.5 transition-colors ${
-                    inMonth ? 'bg-zinc-900/60' : 'bg-zinc-950/40'
-                  } ${isToday ? 'ring-1 ring-emerald-500/40 ring-inset' : ''}`}
-                >
-                  <div className={`text-[11px] font-medium mb-1 ${
-                    isToday ? 'text-emerald-400' : inMonth ? 'text-zinc-400' : 'text-zinc-700'
-                  }`}>
-                    {date.getDate()}
-                  </div>
-                  <div className="space-y-0.5 hidden sm:block">
-                    {dayPosts.slice(0, 3).map((p) => {
-                      const lm = isLeadMagnet(p);
-                      return (
-                        <div
-                          key={p.id}
-                          className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 cursor-pointer hover:bg-zinc-700/60 transition-colors ${
-                            lm ? 'bg-purple-500/10 text-purple-300 border-purple-500' : `bg-zinc-800/60 text-zinc-300 ${statusColors[p.status] || 'border-zinc-600'}`
-                          }`}
-                          title={`${lm ? '🧲 LM: ' : ''}${p.postText.slice(0, 80)} (${p.status}) @ ${formatTime(p.scheduledAt)}`}
-                          onClick={() => setSelectedPost(p)}
-                        >
-                          {lm ? '🧲 ' : ''}{formatTime(p.scheduledAt)}{p.postFormat ? ` · ${p.postFormat}` : ''}
-                        </div>
-                      );
-                    })}
-                    {dayPosts.length > 3 && (
-                      <div className="text-[10px] text-zinc-600 px-1">+{dayPosts.length - 3} more</div>
-                    )}
-                  </div>
-                  {/* Mobile: dot indicators */}
-                  {dayPosts.length > 0 && (
-                    <div className="flex gap-0.5 mt-0.5 sm:hidden">
+                return (
+                  <DroppableDay key={i} dateKey={dateKey} inMonth={inMonth} isToday={isToday} date={date}>
+                    <div className="space-y-0.5 hidden sm:block">
                       {dayPosts.slice(0, 3).map((p) => (
-                        <div key={p.id} className={`w-1.5 h-1.5 rounded-full ${isLeadMagnet(p) ? 'bg-purple-500' : (statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600')}`} />
+                        <DraggablePost key={p.id} post={p} onClick={() => setSelectedPost(p)} />
                       ))}
+                      {dayPosts.length > 3 && (
+                        <div className="text-[10px] text-zinc-600 px-1">+{dayPosts.length - 3} more</div>
+                      )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    {/* Mobile: dot indicators */}
+                    {dayPosts.length > 0 && (
+                      <div className="flex gap-0.5 mt-0.5 sm:hidden">
+                        {dayPosts.slice(0, 3).map((p) => (
+                          <div key={p.id} className={`w-1.5 h-1.5 rounded-full ${isLeadMagnet(p) ? 'bg-purple-500' : (statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600')}`} />
+                        ))}
+                      </div>
+                    )}
+                  </DroppableDay>
+                );
+              })}
+            </div>
           </div>
-        </div>
+
+          <DragOverlay>
+            {draggedPost && (
+              <div className={`px-2 py-1 rounded text-[10px] border-l-2 shadow-lg ${
+                isLeadMagnet(draggedPost) ? 'bg-purple-500/20 text-purple-300 border-purple-500' : 'bg-zinc-800 text-zinc-300 border-amber-500'
+              }`}>
+                {isLeadMagnet(draggedPost) ? '🧲 ' : ''}{formatTime(draggedPost.scheduledAt)}{draggedPost.postFormat ? ` · ${draggedPost.postFormat}` : ''}
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {/* Status filters */}
