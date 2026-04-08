@@ -124,10 +124,13 @@ const PostDetail: React.FC<{
   post: ScheduledPost;
   onClose: () => void;
   onUpdate: (id: string, field: string, value: string) => Promise<void>;
-}> = ({ post, onClose, onUpdate }) => {
+  onDelete: (id: string) => Promise<void>;
+}> = ({ post, onClose, onUpdate, onDelete }) => {
   const { userTimezone } = useDashboard();
   const isEditable = post.status === 'pending';
   const [saving, setSaving] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Local editable state
   const parts = toLocalParts(post.scheduledAt, userTimezone);
@@ -255,9 +258,33 @@ const PostDetail: React.FC<{
               <Pencil className="w-3 h-3 text-zinc-600" />
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {confirmDelete ? (
+              <div className="flex items-center gap-1.5 mr-1">
+                <span className="text-[11px] text-red-400">Delete?</span>
+                <button
+                  onClick={async () => { setDeleting(true); await onDelete(post.id); onClose(); }}
+                  disabled={deleting}
+                  className="px-2 py-1 rounded-lg text-[11px] font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                >
+                  {deleting ? 'Deleting...' : 'Yes'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:bg-zinc-700/60 transition-colors"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete post">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -347,7 +374,7 @@ const PostDetail: React.FC<{
 
 const ContentPanel: React.FC = () => {
   const { userTimezone } = useDashboard();
-  const { posts, statusCounts, postsByDate, loading, refresh, updatePost } = useContentPipeline(userTimezone);
+  const { posts, statusCounts, postsByDate, loading, refresh, updatePost, deletePost } = useContentPipeline(userTimezone);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_posts'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
@@ -594,9 +621,12 @@ const ContentPanel: React.FC = () => {
           onClose={() => setSelectedPost(null)}
           onUpdate={async (id, field, value) => {
             await updatePost(id, field, value);
-            // Update the selected post in-place so the modal reflects changes
             const updated = posts.find(p => p.id === id);
             if (updated) setSelectedPost({ ...updated });
+          }}
+          onDelete={async (id) => {
+            await deletePost(id);
+            setSelectedPost(null);
           }}
         />
       )}

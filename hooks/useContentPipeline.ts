@@ -79,6 +79,17 @@ export function useContentPipeline(timezone?: string) {
     }
   }, [fetch]);
 
+  const deletePost = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase.from('scheduled_posts').delete().eq('id', id);
+      if (error) throw error;
+      toastSuccess('Post deleted');
+      await fetch();
+    } catch (err) {
+      toastError('delete post', err);
+    }
+  }, [fetch]);
+
   return {
     posts,
     statusCounts,
@@ -86,5 +97,6 @@ export function useContentPipeline(timezone?: string) {
     loading,
     refresh: fetch,
     updatePost,
+    deletePost,
   };
 }
