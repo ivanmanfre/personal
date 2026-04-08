@@ -165,7 +165,7 @@ const PostDetail: React.FC<{
   const removeMedia = useCallback((index: number) => {
     const updated = mediaUrls.filter((_, i) => i !== index);
     setMediaUrls(updated);
-    save('media_urls', JSON.stringify(updated));
+    save('media_urls', `{${updated.join(',')}}`);
   }, [mediaUrls, save]);
 
   const addMedia = useCallback(() => {
@@ -174,7 +174,7 @@ const PostDetail: React.FC<{
     const updated = [...mediaUrls, trimmed];
     setMediaUrls(updated);
     setNewUrl('');
-    save('media_urls', JSON.stringify(updated));
+    save('media_urls', `{${updated.join(',')}}`);
   }, [mediaUrls, newUrl, save]);
 
   const imageUrl = mediaUrls[0] || null;
@@ -245,23 +245,31 @@ const PostDetail: React.FC<{
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Media section */}
-          {(imageUrl || isEditable) && (
+          {(mediaUrls.length > 0 || isEditable) && (
             <div className="space-y-2">
-              {imageUrl && (
-                <div className="rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950">
-                  <img
-                    src={imageUrl}
-                    alt="Post media"
-                    className="w-full max-h-[400px] object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
+              {mediaUrls.length > 0 && (
+                <div className="grid gap-2" style={{ gridTemplateColumns: mediaUrls.length === 1 ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+                  {mediaUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950 hover:border-zinc-600 transition-colors">
+                      <img
+                        src={url}
+                        alt={`Media ${i + 1}`}
+                        className={`w-full object-contain ${mediaUrls.length === 1 ? 'max-h-[400px]' : 'max-h-[200px]'}`}
+                        onError={(e) => {
+                          const el = e.target as HTMLImageElement;
+                          el.style.display = 'none';
+                          el.parentElement!.innerHTML = `<div class="px-3 py-2 text-xs text-zinc-500 truncate">${url}</div>`;
+                        }}
+                      />
+                    </a>
+                  ))}
                 </div>
               )}
               {isEditable && (
                 <div className="space-y-1.5">
                   {mediaUrls.map((url, i) => (
                     <div key={i} className="flex items-center gap-2 group">
-                      <span className="flex-1 text-xs text-zinc-400 truncate bg-zinc-800/40 rounded-lg px-2.5 py-1.5 border border-zinc-700/40">{url}</span>
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex-1 text-xs text-blue-400 hover:text-blue-300 truncate bg-zinc-800/40 rounded-lg px-2.5 py-1.5 border border-zinc-700/40">{url}</a>
                       <button
                         onClick={() => removeMedia(i)}
                         className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
