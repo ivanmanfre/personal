@@ -73,6 +73,15 @@ function formatCountdown(ms: number): string {
   return `${m}m`;
 }
 
+/** Convert Google Drive share links to embeddable thumbnail URLs */
+function toEmbedUrl(url: string): string {
+  const m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  const m2 = url.match(/drive\.google\.com\/uc\?id=([^&]+)/);
+  if (m2) return `https://lh3.googleusercontent.com/d/${m2[1]}`;
+  return url;
+}
+
 /** Parse an ISO date string into local date/time parts for the given timezone */
 function toLocalParts(iso: string, tz?: string): { date: string; time: string } {
   const d = new Date(iso);
@@ -252,7 +261,7 @@ const PostDetail: React.FC<{
                   {mediaUrls.map((url, i) => (
                     <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950 hover:border-zinc-600 transition-colors">
                       <img
-                        src={url}
+                        src={toEmbedUrl(url)}
                         alt={`Media ${i + 1}`}
                         className={`w-full object-contain ${mediaUrls.length === 1 ? 'max-h-[400px]' : 'max-h-[200px]'}`}
                         onError={(e) => {
