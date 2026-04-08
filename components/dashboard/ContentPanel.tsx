@@ -263,7 +263,7 @@ const PostDetail: React.FC<{
               <div className="flex items-center gap-1.5 mr-1">
                 <span className="text-[11px] text-red-400">Delete?</span>
                 <button
-                  onClick={async () => { setDeleting(true); await onDelete(post.id); onClose(); }}
+                  onClick={async () => { setDeleting(true); await onDelete(post.id); }}
                   disabled={deleting}
                   className="px-2 py-1 rounded-lg text-[11px] font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                 >

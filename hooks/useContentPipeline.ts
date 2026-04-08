@@ -81,7 +81,7 @@ export function useContentPipeline(timezone?: string) {
 
   const deletePost = useCallback(async (id: string) => {
     try {
-      const { error } = await supabase.from('scheduled_posts').delete().eq('id', id);
+      const { error } = await supabase.rpc('delete_scheduled_post', { p_id: id });
       if (error) throw error;
       toastSuccess('Post deleted');
       await fetch();
