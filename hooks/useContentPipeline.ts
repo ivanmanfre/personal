@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { toastError } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { ScheduledPost } from '../types/dashboard';
 
 function mapPost(row: any): ScheduledPost {
@@ -69,11 +69,22 @@ export function useContentPipeline(timezone?: string) {
     [posts, timezone]
   );
 
+  const updatePost = useCallback(async (id: string, field: string, value: string) => {
+    try {
+      await dashboardAction('scheduled_posts', id, field, value);
+      toastSuccess(`Updated ${field.replace(/_/g, ' ')}`);
+      await fetch();
+    } catch (err) {
+      toastError(`update ${field.replace(/_/g, ' ')}`, err);
+    }
+  }, [fetch]);
+
   return {
     posts,
     statusCounts,
     postsByDate,
     loading,
     refresh: fetch,
+    updatePost,
   };
 }

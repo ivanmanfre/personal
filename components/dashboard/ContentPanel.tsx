@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Calendar, FileText, ChevronLeft, ChevronRight, Image, Clock, ArrowRight, AlertTriangle, Send, X, Pencil, Plus, Trash2, Loader } from 'lucide-react';
 import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -73,9 +73,111 @@ function formatCountdown(ms: number): string {
   return `${m}m`;
 }
 
-const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ post, onClose }) => {
+/** Parse an ISO date string into local date/time parts for the given timezone */
+function toLocalParts(iso: string, tz?: string): { date: string; time: string } {
+  const d = new Date(iso);
+  if (tz) {
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+    return { date: fmt.format(d), time: timeFmt.format(d) };
+  }
+  return {
+    date: d.toISOString().slice(0, 10),
+    time: d.toISOString().slice(11, 16),
+  };
+}
+
+/** Combine date + time strings into an ISO string in the given timezone */
+function toISOFromLocal(dateStr: string, timeStr: string, tz?: string): string {
+  // Build a date in the target timezone by creating a temporary date and adjusting
+  if (tz) {
+    // Create a date object from the date and time parts
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [h, min] = timeStr.split(':').map(Number);
+    // Use a reference date to find the UTC offset for that timezone
+    const ref = new Date(y, m - 1, d, h, min);
+    const utcStr = ref.toLocaleString('en-US', { timeZone: 'UTC' });
+    const tzStr = ref.toLocaleString('en-US', { timeZone: tz });
+    const offsetMs = new Date(utcStr).getTime() - new Date(tzStr).getTime();
+    const adjusted = new Date(ref.getTime() + offsetMs);
+    return adjusted.toISOString();
+  }
+  return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+}
+
+const PostDetail: React.FC<{
+  post: ScheduledPost;
+  onClose: () => void;
+  onUpdate: (id: string, field: string, value: string) => Promise<void>;
+}> = ({ post, onClose, onUpdate }) => {
   const { userTimezone } = useDashboard();
-  const imageUrl = post.mediaUrls?.[0] || null;
+  const isEditable = post.status === 'pending';
+  const [saving, setSaving] = useState<string | null>(null);
+
+  // Local editable state
+  const parts = toLocalParts(post.scheduledAt, userTimezone);
+  const [dateVal, setDateVal] = useState(parts.date);
+  const [timeVal, setTimeVal] = useState(parts.time);
+  const [postText, setPostText] = useState(post.postText);
+  const [postFormat, setPostFormat] = useState(post.postFormat || '');
+  const [mediaUrls, setMediaUrls] = useState<string[]>([...post.mediaUrls]);
+  const [newUrl, setNewUrl] = useState('');
+
+  // Reset local state when the post prop changes (e.g., after refresh)
+  useEffect(() => {
+    const p = toLocalParts(post.scheduledAt, userTimezone);
+    setDateVal(p.date);
+    setTimeVal(p.time);
+    setPostText(post.postText);
+    setPostFormat(post.postFormat || '');
+    setMediaUrls([...post.mediaUrls]);
+  }, [post, userTimezone]);
+
+  const save = useCallback(async (field: string, value: string) => {
+    setSaving(field);
+    try {
+      await onUpdate(post.id, field, value);
+    } finally {
+      setSaving(null);
+    }
+  }, [onUpdate, post.id]);
+
+  const handleDateTimeBlur = useCallback(() => {
+    if (!dateVal || !timeVal) return;
+    const newIso = toISOFromLocal(dateVal, timeVal, userTimezone);
+    if (newIso !== post.scheduledAt) {
+      save('scheduled_at', newIso);
+    }
+  }, [dateVal, timeVal, userTimezone, post.scheduledAt, save]);
+
+  const handleTextBlur = useCallback(() => {
+    if (postText !== post.postText) {
+      save('post_text', postText);
+    }
+  }, [postText, post.postText, save]);
+
+  const handleFormatBlur = useCallback(() => {
+    if (postFormat !== (post.postFormat || '')) {
+      save('post_format', postFormat);
+    }
+  }, [postFormat, post.postFormat, save]);
+
+  const removeMedia = useCallback((index: number) => {
+    const updated = mediaUrls.filter((_, i) => i !== index);
+    setMediaUrls(updated);
+    save('media_urls', JSON.stringify(updated));
+  }, [mediaUrls, save]);
+
+  const addMedia = useCallback(() => {
+    const trimmed = newUrl.trim();
+    if (!trimmed) return;
+    const updated = [...mediaUrls, trimmed];
+    setMediaUrls(updated);
+    setNewUrl('');
+    save('media_urls', JSON.stringify(updated));
+  }, [mediaUrls, newUrl, save]);
+
+  const imageUrl = mediaUrls[0] || null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -90,11 +192,49 @@ const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ po
             <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${statusBadgeColors[post.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
               {post.status}
             </span>
-            <span className="text-sm text-zinc-400">
-              {formatDate(post.scheduledAt, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }, userTimezone)} at {formatTime(post.scheduledAt, userTimezone)}
-            </span>
-            {post.postFormat && (
-              <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
+            {isEditable ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={dateVal}
+                  onChange={(e) => setDateVal(e.target.value)}
+                  onBlur={handleDateTimeBlur}
+                  className="bg-zinc-800 border border-zinc-700/60 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/60"
+                />
+                <input
+                  type="time"
+                  value={timeVal}
+                  onChange={(e) => setTimeVal(e.target.value)}
+                  onBlur={handleDateTimeBlur}
+                  className="bg-zinc-800 border border-zinc-700/60 rounded-lg px-2 py-1 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500/60"
+                />
+              </div>
+            ) : (
+              <span className="text-sm text-zinc-400">
+                {formatDate(post.scheduledAt, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }, userTimezone)} at {formatTime(post.scheduledAt, userTimezone)}
+              </span>
+            )}
+            {isEditable ? (
+              <input
+                type="text"
+                value={postFormat}
+                onChange={(e) => setPostFormat(e.target.value)}
+                onBlur={handleFormatBlur}
+                placeholder="format"
+                className="bg-zinc-800 border border-zinc-700/60 rounded-lg px-2 py-1 text-[11px] text-zinc-400 w-24 focus:outline-none focus:border-emerald-500/60"
+              />
+            ) : (
+              post.postFormat && (
+                <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
+              )
+            )}
+            {saving && (
+              <span className="flex items-center gap-1 text-[11px] text-emerald-400/80">
+                <Loader className="w-3 h-3 animate-spin" /> Saving...
+              </span>
+            )}
+            {isEditable && !saving && (
+              <Pencil className="w-3 h-3 text-zinc-600" />
             )}
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60 transition-colors">
@@ -104,17 +244,69 @@ const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ po
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {imageUrl && (
-            <div className="rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950">
-              <img
-                src={imageUrl}
-                alt="Post media"
-                className="w-full max-h-[400px] object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
+          {/* Media section */}
+          {(imageUrl || isEditable) && (
+            <div className="space-y-2">
+              {imageUrl && (
+                <div className="rounded-xl overflow-hidden border border-zinc-800/60 bg-zinc-950">
+                  <img
+                    src={imageUrl}
+                    alt="Post media"
+                    className="w-full max-h-[400px] object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              )}
+              {isEditable && (
+                <div className="space-y-1.5">
+                  {mediaUrls.map((url, i) => (
+                    <div key={i} className="flex items-center gap-2 group">
+                      <span className="flex-1 text-xs text-zinc-400 truncate bg-zinc-800/40 rounded-lg px-2.5 py-1.5 border border-zinc-700/40">{url}</span>
+                      <button
+                        onClick={() => removeMedia(i)}
+                        className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newUrl}
+                      onChange={(e) => setNewUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') addMedia(); }}
+                      placeholder="Add media URL..."
+                      className="flex-1 bg-zinc-800 border border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-emerald-500/60"
+                    />
+                    <button
+                      onClick={addMedia}
+                      disabled={!newUrl.trim()}
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{post.postText}</div>
+
+          {/* Post text */}
+          {isEditable ? (
+            <textarea
+              value={postText}
+              onChange={(e) => setPostText(e.target.value)}
+              onBlur={handleTextBlur}
+              rows={12}
+              className="w-full bg-zinc-800/60 border border-zinc-700/60 rounded-xl px-4 py-3 text-sm text-zinc-200 leading-relaxed resize-y focus:outline-none focus:border-emerald-500/60 placeholder-zinc-600"
+              placeholder="Post text..."
+            />
+          ) : (
+            <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{post.postText}</div>
+          )}
+
           {post.errorMessage && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -129,7 +321,7 @@ const PostDetail: React.FC<{ post: ScheduledPost; onClose: () => void }> = ({ po
 
 const ContentPanel: React.FC = () => {
   const { userTimezone } = useDashboard();
-  const { posts, statusCounts, postsByDate, loading, refresh } = useContentPipeline(userTimezone);
+  const { posts, statusCounts, postsByDate, loading, refresh, updatePost } = useContentPipeline(userTimezone);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_posts'] });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [filter, setFilter] = useState<string>('all');
@@ -364,7 +556,18 @@ const ContentPanel: React.FC = () => {
         </div>
       </PanelCard>
 
-      {selectedPost && <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />}
+      {selectedPost && (
+        <PostDetail
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onUpdate={async (id, field, value) => {
+            await updatePost(id, field, value);
+            // Update the selected post in-place so the modal reflects changes
+            const updated = posts.find(p => p.id === id);
+            if (updated) setSelectedPost({ ...updated });
+          }}
+        />
+      )}
     </div>
   );
 };
