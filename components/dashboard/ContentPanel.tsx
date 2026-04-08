@@ -25,6 +25,12 @@ const statusBadgeColors: Record<string, string> = {
   failed: 'bg-red-500/20 text-red-300 border-red-500/30',
 };
 
+const LM_PATTERN = /\bcomment\s+[""]?(\w+)[""]?\b/i;
+
+function isLeadMagnet(post: ScheduledPost): boolean {
+  return LM_PATTERN.test(post.postText);
+}
+
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getMonthDays(year: number, month: number) {
@@ -201,6 +207,9 @@ const PostDetail: React.FC<{
             <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${statusBadgeColors[post.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
               {post.status}
             </span>
+            {isLeadMagnet(post) && (
+              <span className="px-2 py-0.5 rounded text-[11px] font-medium border bg-purple-500/20 text-purple-300 border-purple-500/30">🧲 Lead Magnet</span>
+            )}
             {isEditable ? (
               <div className="flex items-center gap-1.5">
                 <input
@@ -479,18 +488,21 @@ const ContentPanel: React.FC = () => {
                     {date.getDate()}
                   </div>
                   <div className="space-y-0.5 hidden sm:block">
-                    {dayPosts.slice(0, 3).map((p) => (
-                      <div
-                        key={p.id}
-                        className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 bg-zinc-800/60 text-zinc-300 cursor-pointer hover:bg-zinc-700/60 transition-colors ${
-                          statusColors[p.status] || 'border-zinc-600'
-                        }`}
-                        title={`${p.postText.slice(0, 80)} (${p.status}) @ ${formatTime(p.scheduledAt)}`}
-                        onClick={() => setSelectedPost(p)}
-                      >
-                        {formatTime(p.scheduledAt)}{p.postFormat ? ` · ${p.postFormat}` : ''}
-                      </div>
-                    ))}
+                    {dayPosts.slice(0, 3).map((p) => {
+                      const lm = isLeadMagnet(p);
+                      return (
+                        <div
+                          key={p.id}
+                          className={`px-1 py-0.5 rounded text-[10px] truncate border-l-2 cursor-pointer hover:bg-zinc-700/60 transition-colors ${
+                            lm ? 'bg-purple-500/10 text-purple-300 border-purple-500' : `bg-zinc-800/60 text-zinc-300 ${statusColors[p.status] || 'border-zinc-600'}`
+                          }`}
+                          title={`${lm ? '🧲 LM: ' : ''}${p.postText.slice(0, 80)} (${p.status}) @ ${formatTime(p.scheduledAt)}`}
+                          onClick={() => setSelectedPost(p)}
+                        >
+                          {lm ? '🧲 ' : ''}{formatTime(p.scheduledAt)}{p.postFormat ? ` · ${p.postFormat}` : ''}
+                        </div>
+                      );
+                    })}
                     {dayPosts.length > 3 && (
                       <div className="text-[10px] text-zinc-600 px-1">+{dayPosts.length - 3} more</div>
                     )}
@@ -499,7 +511,7 @@ const ContentPanel: React.FC = () => {
                   {dayPosts.length > 0 && (
                     <div className="flex gap-0.5 mt-0.5 sm:hidden">
                       {dayPosts.slice(0, 3).map((p) => (
-                        <div key={p.id} className={`w-1.5 h-1.5 rounded-full ${statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+                        <div key={p.id} className={`w-1.5 h-1.5 rounded-full ${isLeadMagnet(p) ? 'bg-purple-500' : (statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600')}`} />
                       ))}
                     </div>
                   )}
@@ -542,13 +554,16 @@ const ContentPanel: React.FC = () => {
           ) : (
             filteredList.map((post) => (
               <div key={post.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors cursor-pointer" onClick={() => setSelectedPost(post)}>
-                <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${statusColors[post.status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+                <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${isLeadMagnet(post) ? 'bg-purple-500' : (statusColors[post.status]?.split(' ')[0] || 'bg-zinc-600')}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-zinc-300 line-clamp-2">{post.postText}</p>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusBadgeColors[post.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>
                       {post.status}
                     </span>
+                    {isLeadMagnet(post) && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium border bg-purple-500/20 text-purple-300 border-purple-500/30">LM</span>
+                    )}
                     <span className="text-[11px] text-zinc-500">
                       {formatDate(post.scheduledAt, { month: 'short', day: 'numeric' }, userTimezone)} at {formatTime(post.scheduledAt, userTimezone)}
                     </span>
