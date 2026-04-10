@@ -58,7 +58,7 @@ const steps = [
                     />
                     <motion.path
                         d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-                        stroke="#00E676"
+                        stroke="#00D084"
                         strokeWidth="3"
                         fill="none"
                         initial={{ pathLength: 0, pathOffset: 1 }}
@@ -82,7 +82,7 @@ const steps = [
             <div className="w-48 h-48 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     {[20, 50, 80].map((y, i) => (
-                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#00E676" strokeWidth="2" />
+                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#00D084" strokeWidth="2" />
                     ))}
                     {[27, 57, 87].map((y, i) => (
                         <motion.line
@@ -98,9 +98,9 @@ const steps = [
                             transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
                         />
                     ))}
-                    <motion.circle cx="72" cy="27" r="2" fill="#00E676" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="57" r="2" fill="#00E676" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="87" r="2" fill="#00E676" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="27" r="2" fill="#00D084" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="57" r="2" fill="#00D084" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="87" r="2" fill="#00D084" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
                 </svg>
             </div>
         )
@@ -125,7 +125,7 @@ const Connector: React.FC = () => (
 
         {/* Arrow */}
         <svg width="16" height="10" viewBox="0 0 16 10" className="text-accent">
-            <path d="M8 10 L0 0 L16 0 Z" fill="#00E676" />
+            <path d="M8 10 L0 0 L16 0 Z" fill="#00D084" />
         </svg>
 
         {/* Input dot */}
@@ -139,7 +139,7 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-zinc-950 py-24">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border-4 border-black text-black font-black uppercase tracking-widest text-xl shadow-[8px_8px_0px_0px_rgba(0,230,118,1)] transform -rotate-2">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border-4 border-black text-black font-black tracking-widest text-xl shadow-[5px_5px_0px_0px_rgba(0,208,132,1)] transform -rotate-2">
                     The Architecture Protocol
                 </div>
             </div>
@@ -163,7 +163,7 @@ const Process: React.FC = () => {
                                         </span>
                                         <div className="h-0.5 flex-grow bg-zinc-800 max-w-16" />
                                     </div>
-                                    <h2 className={`text-3xl md:text-4xl font-black uppercase mb-4 tracking-tighter leading-none ${step.textColor}`}>
+                                    <h2 className={`text-3xl md:text-4xl font-black mb-4 tracking-tighter leading-none ${step.textColor}`}>
                                         {step.title}
                                     </h2>
                                     <p className="text-lg font-medium text-zinc-500 leading-relaxed">

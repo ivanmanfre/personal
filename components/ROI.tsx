@@ -21,11 +21,11 @@ const ROI: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-mono text-sm uppercase mb-6 comic-border shadow-[4px_4px_0px_0px_rgba(41,121,255,1)]"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-mono text-sm uppercase mb-6 comic-border shadow-[3px_3px_0px_0px_rgba(30,64,175,1)]"
                     >
                         <Calculator size={16} /> ROI Engine
                     </motion.div>
-                    <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
+                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">
                         The Cost of <span className="text-pink inline-block -rotate-2 transform">Inaction</span>
                     </h2>
                     <p className="text-xl md:text-2xl font-bold max-w-3xl mx-auto text-gray-800">
@@ -124,7 +124,7 @@ const ROI: React.FC = () => {
                             href="https://calendly.com/ivan-intelligents/30min"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full mt-2 px-8 py-5 bg-cyan comic-border-thick shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 flex items-center justify-center gap-3 font-black text-xl uppercase tracking-wide text-black"
+                            className="w-full mt-2 px-8 py-5 bg-cyan comic-border-thick shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all active:shadow-[0px_0px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 flex items-center justify-center gap-3 font-black text-xl uppercase tracking-wide text-black"
                         >
                             Stop The Bleeding <ArrowRight size={24} />
                         </a>

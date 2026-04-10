@@ -10,7 +10,7 @@ const CTA: React.FC = () => {
                     whileInView={{ scale: 1, opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ type: "spring", duration: 0.8 }}
-                    className="bg-white border-4 border-black p-12 shadow-comic max-w-4xl mx-auto"
+                    className="bg-white border-3 border-black p-12 shadow-comic max-w-4xl mx-auto"
                 >
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase mb-6 leading-[0.9]">
                         Ready To Stop <br /> <span className="font-drama italic">Wasting Your Best Talent?</span>
@@ -23,7 +23,7 @@ const CTA: React.FC = () => {
                         href="https://calendly.com/ivan-intelligents/30min"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-magnetic relative z-20 group inline-flex items-center gap-3 px-12 py-6 bg-black text-white text-xl font-black uppercase border-4 border-black shadow-comic focus:outline-none"
+                        className="btn-magnetic relative z-20 group inline-flex items-center gap-3 px-12 py-6 bg-black text-white text-xl font-black uppercase border-3 border-black shadow-comic focus:outline-none"
                     >
                         <span className="relative z-10 group-hover:text-black transition-colors duration-300 tracking-wide">Book Strategy Call</span>
                     </a>

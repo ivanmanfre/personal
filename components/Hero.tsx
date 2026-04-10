@@ -10,7 +10,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none z-0" />
 
       {/* Decorative large number */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[22rem] font-black text-black/[0.03] select-none pointer-events-none leading-none pr-8">
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[22rem] font-black text-black/[0.03] select-none pointer-events-none leading-none pr-8 hidden md:block">
         01
       </div>
 
@@ -37,7 +37,7 @@ const Hero: React.FC = () => {
         >
           I Build Systems That{' '}
           <br className="hidden md:block" />
-          <span className="relative inline-block mt-4 px-6 md:px-8 py-2 md:py-3 border-2 border-zinc-800 bg-black shadow-[6px_6px_0px_0px_rgba(0,230,118,1)]">
+          <span className="relative inline-block mt-4 px-4 sm:px-6 md:px-8 py-2 md:py-3 border-2 border-zinc-800 bg-black shadow-[4px_4px_0px_0px_rgba(0,208,132,1)]">
             <span className="relative z-10 text-accent font-black tracking-widest text-4xl md:text-5xl lg:text-6xl">
               <ScrambleText text="RUN WITHOUT YOU" />
             </span>

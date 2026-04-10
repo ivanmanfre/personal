@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${scrolled
-        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border-2 border-zinc-900 shadow-[6px_6px_0px_0px_#18181B]'
+        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border-2 border-zinc-900 shadow-[4px_4px_0px_0px_#1A1A1A]'
         : 'top-0 left-0 right-0 py-6 bg-transparent border-transparent'
       }`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
           <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center">
             <span className="text-white font-black text-xl tracking-tighter">IM</span>
           </div>
-          <span className="text-sm font-black tracking-widest uppercase text-gray-800 group-hover:text-black transition-colors">
+          <span className="text-sm font-black tracking-widest text-gray-800 group-hover:text-black transition-colors">
             Iván Manfredi
           </span>
         </Link>
@@ -83,7 +83,7 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden p-2 comic-border shadow-comic active:shadow-none bg-white active:translate-y-1 transition-all"
+          className="md:hidden p-3 comic-border shadow-comic active:shadow-none bg-white active:translate-y-1 transition-all"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={28} strokeWidth={3} /> : <Menu size={28} strokeWidth={3} />}

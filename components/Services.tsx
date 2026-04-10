@@ -5,7 +5,7 @@ import AutomationCursorFlow from './ui/AutomationCursorFlow';
 
 const Services: React.FC = () => {
   return (
-    <section id="services" className="py-32 border-t-4 border-black bg-white overflow-hidden">
+    <section id="services" className="py-32 border-t-3 border-black bg-white overflow-hidden">
       <div className="container mx-auto px-6 max-w-6xl">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -14,7 +14,7 @@ const Services: React.FC = () => {
           className="mb-24 flex flex-col md:flex-row items-end gap-6 justify-between border-b-4 border-black pb-8"
         >
           <div>
-            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 uppercase transform -rotate-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]">Core Architectures</h2>
+            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 transform -rotate-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.2)]">Core Architectures</h2>
             <h3 className="text-5xl md:text-6xl font-black uppercase leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">Without You</span></h3>
           </div>
           <p className="text-xl font-bold max-w-sm text-right text-gray-600 leading-relaxed border-r-4 border-accent pr-6">
@@ -34,7 +34,7 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">01</span>
-                <h4 className="text-3xl font-black uppercase tracking-tight">AI & API Orchestration</h4>
+                <h4 className="text-3xl font-black tracking-tight">AI & API Orchestration</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
                 Replacing manual data entry and handoffs with mercilessly efficient API workflows. I connect your entire tech stack (CRMs, Slack, Docs, AI Models) so information flows instantly and accurately, 24/7.
@@ -61,7 +61,7 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">02</span>
-                <h4 className="text-3xl font-black uppercase tracking-tight">Autonomous Agents</h4>
+                <h4 className="text-3xl font-black tracking-tight">Autonomous Agents</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
                 Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and cheaper than an entire offshore team.

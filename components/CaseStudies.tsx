@@ -30,7 +30,7 @@ const cases = [
     title: "Content Engine",
     metric: "20x Output",
     desc: "One recorded video becomes 20 social posts, a blog article, and a newsletter. AI handles transcription, repurposing, and scheduling across platforms.",
-    color: "bg-white border-4 border-black",
+    color: "bg-white border-3 border-black",
     metricBox: "bg-black border-2 border-black text-white"
   }
 ];
@@ -43,7 +43,7 @@ const CaseStudies: React.FC = () => {
           initial={{ y: 50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="text-6xl md:text-7xl font-black mb-6 uppercase text-center text-outline font-drama italic"
+          className="text-4xl sm:text-6xl md:text-7xl font-black mb-6 uppercase text-center text-outline font-drama italic"
         >
           Results
         </motion.h2>
@@ -60,7 +60,7 @@ const CaseStudies: React.FC = () => {
             href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,230,118,1)] hover:-translate-y-0.5 transition-transform"
+            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,208,132,1)] hover:-translate-y-0.5 transition-transform"
           >
             <ShieldCheck size={16} className="text-accent" />
             <span>100% Job Success</span>
@@ -77,7 +77,7 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 border-4 border-black shadow-comic bg-white group hover-lift hover:shadow-comic-hover transition-all"
+              className="flex-1 border-3 border-black shadow-comic bg-white group hover-lift hover:shadow-comic-hover transition-all"
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b-4 border-black flex items-center justify-center relative overflow-hidden`}>

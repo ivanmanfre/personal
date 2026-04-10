@@ -5,12 +5,12 @@ import { FileText, Webhook, Brain, CheckCircle } from 'lucide-react';
 const AutomationCursorFlow: React.FC = () => {
 
     return (
-        <div className="w-full h-80 bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group hover:border-accent transition-colors">
+        <div className="w-full h-80 bg-white border-4 border-black shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group hover:border-accent transition-colors">
 
             {/* Decorative Grid */}
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)", backgroundSize: '20px 20px' }} />
 
-            <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,230,118,1)] z-20">
+            <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,208,132,1)] z-20">
                 System Builder Instance
             </div>
 
@@ -32,7 +32,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#00E676", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#00D084", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
                             className="w-14 h-14 bg-white border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_black] z-10 relative"
                         >
@@ -45,7 +45,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#2979FF", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#1E40AF", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
                             className="w-14 h-14 bg-white border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_black] z-10 relative"
                         >
@@ -58,7 +58,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", "#FF4081", "#fff"] }}
+                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", "#E8366D", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.7, 0.9], repeat: Infinity }}
                             className="w-14 h-14 bg-white border-2 border-black flex items-center justify-center shadow-[4px_4px_0px_0px_black] z-10 relative"
                         >

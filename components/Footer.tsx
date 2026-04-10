@@ -9,12 +9,12 @@ const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-black text-white border-t-8 border-black pt-16 pb-8 relative z-10">
+    <footer className="bg-black text-white border-t-4 border-black pt-16 pb-8 relative z-10">
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8">
 
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-black uppercase mb-2 tracking-tight">Iván Manfredi</h2>
+            <h2 className="text-4xl font-black mb-2 tracking-tight">Iván Manfredi</h2>
             <p className="font-bold text-gray-400">AI & Automation Architect</p>
           </div>
 

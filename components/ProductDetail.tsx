@@ -54,7 +54,7 @@ const ProductDetail: React.FC = () => {
             >
               {product.category}
             </span>
-            <h1 className="text-6xl md:text-8xl font-black uppercase leading-[0.85] tracking-tighter mb-8">
+            <h1 className="text-6xl md:text-8xl font-black leading-[0.85] tracking-tighter mb-8">
               {product.name}
             </h1>
             <p className="text-3xl md:text-4xl font-bold mb-8 max-w-4xl mx-auto tracking-tight">
@@ -108,11 +108,11 @@ const ProductDetail: React.FC = () => {
           <div className="container mx-auto px-6 max-w-6xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="flex justify-center mb-8">
-                <span className="inline-flex items-center gap-3 px-6 py-2 bg-black text-white comic-border shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] font-black uppercase tracking-widest text-sm">
+                <span className="inline-flex items-center gap-3 px-6 py-2 bg-black text-white comic-border shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] font-black uppercase tracking-widest text-sm">
                   <Eye size={20} /> Workflow Overview
                 </span>
               </div>
-              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block comic-border-thick bg-black p-2 hover:p-1 transition-all group shadow-[8px_8px_0px_0px_rgba(255,255,255,0.2)]">
+              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block comic-border-thick bg-black p-2 hover:p-1 transition-all group shadow-[5px_5px_0px_0px_rgba(255,255,255,0.2)]">
                 <img
                   src={product.previewImage}
                   alt={`${product.name} workflow`}
@@ -295,7 +295,7 @@ const ProductDetail: React.FC = () => {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => handleBuy(mainTier)}
-                className="px-12 py-6 bg-black text-white comic-border-thick shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-[12px_12px_0px_0px_rgba(255,255,255,1)] hover:-translate-y-2 transition-all active:shadow-[0px_0px_0px_0px_rgba(255,255,255,1)] active:translate-y-0 font-black text-2xl md:text-3xl uppercase tracking-wide inline-flex items-center gap-4"
+                className="px-12 py-6 bg-black text-white comic-border-thick shadow-[5px_5px_0px_0px_rgba(255,255,255,1)] hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:-translate-y-2 transition-all active:shadow-[0px_0px_0px_0px_rgba(255,255,255,1)] active:translate-y-0 font-black text-2xl md:text-3xl uppercase tracking-wide inline-flex items-center gap-4"
               >
                 <ShoppingCart size={32} strokeWidth={3} /> Get {product.name}
               </button>

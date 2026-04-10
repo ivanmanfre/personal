@@ -6,23 +6,23 @@
   --font-drama: 'DM Serif Display', serif;
   --font-mono: monospace;
 
-  --color-primary: #18181B;
-  /* Softened dark zinc instead of pure black */
-  --color-paper: #ffffff;
-  --color-accent: #00E676;
-  /* Vibrant Green */
-  --color-cyan: #2979FF;
-  /* Crisp Cyan */
-  --color-pink: #FF4081;
+  --color-primary: #1A1A1A;
+  /* Softened dark */
+  --color-paper: #FAFAF8;
+  --color-accent: #00D084;
+  /* Sage Green */
+  --color-cyan: #1E40AF;
+  /* Steel Blue */
+  --color-pink: #E8366D;
 
-  /* Sophisticated Softened Shadows */
-  --shadow-comic: 6px 6px 0px 0px rgba(24, 24, 27, 0.85);
-  --shadow-comic-hover: 8px 8px 0px 0px rgba(24, 24, 27, 0.85);
-  --shadow-comic-active: 0px 0px 0px 0px rgba(24, 24, 27, 0.85);
+  /* Refined Shadows */
+  --shadow-comic: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
+  --shadow-comic-hover: 6px 6px 0px 0px rgba(26, 26, 26, 0.85);
+  --shadow-comic-active: 0px 0px 0px 0px rgba(26, 26, 26, 0.85);
 
-  --shadow-comic-sm: 4px 4px 0px 0px rgba(24, 24, 27, 0.85);
-  --shadow-comic-sm-hover: 6px 6px 0px 0px rgba(24, 24, 27, 0.85);
-  --shadow-comic-sm-active: 0px 0px 0px 0px rgba(24, 24, 27, 0.85);
+  --shadow-comic-sm: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
+  --shadow-comic-sm-hover: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
+  --shadow-comic-sm-active: 0px 0px 0px 0px rgba(26, 26, 26, 0.85);
 }
 
 body {
@@ -30,14 +30,14 @@ body {
   color: var(--color-primary);
   overflow-x: hidden;
   /* Add base grain texture via SVG */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
 }
 
 /* Base Comic Grid */
 .bg-grid-pattern {
   background-size: 40px 40px;
-  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
 }
 
 /* Utility for text outlines */
@@ -72,7 +72,7 @@ body {
 }
 
 .comic-border-thick {
-  border: 3px solid var(--color-primary);
+  border: 2px solid var(--color-primary);
 }
 
 /* Magnetic Button Interactions */
@@ -278,4 +278,17 @@ body {
 
 .animate-ping-slow {
   animation: ping-slow 2s ease-in-out infinite;
+}
+
+/* Mobile refinements */
+@media (max-width: 639px) {
+  body {
+    font-size: 1.0625rem;
+  }
+  :root {
+    --shadow-comic: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
+    --shadow-comic-hover: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
+    --shadow-comic-sm: 2px 2px 0px 0px rgba(26, 26, 26, 0.85);
+    --shadow-comic-sm-hover: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
+  }
 }
