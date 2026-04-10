@@ -44,7 +44,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         )}
 
         {/* Category badge */}
-        <span className="text-xs font-black uppercase comic-border px-3 py-1 bg-white w-fit mb-4 shadow-comic-sm">
+        <span className="text-xs font-bold uppercase comic-border px-3 py-1 bg-white w-fit mb-4 shadow-comic-sm">
           {product.category}
         </span>
 
@@ -57,12 +57,12 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         </p>
 
         {/* Price + CTA */}
-        <div className="flex items-center justify-between border-t-4 border-black pt-4 mt-auto">
+        <div className="flex items-center justify-between border-t border-zinc-200 pt-4 mt-auto">
           <div>
-            <span className="text-xs font-black uppercase text-gray-500 block tracking-widest">From</span>
-            <span className="text-4xl font-black">{product.tiers[0].label}</span>
+            <span className="text-xs font-bold uppercase text-gray-500 block tracking-widest">From</span>
+            <span className="text-4xl font-bold">{product.tiers[0].label}</span>
           </div>
-          <span className="flex items-center gap-2 font-black uppercase text-sm group-hover:gap-4 transition-all bg-black text-white px-4 py-2">
+          <span className="flex items-center gap-2 font-bold uppercase text-sm group-hover:gap-4 transition-all bg-black text-white px-4 py-2">
             Details <ArrowRight size={18} />
           </span>
         </div>

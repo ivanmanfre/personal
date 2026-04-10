@@ -17,7 +17,7 @@ const Services: React.FC = () => {
             <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 transform -rotate-1 shadow-sm">Core Architectures</h2>
             <h3 className="text-5xl md:text-6xl font-bold uppercase leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">Without You</span></h3>
           </div>
-          <p className="text-xl font-bold max-w-sm text-right text-gray-600 leading-relaxed border-r-4 border-accent pr-6">
+          <p className="text-xl font-bold max-w-sm text-right text-gray-600 leading-relaxed border-r-2 border-accent pr-6">
             I don't sell hours. I build infrastructure that gives you your hours back.
           </p>
         </motion.div>
@@ -46,7 +46,7 @@ const Services: React.FC = () => {
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-crosshair">
-              <div className="absolute inset-0 bg-accent translate-x-4 translate-y-4 border-2 border-black transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
+              <div className="absolute inset-0 bg-accent translate-x-4 translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
               <AutomationCursorFlow />
             </div>
           </div>
@@ -73,7 +73,7 @@ const Services: React.FC = () => {
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-crosshair">
-              <div className="absolute inset-0 bg-cyan translate-x-[-1rem] translate-y-4 border-2 border-black transition-transform group-hover:translate-x-[-1.5rem] group-hover:translate-y-6"></div>
+              <div className="absolute inset-0 bg-cyan translate-x-[-1rem] translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-[-1.5rem] group-hover:translate-y-6"></div>
               <TelemetryTypewriter />
             </div>
           </div>

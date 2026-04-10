@@ -13,7 +13,7 @@ const About: React.FC = () => {
                     viewport={{ once: true }}
                     className="mb-20 flex justify-center"
                 >
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 border-2 border-zinc-700 text-white font-mono text-xs tracking-widest shadow-sm">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-700 text-white font-mono text-xs tracking-widest shadow-sm">
                         <Target size={14} className="text-accent" /> Core Philosophy
                     </div>
                 </motion.div>
@@ -26,7 +26,7 @@ const About: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
-                        className="text-center md:text-left border-l-4 border-zinc-800 pl-6 md:pl-10"
+                        className="text-center md:text-left border-l-2 border-zinc-800 pl-6 md:pl-10"
                     >
                         <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
                             Most consultants focus on <span className="text-zinc-400">writing strategy decks.</span>
@@ -42,7 +42,7 @@ const About: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-center md:text-right border-r-4 border-zinc-800 pr-6 md:pr-10"
+                        className="text-center md:text-right border-r-2 border-zinc-800 pr-6 md:pr-10"
                     >
                         <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
                             Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
@@ -64,7 +64,7 @@ const About: React.FC = () => {
                 >
                     {/* Photo */}
                     <div className="shrink-0 relative group hover-lift">
-                        <div className="absolute inset-0 bg-accent translate-x-3 translate-y-3 border-2 border-black transition-transform group-hover:translate-x-4 group-hover:translate-y-4"></div>
+                        <div className="absolute inset-0 bg-accent translate-x-3 translate-y-3 border border-zinc-300 transition-transform group-hover:translate-x-4 group-hover:translate-y-4"></div>
                         <img
                             src="/ivan-portrait.jpg"
                             alt="Iván Manfredi"

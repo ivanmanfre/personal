@@ -23,7 +23,7 @@ const CTA: React.FC = () => {
                         href="https://calendly.com/ivan-intelligents/30min"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-magnetic relative z-20 group inline-flex items-center gap-3 px-12 py-6 bg-black text-white text-xl font-black uppercase border border-zinc-200 shadow-comic focus:outline-none"
+                        className="btn-magnetic relative z-20 group inline-flex items-center gap-3 px-12 py-6 bg-black text-white text-xl font-bold uppercase border border-zinc-200 shadow-comic focus:outline-none"
                     >
                         <span className="relative z-10 group-hover:text-black transition-colors duration-300 tracking-wide">Book Strategy Call</span>
                     </a>

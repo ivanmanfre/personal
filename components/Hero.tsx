@@ -37,7 +37,7 @@ const Hero: React.FC = () => {
         >
           I Build Systems That{' '}
           <br className="hidden md:block" />
-          <span className="relative inline-block mt-4 px-4 sm:px-6 md:px-8 py-2 md:py-3 border-2 border-zinc-800 bg-black shadow-lg">
+          <span className="relative inline-block mt-4 px-4 sm:px-6 md:px-8 py-2 md:py-3 border border-zinc-700 bg-black shadow-lg">
             <span className="relative z-10 text-accent font-black tracking-widest text-4xl md:text-5xl lg:text-6xl">
               <ScrambleText text="RUN WITHOUT YOU" />
             </span>
@@ -49,7 +49,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
-          className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-gray-700 border-l-4 border-black pl-6"
+          className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-gray-700 border-l-2 border-zinc-300 pl-6"
         >
           I design and build AI automation systems that make your operations run without you babysitting them.
         </motion.p>
@@ -65,7 +65,7 @@ const Hero: React.FC = () => {
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black comic-border-thick shadow-comic flex items-center justify-center gap-3 font-black text-xl uppercase tracking-wide text-white group"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black comic-border-thick shadow-comic flex items-center justify-center gap-3 font-bold text-xl uppercase tracking-wide text-white group"
           >
             <span className="group-hover:text-black transition-colors duration-300 z-10 flex items-center gap-3">
               Book Strategy Call <ArrowRight size={24} />
@@ -74,7 +74,7 @@ const Hero: React.FC = () => {
 
           <a
             href="#cases"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic font-black text-xl uppercase tracking-wide text-black text-center"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic font-bold text-xl uppercase tracking-wide text-black text-center"
           >
             View Case Studies
           </a>

@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${scrolled
-        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border-2 border-zinc-900 shadow-lg'
+        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border border-zinc-300 shadow-lg'
         : 'top-0 left-0 right-0 py-6 bg-transparent border-transparent'
       }`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
           <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center">
             <span className="text-white font-black text-xl tracking-tighter">IM</span>
           </div>
-          <span className="text-sm font-black tracking-widest text-gray-800 group-hover:text-black transition-colors">
+          <span className="text-sm font-bold tracking-widest text-gray-800 group-hover:text-black transition-colors">
             Iván Manfredi
           </span>
         </Link>
@@ -75,7 +75,7 @@ const Navbar: React.FC = () => {
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 bg-accent comic-border shadow-comic font-black uppercase tracking-wide hover:-translate-y-1 hover:shadow-comic-hover transition-all active:translate-y-0 active:shadow-comic-active flex items-center"
+            className="px-6 py-3 bg-accent comic-border shadow-comic font-bold uppercase tracking-wide hover:-translate-y-1 hover:shadow-comic-hover transition-all active:translate-y-0 active:shadow-comic-active flex items-center"
           >
             Let's Talk
           </a>
@@ -106,7 +106,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-black comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </a>
@@ -115,7 +115,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     to={`/${link.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-black comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </Link>
@@ -124,7 +124,7 @@ const Navbar: React.FC = () => {
               <Link
                 to="/store"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-3xl font-black comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
               >
                 Store
               </Link>
@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
                 href="https://calendly.com/ivan-intelligents/30min"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 w-full py-5 bg-black text-white font-black text-2xl uppercase comic-border hover:bg-white hover:text-black transition-colors text-center block shadow-comic"
+                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl uppercase comic-border hover:bg-white hover:text-black transition-colors text-center block shadow-comic"
               >
                 Book Strategy Call
               </a>

@@ -23,7 +23,7 @@ const SocialProof: React.FC = () => {
   const marquee = [...tools, ...tools, ...tools, ...tools];
 
   return (
-    <section className="border-y-4 border-black bg-accent overflow-hidden py-12 relative z-20">
+    <section className="border-y border-zinc-200 bg-accent overflow-hidden py-12 relative z-20">
         <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-accent to-transparent z-10" />
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-accent to-transparent z-10" />
         
@@ -41,7 +41,7 @@ const SocialProof: React.FC = () => {
                      {tool.isLucide && tool.icon ? (
                          <div className="flex items-center gap-2 text-black">
                             <tool.icon size={48} strokeWidth={1.5} />
-                            <span className="font-black text-xl uppercase tracking-tighter leading-none">{tool.name}</span>
+                            <span className="font-bold text-xl uppercase tracking-tighter leading-none">{tool.name}</span>
                          </div>
                     ) : (
                      <img

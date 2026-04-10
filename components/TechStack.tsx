@@ -37,14 +37,14 @@ const TechStack: React.FC = () => {
   };
 
   return (
-    <section className="py-24 bg-cyan border-t-4 border-black">
+    <section className="py-24 bg-cyan border-t border-zinc-200">
       <div className="container mx-auto px-6">
          <div className="text-center mb-12">
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
                 viewport={{ once: true }}
-                className="inline-flex items-center justify-center gap-2 bg-white border-2 border-black px-6 py-2 shadow-comic mb-6 transform rotate-2"
+                className="inline-flex items-center justify-center gap-2 bg-white border border-zinc-200 px-6 py-2 shadow-comic mb-6 transform rotate-2"
             >
               <Sparkles size={20} className="text-black" />
               <span className="font-bold uppercase">Platform Agnostic Architecture</span>
@@ -53,7 +53,7 @@ const TechStack: React.FC = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
                 viewport={{ once: true }}
-                className="text-5xl md:text-7xl font-black text-white text-outline uppercase"
+                className="text-5xl md:text-7xl font-bold text-white text-outline uppercase"
             >
                 I Use What Works
             </motion.h2>
@@ -73,7 +73,7 @@ const TechStack: React.FC = () => {
                 <motion.div 
                     key={tool.name} 
                     variants={item}
-                    className={`${tool.bg} aspect-square border-2 border-black shadow-comic flex flex-col items-center justify-center p-4 hover:-translate-y-1 hover:shadow-comic-hover transition-all`}
+                    className={`${tool.bg} aspect-square border border-zinc-200 shadow-comic flex flex-col items-center justify-center p-4 hover:-translate-y-1 hover:shadow-comic-hover transition-all`}
                 >
                     {tool.isLucide ? (
                         <tool.icon size={40} className="mb-3 text-black" />

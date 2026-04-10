@@ -158,7 +158,7 @@ const Process: React.FC = () => {
                                 {/* Text */}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border-2 border-black shadow-sm">
+                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border border-zinc-300 shadow-sm">
                                             {step.id}
                                         </span>
                                         <div className="h-0.5 flex-grow bg-zinc-800 max-w-16" />

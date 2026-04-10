@@ -11,7 +11,7 @@ const cases = [
     metric: "100% Audit Rate",
     desc: "AI listens to every sales call, scores performance, and flags coaching opportunities. Went from auditing 5% of calls manually to 100% coverage overnight.",
     color: "bg-accent",
-    metricBox: "bg-white border-2 border-black text-black"
+    metricBox: "bg-white border border-zinc-300 text-black"
   },
   {
     id: "02",
@@ -21,7 +21,7 @@ const cases = [
     metric: "800 Hrs/Yr Saved",
     desc: "AI scans state-specific SWPPP regulatory requirements and auto-generates compliant documentation. Invoicing, document assembly, and filing, all hands-free.",
     color: "bg-black",
-    metricBox: "bg-accent border-2 border-black text-black"
+    metricBox: "bg-accent border border-zinc-300 text-black"
   },
   {
     id: "03",
@@ -31,7 +31,7 @@ const cases = [
     metric: "20x Output",
     desc: "One recorded video becomes 20 social posts, a blog article, and a newsletter. AI handles transcription, repurposing, and scheduling across platforms.",
     color: "bg-white border border-zinc-200",
-    metricBox: "bg-black border-2 border-black text-white"
+    metricBox: "bg-black border border-zinc-300 text-white"
   }
 ];
 
@@ -60,11 +60,11 @@ const CaseStudies: React.FC = () => {
             href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border-2 border-black shadow-md hover:-translate-y-0.5 transition-transform"
+            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border border-zinc-700 shadow-md hover:-translate-y-0.5 transition-transform"
           >
             <ShieldCheck size={16} className="text-accent" />
             <span>100% Job Success</span>
-            <span className="text-accent font-black">|</span>
+            <span className="text-accent font-bold">|</span>
             <span className="text-zinc-400">Upwork Verified</span>
           </a>
         </motion.div>
@@ -81,8 +81,8 @@ const CaseStudies: React.FC = () => {
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
-                <span className="text-9xl font-black opacity-20 text-black absolute -bottom-10 -right-10 select-none transition-transform group-hover:scale-110">{study.id}</span>
-                <div className={`relative z-10 font-black text-4xl ${study.metricBox} px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center`}>
+                <span className="text-9xl font-bold opacity-20 text-black absolute -bottom-10 -right-10 select-none transition-transform group-hover:scale-110">{study.id}</span>
+                <div className={`relative z-10 font-bold text-4xl ${study.metricBox} px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center`}>
                   {study.metric}
                 </div>
               </div>
@@ -94,7 +94,7 @@ const CaseStudies: React.FC = () => {
                   <span className="text-xs font-mono uppercase text-gray-400 tracking-wide">{study.industry}</span>
                 </div>
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
-                <p className="text-lg font-normal border-l-4 border-black pl-4 leading-relaxed">{study.desc}</p>
+                <p className="text-lg font-normal border-l-2 border-zinc-300 pl-4 leading-relaxed">{study.desc}</p>
               </div>
             </motion.div>
           ))}

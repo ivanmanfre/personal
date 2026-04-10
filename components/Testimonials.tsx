@@ -91,7 +91,7 @@ const Testimonials: React.FC = () => {
           href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-black border-2 border-black text-white font-mono text-xs uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-transform"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-transform"
         >
           [ DEPLOYMENT FEEDBACK ] <span className="text-accent">| 100% JSS</span>
         </a>
