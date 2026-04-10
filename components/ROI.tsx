@@ -28,7 +28,7 @@ const ROI: React.FC = () => {
                     <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold uppercase tracking-tighter mb-6">
                         The Cost of <span className="text-pink inline-block -rotate-2 transform">Inaction</span>
                     </h2>
-                    <p className="text-xl md:text-2xl font-bold max-w-3xl mx-auto text-gray-800">
+                    <p className="text-xl md:text-2xl font-bold max-w-3xl mx-auto text-zinc-700">
                         Stop guessing. Calculate exactly how much manual tasks cost your business every year.
                     </p>
                 </div>
@@ -54,9 +54,9 @@ const ROI: React.FC = () => {
                                 step="5"
                                 value={hoursPerWeek}
                                 onChange={(e) => setHoursPerWeek(Number(e.target.value))}
-                                className="w-full h-3 bg-gray-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
+                                className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
                             />
-                            <div className="flex justify-between text-xs font-mono font-bold text-gray-400 mt-2 uppercase">
+                            <div className="flex justify-between text-xs font-mono font-bold text-zinc-400 mt-2 uppercase">
                                 <span>5 hrs</span>
                                 <span>100 hrs</span>
                             </div>
@@ -74,15 +74,15 @@ const ROI: React.FC = () => {
                                 step="25"
                                 value={hourlyRate}
                                 onChange={(e) => setHourlyRate(Number(e.target.value))}
-                                className="w-full h-3 bg-gray-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
+                                className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
                             />
-                            <div className="flex justify-between text-xs font-mono font-bold text-gray-400 mt-2 uppercase">
+                            <div className="flex justify-between text-xs font-mono font-bold text-zinc-400 mt-2 uppercase">
                                 <span>$50/hr</span>
                                 <span>$500/hr</span>
                             </div>
                         </div>
 
-                        <p className="text-sm font-bold text-gray-500 italic">
+                        <p className="text-sm font-bold text-zinc-500 italic">
                             *Blended value = the average hourly revenue target of the team members doing the manual work.
                         </p>
                     </motion.div>
@@ -96,18 +96,18 @@ const ROI: React.FC = () => {
                     >
                         <div className="comic-border-thick bg-black text-white p-8 shadow-comic relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-pink opacity-20 rounded-full blur-3xl group-hover:bg-accent transition-colors duration-500"></div>
-                            <h3 className="font-bold text-gray-400 uppercase tracking-widest text-sm mb-2">Yearly Efficiency Bleed</h3>
+                            <h3 className="font-bold text-zinc-400 uppercase tracking-widest text-sm mb-2">Yearly Efficiency Bleed</h3>
                             <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter group-hover:text-pink transition-colors">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
-                            <p className="font-bold text-gray-500 mt-4 leading-relaxed">
+                            <p className="font-bold text-zinc-500 mt-4 leading-relaxed">
                                 If you change nothing, this is the cash value of the time your team burns on repetitive tasks over the next 12 months.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="comic-border bg-white p-6 shadow-comic-sm">
-                                <h3 className="font-bold text-gray-500 uppercase tracking-widest text-xs mb-2">5-Year Bleed</h3>
+                                <h3 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year Bleed</h3>
                                 <div className="text-3xl font-bold font-mono text-red-600">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>

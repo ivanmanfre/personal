@@ -34,7 +34,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
 
         {/* Preview image */}
         {product.previewImage && (
-          <div className="comic-border mb-6 overflow-hidden bg-gray-900 p-1.5 shadow-comic-sm group-hover:shadow-comic-sm-hover transition-shadow">
+          <div className="comic-border mb-6 overflow-hidden bg-zinc-900 p-1.5 shadow-comic-sm group-hover:shadow-comic-sm-hover transition-shadow">
             <img
               src={product.previewImage}
               alt={`${product.name} workflow`}
@@ -52,14 +52,14 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         <h3 className="text-3xl font-semibold mb-2 tracking-tight">{product.name}</h3>
 
         {/* Headline */}
-        <p className="text-lg font-bold leading-relaxed mb-6 flex-grow text-gray-800">
+        <p className="text-lg font-bold leading-relaxed mb-6 flex-grow text-zinc-700">
           {product.headline}
         </p>
 
         {/* Price + CTA */}
         <div className="flex items-center justify-between border-t border-zinc-200 pt-4 mt-auto">
           <div>
-            <span className="text-xs font-bold uppercase text-gray-500 block tracking-widest">From</span>
+            <span className="text-xs font-bold uppercase text-zinc-500 block tracking-widest">From</span>
             <span className="text-4xl font-bold">{product.tiers[0].label}</span>
           </div>
           <span className="flex items-center gap-2 font-bold uppercase text-sm group-hover:gap-4 transition-all bg-black text-white px-4 py-2">

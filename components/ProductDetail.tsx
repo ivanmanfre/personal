@@ -60,7 +60,7 @@ const ProductDetail: React.FC = () => {
             <p className="text-3xl md:text-4xl font-bold mb-8 max-w-4xl mx-auto tracking-tight">
               {product.headline}
             </p>
-            <p className="text-xl font-medium leading-relaxed max-w-2xl mx-auto text-gray-800 mb-12">
+            <p className="text-xl font-medium leading-relaxed max-w-2xl mx-auto text-zinc-700 mb-12">
               {product.description}
             </p>
 
@@ -81,7 +81,7 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Trust signals */}
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-bold uppercase tracking-widest text-gray-800">
+            <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-bold uppercase tracking-widest text-zinc-700">
               <span className="flex items-center gap-2"><Check size={18} strokeWidth={3} className="text-green-500" /> Instant download</span>
               <span className="flex items-center gap-2"><Check size={18} strokeWidth={3} className="text-green-500" /> Setup guide included</span>
             </div>
@@ -103,7 +103,7 @@ const ProductDetail: React.FC = () => {
 
       {/* ── WORKFLOW PREVIEW ── */}
       {product.previewImage && (
-        <section className="bg-gray-900 py-16 border-b border-zinc-200 relative">
+        <section className="bg-zinc-900 py-16 border-b border-zinc-200 relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/%3E%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/%3E%3C/g%3E%3C/svg%3E')" }}></div>
           <div className="container mx-auto px-6 max-w-6xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -169,7 +169,7 @@ const ProductDetail: React.FC = () => {
                     <img
                       src={product.sampleImage}
                       alt={`${product.name} sample output`}
-                      className="w-full h-auto border-2 border-dashed border-gray-300"
+                      className="w-full h-auto border-2 border-dashed border-zinc-300"
                     />
                   </div>
                   {product.samplePdf && (
@@ -216,7 +216,7 @@ const ProductDetail: React.FC = () => {
                     {product.setup.map((req, i) => (
                       <li key={i} className="flex items-start gap-4">
                         <div className="mt-1.5 w-2 h-2 rounded-full bg-black shrink-0"></div>
-                        <span className="font-bold text-lg text-gray-800">{req}</span>
+                        <span className="font-bold text-lg text-zinc-700">{req}</span>
                       </li>
                     ))}
                   </ul>
@@ -254,13 +254,13 @@ const ProductDetail: React.FC = () => {
                     <div className="mb-6">
                       <span className="text-5xl font-bold">{tier.label}</span>
                     </div>
-                    <p className="font-bold text-gray-700 leading-relaxed mb-8 flex-grow">{tier.description}</p>
+                    <p className="font-bold text-zinc-600 leading-relaxed mb-8 flex-grow">{tier.description}</p>
                     <button
                       onClick={() => handleBuy(tier)}
                       className={`w-full px-6 py-5 comic-border font-bold uppercase text-lg tracking-wide transition-all active:shadow-comic-active active:translate-y-1 flex items-center justify-center gap-3 ${tier.highlighted
                         ? 'bg-accent shadow-comic hover:shadow-comic-hover hover:-translate-y-1'
                         : tier.id === 'custom-install'
-                          ? 'bg-gray-100 shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
+                          ? 'bg-zinc-100 shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
                           : 'bg-white shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
                         }`}
                     >
@@ -271,7 +271,7 @@ const ProductDetail: React.FC = () => {
                       )}
                     </button>
                     {tier.id === 'custom-install' && (
-                      <p className="text-xs font-bold uppercase tracking-widest text-center text-gray-400 mt-4 flex items-center justify-center gap-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-center text-zinc-400 mt-4 flex items-center justify-center gap-2">
                         <ExternalLink size={14} strokeWidth={3} /> Opens Calendly
                       </p>
                     )}

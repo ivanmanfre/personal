@@ -35,7 +35,7 @@ const Navbar: React.FC = () => {
           <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center">
             <span className="text-white font-black text-xl tracking-tighter">IM</span>
           </div>
-          <span className="text-sm font-bold tracking-widest text-gray-800 group-hover:text-black transition-colors">
+          <span className="text-sm font-bold tracking-widest text-zinc-700 group-hover:text-black transition-colors">
             Iván Manfredi
           </span>
         </Link>

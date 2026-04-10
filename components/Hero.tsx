@@ -49,7 +49,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
-          className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-gray-700 border-l-2 border-zinc-300 pl-6"
+          className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-zinc-600 border-l-2 border-zinc-300 pl-6"
         >
           I design and build AI automation systems that make your operations run without you babysitting them.
         </motion.p>
@@ -89,7 +89,7 @@ const Hero: React.FC = () => {
           transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
           className="w-0.5 h-10 bg-black/30"
         />
-        <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">Scroll</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Scroll</span>
       </div>
     </section>
   );

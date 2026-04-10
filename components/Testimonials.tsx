@@ -50,7 +50,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
     {/* Project Badge */}
     <div className="mb-8">
       <div className="flex flex-col items-start gap-1">
-        <span className="text-[10px] font-mono uppercase text-gray-400 tracking-widest">Project Deployed</span>
+        <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-widest">Project Deployed</span>
         <span className="bg-black text-white px-3 py-1.5 text-sm font-bold uppercase tracking-wide border border-black shadow-sm">
           {review.project}
         </span>
@@ -67,17 +67,17 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
     {/* Footer */}
     <div className="border-t border-zinc-200 pt-5 mt-auto flex justify-between items-end">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] uppercase font-mono text-gray-500 font-bold">Client Rating</span>
+        <span className="text-[10px] uppercase font-mono text-zinc-500 font-bold">Client Rating</span>
         <div className="flex gap-1">
           {[...Array(review.rating)].map((_, i) => (
             <Star key={i} size={18} className="fill-accent text-accent" />
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <a href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
         <ShieldCheck size={18} className="text-accent" />
-        <span className="text-xs font-bold uppercase text-black tracking-wider">Verified</span>
-      </div>
+        <span className="text-xs font-bold uppercase text-black tracking-wider">Verified on Upwork</span>
+      </a>
     </div>
   </div>
 );

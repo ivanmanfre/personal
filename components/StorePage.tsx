@@ -50,7 +50,7 @@ const StorePage: React.FC = () => {
               </div>
               <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-outline-sm">Store</h1>
             </div>
-            <p className="text-2xl font-bold max-w-2xl text-gray-800 leading-relaxed">
+            <p className="text-2xl font-bold max-w-2xl text-zinc-700 leading-relaxed">
               Pre-built automation systems ready to deploy. Each product includes the workflow files and setup guide.
             </p>
           </motion.div>
@@ -92,7 +92,7 @@ const StorePage: React.FC = () => {
           {/* Empty state */}
           {filtered.length === 0 && (
             <div className="text-center py-20 comic-border bg-white shadow-comic">
-              <p className="text-2xl font-bold text-gray-400 uppercase">No products here yet</p>
+              <p className="text-2xl font-bold text-zinc-400 uppercase">No products here yet</p>
             </div>
           )}
         </div>

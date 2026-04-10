@@ -41,7 +41,7 @@ const steps = [
     {
         id: '02',
         title: 'Architecture Blueprint',
-        desc: 'You receive a complete system architecture: immutable data models, secure API routes, and logic trees — before a single workflow is built.',
+        desc: 'You receive a complete system architecture: every data flow, decision point, and integration mapped out — so you see exactly what gets built before we start.',
         color: 'bg-black',
         textColor: 'text-white',
         icon: (
@@ -137,7 +137,7 @@ const Connector: React.FC = () => (
 
 const Process: React.FC = () => {
     return (
-        <section className="relative bg-zinc-950 py-24">
+        <section className="relative bg-zinc-900 py-24">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
                 <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-widest text-xl shadow-lg transform -rotate-2">
                     The Architecture Protocol

@@ -5,7 +5,7 @@ import { Target } from 'lucide-react';
 const About: React.FC = () => {
 
     return (
-        <section id="about" className="py-32 bg-black relative overflow-hidden">
+        <section id="about" className="py-32 bg-zinc-900 relative overflow-hidden">
             <div className="container mx-auto px-6 relative z-10 max-w-6xl">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -97,7 +97,7 @@ const About: React.FC = () => {
                         <p className="text-lg md:text-xl font-mono text-zinc-400 leading-relaxed">
                             EVERY AUTOMATION ARCHITECTURE IS BUILT ON A SINGLE RULE: <br /><br />
                             <span className="text-white font-bold bg-zinc-800 px-2 py-1">IF WE CANNOT TIE THE WORKFLOW DIRECTLY TO HOURS SAVED, ERRORS REDUCED, OR REVENUE GAINED, IT DOES NOT GET BUILT.</span> <br /><br />
-                            NO HYPE. NO GENERIC CHATBOTS. PURE ROI ENGINEERING.
+                            NO HYPE. NO GENERIC CHATBOTS. PURE RESULTS. NOTHING ELSE.
                         </p>
                     </div>
                 </motion.div>
