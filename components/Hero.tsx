@@ -35,11 +35,11 @@ const Hero: React.FC = () => {
           transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
           className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-8 uppercase max-w-5xl"
         >
-          Replacing Operational Drag With{' '}
+          I Build Systems That{' '}
           <br className="hidden md:block" />
           <span className="relative inline-block mt-4 px-6 md:px-8 py-2 md:py-3 border-2 border-zinc-800 bg-black shadow-[6px_6px_0px_0px_rgba(0,230,118,1)]">
             <span className="relative z-10 text-accent font-black tracking-widest text-4xl md:text-5xl lg:text-6xl">
-              <ScrambleText text="IMMUTABLE INFRASTRUCTURE" />
+              <ScrambleText text="RUN WITHOUT YOU" />
             </span>
           </span>
         </motion.h1>
@@ -51,7 +51,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.25 }}
           className="text-xl md:text-2xl font-bold max-w-2xl mb-10 leading-relaxed text-gray-700 border-l-4 border-black pl-6"
         >
-          I engineer self-healing AI and API systems that permanently eliminate repetitive labor.
+          I design and build AI automation systems that make your operations run without you babysitting them.
         </motion.p>
 
         {/* Buttons */}
