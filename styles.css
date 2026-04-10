@@ -15,14 +15,14 @@
   /* Steel Blue */
   --color-pink: #E8366D;
 
-  /* Refined Shadows */
-  --shadow-comic: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
-  --shadow-comic-hover: 6px 6px 0px 0px rgba(26, 26, 26, 0.85);
-  --shadow-comic-active: 0px 0px 0px 0px rgba(26, 26, 26, 0.85);
+  /* Premium Soft Shadows */
+  --shadow-comic: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-comic-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-comic-active: 0 1px 2px rgba(0, 0, 0, 0.1);
 
-  --shadow-comic-sm: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
-  --shadow-comic-sm-hover: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
-  --shadow-comic-sm-active: 0px 0px 0px 0px rgba(26, 26, 26, 0.85);
+  --shadow-comic-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-comic-sm-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-comic-sm-active: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 body {
@@ -68,11 +68,11 @@ body {
 
 /* Sophisticated borders */
 .comic-border {
-  border: 2px solid var(--color-primary);
+  border: 1px solid rgba(26, 26, 26, 0.15);
 }
 
 .comic-border-thick {
-  border: 2px solid var(--color-primary);
+  border: 1px solid rgba(26, 26, 26, 0.2);
 }
 
 /* Magnetic Button Interactions */
@@ -286,9 +286,9 @@ body {
     font-size: 1.0625rem;
   }
   :root {
-    --shadow-comic: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
-    --shadow-comic-hover: 4px 4px 0px 0px rgba(26, 26, 26, 0.85);
-    --shadow-comic-sm: 2px 2px 0px 0px rgba(26, 26, 26, 0.85);
-    --shadow-comic-sm-hover: 3px 3px 0px 0px rgba(26, 26, 26, 0.85);
+    --shadow-comic: 0 1px 4px rgba(0, 0, 0, 0.06);
+    --shadow-comic-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-comic-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-comic-sm-hover: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 }

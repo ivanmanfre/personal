@@ -30,20 +30,20 @@ const cases = [
     title: "Content Engine",
     metric: "20x Output",
     desc: "One recorded video becomes 20 social posts, a blog article, and a newsletter. AI handles transcription, repurposing, and scheduling across platforms.",
-    color: "bg-white border-3 border-black",
+    color: "bg-white border border-zinc-200",
     metricBox: "bg-black border-2 border-black text-white"
   }
 ];
 
 const CaseStudies: React.FC = () => {
   return (
-    <section id="cases" className="py-24 bg-white border-t-4 border-black">
+    <section id="cases" className="py-24 bg-white border-t border-zinc-200">
       <div className="container mx-auto px-6">
         <motion.h2
           initial={{ y: 50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="text-4xl sm:text-6xl md:text-7xl font-black mb-6 uppercase text-center text-outline font-drama italic"
+          className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 uppercase text-center text-outline font-drama italic"
         >
           Results
         </motion.h2>
@@ -60,7 +60,7 @@ const CaseStudies: React.FC = () => {
             href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,208,132,1)] hover:-translate-y-0.5 transition-transform"
+            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border-2 border-black shadow-md hover:-translate-y-0.5 transition-transform"
           >
             <ShieldCheck size={16} className="text-accent" />
             <span>100% Job Success</span>
@@ -77,10 +77,10 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 border-3 border-black shadow-comic bg-white group hover-lift hover:shadow-comic-hover transition-all"
+              className="flex-1 border border-zinc-200 shadow-comic bg-white group hover-lift hover:shadow-comic-hover transition-all"
             >
               {/* Metric Area */}
-              <div className={`h-48 ${study.color} border-b-4 border-black flex items-center justify-center relative overflow-hidden`}>
+              <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
                 <span className="text-9xl font-black opacity-20 text-black absolute -bottom-10 -right-10 select-none transition-transform group-hover:scale-110">{study.id}</span>
                 <div className={`relative z-10 font-black text-4xl ${study.metricBox} px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center`}>
                   {study.metric}
@@ -93,8 +93,8 @@ const CaseStudies: React.FC = () => {
                   <span className="font-bold uppercase text-xs tracking-widest bg-black text-white px-2 py-1">{study.client}</span>
                   <span className="text-xs font-mono uppercase text-gray-400 tracking-wide">{study.industry}</span>
                 </div>
-                <h3 className="text-3xl font-black uppercase mb-2">{study.title}</h3>
-                <p className="text-lg font-bold border-l-4 border-black pl-4 leading-relaxed">{study.desc}</p>
+                <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
+                <p className="text-lg font-normal border-l-4 border-black pl-4 leading-relaxed">{study.desc}</p>
               </div>
             </motion.div>
           ))}

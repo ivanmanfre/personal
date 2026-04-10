@@ -139,7 +139,7 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-zinc-950 py-24">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border-4 border-black text-black font-black tracking-widest text-xl shadow-[5px_5px_0px_0px_rgba(0,208,132,1)] transform -rotate-2">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-widest text-xl shadow-lg transform -rotate-2">
                     The Architecture Protocol
                 </div>
             </div>
@@ -152,18 +152,18 @@ const Process: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ type: 'spring', bounce: 0.25 }}
-                            className={`w-full ${step.color} border-4 border-zinc-800`}
+                            className={`w-full ${step.color} border border-zinc-800`}
                         >
                             <div className="flex flex-col md:flex-row items-center gap-8 p-8 md:p-12">
                                 {/* Text */}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="font-mono text-2xl font-black bg-accent text-black px-3 py-1 border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border-2 border-black shadow-sm">
                                             {step.id}
                                         </span>
                                         <div className="h-0.5 flex-grow bg-zinc-800 max-w-16" />
                                     </div>
-                                    <h2 className={`text-3xl md:text-4xl font-black mb-4 tracking-tighter leading-none ${step.textColor}`}>
+                                    <h2 className={`text-3xl md:text-4xl font-semibold mb-4 tracking-tighter leading-none ${step.textColor}`}>
                                         {step.title}
                                     </h2>
                                     <p className="text-lg font-medium text-zinc-500 leading-relaxed">

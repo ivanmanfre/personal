@@ -5,6 +5,7 @@ import CaseStudies from './CaseStudies';
 import Process from './Process';
 import About from './About';
 import Testimonials from './Testimonials';
+import ROI from './ROI';
 import CTA from './CTA';
 
 const HomePage: React.FC = () => {
@@ -16,6 +17,7 @@ const HomePage: React.FC = () => {
       <CaseStudies />
       <Testimonials />
       <About />
+      <ROI />
       <CTA />
     </>
   );

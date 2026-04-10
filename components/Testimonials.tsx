@@ -39,7 +39,7 @@ const reviews = [
 const marqueeReviews = [...reviews, ...reviews, ...reviews];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
-  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border-4 border-black p-5 sm:p-8 relative group hover:shadow-comic-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-comic">
+  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border border-zinc-200 p-5 sm:p-8 relative group hover:shadow-comic-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-comic">
     {/* Tech Decoration: Parallel Lines */}
     <div className="absolute top-0 right-0 p-4 flex gap-1.5 opacity-20 group-hover:opacity-100 transition-opacity">
       <div className="w-1.5 h-6 bg-black transform -skew-x-12"></div>
@@ -51,7 +51,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
     <div className="mb-8">
       <div className="flex flex-col items-start gap-1">
         <span className="text-[10px] font-mono uppercase text-gray-400 tracking-widest">Project Deployed</span>
-        <span className="bg-black text-white px-3 py-1.5 text-sm font-bold uppercase tracking-wide border border-black shadow-[2px_2px_0px_0px_rgba(0,208,132,1)]">
+        <span className="bg-black text-white px-3 py-1.5 text-sm font-bold uppercase tracking-wide border border-black shadow-sm">
           {review.project}
         </span>
       </div>
@@ -59,13 +59,13 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
 
     {/* Content */}
     <div className="relative z-10 mb-8 flex-grow">
-      <p className="font-display font-bold text-2xl md:text-3xl text-zinc-700 italic leading-tight tracking-wide group-hover:text-black transition-colors duration-300">
+      <p className="font-display font-medium text-2xl md:text-3xl text-zinc-700 italic leading-tight tracking-wide group-hover:text-black transition-colors duration-300">
         "{review.text}"
       </p>
     </div>
 
     {/* Footer */}
-    <div className="border-t-4 border-black pt-5 mt-auto flex justify-between items-end">
+    <div className="border-t border-zinc-200 pt-5 mt-auto flex justify-between items-end">
       <div className="flex flex-col gap-1">
         <span className="text-[10px] uppercase font-mono text-gray-500 font-bold">Client Rating</span>
         <div className="flex gap-1">
@@ -84,14 +84,14 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
 
 const Testimonials: React.FC = () => {
   return (
-    <section className="py-20 bg-paper border-t-4 border-black overflow-hidden relative z-20 flex flex-col gap-8">
+    <section className="py-20 bg-paper border-t border-zinc-200 overflow-hidden relative z-20 flex flex-col gap-8">
       {/* Section Label */}
       <div className="container mx-auto px-6 relative z-40 flex justify-center mb-4">
         <a
           href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-black border-2 border-black text-white font-mono text-xs uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,208,132,1)] hover:-translate-y-0.5 transition-transform"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-black border-2 border-black text-white font-mono text-xs uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-transform"
         >
           [ DEPLOYMENT FEEDBACK ] <span className="text-accent">| 100% JSS</span>
         </a>
