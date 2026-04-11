@@ -64,8 +64,8 @@ const ROI: React.FC = () => {
 
                         <div className="mb-8">
                             <label className="flex items-center justify-between mb-4 font-bold uppercase text-xl">
-                                <span className="flex items-center gap-2"><DollarSign className="text-cyan" /> Blended Hourly Value</span>
-                                <span className="font-mono text-2xl text-cyan bg-black px-3 py-1 comic-border shadow-comic-sm">${hourlyRate}</span>
+                                <span className="flex items-center gap-2"><DollarSign className="text-accent" /> Blended Hourly Value</span>
+                                <span className="font-mono text-2xl text-accent bg-black px-3 py-1 comic-border shadow-comic-sm">${hourlyRate}</span>
                             </label>
                             <input
                                 type="range"
@@ -95,9 +95,9 @@ const ROI: React.FC = () => {
                         className="w-full lg:w-1/2 flex flex-col gap-6"
                     >
                         <div className="comic-border-thick bg-black text-white p-8 shadow-comic relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-pink opacity-20 rounded-full blur-3xl group-hover:bg-accent transition-colors duration-500"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-accent opacity-10 rounded-full blur-3xl"></div>
                             <h3 className="font-bold text-zinc-400 uppercase tracking-widest text-sm mb-2">Yearly Efficiency Bleed</h3>
-                            <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter group-hover:text-pink transition-colors">
+                            <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
                             <p className="font-bold text-zinc-500 mt-4 leading-relaxed">
@@ -108,7 +108,7 @@ const ROI: React.FC = () => {
                         <div className="grid grid-cols-2 gap-6">
                             <div className="comic-border bg-white p-6 shadow-comic-sm">
                                 <h3 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year Bleed</h3>
-                                <div className="text-3xl font-bold font-mono text-red-600">
+                                <div className="text-3xl font-bold font-mono text-zinc-800">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
                             </div>
@@ -124,7 +124,7 @@ const ROI: React.FC = () => {
                             href="https://calendly.com/ivan-intelligents/30min"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full mt-2 px-8 py-5 bg-cyan comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
+                            className="w-full mt-2 px-8 py-5 bg-accent comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
                         >
                             See What You'd Save <ArrowRight size={24} />
                         </a>
