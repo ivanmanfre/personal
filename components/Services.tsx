@@ -39,7 +39,7 @@ const Services: React.FC = () => {
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
                 Replacing manual data entry and handoffs with mercilessly efficient API workflows. I connect your entire tech stack (CRMs, Slack, Docs, AI Models) so information flows instantly and accurately, 24/7.
               </p>
-              <ul className="space-y-3 font-mono text-sm font-bold text-zinc-500 uppercase">
+              <ul className="space-y-3 text-sm font-medium text-zinc-500">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect All Your Tools Automatically</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Hands-Free Client Onboarding</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Smart AI Model Selection</li>
@@ -66,7 +66,7 @@ const Services: React.FC = () => {
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
                 Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and cheaper than an entire offshore team.
               </p>
-              <ul className="space-y-3 font-mono text-sm font-bold text-zinc-500 uppercase">
+              <ul className="space-y-3 text-sm font-medium text-zinc-500">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> AI Trained on Your Company Docs</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Auto-Extract Data From Any Document</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Voice & Text Interface</li>
