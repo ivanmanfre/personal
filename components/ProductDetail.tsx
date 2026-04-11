@@ -129,7 +129,7 @@ const ProductDetail: React.FC = () => {
         <div className="container mx-auto px-6 max-w-5xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-6xl font-bold uppercase mb-4 tracking-tighter">What It Does</h2>
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter">What It Does</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {product.features.map((feature, i) => (
@@ -158,7 +158,7 @@ const ProductDetail: React.FC = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
 
             <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-6xl font-bold uppercase mb-4 tracking-tighter">Inside The Box</h2>
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter">Inside The Box</h2>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-12 items-start">
@@ -232,7 +232,7 @@ const ProductDetail: React.FC = () => {
         <div className="container mx-auto px-6 max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-6xl font-bold uppercase mb-4 tracking-tighter">Choose Your Plan</h2>
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter">Choose Your Plan</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -289,13 +289,13 @@ const ProductDetail: React.FC = () => {
         <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px)" }}></div>
         <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
-            <h2 className="text-5xl md:text-7xl font-bold uppercase mb-8 tracking-tighter bg-white text-black inline-block px-6 py-4 comic-border shadow-comic rotate-1 transform">
+            <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter bg-white text-black inline-block px-6 py-4 comic-border shadow-comic">
               Ready to Upgrade?
             </h2>
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => handleBuy(mainTier)}
-                className="px-12 py-6 bg-black text-white comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all active:shadow-sm active:translate-y-0 font-bold text-2xl md:text-3xl uppercase tracking-wide inline-flex items-center gap-4"
+                className="px-12 py-6 bg-black text-white comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all active:shadow-sm active:translate-y-0 font-bold text-2xl md:text-3xl tracking-wide inline-flex items-center gap-4"
               >
                 <ShoppingCart size={32} strokeWidth={3} /> Get {product.name}
               </button>

@@ -46,7 +46,6 @@ const Services: React.FC = () => {
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
-              <div className="absolute inset-0 bg-accent translate-x-4 translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
               <AutomationCursorFlow />
             </div>
           </div>
@@ -73,7 +72,6 @@ const Services: React.FC = () => {
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
-              <div className="absolute inset-0 bg-cyan translate-x-[-1rem] translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-[-1.5rem] group-hover:translate-y-6"></div>
               <TelemetryTypewriter />
             </div>
           </div>

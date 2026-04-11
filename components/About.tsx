@@ -48,7 +48,7 @@ const About: React.FC = () => {
                             Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1] tracking-tighter">
-                            I build to <br /> <span className="font-drama italic text-accent">Eradicate the labor.</span>
+                            I build to <br /> <span className="font-drama italic text-accent">Eliminate the labor.</span>
                         </h2>
                     </motion.div>
 
@@ -64,7 +64,6 @@ const About: React.FC = () => {
                 >
                     {/* Photo */}
                     <div className="shrink-0 relative group hover-lift">
-                        <div className="absolute inset-0 bg-accent translate-x-3 translate-y-3 border border-zinc-300 transition-transform group-hover:translate-x-4 group-hover:translate-y-4"></div>
                         <img
                             src="/ivan-portrait.jpg"
                             alt="Iván Manfredi"
