@@ -50,7 +50,7 @@ const ProductDetail: React.FC = () => {
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center relative">
             <span
-              className={`inline-block text-sm font-bold uppercase tracking-widest px-4 py-2 comic-border mb-8 ${categoryColors[product.category]} shadow-comic-sm -rotate-2 transform`}
+              className={`inline-block text-sm font-bold uppercase tracking-widest px-4 py-2 comic-border mb-8 ${categoryColors[product.category]} shadow-comic-sm`}
             >
               {product.category}
             </span>

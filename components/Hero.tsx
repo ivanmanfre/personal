@@ -65,7 +65,7 @@ const Hero: React.FC = () => {
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black comic-border-thick shadow-comic flex items-center justify-center gap-3 font-bold text-xl uppercase tracking-wide text-white group"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black comic-border-thick shadow-comic flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-white group"
           >
             <span className="group-hover:text-black transition-colors duration-300 z-10 flex items-center gap-3">
               Book Strategy Call <ArrowRight size={24} />
@@ -74,7 +74,7 @@ const Hero: React.FC = () => {
 
           <a
             href="#cases"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic font-bold text-xl uppercase tracking-wide text-black text-center"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic font-bold text-xl tracking-wide text-black text-center"
           >
             View Case Studies
           </a>

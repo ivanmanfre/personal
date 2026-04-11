@@ -53,7 +53,7 @@ const TechStack: React.FC = () => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
                 viewport={{ once: true }}
-                className="text-5xl md:text-7xl font-bold text-white text-outline uppercase"
+                className="text-5xl md:text-7xl font-bold text-white"
             >
                 I Use What Works
             </motion.h2>

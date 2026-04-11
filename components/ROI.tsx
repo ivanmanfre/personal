@@ -25,8 +25,8 @@ const ROI: React.FC = () => {
                     >
                         <Calculator size={16} /> ROI Engine
                     </motion.div>
-                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold uppercase tracking-tighter mb-6">
-                        The Cost of <span className="text-pink inline-block -rotate-2 transform">Inaction</span>
+                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6">
+                        The Cost of <span className="text-pink inline-block">Inaction</span>
                     </h2>
                     <p className="text-xl md:text-2xl font-bold max-w-3xl mx-auto text-zinc-700">
                         Stop guessing. Calculate exactly how much manual tasks cost your business every year.
@@ -124,7 +124,7 @@ const ROI: React.FC = () => {
                             href="https://calendly.com/ivan-intelligents/30min"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full mt-2 px-8 py-5 bg-cyan comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl uppercase tracking-wide text-black"
+                            className="w-full mt-2 px-8 py-5 bg-cyan comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
                         >
                             Stop The Bleeding <ArrowRight size={24} />
                         </a>

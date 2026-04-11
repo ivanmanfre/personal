@@ -75,7 +75,7 @@ const Navbar: React.FC = () => {
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 bg-accent comic-border shadow-comic font-bold uppercase tracking-wide hover:-translate-y-1 hover:shadow-comic-hover transition-all active:translate-y-0 active:shadow-comic-active flex items-center"
+            className="px-6 py-3 bg-accent comic-border shadow-comic font-bold tracking-wide hover:-translate-y-1 hover:shadow-comic-hover transition-all active:translate-y-0 active:shadow-comic-active flex items-center"
           >
             Let's Talk
           </a>
@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
                 href="https://calendly.com/ivan-intelligents/30min"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl uppercase comic-border hover:bg-white hover:text-black transition-colors text-center block shadow-comic"
+                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl comic-border hover:bg-white hover:text-black transition-colors text-center block shadow-comic"
               >
                 Book Strategy Call
               </a>

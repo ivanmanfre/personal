@@ -139,7 +139,7 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-zinc-900 py-24">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-widest text-xl shadow-lg transform -rotate-2">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-widest text-xl shadow-lg ">
                     The Architecture Protocol
                 </div>
             </div>

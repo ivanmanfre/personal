@@ -94,10 +94,10 @@ const About: React.FC = () => {
                     <div className="bg-zinc-900 border border-zinc-800 p-8 md:p-12 shadow-lg relative group hover-lift transition-all">
                         <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-accent"></div>
 
-                        <p className="text-lg md:text-xl font-mono text-zinc-400 leading-relaxed">
-                            EVERY AUTOMATION ARCHITECTURE IS BUILT ON A SINGLE RULE: <br /><br />
-                            <span className="text-white font-bold bg-zinc-800 px-2 py-1">IF WE CANNOT TIE THE WORKFLOW DIRECTLY TO HOURS SAVED, ERRORS REDUCED, OR REVENUE GAINED, IT DOES NOT GET BUILT.</span> <br /><br />
-                            NO HYPE. NO GENERIC CHATBOTS. PURE RESULTS. NOTHING ELSE.
+                        <p className="text-lg md:text-xl text-zinc-400 leading-relaxed">
+                            Every automation I build follows one rule: <br /><br />
+                            <span className="text-white font-bold bg-zinc-800 px-2 py-1">If we can't tie the workflow directly to hours saved, errors reduced, or revenue gained — it doesn't get built.</span> <br /><br />
+                            No hype. No generic chatbots. Pure results.
                         </p>
                     </div>
                 </motion.div>

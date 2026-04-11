@@ -43,7 +43,7 @@ const CaseStudies: React.FC = () => {
           initial={{ y: 50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 uppercase text-center text-outline font-drama italic"
+          className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 text-center font-drama italic"
         >
           Results
         </motion.h2>
@@ -82,7 +82,7 @@ const CaseStudies: React.FC = () => {
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
                 <span className="text-9xl font-bold opacity-20 text-black absolute -bottom-10 -right-10 select-none transition-transform group-hover:scale-110">{study.id}</span>
-                <div className={`relative z-10 font-bold text-4xl ${study.metricBox} px-4 py-2 shadow-comic transform -rotate-3 group-hover:rotate-0 transition-transform text-center`}>
+                <div className={`relative z-10 font-bold text-4xl ${study.metricBox} px-4 py-2 shadow-comic text-center`}>
                   {study.metric}
                 </div>
               </div>

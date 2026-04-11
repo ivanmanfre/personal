@@ -48,7 +48,7 @@ const StorePage: React.FC = () => {
               <div className="w-16 h-16 bg-accent comic-border flex items-center justify-center shadow-comic-sm">
                 <ShoppingBag size={32} strokeWidth={3} className="text-black" />
               </div>
-              <h1 className="text-6xl md:text-8xl font-bold tracking-tighter text-outline-sm">Store</h1>
+              <h1 className="text-6xl md:text-8xl font-bold tracking-tighter">Store</h1>
             </div>
             <p className="text-2xl font-bold max-w-2xl text-zinc-700 leading-relaxed">
               Pre-built automation systems ready to deploy. Each product includes the workflow files and setup guide.

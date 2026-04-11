@@ -14,8 +14,8 @@ const Services: React.FC = () => {
           className="mb-24 flex flex-col md:flex-row items-end gap-6 justify-between border-b border-zinc-200 pb-8"
         >
           <div>
-            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 transform -rotate-1 shadow-sm">Core Architectures</h2>
-            <h3 className="text-5xl md:text-6xl font-bold uppercase leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">Without You</span></h3>
+            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 shadow-sm">Core Architectures</h2>
+            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">Without You</span></h3>
           </div>
           <p className="text-xl font-bold max-w-sm text-right text-zinc-600 leading-relaxed border-r-2 border-accent pr-6">
             I don't sell hours. I build infrastructure that gives you your hours back.
@@ -45,7 +45,7 @@ const Services: React.FC = () => {
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Smart AI Model Selection</li>
               </ul>
             </motion.div>
-            <div className="w-full lg:w-1/2 relative hover-lift group cursor-crosshair">
+            <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
               <div className="absolute inset-0 bg-accent translate-x-4 translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-6 group-hover:translate-y-6"></div>
               <AutomationCursorFlow />
             </div>
@@ -72,7 +72,7 @@ const Services: React.FC = () => {
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Voice & Text Interface</li>
               </ul>
             </motion.div>
-            <div className="w-full lg:w-1/2 relative hover-lift group cursor-crosshair">
+            <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
               <div className="absolute inset-0 bg-cyan translate-x-[-1rem] translate-y-4 border border-zinc-300 transition-transform group-hover:translate-x-[-1.5rem] group-hover:translate-y-6"></div>
               <TelemetryTypewriter />
             </div>
