@@ -15,9 +15,9 @@ const HomePage: React.FC = () => {
       <Services />
       <Process />
       <CaseStudies />
+      <ROI />
       <Testimonials />
       <About />
-      <ROI />
       <CTA />
     </>
   );

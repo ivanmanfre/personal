@@ -36,7 +36,7 @@ const reviews = [
 ];
 
 // Duplicate list for infinite scroll
-const marqueeReviews = [...reviews, ...reviews, ...reviews];
+const marqueeReviews = [...reviews, ...reviews];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
   <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border border-zinc-200 p-5 sm:p-8 relative group hover:shadow-comic-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-comic">
@@ -67,7 +67,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
     {/* Footer */}
     <div className="border-t border-zinc-200 pt-5 mt-auto flex justify-between items-end">
       <div className="flex flex-col gap-1">
-        <span className="text-[10px] uppercase font-mono text-zinc-500 font-bold">Client Rating</span>
+        <span className="text-[10px] uppercase font-mono text-zinc-500 font-medium">Client Rating</span>
         <div className="flex gap-1">
           {[...Array(review.rating)].map((_, i) => (
             <Star key={i} size={18} className="fill-accent text-accent" />
@@ -93,7 +93,7 @@ const Testimonials: React.FC = () => {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-transform"
         >
-          [ DEPLOYMENT FEEDBACK ] <span className="text-accent">| 100% JSS</span>
+          [ CLIENT REVIEWS ] <span className="text-accent">| 100% JSS</span>
         </a>
       </div>
 

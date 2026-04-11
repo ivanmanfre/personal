@@ -26,10 +26,10 @@ const ROI: React.FC = () => {
                         <Calculator size={16} /> ROI Engine
                     </motion.div>
                     <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6">
-                        The Cost of <span className="text-zinc-400 inline-block">Inaction</span>
+                        What Manual Work <span className="text-zinc-400 inline-block">Really Costs</span>
                     </h2>
-                    <p className="text-xl md:text-2xl font-bold max-w-3xl mx-auto text-zinc-700">
-                        Stop guessing. Calculate exactly how much manual tasks cost your business every year.
+                    <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-zinc-700">
+                        See exactly how much manual tasks cost your business every year.
                     </p>
                 </div>
 
@@ -43,7 +43,7 @@ const ROI: React.FC = () => {
                         className="w-full lg:w-1/2 comic-border-thick bg-white p-8 shadow-comic"
                     >
                         <div className="mb-10">
-                            <label className="flex items-center justify-between mb-4 font-bold uppercase text-xl">
+                            <label className="flex items-center justify-between mb-4 font-medium uppercase text-xl">
                                 <span className="flex items-center gap-2"><Clock className="text-accent" /> Hours lost per week</span>
                                 <span className="font-mono text-2xl text-accent bg-black px-3 py-1 comic-border shadow-comic-sm">{hoursPerWeek}</span>
                             </label>
@@ -56,14 +56,14 @@ const ROI: React.FC = () => {
                                 onChange={(e) => setHoursPerWeek(Number(e.target.value))}
                                 className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
                             />
-                            <div className="flex justify-between text-xs font-mono font-bold text-zinc-400 mt-2 uppercase">
+                            <div className="flex justify-between text-xs font-mono font-medium text-zinc-400 mt-2 uppercase">
                                 <span>5 hrs</span>
                                 <span>100 hrs</span>
                             </div>
                         </div>
 
                         <div className="mb-8">
-                            <label className="flex items-center justify-between mb-4 font-bold uppercase text-xl">
+                            <label className="flex items-center justify-between mb-4 font-medium uppercase text-xl">
                                 <span className="flex items-center gap-2"><DollarSign className="text-accent" /> Blended Hourly Value</span>
                                 <span className="font-mono text-2xl text-accent bg-black px-3 py-1 comic-border shadow-comic-sm">${hourlyRate}</span>
                             </label>
@@ -76,13 +76,13 @@ const ROI: React.FC = () => {
                                 onChange={(e) => setHourlyRate(Number(e.target.value))}
                                 className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
                             />
-                            <div className="flex justify-between text-xs font-mono font-bold text-zinc-400 mt-2 uppercase">
+                            <div className="flex justify-between text-xs font-mono font-medium text-zinc-400 mt-2 uppercase">
                                 <span>$50/hr</span>
                                 <span>$500/hr</span>
                             </div>
                         </div>
 
-                        <p className="text-sm font-bold text-zinc-500 italic">
+                        <p className="text-sm font-medium text-zinc-500 italic">
                             *Blended value = the average hourly revenue target of the team members doing the manual work.
                         </p>
                     </motion.div>
@@ -96,24 +96,24 @@ const ROI: React.FC = () => {
                     >
                         <div className="comic-border-thick bg-black text-white p-8 shadow-comic relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-accent opacity-10 rounded-full blur-3xl"></div>
-                            <h3 className="font-bold text-zinc-400 uppercase tracking-widest text-sm mb-2">Yearly Efficiency Bleed</h3>
-                            <div className="text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
+                            <h3 className="font-medium text-zinc-400 uppercase tracking-widest text-sm mb-2">Yearly Cost of Manual Work</h3>
+                            <div className="text-5xl sm:text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
-                            <p className="font-bold text-zinc-500 mt-4 leading-relaxed">
+                            <p className="font-medium text-zinc-500 mt-4 leading-relaxed">
                                 If you change nothing, this is the cash value of the time your team burns on repetitive tasks over the next 12 months.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="comic-border bg-white p-6 shadow-comic-sm">
-                                <h3 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year Bleed</h3>
+                                <h3 className="font-medium text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year Cost</h3>
                                 <div className="text-3xl font-bold font-mono text-zinc-800">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
                             </div>
                             <div className="comic-border bg-accent p-6 shadow-comic-sm">
-                                <h3 className="font-bold text-black uppercase tracking-widest text-xs mb-2">Yr 1 Automation ROI</h3>
+                                <h3 className="font-medium text-black uppercase tracking-widest text-xs mb-2">Yr 1 Automation ROI</h3>
                                 <div className="text-3xl font-bold font-mono text-black">
                                     +{calculateROI().toLocaleString(undefined, { maximumFractionDigits: 0 })}%
                                 </div>

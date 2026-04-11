@@ -58,7 +58,7 @@ const steps = [
                     />
                     <motion.path
                         d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-                        stroke="#00A86B"
+                        stroke="#008F5A"
                         strokeWidth="3"
                         fill="none"
                         initial={{ pathLength: 0, pathOffset: 1 }}
@@ -74,15 +74,15 @@ const steps = [
     },
     {
         id: '03',
-        title: 'Deployment Protocol',
-        desc: 'I construct, stress-test, and deploy the workflow end-to-end into your tech stack. Operations shift from manual drag to automated throughput instantly.',
+        title: 'Build & Launch',
+        desc: 'I build, test, and deploy the system end-to-end into your existing tools. Your team goes from manual work to automated flow — typically within weeks.',
         color: 'bg-zinc-900',
         textColor: 'text-white',
         icon: (
             <div className="w-48 h-48 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     {[20, 50, 80].map((y, i) => (
-                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#00A86B" strokeWidth="2" />
+                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#008F5A" strokeWidth="2" />
                     ))}
                     {[27, 57, 87].map((y, i) => (
                         <motion.line
@@ -98,9 +98,9 @@ const steps = [
                             transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
                         />
                     ))}
-                    <motion.circle cx="72" cy="27" r="2" fill="#00A86B" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="57" r="2" fill="#00A86B" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="87" r="2" fill="#00A86B" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="27" r="2" fill="#008F5A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="57" r="2" fill="#008F5A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="87" r="2" fill="#008F5A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
                 </svg>
             </div>
         )
@@ -125,7 +125,7 @@ const Connector: React.FC = () => (
 
         {/* Arrow */}
         <svg width="16" height="10" viewBox="0 0 16 10" className="text-accent">
-            <path d="M8 10 L0 0 L16 0 Z" fill="#00A86B" />
+            <path d="M8 10 L0 0 L16 0 Z" fill="#008F5A" />
         </svg>
 
         {/* Input dot */}
@@ -139,8 +139,8 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-zinc-900 py-24">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-widest text-xl shadow-lg ">
-                    The Architecture Protocol
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-wide text-xl shadow-lg ">
+                    How We Work Together
                 </div>
             </div>
 

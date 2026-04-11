@@ -14,10 +14,10 @@ const Services: React.FC = () => {
           className="mb-24 flex flex-col md:flex-row items-end gap-6 justify-between border-b border-zinc-200 pb-8"
         >
           <div>
-            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 shadow-sm">Core Architectures</h2>
-            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">Without You</span></h3>
+            <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 shadow-sm">What I Build</h2>
+            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">So You Don't Have To</span></h3>
           </div>
-          <p className="text-xl font-bold max-w-sm text-right text-zinc-600 leading-relaxed border-r-2 border-accent pr-6">
+          <p className="text-xl font-medium max-w-sm text-right text-zinc-600 leading-relaxed border-r-2 border-accent pr-6">
             I don't sell hours. I build infrastructure that gives you your hours back.
           </p>
         </motion.div>
@@ -37,7 +37,7 @@ const Services: React.FC = () => {
                 <h4 className="text-3xl font-semibold tracking-tight">AI & API Orchestration</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
-                Replacing manual data entry and handoffs with mercilessly efficient API workflows. I connect your entire tech stack (CRMs, Slack, Docs, AI Models) so information flows instantly and accurately, 24/7.
+                Replacing manual data entry and handoffs with automated workflows that just work. I connect your entire tech stack (CRMs, Slack, Docs, AI Models) so information flows instantly and accurately, 24/7.
               </p>
               <ul className="space-y-3 text-sm font-medium text-zinc-500">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect All Your Tools Automatically</li>
@@ -63,12 +63,12 @@ const Services: React.FC = () => {
                 <h4 className="text-3xl font-semibold tracking-tight">Autonomous Agents</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
-                Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and cheaper than an entire offshore team.
+                Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and more reliably than manual processing.
               </p>
               <ul className="space-y-3 text-sm font-medium text-zinc-500">
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> AI Trained on Your Company Docs</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Auto-Extract Data From Any Document</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-black"></div> Voice & Text Interface</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> AI Trained on Your Company Docs</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Auto-Extract Data From Any Document</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Voice & Text Interface</li>
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">

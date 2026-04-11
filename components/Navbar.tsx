@@ -20,6 +20,7 @@ const Navbar: React.FC = () => {
   const homeLinks = [
     { name: 'Services', href: '#services' },
     { name: 'Work', href: '#cases' },
+    { name: 'ROI', href: '#roi-calculator' },
     { name: 'About', href: '#about' },
   ];
 

@@ -9,7 +9,7 @@
   --color-primary: #1A1A1A;
   /* Softened dark */
   --color-paper: #FAF8F5;
-  --color-accent: #00A86B;
+  --color-accent: #008F5A;
   /* Sage Green */
   --color-cyan: #1E40AF;
   /* Steel Blue */
@@ -90,7 +90,7 @@ body {
   left: -100%;
   width: 100%;
   height: 100%;
-  background-color: var(--color-accent);
+  background-color: rgba(255, 255, 255, 0.08);
   transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: -1;
 }

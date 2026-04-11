@@ -14,8 +14,8 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8">
 
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-bold mb-2 tracking-tight">Iván Manfredi</h2>
-            <p className="font-bold text-zinc-400">AI & Automation Architect</p>
+            <h2 className="text-4xl font-semibold mb-2 tracking-tight">Iván Manfredi</h2>
+            <p className="font-medium text-zinc-400">AI & Automation Architect</p>
           </div>
 
           <div className="flex gap-4">
@@ -33,7 +33,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-zinc-400 font-bold uppercase tracking-widest">
+        <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-zinc-400 font-bold uppercase tracking-wide">
           <p>&copy; {new Date().getFullYear()} All Rights Reserved.</p>
 
           <div className="flex gap-8">

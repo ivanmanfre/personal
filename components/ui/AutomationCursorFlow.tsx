@@ -32,7 +32,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#00A86B", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#008F5A", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -71,8 +71,8 @@ const AutomationCursorFlow: React.FC = () => {
                 {/* Simulated Live Action Log */}
                 <div className="mt-12 text-center w-full">
                     <motion.div
-                        animate={{ opacity: [1, 0, 1] }}
-                        transition={{ duration: 0.5, repeat: Infinity }}
+                        animate={{ opacity: [1, 0.6, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
                         className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 border border-zinc-300 shadow-sm"
                     >
                         <CheckCircle size={14} className="text-black" />

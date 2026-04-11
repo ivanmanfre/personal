@@ -28,10 +28,10 @@ const About: React.FC = () => {
                         transition={{ duration: 0.6 }}
                         className="text-center md:text-left border-l-2 border-zinc-800 pl-6 md:pl-10"
                     >
-                        <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
+                        <p className="text-xl md:text-3xl font-medium text-zinc-400 mb-6 tracking-tight">
                             Most consultants focus on <span className="text-zinc-400">writing strategy decks.</span>
                         </p>
-                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1] tracking-tighter">
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-[1] tracking-tighter">
                             I focus on <br /> <span className="font-drama italic text-accent">Deploying Systems.</span>
                         </h2>
                     </motion.div>
@@ -44,11 +44,11 @@ const About: React.FC = () => {
                         transition={{ duration: 0.6, delay: 0.2 }}
                         className="text-center md:text-right border-r-2 border-zinc-800 pr-6 md:pr-10"
                     >
-                        <p className="text-xl md:text-3xl font-bold text-zinc-500 mb-6 tracking-tight">
+                        <p className="text-xl md:text-3xl font-medium text-zinc-400 mb-6 tracking-tight">
                             Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
                         </p>
-                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-[1] tracking-tighter">
-                            I build to <br /> <span className="font-drama italic text-accent">Eliminate the labor.</span>
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-[1] tracking-tighter">
+                            I build to <br /> <span className="font-drama italic text-accent">Eliminate the busywork.</span>
                         </h2>
                     </motion.div>
 
@@ -73,7 +73,7 @@ const About: React.FC = () => {
 
                     {/* Bio */}
                     <div className="flex-1 text-center md:text-left">
-                        <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">
+                        <h3 className="text-3xl md:text-4xl font-semibold text-white mb-4 tracking-tight">
                             Iván <span className="font-drama italic text-accent">Manfredi</span>
                         </h3>
                         <p className="font-mono text-xs text-accent uppercase tracking-widest mb-4">AI & Automation Architect</p>
@@ -96,7 +96,7 @@ const About: React.FC = () => {
                         <p className="text-lg md:text-xl text-zinc-400 leading-relaxed">
                             Every automation I build follows one rule: <br /><br />
                             <span className="text-white font-bold bg-zinc-800 px-2 py-1">If we can't tie the workflow directly to hours saved, errors reduced, or revenue gained — it doesn't get built.</span> <br /><br />
-                            No hype. No generic chatbots. Pure results.
+                            Just systems that work — and keep working.
                         </p>
                     </div>
                 </motion.div>

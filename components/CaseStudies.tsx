@@ -81,7 +81,7 @@ const CaseStudies: React.FC = () => {
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
-                <div className={`relative z-10 font-bold text-4xl ${study.metricBox} px-4 py-2 shadow-comic text-center`}>
+                <div className={`relative z-10 font-semibold text-4xl ${study.metricBox} px-4 py-2 shadow-comic text-center`}>
                   {study.metric}
                 </div>
               </div>

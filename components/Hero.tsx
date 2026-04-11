@@ -33,13 +33,13 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
-          className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-8 uppercase max-w-5xl"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-8 max-w-5xl"
         >
           I Build Systems That{' '}
           <br className="hidden md:block" />
           <span className="relative inline-block mt-4 px-4 sm:px-6 md:px-8 py-2 md:py-3 border border-zinc-700 bg-black shadow-lg">
-            <span className="relative z-10 text-accent font-black tracking-widest text-4xl md:text-5xl lg:text-6xl">
-              <ScrambleText text="RUN WITHOUT YOU" />
+            <span className="relative z-10 text-accent font-black tracking-wide text-3xl sm:text-4xl md:text-5xl lg:text-6xl">
+              <ScrambleText text="FREE YOUR TEAM" />
             </span>
           </span>
         </motion.h1>
@@ -51,7 +51,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.25 }}
           className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-zinc-600 border-l-2 border-zinc-300 pl-6"
         >
-          I design and build AI automation systems that make your operations run without you babysitting them.
+          I design AI automation systems that handle the repetitive work — so your team focuses on what actually moves the business.
         </motion.p>
 
         {/* Buttons */}
