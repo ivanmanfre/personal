@@ -10,7 +10,23 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-0 sm:opacity-25 pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+
+          {/* Portrait — mobile (top) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
+            className="lg:hidden shrink-0"
+          >
+            <div className="bg-accent/10 rounded-2xl p-3">
+              <img
+                src="/ivan-hero.jpeg"
+                alt="Iván Manfredi"
+                className="w-32 sm:w-40 rounded-xl object-cover"
+              />
+            </div>
+          </motion.div>
 
           {/* Left — Copy */}
           <div className="flex-1">
@@ -98,11 +114,13 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="hidden lg:block shrink-0"
           >
-            <img
-              src="/ivan-hero.jpeg"
-              alt="Iván Manfredi"
-              className="w-80 xl:w-96 rounded-2xl shadow-xl object-cover"
-            />
+            <div className="bg-accent/10 rounded-2xl p-4">
+              <img
+                src="/ivan-hero.jpeg"
+                alt="Iván Manfredi"
+                className="w-64 xl:w-72 rounded-xl shadow-lg object-cover"
+              />
+            </div>
           </motion.div>
 
         </div>
