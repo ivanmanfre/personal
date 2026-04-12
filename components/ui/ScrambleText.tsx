@@ -2,22 +2,23 @@ import React, { useState, useEffect } from 'react';
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+const scramble = (text: string) =>
+    text.split('').map(ch => ch === ' ' ? ' ' : CHARS[Math.floor(Math.random() * CHARS.length)]).join('');
+
 export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
-    const [display, setDisplay] = useState(text);
-    const [scrambling, setScrambling] = useState(false);
+    const [display, setDisplay] = useState(() => scramble(text));
+    const [scrambling, setScrambling] = useState(true);
     const center = Math.floor(text.length / 2);
 
     useEffect(() => {
         let tick = 0;
 
         const timeout = setTimeout(() => {
-            setScrambling(true);
             const interval = setInterval(() => {
                 setDisplay(
                     text
                         .split('')
                         .map((ch, i) => {
-                            // Resolve outward from center
                             const dist = Math.abs(i - center);
                             if (dist < tick) return text[i];
                             if (ch === ' ') return ' ';
