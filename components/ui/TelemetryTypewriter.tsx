@@ -59,9 +59,9 @@ const TelemetryTypewriter: React.FC = () => {
                             key={i}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className={`mb-2 font-medium ${line.includes('[WEBHOOK') ? 'text-pink' :
+                            className={`mb-2 font-medium ${line.includes('[WEBHOOK') ? 'text-zinc-300' :
                                     line.includes('[ACTION]') ? 'text-accent' :
-                                        line.includes('[SYSTEM]') ? 'text-cyan' :
+                                        line.includes('[SYSTEM]') ? 'text-zinc-500' :
                                             'text-zinc-400'
                                 }`}
                         >
@@ -78,7 +78,7 @@ const TelemetryTypewriter: React.FC = () => {
             </div>
 
             {/* Scanline Effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan/5 to-transparent h-[200%] w-full animate-scanline pointer-events-none z-0 opacity-20 group-hover:opacity-40 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent h-[200%] w-full animate-scanline pointer-events-none z-0 opacity-20 group-hover:opacity-40 transition-opacity" />
         </div>
     );
 };

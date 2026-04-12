@@ -32,7 +32,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#008F5A", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#2A8F65", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -45,7 +45,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#1E40AF", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#3DA87A", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -58,7 +58,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", "#E8366D", "#fff"] }}
+                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", "#52525B", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.7, 0.9], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
