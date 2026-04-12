@@ -25,6 +25,7 @@ const LazyRecordingsPanel = lazy(() => import('./RecordingsPanel'));
 const LazyAutoResearchPanel = lazy(() => import('./AutoResearchPanel'));
 const LazyMeetingsPanel = lazy(() => import('./MeetingsPanel'));
 const LazyCodePanel = lazy(() => import('./CodePanel'));
+const LazyVideoIdeasPanel = lazy(() => import('./VideoIdeasPanel'));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -43,6 +44,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   'auto-research': LazyAutoResearchPanel as unknown as React.ComponentType,
   meetings: LazyMeetingsPanel as unknown as React.ComponentType,
   code: LazyCodePanel as unknown as React.ComponentType,
+  video: LazyVideoIdeasPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 

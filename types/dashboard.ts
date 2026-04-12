@@ -626,6 +626,29 @@ export interface CalendarEvent {
   createdAt: string;
 }
 
+export interface VideoIdea {
+  id: string;
+  title: string;
+  description: string | null;
+  script: string | null;
+  videoType: string;
+  sourcePostId: string | null;
+  sourceClickupTaskId: string | null;
+  status: string;
+  priority: string | null;
+  platform: string;
+  durationSeconds: number | null;
+  tags: string[] | null;
+  videoUrl: string | null;
+  audioUrl: string | null;
+  thumbnailUrl: string | null;
+  renderStatus: string | null;
+  renderError: string | null;
+  carouselFolderId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'video' | 'settings';
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
