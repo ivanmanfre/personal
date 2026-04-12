@@ -33,7 +33,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4 }}
-              className="mb-8"
+              className="mb-6"
             >
               <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5">
                 AI & Automation Architect
@@ -45,12 +45,12 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
-              className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-none mb-8"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-none mb-6"
             >
               I Build Systems That{' '}
               <br className="hidden md:block" />
               <span className="relative inline-block mt-4 px-4 sm:px-6 md:px-8 py-2 md:py-3 border border-zinc-700 bg-black shadow-lg">
-                <span className="relative z-10 text-accent font-black tracking-wide text-2xl sm:text-4xl md:text-5xl lg:text-6xl">
+                <span className="relative z-10 text-accent font-black tracking-wide text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
                   <ScrambleText text="RUN WITHOUT YOU" />
                 </span>
               </span>
@@ -61,7 +61,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="text-lg md:text-2xl font-medium max-w-2xl mb-6 leading-relaxed text-zinc-700 border-l-2 border-accent/40 pl-6"
+              className="text-base md:text-lg lg:text-xl font-medium max-w-xl mb-6 leading-relaxed text-zinc-700 border-l-2 border-accent/40 pl-6"
             >
               I design AI automation systems that handle the repetitive work so your team focuses on what actually moves the business.
             </motion.p>
