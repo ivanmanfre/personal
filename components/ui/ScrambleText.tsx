@@ -4,38 +4,49 @@ const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
     const [display, setDisplay] = useState(text);
+    const [resolved, setResolved] = useState(false);
+    const center = Math.floor(text.length / 2);
 
     useEffect(() => {
-        let iteration = 0;
+        let tick = 0;
 
-        // Slight delay before scrambling starts to allow for initial page load
         const timeout = setTimeout(() => {
             const interval = setInterval(() => {
-                setDisplay(() =>
+                setDisplay(
                     text
                         .split('')
-                        .map((letter, index) => {
-                            if (index < iteration) {
-                                return text[index];
-                            }
-                            if (text[index] === ' ') return ' ';
+                        .map((ch, i) => {
+                            // Resolve outward from center
+                            const dist = Math.abs(i - center);
+                            if (dist < tick) return text[i];
+                            if (ch === ' ') return ' ';
                             return CHARS[Math.floor(Math.random() * CHARS.length)];
                         })
                         .join('')
                 );
 
-                if (iteration >= text.length) {
+                if (tick >= center + 1) {
                     clearInterval(interval);
+                    setResolved(true);
                 }
 
-                iteration += 1 / 3;
-            }, 30);
+                tick += 1;
+            }, 50);
 
             return () => clearInterval(interval);
-        }, 300);
+        }, 500);
 
         return () => clearTimeout(timeout);
-    }, [text]);
+    }, [text, center]);
 
-    return <span className="font-mono tracking-tight">{display}</span>;
+    return (
+        <span
+            style={{
+                filter: resolved ? 'blur(0px)' : 'blur(1.5px)',
+                transition: 'filter 0.3s ease-out',
+            }}
+        >
+            {display}
+        </span>
+    );
 };
