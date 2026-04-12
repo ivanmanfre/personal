@@ -46,7 +46,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.25 }}
           className="text-lg md:text-2xl font-medium max-w-2xl mb-6 leading-relaxed text-zinc-700 border-l-2 border-accent/40 pl-6"
         >
-          AI automation that handles your operations so you scale without hiring.
+          I design AI automation systems that handle the repetitive work so your team focuses on what actually moves the business.
         </motion.p>
 
         {/* Social proof bar */}
