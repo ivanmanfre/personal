@@ -45,7 +45,7 @@ const StorePage: React.FC = () => {
             className="mb-16 border-b border-zinc-200 pb-10"
           >
             <div className="flex items-center gap-6 mb-6">
-              <div className="w-16 h-16 bg-accent comic-border flex items-center justify-center shadow-comic-sm">
+              <div className="w-16 h-16 bg-accent border-subtle flex items-center justify-center shadow-card-sm">
                 <ShoppingBag size={32} strokeWidth={3} className="text-black" />
               </div>
               <h1 className="text-6xl md:text-8xl font-bold tracking-tighter">Store</h1>
@@ -66,9 +66,9 @@ const StorePage: React.FC = () => {
               <button
                 key={key}
                 onClick={() => setActiveCategory(key as 'all' | ProductCategory)}
-                className={`px-6 py-3 comic-border font-bold uppercase text-sm tracking-widest transition-all ${activeCategory === key
+                className={`px-6 py-3 border-subtle font-bold uppercase text-sm tracking-widest transition-all ${activeCategory === key
                     ? 'bg-black text-white shadow-none translate-x-[2px] translate-y-[2px]'
-                    : 'bg-white shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
+                    : 'bg-white shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
                   }`}
               >
                 {label}
@@ -91,7 +91,7 @@ const StorePage: React.FC = () => {
 
           {/* Empty state */}
           {filtered.length === 0 && (
-            <div className="text-center py-20 comic-border bg-white shadow-comic">
+            <div className="text-center py-20 border-subtle bg-white shadow-card">
               <p className="text-2xl font-bold text-zinc-400 uppercase">No products here yet</p>
             </div>
           )}

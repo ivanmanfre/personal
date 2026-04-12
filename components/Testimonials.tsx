@@ -39,7 +39,7 @@ const reviews = [
 const marqueeReviews = [...reviews, ...reviews];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
-  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border border-zinc-200 p-5 sm:p-8 relative group hover:shadow-comic-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-comic">
+  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border border-zinc-200 p-5 sm:p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card">
     {/* Tech Decoration: Parallel Lines */}
     <div className="absolute top-0 right-0 p-4 flex gap-1.5 opacity-20 group-hover:opacity-100 transition-opacity">
       <div className="w-1.5 h-6 bg-black transform -skew-x-12"></div>

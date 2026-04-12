@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 bg-black comic-border shadow-comic group-hover:shadow-comic-hover transition-all flex items-center justify-center">
+          <div className="relative w-12 h-12 bg-black border-subtle shadow-card group-hover:shadow-card-hover transition-all flex items-center justify-center">
             <span className="text-white font-black text-xl tracking-tighter">IM</span>
           </div>
           <span className="text-sm font-bold tracking-widest text-zinc-700 group-hover:text-black transition-colors">
@@ -63,20 +63,11 @@ const Navbar: React.FC = () => {
             )
           )}
 
-          {/* Store link */}
-          <Link
-            to="/store"
-            className={`text-lg font-bold hover:underline decoration-4 decoration-accent underline-offset-4 transition-all ${location.pathname.startsWith('/store') ? 'underline' : ''
-              }`}
-          >
-            Store
-          </Link>
-
           <a
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 bg-accent comic-border shadow-comic font-bold tracking-wide hover:-translate-y-1 hover:shadow-comic-hover transition-all active:translate-y-0 active:shadow-comic-active flex items-center"
+            className="px-6 py-3 bg-accent border-subtle shadow-card font-bold tracking-wide hover:-translate-y-1 hover:shadow-card-hover transition-all active:translate-y-0 active:shadow-card-active flex items-center"
           >
             Let's Talk
           </a>
@@ -84,7 +75,7 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Toggle */}
         <button
-          className="md:hidden p-3 comic-border shadow-comic active:shadow-none bg-white active:translate-y-1 transition-all"
+          className="md:hidden p-3 border-subtle shadow-card active:shadow-none bg-white active:translate-y-1 transition-all"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={28} strokeWidth={3} /> : <Menu size={28} strokeWidth={3} />}
@@ -98,7 +89,7 @@ const Navbar: React.FC = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-accent comic-border-thick border-l-0 border-r-0 border-b-0 mt-4 overflow-hidden"
+            className="md:hidden bg-accent border-subtle-thick border-l-0 border-r-0 border-b-0 mt-4 overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-4">
               {homeLinks.map((link) =>
@@ -107,7 +98,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-3xl font-bold border-subtle border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </a>
@@ -116,24 +107,17 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     to={`/${link.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-3xl font-bold border-subtle border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </Link>
                 )
               )}
-              <Link
-                to="/store"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-3xl font-bold comic-border border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
-              >
-                Store
-              </Link>
               <a
                 href="https://calendly.com/ivan-intelligents/30min"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl comic-border hover:bg-white hover:text-black transition-colors text-center block shadow-comic"
+                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl border-subtle hover:bg-white hover:text-black transition-colors text-center block shadow-card"
               >
                 Book Strategy Call
               </a>

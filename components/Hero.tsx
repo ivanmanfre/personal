@@ -9,11 +9,6 @@ const Hero: React.FC = () => {
       {/* Grid Background */}
       <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none z-0" />
 
-      {/* Decorative large number */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[22rem] font-black text-black/[0.03] select-none pointer-events-none leading-none pr-8 hidden md:block">
-        01
-      </div>
-
       <div className="container mx-auto px-6 relative z-10">
 
         {/* Tag */}
@@ -65,7 +60,7 @@ const Hero: React.FC = () => {
             href="https://calendly.com/ivan-intelligents/30min"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black comic-border-thick shadow-comic flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-white group"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black border-subtle-thick shadow-card flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-white group"
           >
             <span className="group-hover:text-black transition-colors duration-300 z-10 flex items-center gap-3">
               Book Strategy Call <ArrowRight size={24} />
@@ -74,7 +69,7 @@ const Hero: React.FC = () => {
 
           <a
             href="#cases"
-            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic font-bold text-xl tracking-wide text-black text-center"
+            className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-white border-subtle-thick shadow-card font-bold text-xl tracking-wide text-black text-center"
           >
             View Case Studies
           </a>

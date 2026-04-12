@@ -77,11 +77,11 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 border border-zinc-200 shadow-comic bg-white group hover-lift hover:shadow-comic-hover transition-all"
+              className="flex-1 border border-zinc-200 shadow-card bg-white group hover-lift hover:shadow-card-hover transition-all"
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
-                <div className={`relative z-10 font-semibold text-4xl ${study.metricBox} px-4 py-2 shadow-comic text-center`}>
+                <div className={`relative z-10 font-semibold text-4xl ${study.metricBox} px-4 py-2 shadow-card text-center`}>
                   {study.metric}
                 </div>
               </div>

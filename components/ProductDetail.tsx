@@ -42,7 +42,7 @@ const ProductDetail: React.FC = () => {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <Link
               to="/store"
-              className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-12 hover:gap-4 transition-all comic-border px-5 py-3 shadow-comic-sm bg-white hover:shadow-comic-sm-hover hover:-translate-y-1 active:translate-y-0 active:shadow-comic-sm-active"
+              className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-12 hover:gap-4 transition-all border-subtle px-5 py-3 shadow-card-sm bg-white hover:shadow-card-sm-hover hover:-translate-y-1 active:translate-y-0 active:shadow-card-sm-active"
             >
               <ArrowLeft size={18} strokeWidth={3} /> Back to Store
             </Link>
@@ -50,7 +50,7 @@ const ProductDetail: React.FC = () => {
 
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center relative">
             <span
-              className={`inline-block text-sm font-bold uppercase tracking-widest px-4 py-2 comic-border mb-8 ${categoryColors[product.category]} shadow-comic-sm`}
+              className={`inline-block text-sm font-bold uppercase tracking-widest px-4 py-2 border-subtle mb-8 ${categoryColors[product.category]} shadow-card-sm`}
             >
               {product.category}
             </span>
@@ -68,13 +68,13 @@ const ProductDetail: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
               <button
                 onClick={() => handleBuy(mainTier)}
-                className="w-full sm:w-auto px-10 py-5 bg-accent comic-border-thick shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-comic-active active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl lg:text-2xl uppercase tracking-wide"
+                className="w-full sm:w-auto px-10 py-5 bg-accent border-subtle-thick shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all active:shadow-card-active active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl lg:text-2xl uppercase tracking-wide"
               >
                 <ShoppingCart size={28} strokeWidth={2.5} /> Get It Now | {mainTier.label}
               </button>
               <a
                 href="#pricing"
-                className="w-full sm:w-auto px-10 py-5 bg-white comic-border-thick shadow-comic hover:shadow-comic-hover hover:-translate-y-1 transition-all active:shadow-comic-active active:translate-y-1 font-bold uppercase text-lg lg:text-class tracking-wide text-center"
+                className="w-full sm:w-auto px-10 py-5 bg-white border-subtle-thick shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all active:shadow-card-active active:translate-y-1 font-bold uppercase text-lg lg:text-class tracking-wide text-center"
               >
                 See All Plans
               </a>
@@ -108,11 +108,11 @@ const ProductDetail: React.FC = () => {
           <div className="container mx-auto px-6 max-w-6xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
               <div className="flex justify-center mb-8">
-                <span className="inline-flex items-center gap-3 px-6 py-2 bg-black text-white comic-border shadow-md font-bold uppercase tracking-widest text-sm">
+                <span className="inline-flex items-center gap-3 px-6 py-2 bg-black text-white border-subtle shadow-md font-bold uppercase tracking-widest text-sm">
                   <Eye size={20} /> Workflow Overview
                 </span>
               </div>
-              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block comic-border-thick bg-black p-2 hover:p-1 transition-all group shadow-lg">
+              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block border-subtle-thick bg-black p-2 hover:p-1 transition-all group shadow-lg">
                 <img
                   src={product.previewImage}
                   alt={`${product.name} workflow`}
@@ -139,9 +139,9 @@ const ProductDetail: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-start gap-4 p-6 comic-border bg-paper shadow-comic-sm hover:-translate-y-1 hover:shadow-comic-sm-hover transition-all"
+                  className="flex items-start gap-4 p-6 border-subtle bg-paper shadow-card-sm hover:-translate-y-1 hover:shadow-card-sm-hover transition-all"
                 >
-                  <div className="w-8 h-8 bg-accent comic-border flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 bg-accent border-subtle flex items-center justify-center shrink-0 mt-0.5">
                     <Check size={20} strokeWidth={3} />
                   </div>
                   <span className="font-bold text-lg leading-snug">{feature}</span>
@@ -165,7 +165,7 @@ const ProductDetail: React.FC = () => {
               {/* Sample image */}
               {product.sampleImage && (
                 <div className="lg:w-3/5">
-                  <div className="comic-border-thick bg-white p-2 shadow-comic">
+                  <div className="border-subtle-thick bg-white p-2 shadow-card">
                     <img
                       src={product.sampleImage}
                       alt={`${product.name} sample output`}
@@ -177,7 +177,7 @@ const ProductDetail: React.FC = () => {
                       href={product.samplePdf}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-full gap-3 mt-8 px-6 py-4 bg-white comic-border font-bold uppercase tracking-wide text-lg shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1 transition-all active:translate-y-0 active:shadow-comic-sm-active text-center"
+                      className="inline-flex items-center justify-center w-full gap-3 mt-8 px-6 py-4 bg-white border-subtle font-bold uppercase tracking-wide text-lg shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1 transition-all active:translate-y-0 active:shadow-card-sm-active text-center"
                     >
                       <Download size={24} strokeWidth={2.5} /> Download Full Sample PDF
                     </a>
@@ -187,9 +187,9 @@ const ProductDetail: React.FC = () => {
 
               {/* What you get */}
               <div className={product.sampleImage ? 'lg:w-2/5' : 'w-full'}>
-                <div className="comic-border bg-white shadow-comic p-8">
+                <div className="border-subtle bg-white shadow-card p-8">
                   <div className="flex items-center gap-4 mb-8 border-b border-zinc-200 pb-4">
-                    <div className="w-12 h-12 bg-cyan comic-border flex items-center justify-center shadow-comic-sm">
+                    <div className="w-12 h-12 bg-cyan border-subtle flex items-center justify-center shadow-card-sm">
                       <Package size={24} strokeWidth={2.5} />
                     </div>
                     <h3 className="text-3xl font-semibold uppercase tracking-tight">Included</h3>
@@ -205,9 +205,9 @@ const ProductDetail: React.FC = () => {
                 </div>
 
                 {/* Setup requirements */}
-                <div className="comic-border bg-white shadow-comic p-8 mt-8">
+                <div className="border-subtle bg-white shadow-card p-8 mt-8">
                   <div className="flex items-center gap-4 mb-8 border-b border-zinc-200 pb-4">
-                    <div className="w-12 h-12 bg-orange-400 comic-border flex items-center justify-center shadow-comic-sm">
+                    <div className="w-12 h-12 bg-orange-400 border-subtle flex items-center justify-center shadow-card-sm">
                       <Wrench size={24} strokeWidth={2.5} />
                     </div>
                     <h3 className="text-3xl font-semibold uppercase tracking-tight">Required</h3>
@@ -239,9 +239,9 @@ const ProductDetail: React.FC = () => {
               {product.tiers.map((tier) => (
                 <div
                   key={tier.id}
-                  className={`comic-border-thick bg-paper flex flex-col relative transition-transform ${tier.highlighted
-                    ? 'shadow-comic hover:shadow-comic-hover -translate-y-2 hover:-translate-y-4 md:scale-105 z-10'
-                    : 'shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
+                  className={`border-subtle-thick bg-paper flex flex-col relative transition-transform ${tier.highlighted
+                    ? 'shadow-card hover:shadow-card-hover -translate-y-2 hover:-translate-y-4 md:scale-105 z-10'
+                    : 'shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
                     }`}
                 >
                   {tier.highlighted && (
@@ -257,11 +257,11 @@ const ProductDetail: React.FC = () => {
                     <p className="font-bold text-zinc-600 leading-relaxed mb-8 flex-grow">{tier.description}</p>
                     <button
                       onClick={() => handleBuy(tier)}
-                      className={`w-full px-6 py-5 comic-border font-bold uppercase text-lg tracking-wide transition-all active:shadow-comic-active active:translate-y-1 flex items-center justify-center gap-3 ${tier.highlighted
-                        ? 'bg-accent shadow-comic hover:shadow-comic-hover hover:-translate-y-1'
+                      className={`w-full px-6 py-5 border-subtle font-bold uppercase text-lg tracking-wide transition-all active:shadow-card-active active:translate-y-1 flex items-center justify-center gap-3 ${tier.highlighted
+                        ? 'bg-accent shadow-card hover:shadow-card-hover hover:-translate-y-1'
                         : tier.id === 'custom-install'
-                          ? 'bg-zinc-100 shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
-                          : 'bg-white shadow-comic-sm hover:shadow-comic-sm-hover hover:-translate-y-1'
+                          ? 'bg-zinc-100 shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
+                          : 'bg-white shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
                         }`}
                     >
                       {tier.id === 'custom-install' ? (
@@ -289,13 +289,13 @@ const ProductDetail: React.FC = () => {
         <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px)" }}></div>
         <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
-            <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter bg-white text-black inline-block px-6 py-4 comic-border shadow-comic">
+            <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter bg-white text-black inline-block px-6 py-4 border-subtle shadow-card">
               Ready to Upgrade?
             </h2>
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => handleBuy(mainTier)}
-                className="px-12 py-6 bg-black text-white comic-border-thick shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all active:shadow-sm active:translate-y-0 font-bold text-2xl md:text-3xl tracking-wide inline-flex items-center gap-4"
+                className="px-12 py-6 bg-black text-white border-subtle-thick shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all active:shadow-sm active:translate-y-0 font-bold text-2xl md:text-3xl tracking-wide inline-flex items-center gap-4"
               >
                 <ShoppingCart size={32} strokeWidth={3} /> Get {product.name}
               </button>

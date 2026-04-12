@@ -20,21 +20,21 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     <motion.div variants={item} whileHover={{ y: -5 }} whileTap={{ y: 0 }}>
       <Link
         to={`/store/${product.slug}`}
-        className="block bg-paper comic-border-thick p-8 shadow-comic hover:shadow-comic-hover active:shadow-comic-active transition-all group relative overflow-hidden flex flex-col h-full"
+        className="block bg-paper border-subtle-thick p-8 shadow-card hover:shadow-card-hover active:shadow-card-active transition-all group relative overflow-hidden flex flex-col h-full"
       >
         {/* Corner decoration */}
         <div className="absolute top-0 right-0 w-0 h-0 border-l-[60px] border-l-transparent border-t-[60px] border-t-black group-hover:scale-110 transition-transform" />
 
         {/* Icon */}
         <div
-          className={`w-16 h-16 ${categoryColors[product.category]} comic-border flex items-center justify-center mb-6 shadow-comic-sm`}
+          className={`w-16 h-16 ${categoryColors[product.category]} border-subtle flex items-center justify-center mb-6 shadow-card-sm`}
         >
           <product.icon className="text-black" size={32} strokeWidth={2.5} />
         </div>
 
         {/* Preview image */}
         {product.previewImage && (
-          <div className="comic-border mb-6 overflow-hidden bg-zinc-900 p-1.5 shadow-comic-sm group-hover:shadow-comic-sm-hover transition-shadow">
+          <div className="border-subtle mb-6 overflow-hidden bg-zinc-900 p-1.5 shadow-card-sm group-hover:shadow-card-sm-hover transition-shadow">
             <img
               src={product.previewImage}
               alt={`${product.name} workflow`}
@@ -44,7 +44,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         )}
 
         {/* Category badge */}
-        <span className="text-xs font-medium uppercase comic-border px-3 py-1 bg-white w-fit mb-4 shadow-comic-sm">
+        <span className="text-xs font-medium uppercase border-subtle px-3 py-1 bg-white w-fit mb-4 shadow-card-sm">
           {product.category}
         </span>
 

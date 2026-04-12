@@ -16,13 +16,13 @@
   --color-pink: #E8366D;
 
   /* Premium Soft Shadows */
-  --shadow-comic: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-comic-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-comic-active: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-card-active: 0 1px 2px rgba(0, 0, 0, 0.1);
 
-  --shadow-comic-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-comic-sm-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-comic-sm-active: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-card-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-card-sm-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-card-sm-active: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 body {
@@ -67,11 +67,11 @@ body {
 }
 
 /* Sophisticated borders */
-.comic-border {
+.border-subtle {
   border: 1px solid rgba(26, 26, 26, 0.15);
 }
 
-.comic-border-thick {
+.border-subtle-thick {
   border: 1px solid rgba(26, 26, 26, 0.2);
 }
 
@@ -97,7 +97,7 @@ body {
 
 .btn-magnetic:hover {
   transform: scale(1.03) translateY(-2px);
-  box-shadow: var(--shadow-comic-hover);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .btn-magnetic:hover::before {
@@ -106,7 +106,7 @@ body {
 
 .btn-magnetic:active {
   transform: scale(0.98) translateY(2px);
-  box-shadow: var(--shadow-comic-active);
+  box-shadow: var(--shadow-card-active);
 }
 
 /* Global Cinematic Interactions */
@@ -286,9 +286,9 @@ body {
     font-size: 1.0625rem;
   }
   :root {
-    --shadow-comic: 0 1px 4px rgba(0, 0, 0, 0.06);
-    --shadow-comic-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-comic-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow-comic-sm-hover: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-card-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-card-sm-hover: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 }
