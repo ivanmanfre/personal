@@ -46,7 +46,7 @@ const Hero: React.FC = () => {
           transition={{ delay: 0.25 }}
           className="text-xl md:text-2xl font-normal max-w-2xl mb-10 leading-relaxed text-zinc-600 border-l-2 border-zinc-300 pl-6"
         >
-          I design AI automation systems that handle the repetitive work — so your team focuses on what actually moves the business.
+          I design AI automation systems that handle the repetitive work so your team focuses on what actually moves the business.
         </motion.p>
 
         {/* Buttons */}
