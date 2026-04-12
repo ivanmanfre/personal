@@ -62,7 +62,7 @@ const Hero: React.FC = () => {
             rel="noopener noreferrer"
             className="btn-magnetic w-full sm:w-auto px-10 py-5 bg-black border-subtle-thick shadow-card flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-white group"
           >
-            <span className="group-hover:text-black transition-colors duration-300 z-10 flex items-center gap-3">
+            <span className="z-10 flex items-center gap-3">
               Book Strategy Call <ArrowRight size={24} />
             </span>
           </a>
