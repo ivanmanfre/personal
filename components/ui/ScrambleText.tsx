@@ -4,13 +4,14 @@ const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
     const [display, setDisplay] = useState(text);
-    const [resolved, setResolved] = useState(false);
+    const [scrambling, setScrambling] = useState(false);
     const center = Math.floor(text.length / 2);
 
     useEffect(() => {
         let tick = 0;
 
         const timeout = setTimeout(() => {
+            setScrambling(true);
             const interval = setInterval(() => {
                 setDisplay(
                     text
@@ -27,7 +28,7 @@ export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
 
                 if (tick >= center + 1) {
                     clearInterval(interval);
-                    setResolved(true);
+                    setScrambling(false);
                 }
 
                 tick += 1;
@@ -42,7 +43,7 @@ export const ScrambleText: React.FC<{ text: string }> = ({ text }) => {
     return (
         <span
             style={{
-                filter: resolved ? 'blur(0px)' : 'blur(1.5px)',
+                filter: scrambling ? 'blur(1.5px)' : 'blur(0px)',
                 transition: 'filter 0.3s ease-out',
             }}
         >
