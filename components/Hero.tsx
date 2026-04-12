@@ -19,13 +19,11 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.1, duration: 0.6 }}
             className="lg:hidden shrink-0"
           >
-            <div className="bg-accent/10 rounded-2xl p-3">
-              <img
-                src="/ivan-hero.jpeg"
-                alt="Iván Manfredi"
-                className="w-32 sm:w-40 rounded-xl object-cover"
-              />
-            </div>
+            <img
+              src="/ivan-hero.jpeg"
+              alt="Iván Manfredi"
+              className="w-28 sm:w-36 rounded-xl border-2 border-accent/30 shadow-lg object-cover"
+            />
           </motion.div>
 
           {/* Left — Copy */}
@@ -114,13 +112,11 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="hidden lg:block shrink-0"
           >
-            <div className="bg-accent/10 rounded-2xl p-4">
-              <img
-                src="/ivan-hero.jpeg"
-                alt="Iván Manfredi"
-                className="w-64 xl:w-72 rounded-xl shadow-lg object-cover"
-              />
-            </div>
+            <img
+              src="/ivan-hero.jpeg"
+              alt="Iván Manfredi"
+              className="w-64 xl:w-72 rounded-xl border-2 border-accent/30 shadow-xl object-cover"
+            />
           </motion.div>
 
         </div>
