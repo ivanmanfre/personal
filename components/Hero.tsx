@@ -19,7 +19,7 @@ const Hero: React.FC = () => {
           className="mb-8"
         >
           <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5">
-            40+ Systems Deployed · 8 Industries
+            AI & Automation Architect
           </span>
         </motion.div>
 
