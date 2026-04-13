@@ -5,7 +5,7 @@ import { ScrambleText } from './ui/ScrambleText';
 
 const Hero: React.FC = () => {
   return (
-    <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 bg-paper overflow-hidden">
+    <section className="relative min-h-screen flex flex-col justify-center bg-paper overflow-hidden">
       {/* Grid Background */}
       <div className="absolute inset-0 bg-grid-pattern opacity-0 sm:opacity-25 pointer-events-none z-0" />
 
