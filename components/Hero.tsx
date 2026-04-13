@@ -10,7 +10,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-grid-pattern opacity-0 sm:opacity-25 pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-16 max-w-6xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-10 max-w-5xl mx-auto">
 
           {/* Portrait — mobile (top) */}
           <motion.div
@@ -115,7 +115,7 @@ const Hero: React.FC = () => {
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-60 xl:w-64 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-xl object-cover object-top"
+              className="w-72 xl:w-80 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-xl object-cover object-top"
             />
           </motion.div>
 
