@@ -17,7 +17,7 @@ const Hero: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, duration: 0.6 }}
-            className="lg:hidden shrink-0"
+            className="lg:hidden shrink-0 self-center"
           >
             <img
               src="/ivan-hero.jpeg"
