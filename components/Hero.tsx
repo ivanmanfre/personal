@@ -7,10 +7,10 @@ const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex flex-col justify-center bg-paper overflow-hidden">
       {/* Grid Background */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-0 sm:opacity-25 pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-25 pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-10 max-w-5xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10 max-w-5xl mx-auto">
 
           {/* Portrait — mobile (top) */}
           <motion.div
@@ -22,7 +22,7 @@ const Hero: React.FC = () => {
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-24 sm:w-32 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-lg object-cover object-top"
+              className="w-40 sm:w-48 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-lg object-cover object-top"
             />
           </motion.div>
 
@@ -45,12 +45,12 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight leading-[1.1] mb-5"
+              className="text-4xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight leading-[1.1] mb-5"
             >
               I Build Systems That{' '}
               <br className="hidden md:block" />
               <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-lg">
-                <span className="relative z-10 text-accent font-black tracking-wide text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem]">
+                <span className="relative z-10 text-accent font-black tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
                   <ScrambleText text="RUN WITHOUT YOU" />
                 </span>
               </span>
@@ -66,17 +66,17 @@ const Hero: React.FC = () => {
               I design AI automation systems that handle the repetitive work so your team focuses on what actually moves the business.
             </motion.p>
 
-            {/* Social proof bar */}
+            {/* Social proof bar — hidden on mobile */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="flex flex-wrap items-center gap-3 sm:gap-5 mb-8 text-sm text-zinc-500"
+              className="hidden sm:flex flex-wrap items-center gap-3 sm:gap-5 mb-8 text-sm text-zinc-500"
             >
               <span>40+ systems deployed</span>
-              <span className="hidden sm:inline text-zinc-300">·</span>
+              <span className="text-zinc-300">·</span>
               <span>6,000+ hours automated</span>
-              <span className="hidden sm:inline text-zinc-300">·</span>
+              <span className="text-zinc-300">·</span>
               <span>Clients in 8+ industries</span>
             </motion.div>
 
@@ -85,7 +85,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="flex flex-col sm:flex-row items-start gap-3"
+              className="flex flex-col sm:flex-row items-start gap-3 mt-6 sm:mt-0"
             >
               <a
                 href="https://calendly.com/ivan-intelligents/30min"
