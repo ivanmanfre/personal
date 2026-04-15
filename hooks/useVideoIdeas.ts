@@ -25,6 +25,10 @@ function mapIdea(row: any): VideoIdea {
     renderStatus: row.render_status,
     renderError: row.render_error,
     carouselFolderId: row.carousel_folder_id,
+    recordingPath: row.recording_path,
+    recordingDurationSeconds: row.recording_duration_seconds,
+    transcriptText: row.transcript_text,
+    transcriptWords: row.transcript_words,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -139,6 +143,34 @@ export function useVideoIdeas() {
     }
   }, [fetch]);
 
+  const uploadRecording = useCallback(async (ideaId: string, file: File) => {
+    try {
+      const ext = file.name.split('.').pop() || 'webm';
+      const path = `video-recordings/${ideaId}/raw.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('originals')
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { error } = await supabase
+        .from('video_ideas')
+        .update({ recording_path: path, status: 'recording', render_status: 'processing' })
+        .eq('id', ideaId);
+      if (error) throw error;
+
+      await window.fetch(`${N8N_BASE}/webhook/video-process-recording`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoIdeaId: ideaId }),
+      });
+
+      toastSuccess('Recording uploaded, processing started');
+      await fetch();
+    } catch (err) {
+      toastError('upload recording', err);
+    }
+  }, [fetch]);
+
   return {
     ideas,
     statusCounts,
@@ -149,5 +181,6 @@ export function useVideoIdeas() {
     deleteIdea,
     generateScript,
     generateVideo,
+    uploadRecording,
   };
 }

@@ -412,6 +412,18 @@ export interface OutreachProspect {
   blacklisted: boolean;
   notes: string | null;
   skipReason: string | null;
+  preferredChannel: string | null;
+  triggerType: string | null;
+  triggerDetail: string | null;
+  triggerHook: string | null;
+  triggerAsk: string | null;
+  triggerSourceUrl: string | null;
+  triggerConfidence: number | null;
+  researchedAt: string | null;
+  noteVariant: string | null;
+  microPersona: string | null;
+  messagingPattern: string | null;
+  researchSources: Record<string, any> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -428,6 +440,7 @@ export interface OutreachMessage {
   sentAt: string | null;
   createdAt: string;
   isDraft?: boolean;
+  channel: string | null;
   matchedContentType: string | null;
   matchedContentTitle: string | null;
   matchedContentUrl: string | null;
@@ -645,6 +658,26 @@ export interface VideoIdea {
   renderStatus: string | null;
   renderError: string | null;
   carouselFolderId: string | null;
+  recordingPath: string | null;
+  recordingDurationSeconds: number | null;
+  transcriptText: string | null;
+  transcriptWords: { word: string; start: number; end: number }[] | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VideoShort {
+  id: string;
+  videoIdeaId: string;
+  title: string;
+  startTime: number;
+  endTime: number;
+  durationSeconds: number;
+  format: 'short' | 'long';
+  transcriptText: string | null;
+  status: string;
+  renderError: string | null;
+  videoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

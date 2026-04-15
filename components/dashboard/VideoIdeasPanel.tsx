@@ -2,6 +2,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Film, Plus, Trash2, ChevronDown, ChevronRight, Monitor, Camera, Wrench, LayoutGrid, Linkedin, Instagram, Youtube, Sparkles, Play, Loader2, ExternalLink, AlertCircle, Save } from 'lucide-react';
 import { useVideoIdeas } from '../../hooks/useVideoIdeas';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import VideoRecorder from './VideoRecorder';
+import VideoEditingView from './VideoEditingView';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -107,7 +109,7 @@ const VideoIdeasPanel: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('carousel_animation');
   const [newPlatform, setNewPlatform] = useState('linkedin');
-  const { ideas, statusCounts, loading, refresh, updateIdea, createIdea, deleteIdea, generateScript, generateVideo } = useVideoIdeas();
+  const { ideas, statusCounts, loading, refresh, updateIdea, createIdea, deleteIdea, generateScript, generateVideo, uploadRecording } = useVideoIdeas();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['video_ideas'] });
 
   const filteredIdeas = useMemo(() => {
@@ -305,6 +307,28 @@ const VideoIdeasPanel: React.FC = () => {
 
                       {/* Script editor */}
                       <ScriptEditor idea={idea} onSave={(script) => updateIdea(idea.id, 'script', script)} />
+
+                      {/* Recording */}
+                      {(idea.status === 'idea' || idea.status === 'scripted') && !idea.recordingPath && (
+                        <div>
+                          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">Record</p>
+                          <VideoRecorder onRecordingComplete={async (file) => {
+                            await uploadRecording(idea.id, file);
+                          }} />
+                        </div>
+                      )}
+
+                      {/* Recording processing */}
+                      {idea.status === 'recording' && (
+                        <div className="flex items-center gap-2 text-xs text-cyan-400">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing recording...
+                        </div>
+                      )}
+
+                      {/* Editing view */}
+                      {(idea.status === 'editing' || (idea.recordingPath && idea.transcriptWords)) && (
+                        <VideoEditingView idea={idea} />
+                      )}
 
                       {/* Render error */}
                       {idea.renderStatus === 'error' && idea.renderError && (
