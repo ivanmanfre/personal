@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { VideoIdea } from '../types/dashboard';
 
-const N8N_BASE = 'https://n8n.intelligents.agency';
+const N8N_BASE = 'https://n8n.ivanmanfredi.com';
 
 function mapIdea(row: any): VideoIdea {
   return {

@@ -119,7 +119,7 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string 
   const handleCreateProposal = async () => {
     setCreatingProposal(true);
     try {
-      const res = await fetch('https://n8n.intelligents.agency/webhook/proposal-upwork', {
+      const res = await fetch('https://n8n.ivanmanfredi.com/webhook/proposal-upwork', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

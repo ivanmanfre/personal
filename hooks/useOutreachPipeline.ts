@@ -71,6 +71,18 @@ function mapProspect(r: any): OutreachProspect {
     blacklisted: r.blacklisted || false,
     notes: r.notes,
     skipReason: r.skip_reason,
+    preferredChannel: r.preferred_channel || null,
+    triggerType: r.trigger_type || null,
+    triggerDetail: r.trigger_detail || null,
+    triggerHook: r.trigger_hook || null,
+    triggerAsk: r.trigger_ask || null,
+    triggerSourceUrl: r.trigger_source_url || null,
+    triggerConfidence: r.trigger_confidence || null,
+    researchedAt: r.researched_at || null,
+    noteVariant: r.note_variant || null,
+    microPersona: r.micro_persona || null,
+    messagingPattern: r.messaging_pattern || null,
+    researchSources: r.research_sources || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -108,6 +120,7 @@ function mapMessage(r: any): OutreachMessage {
     sentAt: r.sent_at,
     createdAt: r.created_at,
     isDraft: !r.sent_at,
+    channel: r.channel || null,
     matchedContentType: r.matched_content_type || null,
     matchedContentTitle: r.matched_content_title || null,
     matchedContentUrl: r.matched_content_url || null,
@@ -187,6 +200,7 @@ export function useOutreachPipeline(timezone?: string) {
         supabase
           .from('outreach_prospects')
           .select('*, outreach_campaigns(name, niche_tags)')
+          .neq('stage', 'archived')
           .order('updated_at', { ascending: false })
           .limit(500),
         supabase
@@ -488,7 +502,7 @@ export function useOutreachPipeline(timezone?: string) {
   const importProspects = useCallback(async (campaignId: string) => {
     try {
       toastSuccess('Import started...');
-      await window.fetch('https://n8n.intelligents.agency/webhook/outreach-import', {
+      await window.fetch('https://n8n.ivanmanfredi.com/webhook/outreach-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign_id: campaignId }),
@@ -500,7 +514,7 @@ export function useOutreachPipeline(timezone?: string) {
 
   const sendManualDm = useCallback(async (prospectId: string, messageText: string) => {
     try {
-      const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-manual-dm', {
+      const res = await window.fetch('https://n8n.ivanmanfredi.com/webhook/outreach-manual-dm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prospect_id: prospectId, message: messageText }),
@@ -518,25 +532,44 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetch, fetchMessages]);
 
-  const approveDraft = useCallback(async (prospectId: string, messageId: string, messageText: string) => {
+  const approveDraft = useCallback(async (prospectId: string, messageId: string, messageText: string, channel?: string) => {
     try {
-      // Send via manual DM webhook
-      const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-manual-dm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prospect_id: prospectId, message: messageText }),
-      });
-      const data = await res.json();
-      if (data?.success) {
-        // Mark draft as sent
-        await supabase.from('outreach_messages').update({ sent_at: new Date().toISOString() }).eq('id', messageId);
-        // Clear needs_manual_reply
-        await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
-        toastSuccess('DM approved & sent');
-        await fetchMessages(prospectId);
-        await fetch();
+      // Route to correct webhook based on channel
+      const prospect = prospects.find(p => p.id === prospectId);
+      const email = prospect?.email;
+      const isEmail = channel === 'email' || (!channel && prospect?.preferredChannel === 'email');
+
+      if (isEmail) {
+        // Send via email webhook
+        const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prospect_id: prospectId, message_id: messageId, message: messageText, email }),
+        });
+        const data = await res.json();
+        if (data?.success) {
+          toastSuccess('Email sent');
+          await fetch();
+        } else {
+          toastError('email send failed — ' + (data?.error || 'unknown'));
+        }
       } else {
-        toastError('approve DM — send failed');
+        // Send via LinkedIn DM webhook
+        const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-manual-dm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prospect_id: prospectId, message: messageText }),
+        });
+        const data = await res.json();
+        if (data?.success) {
+          await supabase.from('outreach_messages').update({ sent_at: new Date().toISOString() }).eq('id', messageId);
+          await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
+          toastSuccess('DM sent');
+          await fetchMessages(prospectId);
+          await fetch();
+        } else {
+          toastError('DM send failed');
+        }
       }
     } catch (err) {
       toastError('approve DM', err);
@@ -556,6 +589,30 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetch, fetchMessages]);
 
+  // Pending DM drafts (loaded globally for review queue)
+  const [pendingDrafts, setPendingDrafts] = useState<(OutreachMessage & { prospectName?: string })[]>([]);
+
+  const fetchPendingDrafts = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('outreach_messages')
+        .select('*')
+        .is('sent_at', null)
+        .in('message_type', ['dm', 'email', 'connection_note'])
+        .order('created_at', { ascending: false });
+      const drafts = (data || []).map(mapMessage).map((m) => ({
+        ...m,
+        isDraft: true,
+        prospectName: prospects.find((p) => p.id === m.prospectId)?.name || 'Unknown',
+      }));
+      setPendingDrafts(drafts);
+    } catch (err) {
+      toastError('load drafts', err);
+    }
+  }, [prospects]);
+
+  useEffect(() => { fetchPendingDrafts(); }, [fetchPendingDrafts]);
+
   // Derived state
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -566,7 +623,7 @@ export function useOutreachPipeline(timezone?: string) {
   }, [prospects]);
 
   const actionNeeded = useMemo(() =>
-    prospects.filter((p) => p.needsManualReply || p.stage === 'replied'),
+    prospects.filter((p) => p.needsManualReply),
     [prospects]
   );
 
@@ -603,5 +660,7 @@ export function useOutreachPipeline(timezone?: string) {
     sendManualDm,
     approveDraft,
     rejectDraft,
+    pendingDrafts,
+    fetchPendingDrafts,
   };
 }

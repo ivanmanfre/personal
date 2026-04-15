@@ -1,4 +1,4 @@
-const N8NCLAW_WEBHOOK = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
+const N8NCLAW_WEBHOOK = 'https://n8n.ivanmanfredi.com/webhook/n8nclaw-whatsapp';
 const IVAN_JID = '5491159385939@s.whatsapp.net';
 
 export async function sendToEngineer(workflowName: string, workflowId: string, errorMessage: string | null, errorCount: number, supabaseRowId?: string): Promise<boolean> {

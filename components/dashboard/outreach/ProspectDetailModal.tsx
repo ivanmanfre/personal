@@ -170,6 +170,96 @@ export const ProspectDetailModal: React.FC<Props> = ({
             </a>
           </div>
 
+          {/* Research Trigger — Full Reasoning Chain */}
+          {prospect.triggerType && prospect.triggerType !== 'none' && (
+            <div className="bg-zinc-800/40 border border-cyan-500/20 rounded-xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-cyan-400 uppercase tracking-wider font-medium">Research Trigger</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded border ${prospect.preferredChannel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                    {prospect.preferredChannel || 'linkedin'}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                    {prospect.triggerType?.replace('_', ' ')} ({prospect.triggerConfidence}/10)
+                  </span>
+                </div>
+              </div>
+              {prospect.triggerDetail && (
+                <p className="text-xs text-zinc-300">{prospect.triggerDetail}</p>
+              )}
+              {/* Micro Persona */}
+              {prospect.microPersona && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] text-zinc-500">Micro Persona:</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded border font-medium ${
+                      ({ scaling_pain: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                         process_pain: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                         cost_pain: 'bg-red-500/10 text-red-400 border-red-500/20',
+                         compliance_pain: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                         transition_pain: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                         competitive_pain: 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                      } as Record<string, string>)[prospect.microPersona] || 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30'
+                    }`}>
+                      {prospect.microPersona.replace('_', ' ')}
+                    </span>
+                  </div>
+                  {prospect.researchSources?.micro_persona_reasoning && (
+                    <p className="text-[10px] text-zinc-400 italic">{prospect.researchSources.micro_persona_reasoning}</p>
+                  )}
+                </div>
+              )}
+              {/* Messaging Pattern */}
+              {prospect.messagingPattern && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-zinc-500">Pattern:</span>
+                    <span className="text-[10px] text-zinc-300 font-medium">{prospect.messagingPattern.replace('_', ' ')}</span>
+                  </div>
+                </div>
+              )}
+              {/* Research Sources */}
+              {prospect.researchSources && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <p className="text-[10px] text-zinc-500 mb-1.5">Research Sources:</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px]">
+                    <span className={prospect.researchSources.linkedin_posts > 0 ? 'text-emerald-400' : 'text-zinc-600'}>
+                      {prospect.researchSources.linkedin_posts > 0 ? '✓' : '○'} LinkedIn: {prospect.researchSources.linkedin_posts || 0} posts
+                    </span>
+                    <span className={prospect.researchSources.website_chars > 0 ? 'text-emerald-400' : 'text-zinc-600'}>
+                      {prospect.researchSources.website_chars > 0 ? '✓' : '○'} Website: {prospect.researchSources.website_chars > 0 ? `${Math.round(prospect.researchSources.website_chars / 100) / 10}K` : 'none'}
+                    </span>
+                    <span className={prospect.researchSources.job_postings > 0 ? 'text-emerald-400' : 'text-zinc-600'}>
+                      {prospect.researchSources.job_postings > 0 ? '✓' : '○'} Jobs: {prospect.researchSources.job_postings || 0}
+                    </span>
+                    <span className={prospect.researchSources.intel_chars > 0 ? 'text-emerald-400' : 'text-zinc-600'}>
+                      {prospect.researchSources.intel_chars > 0 ? '✓' : '○'} Intel: {prospect.researchSources.intel_chars > 0 ? `${Math.round(prospect.researchSources.intel_chars / 100) / 10}K` : 'none'}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {/* Hook + Ask */}
+              {prospect.triggerHook && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <p className="text-[10px] text-zinc-500 mb-1">Hook:</p>
+                  <p className="text-xs text-zinc-200 italic">"{prospect.triggerHook}"</p>
+                </div>
+              )}
+              {prospect.triggerAsk && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <p className="text-[10px] text-zinc-500 mb-1">Ask:</p>
+                  <p className="text-xs text-zinc-200 italic">"{prospect.triggerAsk}"</p>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-[10px] text-zinc-600">
+                {prospect.triggerSourceUrl && (
+                  <a href={prospect.triggerSourceUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400/60 hover:text-cyan-400">Source</a>
+                )}
+                {prospect.researchedAt && <span>Researched {timeAgo(prospect.researchedAt)}</span>}
+              </div>
+            </div>
+          )}
+
           {/* Outreach Timeline */}
           {(prospect.profileViewedAt || prospect.connectionSentAt || prospect.connectedAt || prospect.lastDmSentAt || prospect.lastReplyAt) && (
             <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-4">

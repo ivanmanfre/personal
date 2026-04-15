@@ -4,7 +4,7 @@ import { dashboardAction, toastError } from '../lib/dashboardActions';
 import type { ProactiveAlert, Reminder, ChatMessage, DailySummary } from '../types/dashboard';
 
 const CHAT_PAGE_SIZE = 50;
-const N8NCLAW_WEBHOOK_URL = 'https://n8n.intelligents.agency/webhook/n8nclaw-whatsapp';
+const N8NCLAW_WEBHOOK_URL = 'https://n8n.ivanmanfredi.com/webhook/n8nclaw-whatsapp';
 
 export function useAgentData(timezone?: string) {
   const [alerts, setAlerts] = useState<ProactiveAlert[]>([]);

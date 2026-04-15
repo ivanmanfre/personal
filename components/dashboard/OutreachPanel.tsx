@@ -65,6 +65,7 @@ const OutreachPanel: React.FC = () => {
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
     createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses,
     toggleWorkflow, importProspects, sendManualDm, approveDraft, rejectDraft,
+    pendingDrafts, fetchPendingDrafts,
   } = pipeline;
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
@@ -300,6 +301,79 @@ const OutreachPanel: React.FC = () => {
         </div>
       )}
 
+      {/* DM Review Queue */}
+      {pendingDrafts.length > 0 && (
+        <div className="bg-zinc-900/90 border border-amber-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-semibold text-amber-400">{pendingDrafts.length} Draft{pendingDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
+          </div>
+          <div className="space-y-3">
+            {pendingDrafts.map((draft) => (
+              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { const p = prospects.find(x => x.id === draft.prospectId); if (p) setSelectedProspect(p); }} className="text-xs font-medium text-zinc-200 hover:text-cyan-400 transition-colors underline decoration-zinc-700 hover:decoration-cyan-400 cursor-pointer">{draft.prospectName}</button>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Step {draft.sequenceStep}</span>
+                    {draft.channel && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${draft.channel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                        {draft.channel === 'email' ? 'Email' : 'LinkedIn'}
+                      </span>
+                    )}
+                    {draft.matchedContentType && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">{draft.matchedContentType}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-zinc-600">{timeAgo(draft.createdAt)}</span>
+                </div>
+                {/* Research context for this prospect */}
+                {(() => {
+                  const p = prospects.find(x => x.id === draft.prospectId);
+                  if (!p?.triggerType || p.triggerType === 'none') return null;
+                  return (
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{p.triggerType?.replace('_', ' ')} ({p.triggerConfidence}/10)</span>
+                      {p.microPersona && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                          ({ scaling_pain: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                             process_pain: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                             cost_pain: 'bg-red-500/10 text-red-400 border-red-500/20',
+                             compliance_pain: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                             transition_pain: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                             competitive_pain: 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                          } as Record<string, string>)[p.microPersona] || 'bg-zinc-700/30 text-zinc-400 border-zinc-600/30'
+                        }`}>{p.microPersona.replace('_', ' ')}</span>
+                      )}
+                      {p.messagingPattern && (
+                        <span className="text-[9px] text-zinc-500">{p.messagingPattern.replace('_', ' ')}</span>
+                      )}
+                      {p.triggerDetail && (
+                        <span className="text-[10px] text-zinc-500 italic truncate max-w-[300px]" title={p.triggerDetail}>{p.triggerDetail}</span>
+                      )}
+                    </div>
+                  );
+                })()}
+                <p className="text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed">{draft.messageText}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async () => { await approveDraft(draft.prospectId, draft.id, draft.messageText, draft.channel || undefined); await fetchPendingDrafts(); }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <Send className="w-3 h-3" /> {draft.channel === 'email' ? 'Send Email' : 'Send DM'}
+                  </button>
+                  <button
+                    onClick={async () => { await rejectDraft(draft.prospectId, draft.id); await fetchPendingDrafts(); }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-zinc-700/30 text-zinc-400 border border-zinc-600/30 hover:bg-zinc-700/50 transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Section 6: Prospect Table */}
       {prospects.length === 0 && stageFilter === 'all' ? (
         <EmptyState
@@ -415,9 +489,30 @@ const OutreachPanel: React.FC = () => {
                           <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">
                             {[p.title || p.headline, p.company].filter(Boolean).join(' @ ') || ''}
                           </p>
-                          {p.campaignName && (
-                            <span className="inline-block mt-0.5 px-1.5 py-0 rounded-full text-[8px] bg-purple-500/10 text-purple-400/70">{p.campaignName}</span>
-                          )}
+                          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            {p.preferredChannel && (
+                              <span className={`px-1.5 py-0 rounded-full text-[8px] ${p.preferredChannel === 'email' ? 'bg-green-500/10 text-green-400/70' : 'bg-blue-500/10 text-blue-400/70'}`}>
+                                {p.preferredChannel === 'email' ? '✉ email' : '🔗 linkedin'}
+                              </span>
+                            )}
+                            {p.campaignName && (
+                              <span className="px-1.5 py-0 rounded-full text-[8px] bg-purple-500/10 text-purple-400/70">{p.campaignName}</span>
+                            )}
+                            {p.microPersona && (
+                              <span className={`px-1.5 py-0 rounded-full text-[8px] ${
+                                ({ scaling_pain: 'bg-blue-500/10 text-blue-400/70',
+                                   process_pain: 'bg-amber-500/10 text-amber-400/70',
+                                   cost_pain: 'bg-red-500/10 text-red-400/70',
+                                   compliance_pain: 'bg-purple-500/10 text-purple-300/70',
+                                   transition_pain: 'bg-cyan-500/10 text-cyan-400/70',
+                                   competitive_pain: 'bg-pink-500/10 text-pink-400/70'
+                                } as Record<string, string>)[p.microPersona] || 'bg-zinc-700/30 text-zinc-500'
+                              }`}>{p.microPersona.replace('_', ' ')}</span>
+                            )}
+                            {p.triggerConfidence != null && p.triggerConfidence > 0 && (
+                              <span className={`w-1.5 h-1.5 rounded-full ${p.triggerConfidence >= 7 ? 'bg-emerald-400' : p.triggerConfidence >= 4 ? 'bg-amber-400' : 'bg-zinc-600'}`} title={`Trigger confidence: ${p.triggerConfidence}/10`} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>

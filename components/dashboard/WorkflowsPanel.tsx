@@ -420,7 +420,7 @@ const WorkflowsPanel: React.FC = () => {
                               </div>
                             )}
                             <div className="flex items-center gap-1 flex-wrap">
-                              <a href={`https://n8n.intelligents.agency/workflow/${wf.workflowId}`}
+                              <a href={`https://n8n.ivanmanfredi.com/workflow/${wf.workflowId}`}
                                 target="_blank" rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/70 transition-colors">
                                 <ExternalLink className="w-2 h-2" aria-hidden="true" /> n8n
@@ -523,7 +523,7 @@ const WorkflowsPanel: React.FC = () => {
                           <span>Workflow: <span className="font-mono">{err.workflowId}</span></span>
                           {err.executionId && (
                             <a
-                              href={`https://n8n.intelligents.agency/workflow/${err.workflowId}/executions/${err.executionId}`}
+                              href={`https://n8n.ivanmanfredi.com/workflow/${err.workflowId}/executions/${err.executionId}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"

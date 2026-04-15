@@ -38,7 +38,7 @@ export const SystemMap: React.FC<Props> = ({ workflows }) => {
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     if (node.type === 'workflow' && node.data.workflowId) {
-      window.open(`https://n8n.intelligents.agency/workflow/${node.data.workflowId}`, '_blank');
+      window.open(`https://n8n.ivanmanfredi.com/workflow/${node.data.workflowId}`, '_blank');
     }
   }, []);
 

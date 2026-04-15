@@ -341,7 +341,7 @@ export function useUpworkPipeline() {
     lockProposal(id, 'submitting');
     setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'submitting' } : p)));
     try {
-      const res = await window.fetch('https://n8n.intelligents.agency/webhook/upwork-submit-proposal', {
+      const res = await window.fetch('https://n8n.ivanmanfredi.com/webhook/upwork-submit-proposal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ proposal_id: id }),
@@ -379,7 +379,7 @@ export function useUpworkPipeline() {
 
     setGeneratingJobs((prev) => new Set(prev).add(jobId));
 
-    window.fetch('https://n8n.intelligents.agency/webhook/upwork-draft-proposal', {
+    window.fetch('https://n8n.ivanmanfredi.com/webhook/upwork-draft-proposal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
