@@ -536,45 +536,53 @@ export function useOutreachPipeline(timezone?: string) {
     try {
       // Route to correct webhook based on channel
       const prospect = prospects.find(p => p.id === prospectId);
-      const email = prospect?.email;
+      let email = prospect?.email;
       const isEmail = channel === 'email' || (!channel && prospect?.preferredChannel === 'email');
 
       if (isEmail) {
-        // Send via email webhook
-        const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prospect_id: prospectId, message_id: messageId, message: messageText, email }),
-        });
-        const data = await res.json();
-        if (data?.success) {
-          toastSuccess('Email sent');
-          await fetch();
-        } else {
-          toastError('email send failed — ' + (data?.error || 'unknown'));
+        // Re-fetch email from DB in case it was added after page load
+        if (!email) {
+          const { data: freshProspect } = await supabase
+            .from('outreach_prospects')
+            .select('email')
+            .eq('id', prospectId)
+            .single();
+          email = freshProspect?.email;
         }
+        if (!email) {
+          toastError('No email address for this prospect');
+          return;
+        }
+        // Approve email via Supabase — WF7 polls and sends via Gmail
+        await supabase.from('outreach_messages').update({
+          approved_at: new Date().toISOString(),
+          recipient_email: email
+        }).eq('id', messageId);
+        await supabase.from('outreach_prospects').update({
+          needs_manual_reply: false,
+          updated_at: new Date().toISOString()
+        }).eq('id', prospectId);
+        toastSuccess('Email approved — sending via Gmail shortly');
+        await fetchPendingDrafts();
+        await fetch();
       } else {
-        // Send via LinkedIn DM webhook
-        const res = await window.fetch('https://n8n.intelligents.agency/webhook/outreach-manual-dm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prospect_id: prospectId, message: messageText }),
-        });
-        const data = await res.json();
-        if (data?.success) {
-          await supabase.from('outreach_messages').update({ sent_at: new Date().toISOString() }).eq('id', messageId);
-          await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
-          toastSuccess('DM sent');
-          await fetchMessages(prospectId);
-          await fetch();
-        } else {
-          toastError('DM send failed');
-        }
+        // Approve LinkedIn message via Supabase — WF8 polls and sends via UniPile
+        await supabase.from('outreach_messages').update({
+          approved_at: new Date().toISOString(),
+          message_text: messageText
+        }).eq('id', messageId);
+        await supabase.from('outreach_prospects').update({
+          needs_manual_reply: false,
+          updated_at: new Date().toISOString()
+        }).eq('id', prospectId);
+        toastSuccess('LinkedIn message approved — sending shortly');
+        await fetchPendingDrafts();
+        await fetch();
       }
-    } catch (err) {
-      toastError('approve DM', err);
+    } catch (err: any) {
+      toastError('send failed: ' + (err?.message || String(err)));
     }
-  }, [fetch, fetchMessages]);
+  }, [fetch, fetchMessages, prospects]);
 
   const rejectDraft = useCallback(async (prospectId: string, messageId: string) => {
     try {
