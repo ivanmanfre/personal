@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle, Clock, Search, Send, Eye, BookOpen, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
+import { supabase } from '../../lib/supabase';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
@@ -72,6 +73,7 @@ const OutreachPanel: React.FC = () => {
 
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [campaignFilter, setCampaignFilter] = useState<string>('all');
+  const [channelFilter, setChannelFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('updated_at');
   const [sortAsc, setSortAsc] = useState(false);
@@ -94,12 +96,22 @@ const OutreachPanel: React.FC = () => {
     if (campaignFilter !== 'all') {
       list = list.filter((p) => p.campaignId === campaignFilter);
     }
+    if (channelFilter !== 'all') {
+      if (channelFilter === 'email') {
+        list = list.filter((p) => p.preferredChannel === 'email');
+      } else if (channelFilter === 'linkedin') {
+        list = list.filter((p) => p.preferredChannel === 'linkedin' || !p.preferredChannel);
+      } else if (channelFilter === 'researched') {
+        list = list.filter((p) => p.triggerType && p.triggerType !== 'none');
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((p) =>
         p.name.toLowerCase().includes(q) ||
         (p.headline?.toLowerCase().includes(q)) ||
-        (p.company?.toLowerCase().includes(q))
+        (p.company?.toLowerCase().includes(q)) ||
+        (p.email?.toLowerCase().includes(q))
       );
     }
     list = [...list].sort((a, b) => {
@@ -270,6 +282,16 @@ const OutreachPanel: React.FC = () => {
             <option value="all">All campaigns</option>
             {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          <select
+            value={channelFilter}
+            onChange={(e) => setChannelFilter(e.target.value)}
+            className="px-2 py-1 rounded-lg text-xs bg-zinc-800/60 border border-zinc-700/40 text-zinc-300 cursor-pointer"
+          >
+            <option value="all">All channels</option>
+            <option value="linkedin">LinkedIn only</option>
+            <option value="email">Email only</option>
+            <option value="researched">Researched only</option>
+          </select>
           <FilterBar searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search prospects..." />
           <select
             value={sortKey}
@@ -301,12 +323,15 @@ const OutreachPanel: React.FC = () => {
         </div>
       )}
 
-      {/* DM Review Queue */}
+      {/* Outreach Review Queue */}
       {pendingDrafts.length > 0 && (
         <div className="bg-zinc-900/90 border border-amber-500/20 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <MessageSquare className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-semibold text-amber-400">{pendingDrafts.length} Draft{pendingDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
+            <span className="text-[9px] text-zinc-500">
+              ({pendingDrafts.filter(d => d.messageType === 'connection_note').length} connection notes, {pendingDrafts.filter(d => d.messageType === 'email').length} emails, {pendingDrafts.filter(d => d.messageType === 'dm').length} DMs)
+            </span>
           </div>
           <div className="space-y-3">
             {pendingDrafts.map((draft) => (
@@ -314,7 +339,7 @@ const OutreachPanel: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <button onClick={() => { const p = prospects.find(x => x.id === draft.prospectId); if (p) setSelectedProspect(p); }} className="text-xs font-medium text-zinc-200 hover:text-cyan-400 transition-colors underline decoration-zinc-700 hover:decoration-cyan-400 cursor-pointer">{draft.prospectName}</button>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Step {draft.sequenceStep}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{draft.messageType === 'connection_note' ? 'Connection Note' : draft.messageType === 'email' ? 'Cold Email' : `DM Step ${draft.sequenceStep}`}</span>
                     {draft.channel && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border ${draft.channel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                         {draft.channel === 'email' ? 'Email' : 'LinkedIn'}
@@ -332,7 +357,7 @@ const OutreachPanel: React.FC = () => {
                   if (!p?.triggerType || p.triggerType === 'none') return null;
                   return (
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{p.triggerType?.replace('_', ' ')} ({p.triggerConfidence}/10)</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{p.triggerType?.replace('_', ' ')} ({p.triggerConfidence}/5)</span>
                       {p.microPersona && (
                         <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
                           ({ scaling_pain: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -353,17 +378,42 @@ const OutreachPanel: React.FC = () => {
                     </div>
                   );
                 })()}
-                <p className="text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed">{draft.messageText}</p>
+                <textarea
+                  defaultValue={draft.messageText}
+                  id={`draft-${draft.id}`}
+                  rows={Math.min(8, Math.max(3, draft.messageText.split('\n').length))}
+                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
+                />
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={async () => { await approveDraft(draft.prospectId, draft.id, draft.messageText, draft.channel || undefined); await fetchPendingDrafts(); }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      const textarea = document.getElementById(`draft-${draft.id}`) as HTMLTextAreaElement;
+                      const editedText = textarea?.value || draft.messageText;
+                      try {
+                        // Save edit if changed
+                        if (editedText !== draft.messageText) {
+                          await supabase.from('outreach_messages').update({ message_text: editedText }).eq('id', draft.id);
+                        }
+                        await approveDraft(draft.prospectId, draft.id, editedText, draft.channel || undefined);
+                        await fetchPendingDrafts();
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-3 h-3" /> {draft.channel === 'email' ? 'Send Email' : 'Send DM'}
+                    <Send className="w-3 h-3" /> {draft.messageType === 'connection_note' ? 'Send Connection' : draft.channel === 'email' ? 'Send Email' : 'Send DM'}
                   </button>
                   <button
-                    onClick={async () => { await rejectDraft(draft.prospectId, draft.id); await fetchPendingDrafts(); }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-zinc-700/30 text-zinc-400 border border-zinc-600/30 hover:bg-zinc-700/50 transition-colors"
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      await rejectDraft(draft.prospectId, draft.id);
+                      await fetchPendingDrafts();
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Reject
                   </button>
@@ -489,6 +539,12 @@ const OutreachPanel: React.FC = () => {
                           <p className="text-[11px] text-zinc-500 truncate max-w-[200px]">
                             {[p.title || p.headline, p.company].filter(Boolean).join(' @ ') || ''}
                           </p>
+                          {p.preferredChannel === 'email' && p.email && (
+                            <p className="text-[10px] text-green-400/60 truncate max-w-[200px]">{p.email}</p>
+                          )}
+                          {p.preferredChannel === 'email' && !p.email && (
+                            <p className="text-[10px] text-red-400/60">No email address</p>
+                          )}
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                             {p.preferredChannel && (
                               <span className={`px-1.5 py-0 rounded-full text-[8px] ${p.preferredChannel === 'email' ? 'bg-green-500/10 text-green-400/70' : 'bg-blue-500/10 text-blue-400/70'}`}>
