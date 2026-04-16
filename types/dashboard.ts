@@ -662,6 +662,15 @@ export interface VideoIdea {
   recordingDurationSeconds: number | null;
   transcriptText: string | null;
   transcriptWords: { word: string; start: number; end: number }[] | null;
+  renderProgress: {
+    totalChunks: number;
+    completedChunks: number;
+    currentStep: string;
+    estimatedCost: number;
+    actualCost: number;
+    steps: { name: string; status: string; detail?: string; startedAt?: string; completedAt?: string }[];
+    chunkDetails: { index: number; status: string; heygenVideoId?: string; videoUrl?: string; durationSeconds?: number; cost?: number }[];
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

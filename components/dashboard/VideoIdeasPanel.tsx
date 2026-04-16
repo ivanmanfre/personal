@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Film, Plus, Trash2, ChevronDown, ChevronRight, Monitor, Camera, Wrench, LayoutGrid, Linkedin, Instagram, Youtube, Sparkles, Play, Loader2, ExternalLink, AlertCircle, Save } from 'lucide-react';
+import { Film, Plus, Trash2, ChevronDown, ChevronRight, Monitor, Camera, Wrench, LayoutGrid, Linkedin, Instagram, Youtube, Sparkles, Play, Loader2, ExternalLink, AlertCircle, Save, DollarSign, Video, CheckCircle2, Circle as CircleIcon, RotateCcw } from 'lucide-react';
 import { useVideoIdeas } from '../../hooks/useVideoIdeas';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import VideoRecorder from './VideoRecorder';
@@ -24,6 +24,7 @@ const statusColors: Record<string, string> = {
 const renderStatusLabels: Record<string, string> = {
   generating_script: 'Generating script...',
   generating_audio: 'Generating voiceover...',
+  generating_avatar: 'Generating avatar clips...',
   rendering: 'Rendering video...',
   uploading: 'Uploading...',
   done: 'Complete',
@@ -102,6 +103,66 @@ function ScriptEditor({ idea, onSave }: { idea: VideoIdea; onSave: (script: stri
   );
 }
 
+function AvatarProgressDisplay({ idea }: { idea: VideoIdea }) {
+  const progress = idea.renderProgress;
+  if (!progress) return null;
+
+  const stepIcons: Record<string, React.ReactNode> = {
+    done: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
+    processing: <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />,
+    pending: <CircleIcon className="w-3.5 h-3.5 text-zinc-600" />,
+    error: <AlertCircle className="w-3.5 h-3.5 text-red-400" />,
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Steps timeline */}
+      <div className="space-y-1.5">
+        {progress.steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            {stepIcons[step.status] || stepIcons.pending}
+            <span className={step.status === 'processing' ? 'text-cyan-400 font-medium' : step.status === 'done' ? 'text-zinc-400' : 'text-zinc-600'}>
+              {step.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+            </span>
+            {step.detail && <span className="text-zinc-600">({step.detail})</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Cost tracking */}
+      <div className="flex items-center gap-3 text-[10px] text-zinc-500">
+        <span className="flex items-center gap-1">
+          <DollarSign className="w-3 h-3" />
+          Cost: ${progress.actualCost?.toFixed(2) || '0.00'} / ~${progress.estimatedCost?.toFixed(2) || '0.00'}
+        </span>
+        <span>Chunks: {progress.completedChunks}/{progress.totalChunks}</span>
+      </div>
+
+      {/* Chunk details (collapsed by default, expandable) */}
+      {progress.chunkDetails && progress.chunkDetails.length > 0 && (
+        <details className="text-[10px]">
+          <summary className="text-zinc-500 cursor-pointer hover:text-zinc-400">Chunk details</summary>
+          <div className="mt-1 space-y-0.5 pl-2">
+            {progress.chunkDetails.map((chunk, i) => (
+              <div key={i} className="flex items-center gap-2">
+                {stepIcons[chunk.status] || stepIcons.pending}
+                <span className="text-zinc-500">Chunk {chunk.index + 1}</span>
+                {chunk.durationSeconds && <span className="text-zinc-600">{Math.round(chunk.durationSeconds)}s</span>}
+                {chunk.cost && <span className="text-zinc-600">${chunk.cost.toFixed(2)}</span>}
+                {chunk.videoUrl && (
+                  <a href={chunk.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 const VideoIdeasPanel: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -109,7 +170,7 @@ const VideoIdeasPanel: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState('carousel_animation');
   const [newPlatform, setNewPlatform] = useState('linkedin');
-  const { ideas, statusCounts, loading, refresh, updateIdea, createIdea, deleteIdea, generateScript, generateVideo, uploadRecording } = useVideoIdeas();
+  const { ideas, statusCounts, loading, refresh, updateIdea, createIdea, deleteIdea, generateScript, generateVideo, uploadRecording, generateAvatarVideo, estimateAvatarCost } = useVideoIdeas();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['video_ideas'] });
 
   const filteredIdeas = useMemo(() => {
@@ -307,6 +368,37 @@ const VideoIdeasPanel: React.FC = () => {
 
                       {/* Script editor */}
                       <ScriptEditor idea={idea} onSave={(script) => updateIdea(idea.id, 'script', script)} />
+
+                      {/* Generate Avatar Video */}
+                      {idea.status === 'scripted' && idea.script && !isRendering && (
+                        <div className="space-y-2">
+                          {(() => {
+                            const est = estimateAvatarCost(idea.script || '');
+                            return (
+                              <div>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`This will cost approximately $${est.estimatedCost} in HeyGen credits (${est.chunks} chunk${est.chunks > 1 ? 's' : ''} × ~$4/min). Continue?`)) {
+                                      generateAvatarVideo(idea.id);
+                                    }
+                                  }}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-purple-600/20 text-purple-400 border border-purple-500/30 hover:bg-purple-600/30 transition-colors"
+                                >
+                                  <Video className="w-3 h-3" /> Avatar Video
+                                </button>
+                                <p className="text-[10px] text-zinc-600 mt-1">
+                                  ~{est.estimatedMinutes} min · {est.chunks} chunk{est.chunks > 1 ? 's' : ''} · ~${est.estimatedCost} HeyGen
+                                </p>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Avatar generation progress */}
+                      {idea.renderProgress && (
+                        <AvatarProgressDisplay idea={idea} />
+                      )}
 
                       {/* Recording */}
                       {(idea.status === 'idea' || idea.status === 'scripted') && !idea.recordingPath && (

@@ -29,6 +29,7 @@ function mapIdea(row: any): VideoIdea {
     recordingDurationSeconds: row.recording_duration_seconds,
     transcriptText: row.transcript_text,
     transcriptWords: row.transcript_words,
+    renderProgress: row.render_progress,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -171,6 +172,41 @@ export function useVideoIdeas() {
     }
   }, [fetch]);
 
+  const generateAvatarVideo = useCallback(async (id: string) => {
+    try {
+      setIdeas(prev => prev.map(i => i.id === id ? { ...i, renderStatus: 'generating_audio' } : i));
+      const resp = await window.fetch(`${N8N_BASE}/webhook/video-generate-avatar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoIdeaId: id }),
+      });
+      if (!resp.ok) throw new Error(`Webhook failed: ${resp.status}`);
+      toastSuccess('Avatar video generation started');
+      // Avatar generation takes minutes — poll with longer intervals
+      setTimeout(() => fetch(), 15000);
+      setTimeout(() => fetch(), 30000);
+      setTimeout(() => fetch(), 60000);
+      setTimeout(() => fetch(), 90000);
+      setTimeout(() => fetch(), 120000);
+      setTimeout(() => fetch(), 180000);
+      setTimeout(() => fetch(), 240000);
+      setTimeout(() => fetch(), 300000);
+    } catch (err) {
+      toastError('generate avatar video', err);
+      await fetch();
+    }
+  }, [fetch]);
+
+  const estimateAvatarCost = useCallback((script: string): { chunks: number; estimatedMinutes: number; estimatedCost: number } => {
+    const wordCount = script.split(/\s+/).length;
+    const estimatedSeconds = Math.round(wordCount / 3);
+    const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
+    // Each chunk is ~45-60s, so chunks ≈ minutes
+    const chunks = Math.max(1, estimatedMinutes);
+    const estimatedCost = chunks * 4; // ~$4 per minute of HeyGen
+    return { chunks, estimatedMinutes, estimatedCost };
+  }, []);
+
   return {
     ideas,
     statusCounts,
@@ -182,5 +218,7 @@ export function useVideoIdeas() {
     generateScript,
     generateVideo,
     uploadRecording,
+    generateAvatarVideo,
+    estimateAvatarCost,
   };
 }
