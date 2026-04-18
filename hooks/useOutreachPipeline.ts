@@ -118,6 +118,7 @@ function mapMessage(r: any): OutreachMessage {
     unipileMessageId: r.unipile_message_id,
     unipileChatId: r.unipile_chat_id,
     sentAt: r.sent_at,
+    approvedAt: r.approved_at || null,
     createdAt: r.created_at,
     isDraft: !r.sent_at,
     channel: r.channel || null,
@@ -125,6 +126,10 @@ function mapMessage(r: any): OutreachMessage {
     matchedContentTitle: r.matched_content_title || null,
     matchedContentUrl: r.matched_content_url || null,
     industryCluster: r.industry_cluster || null,
+    emailStep: r.email_step ?? null,
+    emailSequenceStoppedAt: r.email_sequence_stopped_at || null,
+    emailSequenceStoppedReason: r.email_sequence_stopped_reason || null,
+    recipientEmail: r.recipient_email || null,
   };
 }
 

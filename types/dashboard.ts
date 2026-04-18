@@ -438,6 +438,7 @@ export interface OutreachMessage {
   unipileMessageId: string | null;
   unipileChatId: string | null;
   sentAt: string | null;
+  approvedAt: string | null;
   createdAt: string;
   isDraft?: boolean;
   channel: string | null;
@@ -445,6 +446,11 @@ export interface OutreachMessage {
   matchedContentTitle: string | null;
   matchedContentUrl: string | null;
   industryCluster: string | null;
+  // Email follow-up sequence (Day 0 / 3 / 10)
+  emailStep: number | null;
+  emailSequenceStoppedAt: string | null;
+  emailSequenceStoppedReason: string | null; // 'reply' | 'bounce' | 'completed' | 'unsubscribed'
+  recipientEmail: string | null;
 }
 
 export interface OutreachEngagementLog {

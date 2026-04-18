@@ -200,7 +200,7 @@ const OutreachPanel: React.FC = () => {
           {([
             { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁' },
             { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️' },
-            { key: 'connection_request', label: 'Connections', defaultLimit: 15, icon: '🤝' },
+            { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝' },
             { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬' },
           ] as const).map(({ key, label, defaultLimit, icon }) => {
             const rl = rateLimits[key];
@@ -339,7 +339,11 @@ const OutreachPanel: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <button onClick={() => { const p = prospects.find(x => x.id === draft.prospectId); if (p) setSelectedProspect(p); }} className="text-xs font-medium text-zinc-200 hover:text-cyan-400 transition-colors underline decoration-zinc-700 hover:decoration-cyan-400 cursor-pointer">{draft.prospectName}</button>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{draft.messageType === 'connection_note' ? 'Connection Note' : draft.messageType === 'email' ? 'Cold Email' : `DM Step ${draft.sequenceStep}`}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{
+                      draft.messageType === 'connection_note' ? 'Connection Note'
+                      : draft.messageType === 'email' ? `Email ${draft.emailStep ?? 1}/3`
+                      : `DM Step ${draft.sequenceStep}`
+                    }</span>
                     {draft.channel && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded border ${draft.channel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                         {draft.channel === 'email' ? 'Email' : 'LinkedIn'}
@@ -566,7 +570,7 @@ const OutreachPanel: React.FC = () => {
                               }`}>{p.microPersona.replace('_', ' ')}</span>
                             )}
                             {p.triggerConfidence != null && p.triggerConfidence > 0 && (
-                              <span className={`w-1.5 h-1.5 rounded-full ${p.triggerConfidence >= 7 ? 'bg-emerald-400' : p.triggerConfidence >= 4 ? 'bg-amber-400' : 'bg-zinc-600'}`} title={`Trigger confidence: ${p.triggerConfidence}/10`} />
+                              <span className={`w-1.5 h-1.5 rounded-full ${p.triggerConfidence >= 4 ? 'bg-emerald-400' : p.triggerConfidence >= 3 ? 'bg-amber-400' : 'bg-zinc-600'}`} title={`Trigger confidence: ${p.triggerConfidence}/5`} />
                             )}
                           </div>
                         </div>
@@ -758,11 +762,13 @@ const OutreachPanel: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-zinc-800/60">
                     {[
-                      { id: '35HJE7eOpvEdxRwq', name: 'Import + Enrich', schedule: 'Webhook', flag: null, desc: 'Apollo search, UniPile enrich, AI scoring' },
-                      { id: 'kr2lSH1eRGZcDWmO', name: 'Warm-up', schedule: '4h', flag: 'outreach_auto_warmup', desc: 'Likes, reacts, profile views' },
-                      { id: '5ZXtArhobWrDDpfJ', name: 'Connect', schedule: '6h', flag: 'outreach_auto_connect', desc: 'AI connection requests' },
-                      { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '1 DM + 7-day archive' },
-                      { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection + alerts' },
+                      { id: '35HJE7eOpvEdxRwq', name: 'Import + Enrich', schedule: 'Webhook', flag: null, desc: 'Apollo search + enrich, ICP scoring (≥7)' },
+                      { id: 'kr2lSH1eRGZcDWmO', name: 'Warm-up', schedule: '2h', flag: 'outreach_auto_warmup', desc: 'Likes, reacts, profile views' },
+                      { id: 'wBBL75oqWcTf78yp', name: 'Trigger Research', schedule: '12h + on-graduate', flag: null, desc: 'Per-prospect research, generates draft' },
+                      { id: '5ZXtArhobWrDDpfJ', name: 'Connect', schedule: '4h', flag: 'outreach_auto_connect', desc: 'Connection notes (peer voice, no questions)' },
+                      { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '3-DM sequence (warm → owned opinion → soft offer)' },
+                      { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection (engaged + connected stages) + alerts' },
+                      { id: 'kFYlfnWd98YaiErH', name: 'Send Messages', schedule: '2m', flag: null, desc: 'Email sender + 3-email follow-up sequence' },
                     ].map((wf) => {
                       const isActive = workflowStatuses[wf.id] ?? false;
                       const flagOn = wf.flag ? (featureFlags[wf.flag] ?? false) : true;
@@ -834,7 +840,7 @@ const OutreachPanel: React.FC = () => {
                 {['profile_view', 'like', 'connection_request', 'dm'].map((action) => {
                   const rl = rateLimits[action];
                   const count = rl?.count || 0;
-                  const limit = rl?.daily_limit || (action === 'profile_view' ? 50 : action === 'like' ? 20 : action === 'connection_request' ? 15 : 30);
+                  const limit = rl?.daily_limit || (action === 'profile_view' ? 50 : action === 'like' ? 20 : action === 'connection_request' ? 20 : 30);
                   const pct = Math.min((count / limit) * 100, 100);
                   const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
 
@@ -905,20 +911,22 @@ const OutreachPanel: React.FC = () => {
                 <p className="text-xs text-zinc-300 font-medium">Timeline after enabling all workflows:</p>
                 <div className="space-y-2">
                   {[
-                    { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on your enriched prospects. You\'ll see prospects move to "warming" stage.' },
+                    { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on enriched prospects. You\'ll see prospects move to "warming" stage.' },
                     { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" — highest ICP scores first.' },
-                    { time: 'Days 5-14', desc: 'Connection requests go out to "engaged" prospects (1-2/day). You\'ll see "connection_sent" stages appear.' },
-                    { time: 'Days 7-21', desc: 'Accepted connections get 1 personalized DM. If no reply after 7 days, prospect is archived. Replies trigger WhatsApp + Slack alerts.' },
-                    { time: 'Ongoing', desc: 'Pipeline runs continuously. Import more prospects when enriched/warming pool drops below ~20.' },
+                    { time: 'On graduation', desc: 'WF6 fires immediately to research the prospect (LinkedIn posts, website, jobs). Generates trigger hook + draft.' },
+                    { time: 'Days 5-14', desc: 'Connection requests go out to researched "engaged" prospects (~18-20/day, 100/week cap). You\'ll see "connection_sent" stages appear.' },
+                    { time: 'Days 7-21', desc: 'Accepted connections get a 3-DM sequence: warm follow-up → owned-opinion value → soft offer. Replies trigger WhatsApp + Slack alerts.' },
+                    { time: 'Email path', desc: 'Email-channel prospects get 3-email sequence: Day 0 trigger-based opener → Day 3 new angle → Day 10 polite break-up.' },
+                    { time: 'Ongoing', desc: 'Pipeline runs continuously. Auto-imports more prospects when enriched/warming pool drops below 80.' },
                   ].map((t, i) => (
                     <div key={i} className="flex gap-3">
-                      <span className="text-[11px] text-emerald-400 font-medium shrink-0 w-[72px]">{t.time}</span>
+                      <span className="text-[11px] text-emerald-400 font-medium shrink-0 w-[100px]">{t.time}</span>
                       <span className="text-xs text-zinc-400">{t.desc}</span>
                     </div>
                   ))}
                 </div>
                 <div className="bg-zinc-800/40 rounded-lg p-2.5 mt-2">
-                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Typical throughput:</strong> ~1-2 connection requests/day, ~10-15 connections/month. At 30-40% accept rate, expect 3-6 new connections/month leading to DM conversations.</p>
+                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Typical throughput:</strong> ~18-20 connection requests/day, capped at 100/week (LinkedIn free-tier ceiling). At 15% target accept rate, expect ~15 new connections/week → ~3 active conversations/week.</p>
                 </div>
               </div>
             </PanelCard>
@@ -930,12 +938,14 @@ const OutreachPanel: React.FC = () => {
                 {[
                   { from: 'enriched', to: 'warming', trigger: 'WF2 first touch — profile view or post like', auto: true },
                   { from: 'warming', to: 'engaged', trigger: '3+ touches (views + likes) over 10+ days, with 2+ likes/reacts', auto: true },
-                  { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection request (highest ICP first)', auto: true },
-                  { from: 'connection_sent', to: 'connected', trigger: 'WF4 detects accepted connection via UniPile', auto: true },
-                  { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connection)', auto: true },
-                  { from: 'dm_sent', to: 'replied', trigger: 'WF5 detects inbound reply', auto: true },
+                  { from: 'engaged', to: 'engaged (researched)', trigger: 'WF6 fires on graduation — researches LinkedIn posts, website, jobs; generates trigger hook + draft', auto: true },
+                  { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection note (peer voice, no questions, ~18-20/day)', auto: true },
+                  { from: 'connection_sent', to: 'connected', trigger: 'WF5 detects accepted connection via UniPile', auto: true },
+                  { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connect, warm question)', auto: true },
+                  { from: 'dm_sent', to: 'dm_sent', trigger: 'DM Step 2 (3-5d, owned opinion) → DM Step 3 (3-5d, soft offer)', auto: true },
+                  { from: 'dm_sent', to: 'replied', trigger: 'WF5 detects inbound reply (now monitors engaged + connected stages)', auto: true },
                   { from: 'replied', to: 'converted', trigger: 'You mark it after the conversation converts', auto: false },
-                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after 7 days with no reply', auto: true },
+                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after Step 3 with no reply', auto: true },
                 ].map((s, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
@@ -956,8 +966,8 @@ const OutreachPanel: React.FC = () => {
               </div>
             </PanelCard>
 
-            {/* The 5 Workflows */}
-            <PanelCard title="The 5 Workflows" accent="emerald">
+            {/* The 7 Workflows */}
+            <PanelCard title="The 7 Workflows" accent="emerald">
               <div className="space-y-4">
                 {[
                   {
@@ -965,54 +975,79 @@ const OutreachPanel: React.FC = () => {
                     schedule: 'Manual — click Import on a campaign',
                     bullets: [
                       'Searches Apollo API using campaign filters (industry, titles, seniority)',
+                      'Calls Apollo /organizations/enrich for industry + employee_count (Apollo dropped these from search responses)',
                       'Deduplicates by LinkedIn URL — won\'t re-import existing prospects',
-                      'UniPile enrichment: gets LinkedIn provider_id (needed for DMs/connections), recent posts, activity data',
-                      'Claude Sonnet scores ICP fit (1-10) using prompt from ClickUp. Industries scored: construction, manufacturing, trades, professional services, real estate, healthcare ops',
+                      'UniPile enrichment: gets LinkedIn provider_id, recent posts, activity data',
+                      'Claude Sonnet scores ICP fit (1-10) — threshold ≥ 7. Below = auto-archived',
                       'Stores: name, title, company, seniority, employee count, revenue, industry, location, email',
                     ],
                   },
                   {
                     name: '2. Natural Warm-up (WF2)',
-                    schedule: 'Every 4h — 30% random skip',
+                    schedule: 'Every 2h — 30% random skip',
                     bullets: [
-                      'Picks 5-8 enriched/warming prospects with ICP ≥ 6',
+                      'Picks 5-8 enriched/warming prospects with ICP ≥ 7',
                       'Random action: 70% like/react, 15% profile view, 15% natural skip',
                       'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
                       'Sets next touch 2-5 days out — max 1 touch every few days per person',
-                      'Graduates to "engaged" after: 3+ total touches (views + likes count), 10+ days elapsed, 2+ likes',
+                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, 2+ likes',
+                      'On graduation: triggers WF6 immediately to research the prospect',
                       'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
                     ],
                   },
                   {
-                    name: '3. Connection Requests (WF3)',
-                    schedule: 'Every 6h — 40% random skip',
+                    name: '3. Trigger Research Engine (WF6)',
+                    schedule: 'Every 12h scan + on-graduation event trigger',
                     bullets: [
-                      'Picks 1-3 "engaged" prospects, sorted by highest ICP score',
-                      'No minimum ICP threshold — it simply takes the best available',
-                      'Claude writes a 300-char personalized connection note. 20% sent with no note (more natural)',
-                      'Rate limit: 15 connections/day (enforced server-side)',
+                      'Researches each engaged prospect: LinkedIn posts (UniPile), website (HTTP scrape), job postings, company intel (Claude)',
+                      'Synthesizes a trigger: type, micro_persona, messaging_pattern, hook, ask, confidence (1-5)',
+                      'Generates connection note draft using ClickUp prompt (peer voice, no questions, no "Hi")',
+                      'For email-channel prospects: generates Email 1 with lowercase subject + 3-paragraph body',
+                      'Routes channel: linkedin if active OR no email; email if no LinkedIn activity but has email',
+                    ],
+                  },
+                  {
+                    name: '4. Connection Requests (WF3)',
+                    schedule: 'Every 4h — 40% random skip',
+                    bullets: [
+                      'Picks 3 "engaged" prospects (with trigger data), sorted by highest trigger_confidence',
+                      'Voice: peer-to-peer, starts with first name (no "Hi"), NO questions, NO service mentions',
+                      'A/B variants: A (AI note 50%), B (no note 33%), C (short factual 17%), T (trigger-based)',
+                      'Daily cap: 20 connections. Weekly cap: 100 (LinkedIn free-tier ceiling)',
                       'Random delay 60-960 seconds before first request',
                     ],
                   },
                   {
-                    name: '4. DM Sequence (WF4)',
-                    schedule: 'Every 30 min',
+                    name: '5. DM Sequence (WF4)',
+                    schedule: 'Every 30 min — drafts only, manual approval to send',
                     bullets: [
-                      'Checks for accepted connections by polling UniPile',
-                      'Sends up to 3 DMs: initial intro (2h after accept), follow-up 1 (3 days), follow-up 2 (4 days)',
-                      'DMs written by Claude with full context (their industry, topics, headline) — value-first, no pitch',
-                      'If no reply after ~11 days (all 3 DMs sent) → auto-archived with reason "no_reply"',
-                      '3-step sequence: intro → soft follow-up → final touchpoint',
+                      'Checks for accepted connections via UniPile relations API',
+                      '3-DM sequence: Step 1 (warm question, 24h after accept) → Step 2 (owned opinion, 3-5d) → Step 3 (soft offer, 3-5d)',
+                      'DM Step 2 uses "I think" / "Honestly" / "Hot take" formula — owned opinions, never fake authority',
+                      'DMs written by Claude with full research context (micro_persona, trigger_hook, social_proof_story)',
+                      'If no reply after Step 3 → auto-archived',
                     ],
                   },
                   {
-                    name: '5. Conversation Monitor (WF5)',
+                    name: '6. Conversation Monitor (WF5)',
                     schedule: 'Every 15 min — always on (no feature flag)',
                     bullets: [
                       'Polls UniPile for new inbound messages from known prospects',
-                      'When reply detected: marks "needs_manual_reply", moves to "replied" stage',
+                      'Monitors stages: engaged, connected, dm_sent, replied (engaged was added so pre-connection replies are caught)',
+                      'When reply detected: marks "needs_manual_reply", moves to "replied" stage, increments reply_count',
                       'Sends WhatsApp + Slack notification so you can respond personally',
                       'From this point, YOU take over the conversation — no more automation',
+                    ],
+                  },
+                  {
+                    name: '7. Send Messages (WF7)',
+                    schedule: 'Every 2 min poll + every 6h email follow-up generator',
+                    bullets: [
+                      'Polls Supabase for approved (approved_at IS NOT NULL) messages',
+                      'For LinkedIn: sends connection request or DM via UniPile, marks sent_at',
+                      'For Email: sends via Gmail with null-recipient guard (failed → channel=email_failed)',
+                      'Email follow-up generator: Day 3 → Email 2 (new angle), Day 10 → Email 3 (polite break-up)',
+                      'Stops sequence on reply, bounce, or completion of Email 3',
                     ],
                   },
                 ].map((wf) => (
@@ -1098,21 +1133,23 @@ const OutreachPanel: React.FC = () => {
                   </ul>
                 </div>
                 <div className="space-y-2 mt-2">
-                  <p className="text-xs text-zinc-300 font-medium">Daily Rate Limits</p>
+                  <p className="text-xs text-zinc-300 font-medium">Rate Limits</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
                       { action: 'Profile Views', limit: '50/day' },
                       { action: 'Likes & Reacts', limit: '20/day' },
-                      { action: 'Connections', limit: '15/day' },
+                      { action: 'Connections', limit: '20/day' },
+                      { action: 'Connections', limit: '100/week', highlight: true },
                       { action: 'DMs', limit: '30/day' },
-                    ].map((r) => (
-                      <div key={r.action} className="bg-zinc-800/40 rounded px-2.5 py-1.5 text-center">
-                        <p className="text-xs text-zinc-300 font-medium">{r.limit}</p>
+                      { action: 'Emails', limit: '20/day' },
+                    ].map((r, i) => (
+                      <div key={`${r.action}-${i}`} className={`rounded px-2.5 py-1.5 text-center ${r.highlight ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-zinc-800/40'}`}>
+                        <p className={`text-xs font-medium ${r.highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{r.limit}</p>
                         <p className="text-[10px] text-zinc-500">{r.action}</p>
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). Counts are shared with your organic LinkedIn activity.</p>
+                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). The 100/week LinkedIn cap is the real ceiling on free accounts — exceeding triggers warnings then 1-week restrictions.</p>
                 </div>
               </div>
             </PanelCard>
