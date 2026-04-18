@@ -55,6 +55,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
   prospect, messages, engagements, onClose,
   onUpdateStage, onUpdateNotes, onUpdateIcpScore,
   onArchive, onToggleBlacklist, onToggleNeedsReply, onSendDm,
+  onApproveDraft, onRejectDraft,
   onFetchMessages, onFetchEngagements,
 }) => {
   const [notes, setNotes] = useState(prospect.notes || '');
@@ -379,10 +380,29 @@ export const ProspectDetailModal: React.FC<Props> = ({
                         </div>
                       )}
                       <p className="whitespace-pre-wrap">{m.messageText}</p>
-                      <span className="text-[10px] text-zinc-500 mt-1 block">
-                        {m.isDraft ? `Generated ${timeAgo(m.createdAt)}` : timeAgo(m.sentAt)}
-                        {m.sequenceStep != null && ` · Step ${m.sequenceStep}`}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {m.channel === 'email' ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
+                            ✉️ Email {m.emailStep ?? 1}/3
+                          </span>
+                        ) : m.messageType === 'connection_note' ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            🤝 Connection
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            💬 DM {m.sequenceStep ? `${m.sequenceStep}/3` : ''}
+                          </span>
+                        )}
+                        {m.emailSequenceStoppedAt && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-700/30 text-zinc-400 border border-zinc-600/30" title={m.emailSequenceStoppedReason || ''}>
+                            ⏹ sequence stopped{m.emailSequenceStoppedReason ? ` (${m.emailSequenceStoppedReason})` : ''}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-zinc-500">
+                          {m.isDraft ? `Generated ${timeAgo(m.createdAt)}` : timeAgo(m.sentAt)}
+                        </span>
+                      </div>
                       {m.isDraft && (
                         <div className="flex gap-2 mt-2">
                           <button

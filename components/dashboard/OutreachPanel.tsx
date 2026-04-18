@@ -237,7 +237,7 @@ const OutreachPanel: React.FC = () => {
           </div>
           <span className="text-[10px] text-zinc-600">Daily limits enforced by LinkedIn safety layer</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {([
             { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁' },
             { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️' },
@@ -264,6 +264,17 @@ const OutreachPanel: React.FC = () => {
               </div>
             );
           })}
+          {/* Emails — uncapped, just informational */}
+          <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-zinc-400">✉️ Emails Sent</span>
+              <span className="text-sm font-mono font-semibold text-zinc-300">{stats.emailsSentToday}</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-green-500 transition-all" style={{ width: stats.emailsSentToday > 0 ? '100%' : '2%' }} />
+            </div>
+            <p className="text-[9px] text-zinc-500 mt-1">First-touch + follow-ups, no daily cap</p>
+          </div>
         </div>
       </div>
 

@@ -30,7 +30,8 @@ const stageFilterMap: Record<string, string> = {
 };
 
 export const OutreachFunnel: React.FC<Props> = ({ stats, onStageClick }) => {
-  const values = stages.map((s) => (stats as any)[s.key] as number || 0);
+  const snapshot = stages.map((s) => (stats as any)[s.key] as number || 0);
+  const values = snapshot.map((_, i) => snapshot.slice(i).reduce((a, b) => a + b, 0));
   const max = Math.max(...values, 1);
 
   return (
@@ -38,7 +39,7 @@ export const OutreachFunnel: React.FC<Props> = ({ stats, onStageClick }) => {
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Funnel</span>
         <span className="text-[10px] text-zinc-600">
-          {stats.totalProspects} total → {stats.replied + stats.converted} replied
+          Cumulative — {values[0]} entered → {stats.replied + stats.converted} replied
         </span>
       </div>
       <div className="flex items-end gap-1 h-20">

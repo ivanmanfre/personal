@@ -482,6 +482,7 @@ export interface OutreachPipelineStats {
   connectionRate: number;
   engagementsToday: number;
   dmsToday: number;
+  emailsSentToday: number;
   needsAttention: number;
 }
 

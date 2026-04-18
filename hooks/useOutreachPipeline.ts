@@ -165,6 +165,7 @@ function mapStats(r: any): OutreachPipelineStats {
     connectionRate: r.connection_rate || 0,
     engagementsToday: r.engagements_today || 0,
     dmsToday: r.dms_today || 0,
+    emailsSentToday: 0,
     needsAttention: r.needs_attention || 0,
   };
 }
@@ -173,7 +174,7 @@ const emptyStats: OutreachPipelineStats = {
   totalProspects: 0, identified: 0, enriched: 0, warming: 0, engaged: 0,
   connectionSent: 0, connected: 0, dmSent: 0, replied: 0, converted: 0,
   archived: 0, activeCampaigns: 0, avgIcpScore: 0, replyRate: 0,
-  connectionRate: 0, engagementsToday: 0, dmsToday: 0, needsAttention: 0,
+  connectionRate: 0, engagementsToday: 0, dmsToday: 0, emailsSentToday: 0, needsAttention: 0,
 };
 
 export function useOutreachPipeline(timezone?: string) {
@@ -201,7 +202,12 @@ export function useOutreachPipeline(timezone?: string) {
     if (!hasLoaded.current) setLoading(true);
     try {
       const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5'];
-      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes] = await Promise.all([
+      const todayStartIso = (() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString();
+      })();
+      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes, emailsTodayRes] = await Promise.all([
         supabase
           .from('outreach_prospects')
           .select('*, outreach_campaigns(name, niche_tags)')
@@ -239,6 +245,11 @@ export function useOutreachPipeline(timezone?: string) {
           .from('dashboard_workflow_stats')
           .select('workflow_id, is_active')
           .in('workflow_id', outreachWfIds),
+        supabase
+          .from('outreach_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('channel', 'email')
+          .gte('sent_at', todayStartIso),
       ]);
 
       const now = Date.now();
@@ -262,7 +273,8 @@ export function useOutreachPipeline(timezone?: string) {
       setCampaigns((campaignsRes.data || []).map(mapCampaign));
 
       const rawStats = statsRes.data;
-      setStats(rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats);
+      const baseStats = rawStats ? mapStats(Array.isArray(rawStats) ? rawStats[0] : rawStats) : emptyStats;
+      setStats({ ...baseStats, emailsSentToday: emailsTodayRes.count || 0 });
 
       setRecentActivity((activityRes.data || []).map(mapEngagement));
 
