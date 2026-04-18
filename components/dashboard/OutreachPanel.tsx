@@ -747,6 +747,34 @@ const OutreachPanel: React.FC = () => {
               </button>
             </div>
 
+            {/* Auto-Send First Contact */}
+            <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 p-3 space-y-2">
+              <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Auto-Send First Contact</p>
+              {([
+                { key: 'outreach_auto_send_linkedin', label: 'LinkedIn connection notes', desc: 'Skip approval — send immediately when WF6 generates the draft' },
+                { key: 'outreach_auto_send_email', label: 'Cold emails (#1)', desc: 'Skip approval — send first email immediately when generated' },
+              ]).map((row) => {
+                const on = featureFlags[row.key] ?? false;
+                return (
+                  <div key={row.key} className="flex items-center justify-between rounded-lg px-3 py-2 bg-zinc-800/40">
+                    <div>
+                      <p className="text-xs text-zinc-200 font-medium">{row.label}</p>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">{row.desc}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleFeatureFlag(row.key)}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
+                      title={on ? 'Auto-send ON' : 'Manual approval required'}
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        on ? 'translate-x-[22px]' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Workflow Table */}
             <PanelCard title="Workflows" accent="emerald">
               <div className="overflow-x-auto -mx-3">
