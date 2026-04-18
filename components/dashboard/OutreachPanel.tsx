@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+
+const PROSPECTS_PER_PAGE = 30;
 import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle, Clock, Search, Send, Eye, BookOpen, ChevronDown, ChevronRight, Info } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
 import { supabase } from '../../lib/supabase';
@@ -84,6 +86,7 @@ const OutreachPanel: React.FC = () => {
   const [showActivity, setShowActivity] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   // Filtered + sorted prospects
   const filtered = useMemo(() => {
@@ -126,6 +129,16 @@ const OutreachPanel: React.FC = () => {
     });
     return list;
   }, [prospects, stageFilter, campaignFilter, search, sortKey, sortAsc]);
+
+  // Reset to page 1 when filters or sort change
+  useEffect(() => { setPage(1); }, [stageFilter, campaignFilter, channelFilter, search, sortKey, sortAsc]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PROSPECTS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => filtered.slice((safePage - 1) * PROSPECTS_PER_PAGE, safePage * PROSPECTS_PER_PAGE),
+    [filtered, safePage]
+  );
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
@@ -177,6 +190,34 @@ const OutreachPanel: React.FC = () => {
           Outreach automation paused. Manual actions still work.
         </div>
       )}
+
+      {/* Auto-Send First Contact — top-level visibility */}
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2 mr-2">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Auto-Send 1st Touch</span>
+        </div>
+        {([
+          { key: 'outreach_auto_send_linkedin', label: 'LinkedIn DMs' },
+          { key: 'outreach_auto_send_email', label: 'Cold Emails' },
+        ]).map((row) => {
+          const on = featureFlags[row.key] ?? false;
+          return (
+            <label key={row.key} className="flex items-center gap-2 cursor-pointer select-none">
+              <button
+                onClick={() => toggleFeatureFlag(row.key)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
+                title={on ? 'Auto-send ON — drafts skip approval' : 'Manual approval required'}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  on ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`} />
+              </button>
+              <span className={`text-xs font-medium ${on ? 'text-amber-400' : 'text-zinc-400'}`}>{row.label}</span>
+            </label>
+          );
+        })}
+        <span className="text-[10px] text-zinc-500 ml-auto">When ON, first-contact drafts ship without approval. Follow-ups still need approval.</span>
+      </div>
 
       {/* Section 2: Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -443,7 +484,7 @@ const OutreachPanel: React.FC = () => {
         <>
           {/* Mobile cards */}
           <div className="space-y-2 md:hidden">
-            {filtered.map((p) => (
+            {paged.map((p) => (
               <div
                 key={p.id}
                 onClick={() => setSelectedProspect(p)}
@@ -492,12 +533,13 @@ const OutreachPanel: React.FC = () => {
                   <th className="px-3 py-3 w-8">
                     <input
                       type="checkbox"
-                      checked={selectedIds.size === filtered.length && filtered.length > 0}
+                      checked={paged.length > 0 && paged.every((p) => selectedIds.has(p.id))}
                       onChange={(e) => {
-                        if (e.target.checked) setSelectedIds(new Set(filtered.map((p) => p.id)));
-                        else setSelectedIds(new Set());
+                        if (e.target.checked) setSelectedIds(new Set([...selectedIds, ...paged.map((p) => p.id)]));
+                        else { const next = new Set(selectedIds); paged.forEach((p) => next.delete(p.id)); setSelectedIds(next); }
                       }}
                       className="rounded border-zinc-600"
+                      title="Select all on this page"
                     />
                   </th>
                   <th className="px-3 py-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.12em] text-left">Prospect</th>
@@ -513,7 +555,7 @@ const OutreachPanel: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/40">
-                {filtered.map((p) => (
+                {paged.map((p) => (
                   <tr
                     key={p.id}
                     className={`hover:bg-zinc-800/30 transition-colors cursor-pointer ${p.needsManualReply ? 'bg-emerald-500/[0.03]' : ''}`}
@@ -690,6 +732,38 @@ const OutreachPanel: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between gap-3 px-1 pt-2 text-xs text-zinc-400">
+              <span>
+                Showing <span className="text-zinc-200 font-medium">{(safePage - 1) * PROSPECTS_PER_PAGE + 1}</span>–<span className="text-zinc-200 font-medium">{Math.min(safePage * PROSPECTS_PER_PAGE, filtered.length)}</span> of <span className="text-zinc-200 font-medium">{filtered.length}</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(1)}
+                  disabled={safePage === 1}
+                  className="px-2 py-1 rounded border border-zinc-700/60 hover:bg-zinc-800/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                >« First</button>
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="px-2 py-1 rounded border border-zinc-700/60 hover:bg-zinc-800/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                >‹ Prev</button>
+                <span className="px-3 py-1 text-zinc-300">Page {safePage} / {totalPages}</span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="px-2 py-1 rounded border border-zinc-700/60 hover:bg-zinc-800/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                >Next ›</button>
+                <button
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePage === totalPages}
+                  className="px-2 py-1 rounded border border-zinc-700/60 hover:bg-zinc-800/60 disabled:opacity-30 disabled:cursor-not-allowed"
+                >Last »</button>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -745,34 +819,6 @@ const OutreachPanel: React.FC = () => {
                   featureFlags['outreach_enabled'] ? 'translate-x-[22px]' : 'translate-x-0.5'
                 }`} />
               </button>
-            </div>
-
-            {/* Auto-Send First Contact */}
-            <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 p-3 space-y-2">
-              <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Auto-Send First Contact</p>
-              {([
-                { key: 'outreach_auto_send_linkedin', label: 'LinkedIn connection notes', desc: 'Skip approval — send immediately when WF6 generates the draft' },
-                { key: 'outreach_auto_send_email', label: 'Cold emails (#1)', desc: 'Skip approval — send first email immediately when generated' },
-              ]).map((row) => {
-                const on = featureFlags[row.key] ?? false;
-                return (
-                  <div key={row.key} className="flex items-center justify-between rounded-lg px-3 py-2 bg-zinc-800/40">
-                    <div>
-                      <p className="text-xs text-zinc-200 font-medium">{row.label}</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5">{row.desc}</p>
-                    </div>
-                    <button
-                      onClick={() => toggleFeatureFlag(row.key)}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
-                      title={on ? 'Auto-send ON' : 'Manual approval required'}
-                    >
-                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        on ? 'translate-x-[22px]' : 'translate-x-0.5'
-                      }`} />
-                    </button>
-                  </div>
-                );
-              })}
             </div>
 
             {/* Workflow Table */}
