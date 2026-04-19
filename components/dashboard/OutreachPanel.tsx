@@ -225,7 +225,21 @@ const OutreachPanel: React.FC = () => {
         <StatCard label="Campaigns" value={stats.activeCampaigns} icon={<Target className="w-5 h-5" />} color="text-purple-400" />
         <StatCard label="Warming" value={stats.warming + stats.engaged} icon={<Zap className="w-5 h-5" />} color="text-amber-400" />
         <StatCard label="Pending" value={stats.connectionSent} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" />
-        <StatCard label="Reply Rate" value={`${stats.replyRate}%`} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
+        {(() => {
+          // Reply rate at small N is meaningless (1/1 = 100%). Show the fraction as
+          // context and dim the card until there's enough signal to trust the number.
+          const denom = Math.max(stats.dmSent, stats.connected);
+          const lowSignal = denom < 10;
+          return (
+            <StatCard
+              label="Reply Rate"
+              value={lowSignal ? '—' : `${stats.replyRate}%`}
+              icon={<TrendingUp className="w-5 h-5" />}
+              color={lowSignal ? 'text-zinc-400' : 'text-emerald-400'}
+              subValue={denom > 0 ? `${stats.replied}/${denom}${lowSignal ? ' · low signal' : ''}` : 'no sends yet'}
+            />
+          );
+        })()}
       </div>
 
       {/* Section 2b: Daily Activity Limits */}
