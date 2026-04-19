@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star, CheckCircle2, Zap, FileText, TrendingUp, ClipboardCopy } from 'lucide-react';
+import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star, CheckCircle2, Zap, FileText, TrendingUp, ClipboardCopy, ExternalLink } from 'lucide-react';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { toastSuccess, toastError } from '../../lib/dashboardActions';
@@ -49,6 +49,21 @@ const CompetitorIntelPanel: React.FC = () => {
     }
   };
 
+  // Initials avatar (e.g. "Pascal Bornet" → "PB"). Single source of truth for the
+  // pseudo-avatar look so both competitor cards and opportunity rows match.
+  const initials = (name: string) =>
+    name.split(/\s+/).filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase() || '').join('') || '?';
+
+  // Stable hue per name so each competitor keeps the same color tint across re-renders.
+  const avatarHue = (name: string) => {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return h % 360;
+  };
+
+  // Find a profile URL for a competitor by name (any of their posts will do)
+  const profileUrlFor = (name: string) => posts.find((p) => p.competitorName === name && p.linkedinProfileUrl)?.linkedinProfileUrl || null;
+
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
   if (competitorStats.length === 0) {
@@ -70,19 +85,39 @@ const CompetitorIntelPanel: React.FC = () => {
 
       {/* Competitor profiles grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {competitorStats.map((c) => (
-          <button key={c.id} onClick={() => { setSelectedCompetitor(c.competitorName); setTab('posts'); }}
-            className={`bg-zinc-900/80 border rounded-xl p-4 text-left transition-all duration-150 hover:bg-zinc-800/40 ${selectedCompetitor === c.competitorName && tab === 'posts' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-zinc-800/80'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-zinc-200 truncate">{c.competitorName}</p>
-              <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{c.postCount} posts</span>
-            </div>
-            <div className="flex gap-4 text-xs text-zinc-500">
-              <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-pink-400/60" /> ~{c.avgLikes}</span>
-              <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-400/60" /> ~{c.avgComments}</span>
-            </div>
-          </button>
-        ))}
+        {competitorStats.map((c) => {
+          const hue = avatarHue(c.competitorName);
+          const profileUrl = profileUrlFor(c.competitorName);
+          return (
+            <button key={c.id} onClick={() => { setSelectedCompetitor(c.competitorName); setTab('posts'); }}
+              className={`bg-zinc-900/80 border rounded-xl p-4 text-left transition-all duration-150 hover:bg-zinc-800/40 ${selectedCompetitor === c.competitorName && tab === 'posts' ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-zinc-800/80'}`}>
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold border"
+                  style={{ background: `hsl(${hue} 35% 22%)`, borderColor: `hsl(${hue} 30% 35%)`, color: `hsl(${hue} 70% 75%)` }}
+                  aria-hidden
+                >
+                  {initials(c.competitorName)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-zinc-200 truncate">{c.competitorName}</p>
+                    {profileUrl && (
+                      <a href={profileUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="shrink-0 text-zinc-600 hover:text-blue-400 transition-colors" title="Open LinkedIn profile">
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-zinc-500">{c.postCount} posts</span>
+                </div>
+              </div>
+              <div className="flex gap-4 text-xs text-zinc-500">
+                <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-pink-400/60" /> ~{c.avgLikes}</span>
+                <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3 text-blue-400/60" /> ~{c.avgComments}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter tabs */}
@@ -117,6 +152,17 @@ const CompetitorIntelPanel: React.FC = () => {
                     <p className="text-sm text-amber-300/90 font-medium leading-snug">{p.theOpportunity}</p>
                     <p className="text-xs text-zinc-500 mt-1 truncate" title={p.postText.slice(0, 200)}>
                       {p.competitorName} · {p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}
+                      {p.linkedinPostUrl && (
+                        <a
+                          href={p.linkedinPostUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-1.5 inline-flex items-center gap-0.5 text-blue-400 hover:text-blue-300 transition-colors"
+                          title="Open original post on LinkedIn"
+                        >
+                          <ExternalLink className="w-3 h-3" /> source
+                        </a>
+                      )}
                     </p>
                     <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                       {p.suggestedAngle && (

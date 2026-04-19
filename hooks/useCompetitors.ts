@@ -21,6 +21,8 @@ function mapPost(row: any): CompetitorPost {
     suggestedAngle: row.suggested_angle,
     suggestedFormat: row.suggested_format,
     opportunityActioned: row.opportunity_actioned || false,
+    linkedinPostUrl: row.linkedin_post_url,
+    linkedinProfileUrl: row.linkedin_profile_url,
   };
 }
 
@@ -45,7 +47,7 @@ export function useCompetitors() {
     const [postsRes, patternsRes] = await Promise.all([
       supabase
         .from('competitor_posts')
-        .select('id, competitor_name, post_text, post_date, likes_count, comments_count, reposts_count, post_type, topic_category, hook_pattern, is_top_performer, has_opportunity, the_opportunity, suggested_angle, suggested_format, opportunity_actioned')
+        .select('id, competitor_name, post_text, post_date, likes_count, comments_count, reposts_count, post_type, topic_category, hook_pattern, is_top_performer, has_opportunity, the_opportunity, suggested_angle, suggested_format, opportunity_actioned, linkedin_post_url, linkedin_profile_url')
         .order('post_date', { ascending: false })
         .limit(200),
       supabase

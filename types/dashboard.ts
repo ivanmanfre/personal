@@ -47,6 +47,8 @@ export interface CompetitorPost {
   theOpportunity: string | null;
   suggestedAngle: string | null;
   suggestedFormat: string | null;
+  linkedinPostUrl: string | null;
+  linkedinProfileUrl: string | null;
   opportunityActioned: boolean;
 }
 
