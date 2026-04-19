@@ -393,14 +393,26 @@ export function useRecordings(statusFilter?: string) {
     [allRecordings],
   );
 
-  // Candidates for auto-title generation: no existing title, has an original to
-  // transcribe, and not currently in progress. 'failed' rows are re-enqueueable.
+  // Candidates for auto-title generation: the original path exists, no
+  // auto_title has been written yet, and the row isn't currently in progress.
+  // 'failed' status is eligible for retry. A title like "Recording 25/03/2026
+  // 19:30" still counts as needing a real title — it's a placeholder from the
+  // upload step, not a user-chosen title.
+  const PLACEHOLDER_TITLE = /^Recording\s+\d/i;
   const autoTitleCandidates = useMemo(
-    () => allRecordings.filter((r) =>
-      !r.title &&
-      r.originalPath &&
-      (r.autoTitleStatus === null || r.autoTitleStatus === 'pending' || r.autoTitleStatus === 'failed')
-    ),
+    () => allRecordings.filter((r) => {
+      if (!r.originalPath) return false;
+      // Already has a real auto_title (or user-typed title) → skip
+      if (r.autoTitle) return false;
+      const titleIsPlaceholder = !r.title || PLACEHOLDER_TITLE.test(r.title.trim());
+      if (!titleIsPlaceholder) return false;
+      // Allow fresh, pending, or previously-failed rows; skip ones in flight
+      return (
+        r.autoTitleStatus === null ||
+        r.autoTitleStatus === 'pending' ||
+        r.autoTitleStatus === 'failed'
+      );
+    }),
     [allRecordings],
   );
 
