@@ -133,22 +133,27 @@ const AutoResearchPanel: React.FC = () => {
         </div>
       </AnimateIn>
 
-      {/* KPI Row */}
+      {/* KPI Row — dimmed while the system is dormant so the historical numbers
+          don't visually compete with the "insufficient data" banner above. */}
       <AnimateIn delay={50}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Active Sessions" value={stats.running} icon={<FlaskConical className="w-5 h-5" />} color="text-emerald-400" subValue={`${stats.total} total`} />
-          <StatCard label="Total Runs" value={stats.totalRuns} icon={<RotateCcw className="w-5 h-5" />} color="text-blue-400" subValue={`${stats.totalKept} kept`} />
+        <div
+          className={`grid grid-cols-2 lg:grid-cols-4 gap-3 ${stats.running === 0 ? 'opacity-50' : ''}`}
+          title={stats.running === 0 ? 'Historical — sessions paused until enough engagement data is available' : undefined}
+        >
+          <StatCard label="Active Sessions" value={stats.running} icon={<FlaskConical className="w-5 h-5" />} color={stats.running > 0 ? 'text-emerald-400' : 'text-zinc-400'} subValue={`${stats.total} total`} />
+          <StatCard label="Total Runs" value={stats.totalRuns} icon={<RotateCcw className="w-5 h-5" />} color="text-zinc-400" subValue={`${stats.totalKept} kept`} />
           <StatCard
             label="Avg Improvement"
             value={stats.avgImprovementPct !== 0 ? `${stats.avgImprovementPct > 0 ? '+' : ''}${stats.avgImprovementPct.toFixed(1)}%` : '—'}
             icon={<TrendingUp className="w-5 h-5" />}
-            color="text-violet-400"
+            color="text-zinc-400"
+            subValue={stats.running === 0 ? 'historical' : undefined}
           />
           <StatCard
             label="Best Result"
             value={stats.bestSession ? `${(stats.bestSession.improvementPct || 0) > 0 ? '+' : ''}${(stats.bestSession.improvementPct || 0).toFixed(1)}%` : '—'}
             icon={<Zap className="w-5 h-5" />}
-            color="text-amber-400"
+            color="text-zinc-400"
             subValue={stats.bestSession?.name}
           />
         </div>
