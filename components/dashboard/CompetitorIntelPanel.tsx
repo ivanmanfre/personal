@@ -67,7 +67,13 @@ const CompetitorIntelPanel: React.FC = () => {
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
   if (competitorStats.length === 0) {
-    return <EmptyState title="No competitor data" description="Competitor scraping workflow will populate this panel." icon={<Swords className="w-10 h-10" />} />;
+    return (
+      <EmptyState
+        title="No competitor data"
+        description="Apify-driven scraping populates this panel. Check that the Competitors Scraping workflow is active and that competitor profile URLs are configured."
+        icon={<Swords className="w-10 h-10" />}
+      />
+    );
   }
 
   const displayPosts = tab === 'opportunities'

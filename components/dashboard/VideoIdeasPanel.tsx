@@ -297,7 +297,12 @@ const VideoIdeasPanel: React.FC = () => {
 
       {/* Ideas list */}
       {ideas.length === 0 ? (
-        <EmptyState title="No video ideas yet" description="Create your first video idea to start planning content." icon={<Film className="w-10 h-10" />} />
+        <EmptyState
+          title="No video ideas yet"
+          description="Capture an idea title and a video type — the system handles script + render from there."
+          icon={<Film className="w-10 h-10" />}
+          action={{ label: 'New idea', onClick: () => setShowCreate(true) }}
+        />
       ) : (
         <PanelCard title="Video Ideas" icon={<Film className="w-4 h-4" />} badge={filteredIdeas.length} accent="blue" scrollable>
           <div className="divide-y divide-zinc-800/40">

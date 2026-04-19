@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Users, ExternalLink } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -31,6 +32,7 @@ const LeadsPanel: React.FC = () => {
   const [search, setSearch] = useState('');
   const { leads, statusCounts, icpDistribution, loading, refresh, updateStatus } = useLeads(filter);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['leads'] });
+  const { navigateToTab } = useDashboard();
 
   const filteredLeads = useMemo(() => {
     if (!search.trim()) return leads;
@@ -52,7 +54,12 @@ const LeadsPanel: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
-        <EmptyState title="No leads yet" description="Lead pipeline workflow will populate this panel as prospects engage with your content." icon={<Users className="w-10 h-10" />} />
+        <EmptyState
+          title="No leads yet"
+          description="Leads land here once prospects engage with your content (likes, comments, DMs). Until then, the action is in Outreach — warming prospects so engagement starts flowing."
+          icon={<Users className="w-10 h-10" />}
+          action={{ label: 'Open Outreach', onClick: () => navigateToTab('outreach') }}
+        />
       </div>
     );
   }
