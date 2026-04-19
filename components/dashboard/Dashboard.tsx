@@ -14,18 +14,53 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import ErrorBoundary from './shared/ErrorBoundary';
 import type { Tab } from '../../types/dashboard';
 
-const LazyPerformancePanel = lazy(() => import('./PerformancePanel'));
-const LazyHealthPanel = lazy(() => import('./HealthPanel'));
-const LazyCompetitorIntelPanel = lazy(() => import('./CompetitorIntelPanel'));
-const LazyAgentPanel = lazy(() => import('./AgentPanel'));
-const LazyClientsPanel = lazy(() => import('./ClientsPanel'));
-const LazyUpworkPanel = lazy(() => import('./UpworkPanel'));
-const LazyOutreachPanel = lazy(() => import('./OutreachPanel'));
-const LazyRecordingsPanel = lazy(() => import('./RecordingsPanel'));
-const LazyAutoResearchPanel = lazy(() => import('./AutoResearchPanel'));
-const LazyMeetingsPanel = lazy(() => import('./MeetingsPanel'));
-const LazyCodePanel = lazy(() => import('./CodePanel'));
-const LazyVideoIdeasPanel = lazy(() => import('./VideoIdeasPanel'));
+// After a deploy, browsers with stale index.html still reference old chunk
+// hashes (e.g. VideoIdeasPanel-BSiLjuGl.js). The next `import()` throws
+// "Failed to fetch dynamically imported module". First failure: force a hard
+// reload so the browser picks up the new index.html (and bust query string to
+// defeat the Pages CDN cache). The sessionStorage flag prevents infinite
+// reload loops if the error is real (genuine network outage).
+function retryImport<T>(factory: () => Promise<T>): () => Promise<T> {
+  return async () => {
+    try {
+      return await factory();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const looksLikeStaleChunk =
+        /dynamically imported module|Importing a module script failed|Failed to fetch|ChunkLoadError/i.test(msg);
+      const alreadyReloaded = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('__chunk_reload') === '1';
+      if (looksLikeStaleChunk && !alreadyReloaded && typeof window !== 'undefined') {
+        sessionStorage.setItem('__chunk_reload', '1');
+        const url = new URL(window.location.href);
+        url.searchParams.set('_', Date.now().toString());
+        window.location.replace(url.toString());
+        // Return a never-resolving promise so React doesn't render the error UI
+        // in the moment between setting location and the browser navigating.
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    }
+  };
+}
+
+// Clear the reload-guard on successful mount so the next stale-chunk error
+// after a future deploy can reload again.
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => sessionStorage.removeItem('__chunk_reload'));
+}
+
+const LazyPerformancePanel = lazy(retryImport(() => import('./PerformancePanel')));
+const LazyHealthPanel = lazy(retryImport(() => import('./HealthPanel')));
+const LazyCompetitorIntelPanel = lazy(retryImport(() => import('./CompetitorIntelPanel')));
+const LazyAgentPanel = lazy(retryImport(() => import('./AgentPanel')));
+const LazyClientsPanel = lazy(retryImport(() => import('./ClientsPanel')));
+const LazyUpworkPanel = lazy(retryImport(() => import('./UpworkPanel')));
+const LazyOutreachPanel = lazy(retryImport(() => import('./OutreachPanel')));
+const LazyRecordingsPanel = lazy(retryImport(() => import('./RecordingsPanel')));
+const LazyAutoResearchPanel = lazy(retryImport(() => import('./AutoResearchPanel')));
+const LazyMeetingsPanel = lazy(retryImport(() => import('./MeetingsPanel')));
+const LazyCodePanel = lazy(retryImport(() => import('./CodePanel')));
+const LazyVideoIdeasPanel = lazy(retryImport(() => import('./VideoIdeasPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -60,17 +95,18 @@ function getInitialTab(): Tab {
 
 // Prefetch lazy-loaded panel chunks after initial render
 const lazyImports = [
-  () => import('./PerformancePanel'),
-  () => import('./HealthPanel'),
-  () => import('./CompetitorIntelPanel'),
-  () => import('./AgentPanel'),
-  () => import('./ClientsPanel'),
-  () => import('./UpworkPanel'),
-  () => import('./OutreachPanel'),
-  () => import('./RecordingsPanel'),
-  () => import('./AutoResearchPanel'),
-  () => import('./MeetingsPanel'),
-  () => import('./CodePanel'),
+  retryImport(() => import('./PerformancePanel')),
+  retryImport(() => import('./HealthPanel')),
+  retryImport(() => import('./CompetitorIntelPanel')),
+  retryImport(() => import('./AgentPanel')),
+  retryImport(() => import('./ClientsPanel')),
+  retryImport(() => import('./UpworkPanel')),
+  retryImport(() => import('./OutreachPanel')),
+  retryImport(() => import('./RecordingsPanel')),
+  retryImport(() => import('./AutoResearchPanel')),
+  retryImport(() => import('./MeetingsPanel')),
+  retryImport(() => import('./CodePanel')),
+  retryImport(() => import('./VideoIdeasPanel')),
 ];
 
 function usePrefetchPanels() {
