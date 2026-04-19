@@ -16,7 +16,7 @@ import { timeAgo, formatNum } from './shared/utils';
 import type { WorkflowStat } from '../../types/dashboard';
 
 const OverviewPanel: React.FC = () => {
-  const { posts, stats: postStats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(30);
+  const { posts, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(60);
   const { workflows, stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
   const { setSystemHealth, setLastRefreshed, navigateToTab, userTimezone } = useDashboard();
   const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData(userTimezone);
@@ -48,29 +48,49 @@ const OverviewPanel: React.FC = () => {
     });
   }, [workflows]);
 
-  // Week-over-week trends
-  const trends = useMemo(() => {
-    const now = new Date();
-    const thisWeekStart = new Date(now); thisWeekStart.setDate(now.getDate() - 7);
-    const lastWeekStart = new Date(now); lastWeekStart.setDate(now.getDate() - 14);
+  // 30d window stats + 30d vs prior 30d trends — keeps card values and deltas on the same window
+  const { stats30d, trends } = useMemo(() => {
+    const now = Date.now();
+    const day = 86400000;
+    const currStart = now - 30 * day;
+    const prevStart = now - 60 * day;
 
-    const thisWeek = posts.filter((p) => new Date(p.postedAt) >= thisWeekStart);
-    const lastWeek = posts.filter((p) => { const d = new Date(p.postedAt); return d >= lastWeekStart && d < thisWeekStart; });
+    const curr = posts.filter((p) => new Date(p.postedAt).getTime() >= currStart);
+    const prev = posts.filter((p) => {
+      const t = new Date(p.postedAt).getTime();
+      return t >= prevStart && t < currStart;
+    });
 
-    const pct = (curr: number, prev: number) => prev === 0 ? (curr > 0 ? 100 : 0) : Math.round(((curr - prev) / prev) * 100);
+    const sum = (rows: typeof posts, key: 'impressions' | 'likes' | 'comments') =>
+      rows.reduce((s, r) => s + (r[key] || 0), 0);
 
-    const twImpressions = thisWeek.reduce((s, p) => s + (p.impressions || 0), 0);
-    const lwImpressions = lastWeek.reduce((s, p) => s + (p.impressions || 0), 0);
-    const twLikes = thisWeek.reduce((s, p) => s + (p.likes || 0), 0);
-    const lwLikes = lastWeek.reduce((s, p) => s + (p.likes || 0), 0);
-    const twComments = thisWeek.reduce((s, p) => s + (p.comments || 0), 0);
-    const lwComments = lastWeek.reduce((s, p) => s + (p.comments || 0), 0);
+    const totalImpressions = sum(curr, 'impressions');
+    const totalLikes = sum(curr, 'likes');
+    const totalComments = sum(curr, 'comments');
+    const totalShares = curr.reduce((s, r) => s + (r.shares || 0), 0);
+    const stats30d = {
+      count: curr.length,
+      totalImpressions,
+      totalLikes,
+      totalComments,
+      avgImpressions: curr.length ? Math.round(totalImpressions / curr.length) : 0,
+      engagementRate: totalImpressions > 0
+        ? ((totalLikes + totalComments + totalShares) / totalImpressions * 100).toFixed(2)
+        : '0',
+    };
+
+    // Returns undefined when no prior data — suppresses the trend chip rather than showing a misleading 100%
+    const pct = (c: number, p: number): { value: number; label: string } | undefined =>
+      p === 0 ? undefined : { value: Math.round(((c - p) / p) * 100), label: 'vs prior 30d' };
 
     return {
-      posts: { value: pct(thisWeek.length, lastWeek.length), label: 'vs last week' },
-      impressions: { value: pct(twImpressions, lwImpressions), label: 'vs last week' },
-      likes: { value: pct(twLikes, lwLikes), label: 'vs last week' },
-      comments: { value: pct(twComments, lwComments), label: 'vs last week' },
+      stats30d,
+      trends: {
+        posts: pct(curr.length, prev.length),
+        impressions: pct(totalImpressions, sum(prev, 'impressions')),
+        likes: pct(totalLikes, sum(prev, 'likes')),
+        comments: pct(totalComments, sum(prev, 'comments')),
+      },
     };
   }, [posts]);
 
@@ -95,17 +115,17 @@ const OverviewPanel: React.FC = () => {
       {/* Top stat cards */}
       <AnimateIn delay={0}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Posts (30d)" value={postStats.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" trend={trends.posts} />
-          <StatCard label="Impressions" value={formatNum(postStats.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" trend={trends.impressions} />
-          <StatCard label="Likes" value={formatNum(postStats.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" trend={trends.likes} />
-          <StatCard label="Comments" value={formatNum(postStats.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" trend={trends.comments} />
+          <StatCard label="Posts (30d)" value={stats30d.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" trend={trends.posts} />
+          <StatCard label="Impressions (30d)" value={formatNum(stats30d.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" trend={trends.impressions} />
+          <StatCard label="Likes (30d)" value={formatNum(stats30d.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" trend={trends.likes} />
+          <StatCard label="Comments (30d)" value={formatNum(stats30d.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" trend={trends.comments} />
         </div>
       </AnimateIn>
 
       {/* Second row */}
       <AnimateIn delay={80}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Engagement" value={`${postStats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" subValue={`${formatNum(postStats.avgImpressions)} avg imp`} />
+          <StatCard label="Engagement (30d)" value={`${stats30d.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" subValue={`${formatNum(stats30d.avgImpressions)} avg imp`} />
           <StatCard label="Workflows" value={`${wfStats.active}/${wfStats.total}`} icon={<Activity className="w-5 h-5" />} color={wfStats.totalErrors24h > 3 ? 'text-red-400' : 'text-emerald-400'} subValue={`${wfStats.totalErrors24h} errors 24h`} />
           <StatCard label="Alerts" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={alerts.filter((a) => !a.sent).length + ' unsent'} />
           <StatCard label="Agent Msgs" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" subValue={`${messageStats.today} today`} />
