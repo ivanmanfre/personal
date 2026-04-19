@@ -321,9 +321,68 @@ export function useRecordings(statusFilter?: string) {
     }
   }, []);
 
+  /**
+   * One-click backfill: for each recording missing a thumbnail, download the
+   * original from storage, capture a poster frame, upload as the thumbnail.
+   * Concurrency limited to 2 to avoid hammering Supabase egress for big videos.
+   */
+  const backfillThumbnails = useCallback(async (
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<{ processed: number; failed: number }> => {
+    const targets = allRecordings.filter((r) => !r.thumbnailPath && r.originalPath);
+    if (targets.length === 0) return { processed: 0, failed: 0 };
+
+    let done = 0;
+    let processed = 0;
+    let failed = 0;
+    const concurrency = 2;
+    const queue = [...targets];
+
+    const work = async () => {
+      while (queue.length) {
+        const rec = queue.shift();
+        if (!rec) break;
+        try {
+          const { data: signed } = await supabase.storage
+            .from('recordings')
+            .createSignedUrl(rec.originalPath!, 600);
+          if (!signed?.signedUrl) throw new Error('signed URL failed');
+          const res = await window.fetch(signed.signedUrl);
+          const blob = await res.blob();
+          // Wrap as File so capturePosterFrame's mime check passes
+          const fileBlob = new File([blob], 'src.mp4', { type: blob.type || 'video/mp4' });
+          const poster = await capturePosterFrame(fileBlob);
+          if (!poster) throw new Error('frame capture returned null');
+          const tPath = `thumbnails/${rec.id}/poster.jpg`;
+          const { error: upErr } = await supabase.storage
+            .from('recordings')
+            .upload(tPath, poster, { cacheControl: '3600', upsert: true, contentType: 'image/jpeg' });
+          if (upErr) throw upErr;
+          const { error: dbErr } = await supabase.from('recordings').update({ thumbnail_path: tPath }).eq('id', rec.id);
+          if (dbErr) throw dbErr;
+          processed += 1;
+        } catch {
+          failed += 1;
+        } finally {
+          done += 1;
+          onProgress?.(done, targets.length);
+        }
+      }
+    };
+
+    await Promise.all(Array.from({ length: concurrency }, work));
+    await fetch();
+    return { processed, failed };
+  }, [allRecordings, fetch]);
+
+  const missingThumbnails = useMemo(
+    () => allRecordings.filter((r) => !r.thumbnailPath && r.originalPath).length,
+    [allRecordings],
+  );
+
   return {
     recordings, stats, loading, mutating, refresh: fetch,
     updateTitle, updateDescription, togglePublic, createShare, deleteRecording, uploadRecording,
-    extendExpiry, archiveRecording,
+    extendExpiry, archiveRecording, backfillThumbnails, missingThumbnails,
   };
 }

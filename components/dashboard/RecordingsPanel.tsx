@@ -43,7 +43,19 @@ const RecordingsPanel: React.FC = () => {
   const {
     recordings, stats, loading, mutating, refresh,
     updateTitle, createShare, deleteRecording, uploadRecording, extendExpiry, archiveRecording,
+    backfillThumbnails, missingThumbnails,
   } = useRecordings();
+  const [backfilling, setBackfilling] = useState<{ done: number; total: number } | null>(null);
+
+  const handleBackfill = useCallback(async () => {
+    if (!window.confirm(`Backfill posters for ${missingThumbnails} recording${missingThumbnails > 1 ? 's' : ''}? Each video downloads in full to capture a frame.`)) return;
+    setBackfilling({ done: 0, total: missingThumbnails });
+    const result = await backfillThumbnails((done, total) => setBackfilling({ done, total }));
+    setBackfilling(null);
+    if (result.failed > 0) {
+      window.alert(`Done. ${result.processed} succeeded, ${result.failed} failed (likely missing originals).`);
+    }
+  }, [backfillThumbnails, missingThumbnails]);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['recordings'] });
   const { userTimezone } = useDashboard();
 
@@ -268,11 +280,11 @@ const RecordingsPanel: React.FC = () => {
       {/* Stat Cards */}
       <AnimateIn>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <StatCard label="Total" value={stats.total} icon={<Video className="w-4 h-4" />} color="text-blue-400" />
-          <StatCard label="Processing" value={stats.processing} icon={<Loader2 className="w-4 h-4" />} color="text-amber-400" />
+          <StatCard label="Total" value={stats.total} icon={<Video className="w-4 h-4" />} color="text-zinc-300" />
+          <StatCard label="Processing" value={stats.processing} icon={<Loader2 className="w-4 h-4" />} color={stats.processing > 0 ? 'text-amber-400' : 'text-zinc-300'} />
           <StatCard label="Shared" value={stats.shared} icon={<Share2 className="w-4 h-4" />} color="text-emerald-400" />
-          <StatCard label="Total Views" value={stats.totalViews} icon={<Eye className="w-4 h-4" />} color="text-violet-400" />
-          <StatCard label="Storage" value={formatBytes(stats.totalSizeBytes)} icon={<HardDrive className="w-4 h-4" />} color="text-cyan-400" />
+          <StatCard label="Total Views" value={stats.totalViews} icon={<Eye className="w-4 h-4" />} color="text-zinc-300" />
+          <StatCard label="Storage" value={formatBytes(stats.totalSizeBytes)} icon={<HardDrive className="w-4 h-4" />} color="text-zinc-300" />
         </div>
       </AnimateIn>
 
@@ -288,6 +300,25 @@ const RecordingsPanel: React.FC = () => {
           { label: 'Shared', value: 'shared', active: statusFilter === 'shared', onClick: () => setStatusFilter('shared') },
         ]}
       />
+
+      {/* Backfill banner — only when there are recordings missing posters */}
+      {missingThumbnails > 0 && (
+        <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <span className="text-xs text-zinc-400">
+            {backfilling
+              ? `Capturing posters: ${backfilling.done}/${backfilling.total}…`
+              : `${missingThumbnails} recording${missingThumbnails > 1 ? 's' : ''} without poster frames.`}
+          </span>
+          {!backfilling && (
+            <button
+              onClick={handleBackfill}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+            >
+              Backfill posters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Drop Zone + Grid */}
       {filtered.length === 0 && !uploading ? (
