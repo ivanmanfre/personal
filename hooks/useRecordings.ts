@@ -3,6 +3,68 @@ import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { Recording, RecordingStats } from '../types/dashboard';
 
+/**
+ * Capture a poster frame from a video file using a hidden video + canvas.
+ * Seeks to ~25% of duration to skip dark intros. Returns null on any failure
+ * — caller should fall back to the gradient placeholder. Times out after 8s
+ * so a malformed video can't hang the upload flow.
+ */
+function capturePosterFrame(file: File, maxSize = 720): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    if (typeof document === 'undefined' || !file.type.startsWith('video/')) {
+      resolve(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+
+    let settled = false;
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute('src');
+      video.load();
+    };
+    const finish = (blob: Blob | null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(blob);
+    };
+    const timeout = setTimeout(() => finish(null), 8000);
+
+    video.onloadedmetadata = () => {
+      const seekTo = Math.min(Math.max(video.duration * 0.25, 1), 30);
+      video.currentTime = isFinite(seekTo) ? seekTo : 1;
+    };
+
+    video.onseeked = () => {
+      try {
+        const ratio = video.videoHeight / video.videoWidth;
+        const w = Math.min(maxSize, video.videoWidth);
+        const h = Math.round(w * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { clearTimeout(timeout); finish(null); return; }
+        ctx.drawImage(video, 0, 0, w, h);
+        canvas.toBlob((b) => { clearTimeout(timeout); finish(b); }, 'image/jpeg', 0.78);
+      } catch {
+        clearTimeout(timeout);
+        finish(null);
+      }
+    };
+
+    video.onerror = () => { clearTimeout(timeout); finish(null); };
+    video.src = url;
+  });
+}
+
 function mapRecording(row: any): Recording {
   return {
     id: row.id,
@@ -183,11 +245,29 @@ export function useRecordings(statusFilter?: string) {
         .upload(storagePath, file, { cacheControl: '3600', upsert: false, contentType: file.type.split(';')[0] });
       if (uploadError) throw uploadError;
 
+      // Best-effort client-side poster frame capture before inserting metadata
+      // so the recording grid never shows blank cards. Failures are silent —
+      // the gradient placeholder still renders.
+      let thumbnailPath: string | null = null;
+      try {
+        const blob = await capturePosterFrame(file);
+        if (blob) {
+          const tPath = `thumbnails/${id}/poster.jpg`;
+          const { error: thumbErr } = await supabase.storage
+            .from('recordings')
+            .upload(tPath, blob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+          if (!thumbErr) thumbnailPath = tPath;
+        }
+      } catch {
+        /* poster capture is best-effort */
+      }
+
       // Insert metadata
       const { data, error } = await supabase.from('recordings').insert({
         id,
         title,
         original_path: storagePath,
+        thumbnail_path: thumbnailPath,
         status: 'uploaded',
         file_size_bytes: file.size,
         expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
