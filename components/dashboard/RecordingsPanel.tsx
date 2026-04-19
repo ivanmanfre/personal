@@ -44,8 +44,10 @@ const RecordingsPanel: React.FC = () => {
     recordings, stats, loading, mutating, refresh,
     updateTitle, createShare, deleteRecording, uploadRecording, extendExpiry, archiveRecording,
     backfillThumbnails, missingThumbnails,
+    backfillAutoTitles, autoTitleCandidates,
   } = useRecordings();
   const [backfilling, setBackfilling] = useState<{ done: number; total: number } | null>(null);
+  const [autoTitling, setAutoTitling] = useState<{ done: number; total: number } | null>(null);
 
   const handleBackfill = useCallback(async () => {
     if (!window.confirm(`Backfill posters for ${missingThumbnails} recording${missingThumbnails > 1 ? 's' : ''}? Each video downloads in full to capture a frame.`)) return;
@@ -56,6 +58,17 @@ const RecordingsPanel: React.FC = () => {
       window.alert(`Done. ${result.processed} succeeded, ${result.failed} failed (likely missing originals).`);
     }
   }, [backfillThumbnails, missingThumbnails]);
+
+  const handleAutoTitle = useCallback(async () => {
+    const n = autoTitleCandidates.length;
+    if (!window.confirm(`Auto-title ${n} recording${n > 1 ? 's' : ''}? Each runs through Whisper + Claude (~$0.01 per minute of audio).`)) return;
+    setAutoTitling({ done: 0, total: n });
+    const result = await backfillAutoTitles((done, total) => setAutoTitling({ done, total }));
+    setAutoTitling(null);
+    if (result.failed > 0) {
+      window.alert(`Done. ${result.processed} succeeded, ${result.failed} failed (check console for edge function logs).`);
+    }
+  }, [backfillAutoTitles, autoTitleCandidates.length]);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['recordings'] });
   const { userTimezone } = useDashboard();
 
@@ -301,7 +314,7 @@ const RecordingsPanel: React.FC = () => {
         ]}
       />
 
-      {/* Backfill banner — only when there are recordings missing posters */}
+      {/* Backfill banners — only show when there's something to do */}
       {missingThumbnails > 0 && (
         <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-2.5 flex items-center justify-between">
           <span className="text-xs text-zinc-400">
@@ -315,6 +328,23 @@ const RecordingsPanel: React.FC = () => {
               className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
               Backfill posters
+            </button>
+          )}
+        </div>
+      )}
+      {autoTitleCandidates.length > 0 && (
+        <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <span className="text-xs text-zinc-400">
+            {autoTitling
+              ? `Auto-titling: ${autoTitling.done}/${autoTitling.total}…`
+              : `${autoTitleCandidates.length} recording${autoTitleCandidates.length > 1 ? 's' : ''} without a title. Transcribes with Whisper + Claude.`}
+          </span>
+          {!autoTitling && (
+            <button
+              onClick={handleAutoTitle}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+            >
+              Auto-title all
             </button>
           )}
         </div>
@@ -430,7 +460,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
             let h = 0;
             for (let i = 0; i < rec.id.length; i++) h = (h * 31 + rec.id.charCodeAt(i)) >>> 0;
             const hue = h % 360;
-            const label = (rec.title?.trim() || `Recording ${new Date(rec.createdAt).toLocaleDateString()}`).slice(0, 36);
+            const label = (rec.title?.trim() || rec.autoTitle?.trim() || `Recording ${new Date(rec.createdAt).toLocaleDateString()}`).slice(0, 36);
             return (
               <div
                 className="w-full h-full flex flex-col items-center justify-center p-3 text-center"
@@ -480,11 +510,17 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
           />
         ) : (
           <h3
-            className="text-sm font-medium text-zinc-200 truncate cursor-text hover:text-white"
+            className="text-sm font-medium text-zinc-200 truncate cursor-text hover:text-white flex items-center gap-1.5"
             onDoubleClick={(e) => { e.stopPropagation(); onStartEditTitle(); }}
-            title="Double-click to edit"
+            title={rec.title ? 'Double-click to edit' : rec.autoTitleStatus === 'transcribing' ? 'Transcribing…' : rec.autoTitleStatus === 'titling' ? 'Generating title…' : 'Double-click to edit (auto-title shown)'}
           >
-            {rec.title}
+            <span className="truncate">{rec.title || rec.autoTitle || 'Untitled recording'}</span>
+            {!rec.title && rec.autoTitle && (
+              <span className="shrink-0 text-[9px] font-mono uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20" title="Auto-generated — double-click to override">auto</span>
+            )}
+            {!rec.title && !rec.autoTitle && (rec.autoTitleStatus === 'transcribing' || rec.autoTitleStatus === 'titling') && (
+              <Loader2 className="w-3 h-3 text-zinc-500 animate-spin shrink-0" />
+            )}
           </h3>
         )}
 

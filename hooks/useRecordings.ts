@@ -89,6 +89,9 @@ function mapRecording(row: any): Recording {
     keepTranscript: row.keep_transcript,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    transcriptText: row.transcript_text ?? null,
+    autoTitle: row.auto_title ?? null,
+    autoTitleStatus: row.auto_title_status ?? null,
   };
 }
 
@@ -262,7 +265,10 @@ export function useRecordings(statusFilter?: string) {
         /* poster capture is best-effort */
       }
 
-      // Insert metadata
+      // Insert metadata — set auto_title_status='pending' if no title was provided
+      // so the backfill picker picks it up, or the fire-and-forget trigger below
+      // kicks off immediately.
+      const autoTitleStatus = title?.trim() ? null : 'pending';
       const { data, error } = await supabase.from('recordings').insert({
         id,
         title,
@@ -271,8 +277,15 @@ export function useRecordings(statusFilter?: string) {
         status: 'uploaded',
         file_size_bytes: file.size,
         expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        auto_title_status: autoTitleStatus,
       }).select().single();
       if (error) throw error;
+
+      // Fire-and-forget: invoke the auto-title edge function when the upload
+      // has no explicit title. Errors are silent; the backfill button can retry.
+      if (autoTitleStatus === 'pending') {
+        supabase.functions.invoke('recording-auto-title', { body: { recording_id: id } }).catch(() => {});
+      }
 
       toastSuccess('Recording uploaded');
       await fetch();
@@ -380,9 +393,54 @@ export function useRecordings(statusFilter?: string) {
     [allRecordings],
   );
 
+  // Candidates for auto-title generation: no existing title, has an original to
+  // transcribe, and not currently in progress. 'failed' rows are re-enqueueable.
+  const autoTitleCandidates = useMemo(
+    () => allRecordings.filter((r) =>
+      !r.title &&
+      r.originalPath &&
+      (r.autoTitleStatus === null || r.autoTitleStatus === 'pending' || r.autoTitleStatus === 'failed')
+    ),
+    [allRecordings],
+  );
+
+  /**
+   * Invoke the recording-auto-title edge function for each candidate in
+   * sequence (Whisper is the bottleneck — no concurrent benefit here).
+   * The edge function marks status=done/failed; we refresh afterwards.
+   */
+  const backfillAutoTitles = useCallback(async (
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<{ processed: number; failed: number }> => {
+    const targets = autoTitleCandidates;
+    if (targets.length === 0) return { processed: 0, failed: 0 };
+    let processed = 0;
+    let failed = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const rec = targets[i];
+      try {
+        const { data, error } = await supabase.functions.invoke('recording-auto-title', {
+          body: { recording_id: rec.id },
+        });
+        if (error || (data && (data as any).error)) {
+          failed += 1;
+        } else {
+          processed += 1;
+        }
+      } catch {
+        failed += 1;
+      }
+      onProgress?.(i + 1, targets.length);
+    }
+    await fetch();
+    return { processed, failed };
+  }, [autoTitleCandidates, fetch]);
+
   return {
     recordings, stats, loading, mutating, refresh: fetch,
     updateTitle, updateDescription, togglePublic, createShare, deleteRecording, uploadRecording,
-    extendExpiry, archiveRecording, backfillThumbnails, missingThumbnails,
+    extendExpiry, archiveRecording,
+    backfillThumbnails, missingThumbnails,
+    backfillAutoTitles, autoTitleCandidates,
   };
 }

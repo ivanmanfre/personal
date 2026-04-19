@@ -513,6 +513,9 @@ export interface Recording {
   keepTranscript: boolean;
   createdAt: string;
   updatedAt: string;
+  transcriptText: string | null;
+  autoTitle: string | null;
+  autoTitleStatus: string | null;
 }
 
 export interface RecordingSegment {
