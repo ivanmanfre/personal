@@ -306,7 +306,7 @@ const AgentPanel: React.FC = () => {
                             <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                           </div>
                           {showAv && (
-                            <p className={`text-[10px] text-zinc-600 mt-1 px-1 ${isUser ? 'text-right' : ''}`}>
+                            <p className={`text-[10px] text-zinc-500 mt-1 px-1 ${isUser ? 'text-right' : ''}`}>
                               {formatChatTime(msg.createdAt, userTimezone)}
                             </p>
                           )}
@@ -380,7 +380,7 @@ const AgentPanel: React.FC = () => {
               <Send className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-[10px] text-zinc-600 mt-1.5 px-1">
+          <p className="text-[10px] text-zinc-500 mt-1.5 px-1">
             Enter to send · Shift+Enter for new line · Synced with WhatsApp
           </p>
         </div>
@@ -410,7 +410,7 @@ const AgentPanel: React.FC = () => {
                       </div>
                       <p className="text-[11px] text-zinc-500 mt-1 line-clamp-2">{a.body}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[11px] text-zinc-600">{timeAgo(a.createdAt)}</p>
+                        <p className="text-[11px] text-zinc-500">{timeAgo(a.createdAt)}</p>
                         {!a.sent && (
                           <button
                             onClick={() => acknowledgeAlert(a.id)}

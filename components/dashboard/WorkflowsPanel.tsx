@@ -371,7 +371,7 @@ const WorkflowsPanel: React.FC = () => {
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider truncate">
                     {p.name.replace(' Pipeline', '').replace(' & Backups', '')}
                   </span>
-                  <span className="text-[10px] text-zinc-600 tabular-nums">{p.workflows.length}</span>
+                  <span className="text-[10px] text-zinc-500 tabular-nums">{p.workflows.length}</span>
                   {errorWfCount > 0 && <span className="text-[9px] text-red-400">{errorWfCount}err</span>}
                   {warnWfCount > 0 && !errorWfCount && <span className="text-[9px] text-amber-400">{warnWfCount}w</span>}
                   <span className="flex-1" />
@@ -500,7 +500,7 @@ const WorkflowsPanel: React.FC = () => {
                       </div>
                       <p className="text-[11px] text-zinc-500 mt-1 line-clamp-1">{err.errorMessage}</p>
                     </div>
-                    <span className="text-[10px] text-zinc-600 shrink-0 mt-1">{timeAgo(err.lastSeen)}</span>
+                    <span className="text-[10px] text-zinc-500 shrink-0 mt-1">{timeAgo(err.lastSeen)}</span>
                     {isExpanded ? <ChevronDown className="w-4 h-4 text-zinc-600 mt-1 shrink-0" /> : <ChevronRight className="w-4 h-4 text-zinc-600 mt-1 shrink-0" />}
                   </button>
                   {isExpanded && (

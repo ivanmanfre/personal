@@ -543,12 +543,12 @@ const ContentPanel: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{p.postText.slice(0, 80)}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-zinc-600">
+                      <span className="text-[10px] text-zinc-500">
                         {formatDate(p.scheduledAt, { weekday: 'short', month: 'short', day: 'numeric' }, userTimezone)} at {formatTime(p.scheduledAt, userTimezone)}
                       </span>
-                      {p.postFormat && <span className="text-[10px] text-zinc-600 bg-zinc-800/60 px-1 py-0.5 rounded">{p.postFormat}</span>}
+                      {p.postFormat && <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1 py-0.5 rounded">{p.postFormat}</span>}
                       {p.mediaUrls.length > 0 && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-zinc-600">
+                        <span className="flex items-center gap-0.5 text-[10px] text-zinc-500">
                           <Image className="w-3 h-3" />{p.mediaUrls.length}
                         </span>
                       )}
@@ -582,7 +582,7 @@ const ContentPanel: React.FC = () => {
           <div className="p-3">
             <div className="grid grid-cols-7 mb-1">
               {DAYS.map((d) => (
-                <div key={d} className="text-center text-[11px] text-zinc-600 font-medium py-1">{d}</div>
+                <div key={d} className="text-center text-[11px] text-zinc-500 font-medium py-1">{d}</div>
               ))}
             </div>
 
@@ -599,7 +599,7 @@ const ContentPanel: React.FC = () => {
                         <DraggablePost key={p.id} post={p} onClick={() => setSelectedPost(p)} />
                       ))}
                       {dayPosts.length > 3 && (
-                        <div className="text-[10px] text-zinc-600 px-1">+{dayPosts.length - 3} more</div>
+                        <div className="text-[10px] text-zinc-500 px-1">+{dayPosts.length - 3} more</div>
                       )}
                     </div>
                     {/* Mobile: dot indicators */}

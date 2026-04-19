@@ -249,7 +249,7 @@ const OutreachPanel: React.FC = () => {
             <Activity className="w-4 h-4 text-blue-400" />
             <span className="text-sm font-medium text-zinc-200">Today&apos;s Activity</span>
           </div>
-          <span className="text-[10px] text-zinc-600">Daily limits enforced by LinkedIn safety layer</span>
+          <span className="text-[10px] text-zinc-500">Daily limits enforced by LinkedIn safety layer</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {([
@@ -419,7 +419,7 @@ const OutreachPanel: React.FC = () => {
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">{draft.matchedContentType}</span>
                     )}
                   </div>
-                  <span className="text-[10px] text-zinc-600">{timeAgo(draft.createdAt)}</span>
+                  <span className="text-[10px] text-zinc-500">{timeAgo(draft.createdAt)}</span>
                 </div>
                 {/* Research context for this prospect */}
                 {(() => {
@@ -907,7 +907,7 @@ const OutreachPanel: React.FC = () => {
                                 }`} />
                               </button>
                             ) : (
-                              <span className="text-[10px] text-zinc-600">—</span>
+                              <span className="text-[10px] text-zinc-500">—</span>
                             )}
                           </td>
                           <td className="px-3 py-2.5 text-center">
@@ -928,7 +928,7 @@ const OutreachPanel: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[10px] text-zinc-600 mt-3 px-1">
+              <p className="text-[10px] text-zinc-500 mt-3 px-1">
                 n8n = workflow trigger active in n8n. Flag = code logic enabled. Both must be on for automation to run.
               </p>
             </PanelCard>

@@ -280,7 +280,7 @@ const PerformancePanel: React.FC = () => {
                       <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Eye className="w-3 h-3" />{formatNum(post.impressions)}</span>
                       <span className="flex items-center gap-1 text-[11px] text-pink-400/70"><Heart className="w-3 h-3" />{post.likes}</span>
                       <span className="flex items-center gap-1 text-[11px] text-blue-400/70"><MessageCircle className="w-3 h-3" />{post.comments}</span>
-                      <span className="flex items-center gap-1 text-[11px] text-zinc-600"><Repeat2 className="w-3 h-3" />{post.shares}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Repeat2 className="w-3 h-3" />{post.shares}</span>
                     </div>
                   </div>
                   {post.linkedinUrl && (

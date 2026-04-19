@@ -265,7 +265,7 @@ const TasksPanel: React.FC = () => {
                       {task.description}
                     </p>
                     {task.description.length > 80 && (
-                      <span className="text-[10px] text-zinc-600 group-hover/desc:text-zinc-400 transition-colors">
+                      <span className="text-[10px] text-zinc-500 group-hover/desc:text-zinc-400 transition-colors">
                         {expandedDescs.has(task.id) ? 'Show less' : 'Show more'}
                       </span>
                     )}
@@ -290,7 +290,7 @@ const TasksPanel: React.FC = () => {
                     <span className="text-[10px] text-orange-400/40">Reminder</span>
                   )}
 
-                  <span className="text-[10px] text-zinc-600">{timeAgo(task.updatedAt)}</span>
+                  <span className="text-[10px] text-zinc-500">{timeAgo(task.updatedAt)}</span>
 
                   {hasSubtasks && (
                     <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">

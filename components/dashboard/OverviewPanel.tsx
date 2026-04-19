@@ -181,7 +181,7 @@ const OverviewPanel: React.FC = () => {
               <Network className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Health</span>
             </div>
-            <span className="flex items-center gap-1 text-[11px] text-zinc-600 group-hover:text-zinc-400 transition-colors">
+            <span className="flex items-center gap-1 text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors">
               Open System Map <ArrowRight className="w-3 h-3" />
             </span>
           </div>
@@ -231,7 +231,7 @@ const OverviewPanel: React.FC = () => {
                     <p className="text-sm text-zinc-300 truncate" title={item.text}>{item.text}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[11px] text-zinc-500">{timeAgo(item.time)}</span>
-                      <span className="text-[11px] text-zinc-600 bg-zinc-800/60 px-1.5 py-0.5 rounded">{item.meta}</span>
+                      <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{item.meta}</span>
                     </div>
                   </div>
                 </div>
