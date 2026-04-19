@@ -81,10 +81,10 @@ const ClientsPanel: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Clients" value={stats.total} icon={<Server className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Total Clients" value={stats.total} icon={<Server className="w-5 h-5" />} color="text-zinc-300" />
         <StatCard label="Active" value={stats.active} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
-        <StatCard label="Open Errors" value={stats.unresolvedErrors} icon={<XCircle className="w-5 h-5" />} color={stats.unresolvedErrors > 0 ? 'text-red-400' : 'text-zinc-500'} />
-        <StatCard label="Monitored Workflows" value={stats.monitoredWorkflows} icon={<Bell className="w-5 h-5" />} color={stats.monitoredWorkflows > 0 ? 'text-blue-400' : 'text-zinc-500'} />
+        <StatCard label="Open Errors" value={stats.unresolvedErrors} icon={<XCircle className="w-5 h-5" />} color={stats.unresolvedErrors > 3 ? 'text-red-400' : stats.unresolvedErrors > 0 ? 'text-amber-400' : 'text-zinc-300'} />
+        <StatCard label="Monitored Workflows" value={stats.monitoredWorkflows} icon={<Bell className="w-5 h-5" />} color="text-zinc-300" />
       </div>
 
       {clients.length === 0 ? (

@@ -372,8 +372,8 @@ const TasksPanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <StatCard label="Agent Tasks" value={agentPending} icon={<Bot className="w-5 h-5" />} color="text-cyan-400" subValue={`${agentCount} total`} />
-        <StatCard label="Reminders" value={reminderPending} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={`${reminderCount} total`} />
+        <StatCard label="Agent Tasks" value={agentPending} icon={<Bot className="w-5 h-5" />} color={agentPending > 0 ? 'text-amber-400' : 'text-zinc-300'} subValue={`${agentCount} total`} />
+        <StatCard label="Reminders" value={reminderPending} icon={<Bell className="w-5 h-5" />} color={reminderPending > 0 ? 'text-amber-400' : 'text-zinc-300'} subValue={`${reminderCount} total`} />
         <StatCard label="Completed" value={completedTasks.length} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
       </div>
 

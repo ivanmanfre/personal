@@ -454,11 +454,11 @@ const MeetingsPanel: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <StatCard label="Total Calls" value={stats.total} icon={<Phone className="w-4 h-4" />} color="text-blue-400" />
-        <StatCard label="Today" value={todayEvents.length} icon={<Calendar className="w-4 h-4" />} color={todayEvents.length > 0 ? 'text-emerald-400' : 'text-zinc-400'} />
-        <StatCard label="This Week" value={stats.thisWeek} icon={<Clock className="w-4 h-4" />} color="text-cyan-400" />
-        <StatCard label="With Actions" value={stats.withActionItems} icon={<ListChecks className="w-4 h-4" />} color="text-amber-400" />
-        <StatCard label="Avg Duration" value={`${stats.avgDurationMinutes}m`} icon={<Clock className="w-4 h-4" />} color="text-violet-400" />
+        <StatCard label="Total Calls" value={stats.total} icon={<Phone className="w-4 h-4" />} color="text-zinc-300" />
+        <StatCard label="Today" value={todayEvents.length} icon={<Calendar className="w-4 h-4" />} color={todayEvents.length > 0 ? 'text-emerald-400' : 'text-zinc-300'} />
+        <StatCard label="This Week" value={stats.thisWeek} icon={<Clock className="w-4 h-4" />} color="text-zinc-300" />
+        <StatCard label="With Actions" value={stats.withActionItems} icon={<ListChecks className="w-4 h-4" />} color={stats.withActionItems > 0 ? 'text-amber-400' : 'text-zinc-300'} />
+        <StatCard label="Avg Duration" value={`${stats.avgDurationMinutes}m`} icon={<Clock className="w-4 h-4" />} color="text-zinc-300" />
       </div>
 
       {/* Call Playbook + Upcoming Events */}
