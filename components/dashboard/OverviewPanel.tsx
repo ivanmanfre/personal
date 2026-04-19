@@ -3,6 +3,7 @@ import { TrendingUp, Eye, Heart, MessageSquare, Activity, Bell, Clock, Zap, Chec
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
 import { useAgentData } from '../../hooks/useAgentData';
+import { useContentPipeline } from '../../hooks/useContentPipeline';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
@@ -11,6 +12,7 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
 import AnimateIn from './shared/AnimateIn';
+import TodaysFocus from './shared/TodaysFocus';
 import { pipelineConfig } from './system-map/config';
 import { timeAgo, formatNum } from './shared/utils';
 import type { WorkflowStat } from '../../types/dashboard';
@@ -20,9 +22,11 @@ const OverviewPanel: React.FC = () => {
   const { workflows, stats: wfStats, loading: wfLoading, refresh: refreshWf } = useWorkflowStats();
   const { setSystemHealth, setLastRefreshed, navigateToTab, userTimezone } = useDashboard();
   const { alerts, reminders, messageStats, loading: agentLoading, refresh: refreshAgent, acknowledgeAlert, completeReminder } = useAgentData(userTimezone);
+  const { statusCounts, refresh: refreshContent } = useContentPipeline(userTimezone);
+  const pendingPostsCount = statusCounts.pending || 0;
 
   const refreshAll = async () => {
-    await Promise.all([refreshPosts(), refreshWf(), refreshAgent()]);
+    await Promise.all([refreshPosts(), refreshWf(), refreshAgent(), refreshContent()]);
     setLastRefreshed(new Date());
   };
 
@@ -111,6 +115,16 @@ const OverviewPanel: React.FC = () => {
         <h1 className="text-2xl font-bold tracking-tight animate-count-up">Overview</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refreshAll} />
       </div>
+
+      {/* Today's focus — actionable items above everything else */}
+      <AnimateIn delay={0}>
+        <TodaysFocus
+          workflows={workflows}
+          alerts={alerts}
+          pendingPostsCount={pendingPostsCount}
+          onNavigate={navigateToTab}
+        />
+      </AnimateIn>
 
       {/* Top stat cards */}
       <AnimateIn delay={0}>
