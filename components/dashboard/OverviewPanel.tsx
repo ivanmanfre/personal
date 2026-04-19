@@ -98,10 +98,22 @@ const OverviewPanel: React.FC = () => {
     };
   }, [posts]);
 
+  // Dedupe on (alertType + title). Keep the newest per group, track count so the
+  // panel shows one row per distinct problem with "×N" instead of N identical rows.
+  const recentAlerts = useMemo(() => {
+    const seen = new Map<string, { alert: typeof alerts[number]; count: number }>();
+    for (const a of alerts) {
+      const key = `${a.alertType}|${a.title}`;
+      const existing = seen.get(key);
+      if (existing) existing.count += 1;
+      else seen.set(key, { alert: a, count: 1 });
+    }
+    return Array.from(seen.values()).slice(0, 4);
+  }, [alerts]);
+
   const loading = postsLoading || wfLoading || agentLoading;
   if (loading) return <LoadingSkeleton cards={8} rows={5} />;
 
-  const recentAlerts = alerts.slice(0, 4);
   const pendingReminders = reminders.slice(0, 4);
 
   const activityItems = [
@@ -235,11 +247,16 @@ const OverviewPanel: React.FC = () => {
               {recentAlerts.length === 0 ? (
                 <p className="px-4 py-6 text-zinc-600 text-sm text-center">No alerts</p>
               ) : (
-                recentAlerts.map((a) => (
+                recentAlerts.map(({ alert: a, count }) => (
                   <div key={a.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-zinc-800/30 transition-colors">
                     <StatusDot status={a.sent ? 'healthy' : 'warning'} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-zinc-300 truncate" title={a.title}>{a.title}</p>
+                        {count > 1 && (
+                          <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50" title={`${count} alerts of this type`}>×{count}</span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-zinc-500">{a.alertType.replace(/_/g, ' ')} · {timeAgo(a.createdAt)}</p>
                     </div>
                     {!a.sent && (

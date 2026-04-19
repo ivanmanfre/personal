@@ -173,10 +173,32 @@ const VideoIdeasPanel: React.FC = () => {
   const { ideas, statusCounts, loading, refresh, updateIdea, createIdea, deleteIdea, generateScript, generateVideo, uploadRecording, generateAvatarVideo, estimateAvatarCost } = useVideoIdeas();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['video_ideas'] });
 
+  // Dedupe on title+videoType+platform. Source of truth is still the raw `ideas`
+  // array (so statusCounts stay accurate); we only collapse for display.
+  const dedupedIdeas = useMemo(() => {
+    const seen = new Map<string, { idea: VideoIdea; dupeIds: string[] }>();
+    // `ideas` is sorted created_at desc, so the first match we keep is the most recent
+    for (const idea of ideas) {
+      const key = `${idea.title}|${idea.videoType}|${idea.platform}`.toLowerCase();
+      const existing = seen.get(key);
+      if (existing) {
+        existing.dupeIds.push(idea.id);
+      } else {
+        seen.set(key, { idea, dupeIds: [] });
+      }
+    }
+    return Array.from(seen.values());
+  }, [ideas]);
+
   const filteredIdeas = useMemo(() => {
-    if (filter === 'all') return ideas;
-    return ideas.filter(i => i.status === filter);
-  }, [ideas, filter]);
+    const base = filter === 'all' ? dedupedIdeas : dedupedIdeas.filter(({ idea }) => idea.status === filter);
+    return base;
+  }, [dedupedIdeas, filter]);
+
+  const handleDeleteDuplicates = useCallback(async (dupeIds: string[]) => {
+    if (!window.confirm(`Delete ${dupeIds.length} duplicate idea${dupeIds.length > 1 ? 's' : ''}? The most recent one is kept.`)) return;
+    await Promise.all(dupeIds.map((id) => deleteIdea(id)));
+  }, [deleteIdea]);
 
   const handleCreate = useCallback(async () => {
     if (!newTitle.trim()) return;
@@ -279,7 +301,7 @@ const VideoIdeasPanel: React.FC = () => {
       ) : (
         <PanelCard title="Video Ideas" icon={<Film className="w-4 h-4" />} badge={filteredIdeas.length} accent="blue" scrollable>
           <div className="divide-y divide-zinc-800/40">
-            {filteredIdeas.map(idea => {
+            {filteredIdeas.map(({ idea, dupeIds }) => {
               const isExpanded = expandedId === idea.id;
               const statusIdx = statusFlow.indexOf(idea.status as typeof statusFlow[number]);
               const canAdvance = statusIdx >= 0 && statusIdx < statusFlow.length - 1;
@@ -308,6 +330,15 @@ const VideoIdeasPanel: React.FC = () => {
                         </span>
                         {idea.priority && <span className={`text-[10px] font-medium ${priorityColors[idea.priority] || 'text-zinc-500'}`}>{idea.priority}</span>}
                         <RenderStatusBadge status={idea.renderStatus} error={idea.renderError} />
+                        {dupeIds.length > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteDuplicates(dupeIds); }}
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                            title={`${dupeIds.length} older duplicate${dupeIds.length > 1 ? 's' : ''} of this idea — click to delete them`}
+                          >
+                            ×{dupeIds.length + 1} dupes
+                          </button>
+                        )}
                       </div>
                     </div>
 
