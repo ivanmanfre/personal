@@ -197,6 +197,7 @@ const OverviewPanel: React.FC = () => {
                 <div key={p.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-zinc-800/40 border border-zinc-700/20">
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
                   <span className={`text-[10px] font-medium truncate ${pipeColors[p.color] || 'text-zinc-400'}`}>{p.name.replace(' Pipeline', '').replace(' & Backups', '')}</span>
+                  <span className="text-[9px] text-zinc-500 shrink-0 ml-auto">{p.count}</span>
                   {p.errors > 0 && <span className="text-[9px] text-red-400 shrink-0">{p.errors}e</span>}
                 </div>
               );

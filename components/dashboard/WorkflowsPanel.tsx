@@ -392,7 +392,14 @@ const WorkflowsPanel: React.FC = () => {
                         >
                           <StatusDot status={health} pulse={health === 'error'} />
                           <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate">{wf.workflowName}</span>
-                          <span className="text-[9px] text-zinc-600 tabular-nums shrink-0 hidden xl:inline">{timeAgo(wf.lastExecutionAt)}</span>
+                          <span
+                            className="text-[9px] text-zinc-600 tabular-nums shrink-0 hidden xl:inline"
+                            title={wf.lastExecutionAt ? `Last run: ${new Date(wf.lastExecutionAt).toLocaleString()}` : wf.triggerType === 'webhook' ? 'Triggered on demand by another workflow or external call' : 'No executions recorded'}
+                          >
+                            {wf.lastExecutionAt
+                              ? timeAgo(wf.lastExecutionAt)
+                              : wf.triggerType === 'webhook' ? 'on demand' : '—'}
+                          </span>
                           {wf.errorCount24h > 0 && (
                             <span className="text-[9px] text-red-400 tabular-nums shrink-0" title={`${wf.errorCount24h} errors in 24h`}>
                               {wf.errorCount24h}e
