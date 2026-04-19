@@ -19,6 +19,8 @@ const ASSEMBLYAI_URL = "https://api.assemblyai.com/v2/transcript";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 
+class NoAudioError extends Error {}
+
 async function setStatus(sb: any, id: string, status: string, extra: Record<string, unknown> = {}) {
   await sb.from("recordings").update({ auto_title_status: status, ...extra }).eq("id", id);
 }
@@ -51,7 +53,13 @@ async function transcribe(audioUrl: string, apiKey: string): Promise<string> {
     if (!r.ok) throw new Error(`assemblyai poll: ${r.status}`);
     const data = await r.json();
     if (data.status === "completed") return String(data.text || "").trim();
-    if (data.status === "error") throw new Error(`assemblyai error: ${data.error || "unknown"}`);
+    if (data.status === "error") {
+      const msg = String(data.error || "unknown");
+      if (/no spoken audio|does not appear to contain audio|language_detection/i.test(msg)) {
+        throw new NoAudioError(msg);
+      }
+      throw new Error(`assemblyai error: ${msg}`);
+    }
   }
   throw new Error("assemblyai timeout after 3m");
 }
@@ -123,7 +131,22 @@ Deno.serve(async (req: Request) => {
     const { data: signed, error: sErr } = await sb.storage.from("recordings").createSignedUrl(rec.original_path, 3600);
     if (sErr || !signed?.signedUrl) throw new Error(`signed url failed: ${sErr?.message || "no url"}`);
 
-    const transcript = await transcribe(signed.signedUrl, ASSEMBLYAI_KEY);
+    let transcript: string;
+    try {
+      transcript = await transcribe(signed.signedUrl, ASSEMBLYAI_KEY);
+    } catch (err) {
+      if (err instanceof NoAudioError) {
+        // Screen recordings without narration are a legitimate case — mark them
+        // as no_audio so the backfill button stops offering to retry them.
+        await sb.from("recordings").update({
+          auto_title: "(no audio)",
+          auto_title_status: "no_audio",
+          transcript_text: null,
+        }).eq("id", id);
+        return new Response(JSON.stringify({ ok: true, auto_title: "(no audio)", no_audio: true }), { status: 200, headers: CORS });
+      }
+      throw err;
+    }
 
     await setStatus(sb, id, "titling", { transcript_text: transcript });
 

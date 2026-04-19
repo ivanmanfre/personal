@@ -407,11 +407,13 @@ export function useRecordings(statusFilter?: string) {
       const titleIsPlaceholder = !r.title || PLACEHOLDER_TITLE.test(r.title.trim());
       if (!titleIsPlaceholder) return false;
       // Allow fresh, pending, or previously-failed rows; skip ones in flight
+      // and skip 'no_audio' (legitimate case — screen recordings without speech)
       return (
         r.autoTitleStatus === null ||
         r.autoTitleStatus === 'pending' ||
         r.autoTitleStatus === 'failed'
       );
+      // Note: 'transcribing', 'titling', 'done', 'no_audio' all fall through to false above
     }),
     [allRecordings],
   );

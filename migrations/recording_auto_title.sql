@@ -9,7 +9,7 @@ ALTER TABLE recordings
 
 COMMENT ON COLUMN recordings.transcript_text IS 'Full AssemblyAI transcript. Populated async by recording-auto-title edge function.';
 COMMENT ON COLUMN recordings.auto_title IS 'Suggested title generated from transcript by Claude Haiku. Surfaced when title is empty; double-click on card to override.';
-COMMENT ON COLUMN recordings.auto_title_status IS 'null | pending | transcribing | titling | done | failed';
+COMMENT ON COLUMN recordings.auto_title_status IS 'null | pending | transcribing | titling | done | failed | no_audio';
 
 -- SECURITY DEFINER wrapper so edge functions can read vault secrets without
 -- needing a direct grant on the vault schema. Only service_role can call it.
