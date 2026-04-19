@@ -67,7 +67,12 @@ export const OutreachFunnel: React.FC<Props> = ({ stats, onStageClick }) => {
               <div className="text-center">
                 <span className="text-[9px] text-zinc-500 block">{stage.label}</span>
                 {convRate != null && (
-                  <span className="text-[8px] text-zinc-600">{convRate}%</span>
+                  <span
+                    className={`text-[8px] block ${convRate >= 50 ? 'text-emerald-400/80' : convRate >= 20 ? 'text-amber-400/80' : 'text-red-400/80'}`}
+                    title={`${value} of ${values[i - 1]} (${convRate}%) reached this stage — drop-off ${values[i - 1] - value}`}
+                  >
+                    {convRate}% · −{values[i - 1] - value}
+                  </span>
                 )}
               </div>
             </div>
