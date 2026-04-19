@@ -392,11 +392,24 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
       <div className="relative aspect-video bg-zinc-800/50">
         {thumbUrl ? (
           <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Video className="w-8 h-8 text-zinc-700" />
-          </div>
-        )}
+        ) : (() => {
+            // Stable hue from the recording id so each placeholder keeps the same
+            // color; gives the grid some visual variety and makes recordings
+            // recognizable by color even without a real poster frame.
+            let h = 0;
+            for (let i = 0; i < rec.id.length; i++) h = (h * 31 + rec.id.charCodeAt(i)) >>> 0;
+            const hue = h % 360;
+            const label = (rec.title?.trim() || `Recording ${new Date(rec.createdAt).toLocaleDateString()}`).slice(0, 36);
+            return (
+              <div
+                className="w-full h-full flex flex-col items-center justify-center p-3 text-center"
+                style={{ background: `linear-gradient(135deg, hsl(${hue} 40% 18%), hsl(${(hue + 30) % 360} 30% 12%))` }}
+              >
+                <Video className="w-6 h-6 opacity-60 mb-2" style={{ color: `hsl(${hue} 70% 75%)` }} />
+                <span className="text-[11px] font-medium text-zinc-200 leading-tight line-clamp-2">{label}</span>
+              </div>
+            );
+          })()}
         {/* Duration badge */}
         {rec.durationSeconds && (
           <span className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-sm rounded text-[10px] font-mono text-zinc-300">
