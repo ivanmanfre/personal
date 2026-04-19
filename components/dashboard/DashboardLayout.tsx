@@ -131,10 +131,16 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white leading-tight truncate">Ivan System</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <StatusDot status={healthStatus} pulse />
-                <p className="text-[11px] text-zinc-500 capitalize">{systemHealth || 'checking...'}</p>
-              </div>
+              <button
+                onClick={() => { onTabChange(systemHealth === 'healthy' ? 'overview' : 'workflows'); setSidebarOpen(false); }}
+                className="mt-0.5 -ml-0.5 px-1 py-0.5 rounded inline-flex items-center gap-1.5 hover:bg-zinc-800/50 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none"
+                title={systemHealth === 'healthy' ? 'All systems healthy' : 'Open Workflows to investigate'}
+              >
+                <StatusDot status={healthStatus} pulse={systemHealth !== 'healthy'} />
+                <span className={`text-[11px] capitalize ${systemHealth === 'critical' ? 'text-red-400' : systemHealth === 'degraded' ? 'text-amber-400' : 'text-zinc-500'}`}>
+                  {systemHealth === 'critical' ? 'Needs attention' : systemHealth === 'degraded' ? 'Degraded' : systemHealth || 'checking...'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
