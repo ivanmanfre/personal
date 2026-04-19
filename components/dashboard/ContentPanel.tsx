@@ -512,8 +512,8 @@ const ContentPanel: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Total Posts" value={posts.length} icon={<FileText className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Pending" value={pendingCount} icon={<Clock className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="Total Posts" value={posts.length} icon={<FileText className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="Pending" value={pendingCount} icon={<Clock className="w-5 h-5" />} color={pendingCount > 5 ? 'text-amber-400' : 'text-zinc-300'} />
         <StatCard label="Posted" value={postedCount} icon={<Send className="w-5 h-5" />} color="text-emerald-400" />
         <StatCard label="Failed" value={failedCount} icon={<AlertTriangle className="w-5 h-5" />} color="text-red-400" />
       </div>

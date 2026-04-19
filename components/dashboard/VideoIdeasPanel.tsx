@@ -235,10 +235,10 @@ const VideoIdeasPanel: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard label="Total" value={total} icon={<Film className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Ideas" value={statusCounts['idea'] || 0} icon={<Film className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Scripted" value={statusCounts['scripted'] || 0} icon={<Sparkles className="w-5 h-5" />} color="text-violet-400" />
-        <StatCard label="In Progress" value={(statusCounts['recording'] || 0) + (statusCounts['editing'] || 0)} icon={<Camera className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="Total" value={total} icon={<Film className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="Ideas" value={statusCounts['idea'] || 0} icon={<Film className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="Scripted" value={statusCounts['scripted'] || 0} icon={<Sparkles className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="In Progress" value={(statusCounts['recording'] || 0) + (statusCounts['editing'] || 0)} icon={<Camera className="w-5 h-5" />} color={(statusCounts['recording'] || 0) + (statusCounts['editing'] || 0) > 0 ? 'text-amber-400' : 'text-zinc-300'} />
         <StatCard label="Published" value={statusCounts['published'] || 0} icon={<Film className="w-5 h-5" />} color="text-emerald-400" />
       </div>
 
