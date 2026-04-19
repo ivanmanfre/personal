@@ -166,14 +166,19 @@ const DroppableDay: React.FC<{
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[48px] sm:min-h-[80px] p-1 sm:p-1.5 transition-colors ${
-        inMonth ? 'bg-zinc-900/60' : 'bg-zinc-950/40'
-      } ${isToday ? 'ring-1 ring-emerald-500/40 ring-inset' : ''} ${isOver ? 'ring-2 ring-cyan-500/60 ring-inset bg-cyan-500/5' : ''}`}
+      className={`min-h-[48px] sm:min-h-[80px] p-1 sm:p-1.5 transition-colors border border-zinc-800/80 ${
+        inMonth ? 'bg-zinc-900/60' : 'bg-zinc-950/60'
+      } ${isToday ? 'bg-emerald-500/10 border-emerald-500/50' : ''} ${isOver ? 'ring-2 ring-cyan-500/60 ring-inset bg-cyan-500/5' : ''}`}
     >
-      <div className={`text-[11px] font-medium mb-1 ${
-        isToday ? 'text-emerald-400' : inMonth ? 'text-zinc-400' : 'text-zinc-700'
-      }`}>
-        {date.getDate()}
+      <div className="flex items-center justify-between mb-1">
+        <span className={`text-[11px] font-semibold ${
+          isToday ? 'text-emerald-300' : inMonth ? 'text-zinc-300' : 'text-zinc-600'
+        }`}>
+          {date.getDate()}
+        </span>
+        {isToday && (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-300/80">Today</span>
+        )}
       </div>
       {children}
     </div>
