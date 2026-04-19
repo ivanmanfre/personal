@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar, PieChart, Pie, Cell,
+  BarChart, Bar, PieChart, Pie, Cell, LabelList,
 } from 'recharts';
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useCompetitors } from '../../hooks/useCompetitors';
@@ -188,16 +188,28 @@ const PerformancePanel: React.FC = () => {
 
             {/* Competitor benchmark */}
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors (Avg Likes)</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors — avg likes per post</h3>
               {benchmarkData.length > 1 ? (
-                <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={benchmarkData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
-                    <XAxis type="number" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis dataKey="name" type="category" tick={{ fill: '#71717a', fontSize: 11 }} width={60} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} />
+                <ResponsiveContainer width="100%" height={Math.max(160, benchmarkData.length * 26)}>
+                  <BarChart data={benchmarkData} layout="vertical" margin={{ right: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" horizontal={false} />
+                    <XAxis type="number" tick={{ fill: '#a1a1aa', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      tick={({ y, payload }) => (
+                        <text x={0} y={y} dy={4} fill={payload.value === 'You' ? '#10b981' : '#d4d4d8'} fontSize={11} fontWeight={payload.value === 'You' ? 700 : 400}>
+                          {payload.value}
+                        </text>
+                      )}
+                      width={70}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} formatter={(v: number) => [`${v} avg likes`, '']} />
                     <Bar dataKey="avgLikes" radius={[0, 4, 4, 0]}>
-                      {benchmarkData.map((_, i) => <Cell key={i} fill={i === 0 ? '#10b981' : 'rgba(63, 63, 70, 0.6)'} />)}
+                      {benchmarkData.map((_, i) => <Cell key={i} fill={i === 0 ? '#10b981' : 'rgba(113, 113, 122, 0.55)'} />)}
+                      <LabelList dataKey="avgLikes" position="right" fill="#a1a1aa" fontSize={11} formatter={(v: number) => formatNum(v)} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -208,7 +220,7 @@ const PerformancePanel: React.FC = () => {
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic — bar width shows avg impressions per post</h3>
               {topicData.length > 0 ? (
                 <div className="space-y-2">
                   {topicData.slice(0, 6).map((t) => {
@@ -230,7 +242,7 @@ const PerformancePanel: React.FC = () => {
             </div>
 
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern — bar width shows avg impressions per post</h3>
               {hookData.length > 0 ? (
                 <div className="space-y-2">
                   {hookData.slice(0, 6).map((h) => {
