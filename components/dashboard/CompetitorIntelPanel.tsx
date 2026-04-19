@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star, CheckCircle2, Zap, FileText, TrendingUp } from 'lucide-react';
+import { Swords, Lightbulb, Heart, MessageCircle, Repeat2, Star, CheckCircle2, Zap, FileText, TrendingUp, ClipboardCopy } from 'lucide-react';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { toastSuccess, toastError } from '../../lib/dashboardActions';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import PanelCard from './shared/PanelCard';
+import type { CompetitorPost } from '../../types/dashboard';
 
 const CompetitorIntelPanel: React.FC = () => {
   const { posts, patterns, competitorStats, opportunities, loading, refresh, markOpportunityActioned } = useCompetitors();
@@ -26,6 +28,26 @@ const CompetitorIntelPanel: React.FC = () => {
     posts.forEach((p) => { if (p.topicCategory) counts[p.topicCategory] = (counts[p.topicCategory] || 0) + 1; });
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [posts]);
+
+  const draftFromOpportunity = async (p: CompetitorPost) => {
+    const date = p.postDate ? new Date(p.postDate).toLocaleDateString() : 'unknown date';
+    const lines = [
+      `OPPORTUNITY: ${p.theOpportunity || ''}`,
+      ``,
+      `Source: ${p.competitorName} post from ${date}`,
+      p.suggestedAngle ? `Suggested angle: ${p.suggestedAngle}` : '',
+      p.suggestedFormat ? `Suggested format: ${p.suggestedFormat}` : '',
+      ``,
+      `Original post (${p.likesCount} likes, ${p.commentsCount} comments):`,
+      p.postText.slice(0, 600),
+    ].filter(Boolean).join('\n');
+    try {
+      await navigator.clipboard.writeText(lines);
+      toastSuccess('Draft brief copied — paste into n8n Post Gen or ClickUp');
+    } catch (err) {
+      toastError('copy draft', err);
+    }
+  };
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
 
@@ -113,13 +135,22 @@ const CompetitorIntelPanel: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => markOpportunityActioned(p.id)}
-                    className="shrink-0 p-2 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                    title="Mark as actioned"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                  </button>
+                  <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      onClick={() => draftFromOpportunity(p)}
+                      className="px-2.5 py-1.5 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors flex items-center gap-1"
+                      title="Copy a structured draft brief to clipboard"
+                    >
+                      <ClipboardCopy className="w-3 h-3" /> Draft
+                    </button>
+                    <button
+                      onClick={() => markOpportunityActioned(p.id)}
+                      className="p-2 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                      title="Mark as actioned"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
