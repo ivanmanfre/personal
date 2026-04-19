@@ -11,28 +11,36 @@ interface Props {
 }
 
 // Map text color classes to background tint classes
+// Restricted palette: emerald = positive/primary, zinc = neutral metric,
+// red = error, amber = warning, blue = info. Other accents kept for back-compat
+// but all new code should pick from the four semantic options.
 const colorToBg: Record<string, string> = {
   'text-emerald-400': 'bg-emerald-500/15 border-emerald-500/20',
-  'text-blue-400': 'bg-blue-500/15 border-blue-500/20',
-  'text-pink-400': 'bg-pink-500/15 border-pink-500/20',
-  'text-amber-400': 'bg-amber-500/15 border-amber-500/20',
-  'text-violet-400': 'bg-violet-500/15 border-violet-500/20',
-  'text-red-400': 'bg-red-500/15 border-red-500/20',
-  'text-orange-400': 'bg-orange-500/15 border-orange-500/20',
-  'text-cyan-400': 'bg-cyan-500/15 border-cyan-500/20',
-  'text-purple-400': 'bg-purple-500/15 border-purple-500/20',
+  'text-zinc-300':    'bg-zinc-700/30 border-zinc-700/40',
+  'text-zinc-400':    'bg-zinc-700/30 border-zinc-700/40',
+  'text-red-400':     'bg-red-500/15 border-red-500/20',
+  'text-amber-400':   'bg-amber-500/15 border-amber-500/20',
+  'text-blue-400':    'bg-blue-500/15 border-blue-500/20',
+  // Legacy accents — deprecated, kept so older panels keep rendering
+  'text-pink-400':    'bg-pink-500/15 border-pink-500/20',
+  'text-violet-400':  'bg-violet-500/15 border-violet-500/20',
+  'text-orange-400':  'bg-orange-500/15 border-orange-500/20',
+  'text-cyan-400':    'bg-cyan-500/15 border-cyan-500/20',
+  'text-purple-400':  'bg-purple-500/15 border-purple-500/20',
 };
 
 const colorToAccent: Record<string, string> = {
   'text-emerald-400': 'from-emerald-500',
-  'text-blue-400': 'from-blue-500',
-  'text-pink-400': 'from-pink-500',
-  'text-amber-400': 'from-amber-500',
-  'text-violet-400': 'from-violet-500',
-  'text-red-400': 'from-red-500',
-  'text-orange-400': 'from-orange-500',
-  'text-cyan-400': 'from-cyan-500',
-  'text-purple-400': 'from-purple-500',
+  'text-zinc-300':    'from-zinc-500',
+  'text-zinc-400':    'from-zinc-500',
+  'text-red-400':     'from-red-500',
+  'text-amber-400':   'from-amber-500',
+  'text-blue-400':    'from-blue-500',
+  'text-pink-400':    'from-pink-500',
+  'text-violet-400':  'from-violet-500',
+  'text-orange-400':  'from-orange-500',
+  'text-cyan-400':    'from-cyan-500',
+  'text-purple-400':  'from-purple-500',
 };
 
 /** Extract a numeric value and its prefix/suffix for animated counting */

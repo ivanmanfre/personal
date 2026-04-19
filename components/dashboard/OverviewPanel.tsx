@@ -129,20 +129,32 @@ const OverviewPanel: React.FC = () => {
       {/* Top stat cards */}
       <AnimateIn delay={0}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Posts (30d)" value={stats30d.count} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" trend={trends.posts} />
-          <StatCard label="Impressions (30d)" value={formatNum(stats30d.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" trend={trends.impressions} />
-          <StatCard label="Likes (30d)" value={formatNum(stats30d.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-pink-400" trend={trends.likes} />
-          <StatCard label="Comments (30d)" value={formatNum(stats30d.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-amber-400" trend={trends.comments} />
+          <StatCard label="Posts (30d)" value={stats30d.count} icon={<TrendingUp className="w-5 h-5" />} color="text-zinc-300" trend={trends.posts} />
+          <StatCard label="Impressions (30d)" value={formatNum(stats30d.totalImpressions)} icon={<Eye className="w-5 h-5" />} color="text-zinc-300" trend={trends.impressions} />
+          <StatCard label="Likes (30d)" value={formatNum(stats30d.totalLikes)} icon={<Heart className="w-5 h-5" />} color="text-zinc-300" trend={trends.likes} />
+          <StatCard label="Comments (30d)" value={formatNum(stats30d.totalComments)} icon={<MessageSquare className="w-5 h-5" />} color="text-zinc-300" trend={trends.comments} />
         </div>
       </AnimateIn>
 
       {/* Second row */}
       <AnimateIn delay={80}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="Engagement (30d)" value={`${stats30d.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" subValue={`${formatNum(stats30d.avgImpressions)} avg imp`} />
-          <StatCard label="Workflows" value={`${wfStats.active}/${wfStats.total}`} icon={<Activity className="w-5 h-5" />} color={wfStats.totalErrors24h > 3 ? 'text-red-400' : 'text-emerald-400'} subValue={`${wfStats.totalErrors24h} errors 24h`} />
-          <StatCard label="Alerts" value={alerts.length} icon={<Bell className="w-5 h-5" />} color="text-orange-400" subValue={alerts.filter((a) => !a.sent).length + ' unsent'} />
-          <StatCard label="Agent Msgs" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-cyan-400" subValue={`${messageStats.today} today`} />
+          <StatCard label="Engagement (30d)" value={`${stats30d.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-emerald-400" subValue={`${formatNum(stats30d.avgImpressions)} avg imp`} />
+          <StatCard
+            label="Workflows"
+            value={`${wfStats.active}/${wfStats.total}`}
+            icon={<Activity className="w-5 h-5" />}
+            color={wfStats.totalErrors24h > 3 ? 'text-red-400' : wfStats.totalErrors24h > 0 ? 'text-amber-400' : 'text-emerald-400'}
+            subValue={`${wfStats.totalErrors24h} errors 24h`}
+          />
+          <StatCard
+            label="Alerts"
+            value={alerts.length}
+            icon={<Bell className="w-5 h-5" />}
+            color={alerts.filter((a) => !a.sent).length > 0 ? 'text-amber-400' : 'text-zinc-300'}
+            subValue={alerts.filter((a) => !a.sent).length + ' unsent'}
+          />
+          <StatCard label="Agent Msgs" value={messageStats.total} icon={<MessageSquare className="w-5 h-5" />} color="text-zinc-300" subValue={`${messageStats.today} today`} />
         </div>
       </AnimateIn>
 
