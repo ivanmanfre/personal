@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target, Video, FlaskConical, Phone, Terminal, Film } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target, Video, FlaskConical, Phone, Terminal, Film, Search } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
 import StatusDot from './shared/StatusDot';
 import RefreshIndicator from './shared/RefreshIndicator';
+import CommandPalette, { commandsFromTabs, useCommandPaletteHotkey } from './shared/CommandPalette';
 import { useDashboard } from '../../contexts/DashboardContext';
 import type { Tab } from '../../types/dashboard';
 
@@ -61,7 +62,29 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
 const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const { systemHealth, lastRefreshed } = useDashboard();
+
+  useCommandPaletteHotkey(setPaletteOpen);
+  const paletteCommands = useMemo(() => [
+    ...commandsFromTabs(tabGroups, onTabChange),
+    {
+      id: 'open-settings',
+      label: 'Open Settings',
+      group: 'Actions',
+      icon: <Settings className="w-[18px] h-[18px]" />,
+      keywords: ['preferences', 'config'],
+      run: () => onTabChange('settings'),
+    },
+    {
+      id: 'logout',
+      label: 'Log out',
+      group: 'Actions',
+      icon: <LogOut className="w-[18px] h-[18px]" />,
+      keywords: ['signout', 'sign out'],
+      run: () => { logout(); onLogout(); },
+    },
+  ], [onTabChange, onLogout]);
 
   const handleLogout = () => {
     logout();
@@ -158,6 +181,15 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
         <div className="px-3 pb-4 pt-3 space-y-1">
           <button
+            onClick={() => setPaletteOpen(true)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none"
+            title="Open command palette (⌘K)"
+          >
+            <span className="opacity-60"><Search className="w-[18px] h-[18px]" /></span>
+            <span className="flex-1 text-left">Quick jump</span>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700/60">⌘K</kbd>
+          </button>
+          <button
             onClick={() => { onTabChange('settings'); setSidebarOpen(false); }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200 relative focus-visible:ring-2 focus-visible:ring-emerald-500/50 focus-visible:outline-none ${
               activeTab === 'settings'
@@ -204,6 +236,8 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
           {children}
         </div>
       </main>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={paletteCommands} />
     </div>
   );
 };
