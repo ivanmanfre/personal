@@ -283,7 +283,7 @@ const CompetitorIntelPanel: React.FC = () => {
             {/* Mobile cards */}
             <div className="space-y-2 md:hidden">
               {displayPosts.map((p) => (
-                <div key={p.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5">
+                <div key={p.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5 hover:border-zinc-700 hover:bg-zinc-800/30 transition-colors">
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-xs font-medium text-zinc-400">{p.competitorName.split(' ')[0]}</span>
                     <div className="flex items-center gap-2 text-[11px]">

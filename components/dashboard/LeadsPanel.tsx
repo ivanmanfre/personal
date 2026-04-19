@@ -169,7 +169,7 @@ const LeadsPanel: React.FC = () => {
           {/* Mobile cards */}
           <div className="space-y-2 md:hidden">
             {filteredLeads.map((lead) => (
-              <div key={lead.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5">
+              <div key={lead.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5 hover:border-zinc-700 hover:bg-zinc-800/30 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-zinc-200 text-sm">{lead.name || '—'}</p>
