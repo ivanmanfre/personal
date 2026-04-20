@@ -30,8 +30,8 @@ const ROI: React.FC = () => {
                     >
                         <Calculator size={16} /> 90-Day Payback Check
                     </motion.div>
-                    <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6">
-                        The <span className="font-drama italic text-zinc-400 inline-block">90-Day Payback</span> Rule
+                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight mb-6">
+                        The <span className="font-drama italic text-black inline-block">90-Day Payback</span> Rule
                     </h2>
                     <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-zinc-700">
                         If I can't recoup the project in 90 days, I don't build it. Here's what your number looks like.
@@ -87,8 +87,8 @@ const ROI: React.FC = () => {
                             </div>
                         </div>
 
-                        <p className="text-sm font-medium text-zinc-500 italic">
-                            *Blended value = the average hourly revenue target of the team members doing the manual work.
+                        <p className="text-sm font-medium text-zinc-500">
+                            Blended value = the average hourly revenue target of the team members doing the manual work.
                         </p>
                     </motion.div>
 

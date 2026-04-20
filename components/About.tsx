@@ -32,7 +32,7 @@ const About: React.FC = () => {
                             Most consultants focus on <span className="text-zinc-400">writing strategy decks.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-[1] tracking-tighter">
-                            I focus on <br /> <span className="font-drama italic text-accent">Deploying Systems.</span>
+                            I focus on <br /> <span className="text-accent">Deploying Systems.</span>
                         </h2>
                     </motion.div>
 

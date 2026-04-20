@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-lg font-bold hover:underline decoration-4 decoration-accent underline-offset-4 transition-all"
+                className="text-lg font-semibold hover:underline decoration-accent underline-offset-4 transition-all"
               >
                 {link.name}
               </a>
@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
               <Link
                 key={link.name}
                 to={`/${link.href}`}
-                className="text-lg font-bold hover:underline decoration-4 decoration-accent underline-offset-4 transition-all"
+                className="text-lg font-semibold hover:underline decoration-accent underline-offset-4 transition-all"
               >
                 {link.name}
               </Link>

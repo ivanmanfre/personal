@@ -112,7 +112,7 @@ const StartPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-6 pt-32 pb-16">
         <div className="max-w-2xl w-full bg-white border border-zinc-300 p-10 md:p-14 shadow-card text-center">
-          <div className="w-16 h-16 bg-accent/20 border-2 border-accent flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-accent/20 border border-accent flex items-center justify-center mx-auto mb-6">
             <Check size={32} className="text-black" strokeWidth={3} />
           </div>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">

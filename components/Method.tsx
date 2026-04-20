@@ -103,7 +103,7 @@ const Method: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}
-          className="bg-paper border border-zinc-300 p-8 md:p-12 mb-12 shadow-card"
+          className="bg-paper border border-[color:var(--color-hairline)] rounded-2xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
           <div className="flex items-center justify-between mb-8 border-b border-zinc-300 pb-4">
             <span className="font-mono text-xs uppercase tracking-widest text-zinc-500">

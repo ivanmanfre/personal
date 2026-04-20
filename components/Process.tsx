@@ -19,7 +19,7 @@ const steps = [
                         style={{ transformOrigin: "50px 50px" }}
                     />
                     <circle cx="50" cy="50" r="20" stroke="black" strokeWidth="1" fill="none" strokeDasharray="4 4" />
-                    <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="2" fill="none" />
+                    <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="1" fill="none" />
                     <line x1="50" y1="0" x2="50" y2="100" stroke="black" strokeWidth="1" opacity="0.3" />
                     <line x1="0" y1="50" x2="100" y2="50" stroke="black" strokeWidth="1" opacity="0.3" />
                     {[20, 45, 70, 85].map((pos, i) => (
@@ -58,7 +58,7 @@ const steps = [
                     />
                     <motion.path
                         d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-                        stroke="#3F6B4A"
+                        stroke="currentColor" style={{ color: 'var(--color-accent)' }}
                         strokeWidth="3"
                         fill="none"
                         initial={{ pathLength: 0, pathOffset: 1 }}
@@ -82,7 +82,7 @@ const steps = [
             <div className="w-48 h-48 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     {[20, 50, 80].map((y, i) => (
-                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#3F6B4A" strokeWidth="2" />
+                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
                     ))}
                     {[27, 57, 87].map((y, i) => (
                         <motion.line
@@ -92,15 +92,15 @@ const steps = [
                             x2="45"
                             y2={y}
                             stroke="#fff"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             initial={{ x: 0, opacity: 0 }}
                             animate={{ x: [0, 30, 0], opacity: [0, 1, 0] }}
                             transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
                         />
                     ))}
-                    <motion.circle cx="72" cy="27" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="57" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="87" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="27" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="57" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="87" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
                 </svg>
             </div>
         )
@@ -110,7 +110,7 @@ const steps = [
 const Connector: React.FC = () => (
     <div className="flex flex-col items-center relative z-10 py-0">
         {/* Output dot */}
-        <div className="w-5 h-5 rounded-full bg-white border-2 border-accent flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-white border border-accent flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-accent" />
         </div>
 
@@ -125,11 +125,11 @@ const Connector: React.FC = () => (
 
         {/* Arrow */}
         <svg width="16" height="10" viewBox="0 0 16 10" className="text-accent">
-            <path d="M8 10 L0 0 L16 0 Z" fill="#3F6B4A" />
+            <path d="M8 10 L0 0 L16 0 Z" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
         </svg>
 
         {/* Input dot */}
-        <div className="w-5 h-5 rounded-full bg-white border-2 border-accent flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-white border border-accent flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
         </div>
     </div>
@@ -139,7 +139,7 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-paper py-24 border-t border-zinc-200">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-black border border-black text-white font-bold tracking-wide text-xl shadow-lg ">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-black border border-black text-white font-bold tracking-wide text-xl shadow-card-subtle">
                     How We Work Together
                 </div>
             </div>
@@ -158,7 +158,7 @@ const Process: React.FC = () => {
                                 {/* Text */}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border border-zinc-300 shadow-sm">
+                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border border-[color:var(--color-hairline)] shadow-card-subtle">
                                             {step.id}
                                         </span>
                                         <div className="h-0.5 flex-grow bg-zinc-800 max-w-16" />

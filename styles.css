@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Space Grotesk', sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-drama: 'DM Serif Display', serif;
+  --font-sans: 'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-drama: 'Bodoni Moda', 'DM Serif Display', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* ── INK (text + borders) ───────────────────────────────── */

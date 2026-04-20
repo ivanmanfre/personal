@@ -192,7 +192,7 @@ const ProductDetail: React.FC = () => {
                     <img
                       src={product.sampleImage}
                       alt={`${product.name} sample output`}
-                      className="w-full h-auto border-2 border-dashed border-zinc-300"
+                      className="w-full h-auto border border-dashed border-zinc-300"
                     />
                   </div>
                   {product.samplePdf && (

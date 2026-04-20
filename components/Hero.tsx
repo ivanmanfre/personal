@@ -22,7 +22,7 @@ const Hero: React.FC = () => {
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-40 sm:w-48 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-lg object-cover object-top portrait-editorial"
+              className="w-40 sm:w-48 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-subtle object-cover object-top portrait-editorial"
             />
           </motion.div>
 
@@ -123,7 +123,7 @@ const Hero: React.FC = () => {
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-72 xl:w-80 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-xl object-cover object-top portrait-editorial"
+              className="w-72 xl:w-80 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-lift object-cover object-top portrait-editorial"
             />
           </motion.div>
 

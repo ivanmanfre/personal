@@ -38,7 +38,7 @@ const TelemetryTypewriter: React.FC = () => {
         <div className="w-full h-fit bg-zinc-950 border-subtle-thick border-zinc-800 shadow-lg relative overflow-hidden font-mono group hover:border-accent transition-colors">
 
             {/* Header Bar */}
-            <div className="bg-zinc-900 border-b-2 border-zinc-800 p-3 flex justify-between items-center relative z-10">
+            <div className="bg-zinc-900 border-b border-zinc-800 p-3 flex justify-between items-center relative z-10">
                 <div className="flex items-center gap-3">
                     <TerminalSquare size={16} className="text-zinc-500" />
                     <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">System_Telemetry.log</span>

@@ -10,7 +10,7 @@ const CTA: React.FC = () => {
                     whileInView={{ scale: 1, opacity: 1 }}
                     viewport={{ once: true }}
                     transition={{ type: "spring", duration: 0.8 }}
-                    className="bg-white border border-zinc-200 p-12 shadow-card max-w-4xl mx-auto"
+                    className="bg-white rounded-2xl border border-[color:var(--color-hairline)] p-12 shadow-card-subtle max-w-4xl mx-auto"
                 >
                     <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold mb-6 leading-[0.9]">
                         Ready to grow <br /> <span className="font-drama italic">without hiring?</span>

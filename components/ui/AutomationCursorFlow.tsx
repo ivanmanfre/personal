@@ -2,6 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Webhook, Brain, CheckCircle } from 'lucide-react';
 
+// Framer Motion animate arrays require concrete values. These MUST match
+// the canonical tokens in styles.css: --color-accent and a muted sibling.
+// If the accent hex changes, update here too (tokens docs: Design System v1).
+const ACCENT = '#3F6B4A';        // var(--color-accent)
+const ACCENT_MUTED = '#4C7B58';  // sibling used for the middle node pulse
+const INK_NEUTRAL = '#52525B';   // zinc-600 equivalent, for the output node
+
 const AutomationCursorFlow: React.FC = () => {
 
     return (
@@ -32,7 +39,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#3F6B4A", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -45,7 +52,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#4C7B58", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT_MUTED, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -58,7 +65,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", "#52525B", "#fff"] }}
+                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", INK_NEUTRAL, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.7, 0.9], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >

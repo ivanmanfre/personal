@@ -45,9 +45,9 @@ const CaseStudies: React.FC = () => {
           initial={{ y: 50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 text-center font-drama italic"
+          className="text-4xl sm:text-5xl md:text-6xl font-semibold mb-6 text-center tracking-tight"
         >
-          Results
+          <span className="font-drama italic">Results.</span>
         </motion.h2>
 
         {/* ICP badge */}
