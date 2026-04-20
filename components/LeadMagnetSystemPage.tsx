@@ -40,7 +40,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5">
+            <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
               Lead Magnet System
             </span>
           </motion.div>

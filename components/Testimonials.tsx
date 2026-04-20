@@ -74,7 +74,7 @@ const Testimonials: React.FC = () => {
     <section className="py-20 bg-paper border-t border-zinc-200 overflow-hidden relative z-20 flex flex-col gap-8">
       {/* Section Label */}
       <div className="container mx-auto px-6 relative z-40 flex justify-center mb-4">
-        <span className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-md">
+        <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
           Client Reviews
         </span>
       </div>

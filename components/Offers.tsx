@@ -75,7 +75,7 @@ const Offers: React.FC = () => {
           viewport={{ once: true }}
           className="mb-16"
         >
-          <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5 mb-6 inline-block">
+          <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-6">
             Work with me
           </span>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1] tracking-tighter">

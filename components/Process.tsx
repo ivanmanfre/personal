@@ -139,9 +139,9 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-paper py-24 border-t border-zinc-200">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-black border border-black text-white font-bold tracking-wide text-xl shadow-card-subtle">
+                <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
                     How We Work Together
-                </div>
+                </span>
             </div>
 
             <div className="container mx-auto px-6 max-w-4xl flex flex-col items-center">

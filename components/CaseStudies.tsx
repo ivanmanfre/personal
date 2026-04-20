@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 const cases = [
   {
     id: "01",
-    client: "ProvalTech",
-    industry: "Sales Tech",
+    client: "B2B sales platform",
+    industry: "SaaS",
     title: "AI Call Auditing",
-    metric: "100% coverage",
+    metric: "5% → 100%",
     desc: "Sales calls are the highest-judgment, lowest-documented work in a sales org. We wrote down how their best manager grades a call — 8 criteria, scored 1-5 — then let the agent apply it to every call instead of the 5% a human could sample. Humans still review flagged calls. That's the design, not a workaround.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
@@ -15,25 +15,25 @@ const cases = [
   },
   {
     id: "02",
-    client: "Lemonade",
-    industry: "Marketing Agency",
-    title: "Interactive Lead Magnet System",
-    metric: "20-question scorecard",
-    desc: "Lead qualification used to get pushed to whoever answered the form. We turned it into a 20-question scorecard — structured input, fixed rubric — so every lead arrives pre-scored. The agency team spends time on qualified conversations, not triage.",
+    client: "Marketing agency",
+    industry: "Services",
+    title: "Lead Magnet System",
+    metric: "Live in 3 weeks",
+    desc: "Their lead gen lived in someone's head. We productized it: interactive landing page, CMS-driven magnet library, CRM wired in, and an email sequence that runs itself. Now when a new magnet is needed, the team swaps copy in the CMS and ships — no dev, no agency, no waiting.",
     readiness: "4/4 Agent-Ready",
-    color: "bg-black",
+    color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "03",
-    client: "MediaScale",
-    industry: "Media / Content",
+    client: "Content studio",
+    industry: "Media",
     title: "Content Engine",
     metric: "1 video → 20 posts",
     desc: "Content repurposing is judgment-heavy until you break it down: what's the hook, what's the takeaway, what's the format. We wrote that logic once. One video in, 20 outputs ready for human review. The person who used to draft posts now edits them.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
-    metricBox: "bg-black border border-[color:var(--color-hairline)] text-white"
+    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
   }
 ];
 
@@ -58,7 +58,7 @@ const CaseStudies: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-16"
         >
-          <span className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-xs uppercase tracking-widest border border-zinc-700 shadow-md">
+          <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
             Agencies · Consultancies · Law &amp; Accounting firms
           </span>
         </motion.div>

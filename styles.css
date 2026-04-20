@@ -87,9 +87,12 @@ body {
   scrollbar-width: none;
 }
 
-/* Editorial portrait regrade — desaturate slightly, warm undertone, lift contrast */
+/* Editorial portrait regrade — desaturate heavily (kill the green backdrop),
+   warm undertone, lift contrast. Without real reshoot this CSS filter
+   is what takes the green-gradient studio portrait and tones it toward
+   a putty/paper feel that lives inside the cream brand system. */
 .portrait-editorial {
-  filter: saturate(0.8) sepia(0.1) contrast(1.08) brightness(0.97);
+  filter: saturate(0.45) sepia(0.18) contrast(1.1) brightness(0.95);
 }
 
 /* View Transitions API — named elements animate smoothly across route changes */

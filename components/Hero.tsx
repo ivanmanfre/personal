@@ -45,7 +45,7 @@ const Hero: React.FC = () => {
               transition={{ duration: 0.4 }}
               className="mb-5"
             >
-              <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5">
+              <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
                 Agent-Ready Ops™
               </span>
             </motion.div>
