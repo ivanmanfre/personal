@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -11,6 +11,20 @@ import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
 import FractionalPage from './components/FractionalPage';
 import ScrollToTop from './components/ScrollToTop';
 
+// View Transitions API wrapper — smooth cross-fade between routes on supported browsers.
+// Falls back to instant navigation on browsers without document.startViewTransition.
+function useRouteViewTransition(pathname: string) {
+  const prevPath = useRef(pathname);
+  useEffect(() => {
+    if (prevPath.current === pathname) return;
+    prevPath.current = pathname;
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+    if (typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => {});
+    }
+  }, [pathname]);
+}
+
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 
@@ -18,6 +32,8 @@ function App() {
   const location = useLocation();
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isViewer = location.pathname.startsWith('/v/');
+
+  useRouteViewTransition(location.pathname);
 
   // Public video viewer — full-screen, no nav/footer
   if (isViewer) {

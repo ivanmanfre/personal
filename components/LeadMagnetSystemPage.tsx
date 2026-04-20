@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
+import { useMetadata } from '../hooks/useMetadata';
 
 const deliverables = [
   'Interactive landing page (scorecard, assessment, or calculator format)',
@@ -24,6 +25,11 @@ const notIncluded = [
 ];
 
 const LeadMagnetSystemPage: React.FC = () => {
+  useMetadata({
+    title: 'Lead Magnet System | Manfredi',
+    description: 'Productized 3-week build. Interactive landing page + CMS-driven magnet + CRM wired + nurture sequence. A lead gen asset that works without a marketing team. $8-12k fixed.',
+    canonical: 'https://ivanmanfredi.com/lead-magnet-system',
+  });
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">

@@ -22,9 +22,109 @@
     <meta name="twitter:title" content="Iván Manfredi | Agent-Ready Ops™" />
     <meta name="twitter:description" content="AI systems for growing service businesses. Systems scale. Headcount doesn't." />
     <meta name="twitter:image" content="https://ivanmanfredi.com/profile.jpg" />
+    <link rel="canonical" href="https://ivanmanfredi.com/" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Space+Grotesk:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Structured data: Person + ProfessionalService (Agent-Ready Ops) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Person",
+          "@id": "https://ivanmanfredi.com/#person",
+          "name": "Iván Manfredi",
+          "url": "https://ivanmanfredi.com",
+          "image": "https://ivanmanfredi.com/ivan-portrait.jpg",
+          "jobTitle": "Founder, Agent-Ready Ops",
+          "description": "AI systems builder for growing service businesses. Creator of the Agent-Ready Ops methodology.",
+          "sameAs": [
+            "https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/"
+          ],
+          "knowsAbout": [
+            "AI automation",
+            "Agent-Ready Ops",
+            "Operations consulting",
+            "Workflow automation",
+            "AI systems design"
+          ]
+        },
+        {
+          "@type": "ProfessionalService",
+          "@id": "https://ivanmanfredi.com/#service",
+          "name": "Agent-Ready Ops",
+          "url": "https://ivanmanfredi.com",
+          "provider": { "@id": "https://ivanmanfredi.com/#person" },
+          "serviceType": "AI systems consulting for growing service businesses",
+          "areaServed": ["US", "CA", "UK", "EU"],
+          "audience": {
+            "@type": "Audience",
+            "audienceType": "Growing service businesses — agencies, consultancies, law firms, accounting firms (10-100 employees)"
+          },
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Agent-Ready Assessment",
+              "description": "Paid 1-week diagnostic scoring your operation against the 4 Agent-Ready preconditions. Scorecard + 30-day roadmap.",
+              "price": "2500",
+              "priceCurrency": "USD",
+              "url": "https://ivanmanfredi.com/assessment"
+            },
+            {
+              "@type": "Offer",
+              "name": "Lead Magnet System",
+              "description": "3-week productized build: interactive landing page + CMS-driven magnet + CRM integration + email automation.",
+              "price": "8000",
+              "priceCurrency": "USD",
+              "priceSpecification": {
+                "@type": "PriceSpecification",
+                "minPrice": "8000",
+                "maxPrice": "12000",
+                "priceCurrency": "USD"
+              },
+              "url": "https://ivanmanfredi.com/lead-magnet-system"
+            },
+            {
+              "@type": "Offer",
+              "name": "Fractional AI Partner",
+              "description": "Monthly retainer. Strategic AI ownership for growing service firms. Three tiers based on engagement depth.",
+              "url": "https://ivanmanfredi.com/fractional"
+            }
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "@id": "https://ivanmanfredi.com/#agent-ready-ops-method",
+          "name": "Agent-Ready Ops — The 4 Preconditions",
+          "description": "The methodology Iván Manfredi uses to evaluate whether a business is ready to deploy AI systems successfully. Every AI project that ships meets these four conditions.",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "Structured input data",
+              "text": "Intake captures what the agent needs, every time. No free-text chaos."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Documentable decision logic",
+              "text": "Your best person can write down how they decide. Then we encode it."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Narrow initial scope",
+              "text": "One job, done end-to-end, before widening. Small wins compound."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "Human-in-the-loop by design",
+              "text": "Routed review is the design, not the rescue. Failure paths planned upfront."
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <!-- GitHub Pages SPA redirect handler -->
     <script>
       (function(l) {

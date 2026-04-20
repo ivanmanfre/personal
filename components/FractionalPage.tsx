@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
+import { useMetadata } from '../hooks/useMetadata';
 
 const tiers = [
   {
@@ -56,6 +57,11 @@ const notIncluded = [
 ];
 
 const FractionalPage: React.FC = () => {
+  useMetadata({
+    title: 'Fractional AI Partner | Manfredi',
+    description: 'Your AI strategy, owned by someone who ships. Monthly retainer in three tiers. For growing service firms at $1-5M+ ARR that want infrastructure, not another consultant.',
+    canonical: 'https://ivanmanfredi.com/fractional',
+  });
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">

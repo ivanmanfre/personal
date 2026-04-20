@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
+import { useMetadata } from '../hooks/useMetadata';
 
 interface FormData {
   companySize: string;
@@ -54,6 +55,11 @@ const decisionMakerOptions = [
 const CALENDLY_URL = 'https://calendly.com/ivan-intelligents/30min';
 
 const StartPage: React.FC = () => {
+  useMetadata({
+    title: 'Book a call | Manfredi',
+    description: 'Answer 7 quick questions to help me come prepared. Filters for decision-maker, timeline, and budget fit so we don\'t waste each other\'s 30 minutes.',
+    canonical: 'https://ivanmanfredi.com/start',
+  });
   const [step, setStep] = useState<'form' | 'approved' | 'waitlist'>('form');
   const [form, setForm] = useState<FormData>({
     companySize: '',

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
+import { useMetadata } from '../hooks/useMetadata';
 
 const preconditions = [
   {
@@ -33,6 +34,11 @@ const deliverables = [
 ];
 
 const AssessmentPage: React.FC = () => {
+  useMetadata({
+    title: 'Agent-Ready Assessment | Manfredi',
+    description: 'A paid 1-week diagnostic that scores your operation on the 4 Agent-Ready preconditions. Scorecard + 30-day roadmap. $2,500, 100% credited toward any follow-on engagement.',
+    canonical: 'https://ivanmanfredi.com/assessment',
+  });
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">
