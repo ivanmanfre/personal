@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, ShieldCheck } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const reviews = [
@@ -74,10 +74,9 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
           ))}
         </div>
       </div>
-      <a href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-        <ShieldCheck size={18} className="text-accent" />
-        <span className="text-xs font-bold uppercase text-black tracking-wider">Verified on Upwork</span>
-      </a>
+      <span className="flex items-center gap-2">
+        <span className="text-xs font-bold uppercase text-zinc-500 tracking-wider">Verified review</span>
+      </span>
     </div>
   </div>
 );
@@ -87,14 +86,9 @@ const Testimonials: React.FC = () => {
     <section className="py-20 bg-paper border-t border-zinc-200 overflow-hidden relative z-20 flex flex-col gap-8">
       {/* Section Label */}
       <div className="container mx-auto px-6 relative z-40 flex justify-center mb-4">
-        <a
-          href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-md hover:-translate-y-0.5 transition-transform"
-        >
-          [ CLIENT REVIEWS ] <span className="text-accent">| 100% JSS</span>
-        </a>
+        <span className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-zinc-700 text-white font-mono text-xs uppercase tracking-widest shadow-md">
+          Client Reviews
+        </span>
       </div>
 
       {/* Marquee Area */}

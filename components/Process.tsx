@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 const steps = [
     {
         id: '01',
-        title: 'Diagnostic Phase',
-        desc: 'I map every process, data flow, and manual touchpoint in your business to find exactly where time and capital are leaking.',
+        title: 'Agent-Ready Assessment',
+        desc: 'A paid 1-week diagnostic. I score your ops on the 4 preconditions and deliver a scorecard plus a 30-day roadmap. You find out whether to build now or fix the foundation first. $2,500, credited back if you move forward.',
         color: 'bg-white',
         textColor: 'text-black',
         icon: (
@@ -40,8 +40,8 @@ const steps = [
     },
     {
         id: '02',
-        title: 'Architecture Blueprint',
-        desc: 'You receive a complete system architecture: every data flow, decision point, and integration mapped out — so you see exactly what gets built before we start.',
+        title: 'Architecture + prep',
+        desc: 'If preconditions pass, I design the full system end-to-end. Every data flow, decision point, and integration mapped out. If preconditions fail, we fix the foundation first. You see exactly what gets built before we start.',
         color: 'bg-black',
         textColor: 'text-white',
         icon: (
@@ -74,8 +74,8 @@ const steps = [
     },
     {
         id: '03',
-        title: 'Build & Launch',
-        desc: 'I build, test, and deploy the system end-to-end into your existing tools. Your team goes from manual work to automated flow — typically within weeks.',
+        title: 'Build, launch, maintain',
+        desc: 'I build the system, test it, deploy it into your stack. Most projects ship in 3-4 weeks. After launch, clients typically move to a Care Plan or Fractional retainer so the system keeps running as your business grows.',
         color: 'bg-zinc-900',
         textColor: 'text-white',
         icon: (
