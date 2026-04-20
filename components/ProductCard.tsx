@@ -8,6 +8,7 @@ const categoryColors: Record<string, string> = {
   workflow: 'bg-accent',
   template: 'bg-cyan',
   agent: 'bg-pink',
+  service: 'bg-amber-300',
 };
 
 const item: Variants = {

@@ -36,7 +36,7 @@ export interface Testimonial {
   image: string;
 }
 
-export type ProductCategory = 'workflow' | 'template' | 'agent';
+export type ProductCategory = 'workflow' | 'template' | 'agent' | 'service';
 
 export interface PricingTier {
   id: string;

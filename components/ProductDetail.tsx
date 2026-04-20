@@ -10,6 +10,7 @@ const categoryColors: Record<string, string> = {
   workflow: 'bg-accent',
   template: 'bg-cyan',
   agent: 'bg-pink',
+  service: 'bg-amber-300',
 };
 
 const ProductDetail: React.FC = () => {
@@ -25,10 +26,11 @@ const ProductDetail: React.FC = () => {
   const handleBuy = (tier: PricingTier) => {
     if (!tier.checkoutUrl || tier.checkoutUrl === '#') return;
 
-    if (tier.id === 'custom-install') {
-      window.open(tier.checkoutUrl, '_blank');
-    } else {
+    const isLemon = tier.checkoutUrl.includes('lemonsqueezy.com');
+    if (isLemon) {
       (window as any).LemonSqueezy?.Url?.Open?.(tier.checkoutUrl);
+    } else {
+      window.open(tier.checkoutUrl, '_blank');
     }
   };
 
