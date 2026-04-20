@@ -200,7 +200,7 @@ const FractionalPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-black text-white p-10 md:p-12 text-center"
+            className="bg-black text-white rounded-2xl p-8 md:p-12 text-center"
           >
             <h2 className="text-3xl md:text-4xl font-semibold mb-4 tracking-tight">
               Talk through the fit

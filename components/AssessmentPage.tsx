@@ -139,7 +139,7 @@ const AssessmentPage: React.FC = () => {
               {preconditions.map((item) => (
                 <div
                   key={item.number}
-                  className="border border-zinc-300 bg-white p-6 shadow-sm"
+                  className="rounded-2xl border border-[color:var(--color-hairline)] bg-white p-6"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="font-mono text-xs text-zinc-500">{item.number}</span>
@@ -198,7 +198,7 @@ const AssessmentPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="bg-black text-white p-10 md:p-12 text-center"
+            className="bg-black text-white rounded-2xl p-8 md:p-12 text-center"
           >
             <h2 className="text-3xl md:text-4xl font-semibold mb-4 tracking-tight">
               Start the Assessment

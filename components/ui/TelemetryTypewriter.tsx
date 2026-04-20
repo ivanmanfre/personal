@@ -35,7 +35,7 @@ const TelemetryTypewriter: React.FC = () => {
     }, [currentIndex]);
 
     return (
-        <div className="w-full h-fit bg-zinc-950 border-subtle-thick border-zinc-800 shadow-lg relative overflow-hidden font-mono group hover:border-accent transition-colors">
+        <div className="w-full h-fit bg-zinc-950 rounded-2xl border border-zinc-800 shadow-card-subtle relative overflow-hidden font-mono group hover:border-accent transition-colors">
 
             {/* Header Bar */}
             <div className="bg-zinc-900 border-b border-zinc-800 p-3 flex justify-between items-center relative z-10">

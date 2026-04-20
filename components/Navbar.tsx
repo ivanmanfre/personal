@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${scrolled
-        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border border-zinc-300 shadow-lg'
+        ? 'top-2 left-2 right-2 md:top-6 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-5xl py-3 bg-paper/90 backdrop-blur-md border border-[color:var(--color-hairline-bold)] shadow-card-lift'
         : 'top-0 left-0 right-0 py-6 bg-transparent border-transparent'
       }`}>
       <div className="container mx-auto px-6 flex justify-between items-center">

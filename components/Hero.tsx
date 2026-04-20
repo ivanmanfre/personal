@@ -60,7 +60,7 @@ const Hero: React.FC = () => {
             >
               Systems scale.{' '}
               <br className="hidden md:block" />
-              <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-lg">
+              <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-card-subtle">
                 <span className="relative z-10 text-accent font-bold tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
                   <ScrambleText text="HEADCOUNT DOESN'T" />
                 </span>
@@ -82,7 +82,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="hidden sm:flex flex-wrap items-center gap-3 sm:gap-5 mb-8 text-sm text-zinc-500"
+              className="hidden sm:flex flex-wrap items-center gap-3 sm:gap-4 mb-8 text-sm text-zinc-500"
             >
               <span>40+ systems shipped</span>
               <span className="text-zinc-300">·</span>

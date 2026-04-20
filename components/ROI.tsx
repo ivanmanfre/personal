@@ -127,7 +127,7 @@ const ROI: React.FC = () => {
 
                         <a
                             href="/assessment"
-                            className="w-full mt-2 px-8 py-5 bg-accent border-subtle-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
+                            className="w-full mt-2 px-8 py-5 bg-accent rounded-lg border-subtle-thick shadow-card-subtle hover:shadow-card-lift hover:-translate-y-1 transition-all active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
                         >
                             See if you're Agent-Ready <ArrowRight size={24} />
                         </a>

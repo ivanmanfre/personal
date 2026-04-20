@@ -12,12 +12,12 @@ const INK_NEUTRAL = '#52525B';   // zinc-600 equivalent, for the output node
 const AutomationCursorFlow: React.FC = () => {
 
     return (
-        <div className="w-full h-80 bg-white border border-zinc-200 shadow-lg relative overflow-hidden group hover:border-accent transition-colors">
+        <div className="w-full h-80 bg-white rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden group hover:border-accent transition-colors">
 
             {/* Decorative Grid */}
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)", backgroundSize: '20px 20px' }} />
 
-            <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 shadow-sm z-20">
+            <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 z-20">
                 Agent-Ready Pipeline
             </div>
 
@@ -80,7 +80,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <motion.div
                         animate={{ opacity: [1, 0.6, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 border border-zinc-300 shadow-sm"
+                        className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 border border-[color:var(--color-hairline)]"
                     >
                         <CheckCircle size={14} className="text-black" />
                         <span className="font-mono text-xs uppercase font-bold text-black tracking-widest">
@@ -104,7 +104,7 @@ const AutomationCursorFlow: React.FC = () => {
                     ease: "easeInOut",
                     times: [0, 0.1, 0.15, 0.4, 0.45, 0.7, 0.75, 1]
                 }}
-                className="absolute z-30 pointer-events-none drop-shadow-xl"
+                className="absolute z-30 pointer-events-none drop-shadow-md"
                 style={{ width: '28px', height: '28px' }}
             >
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
