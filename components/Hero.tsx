@@ -7,7 +7,7 @@ const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex flex-col justify-center bg-paper overflow-hidden">
       {/* Grid Background */}
-      <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-25 pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-[0.12] pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10 max-w-5xl mx-auto">
@@ -45,12 +45,12 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
-              className="text-4xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight leading-[1.1] mb-5"
+              className="text-4xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] mb-5"
             >
               Systems scale.{' '}
               <br className="hidden md:block" />
               <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-lg">
-                <span className="relative z-10 text-accent font-black tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
+                <span className="relative z-10 text-accent font-bold tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
                   <ScrambleText text="HEADCOUNT DOESN'T" />
                 </span>
               </span>

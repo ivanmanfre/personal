@@ -58,7 +58,7 @@ const steps = [
                     />
                     <motion.path
                         d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-                        stroke="#2A8F65"
+                        stroke="#3F6B4A"
                         strokeWidth="3"
                         fill="none"
                         initial={{ pathLength: 0, pathOffset: 1 }}
@@ -82,7 +82,7 @@ const steps = [
             <div className="w-48 h-48 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     {[20, 50, 80].map((y, i) => (
-                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#2A8F65" strokeWidth="2" />
+                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="#3F6B4A" strokeWidth="2" />
                     ))}
                     {[27, 57, 87].map((y, i) => (
                         <motion.line
@@ -98,9 +98,9 @@ const steps = [
                             transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }}
                         />
                     ))}
-                    <motion.circle cx="72" cy="27" r="2" fill="#2A8F65" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="57" r="2" fill="#2A8F65" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
-                    <motion.circle cx="72" cy="87" r="2" fill="#2A8F65" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="27" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.5, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="57" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }} />
+                    <motion.circle cx="72" cy="87" r="2" fill="#3F6B4A" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.6, repeat: Infinity }} />
                 </svg>
             </div>
         )
@@ -125,7 +125,7 @@ const Connector: React.FC = () => (
 
         {/* Arrow */}
         <svg width="16" height="10" viewBox="0 0 16 10" className="text-accent">
-            <path d="M8 10 L0 0 L16 0 Z" fill="#2A8F65" />
+            <path d="M8 10 L0 0 L16 0 Z" fill="#3F6B4A" />
         </svg>
 
         {/* Input dot */}

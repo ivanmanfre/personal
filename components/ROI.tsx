@@ -18,7 +18,7 @@ const ROI: React.FC = () => {
 
     return (
         <section className="py-24 bg-paper border-b border-zinc-200 relative overflow-hidden" id="roi-calculator">
-            <div className="absolute inset-0 bg-grid-pattern opacity-50 z-0"></div>
+            <div className="absolute inset-0 bg-grid-pattern opacity-[0.2] z-0"></div>
             <div className="container mx-auto px-6 max-w-5xl relative z-10">
 
                 <div className="text-center mb-16">

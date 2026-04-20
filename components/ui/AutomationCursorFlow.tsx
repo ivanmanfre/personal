@@ -32,7 +32,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#2A8F65", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#3F6B4A", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
@@ -45,7 +45,7 @@ const AutomationCursorFlow: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <motion.div
                             initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#3DA87A", "#fff"] }}
+                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", "#4C7B58", "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
                             className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
