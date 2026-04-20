@@ -510,32 +510,29 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="w-full bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500"
           />
-        ) : (
-          {(() => {
-            // Title precedence: a real (non-placeholder) user title wins, otherwise
-            // show the auto_title with an "auto" badge. Treat "Recording DD/MM/YYYY HH:MM"
-            // as a placeholder — that's just the upload-time default.
-            const isPlaceholder = (t: string | null | undefined) => !t || /^Recording\s+\d/i.test(t.trim());
-            const titleIsPlaceholder = isPlaceholder(rec.title);
-            const showAutoTitle = titleIsPlaceholder && !!rec.autoTitle;
-            const inFlight = rec.autoTitleStatus === 'transcribing' || rec.autoTitleStatus === 'titling';
-            return (
-              <h3
-                className="text-sm font-medium text-zinc-200 truncate cursor-text hover:text-white flex items-center gap-1.5"
-                onDoubleClick={(e) => { e.stopPropagation(); onStartEditTitle(); }}
-                title={showAutoTitle ? 'Auto-generated — double-click to override' : !titleIsPlaceholder ? 'Double-click to edit' : inFlight ? 'Generating title…' : 'Double-click to edit'}
-              >
-                <span className="truncate">{showAutoTitle ? rec.autoTitle : (rec.title || rec.autoTitle || 'Untitled recording')}</span>
-                {showAutoTitle && (
-                  <span className="shrink-0 text-[9px] font-mono uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">auto</span>
-                )}
-                {titleIsPlaceholder && !rec.autoTitle && inFlight && (
-                  <Loader2 className="w-3 h-3 text-zinc-500 animate-spin shrink-0" />
-                )}
-              </h3>
-            );
-          })()}
-        )}
+        ) : (() => {
+          // Title precedence: a real (non-placeholder) user title wins, otherwise
+          // show the auto_title with an "auto" badge. Treat "Recording DD/MM/YYYY HH:MM"
+          // as a placeholder — that's just the upload-time default.
+          const titleIsPlaceholder = !rec.title || /^Recording\s+\d/i.test(rec.title.trim());
+          const showAutoTitle = titleIsPlaceholder && !!rec.autoTitle;
+          const inFlight = rec.autoTitleStatus === 'transcribing' || rec.autoTitleStatus === 'titling';
+          return (
+            <h3
+              className="text-sm font-medium text-zinc-200 truncate cursor-text hover:text-white flex items-center gap-1.5"
+              onDoubleClick={(e) => { e.stopPropagation(); onStartEditTitle(); }}
+              title={showAutoTitle ? 'Auto-generated — double-click to override' : !titleIsPlaceholder ? 'Double-click to edit' : inFlight ? 'Generating title…' : 'Double-click to edit'}
+            >
+              <span className="truncate">{showAutoTitle ? rec.autoTitle : (rec.title || rec.autoTitle || 'Untitled recording')}</span>
+              {showAutoTitle && (
+                <span className="shrink-0 text-[9px] font-mono uppercase tracking-wider px-1 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">auto</span>
+              )}
+              {titleIsPlaceholder && !rec.autoTitle && inFlight && (
+                <Loader2 className="w-3 h-3 text-zinc-500 animate-spin shrink-0" />
+              )}
+            </h3>
+          );
+        })()}
 
         <div className="flex items-center justify-between text-[11px] text-zinc-500">
           <div className="flex items-center gap-3">
