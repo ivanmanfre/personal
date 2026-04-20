@@ -4,25 +4,46 @@
   --font-sans: 'Space Grotesk', sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
   --font-drama: 'DM Serif Display', serif;
-  --font-mono: monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
+  /* ── INK (text + borders) ───────────────────────────────── */
   --color-primary: #1A1A1A;
-  /* Softened dark */
+  --color-ink: #1A1A1A;
+  --color-ink-soft: #4A4A48;
+  --color-ink-mute: #8A8680;
+  --color-hairline: rgba(26, 26, 26, 0.15);
+  --color-hairline-bold: rgba(26, 26, 26, 0.25);
+
+  /* ── PAPER (backgrounds) ────────────────────────────────── */
   --color-paper: #F7F4EF;
+  --color-paper-sunk: #EFEBE3;
+  --color-paper-raise: #FFFFFF;
+
+  /* ── ACCENT (the ONE brand accent) ──────────────────────── */
   --color-accent: #3F6B4A;
-  /* Deep Bottle Green — desaturated, editorial, reads premium against cream */
+  --color-accent-ink: #2A4A33;
+  --color-accent-soft: rgba(63, 107, 74, 0.08);
+
+  /* ── Deprecated — do not use in new code ───────────────── */
   --color-cyan: #1E40AF;
-  /* Steel Blue */
   --color-pink: #E8366D;
 
-  /* Premium Soft Shadows */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-card-active: 0 1px 2px rgba(0, 0, 0, 0.1);
+  /* ── SHADOWS (two tiers only) ───────────────────────────── */
+  --shadow-card-subtle: 0 1px 3px rgba(26, 26, 26, 0.06), 0 1px 2px rgba(26, 26, 26, 0.04);
+  --shadow-card-lift: 0 8px 24px rgba(26, 26, 26, 0.10), 0 2px 6px rgba(26, 26, 26, 0.05);
 
-  --shadow-card-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
-  --shadow-card-sm-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-card-sm-active: 0 1px 2px rgba(0, 0, 0, 0.08);
+  /* Legacy shadow aliases — map to new subtle/lift so existing classes keep working */
+  --shadow-card: 0 1px 3px rgba(26, 26, 26, 0.06), 0 1px 2px rgba(26, 26, 26, 0.04);
+  --shadow-card-hover: 0 8px 24px rgba(26, 26, 26, 0.10), 0 2px 6px rgba(26, 26, 26, 0.05);
+  --shadow-card-active: 0 1px 2px rgba(26, 26, 26, 0.06);
+  --shadow-card-sm: 0 1px 2px rgba(26, 26, 26, 0.04);
+  --shadow-card-sm-hover: 0 2px 6px rgba(26, 26, 26, 0.05);
+  --shadow-card-sm-active: 0 1px 2px rgba(26, 26, 26, 0.04);
+
+  /* ── RADIUS ─────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
 }
 
 body {
@@ -71,13 +92,13 @@ body {
   filter: saturate(0.8) sepia(0.1) contrast(1.08) brightness(0.97);
 }
 
-/* Sophisticated borders */
+/* Sophisticated borders — point to canonical hairline tokens */
 .border-subtle {
-  border: 1px solid rgba(26, 26, 26, 0.15);
+  border: 1px solid var(--color-hairline);
 }
 
 .border-subtle-thick {
-  border: 1px solid rgba(26, 26, 26, 0.2);
+  border: 1px solid var(--color-hairline-bold);
 }
 
 /* Magnetic Button Interactions */

@@ -39,43 +39,31 @@ const reviews = [
 const marqueeReviews = [...reviews, ...reviews];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
-  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white border border-zinc-200 p-5 sm:p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card">
-    {/* Tech Decoration: Parallel Lines */}
-    <div className="absolute top-0 right-0 p-4 flex gap-1.5 opacity-20 group-hover:opacity-100 transition-opacity">
-      <div className="w-1.5 h-6 bg-black transform -skew-x-12"></div>
-      <div className="w-1.5 h-6 bg-black transform -skew-x-12"></div>
-      <div className="w-1.5 h-6 bg-accent transform -skew-x-12"></div>
-    </div>
+  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card-subtle">
 
     {/* Project Badge */}
     <div className="mb-8">
-      <div className="flex flex-col items-start gap-1">
-        <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-widest">Project Deployed</span>
-        <span className="bg-black text-white px-3 py-1.5 text-sm font-bold uppercase tracking-wide border border-black shadow-sm">
-          {review.project}
-        </span>
-      </div>
+      <span className="text-[11px] font-mono uppercase text-zinc-500 tracking-widest font-medium">
+        {review.project}
+      </span>
     </div>
 
-    {/* Content */}
+    {/* Content — italic serif pull quote */}
     <div className="relative z-10 mb-8 flex-grow">
-      <p className="font-display font-medium text-2xl md:text-3xl text-zinc-700 italic leading-tight tracking-wide group-hover:text-black transition-colors duration-300">
+      <p className="font-drama italic text-2xl md:text-3xl text-zinc-700 leading-tight group-hover:text-black transition-colors duration-300">
         "{review.text}"
       </p>
     </div>
 
     {/* Footer */}
-    <div className="border-t border-zinc-200 pt-5 mt-auto flex justify-between items-end">
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] uppercase font-mono text-zinc-500 font-medium">Client Rating</span>
-        <div className="flex gap-1">
-          {[...Array(review.rating)].map((_, i) => (
-            <Star key={i} size={18} className="fill-accent text-accent" />
-          ))}
-        </div>
+    <div className="border-t border-[color:var(--color-hairline)] pt-5 mt-auto flex justify-between items-center">
+      <div className="flex gap-1">
+        {[...Array(review.rating)].map((_, i) => (
+          <Star key={i} size={14} className="fill-accent text-accent" />
+        ))}
       </div>
-      <span className="flex items-center gap-2">
-        <span className="text-xs font-bold uppercase text-zinc-500 tracking-wider">Verified review</span>
+      <span className="text-[11px] font-medium uppercase text-zinc-500 tracking-widest">
+        Verified review
       </span>
     </div>
   </div>

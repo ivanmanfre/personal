@@ -10,8 +10,8 @@ const cases = [
     metric: "100% coverage",
     desc: "Sales calls are the highest-judgment, lowest-documented work in a sales org. We wrote down how their best manager grades a call — 8 criteria, scored 1-5 — then let the agent apply it to every call instead of the 5% a human could sample. Humans still review flagged calls. That's the design, not a workaround.",
     readiness: "4/4 Agent-Ready",
-    color: "bg-accent",
-    metricBox: "bg-white border border-zinc-300 text-black"
+    color: "bg-[color:var(--color-paper-sunk)]",
+    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "02",
@@ -22,7 +22,7 @@ const cases = [
     desc: "Lead qualification used to get pushed to whoever answered the form. We turned it into a 20-question scorecard — structured input, fixed rubric — so every lead arrives pre-scored. The agency team spends time on qualified conversations, not triage.",
     readiness: "4/4 Agent-Ready",
     color: "bg-black",
-    metricBox: "bg-accent border border-zinc-300 text-black"
+    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "03",
@@ -32,8 +32,8 @@ const cases = [
     metric: "1 video → 20 posts",
     desc: "Content repurposing is judgment-heavy until you break it down: what's the hook, what's the takeaway, what's the format. We wrote that logic once. One video in, 20 outputs ready for human review. The person who used to draft posts now edits them.",
     readiness: "4/4 Agent-Ready",
-    color: "bg-white border border-zinc-200",
-    metricBox: "bg-black border border-zinc-300 text-white"
+    color: "bg-[color:var(--color-paper-sunk)]",
+    metricBox: "bg-black border border-[color:var(--color-hairline)] text-white"
   }
 ];
 
@@ -71,7 +71,7 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 border border-zinc-200 shadow-card bg-white group hover-lift hover:shadow-card-hover transition-all"
+              className="flex-1 rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-white group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>

@@ -93,18 +93,18 @@ const Offers: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className={`group flex flex-col p-8 border shadow-card hover-lift transition-all ${
+              className={`group flex flex-col rounded-2xl p-8 border shadow-card-subtle hover:shadow-card-lift transition-all ${
                 offer.highlighted
                   ? 'bg-black text-white border-black'
-                  : 'bg-white text-black border-zinc-300 hover:border-black'
+                  : 'bg-white text-black border-[color:var(--color-hairline)] hover:border-black'
               }`}
             >
               <div className="flex items-start justify-between mb-6">
-                <span className={`font-mono text-xs uppercase tracking-widest ${offer.highlighted ? 'text-accent' : 'text-zinc-500'}`}>
+                <span className={`font-mono text-[11px] uppercase tracking-widest font-medium ${offer.highlighted ? 'text-accent' : 'text-zinc-500'}`}>
                   {offer.id}
                 </span>
                 {offer.highlighted && (
-                  <span className="font-mono text-xs uppercase tracking-widest text-accent">
+                  <span className="font-mono text-[11px] uppercase tracking-widest text-accent font-medium">
                     Start here
                   </span>
                 )}
@@ -115,19 +115,19 @@ const Offers: React.FC = () => {
               </h3>
 
               <div className="mb-4">
-                <div className={`text-3xl font-bold tracking-tighter font-mono ${offer.highlighted ? 'text-accent' : 'text-black'}`}>
+                <div className={`text-3xl font-bold tracking-tight font-mono ${offer.highlighted ? 'text-accent' : 'text-black'}`}>
                   {offer.price}
                 </div>
-                <div className={`text-xs font-mono uppercase tracking-widest mt-1 ${offer.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <div className={`text-[11px] font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   {offer.cadence}
                 </div>
               </div>
 
-              <p className={`text-sm leading-relaxed mb-6 flex-1 ${offer.highlighted ? 'text-zinc-300' : 'text-zinc-600'}`}>
+              <p className={`text-[15px] leading-relaxed mb-6 flex-1 ${offer.highlighted ? 'text-zinc-300' : 'text-zinc-600'}`}>
                 {offer.description}
               </p>
 
-              <div className={`flex items-center gap-2 font-bold text-sm tracking-wide ${offer.highlighted ? 'text-accent' : 'text-black'} group-hover:gap-3 transition-all`}>
+              <div className={`flex items-center gap-2 font-semibold text-sm tracking-wide ${offer.highlighted ? 'text-accent' : 'text-black'} group-hover:gap-3 transition-all`}>
                 {offer.highlighted ? 'Book the Assessment' : 'Start the conversation'}
                 <ArrowRight size={16} />
               </div>

@@ -48,7 +48,7 @@ const About: React.FC = () => {
                             Most AI projects fail. <span className="text-zinc-400">Not because of the model.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-[1] tracking-tighter">
-                            I make you <br /> <span className="font-drama italic text-accent">Agent-Ready.</span>
+                            I make you <br /> <span className="text-accent">Agent-Ready.</span>
                         </h2>
                     </motion.div>
 
