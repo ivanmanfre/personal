@@ -17,10 +17,11 @@ const container: Variants = {
 const StorePage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<'all' | ProductCategory>('all');
 
+  const visibleProducts = products.filter((p) => !p.unlisted);
   const filtered =
     activeCategory === 'all'
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+      ? visibleProducts
+      : visibleProducts.filter((p) => p.category === activeCategory);
 
   return (
     <div className="flex flex-col min-h-screen">

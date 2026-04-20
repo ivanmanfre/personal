@@ -62,4 +62,5 @@ export interface Product {
   previewImage?: string; // path to workflow/product screenshot
   sampleImage?: string; // path to sample output screenshot
   samplePdf?: string; // path to downloadable sample PDF
+  unlisted?: boolean; // hidden from /store catalog, direct URL still works
 }

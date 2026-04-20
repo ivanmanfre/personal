@@ -4,6 +4,7 @@ import { Product } from '../types';
 export const products: Product[] = [
   {
     slug: 'agent-ready-strategy-session',
+    unlisted: true,
     name: 'Agent-Ready Strategy Session',
     headline: 'One call to see where AI actually {{italic:fits}} in your business — and where it doesn\'t.',
     description:
@@ -301,5 +302,4 @@ export const categoryLabels: Record<string, string> = {
   workflow: 'Workflows',
   template: 'Templates',
   agent: 'Agents',
-  service: 'Sessions',
 };
