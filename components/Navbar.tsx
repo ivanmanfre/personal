@@ -111,9 +111,9 @@ const Navbar: React.FC = () => {
               )}
               <a
                 href="/assessment"
-                className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl border-subtle hover:bg-white hover:text-black transition-colors text-center block shadow-card"
+                className="mt-6 w-full py-5 bg-black text-white font-semibold text-2xl rounded-lg border-subtle hover:bg-white hover:text-black transition-colors text-center block shadow-card-subtle"
               >
-                Start with the Assessment — $2,500
+                Start with the Assessment
               </a>
             </div>
           </motion.div>

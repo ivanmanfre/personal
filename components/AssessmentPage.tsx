@@ -212,7 +212,7 @@ const AssessmentPage: React.FC = () => {
               rel="noopener noreferrer"
               className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-black font-bold text-lg tracking-wide border-subtle-thick shadow-card"
             >
-              Book the Assessment — $2,500
+              Book the Assessment
               <ArrowRight size={20} />
             </a>
             <p className="mt-6 text-sm text-zinc-500">
