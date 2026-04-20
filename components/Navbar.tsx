@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center group">
-          <span className="font-drama italic text-3xl md:text-4xl tracking-tight text-black group-hover:text-accent transition-colors leading-none">
+          <span className="font-drama text-3xl md:text-4xl tracking-tight text-black group-hover:text-accent transition-colors leading-none">
             Manfredi
           </span>
         </Link>
