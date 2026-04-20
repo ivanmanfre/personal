@@ -11,7 +11,7 @@ const AutomationCursorFlow: React.FC = () => {
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)", backgroundSize: '20px 20px' }} />
 
             <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 shadow-sm z-20">
-                System Builder Instance
+                Agent-Ready Pipeline
             </div>
 
             <div className="p-8 h-full flex flex-col justify-center relative z-10 w-full">
@@ -77,7 +77,7 @@ const AutomationCursorFlow: React.FC = () => {
                     >
                         <CheckCircle size={14} className="text-black" />
                         <span className="font-mono text-xs uppercase font-bold text-black tracking-widest">
-                            System Active & Syncing
+                            Running · Monitored
                         </span>
                     </motion.div>
                 </div>

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, TerminalSquare } from 'lucide-react';
+import { TerminalSquare } from 'lucide-react';
 
 const feedData = [
-    "[WEBHOOK_RECEIVED] source: docusign_connect payload: contract_signed",
-    "[PROCESSING] Extracting entities via Claude-3-Opus... success. 248ms",
-    "[ACTION] Created Google Drive workspace: _Client_AcmeCorp",
-    "[API_CALL] Generating SLA templates from repository...",
-    "[ACTION] Slack channel #ext-acme-corp created. 3 users invited.",
-    "[SYSTEM] Workflow 'SignFlow' execution completed. Status: 200 OK",
-    "[WAITING] Polling for next event..."
+    "[INTAKE] Structured input: 24/24 fields parsed. PASS",
+    "[LOGIC] Decision tree matched: lead_qualification.v3",
+    "[AGENT] Scoring 248 leads against defined rubric...",
+    "[SCORE] 47 qualified, 184 nurture, 17 disqualified",
+    "[REVIEW] 3 edge cases routed to human review",
+    "[HANDOFF] Qualified leads synced to HubSpot",
+    "[AUDIT] Decision log written to long-term storage",
+    "[WAITING] Polling for next batch..."
 ];
 
 const TelemetryTypewriter: React.FC = () => {
@@ -59,10 +60,9 @@ const TelemetryTypewriter: React.FC = () => {
                             key={i}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className={`mb-2 font-medium ${line.includes('[WEBHOOK') ? 'text-zinc-300' :
-                                    line.includes('[ACTION]') ? 'text-accent' :
-                                        line.includes('[SYSTEM]') ? 'text-zinc-500' :
-                                            'text-zinc-400'
+                            className={`mb-2 font-medium ${line.includes('[REVIEW]') || line.includes('[HANDOFF]') ? 'text-accent' :
+                                    line.includes('[WAITING]') ? 'text-zinc-500' :
+                                        'text-zinc-300'
                                 }`}
                         >
                             <span className="text-zinc-600 mr-2">{'>'}</span>{line}
@@ -77,8 +77,7 @@ const TelemetryTypewriter: React.FC = () => {
                 />
             </div>
 
-            {/* Scanline Effect */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent h-[200%] w-full animate-scanline pointer-events-none z-0 opacity-20 group-hover:opacity-40 transition-opacity" />
+            {/* Scanline effect removed — cleaner editorial feel */}
         </div>
     );
 };
