@@ -8,6 +8,8 @@ interface FormData {
   bottleneck: string;
   priorAttempt: string;
   budget: string;
+  timeline: string;
+  decisionMaker: string;
   email: string;
   name: string;
 }
@@ -29,11 +31,24 @@ const revenueOptions = [
 ];
 
 const budgetOptions = [
-  'Under $5k',
   '$5k–$15k',
   '$15k–$30k',
   '$30k+',
   'Retainer',
+];
+
+const timelineOptions = [
+  'This month',
+  'Next 90 days',
+  '6 months out',
+  'Just exploring',
+];
+
+const decisionMakerOptions = [
+  'Yes, it is my call',
+  'I am the lead, others sign off',
+  'I influence, someone else decides',
+  'I am researching',
 ];
 
 const CALENDLY_URL = 'https://calendly.com/ivan-intelligents/30min';
@@ -46,6 +61,8 @@ const StartPage: React.FC = () => {
     bottleneck: '',
     priorAttempt: '',
     budget: '',
+    timeline: '',
+    decisionMaker: '',
     email: '',
     name: '',
   });
@@ -53,15 +70,14 @@ const StartPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simple qualification logic: company must be 10+ AND budget must be $5k+
+    // Qualification: meaningful company size, real budget, true decision authority, actionable timeline.
     const qualified =
       form.companySize !== 'Solo' &&
       form.companySize !== '2–10' &&
-      form.budget !== 'Under $5k';
+      form.decisionMaker !== 'I am researching' &&
+      form.timeline !== 'Just exploring';
 
     // Fire-and-forget pipeline capture via lm-beacon — same pattern as lead magnet captures.
-    // Response isn't used for routing (qualification is client-side), but this lands the
-    // prospect in nurture_subscribers so they enter the 'start-qualified' sequence.
     fetch('https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-beacon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -77,6 +93,8 @@ const StartPage: React.FC = () => {
           bottleneck: form.bottleneck,
           prior_attempt: form.priorAttempt,
           budget: form.budget,
+          timeline: form.timeline,
+          decision_maker: form.decisionMaker,
         },
       }),
     }).catch(() => {
@@ -270,6 +288,52 @@ const StartPage: React.FC = () => {
                   onClick={() => setForm({ ...form, budget: option })}
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.budget === option
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Q6 Timeline */}
+          <div>
+            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+              06 — When do you want this solved?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {timelineOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setForm({ ...form, timeline: option })}
+                  className={`px-4 py-2 border font-medium text-sm transition-all ${
+                    form.timeline === option
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Q7 Decision-maker */}
+          <div>
+            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+              07 — Are you the decision-maker?
+            </label>
+            <div className="flex flex-col gap-2">
+              {decisionMakerOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setForm({ ...form, decisionMaker: option })}
+                  className={`text-left px-4 py-2 border font-medium text-sm transition-all ${
+                    form.decisionMaker === option
                       ? 'bg-black text-white border-black'
                       : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
                   }`}

@@ -7,7 +7,7 @@ const BEACON_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-bea
 const Footer: React.FC = () => {
   const socials = [
     { icon: Linkedin, href: 'https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/' },
-    { icon: Mail, href: 'mailto:ivan@ivanmanfredi.com' },
+    { icon: Mail, href: 'mailto:im@ivanmanfredi.com' },
   ];
 
   const [email, setEmail] = useState('');
@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
             </form>
           )}
           {status === 'error' && (
-            <p className="mt-4 text-sm text-red-400">Something went wrong. Try again or email ivan@ivanmanfredi.com.</p>
+            <p className="mt-4 text-sm text-red-400">Something went wrong. Try again or email im@ivanmanfredi.com.</p>
           )}
         </div>
 
@@ -106,7 +106,7 @@ const Footer: React.FC = () => {
 
           <div className="flex gap-8">
             <Link to="/store" className="hover:text-white transition-colors">Store</Link>
-            <a href="mailto:ivan@ivanmanfredi.com" className="hover:text-white transition-colors">Contact</a>
+            <a href="mailto:im@ivanmanfredi.com" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </div>

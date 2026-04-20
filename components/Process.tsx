@@ -6,7 +6,7 @@ const steps = [
         id: '01',
         title: 'Agent-Ready Assessment',
         desc: 'A paid 1-week diagnostic. I score your ops on the 4 preconditions and deliver a scorecard plus a 30-day roadmap. You find out whether to build now or fix the foundation first. $2,500, credited back if you move forward.',
-        color: 'bg-white',
+        color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
             <div className="w-48 h-48 relative opacity-40">
@@ -42,8 +42,8 @@ const steps = [
         id: '02',
         title: 'Architecture + prep',
         desc: 'If preconditions pass, I design the full system end-to-end. Every data flow, decision point, and integration mapped out. If preconditions fail, we fix the foundation first. You see exactly what gets built before we start.',
-        color: 'bg-black',
-        textColor: 'text-white',
+        color: 'bg-white border-zinc-200',
+        textColor: 'text-black',
         icon: (
             <div className="w-48 h-32 relative opacity-50">
                 <svg viewBox="0 0 200 100" className="w-full h-full">
@@ -76,8 +76,8 @@ const steps = [
         id: '03',
         title: 'Build, launch, maintain',
         desc: 'I build the system, test it, deploy it into your stack. Most projects ship in 3-4 weeks. After launch, clients typically move to a Care Plan or Fractional retainer so the system keeps running as your business grows.',
-        color: 'bg-zinc-900',
-        textColor: 'text-white',
+        color: 'bg-paper border-zinc-200',
+        textColor: 'text-black',
         icon: (
             <div className="w-48 h-48 relative opacity-60">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
@@ -110,12 +110,12 @@ const steps = [
 const Connector: React.FC = () => (
     <div className="flex flex-col items-center relative z-10 py-0">
         {/* Output dot */}
-        <div className="w-5 h-5 rounded-full bg-zinc-900 border-2 border-accent flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-white border-2 border-accent flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-accent" />
         </div>
 
         {/* Animated path */}
-        <div className="relative w-px h-16 bg-zinc-800 overflow-visible">
+        <div className="relative w-px h-16 bg-zinc-300 overflow-visible">
             <motion.div
                 className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-accent"
                 animate={{ top: ['0%', '100%'] }}
@@ -129,7 +129,7 @@ const Connector: React.FC = () => (
         </svg>
 
         {/* Input dot */}
-        <div className="w-5 h-5 rounded-full bg-zinc-900 border-2 border-accent flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full bg-white border-2 border-accent flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
         </div>
     </div>
@@ -137,9 +137,9 @@ const Connector: React.FC = () => (
 
 const Process: React.FC = () => {
     return (
-        <section className="relative bg-zinc-900 py-24">
+        <section className="relative bg-paper py-24 border-t border-zinc-200">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-zinc-200 text-black font-bold tracking-wide text-xl shadow-lg ">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-black border border-black text-white font-bold tracking-wide text-xl shadow-lg ">
                     How We Work Together
                 </div>
             </div>
@@ -152,7 +152,7 @@ const Process: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ type: 'spring', bounce: 0.25 }}
-                            className={`w-full ${step.color} border border-zinc-800`}
+                            className={`w-full ${step.color} border`}
                         >
                             <div className="flex flex-col md:flex-row items-center gap-8 p-8 md:p-12">
                                 {/* Text */}
@@ -166,7 +166,7 @@ const Process: React.FC = () => {
                                     <h2 className={`text-3xl md:text-4xl font-semibold mb-4 tracking-tighter leading-none ${step.textColor}`}>
                                         {step.title}
                                     </h2>
-                                    <p className="text-lg font-medium text-zinc-500 leading-relaxed">
+                                    <p className="text-lg font-medium text-zinc-600 leading-relaxed">
                                         {step.desc}
                                     </p>
                                 </div>

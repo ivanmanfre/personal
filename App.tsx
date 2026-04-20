@@ -7,6 +7,8 @@ import StorePage from './components/StorePage';
 import ProductDetail from './components/ProductDetail';
 import AssessmentPage from './components/AssessmentPage';
 import StartPage from './components/StartPage';
+import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
+import FractionalPage from './components/FractionalPage';
 import ScrollToTop from './components/ScrollToTop';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
@@ -60,6 +62,8 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/assessment" element={<AssessmentPage />} />
+          <Route path="/lead-magnet-system" element={<LeadMagnetSystemPage />} />
+          <Route path="/fractional" element={<FractionalPage />} />
           <Route path="/start" element={<StartPage />} />
           <Route path="/store" element={<StorePage />} />
           <Route path="/store/:slug" element={<ProductDetail />} />

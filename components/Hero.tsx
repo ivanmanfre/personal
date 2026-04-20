@@ -101,6 +101,16 @@ const Hero: React.FC = () => {
                 See the methodology <ArrowRight size={16} />
               </a>
             </motion.div>
+
+            {/* Methodology sub-line */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-6 text-sm text-zinc-500 max-w-md"
+            >
+              Built on the Agent-Ready Ops method — the four conditions every AI build needs before you ship.
+            </motion.p>
           </div>
 
           {/* Right — Portrait */}
