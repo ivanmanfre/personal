@@ -17,7 +17,7 @@ const Services: React.FC = () => {
             <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-4">What I Build</span>
             <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tight">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h3>
           </div>
-          <p className="text-xl font-medium max-w-sm text-right text-zinc-600 leading-relaxed border-r-2 border-accent pr-6">
+          <p className="text-lg md:text-xl font-medium max-w-sm text-left md:text-right text-zinc-600 leading-relaxed border-l md:border-l-0 md:border-r border-accent pl-4 md:pl-0 md:pr-6">
             I don't bill hourly. Every engagement is a productized project or a flat-rate retainer tied to outcomes.
           </p>
         </motion.div>
