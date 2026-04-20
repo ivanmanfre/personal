@@ -3,32 +3,32 @@ import { Product } from '../types';
 
 export const products: Product[] = [
   {
-    slug: 'claude-code-strategy-session',
-    name: 'Claude Code Strategy Session',
-    headline: 'One call. A clear plan to run your business on Claude Code + your existing n8n stack.',
+    slug: 'agent-ready-strategy-session',
+    name: 'Agent-Ready Strategy Session',
+    headline: 'One call to see where AI actually {{italic:fits}} in your business — and where it doesn\'t.',
     description:
-      'A one-off, focused session for operators who already run automations and want to own more of the build themselves. We map exactly how to set up Claude Code for your workflow, which MCPs and skills fit your use case, how to use it alongside your existing n8n systems, and how to get started with a personal AI assistant that actually moves the needle. You walk away with a written plan — not a generic tutorial.',
+      'A focused strategy session for operators who already run automations and want clarity on where AI belongs in their stack. We pressure-test your ops against the 4 preconditions of Agent-Ready Ops — structured inputs, documentable decision logic, narrow scope, human-in-the-loop — then map what to build yourself with Claude Code, what to extend in your existing n8n stack, and what to leave alone. You walk away with a written plan, not a generic tutorial.',
     category: 'service',
     icon: Compass,
     features: [
-      'Claude Code setup tailored to how you actually work',
-      'MCP server selection for your specific stack (n8n, ClickUp, Supabase, Gmail, etc.)',
-      'Skills & subagents — what to install, what to skip',
-      'How Claude Code fits alongside your existing n8n workflows (not replaces them)',
-      'Personal AI assistant — where to start, what to automate first',
-      'Production pitfalls: where Claude Code goes off the rails and how to prevent it',
-      'Honest take on what to build yourself vs what to outsource',
+      'Where AI actually fits in your current ops — and where it doesn\'t',
+      'The 4 Agent-Ready preconditions scored against your business',
+      'Claude Code setup tailored to your stack',
+      'MCP servers and skills shortlisted for your specific tools',
+      'How to extend your existing n8n workflows instead of replacing them',
+      'Personal AI assistant — what to automate first, what to leave alone',
+      'Production pitfalls: where agents go off the rails and how to prevent it',
     ],
     includes: [
       '60-90 min live strategy call',
       'Written plan delivered after the call — tools, setup order, learning path',
       'Custom MCP + skills shortlist for your stack',
-      'Follow-up written in plain English, no fluff',
+      'Plain-English follow-up, no fluff',
     ],
     setup: [
-      'Existing automation stack (n8n, Make, or similar) — so we can build on what you have',
-      'Access to or knowledge of the tools you use day-to-day',
-      'A real use case in mind (not "I want to learn AI")',
+      'Operators already running an automation stack (n8n, Make, or similar) — we build on what you have',
+      'A real ops bottleneck in mind, not "I want to learn AI"',
+      'Ready to own the build yourself, not outsource everything',
     ],
     tiers: [
       {
@@ -36,7 +36,7 @@ export const products: Product[] = [
         name: 'Strategy Session + Written Plan',
         price: 500,
         label: '$500',
-        description: 'One focused call plus a written plan after. You leave knowing exactly what to set up, what to learn, and in what order.',
+        description: 'One focused call, then a written plan. You leave knowing what to set up, what to learn, and in what order.',
         checkoutUrl: 'https://buy.stripe.com/3cI3cncqL53rbxc2D9fEk0F',
         highlighted: true,
       },
