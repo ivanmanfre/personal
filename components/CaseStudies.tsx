@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 const cases = [
   {
     id: "01",
-    client: "B2B sales platform",
-    industry: "SaaS",
+    client: "ProvalTech",
+    industry: "Sales Tech",
     title: "AI Call Auditing",
     metric: "5% → 100%",
-    desc: "Sales calls are the highest-judgment, lowest-documented work in a sales org. We wrote down how their best manager grades a call — 8 criteria, scored 1-5 — then let the agent apply it to every call instead of the 5% a human could sample. Humans still review flagged calls. That's the design, not a workaround.",
+    desc: "We encoded how their best manager grades a call — 8 criteria, 1–5 — and let the agent apply it to 100% of calls. Humans review flagged outliers.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
@@ -19,18 +19,18 @@ const cases = [
     industry: "Services",
     title: "Lead Magnet System",
     metric: "Live in 3 weeks",
-    desc: "Their lead gen lived in someone's head. We productized it: interactive landing page, CMS-driven magnet library, CRM wired in, and an email sequence that runs itself. Now when a new magnet is needed, the team swaps copy in the CMS and ships — no dev, no agency, no waiting.",
+    desc: "We productized their lead gen into one CMS. New magnets ship in an afternoon. Every lead arrives pre-scored.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "03",
-    client: "Content studio",
-    industry: "Media",
+    client: "MediaScale",
+    industry: "Media / Content",
     title: "Content Engine",
     metric: "1 video → 20 posts",
-    desc: "Content repurposing is judgment-heavy until you break it down: what's the hook, what's the takeaway, what's the format. We wrote that logic once. One video in, 20 outputs ready for human review. The person who used to draft posts now edits them.",
+    desc: "We encoded the repurposing logic once. One video in, 20 outputs ready for human review. The writer became an editor.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
@@ -45,7 +45,7 @@ const CaseStudies: React.FC = () => {
           initial={{ y: 50, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           viewport={{ once: true }}
-          className="text-4xl sm:text-5xl md:text-6xl font-semibold mb-6 text-center tracking-tight"
+          className="text-5xl sm:text-6xl md:text-7xl font-semibold mb-6 text-center tracking-tight"
         >
           <span className="font-drama italic">Results.</span>
         </motion.h2>

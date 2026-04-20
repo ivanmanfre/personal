@@ -27,7 +27,7 @@ const offers: Offer[] = [
     name: 'Lead Magnet System',
     price: '$6–10k',
     cadence: '3-week project',
-    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time. One system runs the whole funnel.',
+    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time.',
     href: '/lead-magnet-system',
   },
   {
@@ -35,39 +35,15 @@ const offers: Offer[] = [
     name: 'Content Engine',
     price: '$5–9k',
     cadence: '3-week project',
-    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve in ClickUp; the system ships to LinkedIn.',
+    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve; the system ships.',
     href: '/content-system',
   },
   {
     id: '04',
-    name: 'Care Plan',
-    price: '$1,000/mo',
-    cadence: '8-hr soft cap · $150/hr overage',
-    description: 'Post-project maintenance. Bug fixes, small tweaks, monitoring, auth refreshes. 48-hour async response. For clients with an existing system to maintain.',
-    href: '/start',
-  },
-  {
-    id: '05',
-    name: 'Fractional AI Partner — Essential',
+    name: 'Fractional AI Partner',
     price: 'From $3,500/mo',
-    cadence: 'Light strategic partnership',
-    description: '1 strategy call and 1 implementation project per month. Async support. System health monitoring. For firms at $1–2M ARR who want ongoing AI direction.',
-    href: '/fractional',
-  },
-  {
-    id: '06',
-    name: 'Fractional AI Partner — Standard',
-    price: 'From $6,500/mo',
-    cadence: 'Core strategic partnership',
-    description: '2 strategy calls and 2 implementation projects per month. Dedicated comms channel. Tool and vendor management. Monthly AI roadmap.',
-    href: '/fractional',
-  },
-  {
-    id: '07',
-    name: 'Fractional AI Partner — Partner',
-    price: 'From $10,000/mo',
-    cadence: 'Full strategic ownership',
-    description: 'Weekly calls. 3–4 projects per month. Full AI and ops strategy ownership. Quarterly business review. Priority response. For $5M+ firms.',
+    cadence: 'Monthly retainer · 3 tiers',
+    description: 'Your AI strategy, owned by someone who ships. Senior partner embedded monthly — not another consultant selling slide decks.',
     href: '/fractional',
   },
 ];
@@ -92,7 +68,7 @@ const Offers: React.FC = () => {
           </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 gap-6">
           {offers.map((offer, i) => (
             <motion.a
               key={offer.id}

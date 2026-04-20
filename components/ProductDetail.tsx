@@ -113,7 +113,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* Decorative Marquee Divider */}
-      <div className="w-full bg-cyan border-b border-zinc-200 py-3 border-t-0 shadow-sm relative z-20">
+      <div className="w-full bg-cyan border-b border-zinc-200 py-3 border-t-0 relative z-20">
         <Marquee speed={25} className="font-bold text-lg uppercase tracking-widest text-black">
           <span className="mx-6">Plug & Play</span>
           <span className="mx-6">•</span>
@@ -135,7 +135,7 @@ const ProductDetail: React.FC = () => {
                   <Eye size={20} /> Workflow Overview
                 </span>
               </div>
-              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block border-subtle-thick bg-black p-2 hover:p-1 transition-all group shadow-lg">
+              <a href={product.previewImage} target="_blank" rel="noopener noreferrer" className="block rounded-2xl border-subtle-thick bg-black p-2 hover:p-1 transition-all group shadow-card-subtle">
                 <img
                   src={product.previewImage}
                   alt={`${product.name} workflow`}
@@ -318,7 +318,7 @@ const ProductDetail: React.FC = () => {
             <div className="mt-8 flex justify-center">
               <button
                 onClick={() => handleBuy(mainTier)}
-                className="px-12 py-6 bg-black text-white border-subtle-thick shadow-lg hover:shadow-xl hover:-translate-y-2 transition-all active:shadow-sm active:translate-y-0 font-bold text-2xl md:text-3xl tracking-wide inline-flex items-center gap-4"
+                className="px-12 py-6 bg-black text-white rounded-lg border-subtle-thick shadow-card-subtle hover:shadow-card-lift hover:-translate-y-2 transition-all active:translate-y-0 font-semibold text-2xl md:text-3xl tracking-wide inline-flex items-center gap-4"
               >
                 <ShoppingCart size={32} strokeWidth={3} /> Get {product.name}
               </button>
@@ -381,7 +381,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
 
             {/* RIGHT: Pricing card (5 cols) */}
             <div className="lg:col-span-5 lg:sticky lg:top-28">
-              <div className="bg-white border border-zinc-200 shadow-card p-10">
+              <div className="bg-white rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
                 <div className="border-b border-zinc-200 pb-6 mb-6">
                   <div className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
                     Investment
@@ -478,7 +478,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
             viewport={{ once: true }}
             className="bg-black text-white p-12 md:p-16 lg:p-20"
           >
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end">
               <div className="lg:col-span-8">
                 <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest text-[color:var(--color-accent)] mb-6">
                   Ready to start

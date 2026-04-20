@@ -7,7 +7,7 @@ import { useMetadata } from '../hooks/useMetadata';
 const benefits = [
   {
     headline: 'Stop staring at the blank page',
-    body: 'Every Monday morning, a 7-day content plan lands in your ClickUp. Topics are pre-scored against what your audience actually engages with. You approve; the system ships.',
+    body: 'Every Monday morning, a 7-day content plan lands in your review queue. Topics are pre-scored against what your audience actually engages with. You approve; the system ships.',
   },
   {
     headline: 'Your brand voice survives scale',
@@ -37,7 +37,7 @@ const deliverables = [
   'Topic scoring — against your audience, your competitors, and your quarterly strategy',
   'Voice training — trained on your last 50 published posts so drafts sound like you',
   'Multi-format generation — text, carousels, hooks, image prompts',
-  'Human-in-the-loop approval — you review in ClickUp, system waits for sign-off',
+  'Human-in-the-loop approval — you review in your existing tool (ClickUp, Notion, Asana, Linear, etc.); system waits for sign-off',
   'Auto-publish to LinkedIn (or your primary channel) with scheduled cadence',
   'Top performer detection — winning posts get flagged for repurposing',
   'Dashboard — what\'s planned, what\'s scheduled, what shipped, what worked',
@@ -52,7 +52,7 @@ const timeline = [
   {
     week: 'Week 2',
     title: 'Integration + formats',
-    description: 'I wire LinkedIn, ClickUp, and whatever analytics you use. Build the multi-format generators (text / carousel / image). You review first sample outputs.',
+    description: 'I wire LinkedIn, your project tool (ClickUp, Notion, Asana — whatever your team uses), and your analytics. Build the multi-format generators (text / carousel / image). You review first sample outputs.',
   },
   {
     week: 'Week 3',
