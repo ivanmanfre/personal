@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { ScrambleText } from './ui/ScrambleText';
 
 const Hero: React.FC = () => {
   return (
@@ -51,77 +50,49 @@ const Hero: React.FC = () => {
               </span>
             </motion.div>
 
-            {/* Headline */}
+            {/* Headline — editorial restraint, italic serif emphasis */}
             <motion.h1
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
-              className="text-4xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.1] mb-5"
+              className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-semibold tracking-tight leading-[1.02] mb-6"
             >
-              Systems scale.{' '}
-              <br className="hidden md:block" />
-              <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-card-subtle">
-                <span className="relative z-10 text-accent font-bold tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
-                  <ScrambleText text="HEADCOUNT DOESN'T" />
-                </span>
-              </span>
+              Systems <span className="font-drama italic font-normal">scale.</span>
+              <br />
+              Headcount <span className="font-drama italic font-normal">doesn't.</span>
             </motion.h1>
 
-            {/* Subheadline */}
+            {/* Subheadline — one sentence */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="text-base md:text-lg font-medium max-w-lg mb-5 leading-relaxed text-zinc-600 border-l-2 border-accent/40 pl-5"
+              className="text-lg md:text-xl font-medium max-w-lg mb-10 leading-relaxed text-zinc-600"
             >
-              I build AI systems for growing service businesses that want to grow without the hiring treadmill. Every project pays back in 90 days or I don't build it.
+              AI systems for growing service businesses.
             </motion.p>
-
-            {/* Social proof bar — hidden on mobile */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="hidden sm:flex flex-wrap items-center gap-3 sm:gap-4 mb-8 text-sm text-zinc-500"
-            >
-              <span>40+ systems shipped</span>
-              <span className="text-zinc-300">·</span>
-              <span>6,000+ hours automated</span>
-              <span className="text-zinc-300">·</span>
-              <span>Agencies, consultancies, law &amp; accounting firms</span>
-            </motion.div>
 
             {/* Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="flex flex-col sm:flex-row items-start gap-3 mt-6 sm:mt-0"
+              className="flex flex-col sm:flex-row items-start gap-3"
             >
               <a
                 href="/assessment"
-                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card flex items-center justify-center gap-2.5 font-bold text-base tracking-wide text-black"
+                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-black"
               >
-                Start with the Assessment — $2,500 <ArrowRight size={18} />
+                Book the Assessment <ArrowRight size={18} />
               </a>
 
               <a
                 href="#method"
-                className="w-full sm:w-auto px-7 py-3.5 font-bold text-base tracking-wide text-zinc-500 hover:text-black transition-colors text-center flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-zinc-500 hover:text-black transition-colors text-center flex items-center justify-center gap-2"
               >
-                See the methodology <ArrowRight size={16} />
+                See the method <ArrowRight size={16} />
               </a>
             </motion.div>
-
-            {/* Methodology sub-line */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="mt-6 text-sm text-zinc-500 max-w-md"
-            >
-              Built on the Agent-Ready Ops method — the four conditions every AI build needs before you ship.
-            </motion.p>
           </div>
 
           {/* Right — Portrait */}
