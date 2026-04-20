@@ -19,6 +19,7 @@ const Navbar: React.FC = () => {
 
   const homeLinks = [
     { name: 'Services', href: '#services' },
+    { name: 'Method', href: '#method' },
     { name: 'Work', href: '#cases' },
     { name: 'ROI', href: '#roi-calculator' },
     { name: 'About', href: '#about' },
@@ -32,12 +33,9 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-6 flex justify-between items-center">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 bg-black border-subtle shadow-card group-hover:shadow-card-hover transition-all flex items-center justify-center">
-            <span className="text-white font-black text-xl tracking-tighter">IM</span>
-          </div>
-          <span className="text-sm font-bold tracking-widest text-zinc-700 group-hover:text-black transition-colors">
-            Iván Manfredi
+        <Link to="/" className="flex items-center group">
+          <span className="font-drama text-3xl md:text-4xl tracking-tight text-black group-hover:text-accent transition-colors leading-none">
+            Manfredi
           </span>
         </Link>
 
@@ -64,12 +62,10 @@ const Navbar: React.FC = () => {
           )}
 
           <a
-            href="https://calendly.com/ivan-intelligents/30min"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/start"
             className="px-6 py-3 bg-accent border-subtle shadow-card font-bold tracking-wide hover:-translate-y-1 hover:shadow-card-hover transition-all active:translate-y-0 active:shadow-card-active flex items-center"
           >
-            Let's Talk
+            Book a call
           </a>
         </div>
 
@@ -114,12 +110,10 @@ const Navbar: React.FC = () => {
                 )
               )}
               <a
-                href="https://calendly.com/ivan-intelligents/30min"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/assessment"
                 className="mt-6 w-full py-5 bg-black text-white font-bold text-2xl border-subtle hover:bg-white hover:text-black transition-colors text-center block shadow-card"
               >
-                Book Strategy Call
+                Start with the Assessment — $2,500
               </a>
             </div>
           </motion.div>

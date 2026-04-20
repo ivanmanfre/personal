@@ -45,10 +45,10 @@ const About: React.FC = () => {
                         className="text-center md:text-right border-r-2 border-zinc-800 pr-6 md:pr-10"
                     >
                         <p className="text-xl md:text-3xl font-medium text-zinc-400 mb-6 tracking-tight">
-                            Agencies sell <span className="text-zinc-400">retainers for manual labor.</span>
+                            Most AI projects fail. <span className="text-zinc-400">Not because of the model.</span>
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-white leading-[1] tracking-tighter">
-                            I build to <br /> <span className="font-drama italic text-accent">Eliminate the busywork.</span>
+                            I make you <br /> <span className="font-drama italic text-accent">Agent-Ready.</span>
                         </h2>
                     </motion.div>
 
@@ -76,9 +76,9 @@ const About: React.FC = () => {
                         <h3 className="text-3xl md:text-4xl font-semibold text-white mb-4 tracking-tight">
                             Iván <span className="font-drama italic text-accent">Manfredi</span>
                         </h3>
-                        <p className="font-mono text-xs text-accent uppercase tracking-widest mb-4">AI & Automation Architect</p>
+                        <p className="font-mono text-xs text-accent uppercase tracking-widest mb-4">Agent-Ready Ops™</p>
                         <p className="text-lg text-zinc-400 leading-relaxed max-w-xl">
-                            I've architected automation systems for companies across finance, legal, healthcare, and SaaS, eliminating thousands of hours of manual work. I don't sell retainers. I build infrastructure that compounds.
+                            I build AI systems for growing service businesses — agencies, consultancies, law and accounting firms. Every engagement is a productized project or a flat-rate retainer tied to outcomes. Never hourly.
                         </p>
                     </div>
                 </motion.div>
@@ -94,9 +94,9 @@ const About: React.FC = () => {
                         <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-accent"></div>
 
                         <p className="text-lg md:text-xl text-zinc-400 leading-relaxed">
-                            Every automation I build follows one rule: <br /><br />
-                            <span className="text-white font-bold bg-zinc-800 px-2 py-1">If we can't tie the workflow directly to hours saved, errors reduced, or revenue gained — it doesn't get built.</span> <br /><br />
-                            Just systems that work — and keep working.
+                            Every project follows one rule: <br /><br />
+                            <span className="text-white font-bold bg-zinc-800 px-2 py-1">If it doesn't pay back in 90 days, I don't build it.</span> <br /><br />
+                            The 90-Day Payback Rule. No exceptions.
                         </p>
                     </div>
                 </motion.div>

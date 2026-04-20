@@ -36,7 +36,7 @@ const Hero: React.FC = () => {
               className="mb-5"
             >
               <span className="font-mono text-xs uppercase tracking-widest bg-black text-accent px-3 py-1.5">
-                AI & Automation Architect
+                Agent-Ready Ops™
               </span>
             </motion.div>
 
@@ -47,11 +47,11 @@ const Hero: React.FC = () => {
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
               className="text-4xl sm:text-4xl md:text-5xl lg:text-[3.5rem] font-black tracking-tight leading-[1.1] mb-5"
             >
-              I Build Systems That{' '}
+              Systems scale.{' '}
               <br className="hidden md:block" />
               <span className="relative inline-block mt-3 px-4 sm:px-5 md:px-6 py-1.5 md:py-2 border border-zinc-700 bg-black shadow-lg">
                 <span className="relative z-10 text-accent font-black tracking-wide text-[1.7rem] sm:text-3xl md:text-4xl lg:text-[2.75rem]">
-                  <ScrambleText text="RUN WITHOUT YOU" />
+                  <ScrambleText text="HEADCOUNT DOESN'T" />
                 </span>
               </span>
             </motion.h1>
@@ -63,7 +63,7 @@ const Hero: React.FC = () => {
               transition={{ delay: 0.25 }}
               className="text-base md:text-lg font-medium max-w-lg mb-5 leading-relaxed text-zinc-600 border-l-2 border-accent/40 pl-5"
             >
-              I design AI automation systems that handle the repetitive work so your team focuses on what actually moves the business.
+              I build AI systems for growing service businesses that want to grow without the hiring treadmill. Every project pays back in 90 days or I don't build it.
             </motion.p>
 
             {/* Social proof bar — hidden on mobile */}
@@ -73,11 +73,11 @@ const Hero: React.FC = () => {
               transition={{ delay: 0.3 }}
               className="hidden sm:flex flex-wrap items-center gap-3 sm:gap-5 mb-8 text-sm text-zinc-500"
             >
-              <span>40+ systems deployed</span>
+              <span>40+ systems shipped</span>
               <span className="text-zinc-300">·</span>
               <span>6,000+ hours automated</span>
               <span className="text-zinc-300">·</span>
-              <span>Clients in 8+ industries</span>
+              <span>Agencies, consultancies, law &amp; accounting firms</span>
             </motion.div>
 
             {/* Buttons */}
@@ -88,19 +88,17 @@ const Hero: React.FC = () => {
               className="flex flex-col sm:flex-row items-start gap-3 mt-6 sm:mt-0"
             >
               <a
-                href="https://calendly.com/ivan-intelligents/30min"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/assessment"
                 className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card flex items-center justify-center gap-2.5 font-bold text-base tracking-wide text-black"
               >
-                Book Strategy Call <ArrowRight size={18} />
+                Start with the Assessment — $2,500 <ArrowRight size={18} />
               </a>
 
               <a
-                href="#cases"
+                href="#method"
                 className="w-full sm:w-auto px-7 py-3.5 font-bold text-base tracking-wide text-zinc-500 hover:text-black transition-colors text-center flex items-center justify-center gap-2"
               >
-                View Case Studies <ArrowRight size={16} />
+                See the methodology <ArrowRight size={16} />
               </a>
             </motion.div>
           </div>

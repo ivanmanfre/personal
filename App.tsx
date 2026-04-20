@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import StorePage from './components/StorePage';
 import ProductDetail from './components/ProductDetail';
+import AssessmentPage from './components/AssessmentPage';
+import StartPage from './components/StartPage';
 import ScrollToTop from './components/ScrollToTop';
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
@@ -57,6 +59,8 @@ function App() {
       <main className="relative z-10 flex flex-col overflow-hidden">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/assessment" element={<AssessmentPage />} />
+          <Route path="/start" element={<StartPage />} />
           <Route path="/store" element={<StorePage />} />
           <Route path="/store/:slug" element={<ProductDetail />} />
         </Routes>

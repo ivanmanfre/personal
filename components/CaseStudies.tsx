@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
 
 const cases = [
   {
@@ -8,18 +7,20 @@ const cases = [
     client: "ProvalTech",
     industry: "Sales Tech",
     title: "AI Call Auditing",
-    metric: "100% Audit Rate",
-    desc: "AI listens to every sales call, scores performance, and flags coaching opportunities. Went from auditing 5% of calls manually to 100% coverage overnight.",
+    metric: "100% coverage",
+    desc: "Sales calls are the highest-judgment, lowest-documented work in a sales org. We wrote down how their best manager grades a call — 8 criteria, scored 1-5 — then let the agent apply it to every call instead of the 5% a human could sample. Humans still review flagged calls. That's the design, not a workaround.",
+    readiness: "4/4 Agent-Ready",
     color: "bg-accent",
     metricBox: "bg-white border border-zinc-300 text-black"
   },
   {
     id: "02",
-    client: "ProSWPPP",
-    industry: "Construction / Compliance",
-    title: "Regulatory Doc Automation",
-    metric: "800 Hrs/Yr Saved",
-    desc: "AI scans state-specific SWPPP regulatory requirements and auto-generates compliant documentation. Invoicing, document assembly, and filing, all hands-free.",
+    client: "Lemonade",
+    industry: "Marketing Agency",
+    title: "Interactive Lead Magnet System",
+    metric: "20-question scorecard",
+    desc: "Lead qualification used to get pushed to whoever answered the form. We turned it into a 20-question scorecard — structured input, fixed rubric — so every lead arrives pre-scored. The agency team spends time on qualified conversations, not triage.",
+    readiness: "4/4 Agent-Ready",
     color: "bg-black",
     metricBox: "bg-accent border border-zinc-300 text-black"
   },
@@ -28,8 +29,9 @@ const cases = [
     client: "MediaScale",
     industry: "Media / Content",
     title: "Content Engine",
-    metric: "20x Output",
-    desc: "One recorded video becomes 20 social posts, a blog article, and a newsletter. AI handles transcription, repurposing, and scheduling across platforms.",
+    metric: "1 video → 20 posts",
+    desc: "Content repurposing is judgment-heavy until you break it down: what's the hook, what's the takeaway, what's the format. We wrote that logic once. One video in, 20 outputs ready for human review. The person who used to draft posts now edits them.",
+    readiness: "4/4 Agent-Ready",
     color: "bg-white border border-zinc-200",
     metricBox: "bg-black border border-zinc-300 text-white"
   }
@@ -48,7 +50,7 @@ const CaseStudies: React.FC = () => {
           Results
         </motion.h2>
 
-        {/* Upwork 100% JSS Badge */}
+        {/* ICP badge */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -56,17 +58,9 @@ const CaseStudies: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-16"
         >
-          <a
-            href="https://www.upwork.com/freelancers/~01ce6d9c9060674d84"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-sm uppercase tracking-widest border border-zinc-700 shadow-md hover:-translate-y-0.5 transition-transform"
-          >
-            <ShieldCheck size={16} className="text-accent" />
-            <span>100% Job Success</span>
-            <span className="text-accent font-bold">|</span>
-            <span className="text-zinc-400">Upwork Verified</span>
-          </a>
+          <span className="inline-flex items-center gap-2 px-5 py-2 bg-black text-white font-mono text-xs uppercase tracking-widest border border-zinc-700 shadow-md">
+            Agencies · Consultancies · Law &amp; Accounting firms
+          </span>
         </motion.div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -93,7 +87,11 @@ const CaseStudies: React.FC = () => {
                   <span className="text-xs font-mono uppercase text-zinc-400 tracking-wide">{study.industry}</span>
                 </div>
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
-                <p className="text-lg font-normal border-l-2 border-zinc-300 pl-4 leading-relaxed">{study.desc}</p>
+                <p className="text-lg font-normal border-l-2 border-zinc-300 pl-4 leading-relaxed mb-4">{study.desc}</p>
+                <div className="flex items-center gap-2 pt-4 border-t border-zinc-200">
+                  <span className="w-2 h-2 rounded-full bg-accent"></span>
+                  <span className="font-mono text-xs uppercase tracking-widest text-zinc-600">{study.readiness}</span>
+                </div>
               </div>
             </motion.div>
           ))}

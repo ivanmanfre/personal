@@ -15,10 +15,10 @@ const Services: React.FC = () => {
         >
           <div>
             <h2 className="text-xl font-bold bg-black text-white inline-block px-3 py-1 mb-2 shadow-sm">What I Build</h2>
-            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tighter">Systems That Run <br /> <span className="font-drama italic">So You Don't Have To</span></h3>
+            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tighter">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h3>
           </div>
           <p className="text-xl font-medium max-w-sm text-right text-zinc-600 leading-relaxed border-r-2 border-accent pr-6">
-            I don't sell hours. I build infrastructure that gives you your hours back.
+            I don't bill hourly. Every engagement is a productized project or a flat-rate retainer tied to outcomes.
           </p>
         </motion.div>
 
@@ -34,15 +34,15 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">01</span>
-                <h4 className="text-3xl font-semibold tracking-tight">AI & API Orchestration</h4>
+                <h4 className="text-3xl font-semibold tracking-tight">Back-office automation</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
-                Replacing manual data entry and handoffs with automated workflows that just work. I connect your entire tech stack (CRMs, Slack, Docs, AI Models) so information flows instantly and accurately, 24/7.
+                The manual handoffs between your CRM, Slack, docs, and AI tools get replaced with systems that do the work. Your team stops copy-pasting. The data moves itself.
               </p>
               <ul className="space-y-3 text-sm font-medium text-zinc-500">
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect All Your Tools Automatically</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Hands-Free Client Onboarding</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Smart AI Model Selection</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect your existing tools without another platform</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Client onboarding that doesn't need a human</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Right AI model picked per task, not defaulted</li>
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
@@ -60,15 +60,15 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">02</span>
-                <h4 className="text-3xl font-semibold tracking-tight">Autonomous Agents</h4>
+                <h4 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
-                Not generic chatbots. I deploy autonomous agents trained on your exact SOPs and company data to qualify leads, handle tier-1 support, and parse complex documents faster and more reliably than manual processing.
+                Lead qualification. Tier-1 support. Document parsing. The stuff your best person does that creates a bottleneck. I build the system, and I make your ops ready to run it. Most AI projects fail at the second part.
               </p>
               <ul className="space-y-3 text-sm font-medium text-zinc-500">
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> AI Trained on Your Company Docs</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Auto-Extract Data From Any Document</li>
-                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Voice & Text Interface</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your SOPs and company data</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Reads and extracts from any document format</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Human-in-the-loop by design, not by accident</li>
               </ul>
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">

@@ -8,8 +8,13 @@ const ROI: React.FC = () => {
 
     const calculateYearlyCost = () => hoursPerWeek * hourlyRate * 52;
     const calculateFiveYearCost = () => calculateYearlyCost() * 5;
-    const automationInvestment = 5000; // Example base cost
-    const calculateROI = () => ((calculateYearlyCost() - automationInvestment) / automationInvestment) * 100;
+    // Typical project price for 90-day payback calculation
+    const typicalBuildPrice = 10000;
+    const calculatePaybackDays = () => {
+        const dailyCost = calculateYearlyCost() / 365;
+        if (dailyCost === 0) return 999;
+        return Math.round(typicalBuildPrice / dailyCost);
+    };
 
     return (
         <section className="py-24 bg-paper border-b border-zinc-200 relative overflow-hidden" id="roi-calculator">
@@ -23,13 +28,13 @@ const ROI: React.FC = () => {
                         viewport={{ once: true }}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-mono text-sm uppercase mb-6 border-subtle shadow-md"
                     >
-                        <Calculator size={16} /> ROI Engine
+                        <Calculator size={16} /> 90-Day Payback Check
                     </motion.div>
                     <h2 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter mb-6">
-                        What Manual Work <span className="text-zinc-400 inline-block">Really Costs</span>
+                        The <span className="font-drama italic text-zinc-400 inline-block">90-Day Payback</span> Rule
                     </h2>
                     <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-zinc-700">
-                        See exactly how much manual tasks cost your business every year.
+                        If I can't recoup the project in 90 days, I don't build it. Here's what your number looks like.
                     </p>
                 </div>
 
@@ -96,38 +101,39 @@ const ROI: React.FC = () => {
                     >
                         <div className="border-subtle-thick bg-black text-white p-8 shadow-card relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-accent opacity-10 rounded-full blur-3xl"></div>
-                            <h3 className="font-medium text-zinc-400 uppercase tracking-widest text-sm mb-2">Yearly Cost of Manual Work</h3>
+                            <h3 className="font-medium text-zinc-400 uppercase tracking-widest text-sm mb-2">Annual cost of this bottleneck</h3>
                             <div className="text-5xl sm:text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
                             <p className="font-medium text-zinc-500 mt-4 leading-relaxed">
-                                If you change nothing, this is the cash value of the time your team burns on repetitive tasks over the next 12 months.
+                                This is the cash your team burns on repeat work over 12 months if nothing changes.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="border-subtle bg-white p-6 shadow-card-sm">
-                                <h3 className="font-medium text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year Cost</h3>
+                                <h3 className="font-medium text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year drag</h3>
                                 <div className="text-3xl font-bold font-mono text-zinc-800">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
                             </div>
                             <div className="border-subtle bg-accent p-6 shadow-card-sm">
-                                <h3 className="font-medium text-black uppercase tracking-widest text-xs mb-2">Yr 1 Automation ROI</h3>
+                                <h3 className="font-medium text-black uppercase tracking-widest text-xs mb-2">Payback at $10k build</h3>
                                 <div className="text-3xl font-bold font-mono text-black">
-                                    +{calculateROI().toLocaleString(undefined, { maximumFractionDigits: 0 })}%
+                                    ~{calculatePaybackDays()} days
                                 </div>
                             </div>
                         </div>
 
                         <a
-                            href="https://calendly.com/ivan-intelligents/30min"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="/assessment"
                             className="w-full mt-2 px-8 py-5 bg-accent border-subtle-thick shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:shadow-sm active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
                         >
-                            See What You'd Save <ArrowRight size={24} />
+                            See if you're Agent-Ready <ArrowRight size={24} />
                         </a>
+                        <p className="text-sm text-zinc-500 text-center mt-2">
+                            Not ready to talk? <a href="/#newsletter" className="underline hover:text-black">Get The Agent-Ready Letter</a>.
+                        </p>
 
                     </motion.div>
 

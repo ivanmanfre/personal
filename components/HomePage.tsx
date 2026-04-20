@@ -1,6 +1,8 @@
 import React from 'react';
 import Hero from './Hero';
 import Services from './Services';
+import Method from './Method';
+import Offers from './Offers';
 import CaseStudies from './CaseStudies';
 import Process from './Process';
 import About from './About';
@@ -14,6 +16,8 @@ const HomePage: React.FC = () => {
       <Hero />
       <Services />
       <Process />
+      <Method />
+      <Offers />
       <CaseStudies />
       <ROI />
       <Testimonials />
