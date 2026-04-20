@@ -7,28 +7,28 @@ export const products: Product[] = [
     name: 'Agent-Ready Strategy Session',
     headline: 'One call to see where AI actually {{italic:fits}} in your business — and where it doesn\'t.',
     description:
-      'A focused strategy session for operators who already run automations and want clarity on where AI belongs in their stack. We pressure-test your ops against the 4 preconditions of Agent-Ready Ops — structured inputs, documentable decision logic, narrow scope, human-in-the-loop — then map what to build yourself with Claude Code, what to extend in your existing n8n stack, and what to leave alone. You walk away with a written plan, not a generic tutorial.',
+      'A focused strategy session for founders and operators who already run automations and want a clear read on where AI actually belongs in the business. We pressure-test your ops against the 4 preconditions of Agent-Ready Ops — structured inputs, documentable decision logic, narrow scope, human-in-the-loop — then map what to build, what to extend, and what to leave alone. You walk away with a written plan, not a generic tutorial.',
     category: 'service',
     icon: Compass,
     features: [
       'Where AI actually fits in your current ops — and where it doesn\'t',
       'The 4 Agent-Ready preconditions scored against your business',
-      'Claude Code setup tailored to your stack',
-      'MCP servers and skills shortlisted for your specific tools',
-      'How to extend your existing n8n workflows instead of replacing them',
-      'Personal AI assistant — what to automate first, what to leave alone',
-      'Production pitfalls: where agents go off the rails and how to prevent it',
+      'Which tools in your stack to extend vs. rebuild',
+      'A shortlist of MCPs, skills, and agent patterns worth your time',
+      'Which workflows to keep human and which to hand off to agents',
+      'Build vs. outsource — an honest call on each',
+      'Where agents break in production, and how to prevent it',
     ],
     includes: [
       '60-90 min live strategy call',
-      'Written plan delivered after the call — tools, setup order, learning path',
-      'Custom MCP + skills shortlist for your stack',
+      'Written plan delivered after — tools, setup order, sequencing',
+      'Shortlist of the specific integrations worth pursuing',
       'Plain-English follow-up, no fluff',
     ],
     setup: [
-      'Operators already running an automation stack (n8n, Make, or similar) — we build on what you have',
+      'You already run an automation stack (any flavor — we build on what you have)',
       'A real ops bottleneck in mind, not "I want to learn AI"',
-      'Ready to own the build yourself, not outsource everything',
+      'Ready to own the build, not outsource everything',
     ],
     tiers: [
       {
