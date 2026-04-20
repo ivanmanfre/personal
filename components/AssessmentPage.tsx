@@ -3,6 +3,13 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
+// TODO: replace with actual Stripe Payment Link for the $2,500 Agent-Ready Assessment.
+// Until set, falls back to the qualification form at /start.
+// Stripe setup: Dashboard → Products → Add Product → $2,500 one-time → Create Payment Link.
+// Optional: set Stripe success_url to a Calendly Day-2 working session booking page.
+const ASSESSMENT_PAYMENT_LINK = '/start?intent=assessment';
+const DISCOVERY_CALL_LINK = '/start';
+
 const preconditions = [
   {
     number: '01',
@@ -91,10 +98,10 @@ const AssessmentPage: React.FC = () => {
                 <p className="text-sm text-zinc-500 mt-2">One-week engagement · 100% credit clause</p>
               </div>
               <a
-                href="https://calendly.com/ivan-intelligents/30min"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent border-subtle-thick shadow-card flex items-center justify-center gap-3 font-bold text-base tracking-wide text-black"
+                href={ASSESSMENT_PAYMENT_LINK}
+                target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
+                rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-black"
               >
                 Book the Assessment
                 <ArrowRight size={18} />
@@ -207,16 +214,16 @@ const AssessmentPage: React.FC = () => {
               If your operation clears the 4 conditions, AI becomes a force multiplier. If it doesn't, you're funding demos that never ship. Let's find out which one you are.
             </p>
             <a
-              href="https://calendly.com/ivan-intelligents/30min"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-black font-bold text-lg tracking-wide border-subtle-thick shadow-card"
+              href={ASSESSMENT_PAYMENT_LINK}
+              target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
+              rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent rounded-lg text-black font-semibold text-lg tracking-wide border-subtle-thick shadow-card-subtle"
             >
               Book the Assessment
               <ArrowRight size={20} />
             </a>
             <p className="mt-6 text-sm text-zinc-500">
-              Not sure yet? <a href="/start" className="underline text-zinc-300 hover:text-white">Book a call first</a>.
+              Not sure yet? <a href={DISCOVERY_CALL_LINK} className="underline text-zinc-300 hover:text-white">Book a call first</a>.
             </p>
           </motion.div>
         </div>
