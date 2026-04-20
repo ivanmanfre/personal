@@ -64,11 +64,21 @@ const About: React.FC = () => {
                 >
                     {/* Photo */}
                     <div className="shrink-0 relative group hover-lift">
-                        <img
-                            src="/ivan-portrait.jpg"
-                            alt="Iván Manfredi"
-                            className="relative z-10 w-48 h-48 md:w-56 md:h-56 object-cover border border-zinc-700 transition-all duration-500 portrait-editorial"
-                        />
+                        <picture>
+                            <source
+                                type="image/webp"
+                                srcSet="/ivan-portrait-400.webp 400w, /ivan-portrait-800.webp 800w"
+                                sizes="(max-width: 768px) 192px, 224px"
+                            />
+                            <img
+                                src="/ivan-portrait.jpg"
+                                alt="Iván Manfredi"
+                                width="400"
+                                height="400"
+                                loading="lazy"
+                                className="relative z-10 w-48 h-48 md:w-56 md:h-56 object-cover border border-zinc-700 transition-all duration-500 portrait-editorial"
+                            />
+                        </picture>
                     </div>
 
                     {/* Bio */}

@@ -19,11 +19,22 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.1, duration: 0.6 }}
             className="lg:hidden shrink-0 self-center"
           >
-            <img
-              src="/ivan-hero.jpeg"
-              alt="Iván Manfredi"
-              className="w-40 sm:w-48 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-subtle object-cover object-top portrait-editorial"
-            />
+            <picture>
+              <source
+                type="image/webp"
+                srcSet="/ivan-hero-400.webp 400w, /ivan-hero-800.webp 800w"
+                sizes="(max-width: 640px) 160px, 192px"
+              />
+              <img
+                src="/ivan-hero.jpeg"
+                alt="Iván Manfredi"
+                width="400"
+                height="533"
+                loading="eager"
+                fetchPriority="high"
+                className="w-40 sm:w-48 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-subtle object-cover object-top portrait-editorial"
+              />
+            </picture>
           </motion.div>
 
           {/* Left — Copy */}
@@ -120,11 +131,22 @@ const Hero: React.FC = () => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="hidden lg:block shrink-0 pt-8"
           >
-            <img
-              src="/ivan-hero.jpeg"
-              alt="Iván Manfredi"
-              className="w-72 xl:w-80 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-lift object-cover object-top portrait-editorial"
-            />
+            <picture>
+              <source
+                type="image/webp"
+                srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w"
+                sizes="(min-width: 1280px) 320px, 288px"
+              />
+              <img
+                src="/ivan-hero.jpeg"
+                alt="Iván Manfredi"
+                width="1200"
+                height="1600"
+                loading="eager"
+                fetchPriority="high"
+                className="w-72 xl:w-80 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-lift object-cover object-top portrait-editorial"
+              />
+            </picture>
           </motion.div>
 
         </div>
