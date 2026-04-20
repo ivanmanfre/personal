@@ -20,7 +20,7 @@ export const products: Product[] = [
       'Honest take on what to build yourself vs what to outsource',
     ],
     includes: [
-      '60-90 min live strategy call (Zoom, recorded)',
+      '60-90 min live strategy call',
       'Written plan delivered after the call — tools, setup order, learning path',
       'Custom MCP + skills shortlist for your stack',
       'Follow-up written in plain English, no fluff',
