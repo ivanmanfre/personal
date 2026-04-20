@@ -8,6 +8,7 @@ import ProductDetail from './components/ProductDetail';
 import AssessmentPage from './components/AssessmentPage';
 import StartPage from './components/StartPage';
 import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
+import ContentSystemPage from './components/ContentSystemPage';
 import FractionalPage from './components/FractionalPage';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -79,6 +80,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/assessment" element={<AssessmentPage />} />
           <Route path="/lead-magnet-system" element={<LeadMagnetSystemPage />} />
+          <Route path="/content-system" element={<ContentSystemPage />} />
           <Route path="/fractional" element={<FractionalPage />} />
           <Route path="/start" element={<StartPage />} />
           <Route path="/store" element={<StorePage />} />

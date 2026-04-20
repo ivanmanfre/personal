@@ -25,13 +25,21 @@ const offers: Offer[] = [
   {
     id: '02',
     name: 'Lead Magnet System',
-    price: '$8–12k',
+    price: '$6–10k',
     cadence: '3-week project',
-    description: 'Productized lead-gen infrastructure. Interactive landing page, CMS-driven magnet, CRM integration, and email automation. Built once, runs forever.',
+    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time. One system runs the whole funnel.',
     href: '/lead-magnet-system',
   },
   {
     id: '03',
+    name: 'Content Engine',
+    price: '$5–9k',
+    cadence: '3-week project',
+    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve in ClickUp; the system ships to LinkedIn.',
+    href: '/content-system',
+  },
+  {
+    id: '04',
     name: 'Care Plan',
     price: '$1,000/mo',
     cadence: '8-hr soft cap · $150/hr overage',
@@ -39,7 +47,7 @@ const offers: Offer[] = [
     href: '/start',
   },
   {
-    id: '04',
+    id: '05',
     name: 'Fractional AI Partner — Essential',
     price: 'From $3,500/mo',
     cadence: 'Light strategic partnership',
@@ -47,7 +55,7 @@ const offers: Offer[] = [
     href: '/fractional',
   },
   {
-    id: '05',
+    id: '06',
     name: 'Fractional AI Partner — Standard',
     price: 'From $6,500/mo',
     cadence: 'Core strategic partnership',
@@ -55,7 +63,7 @@ const offers: Offer[] = [
     href: '/fractional',
   },
   {
-    id: '06',
+    id: '07',
     name: 'Fractional AI Partner — Partner',
     price: 'From $10,000/mo',
     cadence: 'Full strategic ownership',

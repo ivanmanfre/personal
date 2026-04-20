@@ -3,63 +3,78 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// Benefits — what CHANGES for the business (outcome-framed)
+// Benefits first — outcomes the founder actually cares about
 const benefits = [
   {
-    headline: 'Your best salesperson stops doing triage',
-    body: 'Leads arrive pre-scored. No more manual qualification on every inbound. Your team spends hours on qualified conversations instead of filtering the noise.',
+    headline: 'Stop staring at the blank page',
+    body: 'Every Monday morning, a 7-day content plan lands in your ClickUp. Topics are pre-scored against what your audience actually engages with. You approve; the system ships.',
   },
   {
-    headline: 'Launch new magnets in an afternoon, not 3 weeks',
-    body: 'When you want a new guide or scorecard, you swap copy and a brief in the CMS. The system generates a branded cover image, deploys the page, wires the CRM, and fires the nurture sequence. No dev, no agency, no waiting.',
+    headline: 'Your brand voice survives scale',
+    body: 'The system is trained on your existing posts. New drafts sound like you, not like ChatGPT. When you ship 5 posts a week instead of 1 a month, the voice holds.',
   },
   {
-    headline: 'Every lead gets followed up, every time',
-    body: 'The nurture sequence runs automatically. 4-6 emails over 2 weeks, personalized to what they downloaded. You stop losing leads to "I meant to email them back."',
+    headline: 'Your best-performing posts compound',
+    body: 'Top performers get identified automatically and repurposed into new angles. Your hits don\'t die in the scroll — they come back as carousels, newsletter issues, and follow-ups.',
   },
   {
-    headline: 'Your content library builds your email list',
-    body: 'Every magnet download flows into your newsletter. The people who liked your guide on lead qualification are the same people who want your weekly thinking on the topic. One asset, two revenue lines.',
+    headline: 'You review, you don\'t write',
+    body: '30 minutes reviewing a week\'s worth of drafts beats 3 hours staring at Google Docs. Edit the 5% that matters. The rest ships as-is.',
   },
   {
-    headline: 'You see which magnets actually convert',
-    body: 'A dashboard shows downloads, completion rate, and qualified-lead count by magnet. You stop guessing which topics work. You know.',
+    headline: 'Formats mix without you thinking about them',
+    body: 'Text posts, carousels, image posts, lead-magnet promos — the system rotates formats based on what\'s working this month. You stop shipping 4 text posts in a row by accident.',
   },
   {
-    headline: 'Consistent brand on every asset',
-    body: 'Gemini generates a branded hero image for every new magnet from your visual template. No more paying a designer for a cover image on every launch. No more ugly PDF covers that make the magnet look cheap.',
+    headline: 'One system, both engines',
+    body: 'Pairs natively with the Lead Magnet System. Your posts promote your magnets. Your magnets feed your newsletter. Your newsletter republishes your best posts. Content engine + lead gen engine = one machine.',
   },
 ];
 
-// Technical deliverables — for buyers who want to know what\'s under the hood
+// Technical deliverables — for buyers who want the spec
 const deliverables = [
-  'Interactive landing page (scorecard, assessment, guide, or calculator format)',
-  'CMS-driven magnet library — add or edit magnets without touching code',
-  'AI-generated cover images via Gemini — branded hero image per magnet',
-  'Newsletter integration — Resend, Kit, Beehiiv, or your existing stack',
-  'CRM integration — HubSpot, Apollo, Attio, or whatever you use',
-  'Automated email delivery + nurture sequence (4-6 emails)',
-  'Analytics dashboard — downloads, completion rate, qualified leads by magnet',
+  'Weekly content planning agent — generates 5-7 post plan every Sunday',
+  'Topic scoring — against your audience, your competitors, and your quarterly strategy',
+  'Voice training — trained on your last 50 published posts so drafts sound like you',
+  'Multi-format generation — text, carousels, hooks, image prompts',
+  'Human-in-the-loop approval — you review in ClickUp, system waits for sign-off',
+  'Auto-publish to LinkedIn (or your primary channel) with scheduled cadence',
+  'Top performer detection — winning posts get flagged for repurposing',
+  'Dashboard — what\'s planned, what\'s scheduled, what shipped, what worked',
 ];
 
 const timeline = [
-  { week: 'Week 1', title: 'Intake + architecture', description: 'Kickoff call. I audit your current lead gen, pull brand + copy assets, and send you the full architecture doc. You approve scope before anything ships.' },
-  { week: 'Week 2', title: 'Build + content', description: 'I build the interactive page, wire CRM integration, set up email automation, and draft the magnet copy. You review and mark changes.' },
-  { week: 'Week 3', title: 'Launch + handoff', description: 'We go live. I monitor the first 48 hours, fix anything that surfaces, then hand you the dashboard and docs so your team can run it.' },
+  {
+    week: 'Week 1',
+    title: 'Voice + strategy',
+    description: 'Kickoff call. I read your last 50 posts to train voice. You walk me through quarterly strategy and non-negotiables. I build the planning agent and scoring prompts.',
+  },
+  {
+    week: 'Week 2',
+    title: 'Integration + formats',
+    description: 'I wire LinkedIn, ClickUp, and whatever analytics you use. Build the multi-format generators (text / carousel / image). You review first sample outputs.',
+  },
+  {
+    week: 'Week 3',
+    title: 'Review loop + launch',
+    description: 'The system generates a real week of content on your live schedule. We run it together, edit the approval flow, then hand it off. You own it after Week 3.',
+  },
 ];
 
 const notIncluded = [
-  'Paid traffic to drive visitors (I can recommend a partner)',
-  'Original magnet content — you bring the expertise, I build the delivery system',
-  'Sales outreach to the leads (that\'s the Fractional Partner or Care Plan layer)',
+  'Writing the content for you — you approve and edit; the system drafts',
+  'Paid amplification or ad buying (not this offer)',
+  'Replacing human strategy — if you don\'t know what you want to be known for, the system amplifies the confusion',
+  'Guaranteed engagement — the system ships; the market decides',
 ];
 
-const LeadMagnetSystemPage: React.FC = () => {
+const ContentSystemPage: React.FC = () => {
   useMetadata({
-    title: 'Lead Magnet System | Manfredi',
-    description: 'Productized 3-week build. Interactive landing page + CMS-driven magnet + CRM wired + nurture sequence. A lead gen asset that works without a marketing team. $8-12k fixed.',
-    canonical: 'https://ivanmanfredi.com/lead-magnet-system',
+    title: 'Content Engine | Manfredi',
+    description: 'Weekly content planning agent trained on your voice. You review; the system ships. 5-7 posts a week without staring at a blank page.',
+    canonical: 'https://ivanmanfredi.com/content-system',
   });
+
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">
@@ -71,7 +86,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Lead Magnet System
+              Content Engine
             </span>
           </motion.div>
 
@@ -79,10 +94,10 @@ const LeadMagnetSystemPage: React.FC = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
+            className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight mb-6 max-w-4xl"
           >
-            Turn your expertise into <br />
-            <span className="font-drama italic">a qualified-lead engine.</span>
+            Ship 5 posts a week <br />
+            <span className="font-drama italic">without writing them.</span>
           </motion.h1>
 
           <motion.p
@@ -91,10 +106,10 @@ const LeadMagnetSystemPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-zinc-600 max-w-2xl leading-relaxed mb-12"
           >
-            Stop losing warm leads to follow-up neglect. Stop paying a designer every time you launch a new magnet. Stop guessing which topics convert. One system, installed once, runs forever.
+            Stop staring at the blank page every Monday. Stop shipping ghostwriter-grade content that sounds like everyone else. Stop losing momentum because you got busy for two weeks.
           </motion.p>
 
-          {/* Price box */}
+          {/* Price */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,7 +121,7 @@ const LeadMagnetSystemPage: React.FC = () => {
                 <p className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-2">
                   Fixed project
                 </p>
-                <p className="text-5xl md:text-6xl font-bold tracking-tight">$6–10k</p>
+                <p className="text-5xl md:text-6xl font-bold tracking-tight">$5–9k</p>
                 <p className="text-sm text-zinc-500 mt-2">3-week delivery · 50% upfront, 50% on launch</p>
               </div>
               <a
@@ -118,11 +133,11 @@ const LeadMagnetSystemPage: React.FC = () => {
               </a>
             </div>
             <p className="text-sm text-zinc-600 border-t border-[color:var(--color-hairline)] pt-6">
-              Price depends on how many magnet formats you want live at launch, CRM routing complexity, and whether you need a custom newsletter integration. I quote after a 30-minute scope call.
+              Price depends on number of channels (LinkedIn only vs multi-platform), format variety, and how sophisticated your voice training and analytics need to be. I quote after a 30-minute scope call.
             </p>
           </motion.div>
 
-          {/* Benefits — lead with outcomes, not features */}
+          {/* Benefits */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -142,7 +157,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Under the hood — for buyers who want the tech specs */}
+          {/* Under the hood */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -200,7 +215,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
               What's not in scope
             </h2>
-            <p className="text-zinc-600 mb-6">Being explicit about this up front stops scope arguments later.</p>
+            <p className="text-zinc-600 mb-6">Clear boundaries protect both of us.</p>
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-zinc-700">
@@ -219,14 +234,14 @@ const LeadMagnetSystemPage: React.FC = () => {
             className="bg-black text-white rounded-2xl p-8 md:p-12 text-center"
           >
             <h2 className="text-3xl md:text-4xl font-semibold mb-4 tracking-tight">
-              Ready to start?
+              Ready to stop writing posts?
             </h2>
             <p className="text-zinc-400 mb-8 max-w-xl mx-auto leading-relaxed">
-              Fill out the 5-minute intake and I'll come to our call with a scoped proposal. No guesswork, no back-and-forth on what gets built.
+              Fill out the 5-minute intake and I'll come to our call with a scoped proposal — specific formats, specific channels, specific voice guardrails.
             </p>
             <a
               href="/start"
-              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-black font-bold text-lg tracking-wide border-subtle-thick shadow-card"
+              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent rounded-lg text-black font-bold text-lg tracking-wide border-subtle-thick shadow-card-subtle"
             >
               Start the conversation
               <ArrowRight size={20} />
@@ -241,4 +256,4 @@ const LeadMagnetSystemPage: React.FC = () => {
   );
 };
 
-export default LeadMagnetSystemPage;
+export default ContentSystemPage;
