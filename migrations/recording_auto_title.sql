@@ -36,5 +36,5 @@ REVOKE ALL ON FUNCTION public.get_vault_secret(TEXT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.get_vault_secret(TEXT) TO service_role;
 
 -- Required vault secrets (add via dashboard or SELECT vault.create_secret(...)):
---   ASSEMBLYAI_API_KEY    — transcription
---   ANTHROPIC_API_KEY     — title generation
+--   ASSEMBLYAI_API_KEY    - transcription
+--   ANTHROPIC_API_KEY     - title generation

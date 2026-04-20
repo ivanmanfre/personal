@@ -39,7 +39,7 @@ export function useUpcomingEvents() {
       if (error) throw error;
       setEvents((data || []).map(mapEvent));
     } catch (err) {
-      // Table might not exist yet — silently fail
+      // Table might not exist yet - silently fail
       setEvents([]);
     } finally {
       setLoading(false);

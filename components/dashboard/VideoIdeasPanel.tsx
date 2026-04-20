@@ -299,7 +299,7 @@ const VideoIdeasPanel: React.FC = () => {
       {ideas.length === 0 ? (
         <EmptyState
           title="No video ideas yet"
-          description="Capture an idea title and a video type — the system handles script + render from there."
+          description="Capture an idea title and a video type - the system handles script + render from there."
           icon={<Film className="w-10 h-10" />}
           action={{ label: 'New idea', onClick: () => setShowCreate(true) }}
         />
@@ -339,7 +339,7 @@ const VideoIdeasPanel: React.FC = () => {
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteDuplicates(dupeIds); }}
                             className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
-                            title={`${dupeIds.length} older duplicate${dupeIds.length > 1 ? 's' : ''} of this idea — click to delete them`}
+                            title={`${dupeIds.length} older duplicate${dupeIds.length > 1 ? 's' : ''} of this idea - click to delete them`}
                           >
                             ×{dupeIds.length + 1} dupes
                           </button>

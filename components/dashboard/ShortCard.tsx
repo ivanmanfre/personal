@@ -35,7 +35,7 @@ const ShortCard: React.FC<Props> = ({ short, onApprove, onReject, onRender, onFo
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">{short.title || 'Untitled segment'}</p>
           <p className="text-[10px] text-zinc-500 mt-0.5">
-            {formatTime(short.startTime)} — {formatTime(short.endTime)} · {Math.round(short.durationSeconds)}s
+            {formatTime(short.startTime)} - {formatTime(short.endTime)} · {Math.round(short.durationSeconds)}s
           </p>
         </div>
         <button

@@ -71,10 +71,10 @@ INSERT INTO auto_research_sessions (name, description, target_type, target_ref, 
   -- Tier 1: Content Strategy
   ('Content Strategy Scoring', 'Optimize weekly planning prompt for better topic selection', 'prompt', 'Content Strategy Scoring', 'nfDkl0LK6GVHklYK', '2ky5ezad-1733', 'Plan Quality Score', 'score', 'higher_is_better', 'idle', 'content'),
   -- Tier 1: Carousel Styles
-  ('Carousel — Educational', 'Optimize educational breakdown carousel style', 'prompt', 'Style: Educational Breakdown', '0zD6WZRBD7FnaAhw', '2ky5ezad-1293', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
-  ('Carousel — Step-by-Step', 'Optimize step-by-step carousel style', 'prompt', 'Style: Step-by-Step', '0zD6WZRBD7FnaAhw', '2ky5ezad-1313', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
-  ('Carousel — Myth-Busting', 'Optimize myth-busting carousel style', 'prompt', 'Style: Myth-Busting', '0zD6WZRBD7FnaAhw', '2ky5ezad-1333', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
-  ('Carousel — Framework', 'Optimize framework walkthrough carousel style', 'prompt', 'Style: Framework Walkthrough', '0zD6WZRBD7FnaAhw', '2ky5ezad-1393', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
+  ('Carousel - Educational', 'Optimize educational breakdown carousel style', 'prompt', 'Style: Educational Breakdown', '0zD6WZRBD7FnaAhw', '2ky5ezad-1293', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
+  ('Carousel - Step-by-Step', 'Optimize step-by-step carousel style', 'prompt', 'Style: Step-by-Step', '0zD6WZRBD7FnaAhw', '2ky5ezad-1313', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
+  ('Carousel - Myth-Busting', 'Optimize myth-busting carousel style', 'prompt', 'Style: Myth-Busting', '0zD6WZRBD7FnaAhw', '2ky5ezad-1333', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
+  ('Carousel - Framework', 'Optimize framework walkthrough carousel style', 'prompt', 'Style: Framework Walkthrough', '0zD6WZRBD7FnaAhw', '2ky5ezad-1393', 'Slide Quality', 'score', 'higher_is_better', 'idle', 'content'),
   -- Tier 2: Outreach
   ('Outreach Comment Quality', 'Optimize warmup comment prompt for naturalness', 'prompt', 'Outreach Comment', 'kr2lSH1eRGZcDWmO', '2ky5ezad-2073', 'Naturalness Score', 'score', 'higher_is_better', 'idle', 'outreach'),
   ('Outreach DM Step 1', 'Optimize first DM for reply rate', 'prompt', 'Outreach DM Step 1', 'joU7VaM5OiRAwLwP', '2ky5ezad-2093', 'Reply Likelihood', 'score', 'higher_is_better', 'idle', 'outreach'),

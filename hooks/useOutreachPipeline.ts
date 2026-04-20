@@ -542,7 +542,7 @@ export function useOutreachPipeline(timezone?: string) {
         await fetchMessages(prospectId);
         await fetch();
       } else {
-        toastError('send DM — server rejected');
+        toastError('send DM - server rejected');
       }
     } catch (err) {
       toastError('send DM', err);
@@ -570,7 +570,7 @@ export function useOutreachPipeline(timezone?: string) {
           toastError('No email address for this prospect');
           return;
         }
-        // Approve email via Supabase — WF7 polls and sends via Gmail
+        // Approve email via Supabase - WF7 polls and sends via Gmail
         await supabase.from('outreach_messages').update({
           approved_at: new Date().toISOString(),
           recipient_email: email
@@ -579,11 +579,11 @@ export function useOutreachPipeline(timezone?: string) {
           needs_manual_reply: false,
           updated_at: new Date().toISOString()
         }).eq('id', prospectId);
-        toastSuccess('Email approved — sending via Gmail shortly');
+        toastSuccess('Email approved - sending via Gmail shortly');
         await fetchPendingDrafts();
         await fetch();
       } else {
-        // Approve LinkedIn message via Supabase — WF8 polls and sends via UniPile
+        // Approve LinkedIn message via Supabase - WF8 polls and sends via UniPile
         await supabase.from('outreach_messages').update({
           approved_at: new Date().toISOString(),
           message_text: messageText
@@ -592,7 +592,7 @@ export function useOutreachPipeline(timezone?: string) {
           needs_manual_reply: false,
           updated_at: new Date().toISOString()
         }).eq('id', prospectId);
-        toastSuccess('LinkedIn message approved — sending shortly');
+        toastSuccess('LinkedIn message approved - sending shortly');
         await fetchPendingDrafts();
         await fetch();
       }

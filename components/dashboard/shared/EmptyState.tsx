@@ -5,7 +5,7 @@ interface Props {
   title?: string;
   description?: string;
   icon?: React.ReactNode;
-  /** Optional CTA button — gives the user a next step instead of a dead end. */
+  /** Optional CTA button - gives the user a next step instead of a dead end. */
   action?: { label: string; onClick: () => void };
 }
 

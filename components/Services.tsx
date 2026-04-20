@@ -63,7 +63,7 @@ const Services: React.FC = () => {
                 <h4 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h4>
               </div>
               <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
-                Lead qualification. Tier-1 support. Document parsing. The judgment-heavy work your best person can't scale. I build the agent and get your ops ready to run it — skipping that second half is why most AI projects stall.
+                Lead qualification. Tier-1 support. Document parsing. The judgment-heavy work your best person can't scale. I build the agent and get your ops ready to run it - skipping that second half is why most AI projects stall.
               </p>
               <ul className="space-y-3 text-sm font-medium text-zinc-500">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your SOPs and company data</li>

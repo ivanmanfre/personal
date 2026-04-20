@@ -99,7 +99,7 @@ export function useUpworkPipeline() {
   const [generatingJobs, setGeneratingJobs] = useState<Set<string>>(new Set());
   const [cookiesUpdatedAt, setCookiesUpdatedAt] = useState<string | null>(null);
 
-  // Optimistic locks — prevent auto-refresh from overwriting in-flight states
+  // Optimistic locks - prevent auto-refresh from overwriting in-flight states
   const jobLocks = useRef<Map<string, OptimisticLock>>(new Map());
   const proposalLocks = useRef<Map<string, OptimisticLock>>(new Map());
   const proposalTextLocks = useRef<Map<string, { field: string; value: string; expiry: number }>>(new Map());
@@ -150,7 +150,7 @@ export function useUpworkPipeline() {
       setJobs(serverJobs.map((j) => {
         const lock = jobLocks.current.get(j.id);
         if (lock && now < lock.expiry) {
-          // Server caught up (status changed) — release lock
+          // Server caught up (status changed) - release lock
           if (j.status !== 'assessed' && j.status !== 'new') {
             jobLocks.current.delete(j.id);
             return j;
@@ -211,7 +211,7 @@ export function useUpworkPipeline() {
         }
       }
 
-      // Detect new assessed jobs — only notify for ICP >= 6
+      // Detect new assessed jobs - only notify for ICP >= 6
       const currentAssessedIds = new Set(
         serverJobs.filter((j) => j.status === 'assessed').map((j) => j.id)
       );
@@ -317,7 +317,7 @@ export function useUpworkPipeline() {
   };
 
   const submitProposal = async (id: string) => {
-    // Check if local submission daemon is enabled — if so, just approve and let the daemon pick it up
+    // Check if local submission daemon is enabled - if so, just approve and let the daemon pick it up
     try {
       const { data: configRows } = await supabase
         .from('integration_config')
@@ -330,7 +330,7 @@ export function useUpworkPipeline() {
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'approved' } : p)));
         await dashboardAction('upwork_proposals', id, 'status', 'approved');
         clearProposalLock(id);
-        toastSuccess('Proposal approved — local daemon will submit within 30s');
+        toastSuccess('Proposal approved - local daemon will submit within 30s');
         return;
       }
     } catch {
@@ -355,7 +355,7 @@ export function useUpworkPipeline() {
       } else {
         clearProposalLock(id);
         setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'pending_approval' } : p)));
-        toastError('submit proposal — server rejected');
+        toastError('submit proposal - server rejected');
       }
     } catch (err) {
       toastError('submit proposal', err);

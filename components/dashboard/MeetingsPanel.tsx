@@ -334,10 +334,10 @@ const CallPlaybook: React.FC = () => {
         <div className="px-4 pb-4 space-y-2.5 border-t border-amber-800/20">
           <div className="pt-3 space-y-2">
             {[
-              { num: '1', text: 'Quantify the pain', detail: '"How long does that take you? How often?" — make them feel the cost before you quote.' },
-              { num: '2', text: 'Who else decides?', detail: '"Is anyone else involved in this decision?" — avoid proposals that stall in someone\'s inbox.' },
+              { num: '1', text: 'Quantify the pain', detail: '"How long does that take you? How often?" - make them feel the cost before you quote.' },
+              { num: '2', text: 'Who else decides?', detail: '"Is anyone else involved in this decision?" - avoid proposals that stall in someone\'s inbox.' },
               { num: '3', text: 'Anchor value before price', detail: 'Recap what they\'re losing (time, money, opportunities) THEN give the range.' },
-              { num: '4', text: 'Book the next step', detail: '"When would you like to kick this off? Can we book a follow-up for [day]?" — never end with just "I\'ll send a proposal."' },
+              { num: '4', text: 'Book the next step', detail: '"When would you like to kick this off? Can we book a follow-up for [day]?" - never end with just "I\'ll send a proposal."' },
             ].map((item) => (
               <div key={item.num} className="flex gap-3 items-start">
                 <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-[11px] font-bold flex items-center justify-center mt-0.5">

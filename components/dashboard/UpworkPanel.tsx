@@ -163,10 +163,10 @@ function CookieFreshness({ updatedAt }: { updatedAt: string }) {
   const label = ageH < 1 ? `${Math.round(ageMs / 60_000)}m ago` : `${Math.round(ageH)}h ago`;
 
   const handleRefreshCookies = () => {
-    // Opens Upwork in a new tab — the Chrome extension grabs cookies
+    // Opens Upwork in a new tab - the Chrome extension grabs cookies
     // and sends them to the n8n webhook automatically
     window.open('https://www.upwork.com/nx/find-work/best-matches', '_blank');
-    setRefreshResult('Opened Upwork — extension will grab cookies');
+    setRefreshResult('Opened Upwork - extension will grab cookies');
     setTimeout(() => setRefreshResult(null), 5000);
   };
 
@@ -336,7 +336,7 @@ const UpworkPanel: React.FC = () => {
           className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2"
         >
           {statsCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          {statsCollapsed ? `Stats — ${actionCount} action, ${stats.pendingApproval} review, ${stats.submitted} submitted` : 'Stats'}
+          {statsCollapsed ? `Stats - ${actionCount} action, ${stats.pendingApproval} review, ${stats.submitted} submitted` : 'Stats'}
         </button>
         {!statsCollapsed && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
@@ -424,7 +424,7 @@ const UpworkPanel: React.FC = () => {
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                         <span className="text-xs text-zinc-400">{formatBudget(job)}</span>
                         {job.icpScore != null && (
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${icpBg(job.icpScore)} ${icpColor(job.icpScore)}`} title={`ICP Score: ${job.icpScore}/10 — ${job.icpScore >= 8 ? 'Strong fit' : job.icpScore >= 6 ? 'Moderate fit' : 'Weak fit'}`}>ICP {job.icpScore}</span>
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${icpBg(job.icpScore)} ${icpColor(job.icpScore)}`} title={`ICP Score: ${job.icpScore}/10 - ${job.icpScore >= 8 ? 'Strong fit' : job.icpScore >= 6 ? 'Moderate fit' : 'Weak fit'}`}>ICP {job.icpScore}</span>
                         )}
                         <ClientBadge history={job.clientHistory} />
                         {job.skills.slice(0, 3).map((skill) => (

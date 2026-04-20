@@ -48,7 +48,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
       </span>
     </div>
 
-    {/* Content — italic serif pull quote */}
+    {/* Content - italic serif pull quote */}
     <div className="relative z-10 mb-8 flex-grow">
       <p className="font-drama italic text-2xl md:text-3xl text-zinc-700 leading-tight group-hover:text-black transition-colors duration-300">
         "{review.text}"

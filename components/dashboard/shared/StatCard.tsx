@@ -7,7 +7,7 @@ interface Props {
   icon: React.ReactNode;
   color: string;
   subValue?: string;
-  trend?: { value: number; label?: string }; // percentage change — positive = up, negative = down
+  trend?: { value: number; label?: string }; // percentage change - positive = up, negative = down
 }
 
 // Map text color classes to background tint classes
@@ -21,7 +21,7 @@ const colorToBg: Record<string, string> = {
   'text-red-400':     'bg-red-500/15 border-red-500/20',
   'text-amber-400':   'bg-amber-500/15 border-amber-500/20',
   'text-blue-400':    'bg-blue-500/15 border-blue-500/20',
-  // Legacy accents — deprecated, kept so older panels keep rendering
+  // Legacy accents - deprecated, kept so older panels keep rendering
   'text-pink-400':    'bg-pink-500/15 border-pink-500/20',
   'text-violet-400':  'bg-violet-500/15 border-violet-500/20',
   'text-orange-400':  'bg-orange-500/15 border-orange-500/20',

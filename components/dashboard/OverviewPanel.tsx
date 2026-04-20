@@ -52,7 +52,7 @@ const OverviewPanel: React.FC = () => {
     });
   }, [workflows]);
 
-  // 30d window stats + 30d vs prior 30d trends — keeps card values and deltas on the same window
+  // 30d window stats + 30d vs prior 30d trends - keeps card values and deltas on the same window
   const { stats30d, trends } = useMemo(() => {
     const now = Date.now();
     const day = 86400000;
@@ -83,7 +83,7 @@ const OverviewPanel: React.FC = () => {
         : '0',
     };
 
-    // Returns undefined when no prior data — suppresses the trend chip rather than showing a misleading 100%
+    // Returns undefined when no prior data - suppresses the trend chip rather than showing a misleading 100%
     const pct = (c: number, p: number): { value: number; label: string } | undefined =>
       p === 0 ? undefined : { value: Math.round(((c - p) / p) * 100), label: 'vs prior 30d' };
 
@@ -128,7 +128,7 @@ const OverviewPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refreshAll} />
       </div>
 
-      {/* Today's focus — actionable items above everything else */}
+      {/* Today's focus - actionable items above everything else */}
       <AnimateIn delay={0}>
         <TodaysFocus
           workflows={workflows}

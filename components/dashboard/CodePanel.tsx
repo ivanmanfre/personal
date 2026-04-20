@@ -66,7 +66,7 @@ const CodePanel: React.FC = () => {
 
   return (
     <div className="-m-3 sm:-m-6 md:-m-8 relative" style={{ height: 'calc(100vh - 3.5rem)' }}>
-      {/* Split control — top right, overlays the iframe */}
+      {/* Split control - top right, overlays the iframe */}
       <div className="absolute top-2.5 right-3 z-30 flex items-center gap-1">
         {!isSplit && (
           <button
@@ -108,7 +108,7 @@ const CodePanel: React.FC = () => {
                 transition: isDragging ? 'none' : 'width 0.2s ease',
               }}
             >
-              {/* Close pane button — shows on hover */}
+              {/* Close pane button - shows on hover */}
               {isSplit && (
                 <button
                   onClick={() => removeSplit(pane.id)}

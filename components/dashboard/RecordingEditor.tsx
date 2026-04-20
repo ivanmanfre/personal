@@ -225,12 +225,12 @@ const RecordingEditor: React.FC<Props> = ({ recordingId, duration, videoRef }) =
             />
           ))}
 
-          {/* Trim region dimming — left of trim start */}
+          {/* Trim region dimming - left of trim start */}
           <div
             className="absolute top-0 bottom-0 bg-black/40 pointer-events-none"
             style={{ left: 0, width: `${timeToPercent(editor.trimStart)}%` }}
           />
-          {/* Trim region dimming — right of trim end */}
+          {/* Trim region dimming - right of trim end */}
           <div
             className="absolute top-0 bottom-0 bg-black/40 pointer-events-none"
             style={{ left: `${timeToPercent(editor.trimEnd)}%`, right: 0 }}

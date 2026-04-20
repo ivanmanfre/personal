@@ -437,7 +437,7 @@ const ClientCard: React.FC<ClientCardProps> = ({
                       <button
                         onClick={() => onToggleNotifications(wf.id, !wf.notificationsEnabled)}
                         className={`p-1.5 rounded-lg transition-colors ${wf.notificationsEnabled ? 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/25' : 'bg-zinc-800/50 text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800'}`}
-                        title={wf.notificationsEnabled ? 'Notifications on — click to disable' : 'Notifications off — click to enable'}
+                        title={wf.notificationsEnabled ? 'Notifications on - click to disable' : 'Notifications off - click to enable'}
                       >
                         {wf.notificationsEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
                       </button>
@@ -716,7 +716,7 @@ const InfrastructureTab: React.FC<{
         </a>
       </div>
 
-      {/* GitHub Repos — auto-synced */}
+      {/* GitHub Repos - auto-synced */}
       <RepoList repos={repos} langColors={langColors} />
 
       {/* Manual services + Supabase + notes */}

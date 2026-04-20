@@ -300,7 +300,7 @@ const TasksPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Actions — always visible on mobile, hover-reveal on desktop */}
+              {/* Actions - always visible on mobile, hover-reveal on desktop */}
               <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                 {isAgent && !isCompleted && (
                   <button onClick={() => handleEdit(task.id, 'title', task.title)} className="p-2 sm:p-1.5 rounded-lg text-zinc-500 sm:text-zinc-600 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-cyan-500/50 focus-visible:outline-none" title="Edit" aria-label={`Edit task: ${task.title}`}>

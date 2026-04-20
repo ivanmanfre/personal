@@ -57,7 +57,7 @@ const VideoRecorder: React.FC<Props> = ({ onRecordingComplete }) => {
             ...dest.stream.getAudioTracks(),
           ]);
         } catch {
-          // Mic denied — continue with screen only
+          // Mic denied - continue with screen only
         }
       }
 

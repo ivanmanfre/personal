@@ -43,7 +43,7 @@ const offers: Offer[] = [
     name: 'Fractional AI Partner',
     price: 'From $3,500/mo',
     cadence: 'Monthly retainer · 3 tiers',
-    description: 'Your AI strategy, owned by someone who ships. Senior partner embedded monthly — not another consultant selling slide decks.',
+    description: 'Your AI strategy, owned by someone who ships. Senior partner embedded monthly - not another consultant selling slide decks.',
     href: '/fractional',
   },
 ];

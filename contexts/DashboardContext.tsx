@@ -65,7 +65,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (offsetRow) setUserTimezoneOffset(parseInt(offsetRow.value));
         }
       } catch (err) {
-        // Silently fail — use defaults
+        // Silently fail - use defaults
         console.error('Failed to load timezone settings:', err);
       }
     };

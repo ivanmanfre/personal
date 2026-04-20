@@ -6,7 +6,7 @@ import type { Recording, RecordingStats } from '../types/dashboard';
 /**
  * Capture a poster frame from a video file using a hidden video + canvas.
  * Seeks to ~25% of duration to skip dark intros. Returns null on any failure
- * — caller should fall back to the gradient placeholder. Times out after 8s
+ * - caller should fall back to the gradient placeholder. Times out after 8s
  * so a malformed video can't hang the upload flow.
  */
 function capturePosterFrame(file: File, maxSize = 720): Promise<Blob | null> {
@@ -249,7 +249,7 @@ export function useRecordings(statusFilter?: string) {
       if (uploadError) throw uploadError;
 
       // Best-effort client-side poster frame capture before inserting metadata
-      // so the recording grid never shows blank cards. Failures are silent —
+      // so the recording grid never shows blank cards. Failures are silent -
       // the gradient placeholder still renders.
       let thumbnailPath: string | null = null;
       try {
@@ -265,7 +265,7 @@ export function useRecordings(statusFilter?: string) {
         /* poster capture is best-effort */
       }
 
-      // Insert metadata — set auto_title_status='pending' if no title was provided
+      // Insert metadata - set auto_title_status='pending' if no title was provided
       // so the backfill picker picks it up, or the fire-and-forget trigger below
       // kicks off immediately.
       const autoTitleStatus = title?.trim() ? null : 'pending';
@@ -396,7 +396,7 @@ export function useRecordings(statusFilter?: string) {
   // Candidates for auto-title generation: the original path exists, no
   // auto_title has been written yet, and the row isn't currently in progress.
   // 'failed' status is eligible for retry. A title like "Recording 25/03/2026
-  // 19:30" still counts as needing a real title — it's a placeholder from the
+  // 19:30" still counts as needing a real title - it's a placeholder from the
   // upload step, not a user-chosen title.
   const PLACEHOLDER_TITLE = /^Recording\s+\d/i;
   const autoTitleCandidates = useMemo(
@@ -407,7 +407,7 @@ export function useRecordings(statusFilter?: string) {
       const titleIsPlaceholder = !r.title || PLACEHOLDER_TITLE.test(r.title.trim());
       if (!titleIsPlaceholder) return false;
       // Allow fresh, pending, or previously-failed rows; skip ones in flight
-      // and skip 'no_audio' (legitimate case — screen recordings without speech)
+      // and skip 'no_audio' (legitimate case - screen recordings without speech)
       return (
         r.autoTitleStatus === null ||
         r.autoTitleStatus === 'pending' ||
@@ -420,7 +420,7 @@ export function useRecordings(statusFilter?: string) {
 
   /**
    * Invoke the recording-auto-title edge function for each candidate in
-   * sequence (Whisper is the bottleneck — no concurrent benefit here).
+   * sequence (Whisper is the bottleneck - no concurrent benefit here).
    * The edge function marks status=done/failed; we refresh afterwards.
    */
   const backfillAutoTitles = useCallback(async (

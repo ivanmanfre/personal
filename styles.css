@@ -24,7 +24,7 @@
   --color-accent-ink: #2A4A33;
   --color-accent-soft: rgba(63, 107, 74, 0.08);
 
-  /* ── Deprecated — do not use in new code ───────────────── */
+  /* ── Deprecated - do not use in new code ───────────────── */
   --color-cyan: #1E40AF;
   --color-pink: #E8366D;
 
@@ -32,7 +32,7 @@
   --shadow-card-subtle: 0 1px 3px rgba(26, 26, 26, 0.06), 0 1px 2px rgba(26, 26, 26, 0.04);
   --shadow-card-lift: 0 8px 24px rgba(26, 26, 26, 0.10), 0 2px 6px rgba(26, 26, 26, 0.05);
 
-  /* Legacy shadow aliases — map to new subtle/lift so existing classes keep working */
+  /* Legacy shadow aliases - map to new subtle/lift so existing classes keep working */
   --shadow-card: 0 1px 3px rgba(26, 26, 26, 0.06), 0 1px 2px rgba(26, 26, 26, 0.04);
   --shadow-card-hover: 0 8px 24px rgba(26, 26, 26, 0.10), 0 2px 6px rgba(26, 26, 26, 0.05);
   --shadow-card-active: 0 1px 2px rgba(26, 26, 26, 0.06);
@@ -87,7 +87,7 @@ body {
   scrollbar-width: none;
 }
 
-/* Editorial portrait regrade — desaturate heavily (kill the green backdrop),
+/* Editorial portrait regrade - desaturate heavily (kill the green backdrop),
    warm undertone, lift contrast. Without real reshoot this CSS filter
    is what takes the green-gradient studio portrait and tones it toward
    a putty/paper feel that lives inside the cream brand system. */
@@ -95,7 +95,7 @@ body {
   filter: saturate(0.45) sepia(0.18) contrast(1.1) brightness(0.95);
 }
 
-/* View Transitions API — named elements animate smoothly across route changes */
+/* View Transitions API - named elements animate smoothly across route changes */
 @media not (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -116,7 +116,7 @@ body {
   from { opacity: 0; }
 }
 
-/* Sophisticated borders — point to canonical hairline tokens */
+/* Sophisticated borders - point to canonical hairline tokens */
 .border-subtle {
   border: 1px solid var(--color-hairline);
 }
@@ -170,7 +170,7 @@ body {
 
 /* Dashboard-specific styles */
 
-/* Ambient gradient mesh — kills the flat gray feeling */
+/* Ambient gradient mesh - kills the flat gray feeling */
 .dashboard-mesh-bg {
   background-color: #09090b;
   background-image:

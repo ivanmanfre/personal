@@ -11,7 +11,7 @@ const Hero: React.FC = () => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10 max-w-5xl mx-auto">
 
-          {/* Portrait — mobile (top) */}
+          {/* Portrait - mobile (top) */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -36,7 +36,7 @@ const Hero: React.FC = () => {
             </picture>
           </motion.div>
 
-          {/* Left — Copy */}
+          {/* Left - Copy */}
           <div className="flex-1 min-w-0">
             {/* Tag */}
             <motion.div
@@ -50,7 +50,7 @@ const Hero: React.FC = () => {
               </span>
             </motion.div>
 
-            {/* Headline — editorial restraint, italic serif emphasis */}
+            {/* Headline - editorial restraint, italic serif emphasis */}
             <motion.h1
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -62,7 +62,7 @@ const Hero: React.FC = () => {
               Headcount <span className="font-drama italic font-normal">doesn't.</span>
             </motion.h1>
 
-            {/* Subheadline — one sentence */}
+            {/* Subheadline - one sentence */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -95,7 +95,7 @@ const Hero: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Right — Portrait */}
+          {/* Right - Portrait */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}

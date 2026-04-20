@@ -75,7 +75,7 @@ const steps = [
     {
         id: '03',
         title: 'Build',
-        desc: 'I build, test, and deploy into your existing stack. Most systems ship in 3 to 4 weeks. Your team uses it the day it launches — no multi-month rollout, no invisible progress.',
+        desc: 'I build, test, and deploy into your existing stack. Most systems ship in 3 to 4 weeks. Your team uses it the day it launches - no multi-month rollout, no invisible progress.',
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (

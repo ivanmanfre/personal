@@ -51,9 +51,9 @@ const howItWorks = [
 
 const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
-  'On-site presence — this is remote-first, async-first',
-  '24/7 on-call response — real emergencies handled same-day, but I sleep',
-  'Unlimited implementation volume — each tier has a defined project cap per month',
+  'On-site presence - this is remote-first, async-first',
+  '24/7 on-call response - real emergencies handled same-day, but I sleep',
+  'Unlimited implementation volume - each tier has a defined project cap per month',
 ];
 
 const FractionalPage: React.FC = () => {
@@ -93,7 +93,7 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-zinc-600 max-w-2xl leading-relaxed mb-12"
           >
-            A monthly retainer. You get a senior AI and ops partner who understands your business and ships actual systems — not slide decks. Three tiers based on the volume and depth of the work your team needs.
+            A monthly retainer. You get a senior AI and ops partner who understands your business and ships actual systems - not slide decks. Three tiers based on the volume and depth of the work your team needs.
           </motion.p>
 
           {/* Tiers */}
@@ -188,7 +188,7 @@ const FractionalPage: React.FC = () => {
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-zinc-700">
-                  <span className="font-mono text-zinc-400 mt-1">—</span>
+                  <span className="font-mono text-zinc-400 mt-1">-</span>
                   <span>{item}</span>
                 </li>
               ))}

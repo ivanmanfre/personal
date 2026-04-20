@@ -43,7 +43,7 @@ const CompetitorIntelPanel: React.FC = () => {
     ].filter(Boolean).join('\n');
     try {
       await navigator.clipboard.writeText(lines);
-      toastSuccess('Draft brief copied — paste into n8n Post Gen or ClickUp');
+      toastSuccess('Draft brief copied - paste into n8n Post Gen or ClickUp');
     } catch (err) {
       toastError('copy draft', err);
     }
@@ -157,7 +157,7 @@ const CompetitorIntelPanel: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-amber-300/90 font-medium leading-snug">{p.theOpportunity}</p>
                     <p className="text-xs text-zinc-500 mt-1 truncate" title={p.postText.slice(0, 200)}>
-                      {p.competitorName} · {p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}
+                      {p.competitorName} · {p.postDate ? new Date(p.postDate).toLocaleDateString() : '-'}
                       {p.linkedinPostUrl && (
                         <a
                           href={p.linkedinPostUrl}
@@ -274,7 +274,7 @@ const CompetitorIntelPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Posts — cards on mobile, table on md+ */}
+      {/* Posts - cards on mobile, table on md+ */}
       {tab === 'posts' && (
         displayPosts.length === 0 ? (
           <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-10 text-zinc-600 text-center text-sm">No posts found</div>
@@ -294,7 +294,7 @@ const CompetitorIntelPanel: React.FC = () => {
                   </div>
                   <p className="text-sm text-zinc-300 line-clamp-2">{p.postText.slice(0, 120)}</p>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[11px] text-zinc-500">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</span>
+                    <span className="text-[11px] text-zinc-500">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '-'}</span>
                     {p.topicCategory && <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{p.topicCategory}</span>}
                   </div>
                 </div>
@@ -319,7 +319,7 @@ const CompetitorIntelPanel: React.FC = () => {
                         <td className="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{p.competitorName.split(' ')[0]}</td>
                         <td className="px-4 py-3">
                           <p className="text-sm text-zinc-300 truncate max-w-xs" title={p.postText.slice(0, 200)}>{p.postText.slice(0, 80)}</p>
-                          <p className="text-[11px] text-zinc-500 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '—'}</p>
+                          <p className="text-[11px] text-zinc-500 mt-0.5">{p.postDate ? new Date(p.postDate).toLocaleDateString() : '-'}</p>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5 text-[11px]">
@@ -329,7 +329,7 @@ const CompetitorIntelPanel: React.FC = () => {
                             {p.isTopPerformer && <Star className="w-3 h-3 text-amber-400" />}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-[11px] text-zinc-500">{p.topicCategory || '—'}</td>
+                        <td className="px-4 py-3 text-[11px] text-zinc-500">{p.topicCategory || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -54,7 +54,7 @@ const TodaysFocus: React.FC<Props> = ({ workflows, alerts, pendingPostsCount, on
       });
     });
 
-    // 2. Stuck pipeline (rolled up — show oldest unsent stall)
+    // 2. Stuck pipeline (rolled up - show oldest unsent stall)
     const stalls = alerts
       .filter((a) => a.alertType === 'pipeline_stall' && !a.sent)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());

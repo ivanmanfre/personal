@@ -115,7 +115,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
 
       {/* Sidebar */}
       <aside className={`fixed md:sticky top-0 left-0 z-40 h-screen w-[240px] dashboard-sidebar-glass border-r border-zinc-800/40 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'md:-translate-x-full md:w-0 md:min-w-0 md:overflow-hidden md:border-0' : 'md:translate-x-0'}`}>
-        {/* Collapse toggle — subtle sliver on hover */}
+        {/* Collapse toggle - subtle sliver on hover */}
         <button
           onClick={() => setSidebarCollapsed(c => !c)}
           className="hidden md:flex absolute -right-[5px] top-1/2 -translate-y-1/2 z-50 w-[10px] h-16 items-center justify-center rounded-r opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity duration-200 group/collapse"
@@ -225,7 +225,7 @@ const DashboardLayout: React.FC<Props> = ({ activeTab, onTabChange, onLogout, ch
         </div>
       </aside>
 
-      {/* Expand sidebar — subtle sliver on left edge when collapsed */}
+      {/* Expand sidebar - subtle sliver on left edge when collapsed */}
       {sidebarCollapsed && (
         <button
           onClick={() => setSidebarCollapsed(false)}

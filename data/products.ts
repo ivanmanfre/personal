@@ -8,28 +8,28 @@ export const products: Product[] = [
     name: 'AI Orientation Session',
     headline: 'Stop guessing where to {{italic:start}} with AI in your business.',
     description:
-      'A direction-setting session for founders and operators who already run real systems and want to start using AI without getting lost in the noise. One focused call: we look at what you\'re already running, map out where AI moves the needle, and give you a concrete path — how to set up Claude Code, which MCPs and skills matter for your use case, what to automate first, and what to leave alone. You walk away with a written plan, not a generic tutorial.',
+      'A direction-setting session for founders and operators who already run real systems and want to start using AI without getting lost in the noise. One focused call: we look at what you\'re already running, map out where AI moves the needle, and give you a concrete path - how to set up Claude Code, which MCPs and skills matter for your use case, what to automate first, and what to leave alone. You walk away with a written plan, not a generic tutorial.',
     category: 'service',
     icon: Compass,
     features: [
       'How to set up Claude Code for the way you actually work',
-      'MCP servers and skills that matter for your stack — and which to skip',
+      'MCP servers and skills that matter for your stack - and which to skip',
       'Where AI moves the needle in your business, and where it doesn\'t',
-      'What to automate first — the smallest win with the biggest payoff',
+      'What to automate first - the smallest win with the biggest payoff',
       'A concrete learning path: what to study, in what order',
-      'Build vs. outsource — an honest call on each piece',
+      'Build vs. outsource - an honest call on each piece',
       'Where agents break in production, and how to avoid it',
     ],
     includes: [
       '60-90 min live direction-setting call',
-      'Written plan delivered after — tools, setup order, learning path',
+      'Written plan delivered after - tools, setup order, learning path',
       'Shortlist of MCPs, skills, and integrations worth your time',
       'Plain-English follow-up, no fluff',
     ],
     setup: [
       'You already run real systems or automations in the business',
       'You want to own the build, not outsource everything',
-      'A real use case in mind — not "teach me AI from scratch"',
+      'A real use case in mind - not "teach me AI from scratch"',
     ],
     tiers: [
       {
@@ -48,7 +48,7 @@ export const products: Product[] = [
     name: 'CallBrief',
     headline: 'Every client call becomes 8-14 LinkedIn content briefs. Automatically.',
     description:
-      'An n8n workflow that listens for completed client calls via Fireflies webhook, identifies the client from your Google Drive folder structure, pulls all their reference documents (brand voice, strategy decks, past posts), and feeds everything to Claude Opus — which generates 8-14 detailed LinkedIn content briefs with verbatim soundbites, timestamped quotes, hook options, and a full overlap audit. Output lands as a formatted Google Doc in the client\'s Briefs folder, shared with your team, with a Slack notification.',
+      'An n8n workflow that listens for completed client calls via Fireflies webhook, identifies the client from your Google Drive folder structure, pulls all their reference documents (brand voice, strategy decks, past posts), and feeds everything to Claude Opus - which generates 8-14 detailed LinkedIn content briefs with verbatim soundbites, timestamped quotes, hook options, and a full overlap audit. Output lands as a formatted Google Doc in the client\'s Briefs folder, shared with your team, with a Slack notification.',
     category: 'workflow',
     icon: Workflow,
     previewImage: '/callbrief-workflow.png',
@@ -114,7 +114,7 @@ export const products: Product[] = [
     name: 'DealSync',
     headline: 'Deal closes in HubSpot. Client project appears in ClickUp. Fully staffed.',
     description:
-      'An n8n workflow that watches for closed-won deals in HubSpot and automatically creates a fully populated client engagement in ClickUp — complete with company linking, account manager assignment, team matching from your assignee database, and a structured review comment so the PM knows exactly what to do next. No copy-pasting deal data, no forgotten fields, no manual staffing lookups.',
+      'An n8n workflow that watches for closed-won deals in HubSpot and automatically creates a fully populated client engagement in ClickUp - complete with company linking, account manager assignment, team matching from your assignee database, and a structured review comment so the PM knows exactly what to do next. No copy-pasting deal data, no forgotten fields, no manual staffing lookups.',
     category: 'workflow',
     icon: Zap,
     features: [
@@ -177,7 +177,7 @@ export const products: Product[] = [
     name: 'OnboardSync',
     headline: 'Task moves to Onboarding. Client project fully built. Team assigned.',
     description:
-      'An n8n workflow that triggers when a ClickUp engagement moves to "Onboarding" status and automatically builds the entire client project — creates the client folder with three lists (Project Management, Client Action Items, Off-boarding), copies every template task with full parent/subtask hierarchy, creates the Google Drive folder, copies and personalizes kickoff deck templates via Slides API, remaps all due dates relative to the deal start date, auto-assigns team members based on role patterns, flips the status to Active, and drops a completion comment with every link. Pairs perfectly with DealSync.',
+      'An n8n workflow that triggers when a ClickUp engagement moves to "Onboarding" status and automatically builds the entire client project - creates the client folder with three lists (Project Management, Client Action Items, Off-boarding), copies every template task with full parent/subtask hierarchy, creates the Google Drive folder, copies and personalizes kickoff deck templates via Slides API, remaps all due dates relative to the deal start date, auto-assigns team members based on role patterns, flips the status to Active, and drops a completion comment with every link. Pairs perfectly with DealSync.',
     category: 'workflow',
     icon: Rocket,
     features: [
@@ -239,7 +239,7 @@ export const products: Product[] = [
     name: 'SignFlow',
     headline: 'Contract signed in DocuSign. Client fully onboarded. Zero manual steps.',
     description:
-      'An n8n workflow that fires when a DocuSign envelope is completed, uses Claude to extract the client name and classify the service type from the signed contract, then automatically creates the client\'s Google Drive workspace from the right template, personalizes all documents, drafts pre-kickoff and post-kickoff emails in Gmail, and creates a Slack channel with the client invited — all before you finish your coffee.',
+      'An n8n workflow that fires when a DocuSign envelope is completed, uses Claude to extract the client name and classify the service type from the signed contract, then automatically creates the client\'s Google Drive workspace from the right template, personalizes all documents, drafts pre-kickoff and post-kickoff emails in Gmail, and creates a Slack channel with the client invited - all before you finish your coffee.',
     category: 'workflow',
     icon: FileSignature,
     features: [

@@ -191,7 +191,7 @@ const OutreachPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Auto-Send First Contact — top-level visibility */}
+      {/* Auto-Send First Contact - top-level visibility */}
       <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
         <div className="flex items-center gap-2 mr-2">
           <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Auto-Send 1st Touch</span>
@@ -206,7 +206,7 @@ const OutreachPanel: React.FC = () => {
               <button
                 onClick={() => toggleFeatureFlag(row.key)}
                 className={`relative w-10 h-5 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
-                title={on ? 'Auto-send ON — drafts skip approval' : 'Manual approval required'}
+                title={on ? 'Auto-send ON - drafts skip approval' : 'Manual approval required'}
               >
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
                   on ? 'translate-x-[22px]' : 'translate-x-0.5'
@@ -233,7 +233,7 @@ const OutreachPanel: React.FC = () => {
           return (
             <StatCard
               label="Reply Rate"
-              value={lowSignal ? '—' : `${stats.replyRate}%`}
+              value={lowSignal ? '-' : `${stats.replyRate}%`}
               icon={<TrendingUp className="w-5 h-5" />}
               color={lowSignal ? 'text-zinc-400' : 'text-emerald-400'}
               subValue={denom > 0 ? `${stats.replied}/${denom}${lowSignal ? ' · low signal' : ''}` : 'no sends yet'}
@@ -274,11 +274,11 @@ const OutreachPanel: React.FC = () => {
                 <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
                 </div>
-                {count >= limit && <p className="text-[9px] text-red-400 mt-1">Limit reached — skipping until tomorrow</p>}
+                {count >= limit && <p className="text-[9px] text-red-400 mt-1">Limit reached - skipping until tomorrow</p>}
               </div>
             );
           })}
-          {/* Emails — uncapped, just informational */}
+          {/* Emails - uncapped, just informational */}
           <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[11px] text-zinc-400">✉️ Emails Sent</span>
@@ -646,7 +646,7 @@ const OutreachPanel: React.FC = () => {
                     {/* ICP */}
                     <td className="px-3 py-2.5 text-center">
                       <span className={`font-medium ${icpColor(p.icpScore)}`}>
-                        {p.icpScore ?? '—'}
+                        {p.icpScore ?? '-'}
                       </span>
                     </td>
                     {/* Stage */}
@@ -688,7 +688,7 @@ const OutreachPanel: React.FC = () => {
                         }
 
                         if (p.stage === 'identified' || p.stage === 'enriched') {
-                          return <span className="text-zinc-600 text-[10px]">—</span>;
+                          return <span className="text-zinc-600 text-[10px]">-</span>;
                         }
 
                         return (
@@ -735,7 +735,7 @@ const OutreachPanel: React.FC = () => {
                           case 'replied': label = 'Manual follow-up'; color = 'text-emerald-400'; break;
                           case 'converted': label = 'Done'; color = 'text-yellow-400'; break;
                           case 'archived': label = 'Archived'; color = 'text-zinc-600'; break;
-                          default: label = '—';
+                          default: label = '-';
                         }
 
                         return (
@@ -822,7 +822,7 @@ const OutreachPanel: React.FC = () => {
         </button>
         {showSettings && (
           <div className="space-y-3">
-            {/* Master Switch — prominent */}
+            {/* Master Switch - prominent */}
             <div className={`flex items-center justify-between rounded-xl px-4 py-3 border ${
               featureFlags['outreach_enabled']
                 ? 'bg-emerald-500/10 border-emerald-500/20'
@@ -831,7 +831,7 @@ const OutreachPanel: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-zinc-200">Master Switch</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  {featureFlags['outreach_enabled'] ? 'System is active — workflows will execute' : 'System paused — all automation stopped'}
+                  {featureFlags['outreach_enabled'] ? 'System is active - workflows will execute' : 'System paused - all automation stopped'}
                 </p>
               </div>
               <button
@@ -907,7 +907,7 @@ const OutreachPanel: React.FC = () => {
                                 }`} />
                               </button>
                             ) : (
-                              <span className="text-[10px] text-zinc-500">—</span>
+                              <span className="text-[10px] text-zinc-500">-</span>
                             )}
                           </td>
                           <td className="px-3 py-2.5 text-center">
@@ -933,7 +933,7 @@ const OutreachPanel: React.FC = () => {
               </p>
             </PanelCard>
 
-            {/* Rate limits (detail view — summary shown above) */}
+            {/* Rate limits (detail view - summary shown above) */}
             <PanelCard title="Rate Limits" accent="blue">
               <div className="space-y-2">
                 {['profile_view', 'like', 'connection_request', 'dm'].map((action) => {
@@ -1011,7 +1011,7 @@ const OutreachPanel: React.FC = () => {
                 <div className="space-y-2">
                   {[
                     { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on enriched prospects. You\'ll see prospects move to "warming" stage.' },
-                    { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" — highest ICP scores first.' },
+                    { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" - highest ICP scores first.' },
                     { time: 'On graduation', desc: 'WF6 fires immediately to research the prospect (LinkedIn posts, website, jobs). Generates trigger hook + draft.' },
                     { time: 'Days 5-14', desc: 'Connection requests go out to researched "engaged" prospects (~18-20/day, 100/week cap). You\'ll see "connection_sent" stages appear.' },
                     { time: 'Days 7-21', desc: 'Accepted connections get a 3-DM sequence: warm follow-up → owned-opinion value → soft offer. Replies trigger WhatsApp + Slack alerts.' },
@@ -1035,9 +1035,9 @@ const OutreachPanel: React.FC = () => {
               <div className="space-y-3">
                 <p className="text-xs text-zinc-500 mb-2">Each stage transition is automatic. Only "converted" requires your manual action.</p>
                 {[
-                  { from: 'enriched', to: 'warming', trigger: 'WF2 first touch — profile view or post like', auto: true },
+                  { from: 'enriched', to: 'warming', trigger: 'WF2 first touch - profile view or post like', auto: true },
                   { from: 'warming', to: 'engaged', trigger: '3+ touches (views + likes) over 10+ days, with 2+ likes/reacts', auto: true },
-                  { from: 'engaged', to: 'engaged (researched)', trigger: 'WF6 fires on graduation — researches LinkedIn posts, website, jobs; generates trigger hook + draft', auto: true },
+                  { from: 'engaged', to: 'engaged (researched)', trigger: 'WF6 fires on graduation - researches LinkedIn posts, website, jobs; generates trigger hook + draft', auto: true },
                   { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection note (peer voice, no questions, ~18-20/day)', auto: true },
                   { from: 'connection_sent', to: 'connected', trigger: 'WF5 detects accepted connection via UniPile', auto: true },
                   { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connect, warm question)', auto: true },
@@ -1071,24 +1071,24 @@ const OutreachPanel: React.FC = () => {
                 {[
                   {
                     name: '1. Import + Enrichment (WF1)',
-                    schedule: 'Manual — click Import on a campaign',
+                    schedule: 'Manual - click Import on a campaign',
                     bullets: [
                       'Searches Apollo API using campaign filters (industry, titles, seniority)',
                       'Calls Apollo /organizations/enrich for industry + employee_count (Apollo dropped these from search responses)',
-                      'Deduplicates by LinkedIn URL — won\'t re-import existing prospects',
+                      'Deduplicates by LinkedIn URL - won\'t re-import existing prospects',
                       'UniPile enrichment: gets LinkedIn provider_id, recent posts, activity data',
-                      'Claude Sonnet scores ICP fit (1-10) — threshold ≥ 7. Below = auto-archived',
+                      'Claude Sonnet scores ICP fit (1-10) - threshold ≥ 7. Below = auto-archived',
                       'Stores: name, title, company, seniority, employee count, revenue, industry, location, email',
                     ],
                   },
                   {
                     name: '2. Natural Warm-up (WF2)',
-                    schedule: 'Every 2h — 30% random skip',
+                    schedule: 'Every 2h - 30% random skip',
                     bullets: [
                       'Picks 5-8 enriched/warming prospects with ICP ≥ 7',
                       'Random action: 70% like/react, 15% profile view, 15% natural skip',
                       'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
-                      'Sets next touch 2-5 days out — max 1 touch every few days per person',
+                      'Sets next touch 2-5 days out - max 1 touch every few days per person',
                       'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, 2+ likes',
                       'On graduation: triggers WF6 immediately to research the prospect',
                       'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
@@ -1107,7 +1107,7 @@ const OutreachPanel: React.FC = () => {
                   },
                   {
                     name: '4. Connection Requests (WF3)',
-                    schedule: 'Every 4h — 40% random skip',
+                    schedule: 'Every 4h - 40% random skip',
                     bullets: [
                       'Picks 3 "engaged" prospects (with trigger data), sorted by highest trigger_confidence',
                       'Voice: peer-to-peer, starts with first name (no "Hi"), NO questions, NO service mentions',
@@ -1118,24 +1118,24 @@ const OutreachPanel: React.FC = () => {
                   },
                   {
                     name: '5. DM Sequence (WF4)',
-                    schedule: 'Every 30 min — drafts only, manual approval to send',
+                    schedule: 'Every 30 min - drafts only, manual approval to send',
                     bullets: [
                       'Checks for accepted connections via UniPile relations API',
                       '3-DM sequence: Step 1 (warm question, 24h after accept) → Step 2 (owned opinion, 3-5d) → Step 3 (soft offer, 3-5d)',
-                      'DM Step 2 uses "I think" / "Honestly" / "Hot take" formula — owned opinions, never fake authority',
+                      'DM Step 2 uses "I think" / "Honestly" / "Hot take" formula - owned opinions, never fake authority',
                       'DMs written by Claude with full research context (micro_persona, trigger_hook, social_proof_story)',
                       'If no reply after Step 3 → auto-archived',
                     ],
                   },
                   {
                     name: '6. Conversation Monitor (WF5)',
-                    schedule: 'Every 15 min — always on (no feature flag)',
+                    schedule: 'Every 15 min - always on (no feature flag)',
                     bullets: [
                       'Polls UniPile for new inbound messages from known prospects',
                       'Monitors stages: engaged, connected, dm_sent, replied (engaged was added so pre-connection replies are caught)',
                       'When reply detected: marks "needs_manual_reply", moves to "replied" stage, increments reply_count',
                       'Sends WhatsApp + Slack notification so you can respond personally',
-                      'From this point, YOU take over the conversation — no more automation',
+                      'From this point, YOU take over the conversation - no more automation',
                     ],
                   },
                   {
@@ -1248,7 +1248,7 @@ const OutreachPanel: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). The 100/week LinkedIn cap is the real ceiling on free accounts — exceeding triggers warnings then 1-week restrictions.</p>
+                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). The 100/week LinkedIn cap is the real ceiling on free accounts - exceeding triggers warnings then 1-week restrictions.</p>
                 </div>
               </div>
             </PanelCard>

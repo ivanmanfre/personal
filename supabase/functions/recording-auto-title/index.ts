@@ -68,7 +68,7 @@ async function generateTitle(transcript: string, anthropicKey: string): Promise<
   const snippet = transcript.slice(0, 4000);
   const prompt = [
     "Read this recording transcript and write a single short video title (4-8 words, no period, no emoji, title case).",
-    "Return ONLY the title, nothing else — no quotes, no prefix, no explanation.",
+    "Return ONLY the title, nothing else - no quotes, no prefix, no explanation.",
     "",
     "Transcript:",
     snippet,
@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
       transcript = await transcribe(signed.signedUrl, ASSEMBLYAI_KEY);
     } catch (err) {
       if (err instanceof NoAudioError) {
-        // Screen recordings without narration are a legitimate case — mark them
+        // Screen recordings without narration are a legitimate case - mark them
         // as no_audio so the backfill button stops offering to retry them.
         await sb.from("recordings").update({
           auto_title: "(no audio)",

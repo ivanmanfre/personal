@@ -28,7 +28,7 @@ const CommandPalette: React.FC<Props> = ({ open, onClose, commands }) => {
     if (!q) return commands;
     return commands.filter((c) => {
       const hay = `${c.label} ${c.group || ''} ${(c.keywords || []).join(' ')}`.toLowerCase();
-      // Loose substring match — matches "ovr" against "overview" etc. is too loose; use plain substring on tokens
+      // Loose substring match - matches "ovr" against "overview" etc. is too loose; use plain substring on tokens
       return q.split(/\s+/).every((token) => hay.includes(token));
     });
   }, [query, commands]);

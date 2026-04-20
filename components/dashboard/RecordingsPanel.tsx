@@ -126,7 +126,7 @@ const RecordingsPanel: React.FC = () => {
             ...dest.stream.getAudioTracks(),
           ]);
         } catch {
-          // Mic denied — continue with screen only
+          // Mic denied - continue with screen only
         }
       }
 
@@ -314,7 +314,7 @@ const RecordingsPanel: React.FC = () => {
         ]}
       />
 
-      {/* Backfill banners — only show when there's something to do */}
+      {/* Backfill banners - only show when there's something to do */}
       {missingThumbnails > 0 && (
         <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl px-4 py-2.5 flex items-center justify-between">
           <span className="text-xs text-zinc-400">
@@ -513,7 +513,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
         ) : (() => {
           // Title precedence: a real (non-placeholder) user title wins, otherwise
           // show the auto_title with an "auto" badge. Treat "Recording DD/MM/YYYY HH:MM"
-          // as a placeholder — that's just the upload-time default.
+          // as a placeholder - that's just the upload-time default.
           const titleIsPlaceholder = !rec.title || /^Recording\s+\d/i.test(rec.title.trim());
           const showAutoTitle = titleIsPlaceholder && !!rec.autoTitle;
           const inFlight = rec.autoTitleStatus === 'transcribing' || rec.autoTitleStatus === 'titling';
@@ -521,7 +521,7 @@ const RecordingCard: React.FC<RecordingCardProps> = ({
             <h3
               className="text-sm font-medium text-zinc-200 truncate cursor-text hover:text-white flex items-center gap-1.5"
               onDoubleClick={(e) => { e.stopPropagation(); onStartEditTitle(); }}
-              title={showAutoTitle ? 'Auto-generated — double-click to override' : !titleIsPlaceholder ? 'Double-click to edit' : inFlight ? 'Generating title…' : 'Double-click to edit'}
+              title={showAutoTitle ? 'Auto-generated - double-click to override' : !titleIsPlaceholder ? 'Double-click to edit' : inFlight ? 'Generating title…' : 'Double-click to edit'}
             >
               <span className="truncate">{showAutoTitle ? rec.autoTitle : (rec.title || rec.autoTitle || 'Untitled recording')}</span>
               {showAutoTitle && (

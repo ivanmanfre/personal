@@ -88,7 +88,7 @@ const About: React.FC = () => {
                         </h3>
                         <p className="font-mono text-xs text-accent uppercase tracking-widest mb-4">Agent-Ready Ops™</p>
                         <p className="text-lg text-zinc-400 leading-relaxed max-w-xl">
-                            I build AI systems for growing service businesses — agencies, consultancies, law and accounting firms. Every engagement is a productized project or a flat-rate retainer tied to outcomes. Never hourly.
+                            I build AI systems for growing service businesses - agencies, consultancies, law and accounting firms. Every engagement is a productized project or a flat-rate retainer tied to outcomes. Never hourly.
                         </p>
                     </div>
                 </motion.div>

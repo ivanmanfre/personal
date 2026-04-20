@@ -8,7 +8,7 @@ const cases = [
     industry: "Sales Tech",
     title: "AI Call Auditing",
     metric: "5% → 100%",
-    desc: "We encoded how their best manager grades a call — 8 criteria, 1–5 — and let the agent apply it to 100% of calls. Humans review flagged outliers.",
+    desc: "We encoded how their best manager grades a call - 8 criteria, 1–5 - and let the agent apply it to 100% of calls. Humans review flagged outliers.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"

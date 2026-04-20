@@ -39,7 +39,7 @@ export const OutreachFunnel: React.FC<Props> = ({ stats, onStageClick }) => {
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Funnel</span>
         <span className="text-[10px] text-zinc-600">
-          Cumulative — {values[0]} entered → {stats.replied + stats.converted} replied
+          Cumulative - {values[0]} entered → {stats.replied + stats.converted} replied
         </span>
       </div>
       <div className="flex items-end gap-1 h-20">
@@ -69,7 +69,7 @@ export const OutreachFunnel: React.FC<Props> = ({ stats, onStageClick }) => {
                 {convRate != null && (
                   <span
                     className={`text-[8px] block ${convRate >= 50 ? 'text-emerald-400/80' : convRate >= 20 ? 'text-amber-400/80' : 'text-red-400/80'}`}
-                    title={`${value} of ${values[i - 1]} (${convRate}%) reached this stage — drop-off ${values[i - 1] - value}`}
+                    title={`${value} of ${values[i - 1]} (${convRate}%) reached this stage - drop-off ${values[i - 1] - value}`}
                   >
                     {convRate}% · −{values[i - 1] - value}
                   </span>

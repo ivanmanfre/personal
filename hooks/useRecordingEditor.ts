@@ -161,7 +161,7 @@ export function useRecordingEditor(recordingId: string, duration: number) {
         p_recording_id: recordingId,
       });
       if (error) throw error;
-      toastSuccess('AI trim requested — processing...');
+      toastSuccess('AI trim requested - processing...');
       // Poll for completion
       const poll = setInterval(async () => {
         const { data: rec } = await supabase
@@ -188,7 +188,7 @@ export function useRecordingEditor(recordingId: string, duration: number) {
     }
   }, [recordingId, fetchEditorData]);
 
-  // Manual trim — calls processor /trim endpoint
+  // Manual trim - calls processor /trim endpoint
   const applyManualTrim = useCallback(async () => {
     if (trimStart >= trimEnd) {
       toastError('Invalid trim range');
@@ -202,7 +202,7 @@ export function useRecordingEditor(recordingId: string, duration: number) {
         p_end: trimEnd,
       });
       if (error) throw error;
-      toastSuccess('Trim applied — re-rendering...');
+      toastSuccess('Trim applied - re-rendering...');
       // Poll for completion
       const poll = setInterval(async () => {
         const { data: rec } = await supabase

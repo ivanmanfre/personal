@@ -68,7 +68,7 @@ export const CampaignManager: React.FC<Props> = ({ campaigns, onToggle, onUpdate
       {/* Create form */}
       {showCreate && (
         <div className="bg-zinc-800/40 border border-zinc-700/40 rounded-xl p-3 mb-3 space-y-2">
-          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Quick start — pick an industry</p>
+          <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Quick start - pick an industry</p>
           <div className="flex flex-wrap gap-1.5">
             {INDUSTRY_PRESETS.map((preset, idx) => (
               <button

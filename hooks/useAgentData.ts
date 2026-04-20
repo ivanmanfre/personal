@@ -15,7 +15,7 @@ export function useAgentData(timezone?: string) {
   const [chatHasMore, setChatHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Chat sending state — use refs to avoid dependency issues
+  // Chat sending state - use refs to avoid dependency issues
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
@@ -138,7 +138,7 @@ export function useAgentData(timezone?: string) {
       });
 
       if (rpcError) {
-        // RPC not set up — fall back to direct webhook call
+        // RPC not set up - fall back to direct webhook call
         const resp = await window.fetch(N8NCLAW_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -159,7 +159,7 @@ export function useAgentData(timezone?: string) {
       setSending(false);
       setPendingMessage(null);
     }
-  }, []); // No dependencies — uses refs
+  }, []); // No dependencies - uses refs
 
   useEffect(() => { fetch(); }, [fetch]);
 

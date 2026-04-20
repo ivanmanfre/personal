@@ -194,7 +194,7 @@ const AssessmentPage: React.FC = () => {
               <div className="flex gap-6 items-start">
                 <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-12">Day 7</span>
                 <p className="text-lg text-zinc-700 leading-relaxed">
-                  60-minute presentation call. I deliver the findings and recommend the path forward — Fractional, project, or wait-and-build.
+                  60-minute presentation call. I deliver the findings and recommend the path forward - Fractional, project, or wait-and-build.
                 </p>
               </div>
             </div>

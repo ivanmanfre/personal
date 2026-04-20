@@ -21,17 +21,17 @@ dashboardActions.ts ← all writes go through supabase.rpc('dashboard_action')
 - **Global state**: `DashboardContext` provides refreshRate, systemHealth, lastRefreshed
 
 ## Key Patterns
-- Every hook returns `{ data, loading, refresh, ...mutations }` — panels destructure this
+- Every hook returns `{ data, loading, refresh, ...mutations }` - panels destructure this
 - Mutations use optimistic UI: update local state first, then fire async RPC
 - Panels use shared components: `StatCard`, `StatusDot`, `LoadingSkeleton`, `RefreshIndicator`, `EmptyState`
 - Auth is client-side SHA-256 hash check against `VITE_DASHBOARD_HASH` env var
 
 ## File Map
-- `hooks/` — 7 hooks, one per data domain (posts, workflows, leads, competitors, clients, agent, auto-refresh)
-- `components/dashboard/` — 8 panels + DashboardLayout + DashboardAuth + shared/
-- `types/dashboard.ts` — all interfaces, Tab union type, SystemHealth type
-- `lib/dashboardActions.ts` — single RPC helper for all mutations
-- `contexts/DashboardContext.tsx` — minimal global state
+- `hooks/` - 7 hooks, one per data domain (posts, workflows, leads, competitors, clients, agent, auto-refresh)
+- `components/dashboard/` - 8 panels + DashboardLayout + DashboardAuth + shared/
+- `types/dashboard.ts` - all interfaces, Tab union type, SystemHealth type
+- `lib/dashboardActions.ts` - single RPC helper for all mutations
+- `contexts/DashboardContext.tsx` - minimal global state
 
 ## Supabase Tables (dashboard reads from)
 own_posts, dashboard_workflow_stats, competitor_posts, competitor_patterns, leads,

@@ -83,7 +83,7 @@ const StartPage: React.FC = () => {
       form.decisionMaker !== 'I am researching' &&
       form.timeline !== 'Just exploring';
 
-    // Fire-and-forget pipeline capture via lm-beacon — same pattern as lead magnet captures.
+    // Fire-and-forget pipeline capture via lm-beacon - same pattern as lead magnet captures.
     fetch('https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-beacon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,7 +104,7 @@ const StartPage: React.FC = () => {
         },
       }),
     }).catch(() => {
-      /* silent — routing is client-side, capture is best-effort */
+      /* silent - routing is client-side, capture is best-effort */
     });
 
     if (qualified) {
@@ -125,7 +125,7 @@ const StartPage: React.FC = () => {
             You're a good fit.
           </h1>
           <p className="text-zinc-600 mb-8 leading-relaxed">
-            Based on what you shared, let's talk. Pick a time below. I'll come prepped — you don't have to re-explain anything.
+            Based on what you shared, let's talk. Pick a time below. I'll come prepped - you don't have to re-explain anything.
           </p>
           <a
             href={CALENDLY_URL}
@@ -209,7 +209,7 @@ const StartPage: React.FC = () => {
           {/* Q1 Company size */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              01 — How many people on your team?
+              01 - How many people on your team?
             </label>
             <div className="flex flex-wrap gap-2">
               {companySizeOptions.map((option) => (
@@ -232,7 +232,7 @@ const StartPage: React.FC = () => {
           {/* Q2 Revenue */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              02 — Annual revenue range
+              02 - Annual revenue range
             </label>
             <div className="flex flex-wrap gap-2">
               {revenueOptions.map((option) => (
@@ -255,7 +255,7 @@ const StartPage: React.FC = () => {
           {/* Q3 Bottleneck */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              03 — What's the operational bottleneck you're trying to solve? (one sentence)
+              03 - What's the operational bottleneck you're trying to solve? (one sentence)
             </label>
             <input
               type="text"
@@ -270,7 +270,7 @@ const StartPage: React.FC = () => {
           {/* Q4 Prior AI */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              04 — Have you tried AI or automation before? What happened?
+              04 - Have you tried AI or automation before? What happened?
             </label>
             <textarea
               value={form.priorAttempt}
@@ -284,7 +284,7 @@ const StartPage: React.FC = () => {
           {/* Q5 Budget */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              05 — Budget range you're considering
+              05 - Budget range you're considering
             </label>
             <div className="flex flex-wrap gap-2">
               {budgetOptions.map((option) => (
@@ -307,7 +307,7 @@ const StartPage: React.FC = () => {
           {/* Q6 Timeline */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              06 — When do you want this solved?
+              06 - When do you want this solved?
             </label>
             <div className="flex flex-wrap gap-2">
               {timelineOptions.map((option) => (
@@ -330,7 +330,7 @@ const StartPage: React.FC = () => {
           {/* Q7 Decision-maker */}
           <div>
             <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
-              07 — Are you the decision-maker?
+              07 - Are you the decision-maker?
             </label>
             <div className="flex flex-col gap-2">
               {decisionMakerOptions.map((option) => (

@@ -81,7 +81,7 @@ const TodaySection: React.FC<Props> = ({
           );
         })}
 
-        {/* Today's Workout — display only, no check/done */}
+        {/* Today's Workout - display only, no check/done */}
         {todaysWorkout && todaysWorkout.routineName !== 'Rest' && (
           <div className="flex items-center gap-3 px-4 py-3">
             <Dumbbell className="w-4 h-4 shrink-0 text-violet-400" />

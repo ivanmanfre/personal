@@ -36,7 +36,7 @@ const chipDot: Record<string, string> = {
 };
 
 const formatDuration = (ms: number | null) => {
-  if (ms == null) return '—';
+  if (ms == null) return '-';
   if (ms < 1000) return `${ms}ms`;
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
   return `${(ms / 60000).toFixed(1)}m`;
@@ -365,7 +365,7 @@ const WorkflowsPanel: React.FC = () => {
                     : `border-zinc-800/60 ${accentBorder[p.color] || 'border-t-zinc-700/50'}`
               }`}>
 
-                {/* Tile Header — merged with health strip (single line) */}
+                {/* Tile Header - merged with health strip (single line) */}
                 <div className="px-3 py-2 flex items-center gap-2 border-b border-zinc-800/30 bg-zinc-800/15">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${p.hasError ? 'bg-red-400 animate-pulse' : chipDot[p.color] || 'bg-zinc-400'}`} />
                   <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider truncate">
@@ -398,7 +398,7 @@ const WorkflowsPanel: React.FC = () => {
                           >
                             {wf.lastExecutionAt
                               ? timeAgo(wf.lastExecutionAt)
-                              : wf.triggerType === 'webhook' ? 'on demand' : '—'}
+                              : wf.triggerType === 'webhook' ? 'on demand' : '-'}
                           </span>
                           {wf.errorCount24h > 0 && (
                             <span className="text-[9px] text-red-400 tabular-nums shrink-0" title={`${wf.errorCount24h} errors in 24h`}>
@@ -412,7 +412,7 @@ const WorkflowsPanel: React.FC = () => {
                           <div className="px-3 pb-2.5 pt-1 space-y-2 bg-zinc-800/15 border-b border-zinc-800/30">
                             <div className="flex items-center gap-3 text-[10px]">
                               <span className={`font-medium ${wf.lastExecutionStatus === 'error' ? 'text-red-400' : 'text-zinc-400'}`}>
-                                {wf.lastExecutionStatus || '—'}
+                                {wf.lastExecutionStatus || '-'}
                               </span>
                               <span className="text-zinc-500">{formatDuration(wf.lastExecutionDurationMs)}</span>
                               <span className="text-zinc-500 tabular-nums">{wf.totalExecutions24h} runs</span>

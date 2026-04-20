@@ -31,6 +31,6 @@ export function playNotificationSound() {
       osc.stop(now + i * 0.15 + 0.3);
     });
   } catch {
-    // Silently fail — audio not critical
+    // Silently fail - audio not critical
   }
 }

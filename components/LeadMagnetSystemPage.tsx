@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// Benefits — what CHANGES for the business (outcome-framed)
+// Benefits - what CHANGES for the business (outcome-framed)
 const benefits = [
   {
     headline: 'Your best salesperson stops doing triage',
@@ -31,15 +31,15 @@ const benefits = [
   },
 ];
 
-// Technical deliverables — for buyers who want to know what\'s under the hood
+// Technical deliverables - for buyers who want to know what\'s under the hood
 const deliverables = [
   'Interactive landing page (scorecard, assessment, guide, or calculator format)',
-  'CMS-driven magnet library — add or edit magnets without touching code',
-  'AI-generated cover images via Gemini — branded hero image per magnet',
-  'Newsletter integration — Resend, Kit, Beehiiv, or your existing stack',
-  'CRM integration — HubSpot, Apollo, Attio, or whatever you use',
+  'CMS-driven magnet library - add or edit magnets without touching code',
+  'AI-generated cover images via Gemini - branded hero image per magnet',
+  'Newsletter integration - Resend, Kit, Beehiiv, or your existing stack',
+  'CRM integration - HubSpot, Apollo, Attio, or whatever you use',
   'Automated email delivery + nurture sequence (4-6 emails)',
-  'Analytics dashboard — downloads, completion rate, qualified leads by magnet',
+  'Analytics dashboard - downloads, completion rate, qualified leads by magnet',
 ];
 
 const timeline = [
@@ -50,7 +50,7 @@ const timeline = [
 
 const notIncluded = [
   'Paid traffic to drive visitors (I can recommend a partner)',
-  'Original magnet content — you bring the expertise, I build the delivery system',
+  'Original magnet content - you bring the expertise, I build the delivery system',
   'Sales outreach to the leads (that\'s the Fractional Partner or Care Plan layer)',
 ];
 
@@ -122,7 +122,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             </p>
           </motion.div>
 
-          {/* Benefits — lead with outcomes, not features */}
+          {/* Benefits - lead with outcomes, not features */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -142,7 +142,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Under the hood — for buyers who want the tech specs */}
+          {/* Under the hood - for buyers who want the tech specs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -152,7 +152,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
               Under the hood
             </h2>
-            <p className="text-zinc-600 mb-8">What's actually in the box — for the technically curious.</p>
+            <p className="text-zinc-600 mb-8">What's actually in the box - for the technically curious.</p>
             <ul className="space-y-3">
               {deliverables.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-[15px] text-zinc-700">
@@ -204,7 +204,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-zinc-700">
-                  <span className="font-mono text-zinc-400 mt-1">—</span>
+                  <span className="font-mono text-zinc-400 mt-1">-</span>
                   <span>{item}</span>
                 </li>
               ))}

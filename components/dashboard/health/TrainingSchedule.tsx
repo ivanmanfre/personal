@@ -86,7 +86,7 @@ const TrainingSchedule: React.FC<Props> = ({ trainingSchedule, updateTrainingSch
                   <p className={`text-sm font-semibold ${
                     isRest ? 'text-zinc-600' : isToday ? 'text-purple-300' : 'text-zinc-200'
                   }`}>
-                    {day?.routineName || '—'}
+                    {day?.routineName || '-'}
                   </p>
                   {day?.exercises && (
                     <p className="text-[10px] text-zinc-600 mt-0.5 leading-tight line-clamp-2">

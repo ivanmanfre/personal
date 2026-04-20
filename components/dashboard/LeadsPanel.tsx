@@ -56,7 +56,7 @@ const LeadsPanel: React.FC = () => {
         </div>
         <EmptyState
           title="No leads yet"
-          description="Leads land here once prospects engage with your content (likes, comments, DMs). Until then, the action is in Outreach — warming prospects so engagement starts flowing."
+          description="Leads land here once prospects engage with your content (likes, comments, DMs). Until then, the action is in Outreach - warming prospects so engagement starts flowing."
           icon={<Users className="w-10 h-10" />}
           action={{ label: 'Open Outreach', onClick: () => navigateToTab('outreach') }}
         />
@@ -161,7 +161,7 @@ const LeadsPanel: React.FC = () => {
         searchPlaceholder="Search leads..."
       />
 
-      {/* Leads — cards on mobile, table on md+ */}
+      {/* Leads - cards on mobile, table on md+ */}
       {filteredLeads.length === 0 ? (
         <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-8 text-zinc-500 text-center text-sm">No leads match filter</div>
       ) : (
@@ -172,7 +172,7 @@ const LeadsPanel: React.FC = () => {
               <div key={lead.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-3.5 hover:border-zinc-700 hover:bg-zinc-800/30 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-zinc-200 text-sm">{lead.name || '—'}</p>
+                    <p className="font-medium text-zinc-200 text-sm">{lead.name || '-'}</p>
                     {lead.headline && <p className="text-xs text-zinc-500 truncate mt-0.5">{lead.headline}</p>}
                   </div>
                   {lead.linkedinUrl && (
@@ -221,7 +221,7 @@ const LeadsPanel: React.FC = () => {
                   {filteredLeads.map((lead) => (
                     <tr key={lead.id} className="hover:bg-zinc-800/30 transition-colors">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-zinc-200">{lead.name || '—'}</p>
+                        <p className="font-medium text-zinc-200">{lead.name || '-'}</p>
                         {lead.headline && <p className="text-xs text-zinc-500 truncate max-w-xs" title={lead.headline}>{lead.headline}</p>}
                       </td>
                       <td className="px-4 py-3">
@@ -238,7 +238,7 @@ const LeadsPanel: React.FC = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-medium ${lead.icpScore != null && lead.icpScore >= 7 ? 'text-emerald-400' : lead.icpScore != null && lead.icpScore >= 4 ? 'text-amber-400' : 'text-zinc-400'}`}>
-                            {lead.icpScore != null ? `${lead.icpScore}/10` : '—'}
+                            {lead.icpScore != null ? `${lead.icpScore}/10` : '-'}
                           </span>
                           {lead.icpScore != null && (
                             <div className="w-12 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
@@ -248,10 +248,10 @@ const LeadsPanel: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <span className="text-zinc-400 text-xs">{lead.source || '—'}</span>
+                        <span className="text-zinc-400 text-xs">{lead.source || '-'}</span>
                       </td>
                       <td className="px-4 py-3 text-zinc-400 text-xs">
-                        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}
+                        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '-'}
                       </td>
                       <td className="px-4 py-3">
                         {lead.linkedinUrl && (

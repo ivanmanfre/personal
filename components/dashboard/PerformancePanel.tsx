@@ -188,7 +188,7 @@ const PerformancePanel: React.FC = () => {
 
             {/* Competitor benchmark */}
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors — avg likes per post</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors - avg likes per post</h3>
               {benchmarkData.length > 1 ? (
                 <ResponsiveContainer width="100%" height={Math.max(160, benchmarkData.length * 26)}>
                   <BarChart data={benchmarkData} layout="vertical" margin={{ right: 40 }}>
@@ -220,7 +220,7 @@ const PerformancePanel: React.FC = () => {
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic — bar width shows avg impressions per post</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic - bar width shows avg impressions per post</h3>
               {topicData.length > 0 ? (
                 <div className="space-y-2">
                   {topicData.slice(0, 6).map((t) => {
@@ -242,7 +242,7 @@ const PerformancePanel: React.FC = () => {
             </div>
 
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern — bar width shows avg impressions per post</h3>
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern - bar width shows avg impressions per post</h3>
               {hookData.length > 0 ? (
                 <div className="space-y-2">
                   {hookData.slice(0, 6).map((h) => {

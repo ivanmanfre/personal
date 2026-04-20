@@ -77,7 +77,7 @@ const TelemetryTypewriter: React.FC = () => {
                 />
             </div>
 
-            {/* Scanline effect removed — cleaner editorial feel */}
+            {/* Scanline effect removed - cleaner editorial feel */}
         </div>
     );
 };

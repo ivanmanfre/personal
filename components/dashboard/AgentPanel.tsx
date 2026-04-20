@@ -117,7 +117,7 @@ const AgentPanel: React.FC = () => {
   const isNearBottomRef = useRef(true);
   const prevMsgLenRef = useRef(0);
 
-  // Scroll to bottom — instant for auto-scroll, smooth only for manual button
+  // Scroll to bottom - instant for auto-scroll, smooth only for manual button
   const scrollToBottom = useCallback((smooth = false) => {
     chatEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' });
   }, []);
@@ -207,7 +207,7 @@ const AgentPanel: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">n8nClaw</h1>
-            <p className="text-[11px] text-zinc-500 -mt-0.5">AI Agent — WhatsApp + Dashboard</p>
+            <p className="text-[11px] text-zinc-500 -mt-0.5">AI Agent - WhatsApp + Dashboard</p>
           </div>
         </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />

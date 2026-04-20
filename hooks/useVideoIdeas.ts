@@ -182,7 +182,7 @@ export function useVideoIdeas() {
       });
       if (!resp.ok) throw new Error(`Webhook failed: ${resp.status}`);
       toastSuccess('Avatar video generation started');
-      // Avatar generation takes minutes — poll with longer intervals
+      // Avatar generation takes minutes - poll with longer intervals
       setTimeout(() => fetch(), 15000);
       setTimeout(() => fetch(), 30000);
       setTimeout(() => fetch(), 60000);

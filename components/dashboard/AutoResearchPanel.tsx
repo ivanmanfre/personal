@@ -43,7 +43,7 @@ const tooltipStyle = {
 };
 
 function formatMetric(value: number | null, unit: string): string {
-  if (value == null) return '—';
+  if (value == null) return '-';
   if (unit === 'ms') return `${value.toFixed(1)}ms`;
   if (unit === '%') return `${value.toFixed(1)}%`;
   if (unit === 'score') return value.toFixed(1);
@@ -51,7 +51,7 @@ function formatMetric(value: number | null, unit: string): string {
 }
 
 function formatImprovement(pct: number | null, direction: string): { text: string; positive: boolean } {
-  if (pct == null) return { text: '—', positive: false };
+  if (pct == null) return { text: '-', positive: false };
   const isGood = direction === 'lower_is_better' ? pct < 0 : pct > 0;
   const sign = pct > 0 ? '+' : '';
   return { text: `${sign}${pct.toFixed(1)}%`, positive: isGood };
@@ -118,7 +118,7 @@ const AutoResearchPanel: React.FC = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-amber-300">Insufficient data for meaningful research</p>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Auto-research requires real engagement data to score prompt variations against. Currently there are ~30 posts with minimal engagement — without this signal, all scoring is LLM self-evaluation (Claude rating its own output), which produces circular results that don't reflect actual audience response.
+                Auto-research requires real engagement data to score prompt variations against. Currently there are ~30 posts with minimal engagement - without this signal, all scoring is LLM self-evaluation (Claude rating its own output), which produces circular results that don't reflect actual audience response.
               </p>
               <div className="flex items-center gap-4 mt-2.5">
                 <div className="flex items-center gap-1.5">
@@ -133,25 +133,25 @@ const AutoResearchPanel: React.FC = () => {
         </div>
       </AnimateIn>
 
-      {/* KPI Row — dimmed while the system is dormant so the historical numbers
+      {/* KPI Row - dimmed while the system is dormant so the historical numbers
           don't visually compete with the "insufficient data" banner above. */}
       <AnimateIn delay={50}>
         <div
           className={`grid grid-cols-2 lg:grid-cols-4 gap-3 ${stats.running === 0 ? 'opacity-50' : ''}`}
-          title={stats.running === 0 ? 'Historical — sessions paused until enough engagement data is available' : undefined}
+          title={stats.running === 0 ? 'Historical - sessions paused until enough engagement data is available' : undefined}
         >
           <StatCard label="Active Sessions" value={stats.running} icon={<FlaskConical className="w-5 h-5" />} color={stats.running > 0 ? 'text-emerald-400' : 'text-zinc-400'} subValue={`${stats.total} total`} />
           <StatCard label="Total Runs" value={stats.totalRuns} icon={<RotateCcw className="w-5 h-5" />} color="text-zinc-400" subValue={`${stats.totalKept} kept`} />
           <StatCard
             label="Avg Improvement"
-            value={stats.avgImprovementPct !== 0 ? `${stats.avgImprovementPct > 0 ? '+' : ''}${stats.avgImprovementPct.toFixed(1)}%` : '—'}
+            value={stats.avgImprovementPct !== 0 ? `${stats.avgImprovementPct > 0 ? '+' : ''}${stats.avgImprovementPct.toFixed(1)}%` : '-'}
             icon={<TrendingUp className="w-5 h-5" />}
             color="text-zinc-400"
             subValue={stats.running === 0 ? 'historical' : undefined}
           />
           <StatCard
             label="Best Result"
-            value={stats.bestSession ? `${(stats.bestSession.improvementPct || 0) > 0 ? '+' : ''}${(stats.bestSession.improvementPct || 0).toFixed(1)}%` : '—'}
+            value={stats.bestSession ? `${(stats.bestSession.improvementPct || 0) > 0 ? '+' : ''}${(stats.bestSession.improvementPct || 0).toFixed(1)}%` : '-'}
             icon={<Zap className="w-5 h-5" />}
             color="text-zinc-400"
             subValue={stats.bestSession?.name}
@@ -391,7 +391,7 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
                       const entry = props?.payload;
                       const formatted = value != null && !isNaN(value)
                         ? `${value}${session.metricUnit ? ' ' + session.metricUnit : ''}`
-                        : '—';
+                        : '-';
                       return [formatted, entry?.kept ? 'Kept' : 'Reverted'];
                     }}
                     labelFormatter={(label) => `Run #${label}`}
@@ -454,13 +454,13 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
                         {formatMetric(it.metricAfter, session.metricUnit)}
                       </td>
                       <td className={`px-4 py-2.5 text-right font-mono text-xs ${delta == null ? 'text-zinc-500' : isGood ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '—'}
+                        {delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` : '-'}
                       </td>
                       <td className="px-4 py-2.5 text-center">
                         {it.kept ? (
                           <Check className="w-4 h-4 text-emerald-400 mx-auto" />
                         ) : (
-                          <span className="w-4 h-4 block mx-auto text-zinc-600">—</span>
+                          <span className="w-4 h-4 block mx-auto text-zinc-600">-</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right text-zinc-500 text-xs">{timeAgo(it.createdAt)}</td>
@@ -480,8 +480,8 @@ const SessionDetail: React.FC<SessionDetailProps> = ({
             <ConfigItem label="Target Type" value={session.targetType} />
             <ConfigItem label="Target Ref" value={session.targetRef} />
             <ConfigItem label="Metric" value={`${session.metricName} (${session.metricDirection.replace(/_/g, ' ')})`} />
-            <ConfigItem label="Prompt Page" value={session.promptPageId || '—'} />
-            <ConfigItem label="Workflow" value={session.workflowId || '—'} />
+            <ConfigItem label="Prompt Page" value={session.promptPageId || '-'} />
+            <ConfigItem label="Workflow" value={session.workflowId || '-'} />
             <ConfigItem label="Created" value={new Date(session.createdAt).toLocaleDateString()} />
           </div>
         </PanelCard>

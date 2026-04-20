@@ -12,7 +12,7 @@ import ContentSystemPage from './components/ContentSystemPage';
 import FractionalPage from './components/FractionalPage';
 import ScrollToTop from './components/ScrollToTop';
 
-// View Transitions API wrapper — smooth cross-fade between routes on supported browsers.
+// View Transitions API wrapper - smooth cross-fade between routes on supported browsers.
 // Falls back to instant navigation on browsers without document.startViewTransition.
 function useRouteViewTransition(pathname: string) {
   const prevPath = useRef(pathname);
@@ -36,7 +36,7 @@ function App() {
 
   useRouteViewTransition(location.pathname);
 
-  // Public video viewer — full-screen, no nav/footer
+  // Public video viewer - full-screen, no nav/footer
   if (isViewer) {
     return (
       <Suspense fallback={

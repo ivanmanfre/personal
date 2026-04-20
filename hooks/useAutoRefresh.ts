@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { subscribeToTable } from '../lib/subscriptionManager';
 import { useDashboard } from '../contexts/DashboardContext';
 
-// Global editing state — when any component is editing, all auto-refreshes pause
+// Global editing state - when any component is editing, all auto-refreshes pause
 let editingCount = 0;
 const listeners = new Set<() => void>();
 function isEditing() { return editingCount > 0; }
@@ -39,7 +39,7 @@ export function useAutoRefresh(
     setLastRefreshed(new Date());
   }, [setLastRefreshed]);
 
-  // Polling — skips when editing
+  // Polling - skips when editing
   useEffect(() => {
     const id = setInterval(() => {
       if (!isEditing()) refresh();

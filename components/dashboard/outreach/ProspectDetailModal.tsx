@@ -136,10 +136,10 @@ export const ProspectDetailModal: React.FC<Props> = ({
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <span className={`text-sm font-medium ${icpColor(prospect.icpScore)}`}>
-                ICP: {prospect.icpScore ?? '—'}/10
+                ICP: {prospect.icpScore ?? '-'}/10
               </span>
               <span className={`text-sm font-medium ${icpColor(prospect.activityScore)}`}>
-                Activity: {prospect.activityScore ?? '—'}/10
+                Activity: {prospect.activityScore ?? '-'}/10
               </span>
               <select
                 value={prospect.stage}
@@ -171,7 +171,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
             </a>
           </div>
 
-          {/* Research Trigger — Full Reasoning Chain */}
+          {/* Research Trigger - Full Reasoning Chain */}
           {prospect.triggerType && prospect.triggerType !== 'none' && (
             <div className="bg-zinc-800/40 border border-cyan-500/20 rounded-xl p-4 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -297,7 +297,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
                 onChange={(e) => onUpdateIcpScore(prospect.id, Number(e.target.value))}
                 className="px-2 py-0.5 rounded text-xs bg-zinc-800 border border-zinc-700 text-zinc-300 cursor-pointer"
               >
-                <option value="">—</option>
+                <option value="">-</option>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
@@ -312,7 +312,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
               </div>
             )}
             <div className="flex gap-4 text-xs text-zinc-500">
-              <span>Posts (30d): {prospect.postCount30d ?? '—'}</span>
+              <span>Posts (30d): {prospect.postCount30d ?? '-'}</span>
               <span>Liked: {prospect.postsLiked}</span>
               <span>Commented: {prospect.postsCommented}</span>
             </div>
@@ -358,7 +358,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
                         : 'bg-zinc-700/50 text-zinc-300 border border-zinc-600/30'
                     }`}>
                       {m.isDraft && (
-                        <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block mb-1">Draft — Awaiting Approval</span>
+                        <span className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider block mb-1">Draft - Awaiting Approval</span>
                       )}
                       {m.isDraft && m.matchedContentType && (
                         <div className="mb-2 px-2 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">

@@ -20,7 +20,7 @@ export const WorkflowNode = memo(({ data }: NodeProps) => {
   return (
     <div
       className={`w-full h-full px-2.5 py-1.5 rounded-lg cursor-pointer bg-zinc-900/80 border border-zinc-700/40 hover:bg-zinc-800/80 hover:border-zinc-600/60 transition-colors duration-150 ${ring}`}
-      title={`${data.label} — ${data.triggerType}\n${data.successCount} ok / ${data.errorCount} err (24h)\nClick to open in n8n`}
+      title={`${data.label} - ${data.triggerType}\n${data.successCount} ok / ${data.errorCount} err (24h)\nClick to open in n8n`}
     >
       <div className="flex items-center gap-1.5 h-full">
         <span className="relative shrink-0">

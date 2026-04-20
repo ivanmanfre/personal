@@ -370,7 +370,7 @@ const CustomPlayer: React.FC<{
     const v = videoRef.current;
     if (!v) return;
     const onMeta = () => {
-      // WebM duration can be Infinity — use known duration if available
+      // WebM duration can be Infinity - use known duration if available
       const vDur = isFinite(v.duration) ? v.duration : 0;
       setDuration(knownDuration || vDur || 0);
     };

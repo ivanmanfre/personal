@@ -357,7 +357,7 @@ function DetailModal({
             )}
           </div>
 
-          {/* Diagram — full width, auto-height */}
+          {/* Diagram - full width, auto-height */}
           {prop?.diagramData?.html && (
             <div className="rounded-xl border border-purple-500/20 overflow-hidden">
               <div className="flex items-center justify-between px-3 py-1.5 bg-purple-950/20 border-b border-purple-500/15">
@@ -476,7 +476,7 @@ export const UpworkKanban: React.FC<Props> = ({
 
     for (const job of jobs) {
       const prop = proposalMap.get(job.id);
-      // Skipped jobs don't need staleness check — always show in skipped column
+      // Skipped jobs don't need staleness check - always show in skipped column
       if (job.status !== 'skipped' && isStale(job, prop)) continue;
       const col = getColumn(job, prop);
       if (col && groups[col]) groups[col].push({ job, proposal: prop });
@@ -586,7 +586,7 @@ export const UpworkKanban: React.FC<Props> = ({
         </div>
       </LayoutGroup>
 
-      {/* Modal overlay — portaled to body */}
+      {/* Modal overlay - portaled to body */}
       {expandedData && createPortal(
         <AnimatePresence>
           <DetailModal

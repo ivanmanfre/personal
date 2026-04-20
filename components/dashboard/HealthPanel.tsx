@@ -64,7 +64,7 @@ const HealthPanel: React.FC = () => {
           />
           <StatCard
             label="Weight"
-            value={stats.currentWeight > 0 ? `${stats.currentWeight} kg` : '—'}
+            value={stats.currentWeight > 0 ? `${stats.currentWeight} kg` : '-'}
             icon={<Scale className="w-5 h-5" />}
             color="text-cyan-400"
             subValue={stats.weightTrend !== 0 ? `${stats.weightTrend > 0 ? '+' : ''}${stats.weightTrend} kg vs 7d ago` : undefined}
@@ -94,7 +94,7 @@ const HealthPanel: React.FC = () => {
         />
       </AnimateIn>
 
-      {/* Medication Schedule + Weight Chart — side by side on larger screens */}
+      {/* Medication Schedule + Weight Chart - side by side on larger screens */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AnimateIn delay={200}>
           <MedicationSchedule

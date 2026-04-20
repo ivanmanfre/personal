@@ -1,4 +1,4 @@
-# Store — How to Add & Manage Products
+# Store - How to Add & Manage Products
 
 ## Quick Reference
 

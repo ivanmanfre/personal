@@ -342,7 +342,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
 
   return (
     <div className="bg-paper min-h-screen">
-      {/* Back link — minimal, editorial */}
+      {/* Back link - minimal, editorial */}
       <div className="container mx-auto px-6 max-w-6xl pt-28">
         <Link
           to="/store"
@@ -352,7 +352,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
         </Link>
       </div>
 
-      {/* ── HERO — asymmetric 7/5 grid ── */}
+      {/* ── HERO - asymmetric 7/5 grid ── */}
       <section className="pt-12 pb-24">
         <div className="container mx-auto px-6 max-w-6xl">
           <motion.div
@@ -419,7 +419,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
         <div className="border-t border-zinc-200"></div>
       </div>
 
-      {/* ── 02 — WHAT WE MAP ── */}
+      {/* ── 02 - WHAT WE MAP ── */}
       <EditorialSection number="02" title="What we map" pivot="map">
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-5">
           {product.features.map((feature, i) => (
@@ -431,7 +431,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
         </ul>
       </EditorialSection>
 
-      {/* ── 03 — WHAT YOU LEAVE WITH ── */}
+      {/* ── 03 - WHAT YOU LEAVE WITH ── */}
       <EditorialSection number="03" title="What you leave with" pivot="leave">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-start">
           <div>
@@ -448,7 +448,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
           </div>
           <div className="lg:pl-8 lg:border-l-2 lg:border-[color:var(--color-accent)]">
             <p className="font-drama italic text-2xl md:text-3xl leading-snug text-zinc-800">
-              A written plan — not a generic tutorial.
+              A written plan - not a generic tutorial.
             </p>
             <p className="mt-6 text-base text-zinc-600 leading-relaxed font-medium">
               You leave with specifics: tools to set up, what to learn first, and the honest call on what to build vs. what to leave alone.
@@ -457,7 +457,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
         </div>
       </EditorialSection>
 
-      {/* ── 04 — WHO THIS IS FOR ── */}
+      {/* ── 04 - WHO THIS IS FOR ── */}
       <EditorialSection number="04" title="Who this is for" pivot="for">
         <ul className="space-y-5 max-w-3xl">
           {product.setup.map((req, i) => (
@@ -469,7 +469,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
         </ul>
       </EditorialSection>
 
-      {/* ── FINAL CTA — solid black block, sage punctuation ── */}
+      {/* ── FINAL CTA - solid black block, sage punctuation ── */}
       <section className="pb-32 pt-8">
         <div className="container mx-auto px-6 max-w-6xl">
           <motion.div

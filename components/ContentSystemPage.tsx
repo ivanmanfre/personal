@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// Benefits first — outcomes the founder actually cares about
+// Benefits first - outcomes the founder actually cares about
 const benefits = [
   {
     headline: 'Stop staring at the blank page',
@@ -15,7 +15,7 @@ const benefits = [
   },
   {
     headline: 'Your best-performing posts compound',
-    body: 'Top performers get identified automatically and repurposed into new angles. Your hits don\'t die in the scroll — they come back as carousels, newsletter issues, and follow-ups.',
+    body: 'Top performers get identified automatically and repurposed into new angles. Your hits don\'t die in the scroll - they come back as carousels, newsletter issues, and follow-ups.',
   },
   {
     headline: 'You review, you don\'t write',
@@ -23,7 +23,7 @@ const benefits = [
   },
   {
     headline: 'Formats mix without you thinking about them',
-    body: 'Text posts, carousels, image posts, lead-magnet promos — the system rotates formats based on what\'s working this month. You stop shipping 4 text posts in a row by accident.',
+    body: 'Text posts, carousels, image posts, lead-magnet promos - the system rotates formats based on what\'s working this month. You stop shipping 4 text posts in a row by accident.',
   },
   {
     headline: 'One system, both engines',
@@ -31,16 +31,16 @@ const benefits = [
   },
 ];
 
-// Technical deliverables — for buyers who want the spec
+// Technical deliverables - for buyers who want the spec
 const deliverables = [
-  'Weekly content planning agent — generates 5-7 post plan every Sunday',
-  'Topic scoring — against your audience, your competitors, and your quarterly strategy',
-  'Voice training — trained on your last 50 published posts so drafts sound like you',
-  'Multi-format generation — text, carousels, hooks, image prompts',
-  'Human-in-the-loop approval — you review in your existing tool (ClickUp, Notion, Asana, Linear, etc.); system waits for sign-off',
+  'Weekly content planning agent - generates 5-7 post plan every Sunday',
+  'Topic scoring - against your audience, your competitors, and your quarterly strategy',
+  'Voice training - trained on your last 50 published posts so drafts sound like you',
+  'Multi-format generation - text, carousels, hooks, image prompts',
+  'Human-in-the-loop approval - you review in your existing tool (ClickUp, Notion, Asana, Linear, etc.); system waits for sign-off',
   'Auto-publish to LinkedIn (or your primary channel) with scheduled cadence',
-  'Top performer detection — winning posts get flagged for repurposing',
-  'Dashboard — what\'s planned, what\'s scheduled, what shipped, what worked',
+  'Top performer detection - winning posts get flagged for repurposing',
+  'Dashboard - what\'s planned, what\'s scheduled, what shipped, what worked',
 ];
 
 const timeline = [
@@ -52,7 +52,7 @@ const timeline = [
   {
     week: 'Week 2',
     title: 'Integration + formats',
-    description: 'I wire LinkedIn, your project tool (ClickUp, Notion, Asana — whatever your team uses), and your analytics. Build the multi-format generators (text / carousel / image). You review first sample outputs.',
+    description: 'I wire LinkedIn, your project tool (ClickUp, Notion, Asana - whatever your team uses), and your analytics. Build the multi-format generators (text / carousel / image). You review first sample outputs.',
   },
   {
     week: 'Week 3',
@@ -62,10 +62,10 @@ const timeline = [
 ];
 
 const notIncluded = [
-  'Writing the content for you — you approve and edit; the system drafts',
+  'Writing the content for you - you approve and edit; the system drafts',
   'Paid amplification or ad buying (not this offer)',
-  'Replacing human strategy — if you don\'t know what you want to be known for, the system amplifies the confusion',
-  'Guaranteed engagement — the system ships; the market decides',
+  'Replacing human strategy - if you don\'t know what you want to be known for, the system amplifies the confusion',
+  'Guaranteed engagement - the system ships; the market decides',
 ];
 
 const ContentSystemPage: React.FC = () => {
@@ -167,7 +167,7 @@ const ContentSystemPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
               Under the hood
             </h2>
-            <p className="text-zinc-600 mb-8">What's actually in the box — for the technically curious.</p>
+            <p className="text-zinc-600 mb-8">What's actually in the box - for the technically curious.</p>
             <ul className="space-y-3">
               {deliverables.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-[15px] text-zinc-700">
@@ -219,7 +219,7 @@ const ContentSystemPage: React.FC = () => {
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
                 <li key={i} className="flex items-start gap-4 text-zinc-700">
-                  <span className="font-mono text-zinc-400 mt-1">—</span>
+                  <span className="font-mono text-zinc-400 mt-1">-</span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -237,7 +237,7 @@ const ContentSystemPage: React.FC = () => {
               Ready to stop writing posts?
             </h2>
             <p className="text-zinc-400 mb-8 max-w-xl mx-auto leading-relaxed">
-              Fill out the 5-minute intake and I'll come to our call with a scoped proposal — specific formats, specific channels, specific voice guardrails.
+              Fill out the 5-minute intake and I'll come to our call with a scoped proposal - specific formats, specific channels, specific voice guardrails.
             </p>
             <a
               href="/start"
