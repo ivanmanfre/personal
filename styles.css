@@ -66,6 +66,11 @@ body {
   scrollbar-width: none;
 }
 
+/* Editorial portrait regrade — desaturate slightly, warm undertone, lift contrast */
+.portrait-editorial {
+  filter: saturate(0.8) sepia(0.1) contrast(1.08) brightness(0.97);
+}
+
 /* Sophisticated borders */
 .border-subtle {
   border: 1px solid rgba(26, 26, 26, 0.15);
