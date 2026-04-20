@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 const steps = [
     {
         id: '01',
-        title: 'Agent-Ready Assessment',
-        desc: 'A paid 1-week diagnostic. I score your ops on the 4 preconditions and deliver a scorecard plus a 30-day roadmap. You find out whether to build now or fix the foundation first. $2,500, credited back if you move forward.',
+        title: 'Diagnose',
+        desc: 'I score your operation on the 4 Agent-Ready preconditions and map exactly where time, judgment, and capacity are leaking. You leave this phase with a scorecard and a prioritized 30-day roadmap.',
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
@@ -40,8 +40,8 @@ const steps = [
     },
     {
         id: '02',
-        title: 'Architecture + prep',
-        desc: 'If preconditions pass, I design the full system end-to-end. Every data flow, decision point, and integration mapped out. If preconditions fail, we fix the foundation first. You see exactly what gets built before we start.',
+        title: 'Design',
+        desc: 'I architect the full system end-to-end. Every data flow, decision point, and integration drawn out before anyone writes code. You sign off on the blueprint, so what gets built is exactly what we agreed on.',
         color: 'bg-white border-zinc-200',
         textColor: 'text-black',
         icon: (
@@ -74,8 +74,8 @@ const steps = [
     },
     {
         id: '03',
-        title: 'Build, launch, maintain',
-        desc: 'I build the system, test it, deploy it into your stack. Most projects ship in 3-4 weeks. After launch, clients typically move to a Care Plan or Fractional retainer so the system keeps running as your business grows.',
+        title: 'Build',
+        desc: 'I build, test, and deploy into your existing stack. Most systems ship in 3 to 4 weeks. Your team uses it the day it launches — no multi-month rollout, no invisible progress.',
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
