@@ -364,14 +364,14 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
             {/* LEFT: Headline block (7 cols) */}
             <div className="lg:col-span-7">
               <span className="inline-block bg-black text-white px-3 py-1.5 mb-8 font-mono text-xs font-bold uppercase tracking-widest">
-                Strategy Session · 01
+                Orientation Session · 01
               </span>
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tighter mb-10">
                 {renderPivot(product.headline)}
               </h1>
               <div className="pr-4 border-r-2 border-[color:var(--color-accent)] pl-0 pr-6 mb-10 ml-auto max-w-md text-right hidden lg:block">
                 <p className="font-drama italic text-xl text-zinc-700 leading-snug">
-                  Part of the Agent-Ready Ops methodology.
+                  One call. A real plan. No fluff.
                 </p>
               </div>
               <p className="text-lg md:text-xl leading-relaxed text-zinc-700 max-w-2xl mb-10 font-medium">
@@ -484,7 +484,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                   Ready to start
                 </span>
                 <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-[0.95] tracking-tighter">
-                  See where AI {renderPivot('actually {{italic:belongs}}')} in your business.
+                  Know where to {renderPivot('{{italic:start}}')} with AI in your business.
                 </h2>
               </div>
               <div className="lg:col-span-4 lg:text-right">
