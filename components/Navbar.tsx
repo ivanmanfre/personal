@@ -63,7 +63,7 @@ const Navbar: React.FC = () => {
 
           <a
             href="/start"
-            className="px-6 py-3 bg-accent border-subtle shadow-card font-bold tracking-wide hover:-translate-y-1 hover:shadow-card-hover transition-all active:translate-y-0 active:shadow-card-active flex items-center"
+            className="px-4 py-2 bg-accent text-black font-semibold text-sm tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
           >
             Book a call
           </a>

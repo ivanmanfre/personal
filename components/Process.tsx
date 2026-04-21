@@ -158,10 +158,10 @@ const Process: React.FC = () => {
                                 {/* Text */}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="font-mono text-2xl font-bold bg-accent text-black px-3 py-1 border border-[color:var(--color-hairline)] shadow-card-subtle">
+                                        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
                                             {step.id}
                                         </span>
-                                        <div className="h-0.5 flex-grow bg-zinc-800 max-w-16" />
+                                        <div className="h-px flex-grow bg-[color:var(--color-hairline-bold)] max-w-16" />
                                     </div>
                                     <h2 className={`text-3xl md:text-4xl font-semibold mb-4 tracking-tighter leading-none ${step.textColor}`}>
                                         {step.title}

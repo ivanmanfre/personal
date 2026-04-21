@@ -21,9 +21,9 @@ const CTA: React.FC = () => {
 
                     <a
                         href="/assessment"
-                        className="btn-magnetic relative z-20 group inline-flex items-center gap-3 px-12 py-6 bg-black text-white text-xl font-semibold rounded-lg border border-[color:var(--color-hairline)] shadow-card-subtle focus:outline-none"
+                        className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-semibold tracking-wide hover:bg-accent-ink transition-colors"
                     >
-                        <span className="relative z-10 tracking-wide">Start with the Assessment</span>
+                        Start with the Assessment
                     </a>
 
                     <p className="mt-6 text-sm text-ink-mute">

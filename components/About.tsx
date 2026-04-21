@@ -32,7 +32,7 @@ const About: React.FC = () => {
                             Most consultants focus on writing strategy decks.
                         </p>
                         <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black leading-[1] tracking-tighter">
-                            I focus on <br /> <span className="text-accent-ink">Deploying Systems.</span>
+                            I focus on <br /> <span className="font-drama italic font-normal">Deploying Systems.</span>
                         </h2>
                     </motion.div>
 
@@ -101,8 +101,6 @@ const About: React.FC = () => {
                     className="mt-32 max-w-4xl mx-auto text-center"
                 >
                     <div className="bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle relative group hover-lift transition-all">
-                        <div className="absolute top-0 right-0 w-0 h-0 border-l-[40px] border-l-transparent border-t-[40px] border-t-accent"></div>
-
                         <p className="text-lg md:text-xl text-ink-soft leading-relaxed">
                             Every project follows one rule: <br /><br />
                             <span className="text-black font-semibold">If it doesn't pay back in 90 days, I don't build it.</span> <br /><br />

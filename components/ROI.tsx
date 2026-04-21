@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, DollarSign, Clock, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const ROI: React.FC = () => {
     const [hoursPerWeek, setHoursPerWeek] = useState(20);
@@ -8,7 +8,6 @@ const ROI: React.FC = () => {
 
     const calculateYearlyCost = () => hoursPerWeek * hourlyRate * 52;
     const calculateFiveYearCost = () => calculateYearlyCost() * 5;
-    // Typical project price for 90-day payback calculation
     const typicalBuildPrice = 10000;
     const calculatePaybackDays = () => {
         const dailyCost = calculateYearlyCost() / 365;
@@ -18,39 +17,41 @@ const ROI: React.FC = () => {
 
     return (
         <section className="py-32 bg-paper border-b border-[color:var(--color-hairline)] relative overflow-hidden" id="roi-calculator">
-            <div className="absolute inset-0 bg-grid-pattern opacity-[0.08] z-0"></div>
             <div className="container mx-auto px-6 max-w-5xl relative z-10">
 
-                <div className="text-center mb-16">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
+                <div className="mb-16 flex justify-center">
+                    <motion.span
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white font-mono text-sm uppercase mb-6 border-subtle shadow-md"
+                        className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1"
                     >
-                        <Calculator size={16} /> 90-Day Payback Check
-                    </motion.div>
+                        90-Day Payback Check
+                    </motion.span>
+                </div>
+
+                <div className="text-center mb-16">
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight mb-6">
-                        The <span className="font-drama italic text-black inline-block">90-Day Payback</span> Rule
+                        The <span className="font-drama italic">90-Day Payback</span> Rule
                     </h2>
-                    <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-ink-soft">
+                    <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-ink-soft leading-relaxed">
                         If I can't recoup the project in 90 days, I don't build it. Here's what your number looks like.
                     </p>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-12 items-start">
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
 
                     {/* Controls */}
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="w-full lg:w-1/2 border-subtle-thick bg-white p-8 shadow-card"
+                        className="w-full lg:w-1/2 bg-white border border-[color:var(--color-hairline)] p-8 shadow-card-subtle"
                     >
                         <div className="mb-10">
-                            <label className="flex items-center justify-between mb-4 font-medium uppercase text-xl">
-                                <span className="flex items-center gap-2"><Clock className="text-accent" /> Hours lost per week</span>
-                                <span className="font-mono text-2xl text-accent bg-black px-3 py-1 border-subtle shadow-card-sm">{hoursPerWeek}</span>
+                            <label className="flex items-center justify-between mb-4">
+                                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">Hours lost per week</span>
+                                <span className="font-mono text-2xl text-black border border-[color:var(--color-hairline-bold)] bg-paper-sunk px-3 py-1">{hoursPerWeek}</span>
                             </label>
                             <input
                                 type="range"
@@ -59,18 +60,18 @@ const ROI: React.FC = () => {
                                 step="5"
                                 value={hoursPerWeek}
                                 onChange={(e) => setHoursPerWeek(Number(e.target.value))}
-                                className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
+                                className="w-full h-1 bg-[color:var(--color-hairline)] appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-xs font-mono font-medium text-zinc-400 mt-2 uppercase">
+                            <div className="flex justify-between text-[11px] font-mono text-ink-mute mt-2 uppercase tracking-[0.14em]">
                                 <span>5 hrs</span>
                                 <span>100 hrs</span>
                             </div>
                         </div>
 
                         <div className="mb-8">
-                            <label className="flex items-center justify-between mb-4 font-medium uppercase text-xl">
-                                <span className="flex items-center gap-2"><DollarSign className="text-accent" /> Blended Hourly Value</span>
-                                <span className="font-mono text-2xl text-accent bg-black px-3 py-1 border-subtle shadow-card-sm">${hourlyRate}</span>
+                            <label className="flex items-center justify-between mb-4">
+                                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">Blended hourly value</span>
+                                <span className="font-mono text-2xl text-black border border-[color:var(--color-hairline-bold)] bg-paper-sunk px-3 py-1">${hourlyRate}</span>
                             </label>
                             <input
                                 type="range"
@@ -79,15 +80,15 @@ const ROI: React.FC = () => {
                                 step="25"
                                 value={hourlyRate}
                                 onChange={(e) => setHourlyRate(Number(e.target.value))}
-                                className="w-full h-3 bg-zinc-200 rounded-none appearance-none cursor-pointer border border-zinc-300"
+                                className="w-full h-1 bg-[color:var(--color-hairline)] appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-xs font-mono font-medium text-zinc-400 mt-2 uppercase">
+                            <div className="flex justify-between text-[11px] font-mono text-ink-mute mt-2 uppercase tracking-[0.14em]">
                                 <span>$50/hr</span>
                                 <span>$500/hr</span>
                             </div>
                         </div>
 
-                        <p className="text-sm font-medium text-ink-mute">
+                        <p className="text-sm text-ink-mute leading-relaxed">
                             Blended value = the average hourly revenue target of the team members doing the manual work.
                         </p>
                     </motion.div>
@@ -99,27 +100,26 @@ const ROI: React.FC = () => {
                         viewport={{ once: true }}
                         className="w-full lg:w-1/2 flex flex-col gap-6"
                     >
-                        <div className="border-subtle-thick bg-black text-white p-8 shadow-card relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-accent opacity-10 rounded-full blur-3xl"></div>
-                            <h3 className="font-medium text-zinc-400 uppercase tracking-widest text-sm mb-2">Annual cost of this bottleneck</h3>
-                            <div className="text-5xl sm:text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
+                        <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8 shadow-card-subtle">
+                            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft mb-3">Annual cost of this bottleneck</h3>
+                            <div className="text-5xl sm:text-6xl md:text-7xl font-semibold font-mono tracking-tighter text-black mb-4">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
-                            <p className="font-medium text-ink-mute mt-4 leading-relaxed">
+                            <p className="text-ink-soft leading-relaxed">
                                 This is the cash your team burns on repeat work over 12 months if nothing changes.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="border-subtle bg-white p-6 shadow-card-sm">
-                                <h3 className="font-medium text-ink-mute uppercase tracking-widest text-xs mb-2">5-Year drag</h3>
-                                <div className="text-3xl font-bold font-mono text-zinc-800">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6">
+                                <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">5-Year drag</h3>
+                                <div className="text-3xl font-semibold font-mono text-black">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
                             </div>
-                            <div className="border-subtle bg-accent p-6 shadow-card-sm">
-                                <h3 className="font-medium text-black uppercase tracking-widest text-xs mb-2">Payback at $10k build</h3>
-                                <div className="text-3xl font-bold font-mono text-black">
+                            <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6">
+                                <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">Payback at $10k build</h3>
+                                <div className="text-3xl font-semibold font-mono text-accent-ink">
                                     ~{calculatePaybackDays()} days
                                 </div>
                             </div>
@@ -127,11 +127,11 @@ const ROI: React.FC = () => {
 
                         <a
                             href="/assessment"
-                            className="w-full mt-2 px-8 py-5 bg-accent rounded-lg border-subtle-thick shadow-card-subtle hover:shadow-card-lift hover:-translate-y-1 transition-all active:translate-y-1 flex items-center justify-center gap-3 font-bold text-xl tracking-wide text-black"
+                            className="w-full mt-2 px-6 py-4 bg-accent text-black font-semibold tracking-wide flex items-center justify-center gap-3 hover:bg-accent-ink hover:text-white transition-colors"
                         >
-                            See if you're Agent-Ready <ArrowRight size={24} />
+                            See if you're Agent-Ready <ArrowRight size={18} />
                         </a>
-                        <p className="text-sm text-ink-mute text-center mt-2">
+                        <p className="text-sm text-ink-mute text-center">
                             Not ready to talk? <a href="/#newsletter" className="underline hover:text-black">Get The Agent-Ready Letter</a>.
                         </p>
 

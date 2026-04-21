@@ -37,21 +37,21 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-zinc-900 text-white border-t border-zinc-800 pt-16 pb-8 relative z-10">
-      <div className="container mx-auto px-6">
+    <footer className="bg-paper-sunk text-black border-t border-[color:var(--color-hairline)] pt-20 pb-10 relative z-10">
+      <div className="container mx-auto px-6 max-w-5xl">
 
         {/* Newsletter capture */}
-        <div id="newsletter" className="mb-16 max-w-2xl mx-auto text-center">
+        <div id="newsletter" className="mb-20 text-center">
           <h3 className="text-2xl md:text-3xl font-semibold mb-3 tracking-tight">
-            The Agent-Ready <span className="font-drama italic text-accent">Letter</span>
+            The Agent-Ready <span className="font-drama italic">Letter</span>
           </h3>
-          <p className="text-zinc-400 mb-6">
+          <p className="text-ink-soft mb-6 max-w-xl mx-auto leading-relaxed">
             Weekly notes on AI systems that actually ship. Written for founders of growing service businesses.
           </p>
 
           {status === 'success' ? (
-            <div className="inline-flex items-center gap-3 px-5 py-3 bg-accent/20 border border-accent text-white font-medium">
-              <Check size={18} className="text-accent" strokeWidth={3} />
+            <div className="inline-flex items-center gap-3 px-4 py-2 border border-[color:var(--color-hairline-bold)] text-ink-soft font-medium">
+              <Check size={16} className="text-accent-ink" strokeWidth={3} />
               Subscribed. First letter arrives within 15 minutes.
             </div>
           ) : (
@@ -63,50 +63,52 @@ const Footer: React.FC = () => {
                 required
                 placeholder="you@company.com"
                 disabled={status === 'loading'}
-                className="flex-1 px-4 py-3 bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-accent disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="px-6 py-3 bg-accent text-black font-bold tracking-wide border-subtle shadow-card hover:-translate-y-1 hover:shadow-card-hover transition-all disabled:opacity-50"
+                className="px-6 py-3 bg-accent text-black font-semibold tracking-wide disabled:opacity-50 hover:bg-accent-ink hover:text-white transition-colors"
               >
                 {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
               </button>
             </form>
           )}
           {status === 'error' && (
-            <p className="mt-4 text-sm text-red-400">Something went wrong. Try again or email im@ivanmanfredi.com.</p>
+            <p className="mt-4 text-sm text-red-600">Something went wrong. Try again or email im@ivanmanfredi.com.</p>
           )}
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8">
 
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-semibold mb-2 tracking-tight">Iván Manfredi</h2>
-            <p className="font-medium text-zinc-400">Agent-Ready Ops™</p>
+            <h2 className="text-4xl font-semibold mb-2 tracking-tight">
+              Iván <span className="font-drama italic">Manfredi</span>
+            </h2>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">Agent-Ready Ops™</p>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {socials.map((social, i) => (
               <a
                 key={i}
                 href={social.href}
                 target={social.href.startsWith('http') ? "_blank" : undefined}
                 rel={social.href.startsWith('http') ? "noopener noreferrer" : undefined}
-                className="w-14 h-14 border border-white/30 flex items-center justify-center hover:bg-white hover:text-black hover:-translate-y-1 transition-all active:translate-y-0"
+                className="w-11 h-11 border border-[color:var(--color-hairline-bold)] flex items-center justify-center text-ink-soft hover:bg-black hover:text-white hover:border-black transition-colors"
               >
-                <social.icon size={24} strokeWidth={2.5} />
+                <social.icon size={18} strokeWidth={2} />
               </a>
             ))}
           </div>
         </div>
 
-        <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-zinc-400 font-bold uppercase tracking-wide">
-          <p>&copy; {new Date().getFullYear()} All Rights Reserved.</p>
+        <div className="border-t border-[color:var(--color-hairline)] pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] font-mono uppercase tracking-[0.14em] text-ink-mute">
+          <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
 
           <div className="flex gap-8">
-            <Link to="/store" className="hover:text-white transition-colors">Store</Link>
-            <a href="mailto:im@ivanmanfredi.com" className="hover:text-white transition-colors">Contact</a>
+            <Link to="/store" className="hover:text-black transition-colors">Store</Link>
+            <a href="mailto:im@ivanmanfredi.com" className="hover:text-black transition-colors">Contact</a>
           </div>
         </div>
       </div>

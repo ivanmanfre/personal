@@ -57,7 +57,7 @@ const Hero: React.FC = () => {
               transition={{ type: 'spring', bounce: 0.25, duration: 0.7 }}
               className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-semibold tracking-tight leading-[1.02] mb-6"
             >
-              Systems <span className="font-drama italic font-normal">scale.</span>
+              Systems scale.
               <br />
               Headcount <span className="font-drama italic font-normal">doesn't.</span>
             </motion.h1>

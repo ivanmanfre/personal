@@ -83,8 +83,8 @@ const CaseStudies: React.FC = () => {
               {/* Content */}
               <div className="p-8">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="font-bold uppercase text-xs tracking-widest bg-black text-white px-2 py-1">{study.client}</span>
-                  <span className="text-xs font-mono uppercase text-zinc-400 tracking-wide">{study.industry}</span>
+                  <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">{study.client}</span>
+                  <span className="text-[11px] font-mono uppercase text-ink-mute tracking-[0.14em]">{study.industry}</span>
                 </div>
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
                 <p className="text-lg font-normal border-l border-[color:var(--color-hairline-bold)] pl-4 leading-relaxed mb-4">{study.desc}</p>
