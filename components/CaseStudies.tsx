@@ -39,7 +39,7 @@ const cases = [
 
 const CaseStudies: React.FC = () => {
   return (
-    <section id="cases" className="py-24 bg-white border-t border-zinc-200">
+    <section id="cases" className="py-32 bg-white border-t border-[color:var(--color-hairline)]">
       <div className="container mx-auto px-6">
         <motion.h2
           initial={{ y: 50, opacity: 0 }}
@@ -87,7 +87,7 @@ const CaseStudies: React.FC = () => {
                   <span className="text-xs font-mono uppercase text-zinc-400 tracking-wide">{study.industry}</span>
                 </div>
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
-                <p className="text-lg font-normal border-l-2 border-zinc-300 pl-4 leading-relaxed mb-4">{study.desc}</p>
+                <p className="text-lg font-normal border-l border-[color:var(--color-hairline-bold)] pl-4 leading-relaxed mb-4">{study.desc}</p>
                 <div className="flex items-center gap-2 pt-4 border-t border-zinc-200">
                   <span className="w-2 h-2 rounded-full bg-accent"></span>
                   <span className="font-mono text-xs uppercase tracking-widest text-zinc-600">{study.readiness}</span>

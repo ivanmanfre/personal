@@ -162,7 +162,7 @@ const FractionalPage: React.FC = () => {
             </h2>
             <div className="space-y-6">
               {howItWorks.map((step) => (
-                <div key={step.title} className="border-l-2 border-accent pl-6">
+                <div key={step.title} className="border-l border-accent pl-6">
                   <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
                     {step.title}
                   </h3>

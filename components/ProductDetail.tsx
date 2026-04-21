@@ -126,7 +126,7 @@ const ProductDetail: React.FC = () => {
 
       {/* ── WORKFLOW PREVIEW ── */}
       {product.previewImage && (
-        <section className="bg-zinc-900 py-16 border-b border-zinc-200 relative">
+        <section className="bg-paper-sunk py-20 border-b border-[color:var(--color-hairline)] relative">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"1\" fill-rule=\"evenodd\"%3E%3Ccircle cx=\"3\" cy=\"3\" r=\"3\"/%3E%3Ccircle cx=\"13\" cy=\"13\" r=\"3\"/%3E%3C/g%3E%3C/svg%3E')" }}></div>
           <div className="container mx-auto px-6 max-w-6xl relative z-10">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
@@ -148,7 +148,7 @@ const ProductDetail: React.FC = () => {
       )}
 
       {/* ── FEATURES ── */}
-      <section className="py-24 border-b border-zinc-200 bg-white">
+      <section className="py-32 border-b border-zinc-200 bg-white">
         <div className="container mx-auto px-6 max-w-5xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
@@ -176,7 +176,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* ── SAMPLE OUTPUT + WHAT YOU GET ── */}
-      <section className="py-24 bg-pink/10 border-b border-zinc-200 bg-grid-pattern relative">
+      <section className="py-32 bg-pink/10 border-b border-zinc-200 bg-grid-pattern relative">
         <div className="container mx-auto px-6 max-w-6xl relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
 
@@ -251,7 +251,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="py-24 border-b border-zinc-200 bg-white">
+      <section id="pricing" className="py-32 border-b border-zinc-200 bg-white">
         <div className="container mx-auto px-6 max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
@@ -307,7 +307,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="py-24 bg-accent relative overflow-hidden">
+      <section className="py-32 bg-accent relative overflow-hidden">
         {/* Background stripes */}
         <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px)" }}></div>
         <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
@@ -369,7 +369,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
               <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tighter mb-10">
                 {renderPivot(product.headline)}
               </h1>
-              <div className="pr-4 border-r-2 border-[color:var(--color-accent)] pl-0 pr-6 mb-10 ml-auto max-w-md text-right hidden lg:block">
+              <div className="pr-4 border-r border-[color:var(--color-accent)] pl-0 pr-6 mb-10 ml-auto max-w-md text-right hidden lg:block">
                 <p className="font-drama italic text-xl text-zinc-700 leading-snug">
                   One call. A real plan. No fluff.
                 </p>
@@ -446,7 +446,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
               ))}
             </ul>
           </div>
-          <div className="lg:pl-8 lg:border-l-2 lg:border-[color:var(--color-accent)]">
+          <div className="lg:pl-8 lg:border-l lg:border-[color:var(--color-accent)]">
             <p className="font-drama italic text-2xl md:text-3xl leading-snug text-zinc-800">
               A written plan - not a generic tutorial.
             </p>

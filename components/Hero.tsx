@@ -6,7 +6,7 @@ const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex flex-col justify-center bg-paper overflow-hidden">
       {/* Grid Background */}
-      <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-[0.12] pointer-events-none z-0" />
+      <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-[0.08] pointer-events-none z-0" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row items-start gap-8 lg:gap-10 max-w-5xl mx-auto">

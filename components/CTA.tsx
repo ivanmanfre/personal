@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 const CTA: React.FC = () => {
     return (
-        <section className="py-24 bg-paper relative overflow-hidden border-t border-zinc-200">
+        <section className="py-32 bg-paper relative overflow-hidden border-t border-[color:var(--color-hairline)]">
             <div className="container mx-auto px-6 text-center relative z-10">
                 <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}

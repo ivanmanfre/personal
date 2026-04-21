@@ -134,7 +134,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
               {benefits.map((b, i) => (
-                <div key={i} className="border-l-2 border-accent pl-6">
+                <div key={i} className="border-l border-accent pl-6">
                   <h3 className="text-lg font-semibold mb-2 leading-tight">{b.headline}</h3>
                   <p className="text-zinc-600 leading-relaxed">{b.body}</p>
                 </div>
@@ -175,7 +175,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             </h2>
             <div className="space-y-6">
               {timeline.map((step) => (
-                <div key={step.week} className="flex gap-6 items-start border-l-2 border-accent pl-6">
+                <div key={step.week} className="flex gap-6 items-start border-l border-accent pl-6">
                   <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-20">{step.week}</span>
                   <div>
                     <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
