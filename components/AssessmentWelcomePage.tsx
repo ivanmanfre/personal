@@ -14,7 +14,7 @@ const timeline = [
   {
     day: 'Day 1',
     title: 'Intake',
-    description: 'Check your inbox. I send a structured intake questionnaire — 20-30 questions across the four Agent-Ready preconditions. 30 minutes of focused answering.',
+    description: 'Check your inbox. I send a structured intake questionnaire - 20-30 questions across the four Agent-Ready preconditions. 30 minutes of focused answering.',
   },
   {
     day: 'Day 2',
@@ -29,7 +29,7 @@ const timeline = [
   {
     day: 'Day 7',
     title: 'Presentation',
-    description: 'Final 60-minute call. I deliver the findings and recommend the path forward — Fractional, productized project, or wait-and-build.',
+    description: 'Final 60-minute call. I deliver the findings and recommend the path forward - Fractional, productized project, or wait-and-build.',
   },
 ];
 
@@ -154,7 +154,7 @@ const AssessmentWelcomePage: React.FC = () => {
           >
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">The credit clause</p>
             <p className="text-lg text-ink-soft leading-relaxed">
-              The full $2,500 is credited 100% toward any follow-on engagement — Lead Magnet System, Fractional AI Partner, or custom build — within 60 days of your Day 7 presentation. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
+              The full $2,500 is credited 100% toward any follow-on engagement - Lead Magnet System, Fractional AI Partner, or custom build - within 60 days of your Day 7 presentation. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
             </p>
           </motion.div>
 
