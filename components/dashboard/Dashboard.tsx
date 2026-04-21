@@ -61,6 +61,7 @@ const LazyAutoResearchPanel = lazy(retryImport(() => import('./AutoResearchPanel
 const LazyMeetingsPanel = lazy(retryImport(() => import('./MeetingsPanel')));
 const LazyCodePanel = lazy(retryImport(() => import('./CodePanel')));
 const LazyVideoIdeasPanel = lazy(retryImport(() => import('./VideoIdeasPanel')));
+const LazyAgentReadyPanel = lazy(retryImport(() => import('./AgentReadyPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -80,6 +81,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   meetings: LazyMeetingsPanel as unknown as React.ComponentType,
   code: LazyCodePanel as unknown as React.ComponentType,
   video: LazyVideoIdeasPanel as unknown as React.ComponentType,
+  'agent-ready': LazyAgentReadyPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 
@@ -107,6 +109,7 @@ const lazyImports = [
   retryImport(() => import('./MeetingsPanel')),
   retryImport(() => import('./CodePanel')),
   retryImport(() => import('./VideoIdeasPanel')),
+  retryImport(() => import('./AgentReadyPanel')),
 ];
 
 function usePrefetchPanels() {

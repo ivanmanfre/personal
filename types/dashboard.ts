@@ -704,5 +704,24 @@ export interface VideoShort {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'video' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'video' | 'agent-ready' | 'settings';
+
+export interface PaidAssessmentRow {
+  stripe_session_id: string;
+  email: string;
+  name: string | null;
+  amount_cents: number;
+  currency: string;
+  status: string;
+  paid_at: string;
+  pipeline_stage: string;
+  day2_scheduled_at: string | null;
+  day2_completed_at: string | null;
+  day7_completed_at: string | null;
+  followon_engagement: string | null;
+  notes: string | null;
+  intake_status: 'not_started' | 'in_progress' | 'submitted';
+  intake_answers: Record<string, unknown>;
+  intake_submitted_at: string | null;
+}
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';

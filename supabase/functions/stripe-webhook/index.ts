@@ -164,8 +164,103 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Fire welcome email via Resend. Best-effort: a failure here should NOT
+  // fail the webhook (Stripe would retry, creating duplicate rows).
+  try {
+    await sendWelcomeEmail(sb, row);
+  } catch (e) {
+    console.error("welcome email failed:", String(e));
+  }
+
   return new Response(JSON.stringify({ ok: true, session_id: session.id }), {
     status: 200,
     headers: { ...CORS, "Content-Type": "application/json" },
   });
 });
+
+async function sendWelcomeEmail(sb: any, row: Record<string, unknown>): Promise<void> {
+  const apiKey = await getSecret(sb, "RESEND_API_KEY_ASSESSMENT");
+  const from = await getSecret(sb, "RESEND_FROM");
+
+  const sessionId = row.stripe_session_id as string;
+  const email = row.email as string;
+  const name = (row.name as string | null) ?? null;
+  const welcomeUrl = `https://ivanmanfredi.com/assessment/welcome?session_id=${encodeURIComponent(sessionId)}`;
+  const intakeUrl = `https://ivanmanfredi.com/assessment/intake?session_id=${encodeURIComponent(sessionId)}`;
+  const calendlyUrl = "https://calendly.com/ivan-intelligents/30min";
+
+  const firstLine = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
+
+  const text = `${firstLine}
+
+Payment received. Thanks for booking the Agent-Ready Assessment.
+
+Two things to do now:
+
+1. Fill out the intake questionnaire (~25 min, saves as you type):
+   ${intakeUrl}
+
+2. Book the Day 2 working session:
+   ${calendlyUrl}
+
+The 7-day flow:
+  Day 1 - You fill the intake
+  Day 2 - We run a working session (60-90 min)
+  Day 3-6 - I produce your scorecard + 30-day roadmap
+  Day 7 - Final presentation call
+
+The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
+
+Full welcome page with details: ${welcomeUrl}
+
+Reply to this email with any questions.
+
+- Ivan Manfredi
+Agent-Ready Ops(TM)
+ivanmanfredi.com`;
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
+    <p style="margin:0 0 16px">${firstLine}</p>
+    <p style="margin:0 0 16px">Payment received. Thanks for booking the Agent-Ready Assessment.</p>
+    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8680;font-family:'JetBrains Mono',monospace">Two things to do now</p>
+    <ol style="padding-left:20px;margin:0 0 24px">
+      <li style="margin-bottom:12px"><strong>Fill the intake questionnaire</strong> (~25 min, saves as you type)<br><a href="${intakeUrl}" style="color:#2A4A33;font-weight:600">Open the intake -&gt;</a></li>
+      <li style="margin-bottom:12px"><strong>Book the Day 2 working session</strong><br><a href="${calendlyUrl}" style="color:#2A4A33;font-weight:600">Pick a time -&gt;</a></li>
+    </ol>
+    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8680;font-family:'JetBrains Mono',monospace">The 7-day flow</p>
+    <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;margin-bottom:24px">
+      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680;width:80px">Day 1</td><td style="padding:6px 0;color:#4A4A48">You fill the intake</td></tr>
+      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 2</td><td style="padding:6px 0;color:#4A4A48">Working session (60-90 min)</td></tr>
+      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 3-6</td><td style="padding:6px 0;color:#4A4A48">I produce your scorecard + 30-day roadmap</td></tr>
+      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 7</td><td style="padding:6px 0;color:#4A4A48">Final presentation call</td></tr>
+    </table>
+    <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
+    <p style="margin:24px 0 16px"><a href="${welcomeUrl}" style="color:#2A4A33;font-weight:600">Full welcome page -&gt;</a></p>
+    <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#8A8680;font-size:13px">Reply to this email with any questions.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">Agent-Ready Ops&trade;</span></p>
+  </body></html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [email],
+      reply_to: "im@ivanmanfredi.com",
+      subject: "Your Agent-Ready Assessment is booked",
+      text,
+      html,
+      tags: [
+        { name: "type", value: "assessment_welcome" },
+        { name: "stripe_session_id", value: sessionId.slice(0, 40) },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`resend ${res.status}: ${body.slice(0, 200)}`);
+  }
+}
