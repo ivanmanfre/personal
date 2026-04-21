@@ -12,8 +12,8 @@ const DISCOVERY_CALL_LINK = '/start';
 const preconditions = [
   {
     number: '01',
-    title: 'Structured input data',
-    question: 'Is your intake capturing what an agent would need, every time?',
+    title: 'Reliable input pipeline',
+    question: 'Can the agent read the same data every time, either from structured sources or a real extract layer?',
   },
   {
     number: '02',

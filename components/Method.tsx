@@ -5,8 +5,8 @@ import { ArrowRight } from 'lucide-react';
 const preconditions = [
   {
     number: '01',
-    title: 'Structured input data',
-    description: 'Intake captures what the agent needs, every time. No free-text chaos.',
+    title: 'Reliable input pipeline',
+    description: 'The agent reads the same data every time. Either the source is structured, or extraction from it is.',
   },
   {
     number: '02',

@@ -27,22 +27,23 @@ const sections: Section[] = [
   },
   {
     eyebrow: 'Precondition 01',
-    title: 'Structured input',
-    blurb: 'Can an AI reliably read the information it needs, every time?',
+    title: 'Reliable input pipeline',
+    blurb: 'Can the agent read the same data every time — either from a structured source, or from a reliable extraction on top of messy input?',
     questions: [
       { id: 'input_source', kind: 'text', label: '4. Where does the information for this work first enter your business?', placeholder: 'e.g. a web form, an inbound email, a discovery call transcript, a HubSpot record' },
       {
         id: 'input_shape',
         kind: 'radio',
-        label: '5. Is it captured in a form with set fields, or as free text (emails, call notes)?',
+        label: '5. What shape is that source in today?',
         options: [
-          { value: 'form', label: 'Structured form with set fields' },
-          { value: 'free_text', label: 'Free text (emails, notes, transcripts)' },
-          { value: 'mix', label: 'Mix of both' },
+          { value: 'form', label: 'Already structured (form fields, CRM record, etc.)' },
+          { value: 'unstructured', label: 'Unstructured (emails, call notes, docs) — but it can\'t be changed' },
+          { value: 'fixable', label: 'Unstructured, but we could add structure if we wanted' },
+          { value: 'mix', label: 'Mix of structured + unstructured sources' },
         ],
       },
-      { id: 'input_consistency', kind: 'scale', label: '6. If two people on your team captured the same customer, would the data look the same?', minLabel: 'Totally different', maxLabel: 'Identical' },
-      { id: 'input_gap', kind: 'text', label: '7. What\'s the single piece of information most often missing or inconsistent when this work starts?' },
+      { id: 'input_consistency', kind: 'scale', label: '6. If two people on your team captured the same customer, would the critical fields look the same?', minLabel: 'Totally different', maxLabel: 'Identical' },
+      { id: 'input_gap', kind: 'text', label: '7. What\'s the single piece of information most often missing, inconsistent, or hard to extract when this work starts?' },
     ],
   },
   {
