@@ -33,7 +33,7 @@ const Services: React.FC = () => {
               className="w-full lg:w-1/2"
             >
               <div className="flex items-center gap-3 mb-4">
-                <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">01</span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">01</span>
                 <h4 className="text-3xl font-semibold tracking-tight">Back-office automation</h4>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
@@ -59,7 +59,7 @@ const Services: React.FC = () => {
               className="w-full lg:w-1/2"
             >
               <div className="flex items-center gap-3 mb-4">
-                <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">02</span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">02</span>
                 <h4 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h4>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
