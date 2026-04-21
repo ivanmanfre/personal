@@ -1,13 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Mail } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
 // Day 2 working session booking. Uses the existing 30min event for now; once
 // a dedicated 90min "Agent-Ready Day 2" event type exists, swap this constant.
 const CALENDLY_DAY2_URL = 'https://calendly.com/ivan-intelligents/30min';
-const SUPPORT_EMAIL = 'im@ivanmanfredi.com';
 
 const timeline = [
   {
@@ -35,6 +34,8 @@ const timeline = [
 const AssessmentWelcomePage: React.FC = () => {
   const [params] = useSearchParams();
   const sessionId = params.get('session_id');
+  const intakeDone = params.get('intake') === 'done';
+  const intakeHref = sessionId ? `/assessment/intake?session_id=${encodeURIComponent(sessionId)}` : '/assessment/intake';
 
   useMetadata({
     title: 'Welcome to the Assessment | Manfredi',
@@ -87,19 +88,29 @@ const AssessmentWelcomePage: React.FC = () => {
             className="grid md:grid-cols-2 gap-6 mb-20"
           >
             <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">01 · Check your inbox</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">
+                {intakeDone ? '01 · Intake received' : '01 · Fill out the intake'}
+              </p>
               <h3 className="text-2xl font-semibold tracking-tight mb-3">
-                Intake questionnaire
+                {intakeDone ? 'Intake complete' : 'Intake questionnaire'}
               </h3>
               <p className="text-ink-soft leading-relaxed mb-6">
-                I'm sending the structured intake questionnaire to your email within 30 minutes. Reply directly if you have questions at any point.
+                {intakeDone
+                  ? 'Thanks. I\'ll review your answers before the Day 2 working session.'
+                  : 'Twenty questions across the four preconditions, roughly 25 minutes. Saves as you type — close the tab and come back whenever.'}
               </p>
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-black border-b border-black pb-0.5 hover:text-accent-ink hover:border-accent-ink transition-colors"
-              >
-                <Mail size={14} /> {SUPPORT_EMAIL}
-              </a>
+              {intakeDone ? (
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-accent-ink">
+                  <Check size={14} strokeWidth={3} /> Received
+                </span>
+              ) : (
+                <a
+                  href={intakeHref}
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-black font-semibold tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
+                >
+                  Open the intake <ArrowRight size={16} />
+                </a>
+              )}
             </div>
 
             <div className="bg-black text-white p-8 border border-[color:var(--color-hairline-bold)]">
