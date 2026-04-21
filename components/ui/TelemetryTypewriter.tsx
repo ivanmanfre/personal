@@ -37,12 +37,12 @@ const TelemetryTypewriter: React.FC = () => {
 
             {/* Header Bar */}
             <div className="border-b border-[color:var(--color-hairline)] p-3 flex justify-between items-center relative z-10">
-                <span className="text-[11px] uppercase tracking-[0.14em] text-ink-soft">Agent log</span>
+                <span className="text-xs uppercase tracking-[0.1em] text-ink-soft">Agent log</span>
                 <div className="flex items-center gap-2">
                     <span className="relative flex h-1.5 w-1.5">
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
                     </span>
-                    <span className="text-[10px] text-ink-soft uppercase tracking-[0.14em]">Live</span>
+                    <span className="text-[10px] text-ink-soft uppercase tracking-[0.1em]">Live</span>
                 </div>
             </div>
 

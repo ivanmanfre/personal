@@ -85,7 +85,7 @@ const Footer: React.FC = () => {
             <h2 className="text-4xl font-semibold mb-2 tracking-tight">
               Iván <span className="font-drama italic">Manfredi</span>
             </h2>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">Agent-Ready Ops™</p>
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">Agent-Ready Ops™</p>
           </div>
 
           <div className="flex gap-3">
@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="border-t border-[color:var(--color-hairline)] pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-[11px] font-mono uppercase tracking-[0.14em] text-ink-mute">
+        <div className="border-t border-[color:var(--color-hairline)] pt-8 flex flex-col md:flex-row justify-between items-center gap-6 text-xs font-mono uppercase tracking-[0.1em] text-ink-mute">
           <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
 
           <div className="flex gap-8">

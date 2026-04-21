@@ -56,7 +56,7 @@ const AssessmentPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
+            <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
               Agent-Ready Assessment
             </span>
           </motion.div>
@@ -88,7 +88,7 @@ const AssessmentPage: React.FC = () => {
             transition={{ delay: 0.25 }}
             className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
           >
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">
               Who this is for
             </p>
             <p className="text-ink-soft leading-relaxed mb-4">

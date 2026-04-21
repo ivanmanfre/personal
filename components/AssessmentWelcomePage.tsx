@@ -54,7 +54,7 @@ const AssessmentWelcomePage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6 flex items-center gap-2"
           >
-            <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
+            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
               <Check size={12} strokeWidth={3} className="text-accent-ink" /> Payment received
             </span>
           </motion.div>
@@ -87,7 +87,7 @@ const AssessmentWelcomePage: React.FC = () => {
             className="grid md:grid-cols-2 gap-6 mb-20"
           >
             <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">
+              <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">
                 {intakeDone ? '01 · Intake received' : '01 · Fill out the intake'}
               </p>
               <h3 className="text-2xl font-semibold tracking-tight mb-3">
@@ -113,7 +113,7 @@ const AssessmentWelcomePage: React.FC = () => {
             </div>
 
             <div className="bg-black text-white p-8 border border-[color:var(--color-hairline-bold)]">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">02 · Book now</p>
+              <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">02 · Book now</p>
               <h3 className="text-2xl font-semibold tracking-tight mb-3">
                 Day 2 working session
               </h3>
@@ -145,7 +145,7 @@ const AssessmentWelcomePage: React.FC = () => {
               {timeline.map((step) => (
                 <div key={step.day} className="flex flex-col md:flex-row gap-6 md:gap-10 border-t border-[color:var(--color-hairline)] pt-8">
                   <div className="md:w-32 shrink-0">
-                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-1">{step.day}</p>
+                    <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-1">{step.day}</p>
                     <h3 className="text-lg font-semibold tracking-tight">{step.title}</h3>
                   </div>
                   <p className="text-lg text-ink-soft leading-relaxed flex-1">{step.description}</p>
@@ -161,14 +161,14 @@ const AssessmentWelcomePage: React.FC = () => {
             viewport={{ once: true }}
             className="bg-paper-sunk border border-[color:var(--color-hairline)] p-8 md:p-10 mb-16"
           >
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">The credit clause</p>
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">The credit clause</p>
             <p className="text-lg text-ink-soft leading-relaxed">
               The full $2,500 is credited 100% toward any follow-on engagement - Lead Magnet System, Fractional AI Partner, or custom build - within 60 days of your Day 7 presentation. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
             </p>
           </motion.div>
 
           {sessionId && (
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
               Receipt ref · {sessionId.slice(0, 16)}…
             </p>
           )}

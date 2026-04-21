@@ -94,7 +94,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-bold border-subtle border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-2xl font-semibold border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </a>
@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     to={`/${link.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-3xl font-bold border-subtle border-l-0 border-r-0 border-t-0 border-b-2 pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-2xl font-semibold border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </Link>

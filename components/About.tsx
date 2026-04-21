@@ -13,7 +13,7 @@ const About: React.FC = () => {
                     viewport={{ once: true }}
                     className="mb-20 flex justify-center"
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1 border border-[color:var(--color-hairline-bold)] text-ink-soft font-mono text-[11px] uppercase tracking-[0.14em]">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 border border-[color:var(--color-hairline-bold)] text-ink-soft font-mono text-xs uppercase tracking-[0.1em]">
                         <Target size={12} className="text-accent-ink" /> Core Philosophy
                     </div>
                 </motion.div>
@@ -86,7 +86,7 @@ const About: React.FC = () => {
                         <h3 className="text-3xl md:text-4xl font-semibold text-black mb-4 tracking-tight">
                             Iván <span className="font-drama italic">Manfredi</span>
                         </h3>
-                        <p className="font-mono text-[11px] text-accent-ink uppercase tracking-[0.14em] mb-4">Agent-Ready Ops™</p>
+                        <p className="font-mono text-xs text-accent-ink uppercase tracking-[0.1em] mb-4">Agent-Ready Ops™</p>
                         <p className="text-lg text-ink-soft leading-relaxed max-w-xl">
                             I've shipped 100+ AI and automation systems for growing service businesses - agencies, consultancies, law and accounting firms. Every engagement is a productized project or a flat-rate retainer tied to outcomes. Never hourly.
                         </p>

@@ -24,7 +24,7 @@ const ROI: React.FC = () => {
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1"
+                        className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1"
                     >
                         90-Day Payback Check
                     </motion.span>
@@ -50,7 +50,7 @@ const ROI: React.FC = () => {
                     >
                         <div className="mb-10">
                             <label className="flex items-center justify-between mb-4">
-                                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">Hours lost per week</span>
+                                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft">Hours lost per week</span>
                                 <span className="font-mono text-2xl text-black border border-[color:var(--color-hairline-bold)] bg-paper-sunk px-3 py-1">{hoursPerWeek}</span>
                             </label>
                             <input
@@ -62,7 +62,7 @@ const ROI: React.FC = () => {
                                 onChange={(e) => setHoursPerWeek(Number(e.target.value))}
                                 className="w-full h-1 bg-[color:var(--color-hairline)] appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-[11px] font-mono text-ink-mute mt-2 uppercase tracking-[0.14em]">
+                            <div className="flex justify-between text-xs font-mono text-ink-mute mt-2 uppercase tracking-[0.1em]">
                                 <span>5 hrs</span>
                                 <span>100 hrs</span>
                             </div>
@@ -70,7 +70,7 @@ const ROI: React.FC = () => {
 
                         <div className="mb-8">
                             <label className="flex items-center justify-between mb-4">
-                                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">Blended hourly value</span>
+                                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft">Blended hourly value</span>
                                 <span className="font-mono text-2xl text-black border border-[color:var(--color-hairline-bold)] bg-paper-sunk px-3 py-1">${hourlyRate}</span>
                             </label>
                             <input
@@ -82,7 +82,7 @@ const ROI: React.FC = () => {
                                 onChange={(e) => setHourlyRate(Number(e.target.value))}
                                 className="w-full h-1 bg-[color:var(--color-hairline)] appearance-none cursor-pointer"
                             />
-                            <div className="flex justify-between text-[11px] font-mono text-ink-mute mt-2 uppercase tracking-[0.14em]">
+                            <div className="flex justify-between text-xs font-mono text-ink-mute mt-2 uppercase tracking-[0.1em]">
                                 <span>$50/hr</span>
                                 <span>$500/hr</span>
                             </div>
@@ -101,7 +101,7 @@ const ROI: React.FC = () => {
                         className="w-full lg:w-1/2 flex flex-col gap-6"
                     >
                         <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8 shadow-card-subtle">
-                            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft mb-3">Annual cost of this bottleneck</h3>
+                            <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft mb-3">Annual cost of this bottleneck</h3>
                             <div className="text-5xl sm:text-6xl md:text-7xl font-semibold font-mono tracking-tighter text-black mb-4">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
@@ -112,13 +112,13 @@ const ROI: React.FC = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6">
-                                <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">5-Year drag</h3>
+                                <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">5-Year drag</h3>
                                 <div className="text-3xl font-semibold font-mono text-black">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
                             </div>
                             <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6">
-                                <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">Payback at $10k build</h3>
+                                <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">Payback at $10k build</h3>
                                 <div className="text-3xl font-semibold font-mono text-accent-ink">
                                     ~{calculatePaybackDays()} days
                                 </div>

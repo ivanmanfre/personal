@@ -45,7 +45,7 @@ const Hero: React.FC = () => {
               transition={{ duration: 0.4 }}
               className="mb-5"
             >
-              <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
+              <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
                 Agent-Ready Ops™
               </span>
             </motion.div>
@@ -67,7 +67,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="text-lg md:text-xl font-medium max-w-lg mb-10 leading-relaxed text-ink-soft"
+              className="text-xl md:text-2xl font-medium max-w-lg mb-10 leading-relaxed text-ink-soft"
             >
               AI systems for growing service businesses.
             </motion.p>

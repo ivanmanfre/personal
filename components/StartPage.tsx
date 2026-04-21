@@ -187,7 +187,7 @@ const StartPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-10"
         >
-          <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
+          <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
             Book a call
           </span>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mt-6 mb-3">

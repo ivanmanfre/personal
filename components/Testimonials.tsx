@@ -43,7 +43,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
 
     {/* Project Badge */}
     <div className="mb-8">
-      <span className="text-[11px] font-mono uppercase text-ink-mute tracking-widest font-medium">
+      <span className="text-xs font-mono uppercase text-ink-mute tracking-widest font-medium">
         {review.project}
       </span>
     </div>
@@ -62,7 +62,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
           <Star key={i} size={14} className="fill-accent text-accent" />
         ))}
       </div>
-      <span className="text-[11px] font-medium uppercase text-ink-mute tracking-widest">
+      <span className="text-xs font-medium uppercase text-ink-mute tracking-widest">
         Verified review
       </span>
     </div>
@@ -74,7 +74,7 @@ const Testimonials: React.FC = () => {
     <section className="py-20 bg-paper border-t border-zinc-200 overflow-hidden relative z-20 flex flex-col gap-8">
       {/* Section Label */}
       <div className="container mx-auto px-6 relative z-40 flex justify-center mb-4">
-        <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
+        <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
           Client Reviews
         </span>
       </div>

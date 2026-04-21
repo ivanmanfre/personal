@@ -253,7 +253,7 @@ const AssessmentIntakePage: React.FC = () => {
       <div className="min-h-screen bg-paper pt-32 pb-24 px-6">
         <div className="container mx-auto max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-            <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
+            <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
               <Check size={12} strokeWidth={3} className="text-accent-ink" /> Intake received
             </span>
           </motion.div>
@@ -277,7 +277,7 @@ const AssessmentIntakePage: React.FC = () => {
 
         {/* Eyebrow */}
         <div className="mb-6">
-          <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
+          <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
             Assessment intake
           </span>
         </div>
@@ -290,17 +290,17 @@ const AssessmentIntakePage: React.FC = () => {
           Twenty questions, roughly 25 minutes. Your answers save as you type — close this tab and come back whenever. I'll review everything before our Day 2 call.
         </p>
         {buyer && (
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-12">
+          <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-12">
             Signed in as {buyer.email}
           </p>
         )}
 
         {/* Progress + save indicator */}
         <div className="flex items-center justify-between mb-12 pb-4 border-b border-[color:var(--color-hairline)]">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+          <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
             {answeredQs} of {totalQs} answered
           </p>
-          <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
+          <div className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em]">
             {saveState === 'saving' && (<><Loader2 size={12} className="animate-spin text-ink-mute" /><span className="text-ink-mute">Saving</span></>)}
             {saveState === 'saved' && (<><Save size={12} className="text-accent-ink" /><span className="text-ink-mute">Saved</span></>)}
             {saveState === 'error' && (<span className="text-red-600">Save failed</span>)}
@@ -312,7 +312,7 @@ const AssessmentIntakePage: React.FC = () => {
           {sections.map((section, sIdx) => (
             <section key={section.eyebrow} className="space-y-10">
               <header>
-                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-2">{section.eyebrow}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-2">{section.eyebrow}</p>
                 <h2 className="text-3xl font-semibold tracking-tight mb-2">{section.title}</h2>
                 {section.blurb && <p className="text-ink-soft">{section.blurb}</p>}
               </header>
@@ -332,7 +332,7 @@ const AssessmentIntakePage: React.FC = () => {
                   {q.kind === 'number' && (
                     <div className="flex items-center gap-3">
                       <input id={q.id} type="number" min={0} value={answers[q.id] ?? ''} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-32 px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black focus:outline-none focus:border-accent transition-colors" />
-                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">{q.unit}</span>
+                      <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{q.unit}</span>
                     </div>
                   )}
 
@@ -345,7 +345,7 @@ const AssessmentIntakePage: React.FC = () => {
                           </button>
                         ))}
                       </div>
-                      <div className="flex justify-between mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+                      <div className="flex justify-between mt-2 font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
                         <span>{q.minLabel}</span>
                         <span>{q.maxLabel}</span>
                       </div>
@@ -380,7 +380,7 @@ const AssessmentIntakePage: React.FC = () => {
             <button onClick={handleSubmit} disabled={submitting} className="px-8 py-4 bg-black text-white font-semibold tracking-wide hover:bg-accent-ink transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-3">
               {submitting ? <><Loader2 size={16} className="animate-spin" /> Submitting</> : <>Submit intake</>}
             </button>
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute">
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
               {answeredQs} of {totalQs} answered
             </p>
           </div>

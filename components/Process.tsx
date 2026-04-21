@@ -139,7 +139,7 @@ const Process: React.FC = () => {
     return (
         <section className="relative bg-paper py-32 border-t border-[color:var(--color-hairline)]">
             <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
+                <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
                     How We Work Together
                 </span>
             </div>
@@ -158,7 +158,7 @@ const Process: React.FC = () => {
                                 {/* Text */}
                                 <div className="flex-1">
                                     <div className="flex items-center gap-3 mb-6">
-                                        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
+                                        <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
                                             {step.id}
                                         </span>
                                         <div className="h-px flex-grow bg-[color:var(--color-hairline-bold)] max-w-16" />
