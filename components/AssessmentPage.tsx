@@ -3,11 +3,10 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// TODO: replace with actual Stripe Payment Link for the $2,500 Agent-Ready Assessment.
-// Until set, falls back to the qualification form at /start.
-// Stripe setup: Dashboard → Products → Add Product → $2,500 one-time → Create Payment Link.
-// Optional: set Stripe success_url to a Calendly Day-2 working session booking page.
-const ASSESSMENT_PAYMENT_LINK = '/start?intent=assessment';
+// Stripe Payment Link (live): prod_UNL0AY5g21pMLX / price_1TOaK906n8CBtSkjxVlpZcWa
+// Post-checkout redirect: /start?intent=assessment-paid&session_id={CHECKOUT_SESSION_ID}
+// Webhook: we_1TOaKL06n8CBtSkjlBuYIYkk -> stripe-webhook edge function -> paid_assessments table
+const ASSESSMENT_PAYMENT_LINK = 'https://buy.stripe.com/dRm28jfCXbrP9p40v1fEk0G';
 const DISCOVERY_CALL_LINK = '/start';
 
 const preconditions = [
