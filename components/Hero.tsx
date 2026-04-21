@@ -93,6 +93,15 @@ const Hero: React.FC = () => {
                 See the method <ArrowRight size={16} />
               </a>
             </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-5 font-mono text-xs uppercase tracking-[0.1em] text-ink-mute"
+            >
+              7-day diagnostic · 3-4 week builds · Live the day it launches
+            </motion.p>
           </div>
 
           {/* Right - Portrait */}
