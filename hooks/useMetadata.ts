@@ -5,6 +5,7 @@ interface MetadataOptions {
   description: string;
   canonical?: string;
   ogImage?: string;
+  noindex?: boolean;
 }
 
 /**
@@ -17,7 +18,7 @@ function setMetaContent(selector: string, content: string) {
   if (el) el.content = content;
 }
 
-export function useMetadata({ title, description, canonical, ogImage }: MetadataOptions) {
+export function useMetadata({ title, description, canonical, ogImage, noindex }: MetadataOptions) {
   useEffect(() => {
     const prevTitle = document.title;
 
@@ -45,8 +46,17 @@ export function useMetadata({ title, description, canonical, ogImage }: Metadata
       setMetaContent('meta[name="twitter:image"]', ogImage);
     }
 
+    let robotsEl: HTMLMetaElement | null = null;
+    if (noindex) {
+      robotsEl = document.createElement('meta');
+      robotsEl.name = 'robots';
+      robotsEl.content = 'noindex, nofollow';
+      document.head.appendChild(robotsEl);
+    }
+
     return () => {
       document.title = prevTitle;
+      if (robotsEl && robotsEl.parentNode) robotsEl.parentNode.removeChild(robotsEl);
     };
-  }, [title, description, canonical, ogImage]);
+  }, [title, description, canonical, ogImage, noindex]);
 }

@@ -6,6 +6,7 @@ import HomePage from './components/HomePage';
 import StorePage from './components/StorePage';
 import ProductDetail from './components/ProductDetail';
 import AssessmentPage from './components/AssessmentPage';
+import AssessmentWelcomePage from './components/AssessmentWelcomePage';
 import StartPage from './components/StartPage';
 import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
 import ContentSystemPage from './components/ContentSystemPage';
@@ -79,6 +80,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/assessment" element={<AssessmentPage />} />
+          <Route path="/assessment/welcome" element={<AssessmentWelcomePage />} />
           <Route path="/lead-magnet-system" element={<LeadMagnetSystemPage />} />
           <Route path="/content-system" element={<ContentSystemPage />} />
           <Route path="/fractional" element={<FractionalPage />} />
