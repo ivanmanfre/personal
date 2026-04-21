@@ -124,7 +124,7 @@ const StartPage: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">
             You're a good fit.
           </h1>
-          <p className="text-zinc-600 mb-8 leading-relaxed">
+          <p className="text-ink-soft mb-8 leading-relaxed">
             Based on what you shared, let's talk. Pick a time below. I'll come prepped - you don't have to re-explain anything.
           </p>
           <a
@@ -136,7 +136,7 @@ const StartPage: React.FC = () => {
             Book a 30-minute call
             <ArrowRight size={18} />
           </a>
-          <p className="mt-8 text-sm text-zinc-500">
+          <p className="mt-8 text-sm text-ink-mute">
             Or skip the call: <a href="/assessment" className="underline hover:text-black">start with the $2,500 Assessment</a>.
           </p>
         </div>
@@ -151,13 +151,13 @@ const StartPage: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">
             Thanks for sharing.
           </h1>
-          <p className="text-zinc-600 mb-8 leading-relaxed">
+          <p className="text-ink-soft mb-8 leading-relaxed">
             Based on company stage and budget, a custom engagement isn't the best next move right now. Two better options:
           </p>
           <div className="space-y-4 text-left mb-8">
             <div className="border border-zinc-300 p-5 bg-paper">
               <h3 className="font-bold mb-2">The Agent-Ready Letter</h3>
-              <p className="text-sm text-zinc-600 mb-3">
+              <p className="text-sm text-ink-soft mb-3">
                 Weekly notes on AI systems that actually ship. Free.
               </p>
               <a href="/#newsletter" className="text-sm font-bold text-black underline">
@@ -166,7 +166,7 @@ const StartPage: React.FC = () => {
             </div>
             <div className="border border-zinc-300 p-5 bg-paper">
               <h3 className="font-bold mb-2">Agent-Ready Assessment</h3>
-              <p className="text-sm text-zinc-600 mb-3">
+              <p className="text-sm text-ink-soft mb-3">
                 If you want a paid diagnostic without committing to a build. $2,500.
               </p>
               <a href="/assessment" className="text-sm font-bold text-black underline">
@@ -193,7 +193,7 @@ const StartPage: React.FC = () => {
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mt-6 mb-3">
             A few quick questions first.
           </h1>
-          <p className="text-zinc-600 leading-relaxed">
+          <p className="text-ink-soft leading-relaxed">
             Two minutes. This helps me come prepared and stops us both from wasting 30 minutes if we're not a fit.
           </p>
         </motion.div>
@@ -208,7 +208,7 @@ const StartPage: React.FC = () => {
 
           {/* Q1 Company size */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               01 - How many people on your team?
             </label>
             <div className="flex flex-wrap gap-2">
@@ -220,7 +220,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.companySize === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -231,7 +231,7 @@ const StartPage: React.FC = () => {
 
           {/* Q2 Revenue */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               02 - Annual revenue range
             </label>
             <div className="flex flex-wrap gap-2">
@@ -243,7 +243,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.revenue === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -254,7 +254,7 @@ const StartPage: React.FC = () => {
 
           {/* Q3 Bottleneck */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               03 - What's the operational bottleneck you're trying to solve? (one sentence)
             </label>
             <input
@@ -269,7 +269,7 @@ const StartPage: React.FC = () => {
 
           {/* Q4 Prior AI */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               04 - Have you tried AI or automation before? What happened?
             </label>
             <textarea
@@ -283,7 +283,7 @@ const StartPage: React.FC = () => {
 
           {/* Q5 Budget */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               05 - Budget range you're considering
             </label>
             <div className="flex flex-wrap gap-2">
@@ -295,7 +295,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.budget === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -306,7 +306,7 @@ const StartPage: React.FC = () => {
 
           {/* Q6 Timeline */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               06 - When do you want this solved?
             </label>
             <div className="flex flex-wrap gap-2">
@@ -318,7 +318,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.timeline === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -329,7 +329,7 @@ const StartPage: React.FC = () => {
 
           {/* Q7 Decision-maker */}
           <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
               07 - Are you the decision-maker?
             </label>
             <div className="flex flex-col gap-2">
@@ -341,7 +341,7 @@ const StartPage: React.FC = () => {
                   className={`text-left px-4 py-2 border font-medium text-sm transition-all ${
                     form.decisionMaker === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-zinc-700 border-zinc-300 hover:border-black'
+                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -353,7 +353,7 @@ const StartPage: React.FC = () => {
           {/* Contact */}
           <div className="border-t border-zinc-200 pt-8 space-y-4">
             <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+              <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
                 Name
               </label>
               <input
@@ -365,7 +365,7 @@ const StartPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-zinc-500 block mb-3">
+              <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
                 Email
               </label>
               <input

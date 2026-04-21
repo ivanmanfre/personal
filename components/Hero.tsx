@@ -67,7 +67,7 @@ const Hero: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="text-lg md:text-xl font-medium max-w-lg mb-10 leading-relaxed text-zinc-600"
+              className="text-lg md:text-xl font-medium max-w-lg mb-10 leading-relaxed text-ink-soft"
             >
               AI systems for growing service businesses.
             </motion.p>
@@ -88,7 +88,7 @@ const Hero: React.FC = () => {
 
               <a
                 href="#method"
-                className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-zinc-500 hover:text-black transition-colors text-center flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center flex items-center justify-center gap-2"
               >
                 See the method <ArrowRight size={16} />
               </a>

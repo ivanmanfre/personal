@@ -17,7 +17,7 @@ const Services: React.FC = () => {
             <span className="inline-block text-[11px] uppercase tracking-[0.14em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-4">What I Build</span>
             <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tight">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h3>
           </div>
-          <p className="text-lg md:text-xl font-medium max-w-sm text-left md:text-right text-zinc-600 leading-relaxed border-l md:border-l-0 md:border-r border-accent pl-4 md:pl-0 md:pr-6">
+          <p className="text-lg md:text-xl font-medium max-w-sm text-left md:text-right text-ink-soft leading-relaxed border-l md:border-l-0 md:border-r border-accent pl-4 md:pl-0 md:pr-6">
             I don't bill hourly. Every engagement is a productized project or a flat-rate retainer tied to outcomes.
           </p>
         </motion.div>
@@ -36,10 +36,10 @@ const Services: React.FC = () => {
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">01</span>
                 <h4 className="text-3xl font-semibold tracking-tight">Back-office automation</h4>
               </div>
-              <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
+              <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 The manual handoffs between your CRM, Slack, docs, and AI tools get replaced with systems that do the work. Your team stops copy-pasting. The data moves itself.
               </p>
-              <ul className="space-y-3 text-sm font-medium text-zinc-500">
+              <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect your existing tools without another platform</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Client onboarding that doesn't need a human</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Right AI model picked per task, not defaulted</li>
@@ -62,10 +62,10 @@ const Services: React.FC = () => {
                 <span className="bg-black text-white font-mono font-bold px-2 py-1 text-xs">02</span>
                 <h4 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h4>
               </div>
-              <p className="text-xl font-medium text-zinc-600 mb-6 leading-relaxed">
+              <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 Lead qualification. Tier-1 support. Document parsing. The judgment-heavy work your best person can't scale. I build the agent and get your ops ready to run it - skipping that second half is why most AI projects stall.
               </p>
-              <ul className="space-y-3 text-sm font-medium text-zinc-500">
+              <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your SOPs and company data</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Reads and extracts from any document format</li>
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Human-in-the-loop by design, not by accident</li>

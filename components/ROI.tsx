@@ -33,7 +33,7 @@ const ROI: React.FC = () => {
                     <h2 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight mb-6">
                         The <span className="font-drama italic text-black inline-block">90-Day Payback</span> Rule
                     </h2>
-                    <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-zinc-700">
+                    <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-ink-soft">
                         If I can't recoup the project in 90 days, I don't build it. Here's what your number looks like.
                     </p>
                 </div>
@@ -87,7 +87,7 @@ const ROI: React.FC = () => {
                             </div>
                         </div>
 
-                        <p className="text-sm font-medium text-zinc-500">
+                        <p className="text-sm font-medium text-ink-mute">
                             Blended value = the average hourly revenue target of the team members doing the manual work.
                         </p>
                     </motion.div>
@@ -105,14 +105,14 @@ const ROI: React.FC = () => {
                             <div className="text-5xl sm:text-6xl md:text-7xl font-bold font-mono tracking-tighter text-white">
                                 ${calculateYearlyCost().toLocaleString()}
                             </div>
-                            <p className="font-medium text-zinc-500 mt-4 leading-relaxed">
+                            <p className="font-medium text-ink-mute mt-4 leading-relaxed">
                                 This is the cash your team burns on repeat work over 12 months if nothing changes.
                             </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
                             <div className="border-subtle bg-white p-6 shadow-card-sm">
-                                <h3 className="font-medium text-zinc-500 uppercase tracking-widest text-xs mb-2">5-Year drag</h3>
+                                <h3 className="font-medium text-ink-mute uppercase tracking-widest text-xs mb-2">5-Year drag</h3>
                                 <div className="text-3xl font-bold font-mono text-zinc-800">
                                     ${(calculateFiveYearCost() / 1000).toFixed(0)}k
                                 </div>
@@ -131,7 +131,7 @@ const ROI: React.FC = () => {
                         >
                             See if you're Agent-Ready <ArrowRight size={24} />
                         </a>
-                        <p className="text-sm text-zinc-500 text-center mt-2">
+                        <p className="text-sm text-ink-mute text-center mt-2">
                             Not ready to talk? <a href="/#newsletter" className="underline hover:text-black">Get The Agent-Ready Letter</a>.
                         </p>
 

@@ -90,7 +90,7 @@ const CaseStudies: React.FC = () => {
                 <p className="text-lg font-normal border-l border-[color:var(--color-hairline-bold)] pl-4 leading-relaxed mb-4">{study.desc}</p>
                 <div className="flex items-center gap-2 pt-4 border-t border-zinc-200">
                   <span className="w-2 h-2 rounded-full bg-accent"></span>
-                  <span className="font-mono text-xs uppercase tracking-widest text-zinc-600">{study.readiness}</span>
+                  <span className="font-mono text-xs uppercase tracking-widest text-ink-soft">{study.readiness}</span>
                 </div>
               </div>
             </motion.div>

@@ -26,7 +26,7 @@ const CTA: React.FC = () => {
                         <span className="relative z-10 tracking-wide">Start with the Assessment</span>
                     </a>
 
-                    <p className="mt-6 text-sm text-zinc-500">
+                    <p className="mt-6 text-sm text-ink-mute">
                         Prefer to talk first? <a href="/start" className="underline hover:text-black">Book a call</a>.
                     </p>
                 </motion.div>

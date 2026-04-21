@@ -91,7 +91,7 @@ const FractionalPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-zinc-600 max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
             A monthly retainer. You get a senior AI and ops partner who understands your business and ships actual systems - not slide decks. Three tiers based on the volume and depth of the work your team needs.
           </motion.p>
@@ -122,14 +122,14 @@ const FractionalPage: React.FC = () => {
                   <p className={`text-3xl font-bold tracking-tighter font-mono mb-2 ${tier.highlighted ? 'text-accent' : 'text-black'}`}>
                     {tier.price}
                   </p>
-                  <p className={`text-xs font-mono uppercase tracking-widest ${tier.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <p className={`text-xs font-mono uppercase tracking-widest ${tier.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
                     {tier.fit}
                   </p>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((f) => (
-                    <li key={f} className={`flex items-start gap-3 text-sm leading-relaxed ${tier.highlighted ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                    <li key={f} className={`flex items-start gap-3 text-sm leading-relaxed ${tier.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
                       <Check size={16} className={`shrink-0 mt-1 ${tier.highlighted ? 'text-accent' : 'text-black'}`} strokeWidth={3} />
                       <span>{f}</span>
                     </li>
@@ -166,7 +166,7 @@ const FractionalPage: React.FC = () => {
                   <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-lg text-zinc-700 leading-relaxed">
+                  <p className="text-lg text-ink-soft leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -184,10 +184,10 @@ const FractionalPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
               What's not in scope
             </h2>
-            <p className="text-zinc-600 mb-6">Clear boundaries protect both of us.</p>
+            <p className="text-ink-soft mb-6">Clear boundaries protect both of us.</p>
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-zinc-700">
+                <li key={i} className="flex items-start gap-4 text-ink-soft">
                   <span className="font-mono text-zinc-400 mt-1">-</span>
                   <span>{item}</span>
                 </li>
@@ -215,7 +215,7 @@ const FractionalPage: React.FC = () => {
               Start the conversation
               <ArrowRight size={20} />
             </a>
-            <p className="mt-6 text-sm text-zinc-500">
+            <p className="mt-6 text-sm text-ink-mute">
               Not ready for retainer? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.
             </p>
           </motion.div>

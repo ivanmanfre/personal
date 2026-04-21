@@ -89,7 +89,7 @@ const LeadMagnetSystemPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-zinc-600 max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
             Stop losing warm leads to follow-up neglect. Stop paying a designer every time you launch a new magnet. Stop guessing which topics convert. One system, installed once, runs forever.
           </motion.p>
@@ -103,11 +103,11 @@ const LeadMagnetSystemPage: React.FC = () => {
           >
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
               <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
                   Fixed project
                 </p>
                 <p className="text-5xl md:text-6xl font-bold tracking-tight">$6–10k</p>
-                <p className="text-sm text-zinc-500 mt-2">3-week delivery · 50% upfront, 50% on launch</p>
+                <p className="text-sm text-ink-mute mt-2">3-week delivery · 50% upfront, 50% on launch</p>
               </div>
               <a
                 href="/start"
@@ -117,7 +117,7 @@ const LeadMagnetSystemPage: React.FC = () => {
                 <ArrowRight size={18} />
               </a>
             </div>
-            <p className="text-sm text-zinc-600 border-t border-[color:var(--color-hairline)] pt-6">
+            <p className="text-sm text-ink-soft border-t border-[color:var(--color-hairline)] pt-6">
               Price depends on how many magnet formats you want live at launch, CRM routing complexity, and whether you need a custom newsletter integration. I quote after a 30-minute scope call.
             </p>
           </motion.div>
@@ -136,7 +136,7 @@ const LeadMagnetSystemPage: React.FC = () => {
               {benefits.map((b, i) => (
                 <div key={i} className="border-l border-accent pl-6">
                   <h3 className="text-lg font-semibold mb-2 leading-tight">{b.headline}</h3>
-                  <p className="text-zinc-600 leading-relaxed">{b.body}</p>
+                  <p className="text-ink-soft leading-relaxed">{b.body}</p>
                 </div>
               ))}
             </div>
@@ -152,10 +152,10 @@ const LeadMagnetSystemPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
               Under the hood
             </h2>
-            <p className="text-zinc-600 mb-8">What's actually in the box - for the technically curious.</p>
+            <p className="text-ink-soft mb-8">What's actually in the box - for the technically curious.</p>
             <ul className="space-y-3">
               {deliverables.map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-[15px] text-zinc-700">
+                <li key={i} className="flex items-start gap-4 text-[15px] text-ink-soft">
                   <Check size={18} className="text-accent shrink-0 mt-1" strokeWidth={3} />
                   <span>{item}</span>
                 </li>
@@ -176,12 +176,12 @@ const LeadMagnetSystemPage: React.FC = () => {
             <div className="space-y-6">
               {timeline.map((step) => (
                 <div key={step.week} className="flex gap-6 items-start border-l border-accent pl-6">
-                  <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-20">{step.week}</span>
+                  <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-20">{step.week}</span>
                   <div>
                     <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
                       {step.title}
                     </h3>
-                    <p className="text-lg text-zinc-700 leading-relaxed">
+                    <p className="text-lg text-ink-soft leading-relaxed">
                       {step.description}
                     </p>
                   </div>
@@ -200,10 +200,10 @@ const LeadMagnetSystemPage: React.FC = () => {
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
               What's not in scope
             </h2>
-            <p className="text-zinc-600 mb-6">Being explicit about this up front stops scope arguments later.</p>
+            <p className="text-ink-soft mb-6">Being explicit about this up front stops scope arguments later.</p>
             <ul className="space-y-3">
               {notIncluded.map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-zinc-700">
+                <li key={i} className="flex items-start gap-4 text-ink-soft">
                   <span className="font-mono text-zinc-400 mt-1">-</span>
                   <span>{item}</span>
                 </li>
@@ -231,7 +231,7 @@ const LeadMagnetSystemPage: React.FC = () => {
               Start the conversation
               <ArrowRight size={20} />
             </a>
-            <p className="mt-6 text-sm text-zinc-500">
+            <p className="mt-6 text-sm text-ink-mute">
               Want a diagnostic first? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.
             </p>
           </motion.div>

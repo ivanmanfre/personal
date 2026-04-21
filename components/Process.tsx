@@ -166,7 +166,7 @@ const Process: React.FC = () => {
                                     <h2 className={`text-3xl md:text-4xl font-semibold mb-4 tracking-tighter leading-none ${step.textColor}`}>
                                         {step.title}
                                     </h2>
-                                    <p className="text-lg font-medium text-zinc-600 leading-relaxed">
+                                    <p className="text-lg font-medium text-ink-soft leading-relaxed">
                                         {step.desc}
                                     </p>
                                 </div>

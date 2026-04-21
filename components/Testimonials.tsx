@@ -43,14 +43,14 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
 
     {/* Project Badge */}
     <div className="mb-8">
-      <span className="text-[11px] font-mono uppercase text-zinc-500 tracking-widest font-medium">
+      <span className="text-[11px] font-mono uppercase text-ink-mute tracking-widest font-medium">
         {review.project}
       </span>
     </div>
 
     {/* Content - italic serif pull quote */}
     <div className="relative z-10 mb-8 flex-grow">
-      <p className="font-drama italic text-2xl md:text-3xl text-zinc-700 leading-tight group-hover:text-black transition-colors duration-300">
+      <p className="font-drama italic text-2xl md:text-3xl text-ink-soft leading-tight group-hover:text-black transition-colors duration-300">
         "{review.text}"
       </p>
     </div>
@@ -62,7 +62,7 @@ const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) =>
           <Star key={i} size={14} className="fill-accent text-accent" />
         ))}
       </div>
-      <span className="text-[11px] font-medium uppercase text-zinc-500 tracking-widest">
+      <span className="text-[11px] font-medium uppercase text-ink-mute tracking-widest">
         Verified review
       </span>
     </div>

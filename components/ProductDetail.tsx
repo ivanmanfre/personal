@@ -83,7 +83,7 @@ const ProductDetail: React.FC = () => {
             <p className="text-3xl md:text-4xl font-bold mb-8 max-w-4xl mx-auto tracking-tight">
               {product.headline}
             </p>
-            <p className="text-xl font-medium leading-relaxed max-w-2xl mx-auto text-zinc-700 mb-12">
+            <p className="text-xl font-medium leading-relaxed max-w-2xl mx-auto text-ink-soft mb-12">
               {product.description}
             </p>
 
@@ -104,7 +104,7 @@ const ProductDetail: React.FC = () => {
             </div>
 
             {/* Trust signals */}
-            <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-bold uppercase tracking-widest text-zinc-700">
+            <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-bold uppercase tracking-widest text-ink-soft">
               <span className="flex items-center gap-2"><Check size={18} strokeWidth={3} className="text-green-500" /> Instant download</span>
               <span className="flex items-center gap-2"><Check size={18} strokeWidth={3} className="text-green-500" /> Setup guide included</span>
             </div>
@@ -239,7 +239,7 @@ const ProductDetail: React.FC = () => {
                     {product.setup.map((req, i) => (
                       <li key={i} className="flex items-start gap-4">
                         <div className="mt-1.5 w-2 h-2 rounded-full bg-black shrink-0"></div>
-                        <span className="font-bold text-lg text-zinc-700">{req}</span>
+                        <span className="font-bold text-lg text-ink-soft">{req}</span>
                       </li>
                     ))}
                   </ul>
@@ -277,7 +277,7 @@ const ProductDetail: React.FC = () => {
                     <div className="mb-6">
                       <span className="text-5xl font-bold">{tier.label}</span>
                     </div>
-                    <p className="font-bold text-zinc-600 leading-relaxed mb-8 flex-grow">{tier.description}</p>
+                    <p className="font-bold text-ink-soft leading-relaxed mb-8 flex-grow">{tier.description}</p>
                     <button
                       onClick={() => handleBuy(tier)}
                       className={`w-full px-6 py-5 border-subtle font-bold uppercase text-lg tracking-wide transition-all active:shadow-card-active active:translate-y-1 flex items-center justify-center gap-3 ${tier.highlighted
@@ -346,7 +346,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
       <div className="container mx-auto px-6 max-w-6xl pt-28">
         <Link
           to="/store"
-          className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-600 hover:text-black transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-ink-soft hover:text-black transition-colors"
         >
           <ArrowLeft size={16} strokeWidth={2.5} /> Store
         </Link>
@@ -370,11 +370,11 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                 {renderPivot(product.headline)}
               </h1>
               <div className="pr-4 border-r border-[color:var(--color-accent)] pl-0 pr-6 mb-10 ml-auto max-w-md text-right hidden lg:block">
-                <p className="font-drama italic text-xl text-zinc-700 leading-snug">
+                <p className="font-drama italic text-xl text-ink-soft leading-snug">
                   One call. A real plan. No fluff.
                 </p>
               </div>
-              <p className="text-lg md:text-xl leading-relaxed text-zinc-700 max-w-2xl mb-10 font-medium">
+              <p className="text-lg md:text-xl leading-relaxed text-ink-soft max-w-2xl mb-10 font-medium">
                 {product.description}
               </p>
             </div>
@@ -383,15 +383,15 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
             <div className="lg:col-span-5 lg:sticky lg:top-28">
               <div className="bg-white rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
                 <div className="border-b border-zinc-200 pb-6 mb-6">
-                  <div className="font-mono text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
+                  <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mb-3">
                     Investment
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="font-drama italic text-7xl leading-none">${tier.price}</span>
-                    <span className="font-mono text-sm text-zinc-500 uppercase tracking-widest">flat</span>
+                    <span className="font-mono text-sm text-ink-mute uppercase tracking-widest">flat</span>
                   </div>
                 </div>
-                <p className="text-base leading-relaxed text-zinc-700 mb-8 font-medium">
+                <p className="text-base leading-relaxed text-ink-soft mb-8 font-medium">
                   {tier.description}
                 </p>
                 <button
@@ -404,7 +404,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                   {product.includes.slice(0, 3).map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
                       <div className="w-2 h-2 bg-[color:var(--color-accent)] mt-2 shrink-0"></div>
-                      <span className="text-sm font-medium text-zinc-700 leading-snug">{item}</span>
+                      <span className="text-sm font-medium text-ink-soft leading-snug">{item}</span>
                     </div>
                   ))}
                 </div>
@@ -450,7 +450,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
             <p className="font-drama italic text-2xl md:text-3xl leading-snug text-zinc-800">
               A written plan - not a generic tutorial.
             </p>
-            <p className="mt-6 text-base text-zinc-600 leading-relaxed font-medium">
+            <p className="mt-6 text-base text-ink-soft leading-relaxed font-medium">
               You leave with specifics: tools to set up, what to learn first, and the honest call on what to build vs. what to leave alone.
             </p>
           </div>

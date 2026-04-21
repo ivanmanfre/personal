@@ -84,7 +84,7 @@ const Offers: React.FC = () => {
               }`}
             >
               <div className="flex items-start justify-between mb-6">
-                <span className={`font-mono text-[11px] uppercase tracking-widest font-medium ${offer.highlighted ? 'text-accent' : 'text-zinc-500'}`}>
+                <span className={`font-mono text-[11px] uppercase tracking-widest font-medium ${offer.highlighted ? 'text-accent' : 'text-ink-mute'}`}>
                   {offer.id}
                 </span>
                 {offer.highlighted && (
@@ -102,12 +102,12 @@ const Offers: React.FC = () => {
                 <div className={`text-3xl font-bold tracking-tight font-mono ${offer.highlighted ? 'text-accent' : 'text-black'}`}>
                   {offer.price}
                 </div>
-                <div className={`text-[11px] font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <div className={`text-[11px] font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
                   {offer.cadence}
                 </div>
               </div>
 
-              <p className={`text-[15px] leading-relaxed mb-6 flex-1 ${offer.highlighted ? 'text-zinc-300' : 'text-zinc-600'}`}>
+              <p className={`text-[15px] leading-relaxed mb-6 flex-1 ${offer.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
                 {offer.description}
               </p>
 

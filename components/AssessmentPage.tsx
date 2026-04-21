@@ -77,7 +77,7 @@ const AssessmentPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-zinc-600 max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
             A paid 1-week diagnostic. I score your operation on the four conditions every AI build needs before it ships. You get a scorecard and a 30-day roadmap. If you move forward, the full $2,500 is credited back.
           </motion.p>
@@ -91,11 +91,11 @@ const AssessmentPage: React.FC = () => {
           >
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
               <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-zinc-500 mb-2">
+                <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
                   Assessment
                 </p>
                 <p className="text-5xl md:text-6xl font-bold tracking-tighter">$2,500</p>
-                <p className="text-sm text-zinc-500 mt-2">One-week engagement · 100% credit clause</p>
+                <p className="text-sm text-ink-mute mt-2">One-week engagement · 100% credit clause</p>
               </div>
               <a
                 href={ASSESSMENT_PAYMENT_LINK}
@@ -107,7 +107,7 @@ const AssessmentPage: React.FC = () => {
                 <ArrowRight size={18} />
               </a>
             </div>
-            <p className="text-sm text-zinc-600 border-t border-zinc-200 pt-6">
+            <p className="text-sm text-ink-soft border-t border-zinc-200 pt-6">
               The $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
             </p>
           </motion.div>
@@ -124,7 +124,7 @@ const AssessmentPage: React.FC = () => {
             </h2>
             <ul className="space-y-4">
               {deliverables.map((item, i) => (
-                <li key={i} className="flex items-start gap-4 text-lg text-zinc-700">
+                <li key={i} className="flex items-start gap-4 text-lg text-ink-soft">
                   <Check size={22} className="text-accent shrink-0 mt-1" strokeWidth={3} />
                   <span>{item}</span>
                 </li>
@@ -149,12 +149,12 @@ const AssessmentPage: React.FC = () => {
                   className="rounded-2xl border border-[color:var(--color-hairline)] bg-white p-6"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="font-mono text-xs text-zinc-500">{item.number}</span>
+                    <span className="font-mono text-xs text-ink-mute">{item.number}</span>
                     <h3 className="font-mono text-sm uppercase tracking-widest font-bold">
                       {item.title}
                     </h3>
                   </div>
-                  <p className="text-zinc-600 leading-relaxed">
+                  <p className="text-ink-soft leading-relaxed">
                     {item.question}
                   </p>
                 </div>
@@ -174,26 +174,26 @@ const AssessmentPage: React.FC = () => {
             </h2>
             <div className="space-y-6">
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-12">Day 1</span>
-                <p className="text-lg text-zinc-700 leading-relaxed">
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 1</span>
+                <p className="text-lg text-ink-soft leading-relaxed">
                   You complete a structured intake questionnaire (30 minutes of your time). 20–30 questions across the 4 preconditions.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-12">Day 2</span>
-                <p className="text-lg text-zinc-700 leading-relaxed">
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 2</span>
+                <p className="text-lg text-ink-soft leading-relaxed">
                   We run a 60–90 minute working session. I walk through your answers, ask follow-ups, observe your current systems.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-12">Day 3–6</span>
-                <p className="text-lg text-zinc-700 leading-relaxed">
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 3–6</span>
+                <p className="text-lg text-ink-soft leading-relaxed">
                   I produce your scorecard, 30-day prioritized roadmap, and specific recommendations.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-zinc-500 mt-1 shrink-0 w-12">Day 7</span>
-                <p className="text-lg text-zinc-700 leading-relaxed">
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 7</span>
+                <p className="text-lg text-ink-soft leading-relaxed">
                   60-minute presentation call. I deliver the findings and recommend the path forward - Fractional, project, or wait-and-build.
                 </p>
               </div>
@@ -222,7 +222,7 @@ const AssessmentPage: React.FC = () => {
               Book the Assessment
               <ArrowRight size={20} />
             </a>
-            <p className="mt-6 text-sm text-zinc-500">
+            <p className="mt-6 text-sm text-ink-mute">
               Not sure yet? <a href={DISCOVERY_CALL_LINK} className="underline text-zinc-300 hover:text-white">Book a call first</a>.
             </p>
           </motion.div>

@@ -59,7 +59,7 @@ const Method: React.FC = () => {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="text-xl font-medium text-zinc-600 mb-16 max-w-2xl leading-relaxed"
+          className="text-xl font-medium text-ink-soft mb-16 max-w-2xl leading-relaxed"
         >
           The problem isn't the tech. It's that the work underneath isn't ready for an agent to touch.
         </motion.p>
@@ -71,7 +71,7 @@ const Method: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
-            className="space-y-6 text-lg text-zinc-700 leading-relaxed"
+            className="space-y-6 text-lg text-ink-soft leading-relaxed"
           >
             <p>
               After enough builds, a pattern shows up. Every AI project that actually ships has four things in place before a single prompt is written. Every project that stalls is missing at least one of them.
@@ -86,7 +86,7 @@ const Method: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="space-y-6 text-lg text-zinc-700 leading-relaxed"
+            className="space-y-6 text-lg text-ink-soft leading-relaxed"
           >
             <p>
               The four conditions are simple, not easy. If any one is missing, the build breaks within weeks. If all four are present, the system runs without you.
@@ -106,7 +106,7 @@ const Method: React.FC = () => {
           className="bg-paper border border-[color:var(--color-hairline)] rounded-2xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
           <div className="flex items-center justify-between mb-8 border-b border-zinc-300 pb-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-zinc-500">
+            <span className="font-mono text-xs uppercase tracking-widest text-ink-mute">
               Agent-Ready Scorecard
             </span>
             <span className="font-mono text-xs uppercase tracking-widest text-accent flex items-center gap-2">
@@ -125,12 +125,12 @@ const Method: React.FC = () => {
                 transition={{ delay: 0.6 + i * 0.1 }}
                 className="flex gap-4 border-l-2 border-accent/50 pl-5 py-2"
               >
-                <span className="font-mono text-xs text-zinc-500 mt-1">{item.number}</span>
+                <span className="font-mono text-xs text-ink-mute mt-1">{item.number}</span>
                 <div>
                   <h4 className="font-mono text-sm uppercase tracking-widest font-bold mb-1">
                     {item.title}
                   </h4>
-                  <p className="text-sm text-zinc-600 leading-relaxed">
+                  <p className="text-sm text-ink-soft leading-relaxed">
                     {item.description}
                   </p>
                 </div>
@@ -154,7 +154,7 @@ const Method: React.FC = () => {
             Book an Agent-Ready Assessment
             <ArrowRight size={18} />
           </a>
-          <span className="text-sm text-zinc-500">
+          <span className="text-sm text-ink-mute">
             Paid 1-week diagnostic. Credited toward any follow-on engagement.
           </span>
         </motion.div>
