@@ -4,10 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, Mail } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// Day 2 working session booking (60-90 min). Replace with the real Calendly link
-// once Ivan has the Agent-Ready Day-2 event type configured.
-// Calendly setup: Event Types -> New -> "Agent-Ready Day 2 Working Session" (90 min) -> copy URL.
-const CALENDLY_DAY2_URL = 'https://calendly.com/ivanmanfredi/agent-ready-day-2';
+// Day 2 working session booking. Uses the existing 30min event for now; once
+// a dedicated 90min "Agent-Ready Day 2" event type exists, swap this constant.
+const CALENDLY_DAY2_URL = 'https://calendly.com/ivan-intelligents/30min';
 const SUPPORT_EMAIL = 'im@ivanmanfredi.com';
 
 const timeline = [
@@ -19,7 +18,7 @@ const timeline = [
   {
     day: 'Day 2',
     title: 'Working session',
-    description: '60-90 minute video call. I walk through your answers, ask follow-ups, and observe how your current systems actually run. Book the time below.',
+    description: 'A video call where I walk through your answers, ask follow-ups, and observe how your current systems actually run. Book the time below.',
   },
   {
     day: 'Day 3-6',
@@ -109,7 +108,7 @@ const AssessmentWelcomePage: React.FC = () => {
                 Day 2 working session
               </h3>
               <p className="text-[color:rgba(255,255,255,0.75)] leading-relaxed mb-6">
-                Pick a 60-90 minute slot in the next 3 business days. I walk through your answers, ask follow-ups, and map your current systems live.
+                Pick a slot in the next 3 business days. I walk through your answers, ask follow-ups, and map your current systems live.
               </p>
               <a
                 href={CALENDLY_DAY2_URL}
