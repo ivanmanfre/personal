@@ -4,9 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-// Day 2 working session booking. Uses the existing 30min event for now; once
-// a dedicated 90min "Agent-Ready Day 2" event type exists, swap this constant.
-const CALENDLY_DAY2_URL = 'https://calendly.com/ivan-intelligents/30min';
+// Day 2 working session booking (60 min).
+const CALENDLY_DAY2_URL = 'https://calendly.com/ivan-intelligents/30-minute-meeting-clone';
 
 const timeline = [
   {
@@ -17,7 +16,7 @@ const timeline = [
   {
     day: 'Day 2',
     title: 'Working session',
-    description: 'A video call where I walk through your answers, ask follow-ups, and observe how your current systems actually run. Book the time below.',
+    description: 'A 60-minute video call where I walk through your answers, ask follow-ups, and observe how your current systems actually run. Book the time below.',
   },
   {
     day: 'Day 3-6',

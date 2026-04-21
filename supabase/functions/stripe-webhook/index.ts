@@ -187,7 +187,7 @@ async function sendWelcomeEmail(sb: any, row: Record<string, unknown>): Promise<
   const name = (row.name as string | null) ?? null;
   const welcomeUrl = `https://ivanmanfredi.com/assessment/welcome?session_id=${encodeURIComponent(sessionId)}`;
   const intakeUrl = `https://ivanmanfredi.com/assessment/intake?session_id=${encodeURIComponent(sessionId)}`;
-  const calendlyUrl = "https://calendly.com/ivan-intelligents/30min";
+  const calendlyUrl = "https://calendly.com/ivan-intelligents/30-minute-meeting-clone";
 
   const firstLine = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
 
@@ -205,7 +205,7 @@ Two things to do now:
 
 The 7-day flow:
   Day 1 - You fill the intake
-  Day 2 - We run a working session (60-90 min)
+  Day 2 - We run a working session (60 min)
   Day 3-6 - I produce your scorecard + 30-day roadmap
   Day 7 - Final presentation call
 
@@ -230,7 +230,7 @@ ivanmanfredi.com`;
     <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8A8680;font-family:'JetBrains Mono',monospace">The 7-day flow</p>
     <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;margin-bottom:24px">
       <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680;width:80px">Day 1</td><td style="padding:6px 0;color:#4A4A48">You fill the intake</td></tr>
-      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 2</td><td style="padding:6px 0;color:#4A4A48">Working session (60-90 min)</td></tr>
+      <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 2</td><td style="padding:6px 0;color:#4A4A48">Working session (60 min)</td></tr>
       <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 3-6</td><td style="padding:6px 0;color:#4A4A48">I produce your scorecard + 30-day roadmap</td></tr>
       <tr><td style="padding:6px 0;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8A8680">Day 7</td><td style="padding:6px 0;color:#4A4A48">Final presentation call</td></tr>
     </table>

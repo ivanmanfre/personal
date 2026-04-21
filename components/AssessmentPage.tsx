@@ -199,7 +199,7 @@ const AssessmentPage: React.FC = () => {
               <div className="flex gap-6 items-start">
                 <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 2</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  We run a 60–90 minute working session. I walk through your answers, ask follow-ups, observe your current systems.
+                  We run a 60-minute working session. I walk through your answers, ask follow-ups, observe your current systems.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
