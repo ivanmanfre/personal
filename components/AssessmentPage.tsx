@@ -81,6 +81,24 @@ const AssessmentPage: React.FC = () => {
             A paid 1-week diagnostic. I score your operation on the four conditions every AI build needs before it ships. You get a scorecard and a 30-day roadmap. If you move forward, the full $2,500 is credited back.
           </motion.p>
 
+          {/* Who this is for — self-select gate */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
+          >
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-3">
+              Who this is for
+            </p>
+            <p className="text-ink-soft leading-relaxed mb-4">
+              The Assessment is for founders who want AI to handle a specific piece of judgment work — lead qualification, document classification, tier-1 support, call scoring, or similar. You don't need a fully formed use case, but you need to know the work exists.
+            </p>
+            <p className="text-ink-soft leading-relaxed">
+              Not sure where AI fits in your operation yet? <a href="/start" className="underline underline-offset-2 text-black hover:text-accent-ink transition-colors">Book a free discovery call</a> first — we'll figure out the right path before any money moves.
+            </p>
+          </motion.div>
+
           {/* Price box */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
