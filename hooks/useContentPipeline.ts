@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { ScheduledPost } from '../types/dashboard';
@@ -21,15 +21,17 @@ function mapPost(row: any): ScheduledPost {
 export function useContentPipeline(timezone?: string) {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoadedRef.current) setLoading(true);
     try {
       const { data } = await supabase
         .from('scheduled_posts')
         .select('*')
         .order('scheduled_at', { ascending: true });
       setPosts((data || []).map(mapPost));
+      hasLoadedRef.current = true;
     } catch (err) {
       toastError('load scheduled posts', err);
     } finally {
