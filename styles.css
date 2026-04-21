@@ -4,7 +4,7 @@
   --font-sans: 'Space Grotesk', system-ui, sans-serif;
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-drama: 'Bodoni Moda', 'DM Serif Display', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* ── INK (text + borders) ───────────────────────────────── */
   --color-primary: #1A1A1A;
