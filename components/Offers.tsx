@@ -77,7 +77,7 @@ const Offers: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className={`group flex flex-col rounded-2xl p-8 border shadow-card-subtle hover:shadow-card-lift transition-all ${
+              className={`group flex flex-col rounded-xl p-8 border shadow-card-subtle hover:shadow-card-lift transition-all ${
                 offer.highlighted
                   ? 'bg-black text-white border-black'
                   : 'bg-white text-black border-[color:var(--color-hairline)] hover:border-black'

@@ -71,7 +71,7 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-white group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
+              className="flex-1 rounded-xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-white group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
@@ -89,7 +89,7 @@ const CaseStudies: React.FC = () => {
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
                 <p className="text-lg font-normal border-l border-[color:var(--color-hairline-bold)] pl-4 leading-relaxed mb-4">{study.desc}</p>
                 <div className="flex items-center gap-2 pt-4 border-t border-zinc-200">
-                  <span className="w-2 h-2 rounded-full bg-accent"></span>
+                  <span className="w-2 h-2 bg-accent"></span>
                   <span className="font-mono text-xs uppercase tracking-widest text-ink-soft">{study.readiness}</span>
                 </div>
               </div>

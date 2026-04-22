@@ -39,7 +39,7 @@ const reviews = [
 const marqueeReviews = [...reviews, ...reviews];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
-  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card-subtle">
+  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-white rounded-xl border border-[color:var(--color-hairline)] p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card-subtle">
 
     {/* Project Badge */}
     <div className="mb-8">

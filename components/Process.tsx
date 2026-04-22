@@ -109,15 +109,15 @@ const steps = [
 
 const Connector: React.FC = () => (
     <div className="flex flex-col items-center relative z-10 py-0">
-        {/* Output dot */}
-        <div className="w-5 h-5 rounded-full bg-white border border-accent flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+        {/* Output marker */}
+        <div className="w-5 h-5 bg-paper border border-accent flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-accent" />
         </div>
 
         {/* Animated path */}
         <div className="relative w-px h-16 bg-zinc-300 overflow-visible">
             <motion.div
-                className="absolute left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-accent"
+                className="absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-accent"
                 animate={{ top: ['0%', '100%'] }}
                 transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
             />
@@ -128,9 +128,9 @@ const Connector: React.FC = () => (
             <path d="M8 10 L0 0 L16 0 Z" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
         </svg>
 
-        {/* Input dot */}
-        <div className="w-5 h-5 rounded-full bg-white border border-accent flex items-center justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+        {/* Input marker */}
+        <div className="w-5 h-5 bg-paper border border-accent flex items-center justify-center">
+            <div className="w-1.5 h-1.5 bg-accent animate-pulse" />
         </div>
     </div>
 );

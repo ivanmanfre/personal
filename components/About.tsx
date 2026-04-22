@@ -100,7 +100,7 @@ const About: React.FC = () => {
                     transition={{ delay: 0.4 }}
                     className="mt-32 max-w-4xl mx-auto text-center"
                 >
-                    <div className="bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle relative group hover-lift transition-all">
+                    <div className="bg-white rounded-xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle relative group hover-lift transition-all">
                         <p className="text-lg md:text-xl text-ink-soft leading-relaxed">
                             Every project follows one rule: <br /><br />
                             <span className="text-black font-semibold">If it doesn't pay back in 90 days, I don't build it.</span> <br /><br />

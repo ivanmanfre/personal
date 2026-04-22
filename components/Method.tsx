@@ -103,7 +103,7 @@ const Method: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.5 }}
-          className="bg-paper border border-[color:var(--color-hairline)] rounded-2xl p-8 md:p-12 mb-12 shadow-card-subtle"
+          className="bg-paper border border-[color:var(--color-hairline)] rounded-xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
           <div className="flex items-center justify-between mb-8 border-b border-zinc-300 pb-4">
             <span className="font-mono text-xs uppercase tracking-widest text-ink-mute">
@@ -149,7 +149,7 @@ const Method: React.FC = () => {
         >
           <a
             href="/assessment"
-            className="btn-magnetic px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center gap-3 font-semibold text-base tracking-wide text-black"
+            className="btn-magnetic px-8 py-4 bg-accent border-subtle-thick shadow-card-subtle flex items-center gap-3 font-semibold text-base tracking-wide text-black"
           >
             Book an Agent-Ready Assessment
             <ArrowRight size={18} />
