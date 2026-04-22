@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import TelemetryTypewriter from './ui/TelemetryTypewriter';
 import AutomationCursorFlow from './ui/AutomationCursorFlow';
+import VoiceAnnotationArtifact from './ui/VoiceAnnotationArtifact';
 
 const Services: React.FC = () => {
   return (
@@ -73,6 +74,32 @@ const Services: React.FC = () => {
             </motion.div>
             <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
               <TelemetryTypewriter />
+            </div>
+          </div>
+
+          {/* Artifact 3 */}
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="w-full lg:w-1/2"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">03</span>
+                <h3 className="text-3xl font-semibold tracking-tight">Content that <span className="font-drama italic font-normal">sounds like you.</span></h3>
+              </div>
+              <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
+                Your founder voice is the moat, but you haven't posted in six weeks because you're heads-down running the business. A month from now the system ships your voice weekly: 5-7 drafts land in your review queue every Sunday, topics pre-scored, formats rotated so you stop shipping four text posts in a row by accident. You edit the 5% that matters.
+              </p>
+              <ul className="space-y-3 text-sm font-medium text-ink-mute">
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your last 50 posts so drafts sound like you</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Multi-format rotation, text, carousels, image prompts, hooks</li>
+                <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Top performers auto-identified and repurposed</li>
+              </ul>
+            </motion.div>
+            <div className="w-full lg:w-1/2 relative hover-lift group cursor-default">
+              <VoiceAnnotationArtifact />
             </div>
           </div>
 
