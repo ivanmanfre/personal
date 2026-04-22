@@ -155,7 +155,7 @@ const Method: React.FC = () => {
             <ArrowRight aria-hidden="true" size={18} />
           </a>
           <span className="text-sm text-ink-mute">
-            Paid 1-week diagnostic. Credited toward any follow-on engagement.
+            1-week diagnostic. Staged 30, 90, and 180-day roadmap.
           </span>
         </motion.div>
       </div>

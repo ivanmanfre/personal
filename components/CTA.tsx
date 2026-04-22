@@ -16,7 +16,7 @@ const CTA: React.FC = () => {
                         Ready to grow <br /> <span className="font-drama italic">without hiring?</span>
                     </h2>
                     <p className="text-xl font-normal mb-10 max-w-lg mx-auto">
-                        A 1-week paid diagnostic. Scored readiness plus a 30-day roadmap. 100% credited toward any follow-on engagement.
+                        A 1-week diagnostic. I evaluate your operation against the 4 preconditions and hand back a staged 30, 90, and 180-day roadmap.
                     </p>
 
                     <a

@@ -42,7 +42,7 @@ const deliverables = [
 const AssessmentPage: React.FC = () => {
   useMetadata({
     title: 'Agent-Ready Assessment | Manfredi',
-    description: 'A paid 1-week diagnostic that scores your operation on the 4 Agent-Ready preconditions. Scorecard + 30-day roadmap. $2,500, 100% credited toward any follow-on engagement.',
+    description: 'A 1-week diagnostic that evaluates your operation against the 4 Agent-Ready preconditions. Staged 30, 90, and 180-day roadmap. $2,500, 100% credited toward any follow-on engagement.',
     canonical: 'https://ivanmanfredi.com/assessment',
   });
   return (
@@ -78,7 +78,7 @@ const AssessmentPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
-            A paid 1-week diagnostic. I score your operation on the four conditions every AI build needs before it ships. You get a scorecard and a 30-day roadmap. If you move forward, the full $2,500 is credited back.
+            A 1-week diagnostic. I evaluate your operation against the four conditions every AI build needs before it ships. You leave with a staged 30, 90, and 180-day roadmap. If you move forward, the full $2,500 is credited back.
           </motion.p>
 
           {/* Who this is for — self-select gate */}
@@ -205,7 +205,7 @@ const AssessmentPage: React.FC = () => {
               <div className="flex gap-6 items-start">
                 <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 3–6</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  I produce your scorecard, 30-day prioritized roadmap, and specific recommendations.
+                  I produce your evaluation, the staged 30, 90, and 180-day roadmap, and specific recommendations.
                 </p>
               </div>
               <div className="flex gap-6 items-start">

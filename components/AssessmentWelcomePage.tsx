@@ -21,7 +21,7 @@ const timeline = [
   {
     day: 'Day 3-6',
     title: 'Analysis',
-    description: 'I produce your scorecard, 30-day prioritized roadmap, and specific recommendations. You get time back.',
+    description: 'I produce your evaluation, the staged 30, 90, and 180-day roadmap, and specific recommendations. You get time back.',
   },
   {
     day: 'Day 7',
