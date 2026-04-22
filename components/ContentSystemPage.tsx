@@ -104,10 +104,25 @@ const ContentSystemPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-10"
           >
             Stop staring at the blank page every Monday. Stop shipping ghostwriter-grade content that sounds like everyone else. Stop losing momentum because you got busy for two weeks.
           </motion.p>
+
+          {/* TL;DR */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">TL;DR</p>
+            <ul className="space-y-2 text-ink-soft leading-relaxed">
+              <li>· 3-week productized build · $5-9k flat</li>
+              <li>· Weekly content planning agent trained on your voice, auto-publishing to your channels</li>
+              <li>· You review and approve; the system plans, drafts, schedules, and tracks what performs</li>
+            </ul>
+          </motion.div>
 
           {/* Price */}
           <motion.div

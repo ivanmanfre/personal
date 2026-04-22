@@ -91,10 +91,25 @@ const FractionalPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-10"
           >
             A monthly retainer. You get a senior AI and ops partner who understands your business and ships actual systems - not slide decks. Three tiers based on the volume and depth of the work your team needs.
           </motion.p>
+
+          {/* TL;DR */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">TL;DR</p>
+            <ul className="space-y-2 text-ink-soft leading-relaxed">
+              <li>· Monthly retainer from $3,500/mo · 3 tiers based on depth</li>
+              <li>· A senior AI and ops partner embedded in your business, shipping systems monthly</li>
+              <li>· Your AI strategy, owned by someone who ships — not another consultant selling slide decks</li>
+            </ul>
+          </motion.div>
 
           {/* Tiers */}
           <div className="grid md:grid-cols-3 gap-6 mb-20">

@@ -15,7 +15,7 @@ const Services: React.FC = () => {
         >
           <div>
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-4">What I Build</span>
-            <h3 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tight">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h3>
+            <h2 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tight">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h2>
           </div>
           <p className="text-lg md:text-xl font-medium max-w-sm text-left md:text-right text-ink-soft leading-relaxed border-l md:border-l-0 md:border-r border-accent pl-4 md:pl-0 md:pr-6">
             I don't bill hourly. Every engagement is a productized project or a flat-rate retainer tied to outcomes.
@@ -34,7 +34,7 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">01</span>
-                <h4 className="text-3xl font-semibold tracking-tight">Back-office automation</h4>
+                <h3 className="text-3xl font-semibold tracking-tight">Back-office automation</h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 The manual handoffs between your CRM, Slack, docs, and AI tools get replaced with systems that do the work. Your team stops copy-pasting. The data moves itself.
@@ -60,7 +60,7 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">02</span>
-                <h4 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h4>
+                <h3 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 Lead qualification. Tier-1 support. Document parsing. The judgment-heavy work your best person can't scale. I build the agent and get your ops ready to run it - skipping that second half is why most AI projects stall.

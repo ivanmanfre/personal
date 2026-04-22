@@ -21,6 +21,8 @@
 
   /* ── ACCENT (the ONE brand accent) ──────────────────────── */
   --color-accent: #4C6E3D;
+  /* accent-light is ONLY for use on dark backgrounds (bg-black / bg-ink).
+     On paper it drops to ~2.5:1 contrast and silently fails WCAG AA. */
   --color-accent-light: #709A5D;
   --color-accent-ink: #344B29;
   --color-accent-soft: rgba(76, 110, 61, 0.08);
@@ -51,7 +53,9 @@ body {
   background-color: var(--color-paper);
   color: var(--color-primary);
   overflow-x: hidden;
-  /* Add base grain texture via SVG */
+  /* Inline SVG fractalNoise grain at 0.02 opacity. Adds paper texture so
+     the cream doesn't read as flat digital. Load-bearing for the editorial
+     register — do not remove without replacing with a comparable warmth cue. */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
 }
 
@@ -136,38 +140,12 @@ textarea:focus-visible {
   border: 1px solid var(--color-hairline-bold);
 }
 
-/* Magnetic Button Interactions */
+/* Magnetic button interactions (legacy). Flattened to editorial register —
+   color-shift on hover only, no scale/translate/shadow bounce. */
 .btn-magnetic {
   position: relative;
-  overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
   z-index: 1;
-}
-
-.btn-magnetic::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.08);
-  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  z-index: -1;
-}
-
-.btn-magnetic:hover {
-  transform: scale(1.03) translateY(-2px);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.btn-magnetic:hover::before {
-  transform: translateX(100%);
-}
-
-.btn-magnetic:active {
-  transform: scale(0.98) translateY(2px);
-  box-shadow: var(--shadow-card-active);
 }
 
 /* Global Cinematic Interactions */

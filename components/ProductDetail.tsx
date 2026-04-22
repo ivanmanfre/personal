@@ -25,9 +25,9 @@ const renderPivot = (text: string): React.ReactNode => {
 
 const categoryColors: Record<string, string> = {
   workflow: 'bg-accent',
-  template: 'bg-cyan',
-  agent: 'bg-pink',
-  service: 'bg-amber-300',
+  template: 'bg-paper-sunk text-ink',
+  agent: 'bg-paper-sunk text-ink',
+  service: 'bg-paper-sunk text-ink',
 };
 
 const ProductDetail: React.FC = () => {
@@ -113,7 +113,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* Decorative Marquee Divider */}
-      <div className="w-full bg-cyan border-b border-zinc-200 py-3 border-t-0 relative z-20">
+      <div className="w-full bg-paper-sunk border-b border-zinc-200 py-3 border-t-0 relative z-20">
         <Marquee speed={25} className="font-bold text-lg uppercase tracking-widest text-black">
           <span className="mx-6">Plug & Play</span>
           <span className="mx-6">•</span>
@@ -176,7 +176,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* ── SAMPLE OUTPUT + WHAT YOU GET ── */}
-      <section className="py-32 bg-pink/10 border-b border-zinc-200 bg-grid-pattern relative">
+      <section className="py-32 bg-paper-sunk border-b border-[color:var(--color-hairline)] relative">
         <div className="container mx-auto px-6 max-w-6xl relative z-10">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
 
@@ -212,7 +212,7 @@ const ProductDetail: React.FC = () => {
               <div className={product.sampleImage ? 'lg:w-2/5' : 'w-full'}>
                 <div className="border-subtle bg-paper shadow-card p-8">
                   <div className="flex items-center gap-4 mb-8 border-b border-zinc-200 pb-4">
-                    <div className="w-12 h-12 bg-cyan border-subtle flex items-center justify-center shadow-card-sm">
+                    <div className="w-12 h-12 bg-paper-sunk border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-sm">
                       <Package size={24} strokeWidth={2.5} />
                     </div>
                     <h3 className="text-3xl font-semibold uppercase tracking-tight">Included</h3>

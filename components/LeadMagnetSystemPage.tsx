@@ -89,10 +89,25 @@ const LeadMagnetSystemPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-10"
           >
             Stop losing warm leads to follow-up neglect. Stop paying a designer every time you launch a new magnet. Stop guessing which topics convert. One system, installed once, runs forever.
           </motion.p>
+
+          {/* TL;DR */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">TL;DR</p>
+            <ul className="space-y-2 text-ink-soft leading-relaxed">
+              <li>· 3-week productized build · $6-10k flat</li>
+              <li>· Interactive landing page + CMS-driven magnet library + CRM integration + email automation</li>
+              <li>· You launch new magnets in an afternoon instead of calling an agency</li>
+            </ul>
+          </motion.div>
 
           {/* Price box */}
           <motion.div
