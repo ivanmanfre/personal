@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const cases = [
   {
@@ -8,29 +10,29 @@ const cases = [
     industry: "Sales Tech",
     title: "AI Call Auditing",
     metric: "5% → 100%",
-    desc: "We encoded how their best manager grades a call - 8 criteria, 1–5 - and let the agent apply it to 100% of calls. Humans review flagged outliers.",
+    desc: "Their best manager could only sample 5% of sales calls. We encoded her 8-criteria rubric into an agent that grades 100% and routes risk to leadership within the hour.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "02",
-    client: "Marketing agency",
-    industry: "Services",
+    client: "Marketing Coach",
+    industry: "Agency Operations",
     title: "Lead Magnet System",
-    metric: "Live in 3 weeks",
-    desc: "We productized their lead gen into one CMS. New magnets ship in an afternoon. Every lead arrives pre-scored.",
+    metric: "15 min · idea to launched",
+    desc: "Every lead magnet took days of manual work across disconnected tools. One idea in ClickUp now generates the full package: landing page, email, smart link, scheduled post.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "03",
-    client: "MediaScale",
-    industry: "Media / Content",
-    title: "Content Engine",
-    metric: "1 video → 20 posts",
-    desc: "We encoded the repurposing logic once. One video in, 20 outputs ready for human review. The writer became an editor.",
+    client: "ProSWPPP",
+    industry: "Compliance · 50 states",
+    title: "SWPPP Automation",
+    metric: "Multi-FTE → same-day",
+    desc: "Every permit needed hours of manual environmental research across 50 states. Intake to delivered documents now runs end-to-end, no researcher in the loop.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
     metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
@@ -74,8 +76,8 @@ const CaseStudies: React.FC = () => {
               className="flex-1 rounded-xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-paper group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
             >
               {/* Metric Area */}
-              <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>
-                <div className={`relative z-10 font-semibold text-4xl ${study.metricBox} px-4 py-2 shadow-card text-center`}>
+              <div className={`h-48 ${study.color} border-b border-[color:var(--color-hairline)] flex items-center justify-center relative overflow-hidden`}>
+                <div className={`relative z-10 font-semibold text-3xl ${study.metricBox} px-4 py-2 text-center`}>
                   {study.metric}
                 </div>
               </div>
@@ -88,7 +90,7 @@ const CaseStudies: React.FC = () => {
                 </div>
                 <h3 className="text-3xl font-semibold mb-2">{study.title}</h3>
                 <p className="text-lg font-normal border-l border-[color:var(--color-hairline-bold)] pl-4 leading-relaxed mb-4">{study.desc}</p>
-                <div className="flex items-center gap-2 pt-4 border-t border-zinc-200">
+                <div className="flex items-center gap-2 pt-4 border-t border-[color:var(--color-hairline)]">
                   <span className="w-2 h-2 bg-accent"></span>
                   <span className="font-mono text-xs uppercase tracking-widest text-ink-soft">{study.readiness}</span>
                 </div>
@@ -96,6 +98,22 @@ const CaseStudies: React.FC = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* See all work link */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.6 }}
+          className="flex justify-center mt-12"
+        >
+          <Link
+            to="/work"
+            className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-ink-soft hover:text-black transition-colors border-b border-[color:var(--color-hairline-bold)] hover:border-black pb-1"
+          >
+            See all work <ArrowRight size={12} strokeWidth={2} />
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
