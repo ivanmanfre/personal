@@ -42,7 +42,7 @@ const steps = [
         id: '02',
         title: 'Design',
         desc: 'I architect the full system end-to-end. Every data flow, decision point, and integration drawn out before anyone writes code. You sign off on the blueprint, so what gets built is exactly what we agreed on.',
-        color: 'bg-white border-zinc-200',
+        color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
             <div className="w-48 h-32 relative opacity-50">

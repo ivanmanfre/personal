@@ -104,7 +104,7 @@ const AssessmentPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white border border-zinc-300 shadow-card p-8 md:p-12 mb-16"
+            className="bg-paper border border-zinc-300 shadow-card p-8 md:p-12 mb-16"
           >
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
               <div>
@@ -163,7 +163,7 @@ const AssessmentPage: React.FC = () => {
               {preconditions.map((item) => (
                 <div
                   key={item.number}
-                  className="rounded-2xl border border-[color:var(--color-hairline)] bg-white p-6"
+                  className="rounded-2xl border border-[color:var(--color-hairline)] bg-paper p-6"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="font-mono text-xs text-ink-mute">{item.number}</span>

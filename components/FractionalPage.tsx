@@ -107,7 +107,7 @@ const FractionalPage: React.FC = () => {
                 className={`flex flex-col p-8 border shadow-card ${
                   tier.highlighted
                     ? 'bg-black text-white border-black'
-                    : 'bg-white text-black border-zinc-300'
+                    : 'bg-paper text-black border-zinc-300'
                 }`}
               >
                 <div className="mb-6">
@@ -140,8 +140,8 @@ const FractionalPage: React.FC = () => {
                   href="/start"
                   className={`w-full text-center px-6 py-3 border font-bold tracking-wide text-sm transition-colors ${
                     tier.highlighted
-                      ? 'bg-accent text-black border-accent hover:bg-white'
-                      : 'bg-white text-black border-black hover:bg-black hover:text-white'
+                      ? 'bg-accent text-black border-accent hover:bg-paper'
+                      : 'bg-paper text-black border-black hover:bg-black hover:text-white'
                   }`}
                 >
                   Discuss this tier

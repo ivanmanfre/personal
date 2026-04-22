@@ -322,16 +322,16 @@ const AssessmentIntakePage: React.FC = () => {
                   <label className="block text-lg font-medium leading-relaxed" htmlFor={q.id}>{q.label}</label>
 
                   {q.kind === 'text' && (
-                    <input id={q.id} type="text" value={answers[q.id] ?? ''} placeholder={q.placeholder} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-full px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent transition-colors" />
+                    <input id={q.id} type="text" value={answers[q.id] ?? ''} placeholder={q.placeholder} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-full px-4 py-3 bg-paper border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent transition-colors" />
                   )}
 
                   {q.kind === 'textarea' && (
-                    <textarea id={q.id} rows={4} value={answers[q.id] ?? ''} placeholder={q.placeholder} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-full px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent transition-colors resize-y" />
+                    <textarea id={q.id} rows={4} value={answers[q.id] ?? ''} placeholder={q.placeholder} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-full px-4 py-3 bg-paper border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent transition-colors resize-y" />
                   )}
 
                   {q.kind === 'number' && (
                     <div className="flex items-center gap-3">
-                      <input id={q.id} type="number" min={0} value={answers[q.id] ?? ''} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-32 px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black focus:outline-none focus:border-accent transition-colors" />
+                      <input id={q.id} type="number" min={0} value={answers[q.id] ?? ''} onChange={(e) => setAnswer(q.id, e.target.value)} className="w-32 px-4 py-3 bg-paper border border-[color:var(--color-hairline-bold)] text-black focus:outline-none focus:border-accent transition-colors" />
                       <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{q.unit}</span>
                     </div>
                   )}
@@ -340,7 +340,7 @@ const AssessmentIntakePage: React.FC = () => {
                     <div>
                       <div className="flex gap-2">
                         {[1, 2, 3, 4, 5].map((n) => (
-                          <button key={n} type="button" onClick={() => setAnswer(q.id, n)} className={`flex-1 py-3 font-mono text-lg border transition-colors ${answers[q.id] === n ? 'bg-black text-white border-black' : 'bg-white text-ink-soft border-[color:var(--color-hairline-bold)] hover:border-black'}`}>
+                          <button key={n} type="button" onClick={() => setAnswer(q.id, n)} className={`flex-1 py-3 font-mono text-lg border transition-colors ${answers[q.id] === n ? 'bg-black text-white border-black' : 'bg-paper text-ink-soft border-[color:var(--color-hairline-bold)] hover:border-black'}`}>
                             {n}
                           </button>
                         ))}
@@ -355,10 +355,10 @@ const AssessmentIntakePage: React.FC = () => {
                   {q.kind === 'radio' && (
                     <div className="space-y-2">
                       {q.options.map((opt) => (
-                        <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 border cursor-pointer transition-colors ${answers[q.id] === opt.value ? 'bg-black text-white border-black' : 'bg-white text-ink border-[color:var(--color-hairline-bold)] hover:border-black'}`}>
+                        <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 border cursor-pointer transition-colors ${answers[q.id] === opt.value ? 'bg-black text-white border-black' : 'bg-paper text-ink border-[color:var(--color-hairline-bold)] hover:border-black'}`}>
                           <input type="radio" name={q.id} value={opt.value} checked={answers[q.id] === opt.value} onChange={() => setAnswer(q.id, opt.value)} className="sr-only" />
                           <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${answers[q.id] === opt.value ? 'border-white' : 'border-[color:var(--color-hairline-bold)]'}`}>
-                            {answers[q.id] === opt.value && <span className="w-2 h-2 rounded-full bg-white" />}
+                            {answers[q.id] === opt.value && <span className="w-2 h-2 rounded-full bg-paper" />}
                           </span>
                           <span>{opt.label}</span>
                         </label>

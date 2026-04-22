@@ -65,7 +65,7 @@ const ProductDetail: React.FC = () => {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <Link
               to="/store"
-              className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-12 hover:gap-4 transition-all border-subtle px-5 py-3 shadow-card-sm bg-white hover:shadow-card-sm-hover hover:-translate-y-1 active:translate-y-0 active:shadow-card-sm-active"
+              className="inline-flex items-center gap-2 font-bold uppercase text-sm mb-12 hover:gap-4 transition-all border-subtle px-5 py-3 shadow-card-sm bg-paper hover:shadow-card-sm-hover hover:-translate-y-1 active:translate-y-0 active:shadow-card-sm-active"
             >
               <ArrowLeft size={18} strokeWidth={3} /> Back to Store
             </Link>
@@ -97,7 +97,7 @@ const ProductDetail: React.FC = () => {
               </button>
               <a
                 href="#pricing"
-                className="w-full sm:w-auto px-10 py-5 bg-white border-subtle-thick shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all active:shadow-card-active active:translate-y-1 font-bold uppercase text-lg lg:text-class tracking-wide text-center"
+                className="w-full sm:w-auto px-10 py-5 bg-paper border-subtle-thick shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all active:shadow-card-active active:translate-y-1 font-bold uppercase text-lg lg:text-class tracking-wide text-center"
               >
                 See All Plans
               </a>
@@ -148,7 +148,7 @@ const ProductDetail: React.FC = () => {
       )}
 
       {/* ── FEATURES ── */}
-      <section className="py-32 border-b border-zinc-200 bg-white">
+      <section className="py-32 border-b border-zinc-200 bg-paper">
         <div className="container mx-auto px-6 max-w-5xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
@@ -188,7 +188,7 @@ const ProductDetail: React.FC = () => {
               {/* Sample image */}
               {product.sampleImage && (
                 <div className="lg:w-3/5">
-                  <div className="border-subtle-thick bg-white p-2 shadow-card">
+                  <div className="border-subtle-thick bg-paper p-2 shadow-card">
                     <img
                       src={product.sampleImage}
                       alt={`${product.name} sample output`}
@@ -200,7 +200,7 @@ const ProductDetail: React.FC = () => {
                       href={product.samplePdf}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center w-full gap-3 mt-8 px-6 py-4 bg-white border-subtle font-bold uppercase tracking-wide text-lg shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1 transition-all active:translate-y-0 active:shadow-card-sm-active text-center"
+                      className="inline-flex items-center justify-center w-full gap-3 mt-8 px-6 py-4 bg-paper border-subtle font-bold uppercase tracking-wide text-lg shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1 transition-all active:translate-y-0 active:shadow-card-sm-active text-center"
                     >
                       <Download size={24} strokeWidth={2.5} /> Download Full Sample PDF
                     </a>
@@ -210,7 +210,7 @@ const ProductDetail: React.FC = () => {
 
               {/* What you get */}
               <div className={product.sampleImage ? 'lg:w-2/5' : 'w-full'}>
-                <div className="border-subtle bg-white shadow-card p-8">
+                <div className="border-subtle bg-paper shadow-card p-8">
                   <div className="flex items-center gap-4 mb-8 border-b border-zinc-200 pb-4">
                     <div className="w-12 h-12 bg-cyan border-subtle flex items-center justify-center shadow-card-sm">
                       <Package size={24} strokeWidth={2.5} />
@@ -228,7 +228,7 @@ const ProductDetail: React.FC = () => {
                 </div>
 
                 {/* Setup requirements */}
-                <div className="border-subtle bg-white shadow-card p-8 mt-8">
+                <div className="border-subtle bg-paper shadow-card p-8 mt-8">
                   <div className="flex items-center gap-4 mb-8 border-b border-zinc-200 pb-4">
                     <div className="w-12 h-12 bg-orange-400 border-subtle flex items-center justify-center shadow-card-sm">
                       <Wrench size={24} strokeWidth={2.5} />
@@ -251,7 +251,7 @@ const ProductDetail: React.FC = () => {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" className="py-32 border-b border-zinc-200 bg-white">
+      <section id="pricing" className="py-32 border-b border-zinc-200 bg-paper">
         <div className="container mx-auto px-6 max-w-6xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="text-center mb-16">
@@ -284,7 +284,7 @@ const ProductDetail: React.FC = () => {
                         ? 'bg-accent shadow-card hover:shadow-card-hover hover:-translate-y-1'
                         : tier.id === 'custom-install'
                           ? 'bg-zinc-100 shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
-                          : 'bg-white shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
+                          : 'bg-paper shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
                         }`}
                     >
                       {tier.id === 'custom-install' ? (
@@ -312,7 +312,7 @@ const ProductDetail: React.FC = () => {
         <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px)" }}></div>
         <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}>
-            <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter bg-white text-black inline-block px-6 py-4 border-subtle shadow-card">
+            <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tighter bg-paper text-black inline-block px-6 py-4 border-subtle shadow-card">
               Ready to Upgrade?
             </h2>
             <div className="mt-8 flex justify-center">
@@ -381,7 +381,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
 
             {/* RIGHT: Pricing card (5 cols) */}
             <div className="lg:col-span-5 lg:sticky lg:top-28">
-              <div className="bg-white rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
+              <div className="bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
                 <div className="border-b border-zinc-200 pb-6 mb-6">
                   <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mb-3">
                     Investment

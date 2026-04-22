@@ -117,7 +117,7 @@ const StartPage: React.FC = () => {
   if (step === 'approved') {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-6 pt-32 pb-16">
-        <div className="max-w-2xl w-full bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle text-center">
+        <div className="max-w-2xl w-full bg-paper rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle text-center">
           <div className="w-16 h-16 bg-accent/20 border border-accent flex items-center justify-center mx-auto mb-6">
             <Check size={32} className="text-black" strokeWidth={3} />
           </div>
@@ -147,7 +147,7 @@ const StartPage: React.FC = () => {
   if (step === 'waitlist') {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-6 pt-32 pb-16">
-        <div className="max-w-2xl w-full bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle text-center">
+        <div className="max-w-2xl w-full bg-paper rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle text-center">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">
             Thanks for sharing.
           </h1>
@@ -203,7 +203,7 @@ const StartPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle space-y-8"
+          className="bg-paper rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle space-y-8"
         >
 
           {/* Q1 Company size */}
@@ -220,7 +220,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.companySize === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
+                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -243,7 +243,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.revenue === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
+                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -295,7 +295,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.budget === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
+                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -318,7 +318,7 @@ const StartPage: React.FC = () => {
                   className={`px-4 py-2 border font-medium text-sm transition-all ${
                     form.timeline === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
+                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}
@@ -341,7 +341,7 @@ const StartPage: React.FC = () => {
                   className={`text-left px-4 py-2 border font-medium text-sm transition-all ${
                     form.decisionMaker === option
                       ? 'bg-black text-white border-black'
-                      : 'bg-white text-ink-soft border-zinc-300 hover:border-black'
+                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
                   }`}
                 >
                   {option}

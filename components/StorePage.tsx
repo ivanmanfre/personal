@@ -69,7 +69,7 @@ const StorePage: React.FC = () => {
                 onClick={() => setActiveCategory(key as 'all' | ProductCategory)}
                 className={`px-6 py-3 border-subtle font-bold uppercase text-sm tracking-widest transition-all ${activeCategory === key
                     ? 'bg-black text-white shadow-none translate-x-[2px] translate-y-[2px]'
-                    : 'bg-white shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
+                    : 'bg-paper shadow-card-sm hover:shadow-card-sm-hover hover:-translate-y-1'
                   }`}
               >
                 {label}
@@ -92,7 +92,7 @@ const StorePage: React.FC = () => {
 
           {/* Empty state */}
           {filtered.length === 0 && (
-            <div className="text-center py-20 border-subtle bg-white shadow-card">
+            <div className="text-center py-20 border-subtle bg-paper shadow-card">
               <p className="text-2xl font-bold text-zinc-400 uppercase">No products here yet</p>
             </div>
           )}

@@ -63,7 +63,7 @@ const Footer: React.FC = () => {
                 required
                 placeholder="you@company.com"
                 disabled={status === 'loading'}
-                className="flex-1 px-4 py-3 bg-white border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-paper border border-[color:var(--color-hairline-bold)] text-black placeholder-ink-mute focus:outline-none focus:border-accent disabled:opacity-50"
               />
               <button
                 type="submit"

@@ -12,7 +12,7 @@ const INK_NEUTRAL = '#52525B';   // zinc-600 equivalent, for the output node
 const AutomationCursorFlow: React.FC = () => {
 
     return (
-        <div className="w-full h-80 bg-white rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden group hover:border-accent transition-colors">
+        <div className="w-full h-80 bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden group hover:border-accent transition-colors">
 
             {/* Decorative Grid */}
             <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)", backgroundSize: '20px 20px' }} />
@@ -41,7 +41,7 @@ const AutomationCursorFlow: React.FC = () => {
                             initial={{ scale: 1, backgroundColor: "#fff" }}
                             animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
-                            className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
+                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
                             <Webhook size={24} className="text-black" />
                         </motion.div>
@@ -54,7 +54,7 @@ const AutomationCursorFlow: React.FC = () => {
                             initial={{ scale: 1, backgroundColor: "#fff" }}
                             animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT_MUTED, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
-                            className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
+                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
                             <Brain size={24} className="text-black" />
                         </motion.div>
@@ -67,7 +67,7 @@ const AutomationCursorFlow: React.FC = () => {
                             initial={{ scale: 1, backgroundColor: "#fff" }}
                             animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", INK_NEUTRAL, "#fff"] }}
                             transition={{ duration: 4, times: [0, 0.7, 0.9], repeat: Infinity }}
-                            className="w-14 h-14 bg-white border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
+                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
                         >
                             <FileText size={24} className="text-black" />
                         </motion.div>

@@ -86,7 +86,7 @@ const AssessmentWelcomePage: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="grid md:grid-cols-2 gap-6 mb-20"
           >
-            <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8">
+            <div className="bg-paper border border-[color:var(--color-hairline-bold)] p-8">
               <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">
                 {intakeDone ? '01 · Intake received' : '01 · Fill out the intake'}
               </p>
@@ -124,7 +124,7 @@ const AssessmentWelcomePage: React.FC = () => {
                 href={CALENDLY_DAY2_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-5 py-3 bg-accent text-black font-semibold tracking-wide hover:bg-white transition-colors"
+                className="inline-flex items-center gap-3 px-5 py-3 bg-accent text-black font-semibold tracking-wide hover:bg-paper transition-colors"
               >
                 Book the session <ArrowRight size={16} />
               </a>

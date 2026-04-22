@@ -5,7 +5,7 @@ import AutomationCursorFlow from './ui/AutomationCursorFlow';
 
 const Services: React.FC = () => {
   return (
-    <section id="services" className="py-32 border-t border-zinc-200 bg-white overflow-hidden">
+    <section id="services" className="py-32 border-t border-zinc-200 bg-paper overflow-hidden">
       <div className="container mx-auto px-6 max-w-6xl">
         <motion.div
           initial={{ opacity: 0, x: -50 }}

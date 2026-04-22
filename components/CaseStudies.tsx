@@ -11,7 +11,7 @@ const cases = [
     desc: "We encoded how their best manager grades a call - 8 criteria, 1–5 - and let the agent apply it to 100% of calls. Humans review flagged outliers.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
-    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
+    metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "02",
@@ -22,7 +22,7 @@ const cases = [
     desc: "We productized their lead gen into one CMS. New magnets ship in an afternoon. Every lead arrives pre-scored.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
-    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
+    metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
   },
   {
     id: "03",
@@ -33,13 +33,13 @@ const cases = [
     desc: "We encoded the repurposing logic once. One video in, 20 outputs ready for human review. The writer became an editor.",
     readiness: "4/4 Agent-Ready",
     color: "bg-[color:var(--color-paper-sunk)]",
-    metricBox: "bg-white border border-[color:var(--color-hairline)] text-black"
+    metricBox: "bg-paper border border-[color:var(--color-hairline)] text-black"
   }
 ];
 
 const CaseStudies: React.FC = () => {
   return (
-    <section id="cases" className="py-32 bg-white border-t border-[color:var(--color-hairline)]">
+    <section id="cases" className="py-32 bg-paper border-t border-[color:var(--color-hairline)]">
       <div className="container mx-auto px-6">
         <motion.h2
           initial={{ y: 50, opacity: 0 }}
@@ -71,7 +71,7 @@ const CaseStudies: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.2, type: "spring", bounce: 0.4 }}
-              className="flex-1 rounded-xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-white group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
+              className="flex-1 rounded-xl border border-[color:var(--color-hairline)] shadow-card-subtle bg-paper group hover-lift hover:shadow-card-lift transition-all overflow-hidden"
             >
               {/* Metric Area */}
               <div className={`h-48 ${study.color} border-b border-zinc-200 flex items-center justify-center relative overflow-hidden`}>

@@ -80,7 +80,7 @@ const Offers: React.FC = () => {
               className={`group flex flex-col rounded-xl p-8 border shadow-card-subtle hover:shadow-card-lift transition-all ${
                 offer.highlighted
                   ? 'bg-black text-white border-black'
-                  : 'bg-white text-black border-[color:var(--color-hairline)] hover:border-black'
+                  : 'bg-paper text-black border-[color:var(--color-hairline)] hover:border-black'
               }`}
             >
               <div className="flex items-start justify-between mb-6">

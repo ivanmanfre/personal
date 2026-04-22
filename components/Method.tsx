@@ -27,7 +27,7 @@ const preconditions = [
 
 const Method: React.FC = () => {
   return (
-    <section id="method" className="py-32 bg-white border-t border-zinc-200 relative overflow-hidden">
+    <section id="method" className="py-32 bg-paper border-t border-zinc-200 relative overflow-hidden">
       <div className="container mx-auto px-6 max-w-6xl">
 
         {/* Section eyebrow */}

@@ -45,7 +45,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
         )}
 
         {/* Category badge */}
-        <span className="text-xs font-medium uppercase border-subtle px-3 py-1 bg-white w-fit mb-4 shadow-card-sm">
+        <span className="text-xs font-medium uppercase border-subtle px-3 py-1 bg-paper w-fit mb-4 shadow-card-sm">
           {product.category}
         </span>
 

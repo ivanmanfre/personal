@@ -46,7 +46,7 @@ const ROI: React.FC = () => {
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="w-full lg:w-1/2 bg-white border border-[color:var(--color-hairline)] p-8 shadow-card-subtle"
+                        className="w-full lg:w-1/2 bg-paper border border-[color:var(--color-hairline)] p-8 shadow-card-subtle"
                     >
                         <div className="mb-10">
                             <label className="flex items-center justify-between mb-4">
@@ -100,7 +100,7 @@ const ROI: React.FC = () => {
                         viewport={{ once: true }}
                         className="w-full lg:w-1/2 flex flex-col gap-6"
                     >
-                        <div className="bg-white border border-[color:var(--color-hairline-bold)] p-8 shadow-card-subtle">
+                        <div className="bg-paper border border-[color:var(--color-hairline-bold)] p-8 shadow-card-subtle">
                             <h3 className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft mb-3">Annual cost of this bottleneck</h3>
                             <div className="text-5xl sm:text-6xl md:text-7xl font-semibold font-mono tracking-tighter text-black mb-4">
                                 ${calculateYearlyCost().toLocaleString()}
