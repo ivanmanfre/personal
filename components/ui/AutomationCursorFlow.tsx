@@ -11,7 +11,7 @@ const AutomationCursorFlow: React.FC = () => {
     return (
         <div className="w-full h-80 bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden">
 
-            {/* Decorative grid — static */}
+            {/* Decorative grid, static */}
             <div
                 className="absolute inset-0 opacity-[0.06]"
                 style={{
@@ -29,49 +29,68 @@ const AutomationCursorFlow: React.FC = () => {
 
                 <div className="flex justify-between items-center w-full max-w-sm mx-auto relative mt-6">
 
-                    {/* Connection line — static base */}
+                    {/* Connection line base */}
                     <div className="absolute top-1/2 left-0 w-full h-px bg-[color:var(--color-hairline-bold)] -z-10 translate-y-[-50%]" />
 
-                    {/* Connection line — animated accent fill, left to right */}
+                    {/* Slow, editorial "data flow" pulse moving left to right through the pipeline */}
                     <motion.div
-                        initial={{ width: 0 }}
-                        whileInView={{ width: "100%" }}
-                        viewport={{ once: true, amount: 0.5 }}
-                        transition={{ duration: 1.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-                        className="absolute top-1/2 left-0 h-px bg-[color:var(--color-accent)] -z-10 translate-y-[-50%]"
+                        className="absolute top-1/2 h-px w-12 -z-10 translate-y-[-50%]"
+                        style={{
+                            background: 'linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%)',
+                        }}
+                        animate={{ left: ['-12%', '100%'] }}
+                        transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            ease: 'linear',
+                        }}
                     />
 
-                    {/* Node 1: Trigger */}
+                    {/* Node 1: Trigger, pulses when data arrives */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                        <motion.div
+                            className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative"
+                            animate={{ borderColor: ['rgba(26,26,26,0.25)', 'var(--color-accent)', 'rgba(26,26,26,0.25)'] }}
+                            transition={{ duration: 5, times: [0, 0.1, 0.25], repeat: Infinity, ease: 'easeOut' }}
+                        >
                             <Webhook size={22} className="text-black" />
-                        </div>
+                        </motion.div>
                         <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Trigger</span>
                     </div>
 
-                    {/* Node 2: Logic */}
+                    {/* Node 2: Logic, pulses mid-cycle */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                        <motion.div
+                            className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative"
+                            animate={{ borderColor: ['rgba(26,26,26,0.25)', 'var(--color-accent)', 'rgba(26,26,26,0.25)'] }}
+                            transition={{ duration: 5, times: [0.35, 0.5, 0.65], repeat: Infinity, ease: 'easeOut' }}
+                        >
                             <Brain size={22} className="text-accent-ink" />
-                        </div>
+                        </motion.div>
                         <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Agent Logic</span>
                     </div>
 
-                    {/* Node 3: Output */}
+                    {/* Node 3: Output, pulses end of cycle */}
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                        <motion.div
+                            className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative"
+                            animate={{ borderColor: ['rgba(26,26,26,0.25)', 'var(--color-accent)', 'rgba(26,26,26,0.25)'] }}
+                            transition={{ duration: 5, times: [0.75, 0.9, 1], repeat: Infinity, ease: 'easeOut' }}
+                        >
                             <FileText size={22} className="text-black" />
-                        </div>
+                        </motion.div>
                         <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Generate Output</span>
                     </div>
                 </div>
 
-                {/* Status indicator — static */}
+                {/* Status indicator, subtle live pulse */}
                 <div className="mt-12 text-center w-full">
                     <div className="inline-flex items-center gap-2 px-3 py-1 border border-[color:var(--color-hairline-bold)]">
-                        <span className="relative flex h-1.5 w-1.5">
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent" />
-                        </span>
+                        <motion.span
+                            className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+                        />
                         <span className="font-mono text-[10px] uppercase text-ink-soft tracking-[0.1em]">
                             Running · Monitored
                         </span>

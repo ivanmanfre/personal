@@ -6,23 +6,32 @@ const steps = [
         id: '01',
         title: 'Diagnose',
         desc: (
-            <>The paid Agent-Ready Assessment. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with a scorecard and a 30-day roadmap. Credit applied to any follow-on engagement.</>
+            <>The Agent-Ready Assessment. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with a staged roadmap for the next 30, 90, and 180 days: what to build first, what compounds, what needs foundation work before it ships.</>
         ),
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
-            <div className="w-48 h-48 relative opacity-40">
+            <div className="w-48 h-48 relative opacity-50">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <path
-                        d="M 50 50 L 50 0 A 50 50 0 0 1 100 50 Z"
-                        fill="rgba(0,0,0,0.08)"
+                    {/* Outer dial */}
+                    <circle cx="50" cy="50" r="40" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" fill="none" opacity="0.5" />
+                    {/* Inner dial */}
+                    <circle cx="50" cy="50" r="20" stroke="black" strokeWidth="0.75" fill="none" strokeDasharray="3 3" opacity="0.4" />
+                    {/* Crosshairs */}
+                    <line x1="50" y1="5" x2="50" y2="95" stroke="black" strokeWidth="0.5" opacity="0.2" />
+                    <line x1="5" y1="50" x2="95" y2="50" stroke="black" strokeWidth="0.5" opacity="0.2" />
+                    {/* Sweeping radar arm, 12s rotation, slow and editorial */}
+                    <motion.line
+                        x1="50" y1="50" x2="50" y2="10"
+                        stroke="currentColor"
+                        style={{ color: 'var(--color-accent)', transformOrigin: '50px 50px' }}
+                        strokeWidth="1"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
                     />
-                    <circle cx="50" cy="50" r="20" stroke="black" strokeWidth="1" fill="none" strokeDasharray="4 4" />
-                    <circle cx="50" cy="50" r="40" stroke="black" strokeWidth="1" fill="none" />
-                    <line x1="50" y1="0" x2="50" y2="100" stroke="black" strokeWidth="1" opacity="0.3" />
-                    <line x1="0" y1="50" x2="100" y2="50" stroke="black" strokeWidth="1" opacity="0.3" />
-                    {[20, 45, 70, 85].map((pos, i) => (
-                        <circle key={i} cx={pos} cy={pos} r="2" fill="black" />
+                    {/* Data points, static */}
+                    {[{ x: 30, y: 35 }, { x: 70, y: 40 }, { x: 60, y: 70 }, { x: 25, y: 65 }].map((pt, i) => (
+                        <circle key={i} cx={pt.x} cy={pt.y} r="1.5" fill="currentColor" style={{ color: 'var(--color-accent-ink)' }} />
                     ))}
                 </svg>
             </div>
@@ -37,23 +46,36 @@ const steps = [
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
-            <div className="w-48 h-32 relative opacity-50">
+            <div className="w-48 h-32 relative opacity-60">
                 <svg viewBox="0 0 200 100" className="w-full h-full">
+                    {/* Grid */}
                     <path
                         d="M 10 20 L 190 20 M 10 50 L 190 50 M 10 80 L 190 80 M 40 10 L 40 90 M 100 10 L 100 90 M 160 10 L 160 90"
                         stroke="#27272a"
-                        strokeWidth="1"
+                        strokeWidth="0.5"
                         fill="none"
+                        opacity="0.3"
                     />
-                    <path
+                    {/* Slow-drawing accent path, 6s cycle with long pause between draws */}
+                    <motion.path
                         d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-                        stroke="currentColor" style={{ color: 'var(--color-accent)' }}
-                        strokeWidth="2"
+                        stroke="currentColor"
+                        style={{ color: 'var(--color-accent)' }}
+                        strokeWidth="1.5"
                         fill="none"
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: [0, 1, 1] }}
+                        transition={{
+                            duration: 6,
+                            times: [0, 0.5, 1],
+                            repeat: Infinity,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                        }}
                     />
-                    <circle cx="40" cy="50" r="3" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
-                    <circle cx="100" cy="20" r="3" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
-                    <circle cx="160" cy="80" r="3" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
+                    {/* Static waypoints */}
+                    <circle cx="40" cy="50" r="2.5" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
+                    <circle cx="100" cy="20" r="2.5" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
+                    <circle cx="160" cy="80" r="2.5" fill="#fff" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
                 </svg>
             </div>
         )
@@ -62,20 +84,34 @@ const steps = [
         id: '03',
         title: 'Build',
         desc: (
-            <>I build, test, and deploy into your existing stack. Most systems <span className="font-drama italic">ship in 3 to 4 weeks.</span> Your team uses it the day it launches — no multi-month rollout, no invisible progress.</>
+            <>I build, test, and deploy into your existing stack. Most systems <span className="font-drama italic">ship in 3 to 4 weeks.</span> Your team uses it the day it launches, no multi-month rollout, no invisible progress.</>
         ),
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
         icon: (
-            <div className="w-48 h-48 relative opacity-60">
+            <div className="w-48 h-48 relative opacity-70">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                     {[20, 50, 80].map((y, i) => (
-                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="2" fill="none" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
+                        <rect key={`server-${i}`} x="20" y={y} width="60" height="15" rx="1.5" fill="none" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" />
                     ))}
-                    {/* Static "live" dots — no pulse, no sweep */}
-                    <circle cx="72" cy="27" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
-                    <circle cx="72" cy="57" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
-                    <circle cx="72" cy="87" r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
+                    {/* Subtle live-state pulses, staggered, 3s cycle, low opacity shift */}
+                    {[27, 57, 87].map((y, i) => (
+                        <motion.circle
+                            key={`pulse-${i}`}
+                            cx="72"
+                            cy={y}
+                            r="2"
+                            fill="currentColor"
+                            style={{ color: 'var(--color-accent)' }}
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{
+                                duration: 3,
+                                repeat: Infinity,
+                                delay: i * 0.6,
+                                ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                        />
+                    ))}
                 </svg>
             </div>
         )

@@ -37,7 +37,7 @@ const Services: React.FC = () => {
                 <h3 className="text-3xl font-semibold tracking-tight">Back-office <span className="font-drama italic font-normal">that runs itself.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
-                Your ops lead writes the same four onboarding emails every week, pulls the same reports, chases the same stuck handoffs. A month from now, the system does it — personalized from intake data, routed through your existing CRM and Slack, flagged to her only when something's off.
+                Your ops lead writes the same four onboarding emails every week, pulls the same reports, chases the same stuck handoffs. A month from now, the system does it, personalized from intake data, routed through your existing CRM and Slack, flagged to her only when something's off.
               </p>
               <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect your existing tools without another platform</li>
@@ -63,7 +63,7 @@ const Services: React.FC = () => {
                 <h3 className="text-3xl font-semibold tracking-tight">AI for <span className="font-drama italic font-normal">judgment-heavy work.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
-                Lead qualification, tier-1 support, document parsing — the work your best person does that creates the bottleneck. I encode how they decide, wire it to the data it needs, and keep them in the loop for the edge cases. The second half is why most AI projects stall.
+                Lead qualification, tier-1 support, document parsing, the work your best person does that creates the bottleneck. I encode how they decide, wire it to the data it needs, and keep them in the loop for the edge cases. The second half is why most AI projects stall.
               </p>
               <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your SOPs and company data</li>

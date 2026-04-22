@@ -110,12 +110,12 @@ const Method: React.FC = () => {
           className="bg-paper border border-[color:var(--color-hairline)] rounded-xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
           <div className="flex items-center justify-between mb-8 border-b border-[color:var(--color-hairline)] pb-4">
-            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
-              Sample Scorecard
+            <span className="font-drama italic text-2xl md:text-3xl text-black leading-none">
+              Agent-Ready · Evaluated.
             </span>
-            <span className="font-mono text-xs uppercase tracking-[0.1em] text-accent-ink flex items-center gap-2">
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-              4 Preconditions
+              4 Axes · Sample
             </span>
           </div>
 
@@ -137,7 +137,7 @@ const Method: React.FC = () => {
                   <p className="text-sm text-ink-soft leading-relaxed mb-3">
                     {item.description}
                   </p>
-                  {/* Sample score bars — fill on scroll-in */}
+                  {/* Sample score bars, fill on scroll-in */}
                   <div className="flex items-center gap-2" aria-label={`Sample score: ${item.sampleScore} of 5`}>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((tick) => (
