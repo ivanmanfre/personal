@@ -6,8 +6,8 @@ const BEACON_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-bea
 
 const Footer: React.FC = () => {
   const socials = [
-    { icon: Linkedin, href: 'https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/' },
-    { icon: Mail, href: 'mailto:im@ivanmanfredi.com' },
+    { icon: Linkedin, href: 'https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/', label: 'Iván Manfredi on LinkedIn' },
+    { icon: Mail, href: 'mailto:im@ivanmanfredi.com', label: 'Email Iván at im@ivanmanfredi.com' },
   ];
 
   const [email, setEmail] = useState('');
@@ -56,7 +56,9 @@ const Footer: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <label htmlFor="newsletter-email" className="sr-only">Email address</label>
               <input
+                id="newsletter-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -95,9 +97,10 @@ const Footer: React.FC = () => {
                 href={social.href}
                 target={social.href.startsWith('http') ? "_blank" : undefined}
                 rel={social.href.startsWith('http') ? "noopener noreferrer" : undefined}
+                aria-label={social.label}
                 className="w-11 h-11 border border-[color:var(--color-hairline-bold)] flex items-center justify-center text-ink-soft hover:bg-black hover:text-white hover:border-black transition-colors"
               >
-                <social.icon size={18} strokeWidth={2} />
+                <social.icon size={18} strokeWidth={2} aria-hidden="true" />
               </a>
             ))}
           </div>
