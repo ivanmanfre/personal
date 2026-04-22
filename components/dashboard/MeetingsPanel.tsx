@@ -12,6 +12,7 @@ import EmptyState from './shared/EmptyState';
 import FilterBar from './shared/FilterBar';
 import { formatDate as formatDateUtil, formatTime } from './shared/utils';
 import type { MeetingTranscript, CalendarEvent } from '../../types/dashboard';
+import LiveRecordingBanner from './LiveRecordingBanner';
 
 function parseItem(item: any): Record<string, any> {
   if (typeof item === 'string') {
@@ -437,6 +438,7 @@ const MeetingsPanel: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight">Meetings</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
+        <LiveRecordingBanner />
         <EmptyState
           title="No meetings yet"
           description="Meetings will appear here after Ivan Listener records and transcribes your calls."
@@ -452,6 +454,7 @@ const MeetingsPanel: React.FC = () => {
         <h1 className="text-2xl font-bold tracking-tight">Meetings</h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
+      <LiveRecordingBanner />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard label="Total Calls" value={stats.total} icon={<Phone className="w-4 h-4" />} color="text-zinc-300" />
