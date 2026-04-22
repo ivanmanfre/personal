@@ -118,10 +118,10 @@ const AssessmentPage: React.FC = () => {
                 href={ASSESSMENT_PAYMENT_LINK}
                 target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
                 rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
-                className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-black"
+                className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-white"
               >
                 Book the Assessment
-                <ArrowRight size={18} />
+                <ArrowRight aria-hidden="true" size={18} />
               </a>
             </div>
             <p className="text-sm text-ink-soft border-t border-zinc-200 pt-6">
@@ -234,10 +234,10 @@ const AssessmentPage: React.FC = () => {
               href={ASSESSMENT_PAYMENT_LINK}
               target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
               rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent rounded-lg text-black font-semibold text-lg tracking-wide border-subtle-thick shadow-card-subtle"
+              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent rounded-lg text-white font-semibold text-lg tracking-wide border-subtle-thick shadow-card-subtle"
             >
               Book the Assessment
-              <ArrowRight size={20} />
+              <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
               Not sure yet? <a href={DISCOVERY_CALL_LINK} className="underline text-zinc-300 hover:text-white">Book a call first</a>.

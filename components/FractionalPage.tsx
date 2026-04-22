@@ -210,10 +210,10 @@ const FractionalPage: React.FC = () => {
             </p>
             <a
               href="/start"
-              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-black font-bold text-lg tracking-wide border-subtle-thick shadow-card"
+              className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-white font-bold text-lg tracking-wide border-subtle-thick shadow-card"
             >
               Start the conversation
-              <ArrowRight size={20} />
+              <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
               Not ready for retainer? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.

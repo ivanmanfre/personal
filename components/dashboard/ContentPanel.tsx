@@ -539,7 +539,7 @@ const ContentPanel: React.FC = () => {
                   <div className={`shrink-0 text-right w-16 ${isNext ? 'text-cyan-400' : 'text-zinc-500'}`}>
                     <span className="text-sm font-bold">{formatCountdown(ms)}</span>
                   </div>
-                  <ArrowRight className={`w-3 h-3 shrink-0 ${isNext ? 'text-cyan-400/60' : 'text-zinc-700'}`} />
+                  <ArrowRight aria-hidden="true" className={`w-3 h-3 shrink-0 ${isNext ? 'text-cyan-400/60' : 'text-zinc-700'}`} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm truncate ${isNext ? 'text-zinc-200 font-medium' : 'text-zinc-400'}`}>{p.postText.slice(0, 80)}</p>
                     <div className="flex items-center gap-2 mt-0.5">

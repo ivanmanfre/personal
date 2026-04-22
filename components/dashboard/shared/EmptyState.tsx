@@ -23,7 +23,7 @@ const EmptyState: React.FC<Props> = ({ title = 'No data yet', description, icon,
           onClick={action.onClick}
           className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
         >
-          {action.label} <ArrowRight className="w-3 h-3" />
+          {action.label} <ArrowRight aria-hidden="true" className="w-3 h-3" />
         </button>
       )}
     </div>

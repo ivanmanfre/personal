@@ -81,16 +81,16 @@ const Hero: React.FC = () => {
             >
               <a
                 href="/assessment"
-                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-black"
+                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-white"
               >
-                Book the Assessment <ArrowRight size={18} />
+                Book the Assessment <ArrowRight aria-hidden="true" size={18} />
               </a>
 
               <a
                 href="#method"
                 className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center flex items-center justify-center gap-2"
               >
-                See the method <ArrowRight size={16} />
+                See the method <ArrowRight aria-hidden="true" size={16} />
               </a>
             </motion.div>
           </div>

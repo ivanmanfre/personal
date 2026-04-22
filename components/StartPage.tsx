@@ -134,7 +134,7 @@ const StartPage: React.FC = () => {
             className="btn-magnetic inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-bold tracking-wide border-subtle shadow-card"
           >
             Book a 30-minute call
-            <ArrowRight size={18} />
+            <ArrowRight aria-hidden="true" size={18} />
           </a>
           <p className="mt-8 text-sm text-ink-mute">
             Or skip the call: <a href="/assessment" className="underline hover:text-black">start with the $2,500 Assessment</a>.
@@ -391,7 +391,7 @@ const StartPage: React.FC = () => {
             className="btn-magnetic w-full px-8 py-4 bg-black text-white font-bold tracking-wide border-subtle shadow-card flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Continue
-            <ArrowRight size={18} />
+            <ArrowRight aria-hidden="true" size={18} />
           </button>
         </motion.form>
       </div>

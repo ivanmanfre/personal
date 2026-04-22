@@ -122,7 +122,7 @@ const TodaysFocus: React.FC<Props> = ({ workflows, alerts, pendingPostsCount, on
                 <p className="text-sm text-zinc-200 font-medium truncate">{item.title}</p>
                 <p className="text-[12px] text-zinc-500 truncate">{item.subtitle}</p>
               </div>
-              <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 shrink-0 transition-colors" />
+              <ArrowRight aria-hidden="true" className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 shrink-0 transition-colors" />
             </button>
           );
         })}

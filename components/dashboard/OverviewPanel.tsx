@@ -182,7 +182,7 @@ const OverviewPanel: React.FC = () => {
               <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Health</span>
             </div>
             <span className="flex items-center gap-1 text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors">
-              Open System Map <ArrowRight className="w-3 h-3" />
+              Open System Map <ArrowRight aria-hidden="true" className="w-3 h-3" />
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">

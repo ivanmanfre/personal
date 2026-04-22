@@ -68,7 +68,7 @@ const Footer: React.FC = () => {
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="px-6 py-3 bg-accent text-black font-semibold tracking-wide disabled:opacity-50 hover:bg-accent-ink hover:text-white transition-colors"
+                className="px-6 py-3 bg-accent text-white font-semibold tracking-wide disabled:opacity-50 hover:bg-accent-ink hover:text-white transition-colors"
               >
                 {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
               </button>

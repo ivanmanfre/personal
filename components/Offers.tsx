@@ -84,11 +84,11 @@ const Offers: React.FC = () => {
               }`}
             >
               <div className="flex items-start justify-between mb-6">
-                <span className={`font-mono text-xs uppercase tracking-widest font-medium ${offer.highlighted ? 'text-accent' : 'text-ink-mute'}`}>
+                <span className={`font-mono text-xs uppercase tracking-widest font-medium ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-ink-mute'}`}>
                   {offer.id}
                 </span>
                 {offer.highlighted && (
-                  <span className="font-mono text-xs uppercase tracking-widest text-accent font-medium">
+                  <span className="font-mono text-xs uppercase tracking-widest text-[var(--color-accent-light)] font-medium">
                     Start here
                   </span>
                 )}
@@ -99,7 +99,7 @@ const Offers: React.FC = () => {
               </h3>
 
               <div className="mb-4">
-                <div className={`text-3xl font-bold tracking-tight font-mono ${offer.highlighted ? 'text-accent' : 'text-black'}`}>
+                <div className={`text-3xl font-bold tracking-tight font-mono ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'}`}>
                   {offer.price}
                 </div>
                 <div className={`text-xs font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
@@ -111,9 +111,9 @@ const Offers: React.FC = () => {
                 {offer.description}
               </p>
 
-              <div className={`flex items-center gap-2 font-semibold text-sm tracking-wide ${offer.highlighted ? 'text-accent' : 'text-black'} group-hover:gap-3 transition-all`}>
+              <div className={`flex items-center gap-2 font-semibold text-sm tracking-wide ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'} group-hover:gap-3 transition-all`}>
                 {offer.highlighted ? 'Book the Assessment' : 'Start the conversation'}
-                <ArrowRight size={16} />
+                <ArrowRight aria-hidden="true" size={16} />
               </div>
             </motion.a>
           ))}

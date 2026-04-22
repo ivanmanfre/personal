@@ -80,7 +80,7 @@ const DashboardAuth: React.FC<Props> = ({ onSuccess }) => {
               ) : (
                 <>
                   Enter
-                  <ArrowRight className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                  <ArrowRight aria-hidden="true" className="w-4 h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
                 </>
               )}
             </button>

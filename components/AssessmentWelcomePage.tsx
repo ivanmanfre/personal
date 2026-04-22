@@ -105,9 +105,9 @@ const AssessmentWelcomePage: React.FC = () => {
               ) : (
                 <a
                   href={intakeHref}
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-black font-semibold tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-accent text-white font-semibold tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
                 >
-                  Open the intake <ArrowRight size={16} />
+                  Open the intake <ArrowRight aria-hidden="true" size={16} />
                 </a>
               )}
             </div>
@@ -124,9 +124,9 @@ const AssessmentWelcomePage: React.FC = () => {
                 href={CALENDLY_DAY2_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-5 py-3 bg-accent text-black font-semibold tracking-wide hover:bg-paper transition-colors"
+                className="inline-flex items-center gap-3 px-5 py-3 bg-accent text-white font-semibold tracking-wide hover:bg-paper transition-colors"
               >
-                Book the session <ArrowRight size={16} />
+                Book the session <ArrowRight aria-hidden="true" size={16} />
               </a>
             </div>
           </motion.div>

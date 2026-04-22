@@ -127,9 +127,9 @@ const ROI: React.FC = () => {
 
                         <a
                             href="/assessment"
-                            className="w-full mt-2 px-6 py-4 bg-accent text-black font-semibold tracking-wide flex items-center justify-center gap-3 hover:bg-accent-ink hover:text-white transition-colors"
+                            className="w-full mt-2 px-6 py-4 bg-accent text-white font-semibold tracking-wide flex items-center justify-center gap-3 hover:bg-accent-ink hover:text-white transition-colors"
                         >
-                            See if you're Agent-Ready <ArrowRight size={18} />
+                            See if you're Agent-Ready <ArrowRight aria-hidden="true" size={18} />
                         </a>
                         <p className="text-sm text-ink-mute text-center">
                             Not ready to talk? <a href="/#newsletter" className="underline hover:text-black">Get The Agent-Ready Letter</a>.

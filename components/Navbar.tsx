@@ -63,7 +63,7 @@ const Navbar: React.FC = () => {
 
           <a
             href="/start"
-            className="px-4 py-2 bg-accent text-black font-mono font-semibold text-xs uppercase tracking-[0.14em] hover:bg-accent-ink hover:text-white transition-colors"
+            className="px-4 py-2 bg-accent text-white font-mono font-semibold text-xs uppercase tracking-[0.14em] hover:bg-accent-ink hover:text-white transition-colors"
           >
             Book a call
           </a>
@@ -73,6 +73,8 @@ const Navbar: React.FC = () => {
         <button
           className="md:hidden p-3 border-subtle shadow-card active:shadow-none bg-paper active:translate-y-1 transition-all"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? <X size={28} strokeWidth={3} /> : <Menu size={28} strokeWidth={3} />}
         </button>

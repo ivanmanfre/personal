@@ -149,10 +149,10 @@ const Method: React.FC = () => {
         >
           <a
             href="/assessment"
-            className="btn-magnetic px-8 py-4 bg-accent border-subtle-thick shadow-card-subtle flex items-center gap-3 font-semibold text-base tracking-wide text-black"
+            className="btn-magnetic px-8 py-4 bg-accent border-subtle-thick shadow-card-subtle flex items-center gap-3 font-semibold text-base tracking-wide text-white"
           >
             Book an Agent-Ready Assessment
-            <ArrowRight size={18} />
+            <ArrowRight aria-hidden="true" size={18} />
           </a>
           <span className="text-sm text-ink-mute">
             Paid 1-week diagnostic. Credited toward any follow-on engagement.

@@ -64,7 +64,7 @@ const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
             <span className="text-4xl font-bold">{product.tiers[0].label}</span>
           </div>
           <span className="flex items-center gap-2 font-bold uppercase text-sm group-hover:gap-4 transition-all bg-black text-white px-4 py-2">
-            Details <ArrowRight size={18} />
+            Details <ArrowRight aria-hidden="true" size={18} />
           </span>
         </div>
       </Link>

@@ -73,11 +73,12 @@ function App() {
   }
 
   return (
-    <div className="relative bg-paper text-black min-h-screen font-sans selection:bg-accent selection:text-black">
+    <div className="relative bg-paper text-black min-h-screen font-sans selection:bg-accent selection:text-white">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-paper focus:text-black focus:border focus:border-[var(--color-hairline)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Skip to content</a>
       <ScrollToTop />
       <Navbar />
 
-      <main className="relative z-10 flex flex-col overflow-hidden">
+      <main id="main" className="relative z-10 flex flex-col overflow-hidden">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/assessment" element={<AssessmentPage />} />
