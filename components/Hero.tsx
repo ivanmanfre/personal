@@ -31,7 +31,7 @@ const Hero: React.FC = () => {
                 height="533"
                 loading="eager"
                 fetchPriority="high"
-                className="w-40 sm:w-48 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-subtle object-cover object-top portrait-editorial"
+                className="w-40 sm:w-48 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-card-subtle object-cover object-top portrait-editorial"
               />
             </picture>
           </motion.div>
@@ -81,7 +81,7 @@ const Hero: React.FC = () => {
             >
               <a
                 href="/assessment"
-                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-black"
+                className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-black"
               >
                 Book the Assessment <ArrowRight size={18} />
               </a>
@@ -115,7 +115,7 @@ const Hero: React.FC = () => {
                 height="1600"
                 loading="eager"
                 fetchPriority="high"
-                className="w-72 xl:w-80 aspect-[3/4] rounded-2xl ring-1 ring-white/10 shadow-card-lift object-cover object-top portrait-editorial"
+                className="w-72 xl:w-80 aspect-[3/4] rounded-xl ring-1 ring-white/10 shadow-card-lift object-cover object-top portrait-editorial"
               />
             </picture>
           </motion.div>
