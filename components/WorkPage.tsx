@@ -28,7 +28,7 @@ const cases: Case[] = [
     solution: "Built a system that ingests every finished call, evaluates it on service and expertise criteria, calculates a final score that adapts to the call type, emails each participant their own summary and action items, and alerts leadership when real risk surfaces, with the excerpt and recording link attached. Internal and solo calls filter out automatically so reports stay clean. Airtable dashboards surface per-call detail, per-rep scorecards, trends, and an issues board.",
     outcome: "Coverage moved from 5% sampled to 100% of calls, escalation from days to the next morning, and every rep now gets personalized feedback after every customer conversation. Zero additional manual work for the team.",
     image: '/cases/provaltech.png',
-    imageAlt: 'ProvalTech AI Call Auditing dashboard',
+    imageAlt: 'ProvalTech Call Performance Dashboard showing per-call scores and trends',
   },
   {
     id: '02',
@@ -40,8 +40,6 @@ const cases: Case[] = [
     problem: "Every lead magnet took days of manual work across disconnected tools: writing the content, building landing and resource pages, configuring the email sequence, wiring the tracking link, formatting the spreadsheet if it was a calculator. Output was capped by how much assembly one person could grind through each week.",
     solution: "Built a system where a single idea submitted in the project tool generates the full package in under 15 minutes. AI drafts everything grounded on the founder's masterclass transcripts and top-performing posts via RAG, in the founder's voice. He reviews and approves. The system then auto-builds every downstream asset in parallel: live landing page, live resource page on the founder's subdomain, email draft ready to activate, geo-routed smart link, Google Sheet with working formulas if it's a calculator, and a scheduled LinkedIn post with comment monitoring and DM sequences.",
     outcome: "Human review preserved at the one gate that matters (content approval), zero manual asset-building after that. Output is no longer capped by assembly time, it's capped by how many good ideas he has in a week.",
-    image: '/cases/lead-magnet.png',
-    imageAlt: 'Lead Magnet System architecture',
   },
   {
     id: '03',
@@ -53,7 +51,7 @@ const cases: Case[] = [
     solution: "Built an end-to-end n8n automation from intake to delivery. Gravity Forms feeds a research layer that pulls EPA ECHO for MS4 detection with distance-weighted scoring and fallback logic for delegated states; FWS IPaC for endangered species with project-centered polygons (99.9% reduction in query area vs the county-centroid approach); USDA SSURGO for area-scaled soil sampling; Census and TIGERweb for watershed boundaries. State-specific document chains route through alphabetically ordered switches with continueOnFail resilience. A client-facing audit interface lets the team review and correct pre-populated data before generation runs.",
     outcome: "Same-day document delivery is now on the table. What would have needed multiple full-time researchers plus document specialists runs end-to-end without manual research, with defensible compliance data and a full audit trail.",
     image: '/cases/proswppp-swppp.png',
-    imageAlt: 'ProSWPPP compliance workflow',
+    imageAlt: 'ProSWPPP n8n workflow canvas with state-routed document generation chains',
   },
   {
     id: '04',
@@ -64,8 +62,6 @@ const cases: Case[] = [
     problem: "The SEO content pipeline lived in a single Google Sheet supporting only one article type (keyword spokes, 1,000-1,500 words). Derek wanted to scale across three formats (spokes, state pillars, competitor comparisons), but the existing setup had no concept of article types, no pillar-to-spoke relationships, no production visibility, and no way to see coverage gaps across 50 states.",
     solution: "Built a dedicated AI Content module inside ProSWPPP's internal Railway app. 50-state dashboard shows coverage color-coded at a glance: has pillar, articles but no pillar, untouched. Bulk operations replace one-at-a-time entry. WordPress syncs every 5 minutes. The n8n workflow routes each article through a format-specific research and writing branch (1,500w spoke / 3,500w pillar / comparison table), all converging on a shared image pipeline that embeds the ProSWPPP logo naturally into worker photographs via Gemini.",
     outcome: "Three content formats from one interface, Google Sheet dependency eliminated, pillar-to-spoke internal linking automated, comparison articles built from the ground up to be the canonical AI-citation source for 'best SWPPP service' queries.",
-    image: '/cases/proswppp-content.png',
-    imageAlt: 'ProSWPPP content pipeline',
   },
   {
     id: '05',
@@ -76,8 +72,6 @@ const cases: Case[] = [
     problem: "The sales team was manually managing post-bid follow-up across four sequence types and three reps, copy-pasting templates and swapping regulatory acronyms per state. Misfires happened. Follow-up slipped. Regulatory terminology varied by rep.",
     solution: "Built a Pipedrive-integrated SDR automation that classifies every lead into the right sequence based on project stage, auto-detects the project state and inserts the correct environmental acronym (TCEQ Texas, GA EPD Georgia, CASQUA California, and so on across all 50 states), rotates sender assignment across the team (or honors manual overrides), and sends every email from the assigned rep's actual inbox so deliverability and reply tracking stay authentic. Sequence progression is automatic: as leads move through stages, old trigger fields clear and new sequences fire. Overlap detection surfaces conflicts as Pipedrive tasks.",
     outcome: "Sales follow-up became zero-touch. Every lead, from the right rep, in the right regulatory language, with zero template confusion.",
-    image: '/cases/proswppp-sdr.png',
-    imageAlt: 'ProSWPPP SDR automation',
   },
   {
     id: '06',
@@ -88,8 +82,6 @@ const cases: Case[] = [
     problem: "A cannabis distributor was manually consolidating inventory from multiple suppliers across WhatsApp messages, supplier websites, and Google Sheets. Hours daily of data entry. Pricing errors and stale listings slipped through constantly.",
     solution: "Built an intelligent n8n automation that auto-consolidates inventory from every channel into a single master Google Sheet, standardizes product classifications across inconsistent supplier formats (strain types, flower categories, THC percentages), protects supplier identity through vendor coding and automated COA redaction, maintains data integrity with automatic out-of-stock tracking and duplicate management, and mirrors supplier images and documents to the client's own Google Drive so nothing depends on external hosting.",
     outcome: "15+ hours a week of manual work eliminated. Inventory refreshes every 60-120 minutes. Zero supplier information leakage to end clients. Consistent pricing rules apply automatically. The team focuses on sales instead of spreadsheet reconciliation.",
-    image: '/cases/destino.png',
-    imageAlt: 'Destino Farms inventory automation',
   },
   {
     id: '07',
@@ -101,7 +93,7 @@ const cases: Case[] = [
     solution: "Built a cloud-native billing automation handling the complete flow from raw usage data to verified invoices in Xero. Daily billing exports ingest into BigQuery. Subscriptions classify automatically as New, Renewal, or Transfer using customer history and heuristic logic. A three-tier pricing engine applies dynamic markup rules with support for customer and SKU-specific overrides. Aggregated voice taxes distribute proportionally based on usage, solving the attribution problem that previously required hours of manual mapping. A dry-run mode lets the team simulate a full billing cycle without touching the live ledger.",
     outcome: "Monthly close time went from days to hours. The tax allocation problem that had driven weeks of reconciliation effort is fully solved. Every invoice is traceable from raw Google Channel data to final customer bill.",
     image: '/cases/easygapps.png',
-    imageAlt: 'easyGapps billing automation',
+    imageAlt: 'easyGapps generated invoice in Xero with Google Workspace line items',
   },
 ];
 
