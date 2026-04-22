@@ -51,7 +51,7 @@ const Method: React.FC = () => {
           className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1] tracking-tighter mb-6 max-w-4xl"
         >
           Most AI projects fail <br />
-          <span className="font-drama italic">before the model gets involved.</span>
+          <span className="font-drama italic">before a line of code is written.</span>
         </motion.h2>
 
         <motion.p

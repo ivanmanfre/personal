@@ -10,7 +10,7 @@ import { Check } from 'lucide-react';
 const POSTS = [
     {
         topic: 'Agent-Ready Ops',
-        hook: 'Most AI projects fail before the model gets involved.',
+        hook: 'Most AI projects fail before a line of code is written.',
         body: "The problem isn't the tech. It's that the work underneath isn't ready for an agent to touch. Four conditions. Miss one, the build breaks in weeks.",
         day: 'Monday',
         time: '9:00 AM',
