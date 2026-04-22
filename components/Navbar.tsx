@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
               <a
                 key={link.name}
                 href={link.href}
-                className="text-lg font-semibold hover:underline decoration-accent underline-offset-4 transition-all"
+                className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
               >
                 {link.name}
               </a>
@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
               <Link
                 key={link.name}
                 to={`/${link.href}`}
-                className="text-lg font-semibold hover:underline decoration-accent underline-offset-4 transition-all"
+                className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
               >
                 {link.name}
               </Link>
@@ -63,7 +63,7 @@ const Navbar: React.FC = () => {
 
           <a
             href="/start"
-            className="px-4 py-2 bg-accent text-black font-semibold text-sm tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
+            className="px-4 py-2 bg-accent text-black font-mono font-semibold text-xs uppercase tracking-[0.14em] hover:bg-accent-ink hover:text-white transition-colors"
           >
             Book a call
           </a>
@@ -94,7 +94,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-2xl font-semibold border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </a>
@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     to={`/${link.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-2xl font-semibold border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
                   >
                     {link.name}
                   </Link>
