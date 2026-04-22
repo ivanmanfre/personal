@@ -105,11 +105,11 @@ const Method: React.FC = () => {
           transition={{ delay: 0.5 }}
           className="bg-paper border border-[color:var(--color-hairline)] rounded-xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
-          <div className="flex items-center justify-between mb-8 border-b border-[color:var(--color-hairline)] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 border-b border-[color:var(--color-hairline)] pb-4">
             <span className="font-drama italic text-2xl md:text-3xl text-black leading-none">
               Agent-Ready Ops™
             </span>
-            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute flex items-center gap-2">
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute flex items-center gap-2 whitespace-nowrap">
               <span className="w-1.5 h-1.5 bg-accent rounded-full" />
               The 4 Preconditions
             </span>
