@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 const Hero: React.FC = () => {
   return (
-    <section className="relative min-h-screen flex flex-col justify-center bg-paper overflow-hidden">
+    <section className="relative min-h-screen pt-28 pb-12 lg:pt-0 lg:pb-0 flex flex-col justify-center bg-paper overflow-hidden">
       {/* Grid Background */}
       <div className="absolute inset-0 bg-grid-pattern hidden sm:block opacity-[0.08] pointer-events-none z-0" />
 
