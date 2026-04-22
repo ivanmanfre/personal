@@ -7,25 +7,21 @@ const preconditions = [
     number: '01',
     title: 'Reliable input pipeline',
     description: 'The agent reads the same data every time. Either the source is structured, or extraction from it is.',
-    sampleScore: 3,
   },
   {
     number: '02',
     title: 'Documentable decision logic',
     description: 'Your best person can write down how they decide. Then we encode it.',
-    sampleScore: 4,
   },
   {
     number: '03',
     title: 'Narrow initial scope',
     description: 'One job, done end-to-end, before widening. Small wins compound.',
-    sampleScore: 5,
   },
   {
     number: '04',
     title: 'Human-in-the-loop by design',
     description: 'Routed review is the design, not the rescue. Failure paths planned upfront.',
-    sampleScore: 2,
   },
 ];
 
@@ -96,7 +92,7 @@ const Method: React.FC = () => {
               The four conditions are simple, not easy. If any one is missing, the build breaks within weeks. If all four are present, the system runs without you.
             </p>
             <p>
-              Before any engagement, I run a paid 1-week Agent-Ready Assessment that scores your operation on all four. You get a scorecard and a 30-day roadmap.
+              Before any engagement, I run a 1-week Agent-Ready Assessment that evaluates your operation on all four. You leave knowing what to build first and what needs foundation work before it ships.
             </p>
           </motion.div>
         </div>
@@ -111,11 +107,11 @@ const Method: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-8 border-b border-[color:var(--color-hairline)] pb-4">
             <span className="font-drama italic text-2xl md:text-3xl text-black leading-none">
-              Agent-Ready · Evaluated.
+              Agent-Ready Ops™
             </span>
             <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-              4 Axes · Sample
+              The 4 Preconditions
             </span>
           </div>
 
@@ -134,36 +130,9 @@ const Method: React.FC = () => {
                   <h4 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
                     {item.title}
                   </h4>
-                  <p className="text-sm text-ink-soft leading-relaxed mb-3">
+                  <p className="text-sm text-ink-soft leading-relaxed">
                     {item.description}
                   </p>
-                  {/* Sample score bars, fill on scroll-in */}
-                  <div className="flex items-center gap-2" aria-label={`Sample score: ${item.sampleScore} of 5`}>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((tick) => (
-                        <motion.div
-                          key={tick}
-                          initial={{ scaleY: 0.3, backgroundColor: 'rgba(26,26,26,0.15)' }}
-                          whileInView={{
-                            scaleY: 1,
-                            backgroundColor: tick <= item.sampleScore
-                              ? 'var(--color-accent)'
-                              : 'rgba(26,26,26,0.15)',
-                          }}
-                          viewport={{ once: true }}
-                          transition={{
-                            delay: 0.9 + i * 0.08 + tick * 0.05,
-                            duration: 0.3,
-                            ease: [0.25, 0.46, 0.45, 0.94],
-                          }}
-                          className="w-1.5 h-4 origin-bottom"
-                        />
-                      ))}
-                    </div>
-                    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute ml-1">
-                      {item.sampleScore}/5
-                    </span>
-                  </div>
                 </div>
               </motion.div>
             ))}
