@@ -7,21 +7,25 @@ const preconditions = [
     number: '01',
     title: 'Reliable input pipeline',
     description: 'The agent reads the same data every time. Either the source is structured, or extraction from it is.',
+    sampleScore: 3,
   },
   {
     number: '02',
     title: 'Documentable decision logic',
     description: 'Your best person can write down how they decide. Then we encode it.',
+    sampleScore: 4,
   },
   {
     number: '03',
     title: 'Narrow initial scope',
     description: 'One job, done end-to-end, before widening. Small wins compound.',
+    sampleScore: 5,
   },
   {
     number: '04',
     title: 'Human-in-the-loop by design',
     description: 'Routed review is the design, not the rescue. Failure paths planned upfront.',
+    sampleScore: 2,
   },
 ];
 
@@ -105,12 +109,12 @@ const Method: React.FC = () => {
           transition={{ delay: 0.5 }}
           className="bg-paper border border-[color:var(--color-hairline)] rounded-xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
-          <div className="flex items-center justify-between mb-8 border-b border-zinc-300 pb-4">
-            <span className="font-mono text-xs uppercase tracking-widest text-ink-mute">
-              Agent-Ready Scorecard
+          <div className="flex items-center justify-between mb-8 border-b border-[color:var(--color-hairline)] pb-4">
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
+              Sample Scorecard
             </span>
-            <span className="font-mono text-xs uppercase tracking-widest text-accent flex items-center gap-2">
-              <span className="w-2 h-2 bg-accent rounded-full" />
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-accent-ink flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-accent rounded-full" />
               4 Preconditions
             </span>
           </div>
@@ -123,16 +127,43 @@ const Method: React.FC = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6 + i * 0.1 }}
-                className="flex gap-4 border-l-2 border-accent/50 pl-5 py-2"
+                className="flex gap-4 border-l border-[color:var(--color-hairline-bold)] pl-5 py-2"
               >
                 <span className="font-mono text-xs text-ink-mute mt-1">{item.number}</span>
-                <div>
-                  <h4 className="font-mono text-sm uppercase tracking-widest font-bold mb-1">
+                <div className="flex-1">
+                  <h4 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
                     {item.title}
                   </h4>
-                  <p className="text-sm text-ink-soft leading-relaxed">
+                  <p className="text-sm text-ink-soft leading-relaxed mb-3">
                     {item.description}
                   </p>
+                  {/* Sample score bars — fill on scroll-in */}
+                  <div className="flex items-center gap-2" aria-label={`Sample score: ${item.sampleScore} of 5`}>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((tick) => (
+                        <motion.div
+                          key={tick}
+                          initial={{ scaleY: 0.3, backgroundColor: 'rgba(26,26,26,0.15)' }}
+                          whileInView={{
+                            scaleY: 1,
+                            backgroundColor: tick <= item.sampleScore
+                              ? 'var(--color-accent)'
+                              : 'rgba(26,26,26,0.15)',
+                          }}
+                          viewport={{ once: true }}
+                          transition={{
+                            delay: 0.9 + i * 0.08 + tick * 0.05,
+                            duration: 0.3,
+                            ease: [0.25, 0.46, 0.45, 0.94],
+                          }}
+                          className="w-1.5 h-4 origin-bottom"
+                        />
+                      ))}
+                    </div>
+                    <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute ml-1">
+                      {item.sampleScore}/5
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             ))}

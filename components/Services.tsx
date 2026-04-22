@@ -34,10 +34,10 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">01</span>
-                <h3 className="text-3xl font-semibold tracking-tight">Back-office automation</h3>
+                <h3 className="text-3xl font-semibold tracking-tight">Back-office <span className="font-drama italic font-normal">that runs itself.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
-                The manual handoffs between your CRM, Slack, docs, and AI tools get replaced with systems that do the work. Your team stops copy-pasting. The data moves itself.
+                Your ops lead writes the same four onboarding emails every week, pulls the same reports, chases the same stuck handoffs. A month from now, the system does it — personalized from intake data, routed through your existing CRM and Slack, flagged to her only when something's off.
               </p>
               <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Connect your existing tools without another platform</li>
@@ -60,10 +60,10 @@ const Services: React.FC = () => {
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">02</span>
-                <h3 className="text-3xl font-semibold tracking-tight">AI for judgment-heavy work</h3>
+                <h3 className="text-3xl font-semibold tracking-tight">AI for <span className="font-drama italic font-normal">judgment-heavy work.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
-                Lead qualification. Tier-1 support. Document parsing. The judgment-heavy work your best person can't scale. I build the agent and get your ops ready to run it - skipping that second half is why most AI projects stall.
+                Lead qualification, tier-1 support, document parsing — the work your best person does that creates the bottleneck. I encode how they decide, wire it to the data it needs, and keep them in the loop for the edge cases. The second half is why most AI projects stall.
               </p>
               <ul className="space-y-3 text-sm font-medium text-ink-mute">
                 <li className="flex gap-2 items-center"><div className="w-1.5 h-1.5 bg-accent"></div> Trained on your SOPs and company data</li>

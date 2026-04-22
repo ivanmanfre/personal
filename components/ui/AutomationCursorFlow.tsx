@@ -2,116 +2,83 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Webhook, Brain, CheckCircle } from 'lucide-react';
 
-// Framer Motion animate arrays require concrete values. These MUST match
-// the canonical tokens in styles.css: --color-accent and a muted sibling.
-// If the accent hex changes, update here too (tokens docs: Design System v1).
-const ACCENT = '#3F6B4A';        // var(--color-accent)
-const ACCENT_MUTED = '#4C7B58';  // sibling used for the middle node pulse
-const INK_NEUTRAL = '#52525B';   // zinc-600 equivalent, for the output node
+// Editorial-grade pipeline diagram. Still structure; one purposeful animation
+// (data flowing left→right through the 3 nodes). No cursor, no frantic pulses,
+// no black chips. Tells the "I build agent pipelines" story without the 2022
+// SaaS demo theatrics.
 
 const AutomationCursorFlow: React.FC = () => {
-
     return (
-        <div className="w-full h-80 bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden group hover:border-accent transition-colors">
+        <div className="w-full h-80 bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle relative overflow-hidden">
 
-            {/* Decorative Grid */}
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)", backgroundSize: '20px 20px' }} />
+            {/* Decorative grid — static */}
+            <div
+                className="absolute inset-0 opacity-[0.06]"
+                style={{
+                    backgroundImage: "linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)",
+                    backgroundSize: '20px 20px',
+                }}
+            />
 
-            <div className="absolute top-4 left-4 bg-black text-white font-mono text-[10px] uppercase tracking-widest px-2 py-1 z-20">
+            {/* Hairline section label */}
+            <div className="absolute top-4 left-4 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1 z-20">
                 Agent-Ready Pipeline
             </div>
 
             <div className="p-8 h-full flex flex-col justify-center relative z-10 w-full">
 
-                {/* The Nodes */}
                 <div className="flex justify-between items-center w-full max-w-sm mx-auto relative mt-6">
 
-                    {/* Connection Line */}
-                    <div className="absolute top-1/2 left-0 w-full h-1 bg-zinc-200 -z-10 translate-y-[-50%]"></div>
+                    {/* Connection line — static base */}
+                    <div className="absolute top-1/2 left-0 w-full h-px bg-[color:var(--color-hairline-bold)] -z-10 translate-y-[-50%]" />
+
+                    {/* Connection line — animated accent fill, left to right */}
                     <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                        className="absolute top-1/2 left-0 h-1 bg-black -z-10 translate-y-[-50%]"
+                        whileInView={{ width: "100%" }}
+                        viewport={{ once: true, amount: 0.5 }}
+                        transition={{ duration: 1.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        className="absolute top-1/2 left-0 h-px bg-[color:var(--color-accent)] -z-10 translate-y-[-50%]"
                     />
 
                     {/* Node 1: Trigger */}
                     <div className="flex flex-col items-center gap-2">
-                        <motion.div
-                            initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT, "#fff"] }}
-                            transition={{ duration: 4, times: [0, 0.1, 0.3], repeat: Infinity }}
-                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
-                        >
-                            <Webhook size={24} className="text-black" />
-                        </motion.div>
-                        <span className="font-mono text-[9px] uppercase font-bold text-zinc-500">Trigger</span>
+                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                            <Webhook size={22} className="text-black" />
+                        </div>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Trigger</span>
                     </div>
 
                     {/* Node 2: Logic */}
                     <div className="flex flex-col items-center gap-2">
-                        <motion.div
-                            initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 0.9, 1], backgroundColor: ["#fff", ACCENT_MUTED, "#fff"] }}
-                            transition={{ duration: 4, times: [0, 0.4, 0.6], repeat: Infinity }}
-                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
-                        >
-                            <Brain size={24} className="text-black" />
-                        </motion.div>
-                        <span className="font-mono text-[9px] uppercase font-bold text-zinc-500">Agent Logic</span>
+                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                            <Brain size={22} className="text-accent-ink" />
+                        </div>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Agent Logic</span>
                     </div>
 
                     {/* Node 3: Output */}
                     <div className="flex flex-col items-center gap-2">
-                        <motion.div
-                            initial={{ scale: 1, backgroundColor: "#fff" }}
-                            animate={{ scale: [1, 1.1, 1], backgroundColor: ["#fff", INK_NEUTRAL, "#fff"] }}
-                            transition={{ duration: 4, times: [0, 0.7, 0.9], repeat: Infinity }}
-                            className="w-14 h-14 bg-paper border border-zinc-300 flex items-center justify-center shadow-md z-10 relative"
-                        >
-                            <FileText size={24} className="text-black" />
-                        </motion.div>
-                        <span className="font-mono text-[9px] uppercase font-bold text-zinc-500">Generate Output</span>
+                        <div className="w-14 h-14 bg-white border border-[color:var(--color-hairline-bold)] flex items-center justify-center shadow-card-subtle z-10 relative">
+                            <FileText size={22} className="text-black" />
+                        </div>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">Generate Output</span>
                     </div>
                 </div>
 
-                {/* Simulated Live Action Log */}
+                {/* Status indicator — static */}
                 <div className="mt-12 text-center w-full">
-                    <motion.div
-                        animate={{ opacity: [1, 0.6, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-100 border border-[color:var(--color-hairline)]"
-                    >
-                        <CheckCircle size={14} className="text-black" />
-                        <span className="font-mono text-xs uppercase font-bold text-black tracking-widest">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 border border-[color:var(--color-hairline-bold)]">
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent" />
+                        </span>
+                        <span className="font-mono text-[10px] uppercase text-ink-soft tracking-[0.1em]">
                             Running · Monitored
                         </span>
-                    </motion.div>
+                    </div>
                 </div>
 
             </div>
-
-            {/* The Animated Cursor */}
-            <motion.div
-                animate={{
-                    x: ["10%", "30%", "30%", "60%", "60%", "90%", "90%", "10%"],
-                    y: ["80%", "45%", "45%", "45%", "45%", "45%", "45%", "80%"],
-                    scale: [1, 1, 0.8, 1, 0.8, 1, 0.8, 1] // Click effect
-                }}
-                transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    times: [0, 0.1, 0.15, 0.4, 0.45, 0.7, 0.75, 1]
-                }}
-                className="absolute z-30 pointer-events-none drop-shadow-md"
-                style={{ width: '28px', height: '28px' }}
-            >
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 2L20 10L13 13L16 20L13 22L10 15L4 18V2Z" fill="black" stroke="white" strokeWidth="2" strokeLinejoin="round" />
-                </svg>
-            </motion.div>
-
         </div>
     );
 };
