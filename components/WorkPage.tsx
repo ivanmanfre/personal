@@ -13,8 +13,8 @@ type Case = {
   problem: string;
   solution: string;
   outcome: string;
-  image?: string;
-  imageAlt?: string;
+  images?: string[];
+  imageAlts?: string[];
 };
 
 const cases: Case[] = [
@@ -27,8 +27,8 @@ const cases: Case[] = [
     problem: "ProvalTech records every sales call in Fireflies. But with multiple call types and a shared recording account, there was no consistent view of rep performance, no fast escalation path when customer risk appeared, and no way to compare reps fairly across different call shapes.",
     solution: "Built a system that ingests every finished call, evaluates it on service and expertise criteria, calculates a final score that adapts to the call type, emails each participant their own summary and action items, and alerts leadership when real risk surfaces, with the excerpt and recording link attached. Internal and solo calls filter out automatically so reports stay clean. Airtable dashboards surface per-call detail, per-rep scorecards, trends, and an issues board.",
     outcome: "Coverage moved from 5% sampled to 100% of calls, escalation from days to the next morning, and every rep now gets personalized feedback after every customer conversation. Zero additional manual work for the team.",
-    image: '/cases/provaltech.png',
-    imageAlt: 'ProvalTech Call Performance Dashboard showing per-call scores and trends',
+    images: ['/cases/provaltech.png', '/cases/provaltech-detail.png'],
+    imageAlts: ['ProvalTech Call Performance Dashboard showing per-call scores and trends', 'Individual call scorecard with criteria scores and quality assessment'],
   },
   {
     id: '02',
@@ -50,8 +50,8 @@ const cases: Case[] = [
     problem: "Every stormwater permit required hours of manual research: MS4 operators, endangered species assessments, soil composition, watershed data, state-specific permit terminology. At scale this would have demanded several full-time researchers, and same-day delivery was impossible.",
     solution: "Built an end-to-end n8n automation from intake to delivery. Gravity Forms feeds a research layer that pulls EPA ECHO for MS4 detection with distance-weighted scoring and fallback logic for delegated states; FWS IPaC for endangered species with project-centered polygons (99.9% reduction in query area vs the county-centroid approach); USDA SSURGO for area-scaled soil sampling; Census and TIGERweb for watershed boundaries. State-specific document chains route through alphabetically ordered switches with continueOnFail resilience. A client-facing audit interface lets the team review and correct pre-populated data before generation runs.",
     outcome: "Same-day document delivery is now on the table. What would have needed multiple full-time researchers plus document specialists runs end-to-end without manual research, with defensible compliance data and a full audit trail.",
-    image: '/cases/proswppp-swppp.png',
-    imageAlt: 'ProSWPPP n8n workflow canvas with state-routed document generation chains',
+    images: ['/cases/proswppp-swppp.png'],
+    imageAlts: ['ProSWPPP n8n workflow canvas with state-routed document generation chains'],
   },
   {
     id: '04',
@@ -62,6 +62,8 @@ const cases: Case[] = [
     problem: "The SEO content pipeline lived in a single Google Sheet supporting only one article type (keyword spokes, 1,000-1,500 words). Derek wanted to scale across three formats (spokes, state pillars, competitor comparisons), but the existing setup had no concept of article types, no pillar-to-spoke relationships, no production visibility, and no way to see coverage gaps across 50 states.",
     solution: "Built a dedicated AI Content module inside ProSWPPP's internal Railway app. 50-state dashboard shows coverage color-coded at a glance: has pillar, articles but no pillar, untouched. Bulk operations replace one-at-a-time entry. WordPress syncs every 5 minutes. The n8n workflow routes each article through a format-specific research and writing branch (1,500w spoke / 3,500w pillar / comparison table), all converging on a shared image pipeline that embeds the ProSWPPP logo naturally into worker photographs via Gemini.",
     outcome: "Three content formats from one interface, Google Sheet dependency eliminated, pillar-to-spoke internal linking automated, comparison articles built from the ground up to be the canonical AI-citation source for 'best SWPPP service' queries.",
+    images: ['/cases/proswppp-content-states.png', '/cases/proswppp-content-list.png'],
+    imageAlts: ['50-state coverage dashboard showing pillar status color-coded by state', 'AI Content article list with 76 published articles across pillar and spoke types'],
   },
   {
     id: '05',
@@ -72,6 +74,8 @@ const cases: Case[] = [
     problem: "The sales team was manually managing post-bid follow-up across four sequence types and three reps, copy-pasting templates and swapping regulatory acronyms per state. Misfires happened. Follow-up slipped. Regulatory terminology varied by rep.",
     solution: "Built a Pipedrive-integrated SDR automation that classifies every lead into the right sequence based on project stage, auto-detects the project state and inserts the correct environmental acronym (TCEQ Texas, GA EPD Georgia, CASQUA California, and so on across all 50 states), rotates sender assignment across the team (or honors manual overrides), and sends every email from the assigned rep's actual inbox so deliverability and reply tracking stay authentic. Sequence progression is automatic: as leads move through stages, old trigger fields clear and new sequences fire. Overlap detection surfaces conflicts as Pipedrive tasks.",
     outcome: "Sales follow-up became zero-touch. Every lead, from the right rep, in the right regulatory language, with zero template confusion.",
+    images: ['/cases/proswppp-sdr.png'],
+    imageAlts: ['n8n SDR automation workflow with Pipedrive integration and state-routing logic'],
   },
   {
     id: '06',
@@ -92,8 +96,8 @@ const cases: Case[] = [
     problem: "A Google Workspace reseller was running month-end billing through manual spreadsheet calculations. Errors compounded, margins drifted inconsistent, and tax allocation from Google's aggregated exports, where voice taxes arrived without customer attribution, was a particular reconciliation nightmare.",
     solution: "Built a cloud-native billing automation handling the complete flow from raw usage data to verified invoices in Xero. Daily billing exports ingest into BigQuery. Subscriptions classify automatically as New, Renewal, or Transfer using customer history and heuristic logic. A three-tier pricing engine applies dynamic markup rules with support for customer and SKU-specific overrides. Aggregated voice taxes distribute proportionally based on usage, solving the attribution problem that previously required hours of manual mapping. A dry-run mode lets the team simulate a full billing cycle without touching the live ledger.",
     outcome: "Monthly close time went from days to hours. The tax allocation problem that had driven weeks of reconciliation effort is fully solved. Every invoice is traceable from raw Google Channel data to final customer bill.",
-    image: '/cases/easygapps.png',
-    imageAlt: 'easyGapps generated invoice in Xero with Google Workspace line items',
+    images: ['/cases/easygapps-billing.png', '/cases/easygapps.png'],
+    imageAlts: ['easyGapps Partner Sales Console showing billing accounts', 'Generated invoice in Xero with Google Workspace line items and automated tax allocation'],
   },
 ];
 
@@ -178,14 +182,18 @@ const WorkPage: React.FC = () => {
                   {c.title}
                 </h2>
 
-                {c.image && (
-                  <div className="my-8 border border-[color:var(--color-hairline)] overflow-hidden bg-paper-sunk">
-                    <img
-                      src={c.image}
-                      alt={c.imageAlt ?? ''}
-                      loading="lazy"
-                      className="w-full h-auto"
-                    />
+                {c.images && c.images.length > 0 && (
+                  <div className={`my-8 ${c.images.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}`}>
+                    {c.images.map((src, i) => (
+                      <div key={i} className="border border-[color:var(--color-hairline)] overflow-hidden bg-paper-sunk">
+                        <img
+                          src={src}
+                          alt={c.imageAlts?.[i] ?? ''}
+                          loading="lazy"
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    ))}
                   </div>
                 )}
 
