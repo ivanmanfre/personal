@@ -1,7 +1,25 @@
 import { supabase } from './supabase';
 
 const SESSION_KEY = '__pv_sid';
+const EXCLUDE_KEY = '__pv_exclude';
 const SESSION_ID_LEN = 16;
+
+/**
+ * Persistent "don't count me" flag kept in localStorage. Toggle it by
+ * visiting the site with `?me=1` (set) or `?me=0` (clear) once per browser.
+ * When set, trackPageview() is a no-op. Mirrors Plausible's internal-traffic
+ * opt-out. Private-mode / localStorage failures fall back to tracking.
+ */
+function syncExclusionFlag(): boolean {
+  try {
+    const me = new URLSearchParams(window.location.search).get('me');
+    if (me === '1') localStorage.setItem(EXCLUDE_KEY, '1');
+    else if (me === '0') localStorage.removeItem(EXCLUDE_KEY);
+    return localStorage.getItem(EXCLUDE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
 
 function makeSessionId(): string {
   const bytes = new Uint8Array(SESSION_ID_LEN);
@@ -59,6 +77,9 @@ export async function trackPageview(path: string): Promise<void> {
   // Skip localhost + preview builds to keep dev traffic out of prod data.
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return;
+
+  // Owner opt-out: `?me=1` once per browser, then every future visit is skipped.
+  if (syncExclusionFlag()) return;
 
   try {
     const params = new URLSearchParams(window.location.search);
