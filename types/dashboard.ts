@@ -704,7 +704,7 @@ export interface VideoShort {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
-export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'video' | 'agent-ready' | 'settings';
+export type Tab = 'overview' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'video' | 'agent-ready' | 'audience' | 'settings';
 
 export interface PaidAssessmentRow {
   stripe_session_id: string;

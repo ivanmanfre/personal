@@ -14,6 +14,7 @@ import ContentSystemPage from './components/ContentSystemPage';
 import FractionalPage from './components/FractionalPage';
 import WorkPage from './components/WorkPage';
 import ScrollToTop from './components/ScrollToTop';
+import { trackPageview } from './lib/pageviewTracker';
 
 // View Transitions API wrapper - smooth cross-fade between routes on supported browsers.
 // Falls back to instant navigation on browsers without document.startViewTransition.
@@ -29,6 +30,14 @@ function useRouteViewTransition(pathname: string) {
   }, [pathname]);
 }
 
+// Fires a pageview on initial load and every route change. Tracker itself
+// no-ops on /dashboard, /v/, localhost — so this is safe to call everywhere.
+function useTrackPageviews(pathname: string) {
+  useEffect(() => {
+    trackPageview(pathname);
+  }, [pathname]);
+}
+
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 
@@ -38,6 +47,7 @@ function App() {
   const isViewer = location.pathname.startsWith('/v/');
 
   useRouteViewTransition(location.pathname);
+  useTrackPageviews(location.pathname);
 
   // Public video viewer - full-screen, no nav/footer
   if (isViewer) {
