@@ -69,6 +69,7 @@ const OutreachPanel: React.FC = () => {
     createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses,
     toggleWorkflow, importProspects, sendManualDm, approveDraft, rejectDraft,
     pendingDrafts, fetchPendingDrafts,
+    commentDrafts, fetchCommentDrafts, approveCommentDraft, rejectCommentDraft,
   } = pipeline;
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
@@ -494,6 +495,78 @@ const OutreachPanel: React.FC = () => {
         </div>
       )}
 
+      {/* Comment Draft Review Queue */}
+      {commentDrafts.length > 0 && (
+        <div className="bg-zinc-900/90 border border-purple-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-purple-400" />
+            <span className="text-sm font-semibold text-purple-400">{commentDrafts.length} Comment Draft{commentDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
+            <span className="text-[9px] text-zinc-500">seed commenting_targets to generate drafts automatically</span>
+          </div>
+          <div className="space-y-3">
+            {commentDrafts.map((draft) => (
+              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-zinc-200">{draft.targetName || 'Unknown target'}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">LinkedIn Comment</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-500">{draft.draftedAt ? timeAgo(draft.draftedAt) : ''}</span>
+                </div>
+                {draft.postExcerpt && (
+                  <p className="text-[10px] text-zinc-500 italic mb-2 truncate" title={draft.postExcerpt}>
+                    Post: {draft.postExcerpt.slice(0, 120)}{draft.postExcerpt.length > 120 ? '...' : ''}
+                  </p>
+                )}
+                <textarea
+                  defaultValue={draft.commentText}
+                  id={`comment-draft-${draft.id}`}
+                  rows={Math.min(5, Math.max(2, draft.commentText.split('\n').length + 1))}
+                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      const textarea = document.getElementById(`comment-draft-${draft.id}`) as HTMLTextAreaElement;
+                      const editedText = textarea?.value || draft.commentText;
+                      try {
+                        await approveCommentDraft(draft.id, editedText);
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-3 h-3" /> Approve
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      try {
+                        await rejectCommentDraft(draft.id);
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Skip
+                  </button>
+                  {draft.postUrl && (
+                    <a href={draft.postUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-300 ml-auto transition-colors">
+                      View post ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Section 6: Prospect Table */}
       {prospects.length === 0 && stageFilter === 'all' ? (
         <EmptyState
@@ -868,6 +941,8 @@ const OutreachPanel: React.FC = () => {
                       { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '3-DM sequence (warm → owned opinion → soft offer)' },
                       { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection (engaged + connected stages) + alerts' },
                       { id: 'kFYlfnWd98YaiErH', name: 'Send Messages', schedule: '2m', flag: null, desc: 'Email sender + 3-email follow-up sequence' },
+                      { id: '9q4bhlIBQCiCxQpq', name: 'Comment Drafter', schedule: '2h', flag: 'outreach_auto_comment', desc: 'Fetches posts from commenting_targets, generates drafts in Ivan\'s voice (approve before send)' },
+                      { id: '2AVRUQLoxCIXCzT0', name: 'Comment Sender', schedule: '30m', flag: 'outreach_auto_comment_send', desc: 'Posts approved comment drafts via UniPile — enable only after reviewing drafts' },
                     ].map((wf) => {
                       const isActive = workflowStatuses[wf.id] ?? false;
                       const flagOn = wf.flag ? (featureFlags[wf.flag] ?? false) : true;

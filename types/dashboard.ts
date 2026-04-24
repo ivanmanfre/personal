@@ -455,6 +455,18 @@ export interface OutreachMessage {
   recipientEmail: string | null;
 }
 
+export interface CommentDraft {
+  id: string;
+  targetId: string;
+  targetName: string | null;
+  postExcerpt: string | null;
+  postUrl: string | null;
+  postSocialId: string | null;
+  commentText: string;
+  status: string;
+  draftedAt: string | null;
+}
+
 export interface OutreachEngagementLog {
   id: string;
   prospectId: string;

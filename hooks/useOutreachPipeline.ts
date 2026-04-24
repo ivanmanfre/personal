@@ -7,6 +7,7 @@ import type {
   OutreachMessage,
   OutreachEngagementLog,
   OutreachPipelineStats,
+  CommentDraft,
 } from '../types/dashboard';
 
 interface OptimisticLock {
@@ -201,7 +202,7 @@ export function useOutreachPipeline(timezone?: string) {
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5'];
+      const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5', '9q4bhlIBQCiCxQpq', '2AVRUQLoxCIXCzT0'];
       const todayStartIso = (() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -638,6 +639,57 @@ export function useOutreachPipeline(timezone?: string) {
 
   useEffect(() => { fetchPendingDrafts(); }, [fetchPendingDrafts]);
 
+  // Comment drafts (commenting_log where status='draft')
+  const [commentDrafts, setCommentDrafts] = useState<CommentDraft[]>([]);
+
+  const fetchCommentDrafts = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('commenting_log')
+        .select('id, target_id, post_excerpt, post_url, post_social_id, comment_text, status, drafted_at, commenting_targets(name)')
+        .eq('status', 'draft')
+        .order('drafted_at', { ascending: false });
+      setCommentDrafts((data || []).map((r: any) => ({
+        id: r.id,
+        targetId: r.target_id,
+        targetName: r.commenting_targets?.name || null,
+        postExcerpt: r.post_excerpt || null,
+        postUrl: r.post_url || null,
+        postSocialId: r.post_social_id || null,
+        commentText: r.comment_text,
+        status: r.status,
+        draftedAt: r.drafted_at || null,
+      })));
+    } catch (err) {
+      toastError('load comment drafts', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchCommentDrafts(); }, [fetchCommentDrafts]);
+
+  const approveCommentDraft = useCallback(async (draftId: string, commentText: string) => {
+    try {
+      await supabase.from('commenting_log').update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        comment_text: commentText,
+      }).eq('id', draftId);
+      toastSuccess('Comment approved — sender picks it up within 30 min');
+      await fetchCommentDrafts();
+    } catch (err) {
+      toastError('approve comment', err);
+    }
+  }, [fetchCommentDrafts]);
+
+  const rejectCommentDraft = useCallback(async (draftId: string) => {
+    try {
+      await supabase.from('commenting_log').update({ status: 'skipped' }).eq('id', draftId);
+      await fetchCommentDrafts();
+    } catch (err) {
+      toastError('reject comment', err);
+    }
+  }, [fetchCommentDrafts]);
+
   // Derived state
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -687,5 +739,9 @@ export function useOutreachPipeline(timezone?: string) {
     rejectDraft,
     pendingDrafts,
     fetchPendingDrafts,
+    commentDrafts,
+    fetchCommentDrafts,
+    approveCommentDraft,
+    rejectCommentDraft,
   };
 }
