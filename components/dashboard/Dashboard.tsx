@@ -60,6 +60,7 @@ const LazyRecordingsPanel = lazy(retryImport(() => import('./RecordingsPanel')))
 const LazyAutoResearchPanel = lazy(retryImport(() => import('./AutoResearchPanel')));
 const LazyMeetingsPanel = lazy(retryImport(() => import('./MeetingsPanel')));
 const LazyCodePanel = lazy(retryImport(() => import('./CodePanel')));
+const LazyUsagePanel = lazy(retryImport(() => import('./UsagePanel')));
 const LazyVideoIdeasPanel = lazy(retryImport(() => import('./VideoIdeasPanel')));
 const LazyAgentReadyPanel = lazy(retryImport(() => import('./AgentReadyPanel')));
 const LazyAudiencePanel = lazy(retryImport(() => import('./AudiencePanel')));
@@ -81,6 +82,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   'auto-research': LazyAutoResearchPanel as unknown as React.ComponentType,
   meetings: LazyMeetingsPanel as unknown as React.ComponentType,
   code: LazyCodePanel as unknown as React.ComponentType,
+  usage: LazyUsagePanel as unknown as React.ComponentType,
   video: LazyVideoIdeasPanel as unknown as React.ComponentType,
   'agent-ready': LazyAgentReadyPanel as unknown as React.ComponentType,
   audience: LazyAudiencePanel as unknown as React.ComponentType,
@@ -110,6 +112,7 @@ const lazyImports = [
   retryImport(() => import('./AutoResearchPanel')),
   retryImport(() => import('./MeetingsPanel')),
   retryImport(() => import('./CodePanel')),
+  retryImport(() => import('./UsagePanel')),
   retryImport(() => import('./VideoIdeasPanel')),
   retryImport(() => import('./AgentReadyPanel')),
   retryImport(() => import('./AudiencePanel')),
