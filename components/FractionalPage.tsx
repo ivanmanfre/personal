@@ -52,7 +52,7 @@ const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
   'On-site presence - this is remote-first, async-first',
   '24/7 on-call response - real emergencies handled same-day, but I sleep',
-  'Unlimited implementation volume — scope is agreed at the start of each month',
+  'Unlimited implementation volume — each tier has a defined scope and hours cap per month',
 ];
 
 const FractionalPage: React.FC = () => {
