@@ -10,7 +10,7 @@ const tiers = [
     fit: 'Firms at $1–2M ARR',
     features: [
       '1 strategy call per month',
-      '1 implementation project per month',
+      'Ongoing improvements + 1 new build per month',
       'Async support (Slack or email)',
       'System health monitoring',
     ],
@@ -21,9 +21,8 @@ const tiers = [
     fit: 'Firms at $2–5M ARR',
     features: [
       '2 strategy calls per month',
-      '2 implementation projects per month',
+      'Running backlog — 2-3 builds or improvements per month, prioritized together',
       'Dedicated Slack channel',
-      'Tool and vendor management',
       'Monthly AI roadmap doc',
     ],
     highlighted: true,
@@ -34,7 +33,7 @@ const tiers = [
     fit: 'Firms at $5M+ ARR',
     features: [
       'Weekly strategy calls',
-      '3–4 implementation projects per month',
+      'Full implementation bandwidth — whatever moves the needle that month',
       'Priority response (24-hr SLA)',
       'Full AI and ops strategy ownership',
       'Quarterly business review',
@@ -53,7 +52,7 @@ const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
   'On-site presence - this is remote-first, async-first',
   '24/7 on-call response - real emergencies handled same-day, but I sleep',
-  'Unlimited implementation volume - each tier has a defined project cap per month',
+  'Unlimited implementation volume — scope is agreed at the start of each month',
 ];
 
 const FractionalPage: React.FC = () => {
