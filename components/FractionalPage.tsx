@@ -59,7 +59,7 @@ const notIncluded = [
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Your AI strategy, owned by someone who ships. Monthly retainer in three tiers. For growing service firms at $1-5M+ ARR that want infrastructure, not another consultant.',
+    description: 'Monthly retainer. A senior AI and ops partner embedded in your business, shipping systems every month. Three tiers for growing service firms at $1-5M+ ARR.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
   return (
@@ -83,33 +83,18 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
           >
-            Your AI strategy, <br />
-            <span className="font-drama italic">owned by someone who ships.</span>
+            A senior AI partner, <br />
+            <span className="font-drama italic">embedded in your business.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-10"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-16"
           >
-            A monthly retainer. You get a senior AI and ops partner who understands your business and ships actual systems - not slide decks. Three tiers based on the volume and depth of the work your team needs.
+            Monthly retainer. Three tiers based on the volume and depth of work your team needs. Systems ship every month.
           </motion.p>
-
-          {/* TL;DR */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="bg-paper-sunk border border-[color:var(--color-hairline)] p-6 md:p-8 mb-12 max-w-3xl"
-          >
-            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">TL;DR</p>
-            <ul className="space-y-2 text-ink-soft leading-relaxed">
-              <li>· Monthly retainer from $3,500/mo · 3 tiers based on depth</li>
-              <li>· A senior AI and ops partner embedded in your business, shipping systems monthly</li>
-              <li>· Your AI strategy, owned by someone who ships — not another consultant selling slide decks</li>
-            </ul>
-          </motion.div>
 
           {/* Tiers */}
           <div className="grid md:grid-cols-3 gap-6 mb-20">
