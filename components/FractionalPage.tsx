@@ -45,7 +45,7 @@ const howItWorks = [
   { title: 'Month 1: Agent-Ready Assessment', description: 'Every Fractional engagement starts with the $2,500 diagnostic (credited to month 1). I score your ops, we agree on scope, you approve the 30-day roadmap.' },
   { title: 'Monthly cadence', description: 'Strategy calls happen on a fixed day. Implementation projects get delivered within the month. I track scope in a shared doc so you know where every hour went.' },
   { title: 'Quarterly review', description: 'Every 90 days we pull up the roadmap, measure what shipped, decide what stays, what\'s dropped, and what\'s added for the next quarter.' },
-  { title: 'No lock-in', description: 'Month-to-month. Cancel with 30 days notice. If the partnership isn\'t working, we end it cleanly. Most clients stay 12+ months because the system compounds.' },
+  { title: 'No lock-in', description: 'Month-to-month. If the partnership isn\'t working, we end it cleanly.' },
 ];
 
 const notIncluded = [
