@@ -17,6 +17,7 @@ export type UsageSession = {
   estimated_cost: number;
   message_count: number;
   turn_count: number;
+  user_prompt_count: number;
   tool_call_counts: Record<string, number>;
   session_kind: string | null;
   first_user_message: string | null;

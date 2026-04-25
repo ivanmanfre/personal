@@ -303,7 +303,8 @@ export default function UsagePanel() {
                 <th className="font-medium">Project</th>
                 <th className="font-medium">Kind</th>
                 <th className="font-medium">Model</th>
-                <th className="font-medium text-right">Turns</th>
+                <th className="font-medium text-right" title="User prompts you sent">Prompts</th>
+                <th className="font-medium text-right" title="Model API calls (one prompt can produce many — each tool round-trip is a turn)">Turns</th>
                 <th className="font-medium text-right">Tokens</th>
                 <th className="font-medium text-right">API equiv</th>
                 <th className="font-medium text-right">σ</th>
@@ -316,6 +317,7 @@ export default function UsagePanel() {
                 const isOpen = openSession === s.id;
                 const meta = kindBadge(s.session_kind);
                 const tools = topTools(s.tool_call_counts ?? {}, 5);
+                const turnsPerPrompt = s.user_prompt_count > 0 ? s.turn_count / s.user_prompt_count : 0;
                 return (
                   <Fragment key={s.id}>
                     <tr
@@ -330,7 +332,8 @@ export default function UsagePanel() {
                         </span>
                       </td>
                       <td className={modelColor(s.primary_model)}>{s.primary_model.replace("claude-", "")}</td>
-                      <td className="text-right text-zinc-400 tabular-nums">{fmtNum(s.turn_count)}</td>
+                      <td className="text-right text-zinc-300 tabular-nums">{fmtNum(s.user_prompt_count)}</td>
+                      <td className="text-right text-zinc-500 tabular-nums" title={s.user_prompt_count > 0 ? `${(s.turn_count / s.user_prompt_count).toFixed(1)}× per prompt` : undefined}>{fmtNum(s.turn_count)}</td>
                       <td className="text-right text-zinc-400 tabular-nums">{fmtTokens(s.total_tokens)}</td>
                       <td className="text-right text-zinc-200 tabular-nums font-medium">{fmtCost(Number(s.estimated_cost))}</td>
                       <td className="text-right tabular-nums">
@@ -365,6 +368,12 @@ export default function UsagePanel() {
                                       </span>
                                     ))
                                   }
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Conversation shape</div>
+                                <div className="text-zinc-400 tabular-nums">
+                                  {fmtNum(s.user_prompt_count)} prompts → {fmtNum(s.turn_count)} model calls{turnsPerPrompt > 0 ? ` (${turnsPerPrompt.toFixed(1)}× per prompt)` : ""}
                                 </div>
                               </div>
                               <div>
