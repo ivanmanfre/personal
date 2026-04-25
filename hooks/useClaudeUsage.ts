@@ -9,6 +9,10 @@ export type UsageSession = {
   primary_model: string;
   started_at: string;
   ended_at: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
   total_tokens: number;
   estimated_cost: number;
   message_count: number;
