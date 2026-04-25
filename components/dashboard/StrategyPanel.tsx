@@ -5,6 +5,7 @@ import LoadingSkeleton from './shared/LoadingSkeleton';
 import { ICPCampaignsSection } from './strategy/ICPCampaignsSection';
 import { LeadMagnetInventorySection } from './strategy/LeadMagnetInventorySection';
 import { OfferLadderSection } from './strategy/OfferLadderSection';
+import { FunnelTouchpointsSection } from './strategy/FunnelTouchpointsSection';
 
 const StrategyPanel: React.FC = () => {
   const { campaigns, leadMagnets, campaignsWithoutLM, paidAssessmentsThisMonth, paidAssessmentsTotal, activeClients, loading } = useStrategyMap();
@@ -25,6 +26,7 @@ const StrategyPanel: React.FC = () => {
         paidAssessmentsTotal={paidAssessmentsTotal}
         activeClients={activeClients}
       />
+      <FunnelTouchpointsSection paidAssessmentsThisMonth={paidAssessmentsThisMonth} />
     </div>
   );
 };
