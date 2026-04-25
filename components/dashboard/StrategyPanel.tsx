@@ -4,6 +4,7 @@ import { useStrategyMap } from '../../hooks/useStrategyMap';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import { ICPCampaignsSection } from './strategy/ICPCampaignsSection';
 import { LeadMagnetInventorySection } from './strategy/LeadMagnetInventorySection';
+import { OfferLadderSection } from './strategy/OfferLadderSection';
 
 const StrategyPanel: React.FC = () => {
   const { campaigns, leadMagnets, campaignsWithoutLM, paidAssessmentsThisMonth, paidAssessmentsTotal, activeClients, loading } = useStrategyMap();
@@ -19,11 +20,11 @@ const StrategyPanel: React.FC = () => {
 
       <ICPCampaignsSection campaigns={campaigns} campaignsWithoutLM={campaignsWithoutLM} />
       <LeadMagnetInventorySection leadMagnets={leadMagnets} campaignsWithoutLM={campaignsWithoutLM} />
-
-      {/* Phase 6+ sections appear here */}
-      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-4 text-xs text-zinc-500 font-mono">
-        TODO Phase 6+: paidAssessmentsThisMonth={paidAssessmentsThisMonth}, paidAssessmentsTotal={paidAssessmentsTotal}, activeClients={activeClients}
-      </div>
+      <OfferLadderSection
+        paidAssessmentsThisMonth={paidAssessmentsThisMonth}
+        paidAssessmentsTotal={paidAssessmentsTotal}
+        activeClients={activeClients}
+      />
     </div>
   );
 };
