@@ -716,6 +716,90 @@ export interface VideoShort {
 }
 
 export type RefreshRate = 30000 | 60000 | 300000;
+
+// ─── Strategy Map Types ───
+
+export interface OfferLadderRung {
+  id: string;
+  name: string;
+  priceLabel: string;           // "Free", "$500", "$2,500", "$1.5K-$2K/mo"
+  priceTier: 'free' | 'low' | 'mid' | 'high' | 'enterprise';
+  status: 'live' | 'internal' | 'planned' | 'sold-out';
+  description: string;
+  stripeUrl: string | null;
+  resourceUrl: string | null;
+  visibility: 'public' | 'unlisted' | 'private';
+}
+
+export interface FunnelTouchpoint {
+  step: number;
+  name: string;
+  buildStatus: 'built' | 'partial' | 'not-built';
+  url: string | null;
+  metric: string | null;
+  description: string;
+}
+
+export interface PlannedLeadMagnet {
+  slug: string;
+  title: string;
+  format: string;
+  status: 'planned';
+  targetCampaign: string;
+  industryCluster: string;
+  priority: number;
+  notes: string;
+}
+
+export interface ExternalLink {
+  label: string;
+  url: string;
+  category: 'live-site' | 'tool' | 'doc' | 'spec';
+}
+
+export interface StrategyCampaignSummary {
+  id: string;
+  name: string;
+  isActive: boolean;
+  niche: string[];
+  apolloTitles: string[];
+  apolloLocations: string[];
+  apolloKeywords: string[];
+  apolloEmployeeRanges: string[];
+  prospectCounts: {
+    enriched: number;
+    warming: number;
+    engaged: number;
+    connection_sent: number;
+    connected: number;
+    dm_sent: number;
+    replied: number;
+    archived: number;
+    total: number;
+  };
+}
+
+export interface StrategyLeadMagnetRow {
+  id: string;
+  title: string;
+  format: string;
+  status: string;
+  resourcePageUrl: string | null;
+  mappedCampaigns: string[];
+  demand: number;
+  isPlanned: boolean;
+  lastUpdated: string | null;
+}
+
+export interface StrategyMapData {
+  campaigns: StrategyCampaignSummary[];
+  leadMagnets: StrategyLeadMagnetRow[];
+  campaignsWithoutLM: string[];
+  paidAssessmentsThisMonth: number;
+  paidAssessmentsTotal: number;
+  activeClients: number;
+}
+
 export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'settings';
 
 export interface PaidAssessmentRow {

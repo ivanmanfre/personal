@@ -1,0 +1,192 @@
+import type { OfferLadderRung, FunnelTouchpoint, PlannedLeadMagnet, ExternalLink } from '../types/dashboard';
+
+// Offer ladder — 2026-04-19 strategy doc + 2026-04-25 lead magnet spec
+export const offerLadder: OfferLadderRung[] = [
+  {
+    id: 'lm-free',
+    name: 'Free Lead Magnets',
+    priceLabel: 'Free',
+    priceTier: 'free',
+    status: 'live',
+    description: 'Vertical-specific scorecards, calculators, and reports — entry to the funnel.',
+    stripeUrl: null,
+    resourceUrl: 'https://resources.ivanmanfredi.com',
+    visibility: 'public',
+  },
+  {
+    id: 'orientation-500',
+    name: 'AI Orientation Session',
+    priceLabel: '$500',
+    priceTier: 'low',
+    status: 'internal',
+    description: '1-hour walk-through (unlisted). Internal upsell after qualified Discovery.',
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'unlisted',
+  },
+  {
+    id: 'agent-ready-2500',
+    name: 'Agent-Ready Assessment',
+    priceLabel: '$2,500',
+    priceTier: 'mid',
+    status: 'live',
+    description: 'Paid 4-precondition diagnostic + 90-day roadmap. Primary qualified-lead generator.',
+    stripeUrl: 'https://buy.stripe.com/agent-ready-assessment',
+    resourceUrl: 'https://ivanmanfredi.com/agent-ready-assessment',
+    visibility: 'public',
+  },
+  {
+    id: 'lms-project',
+    name: 'Lead Magnet System (productized)',
+    priceLabel: '$6K-$10K',
+    priceTier: 'high',
+    status: 'planned',
+    description: "Productized entry project — build the firm's first agent-ready lead magnet.",
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'public',
+  },
+  {
+    id: 'care-plan',
+    name: 'Care Plan',
+    priceLabel: '$1.5K-$2K/mo',
+    priceTier: 'high',
+    status: 'planned',
+    description: 'Maintenance retainer for shipped agent-ready systems.',
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'public',
+  },
+  {
+    id: 'fractional-tier-1',
+    name: 'Fractional AI Partner — Tier 1',
+    priceLabel: '$4K/mo',
+    priceTier: 'high',
+    status: 'planned',
+    description: 'Part-time embedded AI ops partner — entry tier.',
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'public',
+  },
+  {
+    id: 'fractional-tier-2',
+    name: 'Fractional AI Partner — Tier 2',
+    priceLabel: '$7K/mo',
+    priceTier: 'enterprise',
+    status: 'planned',
+    description: 'Embedded partner with broader implementation scope.',
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'public',
+  },
+  {
+    id: 'fractional-tier-3',
+    name: 'Fractional AI Partner — Tier 3',
+    priceLabel: '$10K/mo',
+    priceTier: 'enterprise',
+    status: 'planned',
+    description: 'Full embedded partner with delivery + management.',
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'public',
+  },
+];
+
+// Funnel touchpoints — 2026-04-19 strategy doc, 4-touchpoint architecture
+export const funnelTouchpoints: FunnelTouchpoint[] = [
+  {
+    step: 1,
+    name: 'Pre-Call Qualification Form',
+    buildStatus: 'not-built',
+    url: null,
+    metric: null,
+    description: "Free form gating Discovery Call. Filters unqualified prospects before Ivan's time is committed.",
+  },
+  {
+    step: 2,
+    name: 'Discovery Call (free, 30 min)',
+    buildStatus: 'partial',
+    url: 'https://cal.com/ivanmanfredi/discovery',
+    metric: null,
+    description: 'Free call only after Pre-Call Form qualifies. Outcome: Assessment sale or polite no.',
+  },
+  {
+    step: 3,
+    name: 'Agent-Ready Assessment (paid, $2,500)',
+    buildStatus: 'built',
+    url: 'https://ivanmanfredi.com/agent-ready-assessment',
+    metric: null,
+    description: '1-week paid diagnostic. Conversion target: 50-70% to Care Plan or LMS project.',
+  },
+  {
+    step: 4,
+    name: 'Client Kickoff',
+    buildStatus: 'partial',
+    url: null,
+    metric: null,
+    description: 'Onboarding flow after Assessment converts to engagement.',
+  },
+];
+
+// Planned lead magnets from 2026-04-25 spec — items not yet in lead_magnets table
+export const plannedLeadMagnets: PlannedLeadMagnet[] = [
+  {
+    slug: 'accounting-workflow-capacity-calculator',
+    title: 'Agent-Ready Capacity Calculator for Accounting Firms',
+    format: 'Google Sheet',
+    status: 'planned',
+    targetCampaign: 'Accounting & Tax Advisory Firms',
+    industryCluster: 'accounting',
+    priority: 1,
+    notes: '21 enriched prospects blocked. Highest priority.',
+  },
+  {
+    slug: 'architecture-project-margin-score',
+    title: 'Agent-Ready Margin Diagnostic for Architecture Studios',
+    format: 'Interactive Web + Visual Diagram',
+    status: 'planned',
+    targetCampaign: 'Architecture & Interior Design Firms',
+    industryCluster: 'architecture',
+    priority: 2,
+    notes: '13 enriched prospects blocked.',
+  },
+  {
+    slug: 'research-firm-throughput-report',
+    title: 'Agent-Ready Throughput Report for Research Practices',
+    format: 'PDF Report',
+    status: 'planned',
+    targetCampaign: 'Research Firms & Insights Practices',
+    industryCluster: 'research',
+    priority: 3,
+    notes: '14 enriched prospects blocked.',
+  },
+  {
+    slug: 'consultancy-hire-or-build-decision-tool',
+    title: 'Agent-Ready Decision Tool for Boutique Consultancies',
+    format: 'Interactive Decision Tool',
+    status: 'planned',
+    targetCampaign: 'Consultancies & Strategy Firms',
+    industryCluster: 'consulting',
+    priority: 4,
+    notes: '12 enriched prospects blocked.',
+  },
+];
+
+// Source-of-truth links + external resources
+export const externalLinks: ExternalLink[] = [
+  { label: 'Personal site', url: 'https://ivanmanfredi.com', category: 'live-site' },
+  { label: 'Resources subdomain', url: 'https://resources.ivanmanfredi.com', category: 'live-site' },
+  { label: 'n8n', url: 'https://n8n.ivanmanfredi.com', category: 'tool' },
+  { label: 'Supabase project', url: 'https://supabase.com/dashboard/project/bjbvqvzbzczjbatgmccb', category: 'tool' },
+  { label: 'ClickUp Prompts Library', url: 'https://app.clickup.com/90132938061/v/dc/2ky5ezad-853', category: 'tool' },
+  { label: 'Stripe dashboard', url: 'https://dashboard.stripe.com', category: 'tool' },
+];
+
+// Strategy doc + recent specs — manually maintained
+export const sourceOfTruthDocs: ExternalLink[] = [
+  { label: 'Positioning & Offer Strategy (2026-04-19)', url: '/docs/superpowers/specs/2026-04-19-positioning-and-offer-strategy-design.md', category: 'spec' },
+  { label: 'Vertical Lead Magnets Design (2026-04-25)', url: '/docs/superpowers/specs/2026-04-25-vertical-lead-magnets-design.md', category: 'spec' },
+  { label: 'Strategy Map Panel Design (2026-04-25)', url: '/docs/superpowers/specs/2026-04-25-strategy-map-panel-design.md', category: 'spec' },
+  { label: 'Outreach Strategy Purge (2026-04-23)', url: 'memory/outreach-strategy-purge-2026-04-23.md', category: 'doc' },
+  { label: 'MEMORY index', url: 'memory/MEMORY.md', category: 'doc' },
+];
