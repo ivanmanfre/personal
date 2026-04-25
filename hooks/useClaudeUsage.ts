@@ -16,6 +16,10 @@ export type UsageSession = {
   total_tokens: number;
   estimated_cost: number;
   message_count: number;
+  turn_count: number;
+  tool_call_counts: Record<string, number>;
+  session_kind: string | null;
+  first_user_message: string | null;
 };
 
 export type DailyTotal = {
