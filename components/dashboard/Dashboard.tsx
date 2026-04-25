@@ -64,9 +64,11 @@ const LazyUsagePanel = lazy(retryImport(() => import('./UsagePanel')));
 const LazyVideoIdeasPanel = lazy(retryImport(() => import('./VideoIdeasPanel')));
 const LazyAgentReadyPanel = lazy(retryImport(() => import('./AgentReadyPanel')));
 const LazyAudiencePanel = lazy(retryImport(() => import('./AudiencePanel')));
+const LazyStrategyPanel = lazy(retryImport(() => import('./StrategyPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
+  strategy: LazyStrategyPanel as unknown as React.ComponentType,
   performance: LazyPerformancePanel as unknown as React.ComponentType,
   content: ContentPanel,
   workflows: WorkflowsPanel,
