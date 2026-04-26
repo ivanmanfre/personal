@@ -20,7 +20,7 @@ const offers: Offer[] = [
     name: 'Agent-Ready Assessment',
     price: '$2,500',
     cadence: 'One-week engagement',
-    description: '1-week diagnostic. I evaluate your operation against the 4 preconditions and hand back a staged roadmap for the next 30, 90, and 180 days.',
+    description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan — sequenced builds, costed gaps, and decision logic for the first project.',
     creditNote: '100% credited toward any follow-on engagement within 60 days.',
     href: '/assessment',
     cta: 'Book the Assessment',

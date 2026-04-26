@@ -6,19 +6,19 @@ import { useMetadata } from '../hooks/useMetadata';
 const tiers = [
   {
     name: 'Essential',
-    price: 'From $3,500/mo',
-    fit: 'Firms at $1–2M ARR',
+    price: '$3,500/mo',
+    fit: 'Firms at $1–2M ARR, easing into AI.',
     features: [
       '1 strategy call per month',
-      'Ongoing improvements + 1 new build per month',
+      'Ongoing improvements + 1 new build per month (or equivalent in smaller automations)',
       'Async support (Slack or email)',
-      'System health monitoring',
+      'Proactive system monitoring',
     ],
   },
   {
     name: 'Standard',
-    price: 'From $6,500/mo',
-    fit: 'Firms at $2–5M ARR',
+    price: '$6,500/mo',
+    fit: 'Firms at $2–5M ARR with a real backlog.',
     features: [
       '2 strategy calls per month',
       'Running backlog — 2-3 builds or improvements per month, prioritized together',
@@ -29,8 +29,8 @@ const tiers = [
   },
   {
     name: 'Partner',
-    price: 'From $10,000/mo',
-    fit: 'Firms at $5M+ ARR',
+    price: '$10,000/mo',
+    fit: 'Firms at $5M+ going all-in on AI.',
     features: [
       'Weekly strategy calls',
       'Full implementation bandwidth — whatever moves the needle that month',
@@ -52,7 +52,7 @@ const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
   'On-site presence - this is remote-first, async-first',
   '24/7 on-call response - real emergencies handled same-day, but I sleep',
-  'Unlimited implementation volume — each tier has a defined scope and hours cap per month',
+  'Unlimited implementation volume — each tier has a defined monthly scope',
 ];
 
 const FractionalPage: React.FC = () => {
@@ -121,7 +121,7 @@ const FractionalPage: React.FC = () => {
                   <p className={`text-3xl font-bold tracking-tighter font-mono mb-2 ${tier.highlighted ? 'text-accent' : 'text-black'}`}>
                     {tier.price}
                   </p>
-                  <p className={`text-xs font-mono uppercase tracking-widest ${tier.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
+                  <p className={`text-sm italic leading-relaxed ${tier.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
                     {tier.fit}
                   </p>
                 </div>
