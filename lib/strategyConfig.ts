@@ -49,7 +49,7 @@ export const offerLadder: OfferLadderRung[] = [
   {
     id: 'care-plan',
     name: 'Care Plan',
-    priceLabel: '$1.5K-$2K/mo',
+    priceLabel: '$1K/mo',
     priceTier: 'high',
     status: 'planned',
     description: 'Maintenance retainer for shipped agent-ready systems.',
