@@ -184,9 +184,11 @@ export const externalLinks: ExternalLink[] = [
 
 // Strategy doc + recent specs — manually maintained
 export const sourceOfTruthDocs: ExternalLink[] = [
-  { label: 'Positioning & Offer Strategy (2026-04-19)', url: '/docs/superpowers/specs/2026-04-19-positioning-and-offer-strategy-design.md', category: 'spec' },
-  { label: 'Vertical Lead Magnets Design (2026-04-25)', url: '/docs/superpowers/specs/2026-04-25-vertical-lead-magnets-design.md', category: 'spec' },
   { label: 'Strategy Map Panel Design (2026-04-25)', url: '/docs/superpowers/specs/2026-04-25-strategy-map-panel-design.md', category: 'spec' },
+  { label: 'Vertical Lead Magnets Design (2026-04-25)', url: '/docs/superpowers/specs/2026-04-25-vertical-lead-magnets-design.md', category: 'spec' },
+  { label: 'Instagram Content Pipeline (2026-04-21)', url: '/docs/superpowers/specs/2026-04-21-instagram-content-pipeline-design.md', category: 'spec' },
+  { label: 'Design System v1 (2026-04-20)', url: '/docs/superpowers/specs/2026-04-20-design-system-v1.md', category: 'spec' },
+  { label: 'Positioning & Offer Strategy (2026-04-19)', url: '/docs/superpowers/specs/2026-04-19-positioning-and-offer-strategy-design.md', category: 'spec' },
   { label: 'Outreach Strategy Purge (2026-04-23)', url: 'memory/outreach-strategy-purge-2026-04-23.md', category: 'doc' },
   { label: 'MEMORY index', url: 'memory/MEMORY.md', category: 'doc' },
 ];

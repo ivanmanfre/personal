@@ -49,10 +49,20 @@ export const ICPCampaignsSection: React.FC<Props> = ({ campaigns, campaignsWitho
   );
 };
 
+const FOUNDER_TITLE_RX = /\b(founder|owner|managing partner|managing director|principal|partner|ceo|creative director|design principal)\b/i;
+const OPERATOR_TITLE_RX = /\b(coo|chief operating officer|head of operations|director of operations|vp of operations|vp operations)\b/i;
+
+function detectPersonas(titles: string[]): { founder: boolean; operator: boolean } {
+  const founder = titles.some(t => FOUNDER_TITLE_RX.test(t));
+  const operator = titles.some(t => OPERATOR_TITLE_RX.test(t));
+  return { founder, operator };
+}
+
 const CampaignRow: React.FC<{ campaign: StrategyCampaignSummary; missingLM: boolean; onClick: () => void }> = ({ campaign, missingLM, onClick }) => {
   const [expanded, setExpanded] = useState(false);
   const c = campaign;
   const stages = c.prospectCounts;
+  const personas = detectPersonas(c.apolloTitles);
 
   return (
     <div className={`border rounded-xl ${missingLM ? 'border-red-500/30 bg-red-500/5' : 'border-zinc-700/40 bg-zinc-800/30'}`}>
@@ -61,6 +71,8 @@ const CampaignRow: React.FC<{ campaign: StrategyCampaignSummary; missingLM: bool
           {expanded ? <ChevronDown className="w-3 h-3 text-zinc-500 shrink-0" /> : <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />}
           <span className="text-sm font-medium text-zinc-200 truncate">{c.name}</span>
           {missingLM && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/15 text-red-400 border border-red-500/25 shrink-0">no LM</span>}
+          {personas.founder && <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0" title="Apollo titles target founder/owner/partner level">founder</span>}
+          {personas.operator && <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0" title="Apollo titles also target COO/Head of Ops/Director of Ops">operator</span>}
         </button>
         <div className="flex items-center gap-3 text-xs shrink-0">
           <StageDot label="enriched" count={stages.enriched} color="text-blue-400" />

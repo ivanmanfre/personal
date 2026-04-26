@@ -70,6 +70,7 @@ export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campa
                 <th className="text-left px-3 py-2">Status</th>
                 <th className="text-left px-3 py-2">Mapped Campaigns</th>
                 <th className="text-right px-3 py-2">Demand</th>
+                <th className="text-right px-3 py-2">Updated</th>
                 <th className="text-center px-3 py-2 w-8"></th>
               </tr>
             </thead>
@@ -86,6 +87,9 @@ export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campa
                   </td>
                   <td className="px-3 py-2 text-right">
                     <span className={`font-mono font-semibold ${lm.demand > 0 ? 'text-zinc-200' : 'text-zinc-600'}`}>{lm.demand}</span>
+                  </td>
+                  <td className="px-3 py-2 text-right text-[10px] text-zinc-500 font-mono">
+                    {lm.lastUpdated ? new Date(lm.lastUpdated).toISOString().slice(0, 10) : '—'}
                   </td>
                   <td className="px-3 py-2 text-center">
                     {lm.resourcePageUrl && (
