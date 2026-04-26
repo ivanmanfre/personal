@@ -47,7 +47,7 @@ const RungRow: React.FC<{ rung: typeof offerLadder[0]; extraMetric: string | nul
     <div className="bg-zinc-800/30 border border-zinc-700/30 rounded-xl px-3 py-2.5">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className={`font-mono font-bold w-20 shrink-0 ${tierColor[rung.priceTier]}`}>{rung.priceLabel}</span>
+          <span className={`font-mono font-bold w-28 shrink-0 ${tierColor[rung.priceTier]}`}>{rung.priceLabel}</span>
           <span className="text-sm text-zinc-200 font-medium truncate">{rung.name}</span>
           {rung.visibility === 'unlisted' && <EyeOff className="w-3 h-3 text-zinc-600 shrink-0" />}
         </div>
@@ -60,8 +60,8 @@ const RungRow: React.FC<{ rung: typeof offerLadder[0]; extraMetric: string | nul
           )}
         </div>
       </div>
-      <p className="text-[11px] text-zinc-500 mt-1 ml-[88px]">{rung.description}</p>
-      {extraMetric && <p className="text-[10px] text-zinc-400 mt-1 ml-[88px] font-mono">{extraMetric}</p>}
+      <p className="text-[11px] text-zinc-500 mt-1 ml-[120px]">{rung.description}</p>
+      {extraMetric && <p className="text-[10px] text-zinc-400 mt-1 ml-[120px] font-mono">{extraMetric}</p>}
     </div>
   );
 };
