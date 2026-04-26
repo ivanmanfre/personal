@@ -364,22 +364,28 @@ const cases = [
     tag: 'PROVALTECH · SALES TECH',
     headlineA: '5%',
     headlineB: '100%',
-    label: 'OF SALES CALLS AUDITED',
-    blurb: 'AI agent scores every call against an 8-criteria rubric.',
+    label: 'OF CALLS GRADED',
+    blurb: 'From 5% sampled to 100% graded. Risk escalation from days to the next morning.',
+    image: '/cases/provaltech.png',
+    imageAlt: 'ProvalTech call performance dashboard',
   },
   {
     tag: 'MARKETING COACH · AGENCY OPS',
     headlineA: '3 days',
-    headlineB: '1 afternoon',
-    label: 'TO LAUNCH A LEAD MAGNET',
-    blurb: 'One idea in ClickUp now produces page, email, smart link, post.',
+    headlineB: '15 min',
+    label: 'IDEA TO LAUNCHED',
+    blurb: 'One idea in ClickUp produces page, email, smart link, scheduled post. Approved, then shipped.',
+    image: null,
+    imageAlt: '',
   },
   {
-    tag: 'PROSWPPP · COMPLIANCE',
-    headlineA: '50',
-    headlineB: 'states',
-    label: 'OF MANUAL RESEARCH, AUTOMATED',
-    blurb: 'Intake to delivered documents, end to end.',
+    tag: 'PROSWPPP · 50 STATES',
+    headlineA: 'Multi-FTE',
+    headlineB: 'Same-day',
+    label: 'PERMITS, AUTOMATED',
+    blurb: 'Work that would have needed multiple full-time researchers now runs intake to delivery, no researcher in the loop.',
+    image: '/cases/proswppp-swppp.png',
+    imageAlt: 'ProSWPPP n8n workflow canvas',
   },
 ];
 
@@ -389,7 +395,7 @@ const Slide06: React.FC = () => (
       <MonoLabel>SOME RECENT ENGAGEMENTS</MonoLabel>
 
       <motion.h2
-        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-14 max-w-4xl"
+        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-14"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
@@ -401,36 +407,67 @@ const Slide06: React.FC = () => (
         {cases.map((c, i) => (
           <motion.div
             key={c.tag}
-            className="border border-[color:var(--color-hairline-bold)] p-7 bg-paper-raise flex flex-col"
+            className="border border-[color:var(--color-hairline-bold)] bg-paper-raise flex flex-col overflow-hidden"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 + i * 0.22, duration: 0.7, ease: editorial }}
           >
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-6">
-              {c.tag}
-            </div>
+            {/* Visual header — real screenshot, or type-only fallback */}
+            {c.image ? (
+              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] overflow-hidden relative">
+                <img
+                  src={c.image}
+                  alt={c.imageAlt}
+                  className="w-full h-full object-cover object-top"
+                />
+                {/* Soft paper-tone wash for editorial register */}
+                <div className="absolute inset-0 bg-paper opacity-[0.04] pointer-events-none" />
+              </div>
+            ) : (
+              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                  ONE IDEA
+                </span>
+                <span className="font-mono text-base text-ink-mute">↓</span>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-ink-soft font-mono text-xs uppercase tracking-[0.15em]">
+                  <span>Page</span>
+                  <span>·</span>
+                  <span>Email</span>
+                  <span>·</span>
+                  <span>Link</span>
+                  <span>·</span>
+                  <span>Post</span>
+                </div>
+              </div>
+            )}
 
-            <div className="flex items-baseline gap-3 mb-4">
-              <span className="stat-numeral font-mono text-3xl text-ink-mute line-through">
-                {c.headlineA}
-              </span>
-              <span className="font-mono text-ink-mute text-xl">→</span>
-              <span className="font-drama italic text-5xl text-black leading-none">
-                {c.headlineB}
-              </span>
-            </div>
+            <div className="p-7 flex flex-col flex-1">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-5">
+                {c.tag}
+              </div>
 
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-5">
-              {c.label}
-            </div>
+              <div className="flex items-baseline gap-3 mb-3">
+                <span className="font-mono text-2xl text-ink-mute line-through tabular-nums">
+                  {c.headlineA}
+                </span>
+                <span className="font-mono text-ink-mute text-lg">→</span>
+                <span className="text-4xl font-semibold tracking-tight text-black leading-none">
+                  {c.headlineB}
+                </span>
+              </div>
 
-            <p className="text-sm text-ink-soft leading-relaxed mb-6 flex-1">{c.blurb}</p>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-5">
+                {c.label}
+              </div>
 
-            <div className="flex items-center gap-2 border-t border-[color:var(--color-hairline)] pt-4">
-              <span className="w-1.5 h-1.5 bg-accent" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-mute">
-                4/4 AGENT-READY
-              </span>
+              <p className="text-sm text-ink-soft leading-relaxed mb-5 flex-1">{c.blurb}</p>
+
+              <div className="flex items-center gap-2 border-t border-[color:var(--color-hairline)] pt-4">
+                <span className="w-1.5 h-1.5 bg-accent" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-mute">
+                  4/4 AGENT-READY
+                </span>
+              </div>
             </div>
           </motion.div>
         ))}
@@ -713,9 +750,9 @@ const Slide10: React.FC = () => (
       >
         Your
         <br />
-        <span className="font-drama italic font-normal">90-Day AI</span>
+        90-Day AI
         <br />
-        Rollout Plan.
+        <span className="font-drama italic font-normal">Rollout Plan.</span>
       </motion.h2>
 
       <motion.div
