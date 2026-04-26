@@ -9,7 +9,9 @@ interface Offer {
   cadence: string;
   description: string;
   href: string;
+  cta: string;
   highlighted?: boolean;
+  creditNote?: string;
 }
 
 const offers: Offer[] = [
@@ -19,32 +21,37 @@ const offers: Offer[] = [
     price: '$2,500',
     cadence: 'One-week engagement',
     description: '1-week diagnostic. I evaluate your operation against the 4 preconditions and hand back a staged roadmap for the next 30, 90, and 180 days.',
+    creditNote: '100% credited toward any follow-on engagement within 60 days.',
     href: '/assessment',
+    cta: 'Book the Assessment',
     highlighted: true,
   },
   {
     id: '02',
-    name: 'Lead Magnet System',
-    price: '$6–10k',
-    cadence: '3-week project',
-    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time.',
-    href: '/lead-magnet-system',
-  },
-  {
-    id: '03',
-    name: 'Content Engine',
-    price: '$5–9k',
-    cadence: '3-week project',
-    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve; the system ships.',
-    href: '/content-system',
-  },
-  {
-    id: '04',
     name: 'Fractional AI Partner',
     price: 'From $3,500/mo',
     cadence: 'Monthly retainer · 3 tiers',
     description: 'Your AI strategy, owned by someone who ships. Senior partner embedded monthly - not another consultant selling slide decks.',
     href: '/fractional',
+    cta: 'Apply for fit',
+  },
+  {
+    id: '03',
+    name: 'Lead Magnet System',
+    price: 'From $7k',
+    cadence: '3-week project',
+    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time.',
+    href: '/lead-magnet-system',
+    cta: 'Scope your build',
+  },
+  {
+    id: '04',
+    name: 'Content Engine',
+    price: 'From $6k',
+    cadence: '3-week project',
+    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve; the system ships.',
+    href: '/content-system',
+    cta: 'Plan your engine',
   },
 ];
 
@@ -99,7 +106,7 @@ const Offers: React.FC = () => {
               </h3>
 
               <div className="mb-4">
-                <div className={`text-3xl font-bold tracking-tight font-mono ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'}`}>
+                <div className={`stat-numeral text-3xl font-bold font-mono ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'}`}>
                   {offer.price}
                 </div>
                 <div className={`text-xs font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
@@ -107,12 +114,19 @@ const Offers: React.FC = () => {
                 </div>
               </div>
 
-              <p className={`text-[15px] leading-relaxed mb-6 flex-1 ${offer.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
+              <p className={`text-[15px] leading-relaxed mb-4 ${offer.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
                 {offer.description}
               </p>
 
+              {offer.creditNote && (
+                <p className={`text-xs leading-relaxed mb-6 flex-1 italic ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-ink-mute'}`}>
+                  {offer.creditNote}
+                </p>
+              )}
+              {!offer.creditNote && <div className="flex-1 mb-6" />}
+
               <div className={`flex items-center gap-2 font-semibold text-sm tracking-wide ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'} group-hover:gap-3 transition-all`}>
-                {offer.highlighted ? 'Book the Assessment' : 'Start the conversation'}
+                {offer.cta}
                 <ArrowRight aria-hidden="true" size={16} />
               </div>
             </motion.a>

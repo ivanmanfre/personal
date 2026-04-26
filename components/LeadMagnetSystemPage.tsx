@@ -103,7 +103,7 @@ const LeadMagnetSystemPage: React.FC = () => {
           >
             <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">TL;DR</p>
             <ul className="space-y-2 text-ink-soft leading-relaxed">
-              <li>· 3-week productized build · $6-10k flat</li>
+              <li>· 3-week productized build · from $7k</li>
               <li>· Interactive landing page + CMS-driven magnet library + CRM integration + email automation</li>
               <li>· You launch new magnets in an afternoon instead of calling an agency</li>
             </ul>
@@ -121,7 +121,7 @@ const LeadMagnetSystemPage: React.FC = () => {
                 <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
                   Fixed project
                 </p>
-                <p className="text-5xl md:text-6xl font-bold tracking-tight">$6–10k</p>
+                <p className="text-5xl md:text-6xl font-bold tracking-tight">From $7k</p>
                 <p className="text-sm text-ink-mute mt-2">3-week delivery · 50% upfront, 50% on launch</p>
               </div>
               <a
