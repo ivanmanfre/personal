@@ -131,6 +131,74 @@ textarea:focus-visible {
   from { opacity: 0; }
 }
 
+/* Stat numerals — IBM Plex Mono renders punctuation in a full character
+   cell, so "$156,000" at headline sizes reads as "$156 , 000" with visible
+   spaces around the comma. Brand spec reserves mono for labels; stat figures
+   are Space Grotesk with tabular-nums so digits still align in the
+   calculator output. Override font-mono if the parent set it. */
+.stat-numeral {
+  font-family: var(--font-sans) !important;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Branded range slider — replaces the OS-blue native control on the ROI
+   calculator. Sage thumb, paper-tone track, hairline border. */
+input[type='range'].stat-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 2px;
+  background: var(--color-hairline);
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+input[type='range'].stat-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--color-hairline);
+  border-radius: 0;
+}
+input[type='range'].stat-slider::-moz-range-track {
+  height: 2px;
+  background: var(--color-hairline);
+  border-radius: 0;
+}
+input[type='range'].stat-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent-ink);
+  border-radius: 0;
+  margin-top: -8px;
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.15);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+input[type='range'].stat-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.08);
+  background: var(--color-accent-ink);
+}
+input[type='range'].stat-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent-ink);
+  border-radius: 0;
+  box-shadow: 0 1px 3px rgba(26, 26, 26, 0.15);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+input[type='range'].stat-slider::-moz-range-thumb:hover {
+  transform: scale(1.08);
+  background: var(--color-accent-ink);
+}
+input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* Sophisticated borders - point to canonical hairline tokens */
 .border-subtle {
   border: 1px solid var(--color-hairline);

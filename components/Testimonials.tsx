@@ -35,8 +35,12 @@ const reviews = [
   }
 ];
 
-// Duplicate list for infinite scroll
-const marqueeReviews = [...reviews, ...reviews];
+// Duplicate list for infinite scroll. Row 2 starts halfway through the
+// rotation so identical cards never sit adjacent to their twin.
+const marqueeRow1 = [...reviews, ...reviews];
+const offset = Math.floor(reviews.length / 2);
+const reviewsOffset = [...reviews.slice(offset), ...reviews.slice(0, offset)];
+const marqueeRow2 = [...reviewsOffset, ...reviewsOffset];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
   <div className="w-[85vw] sm:w-[500px] shrink-0 bg-paper rounded-xl border border-[color:var(--color-hairline)] p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card-subtle">
@@ -96,7 +100,7 @@ const Testimonials: React.FC = () => {
               ease: "linear"
             }}
           >
-            {marqueeReviews.map((review, i) => (
+            {marqueeRow1.map((review, i) => (
               <TestimonialCard key={`row1-${i}`} review={review} />
             ))}
           </motion.div>
@@ -114,7 +118,7 @@ const Testimonials: React.FC = () => {
               ease: "linear"
             }}
           >
-            {marqueeReviews.map((review, i) => (
+            {marqueeRow2.map((review, i) => (
               <TestimonialCard key={`row2-${i}`} review={review} />
             ))}
           </motion.div>

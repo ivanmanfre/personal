@@ -40,11 +40,13 @@ function useTrackPageviews(pathname: string) {
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
+const Walkthrough = lazy(() => import('./components/Walkthrough'));
 
 function App() {
   const location = useLocation();
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isViewer = location.pathname.startsWith('/v/');
+  const isWalkthrough = location.pathname.startsWith('/walkthrough');
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);
@@ -59,6 +61,17 @@ function App() {
       }>
         <Routes>
           <Route path="/v/:token" element={<VideoViewer />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Recording-only walkthrough deck — full-bleed, no nav/footer
+  if (isWalkthrough) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/walkthrough" element={<Walkthrough />} />
         </Routes>
       </Suspense>
     );

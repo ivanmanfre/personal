@@ -33,16 +33,17 @@ const preconditions = [
 ];
 
 const deliverables = [
-  'Scored readiness across the 4 Agent-Ready conditions',
-  '30-day prioritized roadmap with specific next moves',
-  'A clear yes or no on whether to build now or fix the foundation first',
-  '60-minute live presentation call walking through the findings',
+  'Your 90-Day AI Rollout Plan: sequenced builds for the next 90 and 180 days',
+  'Workflow scorecard against the 4 Agent-Ready preconditions',
+  'Costed gap analysis with a dollar number on every gap',
+  'Decision logic for the first project, ready to hand to any builder',
+  '60-minute live walkthrough of the findings',
 ];
 
 const AssessmentPage: React.FC = () => {
   useMetadata({
     title: 'Agent-Ready Assessment | Manfredi',
-    description: 'A 1-week diagnostic that evaluates your operation against the 4 Agent-Ready preconditions. Staged 30, 90, and 180-day roadmap. $2,500, 100% credited toward any follow-on engagement.',
+    description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. $2,500, 100% credited toward any follow-on engagement.',
     canonical: 'https://ivanmanfredi.com/assessment',
   });
   return (
@@ -78,10 +79,10 @@ const AssessmentPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
-            A 1-week diagnostic. I evaluate your operation against the four conditions every AI build needs before it ships. You leave with a staged 30, 90, and 180-day roadmap. If you move forward, the full $2,500 is credited back.
+            A 1-week diagnostic. I evaluate your operation against the four conditions every AI build needs before it ships. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. If you move forward, the full $2,500 is credited back.
           </motion.p>
 
-          {/* Who this is for — self-select gate */}
+          {/* Who this is for - self-select gate */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -92,10 +93,10 @@ const AssessmentPage: React.FC = () => {
               Who this is for
             </p>
             <p className="text-ink-soft leading-relaxed mb-4">
-              The Assessment is for founders who want AI to handle a specific piece of judgment work — lead qualification, document classification, tier-1 support, call scoring, or similar. You don't need a fully formed use case, but you need to know the work exists.
+              The Assessment is for founders who want AI to handle a specific piece of judgment work, like lead qualification, document classification, tier-1 support, or call scoring. You don't need a fully formed use case, but you need to know the work exists.
             </p>
             <p className="text-ink-soft leading-relaxed">
-              Not sure where AI fits in your operation yet? <a href="/start" className="underline underline-offset-2 text-black hover:text-accent-ink transition-colors">Book a free discovery call</a> first — we'll figure out the right path before any money moves.
+              Not sure where AI fits in your operation yet? <a href="/start" className="underline underline-offset-2 text-black hover:text-accent-ink transition-colors">Book a free discovery call</a> first. We'll figure out the right path before any money moves.
             </p>
           </motion.div>
 

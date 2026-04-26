@@ -99,10 +99,10 @@ const Method: React.FC = () => {
 
         {/* 4 Preconditions scorecard */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
+          viewport={{ once: true, margin: '-150px 0px' }}
+          transition={{ duration: 0.5 }}
           className="bg-paper border border-[color:var(--color-hairline)] rounded-xl p-8 md:p-12 mb-12 shadow-card-subtle"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 border-b border-[color:var(--color-hairline)] pb-4">
@@ -116,13 +116,9 @@ const Method: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {preconditions.map((item, i) => (
-              <motion.div
+            {preconditions.map((item) => (
+              <div
                 key={item.number}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.6 + i * 0.1 }}
                 className="flex gap-4 border-l border-[color:var(--color-hairline-bold)] pl-5 py-2"
               >
                 <span className="font-mono text-xs text-ink-mute mt-1">{item.number}</span>
@@ -134,7 +130,7 @@ const Method: React.FC = () => {
                     {item.description}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </motion.div>
