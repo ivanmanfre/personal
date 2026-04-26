@@ -34,11 +34,16 @@ export interface QueueRow {
   status: string;
   errorMessage: string | null;
   attemptCount: number;
+  emailStep: number | null;
+  emailSubject: string | null;
+  emailPreview: string | null;
+  sequenceName: string | null;
 }
 
 export interface EventRow {
   id: string;
   subscriberId: string | null;
+  subscriberEmail: string | null;
   eventType: string;
   metadata: Record<string, unknown> | null;
   createdAt: string;
@@ -79,12 +84,12 @@ export function useNewsletter() {
           .limit(200),
         supabase
           .from('nurture_queue')
-          .select('id, subscriber_id, email_id, scheduled_for, sent_at, status, error_message, attempt_count, nurture_subscribers(email)')
+          .select('id, subscriber_id, email_id, scheduled_for, sent_at, status, error_message, attempt_count, nurture_subscribers(email), nurture_emails(step, subject, preview, sequence_id, nurture_sequences(name))')
           .order('scheduled_for', { ascending: false })
           .limit(100),
         supabase
           .from('nurture_events')
-          .select('id, subscriber_id, event_type, metadata, created_at')
+          .select('id, subscriber_id, event_type, metadata, created_at, nurture_subscribers(email)')
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
@@ -127,10 +132,15 @@ export function useNewsletter() {
           status: r.status,
           errorMessage: r.error_message,
           attemptCount: Number(r.attempt_count) || 0,
+          emailStep: r.nurture_emails?.step ?? null,
+          emailSubject: r.nurture_emails?.subject ?? null,
+          emailPreview: r.nurture_emails?.preview ?? null,
+          sequenceName: r.nurture_emails?.nurture_sequences?.name ?? null,
         })),
         events: (eventsRes.data || []).map((r: any) => ({
           id: r.id,
           subscriberId: r.subscriber_id,
+          subscriberEmail: r.nurture_subscribers?.email ?? null,
           eventType: r.event_type,
           metadata: r.metadata,
           createdAt: r.created_at,

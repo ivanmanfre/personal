@@ -170,18 +170,34 @@ const LetterPanel: React.FC = () => {
               ) : (
                 <ul className="divide-y divide-zinc-800/60 -mx-1">
                   {data.queue.slice(0, 12).map((q) => (
-                    <li key={q.id} className="px-1 py-2.5 flex items-center justify-between gap-3">
+                    <li key={q.id} className="px-1 py-3 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-zinc-200 truncate">{q.subscriberEmail || '—'}</p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          {q.emailStep != null && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
+                              Step {q.emailStep}
+                            </span>
+                          )}
+                          <p className="text-xs text-zinc-200 truncate font-medium">
+                            {q.emailSubject || '(no subject)'}
+                          </p>
+                        </div>
+                        {q.emailPreview && (
+                          <p className="text-[11px] text-zinc-500 truncate">{q.emailPreview}</p>
+                        )}
+                        <p className="text-[11px] text-zinc-500 mt-1">
+                          <span className="text-zinc-400">→ {q.subscriberEmail || '—'}</span>
+                          {q.sequenceName && <span className="text-zinc-600"> · {q.sequenceName}</span>}
+                        </p>
+                        <p className="text-[11px] text-zinc-600 mt-0.5">
                           {q.sentAt ? `Sent ${relTime(q.sentAt)}` : `Scheduled ${fmtDate(q.scheduledFor)}`}
                         </p>
                         {q.errorMessage && (
-                          <p className="text-[11px] text-red-400 mt-0.5 truncate">{q.errorMessage}</p>
+                          <p className="text-[11px] text-red-400 mt-1 truncate">{q.errorMessage}</p>
                         )}
                       </div>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
+                        className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
                           statusStyles[q.status] || statusStyles.skipped
                         }`}
                       >
@@ -204,14 +220,17 @@ const LetterPanel: React.FC = () => {
                 <ul className="divide-y divide-zinc-800/60 -mx-1 max-h-[320px] overflow-y-auto">
                   {data.events.slice(0, 30).map((e) => (
                     <li key={e.id} className="px-1 py-2 flex items-center justify-between gap-3">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
-                          eventStyles[e.eventType] || eventStyles.delivered
-                        }`}
-                      >
-                        {e.eventType}
-                      </span>
-                      <span className="text-[11px] text-zinc-500">{relTime(e.createdAt)}</span>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span
+                          className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
+                            eventStyles[e.eventType] || eventStyles.delivered
+                          }`}
+                        >
+                          {e.eventType}
+                        </span>
+                        <span className="text-[11px] text-zinc-400 truncate">{e.subscriberEmail || '—'}</span>
+                      </div>
+                      <span className="shrink-0 text-[11px] text-zinc-500">{relTime(e.createdAt)}</span>
                     </li>
                   ))}
                 </ul>
