@@ -8,6 +8,7 @@ import type {
   OutreachEngagementLog,
   OutreachPipelineStats,
   CommentDraft,
+  CommentingTarget,
 } from '../types/dashboard';
 
 interface OptimisticLock {
@@ -697,6 +698,59 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetchCommentDrafts]);
 
+  // Proposed commenting targets (commenting_targets where status='proposed')
+  const [proposedTargets, setProposedTargets] = useState<CommentingTarget[]>([]);
+
+  const fetchProposedTargets = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('commenting_targets')
+        .select('*')
+        .eq('status', 'proposed')
+        .order('priority', { ascending: true })
+        .order('added_at', { ascending: false });
+      setProposedTargets((data || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        linkedinUrl: r.linkedin_url,
+        linkedinProfileId: r.linkedin_profile_id,
+        company: r.company,
+        title: r.title,
+        vertical: r.vertical,
+        followerCount: r.follower_count,
+        postFrequency: r.post_frequency,
+        status: r.status,
+        priority: r.priority,
+        notes: r.notes,
+        source: r.source,
+        addedAt: r.added_at,
+      })));
+    } catch (err) {
+      toastError('load proposed targets', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchProposedTargets(); }, [fetchProposedTargets]);
+
+  const approveCommentingTarget = useCallback(async (targetId: string) => {
+    try {
+      await supabase.from('commenting_targets').update({ status: 'active', updated_at: new Date().toISOString() }).eq('id', targetId);
+      toastSuccess('Target activated — Comment Drafter will pick it up next cycle');
+      await fetchProposedTargets();
+    } catch (err) {
+      toastError('approve target', err);
+    }
+  }, [fetchProposedTargets]);
+
+  const rejectCommentingTarget = useCallback(async (targetId: string) => {
+    try {
+      await supabase.from('commenting_targets').update({ status: 'dropped', updated_at: new Date().toISOString() }).eq('id', targetId);
+      await fetchProposedTargets();
+    } catch (err) {
+      toastError('reject target', err);
+    }
+  }, [fetchProposedTargets]);
+
   // Derived state
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -750,5 +804,9 @@ export function useOutreachPipeline(timezone?: string) {
     fetchCommentDrafts,
     approveCommentDraft,
     rejectCommentDraft,
+    proposedTargets,
+    fetchProposedTargets,
+    approveCommentingTarget,
+    rejectCommentingTarget,
   };
 }

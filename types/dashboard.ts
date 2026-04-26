@@ -467,6 +467,23 @@ export interface CommentDraft {
   draftedAt: string | null;
 }
 
+export interface CommentingTarget {
+  id: string;
+  name: string;
+  linkedinUrl: string | null;
+  linkedinProfileId: string | null;
+  company: string | null;
+  title: string | null;
+  vertical: string | null;
+  followerCount: number | null;
+  postFrequency: string | null;
+  status: string;
+  priority: number | null;
+  notes: string | null;
+  source: string | null;
+  addedAt: string;
+}
+
 export interface OutreachEngagementLog {
   id: string;
   prospectId: string;
