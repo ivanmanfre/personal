@@ -800,7 +800,7 @@ export interface StrategyMapData {
   activeClients: number;
 }
 
-export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'settings';
+export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'settings';
 
 export interface PaidAssessmentRow {
   stripe_session_id: string;
