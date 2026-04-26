@@ -104,7 +104,9 @@ const OutreachPanel: React.FC = () => {
       if (channelFilter === 'email') {
         list = list.filter((p) => p.preferredChannel === 'email');
       } else if (channelFilter === 'linkedin') {
-        list = list.filter((p) => p.preferredChannel === 'linkedin' || !p.preferredChannel);
+        list = list.filter((p) => p.preferredChannel === 'linkedin');
+      } else if (channelFilter === 'unset') {
+        list = list.filter((p) => !p.preferredChannel);
       } else if (channelFilter === 'researched') {
         list = list.filter((p) => p.triggerType && p.triggerType !== 'none');
       }
@@ -355,8 +357,9 @@ const OutreachPanel: React.FC = () => {
             className="px-2 py-1 rounded-lg text-xs bg-zinc-800/60 border border-zinc-700/40 text-zinc-300 cursor-pointer"
           >
             <option value="all">All channels</option>
-            <option value="linkedin">LinkedIn only</option>
-            <option value="email">Email only</option>
+            <option value="linkedin">LinkedIn (tagged)</option>
+            <option value="email">Email (tagged)</option>
+            <option value="unset">No channel set</option>
             <option value="researched">Researched only</option>
           </select>
           <FilterBar searchValue={search} onSearchChange={setSearch} searchPlaceholder="Search prospects..." />

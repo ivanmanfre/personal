@@ -620,17 +620,24 @@ export function useOutreachPipeline(timezone?: string) {
 
   const fetchPendingDrafts = useCallback(async () => {
     try {
+      // Embed the prospect's name + email_sequence_stopped_at via PostgREST so
+      // we don't depend on the local prospects array (which is paginated).
       const { data } = await supabase
         .from('outreach_messages')
-        .select('*')
+        .select('*, outreach_prospects(name)')
         .is('sent_at', null)
+        .is('email_sequence_stopped_at', null)
         .in('message_type', ['dm', 'email', 'connection_note'])
         .order('created_at', { ascending: false });
-      const drafts = (data || []).map(mapMessage).map((m) => ({
-        ...m,
-        isDraft: true,
-        prospectName: prospects.find((p) => p.id === m.prospectId)?.name || 'Unknown',
-      }));
+      const drafts = (data || []).map((row: any) => {
+        const m = mapMessage(row);
+        const embeddedName = row.outreach_prospects?.name as string | undefined;
+        return {
+          ...m,
+          isDraft: true,
+          prospectName: embeddedName || prospects.find((p) => p.id === m.prospectId)?.name || 'Unknown',
+        };
+      });
       setPendingDrafts(drafts);
     } catch (err) {
       toastError('load drafts', err);
