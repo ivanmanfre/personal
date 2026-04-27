@@ -28,3 +28,64 @@ export function toastError(action: string, err?: unknown) {
 export function toastSuccess(message: string) {
   toast.success(message);
 }
+
+// ─── Newsletter actions ─────────────────────────────────────────────────────
+
+export interface NewsletterIssueInput {
+  id?: string | null;
+  slug: string;
+  subject: string;
+  preview: string | null;
+  body_markdown: string;
+  format: string;
+}
+
+export async function upsertNewsletterIssue(input: NewsletterIssueInput): Promise<string> {
+  const { data, error } = await supabase.rpc('newsletter_issue_upsert', {
+    p_id: input.id ?? null,
+    p_slug: input.slug,
+    p_subject: input.subject,
+    p_preview: input.preview,
+    p_body_markdown: input.body_markdown,
+    p_format: input.format,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function approveNewsletterIssue(id: string): Promise<string> {
+  const { data, error } = await supabase.rpc('newsletter_issue_approve', { p_id: id });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function scheduleNewsletterIssue(id: string, when: string): Promise<void> {
+  const { error } = await supabase.rpc('newsletter_issue_schedule', { p_id: id, p_when: when });
+  if (error) throw error;
+}
+
+export async function cancelNewsletterIssue(id: string): Promise<void> {
+  const { error } = await supabase.rpc('newsletter_issue_cancel', { p_id: id });
+  if (error) throw error;
+}
+
+export async function sendNewsletterNow(id: string): Promise<void> {
+  const { error } = await supabase.rpc('newsletter_issue_send_now', { p_id: id });
+  if (error) throw error;
+}
+
+export async function deleteNewsletterIssue(id: string): Promise<void> {
+  const { error } = await supabase.rpc('newsletter_issue_delete', { p_id: id });
+  if (error) throw error;
+}
+
+const TEST_SEND_WEBHOOK = 'https://n8n.ivanmanfredi.com/webhook/send-newsletter-test';
+
+export async function sendNewsletterTest(issueId: string, testEmail: string): Promise<void> {
+  const res = await fetch(TEST_SEND_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ issue_id: issueId, test_email: testEmail }),
+  });
+  if (!res.ok) throw new Error(`Test send failed: ${res.status} ${await res.text()}`);
+}

@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
-import { Mail, Eye, UserMinus, Clock } from 'lucide-react';
-import { useNewsletter } from '../../hooks/useNewsletter';
+import React, { useMemo, useState } from 'react';
+import { Mail, Eye, UserMinus, Clock, Plus, Pencil } from 'lucide-react';
+import { useNewsletter, IssueRow } from '../../hooks/useNewsletter';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
+import LetterEditor from './LetterEditor';
 
 function pctChange(curr: number, prev: number): number {
   if (!prev) return curr > 0 ? 100 : 0;
@@ -67,6 +68,23 @@ const eventStyles: Record<string, string> = {
 const LetterPanel: React.FC = () => {
   const { data, totals, loading, refresh } = useNewsletter();
   const { lastRefreshed } = useAutoRefresh(refresh);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<IssueRow | null>(null);
+
+  function openNew() {
+    setEditingIssue(null);
+    setEditorOpen(true);
+  }
+  function openEdit(issue: IssueRow) {
+    setEditingIssue(issue);
+    setEditorOpen(true);
+  }
+  function closeEditor() {
+    setEditorOpen(false);
+  }
+  function onEditorSaved() {
+    void refresh();
+  }
 
   const hasAny = useMemo(
     () =>
@@ -81,21 +99,30 @@ const LetterPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight">The Letter</h1>
           <p className="text-sm text-zinc-500 mt-1">
             Newsletter subscribers, queue, sequence performance, and Resend events.
           </p>
         </div>
-        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={openNew}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" /> New issue
+          </button>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
 
       {!hasAny ? (
         <EmptyState
           title="No subscribers yet"
-          description="Once someone signs up via the footer form, they'll appear here within seconds. Open ivanmanfredi.com#newsletter to test."
+          description="Once someone signs up via the footer form, they'll appear here within seconds. Open ivanmanfredi.com#newsletter to test. You can also draft an issue now — it'll be ready to ship when subs land."
           icon={<Mail className="w-10 h-10" />}
+          action={{ label: 'New issue', onClick: openNew }}
         />
       ) : (
         <>
@@ -171,14 +198,21 @@ const LetterPanel: React.FC = () => {
 
           {/* Weekly issues — broadcast emails to the full list */}
           <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+            <div className="flex items-center justify-between mb-4 gap-3">
+              <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-bold text-zinc-300">Weekly issues · broadcasts</h2>
-                <p className="text-[11px] text-zinc-500 mt-0.5">One-to-many: a single Letter sent to every active subscriber.</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">
+                  {data.issues.filter((i) => i.status === 'sent').length} sent ·{' '}
+                  {data.issues.filter((i) => i.status === 'scheduled').length} scheduled ·{' '}
+                  {data.issues.filter((i) => i.status === 'draft').length} drafts
+                </p>
               </div>
-              <span className="text-[11px] text-zinc-500">
-                {data.issues.filter((i) => i.status === 'sent').length} sent · {data.issues.filter((i) => i.status === 'scheduled').length} scheduled · {data.issues.filter((i) => i.status === 'draft').length} drafts
-              </span>
+              <button
+                onClick={openNew}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> New issue
+              </button>
             </div>
             {data.issues.length === 0 ? (
               <div className="rounded-xl border border-dashed border-zinc-700/70 bg-zinc-950/50 p-5 text-xs text-zinc-400 leading-relaxed">
@@ -188,11 +222,16 @@ const LetterPanel: React.FC = () => {
             ) : (
               <ul className="divide-y divide-zinc-800/60 -mx-1">
                 {data.issues.map((i) => (
-                  <li key={i.id} className="px-1 py-3 flex items-start justify-between gap-3">
+                  <li
+                    key={i.id}
+                    onClick={() => openEdit(i)}
+                    className="group px-1 py-3 flex items-start justify-between gap-3 cursor-pointer hover:bg-zinc-800/30 rounded-lg transition-colors"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wide">{i.format.replace('_', ' ')}</span>
                         <p className="text-xs text-zinc-200 truncate font-medium">{i.subject}</p>
+                        <Pencil className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       {i.preview && <p className="text-[11px] text-zinc-500 truncate">{i.preview}</p>}
                       <p className="text-[11px] text-zinc-600 mt-1">
@@ -370,6 +409,8 @@ const LetterPanel: React.FC = () => {
           </div>
         </>
       )}
+
+      <LetterEditor open={editorOpen} issue={editingIssue} onClose={closeEditor} onSaved={onEditorSaved} />
     </div>
   );
 };
