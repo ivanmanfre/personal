@@ -159,10 +159,28 @@ const LetterPanel: React.FC = () => {
             )}
           </div>
 
+          {/* Weekly issues — broadcast emails to the full list (not yet wired) */}
+          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-300">Weekly issues · broadcasts</h2>
+                <p className="text-[11px] text-zinc-500 mt-0.5">One-to-many: a single Letter sent to every active subscriber.</p>
+              </div>
+              <span className="text-[11px] text-zinc-500">0 sent</span>
+            </div>
+            <div className="rounded-xl border border-dashed border-zinc-700/70 bg-zinc-950/50 p-5 text-xs text-zinc-400 leading-relaxed">
+              <p className="font-medium text-zinc-300 mb-1">No issues sent yet.</p>
+              <p>The weekly broadcast pipeline isn't wired — only the 3-email <span className="text-zinc-300">welcome drip</span> runs today. To send a real weekly issue we need: a <code className="text-zinc-300">newsletter_issues</code> table, an authoring UI, and an n8n workflow that hits Resend's <code className="text-zinc-300">/broadcasts</code> endpoint with the active audience.</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold text-zinc-300">Queue</h2>
+                <div>
+                  <h2 className="text-sm font-bold text-zinc-300">Sequence queue · drip emails</h2>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Per-subscriber automation (welcome series, etc.) — not broadcasts.</p>
+                </div>
                 <span className="text-[11px] text-zinc-500">{data.queue.length} recent</span>
               </div>
               {data.queue.length === 0 ? (
