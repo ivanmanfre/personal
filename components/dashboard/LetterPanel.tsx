@@ -46,6 +46,15 @@ const statusStyles: Record<string, string> = {
   cancelled: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
 };
 
+const issueStatusStyles: Record<string, string> = {
+  draft: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+  scheduled: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  sending: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  sent: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  failed: 'bg-red-500/15 text-red-400 border-red-500/30',
+  cancelled: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+};
+
 const eventStyles: Record<string, string> = {
   delivered: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   opened: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -63,6 +72,7 @@ const LetterPanel: React.FC = () => {
     () =>
       data.subscribers.length > 0 ||
       data.captures.length > 0 ||
+      data.issues.length > 0 ||
       data.performance.some((p) => p.subscribersTotal > 0),
     [data]
   );
@@ -159,19 +169,53 @@ const LetterPanel: React.FC = () => {
             )}
           </div>
 
-          {/* Weekly issues — broadcast emails to the full list (not yet wired) */}
+          {/* Weekly issues — broadcast emails to the full list */}
           <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-bold text-zinc-300">Weekly issues · broadcasts</h2>
                 <p className="text-[11px] text-zinc-500 mt-0.5">One-to-many: a single Letter sent to every active subscriber.</p>
               </div>
-              <span className="text-[11px] text-zinc-500">0 sent</span>
+              <span className="text-[11px] text-zinc-500">
+                {data.issues.filter((i) => i.status === 'sent').length} sent · {data.issues.filter((i) => i.status === 'scheduled').length} scheduled · {data.issues.filter((i) => i.status === 'draft').length} drafts
+              </span>
             </div>
-            <div className="rounded-xl border border-dashed border-zinc-700/70 bg-zinc-950/50 p-5 text-xs text-zinc-400 leading-relaxed">
-              <p className="font-medium text-zinc-300 mb-1">No issues sent yet.</p>
-              <p>The weekly broadcast pipeline isn't wired — only the 3-email <span className="text-zinc-300">welcome drip</span> runs today. To send a real weekly issue we need: a <code className="text-zinc-300">newsletter_issues</code> table, an authoring UI, and an n8n workflow that hits Resend's <code className="text-zinc-300">/broadcasts</code> endpoint with the active audience.</p>
-            </div>
+            {data.issues.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-zinc-700/70 bg-zinc-950/50 p-5 text-xs text-zinc-400 leading-relaxed">
+                <p className="font-medium text-zinc-300 mb-1">No issues yet.</p>
+                <p>Once drafts are seeded into <code className="text-zinc-300">newsletter_issues</code>, schedule them by setting <code className="text-zinc-300">status='scheduled'</code> and <code className="text-zinc-300">scheduled_for</code>. The Broadcast Sender workflow will pick them up and send via Resend.</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-zinc-800/60 -mx-1">
+                {data.issues.map((i) => (
+                  <li key={i.id} className="px-1 py-3 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wide">{i.format.replace('_', ' ')}</span>
+                        <p className="text-xs text-zinc-200 truncate font-medium">{i.subject}</p>
+                      </div>
+                      {i.preview && <p className="text-[11px] text-zinc-500 truncate">{i.preview}</p>}
+                      <p className="text-[11px] text-zinc-600 mt-1">
+                        {i.sentAt ? `Sent ${relTime(i.sentAt)}` : i.scheduledFor ? `Scheduled ${fmtDate(i.scheduledFor)}` : `Draft · created ${relTime(i.createdAt)}`}
+                      </p>
+                      {i.status === 'sent' && (
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+                          <span className="text-zinc-400">{i.deliveredCount}/{i.recipientCount} delivered</span>
+                          <span className="text-emerald-400">{i.opensCount} opens</span>
+                          <span className="text-purple-400">{i.clicksCount} clicks</span>
+                          {i.bouncesCount > 0 && <span className="text-red-400">{i.bouncesCount} bounces</span>}
+                          {i.unsubscribesCount > 0 && <span className="text-zinc-500">{i.unsubscribesCount} unsubs</span>}
+                        </div>
+                      )}
+                      {i.errorMessage && <p className="text-[11px] text-red-400 mt-1 truncate">{i.errorMessage}</p>}
+                    </div>
+                    <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${issueStatusStyles[i.status] || issueStatusStyles.draft}`}>
+                      {i.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -56,16 +56,37 @@ export interface CaptureRow {
   createdAt: string;
 }
 
+export interface IssueRow {
+  id: string;
+  slug: string;
+  subject: string;
+  preview: string | null;
+  format: string;
+  status: string;
+  scheduledFor: string | null;
+  sentAt: string | null;
+  recipientCount: number;
+  deliveredCount: number;
+  opensCount: number;
+  clicksCount: number;
+  bouncesCount: number;
+  unsubscribesCount: number;
+  complaintsCount: number;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
 export interface NewsletterData {
   performance: SequencePerf[];
   subscribers: SubscriberRow[];
   queue: QueueRow[];
   events: EventRow[];
   captures: CaptureRow[];
+  issues: IssueRow[];
 }
 
 function emptyData(): NewsletterData {
-  return { performance: [], subscribers: [], queue: [], events: [], captures: [] };
+  return { performance: [], subscribers: [], queue: [], events: [], captures: [], issues: [] };
 }
 
 export function useNewsletter() {
@@ -75,7 +96,7 @@ export function useNewsletter() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const [perfRes, subsRes, queueRes, eventsRes, capturesRes] = await Promise.all([
+      const [perfRes, subsRes, queueRes, eventsRes, capturesRes, issuesRes] = await Promise.all([
         supabase.from('nurture_performance').select('*'),
         supabase
           .from('nurture_subscribers')
@@ -99,6 +120,11 @@ export function useNewsletter() {
           .eq('event_type', 'capture')
           .order('created_at', { ascending: false })
           .limit(100),
+        supabase
+          .from('newsletter_issues')
+          .select('id, slug, subject, preview, format, status, scheduled_for, sent_at, recipient_count, delivered_count, opens_count, clicks_count, bounces_count, unsubscribes_count, complaints_count, error_message, created_at')
+          .order('created_at', { ascending: false })
+          .limit(50),
       ]);
 
       setData({
@@ -149,6 +175,25 @@ export function useNewsletter() {
           id: r.id,
           email: r.email,
           src: r.src,
+          createdAt: r.created_at,
+        })),
+        issues: (issuesRes.data || []).map((r: any) => ({
+          id: r.id,
+          slug: r.slug,
+          subject: r.subject,
+          preview: r.preview,
+          format: r.format,
+          status: r.status,
+          scheduledFor: r.scheduled_for,
+          sentAt: r.sent_at,
+          recipientCount: Number(r.recipient_count) || 0,
+          deliveredCount: Number(r.delivered_count) || 0,
+          opensCount: Number(r.opens_count) || 0,
+          clicksCount: Number(r.clicks_count) || 0,
+          bouncesCount: Number(r.bounces_count) || 0,
+          unsubscribesCount: Number(r.unsubscribes_count) || 0,
+          complaintsCount: Number(r.complaints_count) || 0,
+          errorMessage: r.error_message,
           createdAt: r.created_at,
         })),
       });
