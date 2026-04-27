@@ -751,6 +751,79 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetchProposedTargets]);
 
+  // Active commenting cohort (status='active') + management actions
+  const [activeCohort, setActiveCohort] = useState<CommentingTarget[]>([]);
+
+  const fetchActiveCohort = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('commenting_targets')
+        .select('*')
+        .eq('status', 'active')
+        .order('last_post_seen_at', { ascending: false, nullsFirst: false })
+        .order('added_at', { ascending: false });
+      setActiveCohort((data || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        linkedinUrl: r.linkedin_url,
+        linkedinProfileId: r.linkedin_profile_id,
+        company: r.company,
+        title: r.title,
+        vertical: r.vertical,
+        followerCount: r.follower_count,
+        postFrequency: r.post_frequency,
+        status: r.status,
+        priority: r.priority,
+        notes: r.notes,
+        source: r.source,
+        addedAt: r.added_at,
+      })));
+    } catch (err) {
+      toastError('load active cohort', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchActiveCohort(); }, [fetchActiveCohort]);
+
+  const pauseCommentingTarget = useCallback(async (targetId: string) => {
+    try {
+      await supabase.from('commenting_targets').update({ status: 'paused', updated_at: new Date().toISOString() }).eq('id', targetId);
+      await fetchActiveCohort();
+    } catch (err) {
+      toastError('pause target', err);
+    }
+  }, [fetchActiveCohort]);
+
+  const dropActiveCommentingTarget = useCallback(async (targetId: string) => {
+    try {
+      await supabase.from('commenting_targets').update({ status: 'dropped', updated_at: new Date().toISOString() }).eq('id', targetId);
+      await fetchActiveCohort();
+    } catch (err) {
+      toastError('drop target', err);
+    }
+  }, [fetchActiveCohort]);
+
+  const addCommentingTargets = useCallback(async (urls: string[]) => {
+    try {
+      const cleaned = urls.map(u => u.trim()).filter(Boolean);
+      if (cleaned.length === 0) { toastError('Paste at least one LinkedIn URL'); return; }
+      const res = await window.fetch('https://n8n.ivanmanfredi.com/webhook/commenting-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: cleaned }),
+      });
+      if (!res.ok) {
+        toastError(`Add failed: HTTP ${res.status}`);
+        return;
+      }
+      toastSuccess(`Submitted ${cleaned.length} URL${cleaned.length > 1 ? 's' : ''} for enrichment — refreshing cohort in 30s`);
+      // Refresh after enrichment loop typically completes within 30s for 30 URLs
+      setTimeout(() => { fetchActiveCohort(); }, 30000);
+    } catch (err) {
+      toastError('add targets', err);
+    }
+  }, [fetchActiveCohort]);
+
   // Derived state
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -808,5 +881,10 @@ export function useOutreachPipeline(timezone?: string) {
     fetchProposedTargets,
     approveCommentingTarget,
     rejectCommentingTarget,
+    activeCohort,
+    fetchActiveCohort,
+    pauseCommentingTarget,
+    dropActiveCommentingTarget,
+    addCommentingTargets,
   };
 }

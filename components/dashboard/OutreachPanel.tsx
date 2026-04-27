@@ -71,7 +71,10 @@ const OutreachPanel: React.FC = () => {
     pendingDrafts, fetchPendingDrafts,
     commentDrafts, fetchCommentDrafts, approveCommentDraft, rejectCommentDraft,
     proposedTargets, approveCommentingTarget, rejectCommentingTarget,
+    activeCohort, pauseCommentingTarget, dropActiveCommentingTarget, addCommentingTargets,
   } = pipeline;
+  const [bulkUrls, setBulkUrls] = useState('');
+  const [showCohort, setShowCohort] = useState(false);
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
 
@@ -498,6 +501,93 @@ const OutreachPanel: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Commenting Cohort — bulk add + active list */}
+      <div className="bg-zinc-900/90 border border-cyan-500/20 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-semibold text-cyan-400">Commenting Cohort</span>
+            <span className="text-[11px] text-zinc-500">{activeCohort.length} active · target 30-50 for daily depth</span>
+          </div>
+          <button
+            onClick={() => setShowCohort((v) => !v)}
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {showCohort ? '▼ Hide active list' : '▶ Show active list'}
+          </button>
+        </div>
+
+        <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-xl p-3">
+          <p className="text-[11px] text-zinc-500 mb-2">Bulk-add LinkedIn URLs (one per line). Each will be enriched via UniPile and added as <span className="text-emerald-400 font-medium">active</span>.</p>
+          <textarea
+            value={bulkUrls}
+            onChange={(e) => setBulkUrls(e.target.value)}
+            rows={4}
+            placeholder={'https://linkedin.com/in/jane-founder\nhttps://linkedin.com/in/john-partner\n...'}
+            className="w-full text-xs text-zinc-300 bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 font-mono resize-y focus:outline-none focus:border-cyan-500/40"
+          />
+          <div className="flex items-center justify-between gap-2 mt-2">
+            <span className="text-[10px] text-zinc-500">{bulkUrls.split('\n').filter((u) => u.trim()).length} URL(s) ready</span>
+            <button
+              onClick={async () => {
+                const urls = bulkUrls.split('\n').map((u) => u.trim()).filter(Boolean);
+                await addCommentingTargets(urls);
+                setBulkUrls('');
+              }}
+              disabled={!bulkUrls.trim()}
+              className="px-3 py-1 rounded-lg text-[11px] font-medium bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 hover:bg-cyan-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Add to cohort →
+            </button>
+          </div>
+        </div>
+
+        {showCohort && (
+          activeCohort.length === 0 ? (
+            <div className="text-xs text-zinc-500 text-center py-3">No active targets yet — paste URLs above to start.</div>
+          ) : (
+            <div className="overflow-x-auto -mx-3">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-[10px] text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                    <th className="text-left px-3 py-2">Name</th>
+                    <th className="text-left px-3 py-2">Vertical</th>
+                    <th className="text-left px-3 py-2">Title @ Company</th>
+                    <th className="text-left px-3 py-2">Source</th>
+                    <th className="text-center px-3 py-2 w-28">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/40">
+                  {activeCohort.map((t) => (
+                    <tr key={t.id}>
+                      <td className="px-3 py-2 text-zinc-200">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-[160px]" title={t.name}>{t.name}</span>
+                          {t.linkedinUrl && (
+                            <a href={t.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400/60 hover:text-blue-400" title="LinkedIn">
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2"><span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{t.vertical || '—'}</span></td>
+                      <td className="px-3 py-2 text-zinc-400 truncate max-w-[260px]" title={[t.title, t.company].filter(Boolean).join(' @ ')}>
+                        {[t.title, t.company].filter(Boolean).join(' @ ') || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[10px] text-zinc-500 font-mono">{t.source || '—'}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button onClick={() => pauseCommentingTarget(t.id)} className="text-[10px] text-amber-400/80 hover:text-amber-400 mr-2">pause</button>
+                        <button onClick={() => dropActiveCommentingTarget(t.id)} className="text-[10px] text-red-400/80 hover:text-red-400">drop</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+      </div>
 
       {/* Proposed Commenting Targets — review queue */}
       {proposedTargets.length > 0 && (
