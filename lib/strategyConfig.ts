@@ -97,10 +97,10 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
   {
     step: 1,
     name: 'Pre-Call Qualification Form',
-    buildStatus: 'not-built',
-    url: null,
+    buildStatus: 'built',
+    url: 'https://ivanmanfredi.com/start',
     metric: null,
-    description: "Free form gating Discovery Call. Filters unqualified prospects before Ivan's time is committed.",
+    description: "Free form gating Discovery Call. 7 questions that filter for decision-maker, timeline, and budget fit. Qualified leads route to discovery call slot; non-qualified routed to waitlist.",
   },
   {
     step: 2,
