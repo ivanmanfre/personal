@@ -315,7 +315,7 @@ async function handleRequest(req: Request): Promise<Response> {
   if (body.init === true) {
     const nonce = await makeNonce(sessionId, row.turn_count, ANTHROPIC_AGENT_SECRET);
     const greeting = row.chat_history.length === 0
-      ? "Hey — Ivan-bot here. Ready to walk through your Blueprint intake. Take your time. What's the company name, and what's your role there?"
+      ? "Welcome. Let's get your Blueprint started. To kick off, what's your company name, website, and your role there?"
       : null;
     return jsonResponse({
       ok: true,

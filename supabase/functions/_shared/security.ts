@@ -122,7 +122,7 @@ export function sanitizeMessage(text: string): string {
 // ─────────────────────────────────────────────────────────────
 
 const TELL_OPENERS_RX =
-  /^(Great|Awesome|Got it|Perfect|Excellent|Wonderful|Fantastic|Absolutely|Certainly|Of course)[!.,]?\s+/gim;
+  /^(Great|Awesome|Got it|Perfect|Excellent|Wonderful|Fantastic|Absolutely|Certainly|Of course|Sure|Sounds good|Good start|Nice|Cool)[!.,]?\s+/gim;
 const TELL_PHRASES_RX =
   /\b(I'?m here to help|let me know if|please feel free|happy to help)\b[^.!?\n]*[.!?]?\s*/gi;
 

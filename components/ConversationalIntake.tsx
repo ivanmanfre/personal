@@ -1,8 +1,22 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUp, Check, Loader2, AlertTriangle, Send } from 'lucide-react';
+import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
+
+// Browser SpeechRecognition (Web Speech API) — Chromium/Safari
+type SpeechRecognitionConstructor = typeof window extends { SpeechRecognition: infer T } ? T : any;
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+const SpeechRecognitionImpl: any =
+  typeof window !== 'undefined'
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition || null)
+    : null;
+const VOICE_SUPPORTED = !!SpeechRecognitionImpl;
 
 const CHAT_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/assessment-intake-chat';
 const LEGACY_FORM_URL = '/assessment/intake-form';
@@ -64,6 +78,10 @@ const ConversationalIntake: React.FC = () => {
 
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const interimRef = useRef<string>('');
+  const [recording, setRecording] = useState(false);
+  const [voiceErr, setVoiceErr] = useState<string | null>(null);
 
   useMetadata({
     title: 'Blueprint intake | Manfredi',
@@ -230,6 +248,64 @@ const ConversationalIntake: React.FC = () => {
     }
   };
 
+  // Voice input toggle. Web Speech API streams interim results into the textarea.
+  const toggleRecording = useCallback(() => {
+    if (!VOICE_SUPPORTED) {
+      setVoiceErr('Your browser does not support voice input. Try Chrome, Edge, or Safari.');
+      return;
+    }
+    if (recording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    try {
+      const rec = new SpeechRecognitionImpl();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+      const baseValue = input;
+      interimRef.current = '';
+      rec.onresult = (ev: any) => {
+        let finalChunk = '';
+        let interimChunk = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const r = ev.results[i];
+          if (r.isFinal) finalChunk += r[0].transcript;
+          else interimChunk += r[0].transcript;
+        }
+        if (finalChunk) {
+          interimRef.current += finalChunk;
+        }
+        const combined = (baseValue ? baseValue.trimEnd() + ' ' : '') +
+          interimRef.current + interimChunk;
+        setInput(combined.trim());
+      };
+      rec.onerror = (ev: any) => {
+        const msg = ev?.error === 'not-allowed'
+          ? 'Microphone access denied. Enable it in your browser settings.'
+          : `Voice input error: ${ev?.error ?? 'unknown'}`;
+        setVoiceErr(msg);
+        setRecording(false);
+      };
+      rec.onend = () => {
+        setRecording(false);
+        recognitionRef.current = null;
+      };
+      recognitionRef.current = rec;
+      setVoiceErr(null);
+      setRecording(true);
+      rec.start();
+    } catch (e) {
+      setVoiceErr(e instanceof Error ? e.message : 'Voice input failed to start');
+      setRecording(false);
+    }
+  }, [recording, input]);
+
+  // Stop recording on unmount
+  useEffect(() => () => {
+    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+  }, []);
+
   const answeredCount = useMemo(
     () => QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length,
     [answers],
@@ -386,16 +462,33 @@ const ConversationalIntake: React.FC = () => {
                     onKeyDown={handleKeyDown}
                     placeholder={
                       state === 'rate_limited'
-                        ? 'Hold tight…'
+                        ? 'Hold tight, back in a minute.'
                         : state === 'sending'
-                        ? 'Ivan-bot is thinking…'
-                        : 'Type your reply. Enter to send · Shift+Enter for newline.'
+                        ? 'Thinking…'
+                        : recording
+                        ? 'Listening… speak naturally.'
+                        : 'Type or hit the mic. Enter sends, Shift+Enter newlines.'
                     }
                     rows={1}
                     maxLength={2000}
-                    disabled={state !== 'ready'}
+                    disabled={state !== 'ready' && !recording}
                     className="flex-1 resize-none bg-paper-sunk border border-[color:var(--color-hairline-bold)] px-4 py-3 text-sm leading-relaxed focus:outline-none focus:border-accent disabled:opacity-50 font-sans"
                   />
+                  {VOICE_SUPPORTED && (
+                    <button
+                      onClick={toggleRecording}
+                      disabled={state !== 'ready' && !recording}
+                      className={`self-stretch px-3 border transition-colors flex items-center justify-center ${
+                        recording
+                          ? 'bg-red-600 text-white border-red-700 animate-pulse'
+                          : 'bg-paper border-[color:var(--color-hairline-bold)] text-ink hover:bg-paper-sunk'
+                      } disabled:opacity-40 disabled:cursor-not-allowed`}
+                      aria-label={recording ? 'Stop recording' : 'Start voice input'}
+                      title={recording ? 'Click to stop recording' : 'Click to dictate your answer'}
+                    >
+                      {recording ? <MicOff size={18} /> : <Mic size={18} />}
+                    </button>
+                  )}
                   <button
                     onClick={send}
                     disabled={state !== 'ready' || !input.trim()}
@@ -405,6 +498,11 @@ const ConversationalIntake: React.FC = () => {
                     {state === 'sending' ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} />}
                   </button>
                 </div>
+                {voiceErr && (
+                  <div className="mt-2 text-[11px] text-red-700 flex items-center gap-1.5">
+                    <AlertTriangle size={12} /> {voiceErr}
+                  </div>
+                )}
                 <div className="flex items-center justify-between mt-2 text-[10px] font-mono uppercase tracking-[0.12em]">
                   <span className="text-ink-mute">
                     Saves automatically ·{' '}
