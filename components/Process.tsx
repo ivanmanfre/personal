@@ -6,7 +6,7 @@ const steps = [
         id: '01',
         title: 'Diagnose',
         desc: (
-            <>The Agent-Ready Assessment. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with your 90-Day AI Rollout Plan: what to build first, what compounds, what needs foundation work before it ships.</>
+            <>The Agent-Ready Blueprint. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with your 90-Day AI Rollout Plan: what to build first, what compounds, what needs foundation work before it ships.</>
         ),
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',
@@ -41,7 +41,7 @@ const steps = [
         id: '02',
         title: 'Design',
         desc: (
-            <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span className="font-drama italic">before anyone writes code.</span> You sign off on the blueprint, so what gets built is exactly what we agreed on.</>
+            <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span className="font-drama italic">before anyone writes code.</span> You sign off on the spec, so what gets built is exactly what we agreed on.</>
         ),
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',

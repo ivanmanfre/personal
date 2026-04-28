@@ -1,4 +1,4 @@
--- Stores Stripe checkout sessions for the $2,500 Agent-Ready Assessment.
+-- Stores Stripe checkout sessions for the $2,500 Agent-Ready Blueprint.
 -- Populated by the stripe-webhook edge function on checkout.session.completed.
 -- Paired with: supabase/functions/stripe-webhook/index.ts
 
@@ -21,6 +21,6 @@ CREATE INDEX IF NOT EXISTS idx_paid_assessments_email ON paid_assessments(email)
 CREATE INDEX IF NOT EXISTS idx_paid_assessments_paid_at ON paid_assessments(paid_at DESC);
 CREATE INDEX IF NOT EXISTS idx_paid_assessments_status ON paid_assessments(status);
 
-COMMENT ON TABLE paid_assessments IS 'Paid Agent-Ready Assessment checkouts. One row per Stripe session.';
+COMMENT ON TABLE paid_assessments IS 'Paid Agent-Ready Blueprint checkouts. One row per Stripe session.';
 COMMENT ON COLUMN paid_assessments.status IS 'paid | refunded | disputed';
 COMMENT ON COLUMN paid_assessments.metadata IS 'Raw Stripe metadata + any custom fields (e.g., utm params).';

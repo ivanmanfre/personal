@@ -101,7 +101,7 @@ const AgentReadyPanel: React.FC = () => {
         </div>
         <EmptyState
           title="No paid Assessments yet"
-          description="When someone books the $2,500 Agent-Ready Assessment on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
+          description="When someone books the $2,500 Agent-Ready Blueprint on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
           icon={<Award className="w-10 h-10" />}
         />
       </div>

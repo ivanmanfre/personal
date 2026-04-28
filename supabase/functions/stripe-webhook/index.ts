@@ -1,4 +1,4 @@
-// Stripe webhook handler for the $2,500 Agent-Ready Assessment.
+// Stripe webhook handler for the $2,500 Agent-Ready Blueprint.
 // Receives checkout.session.completed events and upserts a row into
 // paid_assessments. Signature verification uses the Stripe scheme
 // (timestamp + payload HMAC-SHA256) against STRIPE_WEBHOOK_SECRET from vault.
@@ -193,7 +193,7 @@ async function sendWelcomeEmail(sb: any, row: Record<string, unknown>): Promise<
 
   const text = `${firstLine}
 
-Payment received. Thanks for booking the Agent-Ready Assessment.
+Payment received. Thanks for booking the Agent-Ready Blueprint.
 
 Two things to do now:
 
@@ -211,6 +211,8 @@ The 7-day flow:
 
 The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
 
+One thing to set expectation now: I pace to your absorption, not my delivery. Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1 - we ship only what your team can actually integrate, leaving runway for the previous wave to land.
+
 Full welcome page with details: ${welcomeUrl}
 
 Reply to this email with any questions.
@@ -221,7 +223,7 @@ ivanmanfredi.com`;
 
   const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
     <p style="margin:0 0 16px">${firstLine}</p>
-    <p style="margin:0 0 16px">Payment received. Thanks for booking the Agent-Ready Assessment.</p>
+    <p style="margin:0 0 16px">Payment received. Thanks for booking the Agent-Ready Blueprint.</p>
     <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">Two things to do now</p>
     <ol style="padding-left:20px;margin:0 0 24px">
       <li style="margin-bottom:12px"><strong>Fill the intake questionnaire</strong> (~25 min, saves as you type)<br><a href="${intakeUrl}" style="color:#344B29;font-weight:600">Open the intake -&gt;</a></li>
@@ -235,6 +237,7 @@ ivanmanfredi.com`;
       <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 7</td><td style="padding:6px 0;color:#4A4A48">Final presentation call</td></tr>
     </table>
     <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
+    <p style="margin:0 0 16px;padding:12px 14px;background:#EAE3D5;border-left:2px solid #344B29;color:#4A4A48;font-size:14px">One thing to set expectation now: <strong>I pace to your absorption, not my delivery.</strong> Your Blueprint is the start &mdash; the first kickoff call sets the implementation budget for week 1. We ship only what your team can actually integrate, leaving runway for the previous wave to land.</p>
     <p style="margin:24px 0 16px"><a href="${welcomeUrl}" style="color:#344B29;font-weight:600">Full welcome page -&gt;</a></p>
     <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#6B6861;font-size:13px">Reply to this email with any questions.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">Agent-Ready Ops&trade;</span></p>
   </body></html>`;
@@ -249,7 +252,7 @@ ivanmanfredi.com`;
       from,
       to: [email],
       reply_to: "im@ivanmanfredi.com",
-      subject: "Your Agent-Ready Assessment is booked",
+      subject: "Your Agent-Ready Blueprint is booked",
       text,
       html,
       tags: [

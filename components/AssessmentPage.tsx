@@ -42,7 +42,7 @@ const deliverables = [
 
 const AssessmentPage: React.FC = () => {
   useMetadata({
-    title: 'Agent-Ready Assessment | Manfredi',
+    title: 'The Agent-Ready Blueprint | Manfredi',
     description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. $2,500, 100% credited toward any follow-on engagement.',
     canonical: 'https://ivanmanfredi.com/assessment',
   });
@@ -58,7 +58,7 @@ const AssessmentPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Agent-Ready Assessment
+              Agent-Ready Blueprint
             </span>
           </motion.div>
 
@@ -93,7 +93,7 @@ const AssessmentPage: React.FC = () => {
               Who this is for
             </p>
             <p className="text-ink-soft leading-relaxed mb-4">
-              The Assessment is for founders who want AI to handle a specific piece of judgment work, like lead qualification, document classification, tier-1 support, or call scoring. You don't need a fully formed use case, but you need to know the work exists.
+              The Blueprint is for founders who want AI to handle a specific piece of judgment work, like lead qualification, document classification, tier-1 support, or call scoring. You don't need a fully formed use case, but you need to know the work exists.
             </p>
             <p className="text-ink-soft leading-relaxed">
               Not sure where AI fits in your operation yet? <a href="/start" className="underline underline-offset-2 text-black hover:text-accent-ink transition-colors">Book a free discovery call</a> first. We'll figure out the right path before any money moves.
@@ -110,7 +110,7 @@ const AssessmentPage: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
               <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
-                  Assessment
+                  Blueprint
                 </p>
                 <p className="text-5xl md:text-6xl font-bold tracking-tighter">$2,500</p>
                 <p className="text-sm text-ink-mute mt-2">One-week engagement · 100% credit clause</p>
@@ -121,7 +121,7 @@ const AssessmentPage: React.FC = () => {
                 rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
                 className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-white"
               >
-                Book the Assessment
+                Build your Blueprint
                 <ArrowRight aria-hidden="true" size={18} />
               </a>
             </div>
@@ -226,7 +226,7 @@ const AssessmentPage: React.FC = () => {
             className="bg-black text-white p-10 md:p-16 text-center border border-[color:var(--color-hairline-bold)]"
           >
             <h2 className="text-3xl md:text-4xl font-semibold mb-4 tracking-tight">
-              Start the Assessment
+              Build your Blueprint
             </h2>
             <p className="text-zinc-400 mb-8 max-w-xl mx-auto leading-relaxed">
               If your operation clears the 4 conditions, AI becomes a force multiplier. If it doesn't, you're funding demos that never ship. Let's find out which one you are.
@@ -237,7 +237,7 @@ const AssessmentPage: React.FC = () => {
               rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
               className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent rounded-lg text-white font-semibold text-lg tracking-wide border-subtle-thick shadow-card-subtle"
             >
-              Book the Assessment
+              Build your Blueprint
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">

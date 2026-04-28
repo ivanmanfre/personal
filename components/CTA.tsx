@@ -23,7 +23,7 @@ const CTA: React.FC = () => {
                         href="/assessment"
                         className="inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-semibold tracking-wide hover:bg-accent-ink transition-colors"
                     >
-                        Start with the Assessment
+                        Build your Blueprint
                     </a>
 
                     <p className="mt-6 text-sm text-ink-mute">

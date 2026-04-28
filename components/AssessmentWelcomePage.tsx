@@ -37,8 +37,8 @@ const AssessmentWelcomePage: React.FC = () => {
   const intakeHref = sessionId ? `/assessment/intake?session_id=${encodeURIComponent(sessionId)}` : '/assessment/intake';
 
   useMetadata({
-    title: 'Welcome to the Assessment | Manfredi',
-    description: 'Payment received. Next steps for your Agent-Ready Assessment.',
+    title: 'Welcome to the Blueprint | Manfredi',
+    description: 'Payment received. Next steps for your Agent-Ready Blueprint.',
     canonical: 'https://ivanmanfredi.com/assessment/welcome',
     noindex: true,
   });
@@ -76,7 +76,7 @@ const AssessmentWelcomePage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-16"
           >
-            Thanks for paying for the Agent-Ready Assessment. The full $2,500 is credited back toward any follow-on engagement within 60 days. Here are your two next actions.
+            Thanks for paying for the Agent-Ready Blueprint. The full $2,500 is credited back toward any follow-on engagement within 60 days. Here are your two next actions.
           </motion.p>
 
           {/* Two immediate actions */}

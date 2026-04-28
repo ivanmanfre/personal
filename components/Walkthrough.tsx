@@ -72,7 +72,7 @@ const Logo: React.FC<{ tool: string; size?: number; className?: string }> = ({
 /**
  * /walkthrough — recording-only deck route.
  *
- * Full-bleed editorial slide deck for the 5-day Assessment walkthrough video.
+ * Full-bleed editorial slide deck for the 5-day Blueprint walkthrough video.
  * Reuses the site's brand tokens (paper, sage, Space Grotesk, DM Serif italic,
  * IBM Plex Mono) so the recorded video matches ivanmanfredi.com pixel-for-pixel.
  *
@@ -153,7 +153,7 @@ const Slide01: React.FC = () => (
         >
           The <span className="font-drama-display">Agent-Ready</span>
           <br />
-          Assessment.
+          Blueprint.
         </motion.h1>
 
         <div className="mt-10">
@@ -208,17 +208,6 @@ const Slide01: React.FC = () => (
             className="w-80 h-[400px] object-cover border border-[color:var(--color-hairline-bold)] shadow-card-lift portrait-editorial"
           />
         </picture>
-        {/* Sage corner mark */}
-        <motion.div
-          className="absolute -bottom-3 -right-3 w-12 h-12 bg-accent flex items-center justify-center"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 1.5, duration: 0.5, ease: editorial }}
-        >
-          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white text-center leading-tight">
-            IVÁN<br />MANFREDI
-          </span>
-        </motion.div>
       </motion.div>
     </div>
   </Slide>
@@ -325,7 +314,7 @@ const Slide03: React.FC = () => (
 // ────────────────────────────────────────────────────────────────────────
 
 // Each row is a category I inspect on day one. The "found" example is illustrative —
-// in a real Assessment it gets replaced by whatever the client actually runs.
+// in a real Blueprint it gets replaced by whatever the client actually runs.
 // Score = 0..4 sage pips against the 4 preconditions (input/logic/scope/loop).
 const auditRows: Array<{ category: string; found: string; score: number }> = [
   { category: 'CRM / source of truth', found: 'HubSpot', score: 3 },
@@ -498,7 +487,7 @@ const Slide05: React.FC = () => (
         animate={{ opacity: 1 }}
         transition={{ delay: 3.4 }}
       >
-        The Assessment is{' '}
+        The Blueprint is{' '}
         <span className="font-mono font-semibold text-black">1.6%</span> of one role.
       </motion.p>
     </div>
@@ -519,6 +508,8 @@ const cases = [
     blurb:
       'Every client call now flows through Fireflies for transcription. Claude reads each transcript for churn signals — frustration, scope drift, dropping engagement — and routes flagged calls to the account lead via Gmail. Customer state syncs to HubSpot, signal tracking to Airtable. First retained account paid for the build.',
     stack: ['Fireflies', 'Claude', 'n8n', 'HubSpot', 'Airtable', 'Gmail'],
+    image: '/cases/provaltech.png',
+    imageAlt: 'Provaltech call performance dashboard',
   },
   {
     tag: 'MARKETING SHOP · GROWTH OPS',
@@ -529,6 +520,8 @@ const cases = [
     blurb:
       'ClickUp briefs trigger the pipeline. Claude does the topic research and drafts the copy from a tested structure. n8n routes the draft through human review, then ships the resource page in Webflow with all assets in place. Same editorial quality, roughly five times the throughput.',
     stack: ['Claude', 'ClickUp', 'Webflow', 'n8n'],
+    image: null,
+    imageAlt: '',
   },
   {
     tag: 'DESTINO FARMS · INVENTORY OPS',
@@ -539,6 +532,8 @@ const cases = [
     blurb:
       'WhatsApp API captures supplier messages. Gemini OCR reads stock photos and PDFs. Firecrawl scrapes supplier sites on a schedule. Claude normalizes everything into one inventory model, n8n orchestrates it, and a custom interface displays a single live dashboard — updated automatically through the day.',
     stack: ['Claude', 'Gemini OCR', 'Firecrawl', 'WhatsApp API', 'n8n'],
+    image: null,
+    imageAlt: '',
   },
 ];
 
@@ -565,25 +560,44 @@ const Slide06: React.FC = () => (
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 + i * 0.22, duration: 0.7, ease: editorial }}
           >
-            {/* Typographic hero — before → after, oversized, paper-sunk */}
-            <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-4">
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                {c.label}
-              </span>
-              <div className="flex flex-col items-center gap-2">
-                <span className="font-mono text-2xl text-ink-mute line-through tabular-nums leading-none">
-                  {c.headlineA}
+            {/* Visual header — real screenshot if available, else typographic hero */}
+            {c.image ? (
+              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] overflow-hidden relative">
+                <img
+                  src={c.image}
+                  alt={c.imageAlt}
+                  className="w-full h-full object-cover object-top"
+                />
+                <div className="absolute inset-0 bg-paper opacity-[0.04] pointer-events-none" />
+              </div>
+            ) : (
+              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                  {c.label}
                 </span>
-                <span className="font-mono text-ink-mute text-base leading-none">↓</span>
-                <span className="font-drama-display text-5xl text-black tracking-tight leading-none">
+                <span className="font-drama-display text-6xl text-black tracking-tight leading-none">
                   {c.headlineB}
                 </span>
               </div>
-            </div>
+            )}
 
             <div className="p-7 flex flex-col flex-1">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-4">
                 {c.tag}
+              </div>
+
+              {/* Before → after metric (always shown in body) */}
+              <div className="flex items-baseline gap-3 mb-1">
+                <span className="font-mono text-xl text-ink-mute line-through tabular-nums">
+                  {c.headlineA}
+                </span>
+                <span className="font-mono text-ink-mute">→</span>
+                <span className="text-3xl font-semibold tracking-tight text-black leading-none">
+                  {c.headlineB}
+                </span>
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-4">
+                {c.label}
               </div>
 
               <p className="text-sm text-black font-medium leading-relaxed mb-3 italic">
@@ -786,7 +800,7 @@ const Slide08: React.FC = () => (
             animate={{ opacity: 1 }}
             transition={{ delay: 2.1 }}
           >
-            <span>Assessment credit</span>
+            <span>Blueprint credit</span>
             <span className="stat-numeral">– $2,500</span>
           </motion.div>
           <motion.div
@@ -930,7 +944,7 @@ const Walkthrough: React.FC = () => {
 
   useMetadata({
     title: 'Walkthrough · Manfredi',
-    description: 'Five-day Agent-Ready Assessment walkthrough.',
+    description: 'Five-day Agent-Ready Blueprint walkthrough.',
     canonical: 'https://ivanmanfredi.com/walkthrough',
     noindex: true,
   });

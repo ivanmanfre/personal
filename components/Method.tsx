@@ -92,7 +92,7 @@ const Method: React.FC = () => {
               The four conditions are simple, not easy. If any one is missing, the build breaks within weeks. If all four are present, the system runs without you.
             </p>
             <p>
-              Before any engagement, I run a 1-week Agent-Ready Assessment that evaluates your operation on all four. You leave knowing what to build first and what needs foundation work before it ships.
+              Before any engagement, I run a 1-week Agent-Ready Blueprint that evaluates your operation on all four. You leave knowing what to build first and what needs foundation work before it ships.
             </p>
           </motion.div>
         </div>
@@ -147,7 +147,7 @@ const Method: React.FC = () => {
             href="/assessment"
             className="btn-magnetic px-8 py-4 bg-accent border-subtle-thick shadow-card-subtle flex items-center gap-3 font-semibold text-base tracking-wide text-white"
           >
-            Book an Agent-Ready Assessment
+            Book an Agent-Ready Blueprint
             <ArrowRight aria-hidden="true" size={18} />
           </a>
           <span className="text-sm text-ink-mute">

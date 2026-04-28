@@ -262,7 +262,7 @@ const ContentSystemPage: React.FC = () => {
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
-              Want a diagnostic first? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.
+              Want a diagnostic first? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint</a>.
             </p>
           </motion.div>
         </div>

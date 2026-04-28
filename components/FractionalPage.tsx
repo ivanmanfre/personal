@@ -13,6 +13,7 @@ const tiers = [
       'Ongoing improvements + 1 new build per month (or equivalent in smaller automations)',
       'Async support (Slack or email)',
       'Proactive system monitoring',
+      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
     ],
   },
   {
@@ -24,6 +25,7 @@ const tiers = [
       'Running backlog — 2-3 builds or improvements per month, prioritized together',
       'Dedicated Slack channel',
       'Monthly AI roadmap doc',
+      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
     ],
     highlighted: true,
   },
@@ -36,15 +38,15 @@ const tiers = [
       'Full implementation bandwidth — whatever moves the needle that month',
       'Priority response (24-hr SLA)',
       'Full AI and ops strategy ownership',
-      'Quarterly business review',
+      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
     ],
   },
 ];
 
 const howItWorks = [
-  { title: 'Month 1: Agent-Ready Assessment', description: 'Every Fractional engagement starts with the $2,500 diagnostic (credited to month 1). I score your ops, we agree on scope, you approve the 30-day roadmap.' },
+  { title: 'Month 1: Agent-Ready Blueprint (credited)', description: 'Every Fractional engagement starts with the $2,500 diagnostic, fully credited to month 1. I score your ops, we agree on scope, you approve the 30-day roadmap.' },
   { title: 'Monthly cadence', description: 'Strategy calls happen on a fixed day. Implementation projects get delivered within the month. I track scope in a shared doc so you know where every hour went.' },
-  { title: 'Quarterly review', description: 'Every 90 days we pull up the roadmap, measure what shipped, decide what stays, what\'s dropped, and what\'s added for the next quarter.' },
+  { title: 'Quarterly Recalibration', description: 'Every 90 days I re-run the Blueprint against your evolving stack and goals. What shipped, what shifted, what\'s next. New ordered priorities, new costed gaps. No upcharge — it\'s how we make sure month 7 is as sharp as month 1.' },
   { title: 'No lock-in', description: 'Month-to-month. If the partnership isn\'t working, we end it cleanly.' },
 ];
 
@@ -173,6 +175,21 @@ const FractionalPage: React.FC = () => {
             </div>
           </motion.div>
 
+          {/* Pace-to-absorption */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink-mute mb-3">
+              How we pace
+            </p>
+            <p className="text-xl md:text-2xl leading-relaxed text-ink-soft">
+              We pace to <span className="font-drama italic text-black">your absorption</span> — not our delivery. The bottleneck on AI in service businesses isn't building the systems; it's whether your team has the headspace to absorb them. Each month we ship only what you can actually integrate, leaving runway for the previous wave to land.
+            </p>
+          </motion.div>
+
           {/* Not included */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -215,7 +232,7 @@ const FractionalPage: React.FC = () => {
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
-              Not ready for retainer? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.
+              Not ready for retainer? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint</a>.
             </p>
           </motion.div>
         </div>

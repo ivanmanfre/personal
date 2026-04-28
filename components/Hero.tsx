@@ -83,7 +83,7 @@ const Hero: React.FC = () => {
                 href="/assessment"
                 className="btn-magnetic w-full sm:w-auto px-7 py-3.5 bg-accent border-subtle-thick shadow-card-subtle flex items-center justify-center gap-2.5 font-semibold text-base tracking-wide text-white"
               >
-                Book the Assessment <ArrowRight aria-hidden="true" size={18} />
+                Build your Blueprint <ArrowRight aria-hidden="true" size={18} />
               </a>
 
               <a

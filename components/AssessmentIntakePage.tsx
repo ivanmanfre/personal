@@ -136,8 +136,8 @@ const AssessmentIntakePage: React.FC = () => {
   const saveTimer = useRef<number | null>(null);
 
   useMetadata({
-    title: 'Assessment intake | Manfredi',
-    description: 'Complete your Agent-Ready Assessment intake questionnaire.',
+    title: 'Blueprint intake | Manfredi',
+    description: 'Complete your Agent-Ready Blueprint intake questionnaire.',
     canonical: 'https://ivanmanfredi.com/assessment/intake',
     noindex: true,
   });
@@ -278,7 +278,7 @@ const AssessmentIntakePage: React.FC = () => {
         {/* Eyebrow */}
         <div className="mb-6">
           <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
-            Assessment intake
+            Blueprint intake
           </span>
         </div>
 

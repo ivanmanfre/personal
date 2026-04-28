@@ -17,13 +17,13 @@ interface Offer {
 const offers: Offer[] = [
   {
     id: '01',
-    name: 'Agent-Ready Assessment',
+    name: 'Agent-Ready Blueprint',
     price: '$2,500',
     cadence: 'One-week engagement',
     description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan — sequenced builds, costed gaps, and decision logic for the first project.',
     creditNote: '100% credited toward any follow-on engagement within 60 days.',
     href: '/assessment',
-    cta: 'Book the Assessment',
+    cta: 'Build your Blueprint',
     highlighted: true,
   },
   {

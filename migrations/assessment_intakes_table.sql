@@ -1,4 +1,4 @@
--- Stores intake questionnaire responses for the Agent-Ready Assessment.
+-- Stores intake questionnaire responses for the Agent-Ready Blueprint.
 -- One row per paid Stripe session. Starts in 'in_progress' and flips to
 -- 'submitted' when the buyer clicks submit.
 -- Paired with: supabase/functions/assessment-intake/index.ts
@@ -32,6 +32,6 @@ CREATE TRIGGER trg_assessment_intakes_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION touch_assessment_intakes_updated_at();
 
-COMMENT ON TABLE assessment_intakes IS 'Agent-Ready Assessment intake questionnaire responses. Keyed by Stripe session.';
+COMMENT ON TABLE assessment_intakes IS 'Agent-Ready Blueprint intake questionnaire responses. Keyed by Stripe session.';
 COMMENT ON COLUMN assessment_intakes.status IS 'in_progress | submitted';
 COMMENT ON COLUMN assessment_intakes.answers IS 'Jsonb map of question_id -> value. Auto-saved as buyer fills the form.';

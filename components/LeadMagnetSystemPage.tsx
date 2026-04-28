@@ -205,6 +205,21 @@ const LeadMagnetSystemPage: React.FC = () => {
             </div>
           </motion.div>
 
+          {/* Pace-to-absorption */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-16 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink-mute mb-3">
+              How we pace the build
+            </p>
+            <p className="text-xl md:text-2xl leading-relaxed text-ink-soft">
+              Three weeks isn't a deadline — it's an <span className="font-drama italic text-black">absorption budget.</span> The bottleneck on lead-magnet systems isn't the build, it's whether your team can field the leads they generate. We ship the magnet only when your CRM, nurture sequence, and qualifying logic are ready to catch them. No firehose into a funnel that can't drink.
+            </p>
+          </motion.div>
+
           {/* Not included */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -247,7 +262,7 @@ const LeadMagnetSystemPage: React.FC = () => {
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
-              Want a diagnostic first? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Assessment</a>.
+              Want a diagnostic first? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint</a>.
             </p>
           </motion.div>
         </div>

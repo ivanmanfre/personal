@@ -137,7 +137,7 @@ const StartPage: React.FC = () => {
             <ArrowRight aria-hidden="true" size={18} />
           </a>
           <p className="mt-8 text-sm text-ink-mute">
-            Or skip the call: <a href="/assessment" className="underline hover:text-black">start with the $2,500 Assessment</a>.
+            Or skip the call: <a href="/assessment" className="underline hover:text-black">start with the $2,500 Blueprint</a>.
           </p>
         </div>
       </div>
@@ -165,12 +165,12 @@ const StartPage: React.FC = () => {
               </a>
             </div>
             <div className="border border-zinc-300 p-5 bg-paper">
-              <h3 className="font-bold mb-2">Agent-Ready Assessment</h3>
+              <h3 className="font-bold mb-2">Agent-Ready Blueprint</h3>
               <p className="text-sm text-ink-soft mb-3">
                 If you want a paid diagnostic without committing to a build. $2,500.
               </p>
               <a href="/assessment" className="text-sm font-bold text-black underline">
-                See the Assessment
+                See the Blueprint
               </a>
             </div>
           </div>

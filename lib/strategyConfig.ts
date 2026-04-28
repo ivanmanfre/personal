@@ -26,7 +26,7 @@ export const offerLadder: OfferLadderRung[] = [
   },
   {
     id: 'agent-ready-2500',
-    name: 'Agent-Ready Assessment',
+    name: 'Agent-Ready Blueprint',
     priceLabel: '$2,500',
     priceTier: 'mid',
     status: 'live',
@@ -108,13 +108,13 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
     buildStatus: 'partial',
     url: 'https://cal.com/ivanmanfredi/discovery',
     metric: null,
-    description: 'Free call only after Pre-Call Form qualifies. Outcome: Assessment sale or polite no.',
+    description: 'Free call only after Pre-Call Form qualifies. Outcome: Blueprint sale or polite no.',
   },
   {
     step: 3,
-    name: 'Agent-Ready Assessment (paid, $2,500)',
+    name: 'Agent-Ready Blueprint (paid, $2,500)',
     buildStatus: 'built',
-    url: 'https://ivanmanfredi.com/agent-ready-assessment',
+    url: 'https://ivanmanfredi.com/assessment',
     metric: null,
     description: '1-week paid diagnostic. Conversion target: 50-70% to Care Plan or LMS project.',
   },
@@ -124,7 +124,7 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
     buildStatus: 'partial',
     url: null,
     metric: null,
-    description: 'Onboarding flow after Assessment converts to engagement.',
+    description: 'Onboarding flow after Blueprint converts to engagement.',
   },
 ];
 

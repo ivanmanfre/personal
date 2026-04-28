@@ -1,4 +1,4 @@
-// Intake questionnaire handler for the Agent-Ready Assessment.
+// Intake questionnaire handler for the Agent-Ready Blueprint.
 // - GET  ?session_id=X  -> returns existing draft (or 404 if no paid row)
 // - POST { session_id, answers, submit? } -> upserts draft; if submit=true
 //   flips status to 'submitted' and records submitted_at.
