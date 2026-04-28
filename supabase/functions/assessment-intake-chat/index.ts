@@ -187,7 +187,18 @@ Deno.serve(async (req: Request) => {
 });
 
 async function handleRequest(req: Request): Promise<Response> {
-  if (req.method === "OPTIONS") return jsonResponse({}, 204);
+  if (req.method === "OPTIONS") {
+    // 204 forbids a body — return naked Response with CORS headers.
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "authorization, content-type, x-intake-nonce",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
 
   if (req.method !== "POST") {
     return jsonResponse({ error: "method_not_allowed" }, 405);
