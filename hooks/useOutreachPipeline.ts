@@ -188,6 +188,7 @@ export function useOutreachPipeline(timezone?: string) {
   const [engagementLog, setEngagementLog] = useState<Record<string, OutreachEngagementLog[]>>({});
   const [recentActivity, setRecentActivity] = useState<OutreachEngagementLog[]>([]);
   const [rateLimits, setRateLimits] = useState<Record<string, { count: number; daily_limit: number }>>({});
+  const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
 
@@ -209,7 +210,7 @@ export function useOutreachPipeline(timezone?: string) {
         d.setHours(0, 0, 0, 0);
         return d.toISOString();
       })();
-      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes, emailsTodayRes] = await Promise.all([
+      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes, emailsTodayRes, queuedLinkedInRes] = await Promise.all([
         supabase
           .from('outreach_prospects')
           .select('*, outreach_campaigns(name, niche_tags)')
@@ -252,6 +253,12 @@ export function useOutreachPipeline(timezone?: string) {
           .select('id', { count: 'exact', head: true })
           .eq('channel', 'email')
           .gte('sent_at', todayStartIso),
+        supabase
+          .from('outreach_messages')
+          .select('message_type')
+          .not('approved_at', 'is', null)
+          .is('sent_at', null)
+          .or('channel.eq.linkedin,channel.is.null'),
       ]);
 
       const now = Date.now();
@@ -286,6 +293,14 @@ export function useOutreachPipeline(timezone?: string) {
         rl[r.action_type] = { count: r.count, daily_limit: r.daily_limit };
       });
       setRateLimits(rl);
+
+      // Capped queue: approved-but-unsent LinkedIn messages, by action_type
+      const cq = { connection_request: 0, dm: 0 };
+      (queuedLinkedInRes.data || []).forEach((r: any) => {
+        if (r.message_type === 'connection_note') cq.connection_request += 1;
+        else if (r.message_type === 'dm') cq.dm += 1;
+      });
+      setCappedQueue(cq);
 
       // Feature flags
       const ff: Record<string, boolean> = {};
@@ -847,6 +862,7 @@ export function useOutreachPipeline(timezone?: string) {
     engagementLog,
     recentActivity,
     rateLimits,
+    cappedQueue,
     featureFlags,
     stageCounts,
     actionNeeded,

@@ -62,7 +62,7 @@ const OutreachPanel: React.FC = () => {
   const pipeline = useOutreachPipeline(userTimezone);
   const {
     prospects, campaigns, stats, loading, messages, engagementLog,
-    recentActivity, rateLimits, featureFlags, stageCounts, actionNeeded,
+    recentActivity, rateLimits, cappedQueue, featureFlags, stageCounts, actionNeeded,
     refresh, fetchMessages, fetchEngagementLog,
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
@@ -260,17 +260,29 @@ const OutreachPanel: React.FC = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {([
-            { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁' },
-            { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️' },
-            { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝' },
-            { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬' },
-          ] as const).map(({ key, label, defaultLimit, icon }) => {
+            { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁', queueKey: null as 'connection_request' | 'dm' | null },
+            { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️', queueKey: null as 'connection_request' | 'dm' | null },
+            { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝', queueKey: 'connection_request' as const },
+            { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬', queueKey: 'dm' as const },
+          ]).map(({ key, label, defaultLimit, icon, queueKey }) => {
             const rl = rateLimits[key];
             const count = rl?.count || 0;
             const limit = rl?.daily_limit || defaultLimit;
             const pct = Math.min((count / limit) * 100, 100);
             const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
             const textColor = pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-zinc-300';
+            const queued = queueKey ? cappedQueue[queueKey] : 0;
+
+            // Compute time until UTC midnight reset
+            let resetIn = '';
+            if (count >= limit) {
+              const now = new Date();
+              const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+              const ms = utcMidnight.getTime() - now.getTime();
+              const h = Math.floor(ms / 3600000);
+              const m = Math.floor((ms % 3600000) / 60000);
+              resetIn = h > 0 ? `${h}h ${m}m` : `${m}m`;
+            }
 
             return (
               <div key={key} className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
@@ -281,7 +293,17 @@ const OutreachPanel: React.FC = () => {
                 <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
                 </div>
-                {count >= limit && <p className="text-[9px] text-red-400 mt-1">Limit reached - skipping until tomorrow</p>}
+                {count >= limit && (
+                  <p className="text-[9px] text-red-400 mt-1 leading-tight">
+                    Cap reached
+                    {queued > 0 && <> · <span className="text-amber-300">{queued} queued</span></>}
+                    <br />
+                    Resets in {resetIn}
+                  </p>
+                )}
+                {count < limit && queueKey && queued > 0 && (
+                  <p className="text-[9px] text-zinc-500 mt-1">{queued} approved waiting</p>
+                )}
               </div>
             );
           })}
@@ -297,6 +319,45 @@ const OutreachPanel: React.FC = () => {
             <p className="text-[9px] text-zinc-500 mt-1">First-touch + follow-ups, no daily cap</p>
           </div>
         </div>
+      </div>
+
+      {/* Section 2c: Recent Activity (lifted from bottom for visibility) */}
+      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-zinc-200">Recent Activity</span>
+            <span className="text-[10px] text-zinc-500">({recentActivity.length})</span>
+          </div>
+          <button
+            onClick={() => setShowActivity(!showActivity)}
+            className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {showActivity ? 'collapse' : 'expand all'}
+          </button>
+        </div>
+        {recentActivity.length === 0 ? (
+          <p className="text-xs text-zinc-600 text-center py-4">No activity yet</p>
+        ) : (
+          <div className={`space-y-1.5 overflow-y-auto ${showActivity ? 'max-h-96' : 'max-h-48'}`}>
+            {(showActivity ? recentActivity : recentActivity.slice(0, 8)).map((e) => {
+              const prospect = prospects.find((p) => p.id === e.prospectId);
+              return (
+                <div key={e.id} className="flex items-start gap-2 text-xs">
+                  <span className="text-zinc-600 whitespace-nowrap w-12 shrink-0">
+                    {new Date(e.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className={e.success ? 'text-zinc-400' : 'text-red-400'}>
+                    {actionTypeIcons[e.actionType] || e.actionType}
+                    {prospect && <span className="text-zinc-300"> {prospect.name}</span>}
+                    {prospect?.campaignName && <span className="text-zinc-600"> ({prospect.campaignName})</span>}
+                    {!e.success && e.errorMessage && <span className="text-red-500/70"> · {e.errorMessage.slice(0, 60)}</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Section 3: Funnel */}
@@ -1177,40 +1238,7 @@ const OutreachPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Section 10: Activity Log */}
-      <div>
-        <button
-          onClick={() => setShowActivity(!showActivity)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2"
-        >
-          {showActivity ? '▼' : '▶'} Recent Activity ({recentActivity.length})
-        </button>
-        {showActivity && (
-          <PanelCard title="Recent Activity" accent="blue">
-            {recentActivity.length === 0 ? (
-              <p className="text-xs text-zinc-600 text-center py-4">No activity yet</p>
-            ) : (
-              <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                {recentActivity.map((e) => {
-                  const prospect = prospects.find((p) => p.id === e.prospectId);
-                  return (
-                    <div key={e.id} className="flex items-start gap-2 text-xs">
-                      <span className="text-zinc-600 whitespace-nowrap w-12 shrink-0">
-                        {new Date(e.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span className={e.success ? 'text-zinc-400' : 'text-red-400'}>
-                        {actionTypeIcons[e.actionType] || e.actionType}
-                        {prospect && <span className="text-zinc-300"> {prospect.name}</span>}
-                        {prospect?.campaignName && <span className="text-zinc-600"> ({prospect.campaignName})</span>}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </PanelCard>
-        )}
-      </div>
+      {/* Section 10: Activity Log moved to top (see Section 2c near header) */}
 
       {/* Section 11: How It Works */}
       <div>
