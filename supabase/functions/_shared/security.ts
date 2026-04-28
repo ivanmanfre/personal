@@ -116,6 +116,37 @@ export function sanitizeMessage(text: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Anti-AI-tell cleanup — strip em-dashes, sycophantic openers, etc.
+// Claude will slip these in even with a strict system prompt, so we
+// scrub them server-side as defense-in-depth.
+// ─────────────────────────────────────────────────────────────
+
+const TELL_OPENERS_RX =
+  /^(Great|Awesome|Got it|Perfect|Excellent|Wonderful|Fantastic|Absolutely|Certainly|Of course)[!.,]?\s+/gim;
+const TELL_PHRASES_RX =
+  /\b(I'?m here to help|let me know if|please feel free|happy to help)\b[^.!?\n]*[.!?]?\s*/gi;
+
+export function stripAITells(text: string): string {
+  return text
+    // Em-dash with surrounding spaces → comma+space
+    .replace(/\s*—\s*/g, ", ")
+    // Em-dash without spaces (e.g. "word—word") → comma+space
+    .replace(/—/g, ", ")
+    // En-dash similarly
+    .replace(/\s*–\s*/g, ", ")
+    .replace(/–/g, ", ")
+    // Sycophantic openers at start of any line
+    .replace(TELL_OPENERS_RX, "")
+    // Chatbot meta-phrases anywhere
+    .replace(TELL_PHRASES_RX, "")
+    // Collapse repeated commas / spaces from the substitutions
+    .replace(/,\s*,/g, ",")
+    .replace(/  +/g, " ")
+    .replace(/\s+,/g, ",")
+    .trim();
+}
+
+// ─────────────────────────────────────────────────────────────
 // IP extraction
 // ─────────────────────────────────────────────────────────────
 

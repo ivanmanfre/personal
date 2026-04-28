@@ -407,7 +407,7 @@ const ConversationalIntake: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between mt-2 text-[10px] font-mono uppercase tracking-[0.12em]">
                   <span className="text-ink-mute">
-                    Powered by Claude · saves automatically · {' '}
+                    Saves automatically ·{' '}
                     <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="underline hover:text-black">
                       switch to form
                     </a>
@@ -445,11 +445,6 @@ const ChatBubble: React.FC<{ role: 'user' | 'assistant'; content: string }> = ({
             : 'bg-accent text-white leading-relaxed'
         }`}
       >
-        {isBot && (
-          <div className="font-drama italic text-xs text-accent-ink mb-1.5 -ml-0.5">
-            Ivan-bot
-          </div>
-        )}
         <div className="text-sm md:text-[15px] whitespace-pre-wrap">{content}</div>
       </div>
     </motion.div>
