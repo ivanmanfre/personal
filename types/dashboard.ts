@@ -654,6 +654,8 @@ export interface MeetingTranscript {
   source: string | null;
   createdAt: string;
   updatedAt: string;
+  meetingType?: MeetingType | null;
+  phaseCoverage?: Record<string, Record<string, boolean>> | null;
 }
 
 export interface MeetingStats {
@@ -661,6 +663,42 @@ export interface MeetingStats {
   thisWeek: number;
   withActionItems: number;
   avgDurationMinutes: number;
+}
+
+// ─── Meeting Type / Sales Script Types ───
+
+export type MeetingType =
+  | 'discovery_sales'
+  | 'technical_audit'
+  | 'client_kickoff'
+  | 'internal'
+  | 'unknown';
+
+export interface SalesScriptMustHit {
+  id: string;
+  label: string;
+  weight: 'high' | 'medium' | 'low';
+}
+
+export interface SalesScriptPhase {
+  id: string;
+  name: string;
+  order: number;
+  duration_target_seconds: number;
+  must_hits: SalesScriptMustHit[];
+}
+
+export interface SalesScript {
+  id: string;
+  name: string;
+  meetingType: MeetingType;
+  version: number;
+  isActive: boolean;
+  contentMd: string;
+  phases: SalesScriptPhase[];
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Calendar Event Types ───
@@ -678,6 +716,7 @@ export interface CalendarEvent {
   description: string | null;
   isAllDay: boolean;
   createdAt: string;
+  meetingType?: MeetingType | null;
 }
 
 export interface VideoIdea {

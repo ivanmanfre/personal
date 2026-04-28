@@ -20,6 +20,8 @@ function mapTranscript(row: any): MeetingTranscript {
     source: row.source,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    meetingType: row.meeting_type,
+    phaseCoverage: row.phase_coverage,
   };
 }
 

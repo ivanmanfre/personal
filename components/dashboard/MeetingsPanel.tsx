@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink } from 'lucide-react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink, Tag } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -11,7 +11,9 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import FilterBar from './shared/FilterBar';
 import { formatDate as formatDateUtil, formatTime } from './shared/utils';
-import type { MeetingTranscript, CalendarEvent } from '../../types/dashboard';
+import { meetingTypeConfig, MEETING_TYPE_OPTIONS } from '../../lib/meetingTypes';
+import SalesScriptViewer from './SalesScriptViewer';
+import type { MeetingTranscript, CalendarEvent, MeetingType } from '../../types/dashboard';
 
 function parseItem(item: any): Record<string, any> {
   if (typeof item === 'string') {
@@ -356,7 +358,51 @@ const CallPlaybook: React.FC = () => {
   );
 };
 
-const UpcomingCallCard: React.FC<{ event: CalendarEvent }> = ({ event }) => {
+const MeetingTypeBadge: React.FC<{
+  event: CalendarEvent;
+  onChange: (type: MeetingType) => void;
+}> = ({ event, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const cfg = meetingTypeConfig(event.meetingType);
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
+        className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1 hover:opacity-80 transition-opacity ${cfg.badgeStyle}`}
+        title={`Meeting type: ${cfg.label}. Click to override.`}
+      >
+        <Tag className="w-2.5 h-2.5" /> {cfg.shortLabel}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-50 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl min-w-[140px] overflow-hidden">
+            {MEETING_TYPE_OPTIONS.map((t) => {
+              const c = meetingTypeConfig(t);
+              const active = event.meetingType === t;
+              return (
+                <button
+                  key={t}
+                  onClick={(e) => { e.stopPropagation(); onChange(t); setOpen(false); }}
+                  className={`w-full text-left text-[11px] px-2.5 py-1.5 hover:bg-zinc-800 flex items-center gap-1.5 ${active ? 'text-zinc-100' : 'text-zinc-400'}`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${c.badgeStyle.split(' ')[0]}`} />
+                  {c.label}
+                  {active && <Check className="w-3 h-3 ml-auto text-emerald-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const UpcomingCallCard: React.FC<{
+  event: CalendarEvent;
+  onSetMeetingType: (eventId: string, type: MeetingType) => void;
+}> = ({ event, onSetMeetingType }) => {
   const start = new Date(event.startTime);
   const end = new Date(event.endTime);
   const now = new Date();
@@ -376,7 +422,9 @@ const UpcomingCallCard: React.FC<{ event: CalendarEvent }> = ({ event }) => {
         <p className="text-sm font-bold text-zinc-200">{timeStr}</p>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-200 truncate">{event.title}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-zinc-200 truncate">{event.title}</p>
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           {event.attendees.length > 0 && (
             <span className="text-[11px] text-zinc-500 flex items-center gap-1 truncate">
@@ -387,6 +435,7 @@ const UpcomingCallCard: React.FC<{ event: CalendarEvent }> = ({ event }) => {
         </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
+        <MeetingTypeBadge event={event} onChange={(t) => onSetMeetingType(event.id, t)} />
         <span className="text-[10px] text-zinc-600">{timeStr}–{endStr}</span>
         {event.meetingUrl && (
           <a
@@ -412,7 +461,7 @@ const UpcomingCallCard: React.FC<{ event: CalendarEvent }> = ({ event }) => {
 const MeetingsPanel: React.FC = () => {
   const [search, setSearch] = useState('');
   const { meetings, stats, loading, refresh } = useMeetings();
-  const { events: upcomingEvents, todayEvents, refresh: refreshEvents } = useUpcomingEvents();
+  const { events: upcomingEvents, todayEvents, refresh: refreshEvents, setMeetingType } = useUpcomingEvents();
   const combinedRefresh = useCallback(async () => { await refresh(); await refreshEvents(); }, [refresh, refreshEvents]);
   const { lastRefreshed } = useAutoRefresh(combinedRefresh, { realtimeTables: ['transcripts', 'calendar_events'] });
   const { userTimezone } = useDashboard();
@@ -461,6 +510,9 @@ const MeetingsPanel: React.FC = () => {
         <StatCard label="Avg Duration" value={`${stats.avgDurationMinutes}m`} icon={<Clock className="w-4 h-4" />} color="text-zinc-300" />
       </div>
 
+      {/* Sales Script Viewer (live, edits saved to Supabase) */}
+      <SalesScriptViewer />
+
       {/* Call Playbook + Upcoming Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <CallPlaybook />
@@ -471,7 +523,7 @@ const MeetingsPanel: React.FC = () => {
             </h3>
             <div className="space-y-1.5">
               {upcomingEvents.slice(0, 5).map((e) => (
-                <UpcomingCallCard key={e.id} event={e} />
+                <UpcomingCallCard key={e.id} event={e} onSetMeetingType={setMeetingType} />
               ))}
               {upcomingEvents.length > 5 && (
                 <p className="text-[11px] text-zinc-600 text-center py-1">+{upcomingEvents.length - 5} more this week</p>
