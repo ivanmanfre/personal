@@ -89,3 +89,46 @@ export async function sendNewsletterTest(issueId: string, testEmail: string): Pr
   });
   if (!res.ok) throw new Error(`Test send failed: ${res.status} ${await res.text()}`);
 }
+
+// Newsletter idea-bank actions
+export async function approveAndDraftIdea(idea_id: string): Promise<{ ok: boolean; issue_id?: string; webhook_request_id?: number; error?: string }> {
+  const { data, error } = await supabase.rpc('dashboard_action', { op: 'approveAndDraftIdea', input: { idea_id } });
+  if (error) return { ok: false, error: error.message };
+  return data as { ok: boolean; issue_id?: string; webhook_request_id?: number; error?: string };
+}
+
+export async function rejectNewsletterIdea(idea_id: string): Promise<void> {
+  const { error } = await supabase.rpc('dashboard_action', { op: 'rejectNewsletterIdea', input: { idea_id } });
+  if (error) throw error;
+}
+
+export async function updateNewsletterIdea(
+  idea_id: string,
+  patch: { subject?: string; preview?: string; hook_one_liner?: string; recommended_cadence?: string },
+): Promise<void> {
+  const { error } = await supabase.rpc('dashboard_action', { op: 'updateNewsletterIdea', input: { idea_id, ...patch } });
+  if (error) throw error;
+}
+
+export async function upsertTopicQueueItem(input: {
+  id?: string;
+  thesis: string;
+  cadence_hint?: string;
+  priority?: number;
+  notes?: string;
+  status?: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('dashboard_action', { op: 'upsertTopicQueueItem', input });
+  if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+export async function archiveTopicQueueItem(id: string): Promise<void> {
+  const { error } = await supabase.rpc('dashboard_action', { op: 'archiveTopicQueueItem', input: { id } });
+  if (error) throw error;
+}
+
+export async function requeueTopicQueueItem(id: string): Promise<void> {
+  const { error } = await supabase.rpc('dashboard_action', { op: 'requeueTopicQueueItem', input: { id } });
+  if (error) throw error;
+}

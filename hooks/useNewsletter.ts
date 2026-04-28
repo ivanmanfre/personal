@@ -254,3 +254,83 @@ export function useNewsletter() {
 
   return { data, totals, loading, refresh: fetch };
 }
+
+export type IdeaRow = {
+  id: string;
+  week_iso: string;
+  subject: string;
+  preview: string;
+  hook_one_liner: string;
+  recommended_cadence: 'field_notes' | 'hiring_wall' | 'manifesto';
+  score: number;
+  source_signal_type: string;
+  source_signal_ref: Record<string, unknown>;
+  source_excerpt: string | null;
+  reasoning: string | null;
+  status: 'proposed' | 'approved' | 'rejected' | 'drafted' | 'draft_failed';
+  linked_issue_id: string | null;
+  created_at: string;
+  approved_at: string | null;
+  rejected_at: string | null;
+  drafted_at: string | null;
+};
+
+export type TopicQueueRow = {
+  id: string;
+  thesis: string;
+  cadence_hint: 'field_notes' | 'hiring_wall' | 'manifesto' | 'any';
+  priority: number;
+  notes: string | null;
+  status: 'queued' | 'used' | 'archived';
+  used_for_issue_id: string | null;
+  created_at: string;
+  used_at: string | null;
+};
+
+export function useNewsletterIdeas() {
+  const [ideas, setIdeas] = useState<IdeaRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: e } = await supabase
+      .from('newsletter_ideas')
+      .select('*')
+      .in('status', ['proposed', 'approved', 'drafted'])
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (e) setError(e.message);
+    setIdeas((data || []) as IdeaRow[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return { ideas, refresh, loading, error };
+}
+
+export function useTopicQueue() {
+  const [items, setItems] = useState<TopicQueueRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: e } = await supabase
+      .from('newsletter_topic_queue')
+      .select('*')
+      .order('priority', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (e) setError(e.message);
+    setItems((data || []) as TopicQueueRow[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return { items, refresh, loading, error };
+}
