@@ -75,7 +75,10 @@ const INJECTION_PATTERNS: RegExp[] = [
   /\b(reveal|show|tell|print|repeat)\s+(?:me\s+)?(?:your\s+)?(?:system\s+prompt|instructions|api\s*key|secret|token|canary)/i,
   /\bact\s+as\s+(?:a\s+)?(?:different|another|unrestricted|jailbroken|DAN|developer)/i,
   /\byou\s+are\s+(?:now|no\s+longer)\s+(?:a|an|not)\b/i,
-  /\bwhat\s+(?:are|is)\s+your\s+(?:instructions|prompt|rules|api\s*key|secret)/i,
+  // Match: "what is your", "what are your", "what's your", "whats your"
+  /\bwhat(?:'s|s|\s+is|\s+are)\s+your\s+(?:instructions|prompt|rules?|api\s*key|secret|token|canary|password)/i,
+  // Direct probes without "your"
+  /\b(?:your|the)\s+(?:api\s*key|secret|token|password|system\s+prompt)\b/i,
   /\brepeat\s+(?:everything|all|the|this)\s+(?:above|before|prior)/i,
   /BLUEPRINT-CANARY-7K9X/i, // canary echo from user side
 ];
