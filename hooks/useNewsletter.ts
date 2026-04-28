@@ -74,6 +74,7 @@ export interface IssueRow {
   complaintsCount: number;
   errorMessage: string | null;
   createdAt: string;
+  sourceIdeaId: string | null;
 }
 
 export interface NewsletterData {
@@ -122,7 +123,7 @@ export function useNewsletter() {
           .limit(100),
         supabase
           .from('newsletter_issues')
-          .select('id, slug, subject, preview, format, status, scheduled_for, sent_at, recipient_count, delivered_count, opens_count, clicks_count, bounces_count, unsubscribes_count, complaints_count, error_message, created_at')
+          .select('id, slug, subject, preview, format, status, scheduled_for, sent_at, recipient_count, delivered_count, opens_count, clicks_count, bounces_count, unsubscribes_count, complaints_count, error_message, created_at, source_idea_id')
           .order('created_at', { ascending: false })
           .limit(50),
       ]);
@@ -195,6 +196,7 @@ export function useNewsletter() {
           complaintsCount: Number(r.complaints_count) || 0,
           errorMessage: r.error_message,
           createdAt: r.created_at,
+          sourceIdeaId: r.source_idea_id ?? null,
         })),
       });
     } catch (err) {

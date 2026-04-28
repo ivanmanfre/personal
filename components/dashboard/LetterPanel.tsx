@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Mail, Eye, UserMinus, Clock, Plus, Pencil } from 'lucide-react';
-import { useNewsletter, IssueRow } from '../../hooks/useNewsletter';
+import { useNewsletter, IssueRow, useNewsletterIdeas } from '../../hooks/useNewsletter';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import LetterEditor from './LetterEditor';
+import IdeaInboxPanel from './IdeaInboxPanel';
+import TopicQueueEditor from './TopicQueueEditor';
 
 function pctChange(curr: number, prev: number): number {
   if (!prev) return curr > 0 ? 100 : 0;
@@ -70,6 +72,9 @@ const LetterPanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refresh);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<IssueRow | null>(null);
+  const [tab, setTab] = useState<'inbox' | 'drafts' | 'queue'>('inbox');
+  const { ideas: allIdeas } = useNewsletterIdeas();
+  const proposedCount = allIdeas.filter((i) => i.status === 'proposed').length;
 
   function openNew() {
     setEditingIssue(null);
@@ -117,7 +122,34 @@ const LetterPanel: React.FC = () => {
         </div>
       </div>
 
-      {!hasAny ? (
+      <div className="border-b border-zinc-800 mb-4 flex gap-4">
+        <button
+          onClick={() => setTab('inbox')}
+          className={`pb-2 text-sm font-medium border-b-2 ${tab === 'inbox' ? 'border-emerald-500 text-zinc-100' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Idea Inbox
+          {proposedCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] bg-emerald-700 text-white rounded-full">{proposedCount}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab('drafts')}
+          className={`pb-2 text-sm font-medium border-b-2 ${tab === 'drafts' ? 'border-emerald-500 text-zinc-100' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Drafts & Scheduled
+        </button>
+        <button
+          onClick={() => setTab('queue')}
+          className={`pb-2 text-sm font-medium border-b-2 ${tab === 'queue' ? 'border-emerald-500 text-zinc-100' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+        >
+          Topic Queue
+        </button>
+      </div>
+
+      {tab === 'inbox' && <IdeaInboxPanel />}
+      {tab === 'queue' && <TopicQueueEditor />}
+
+      {tab === 'drafts' && (!hasAny ? (
         <EmptyState
           title="No subscribers yet"
           description="Once someone signs up via the footer form, they'll appear here within seconds. Open ivanmanfredi.com#newsletter to test. You can also draft an issue now — it'll be ready to ship when subs land."
@@ -231,6 +263,9 @@ const LetterPanel: React.FC = () => {
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wide">{i.format.replace('_', ' ')}</span>
                         <p className="text-xs text-zinc-200 truncate font-medium">{i.subject}</p>
+                        {i.sourceIdeaId && (
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 ml-2">From idea</span>
+                        )}
                         <Pencil className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                       {i.preview && <p className="text-[11px] text-zinc-500 truncate">{i.preview}</p>}
@@ -408,7 +443,7 @@ const LetterPanel: React.FC = () => {
             )}
           </div>
         </>
-      )}
+      ))}
 
       <LetterEditor open={editorOpen} issue={editingIssue} onClose={closeEditor} onSaved={onEditorSaved} />
     </div>
