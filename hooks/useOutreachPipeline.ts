@@ -191,6 +191,7 @@ export function useOutreachPipeline(timezone?: string) {
   const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
+  const [workflowHealth, setWorkflowHealth] = useState<Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number }>>({});
 
   // Optimistic locks
   const locks = useRef<Map<string, OptimisticLock>>(new Map());
@@ -204,7 +205,7 @@ export function useOutreachPipeline(timezone?: string) {
   const fetch = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true);
     try {
-      const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5', '9q4bhlIBQCiCxQpq', '2AVRUQLoxCIXCzT0'];
+      const outreachWfIds = ['35HJE7eOpvEdxRwq', 'kr2lSH1eRGZcDWmO', 'wBBL75oqWcTf78yp', '5ZXtArhobWrDDpfJ', 'joU7VaM5OiRAwLwP', 'KWxb6JFdpvb3y8w5', 'kFYlfnWd98YaiErH', 'VaP0RnmFlhkfKE4V', '9q4bhlIBQCiCxQpq', '2AVRUQLoxCIXCzT0'];
       const todayStartIso = (() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -246,7 +247,7 @@ export function useOutreachPipeline(timezone?: string) {
           .like('key', 'outreach_%'),
         supabase
           .from('dashboard_workflow_stats')
-          .select('workflow_id, is_active')
+          .select('workflow_id, is_active, last_execution_at, last_execution_status, last_error_message, error_count_24h, success_count_24h, total_executions_24h')
           .in('workflow_id', outreachWfIds),
         supabase
           .from('outreach_messages')
@@ -309,12 +310,21 @@ export function useOutreachPipeline(timezone?: string) {
       });
       setFeatureFlags(ff);
 
-      // Workflow statuses
+      // Workflow statuses + health
       const ws: Record<string, boolean> = {};
+      const wh: Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number }> = {};
       (wfStatusRes.data || []).forEach((r: any) => {
         ws[r.workflow_id] = r.is_active === true;
+        wh[r.workflow_id] = {
+          lastExecutionAt: r.last_execution_at,
+          lastStatus: r.last_execution_status,
+          lastError: r.last_error_message,
+          errorCount24h: r.error_count_24h ?? 0,
+          totalExecutions24h: r.total_executions_24h ?? 0,
+        };
       });
       setWorkflowStatuses(ws);
+      setWorkflowHealth(wh);
 
       hasLoaded.current = true;
     } catch (err) {
@@ -882,6 +892,7 @@ export function useOutreachPipeline(timezone?: string) {
     deleteCampaign,
     toggleFeatureFlag,
     workflowStatuses,
+    workflowHealth,
     toggleWorkflow,
     importProspects,
     sendManualDm,

@@ -66,7 +66,7 @@ const OutreachPanel: React.FC = () => {
     refresh, fetchMessages, fetchEngagementLog,
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
-    createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses,
+    createCampaign, deleteCampaign, toggleFeatureFlag, workflowStatuses, workflowHealth,
     toggleWorkflow, importProspects, sendManualDm, approveDraft, rejectDraft,
     pendingDrafts, fetchPendingDrafts,
     commentDrafts, fetchCommentDrafts, approveCommentDraft, rejectCommentDraft,
@@ -197,6 +197,37 @@ const OutreachPanel: React.FC = () => {
           Outreach automation paused. Manual actions still work.
         </div>
       )}
+
+      {/* Workflow error banner — only shown when something errored */}
+      {(() => {
+        const errored = Object.entries(workflowHealth).filter(([, h]) => h.lastStatus === 'error');
+        if (errored.length === 0) return null;
+        const wfNames: Record<string, string> = {
+          '35HJE7eOpvEdxRwq': 'Import + Enrich', 'kr2lSH1eRGZcDWmO': 'Warm-up', 'wBBL75oqWcTf78yp': 'Trigger Research',
+          '5ZXtArhobWrDDpfJ': 'Connect', 'joU7VaM5OiRAwLwP': 'DM Sequence', 'KWxb6JFdpvb3y8w5': 'Monitor',
+          'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Cohort Scraper',
+          '9q4bhlIBQCiCxQpq': 'Comment Drafter', '2AVRUQLoxCIXCzT0': 'Comment Sender',
+        };
+        return (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <span className="text-sm font-medium text-red-300">{errored.length} workflow{errored.length > 1 ? 's' : ''} erroring</span>
+            </div>
+            <div className="space-y-1.5">
+              {errored.map(([wfId, h]) => (
+                <div key={wfId} className="text-xs">
+                  <span className="text-red-300 font-medium">{wfNames[wfId] || wfId}</span>
+                  <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
+                  {h.lastError && (
+                    <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1">{h.lastError.slice(0, 200)}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Auto-Send First Contact - top-level visibility */}
       <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -1144,19 +1175,39 @@ const OutreachPanel: React.FC = () => {
                       { id: '5ZXtArhobWrDDpfJ', name: 'Connect', schedule: '4h', flag: 'outreach_auto_connect', desc: 'Connection notes (peer voice, no questions)' },
                       { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '3-DM sequence (warm → owned opinion → soft offer)' },
                       { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection (engaged + connected stages) + alerts' },
-                      { id: 'kFYlfnWd98YaiErH', name: 'Send Messages', schedule: '2m', flag: null, desc: 'Email sender + 3-email follow-up sequence' },
+                      { id: 'kFYlfnWd98YaiErH', name: 'Send Messages', schedule: '2m', flag: null, desc: 'Email + LinkedIn sender (cap-aware)' },
+                      { id: 'VaP0RnmFlhkfKE4V', name: 'Cohort Scraper', schedule: 'Daily 06:00 UTC', flag: null, desc: 'Apify-scrapes commenting_targets posts → cohort_posts (feeds Drafter)' },
                       { id: '9q4bhlIBQCiCxQpq', name: 'Comment Drafter', schedule: '2h', flag: 'outreach_auto_comment', desc: 'Fetches posts from commenting_targets, generates drafts in Ivan\'s voice (approve before send)' },
                       { id: '2AVRUQLoxCIXCzT0', name: 'Comment Sender', schedule: '30m', flag: 'outreach_auto_comment_send', desc: 'Posts approved comment drafts via UniPile — enable only after reviewing drafts' },
                     ].map((wf) => {
                       const isActive = workflowStatuses[wf.id] ?? false;
                       const flagOn = wf.flag ? (featureFlags[wf.flag] ?? false) : true;
                       const fullyOn = isActive && flagOn;
+                      const health = workflowHealth[wf.id];
+                      const hasError = health?.lastStatus === 'error';
+                      const lastRunAgo = health?.lastExecutionAt ? timeAgo(health.lastExecutionAt) : null;
 
                       return (
-                        <tr key={wf.id} className="group hover:bg-zinc-800/30">
+                        <tr key={wf.id} className={`group hover:bg-zinc-800/30 ${hasError ? 'bg-red-500/5' : ''}`}>
                           <td className="px-3 py-2.5">
-                            <p className="text-xs text-zinc-200 font-medium">{wf.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              {hasError && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
+                              <p className="text-xs text-zinc-200 font-medium">{wf.name}</p>
+                              {(health?.errorCount24h ?? 0) > 0 && (
+                                <span className="text-[9px] bg-red-500/20 text-red-300 px-1 py-0.5 rounded">{health!.errorCount24h} err/24h</span>
+                              )}
+                            </div>
                             <p className="text-[10px] text-zinc-500 mt-0.5">{wf.desc}</p>
+                            {lastRunAgo && (
+                              <p className="text-[10px] text-zinc-600 mt-0.5">
+                                last run: <span className={hasError ? 'text-red-400' : 'text-zinc-500'}>{lastRunAgo}{hasError ? ' · errored' : ''}</span>
+                              </p>
+                            )}
+                            {hasError && health?.lastError && (
+                              <p className="text-[10px] text-red-400/80 mt-1 font-mono leading-tight" title={health.lastError}>
+                                {health.lastError.slice(0, 120)}{health.lastError.length > 120 ? '…' : ''}
+                              </p>
+                            )}
                           </td>
                           <td className="px-3 py-2.5 text-center">
                             <span className="text-[10px] text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded">{wf.schedule}</span>
