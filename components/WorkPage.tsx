@@ -230,7 +230,7 @@ const WorkPage: React.FC = () => {
             Have a system you need <span className="font-drama italic">shipped like this?</span>
           </h2>
           <p className="text-lg text-ink-soft mb-8 max-w-xl mx-auto leading-relaxed">
-            The Agent-Ready Assessment evaluates your operation against the 4 preconditions and hands back a staged 30, 90, and 180-day roadmap.
+            The Agent-Ready Assessment evaluates your operation against the 4 preconditions and hands back your 90-Day AI Rollout Plan.
           </p>
           <a
             href="/assessment"

@@ -16,7 +16,7 @@ const CTA: React.FC = () => {
                         Ready to grow <br /> <span className="font-drama italic">without hiring?</span>
                     </h2>
                     <p className="text-xl font-normal mb-10 max-w-lg mx-auto">
-                        A 1-week diagnostic. I evaluate your operation against the 4 preconditions and hand back a staged 30, 90, and 180-day roadmap.
+                        A 1-week diagnostic. I evaluate your operation against the 4 preconditions, then hand back your 90-Day AI Rollout Plan — sequenced builds, costed gaps, decision logic for the first project.
                     </p>
 
                     <a

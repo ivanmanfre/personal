@@ -6,7 +6,7 @@ const steps = [
         id: '01',
         title: 'Diagnose',
         desc: (
-            <>The Agent-Ready Assessment. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with a staged roadmap for the next 30, 90, and 180 days: what to build first, what compounds, what needs foundation work before it ships.</>
+            <>The Agent-Ready Assessment. I score your operation on the 4 preconditions and map exactly <span className="font-drama italic">where capacity is leaking.</span> You leave with your 90-Day AI Rollout Plan: what to build first, what compounds, what needs foundation work before it ships.</>
         ),
         color: 'bg-paper border-zinc-200',
         textColor: 'text-black',

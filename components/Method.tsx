@@ -151,7 +151,7 @@ const Method: React.FC = () => {
             <ArrowRight aria-hidden="true" size={18} />
           </a>
           <span className="text-sm text-ink-mute">
-            1-week diagnostic. Staged 30, 90, and 180-day roadmap.
+            One week. You leave with your 90-Day AI Rollout Plan.
           </span>
         </motion.div>
       </div>

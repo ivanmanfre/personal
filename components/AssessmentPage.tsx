@@ -206,7 +206,7 @@ const AssessmentPage: React.FC = () => {
               <div className="flex gap-6 items-start">
                 <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 3–6</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  I produce your evaluation, the staged 30, 90, and 180-day roadmap, and specific recommendations.
+                  I produce your evaluation, your 90-Day AI Rollout Plan, and specific recommendations.
                 </p>
               </div>
               <div className="flex gap-6 items-start">

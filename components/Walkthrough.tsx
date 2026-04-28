@@ -1,6 +1,73 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMetadata } from '../hooks/useMetadata';
+import {
+  siN8n, siClaude, siHubspot, siSupabase, siClickup, siWebflow,
+  siGmail, siStripe, siNotion, siAirtable, siWhatsapp, siGooglegemini,
+} from 'simple-icons';
+
+// ────────────────────────────────────────────────────────────────────────
+// Tool logos — monochrome, brand-correct (ink color, no vendor color clash)
+// ────────────────────────────────────────────────────────────────────────
+
+// Slug → simple-icons path data. Two tools (Fireflies, Firecrawl) aren't in
+// simple-icons; render a small flame glyph for both since both are
+// "fire-themed" services. Editorially honest, brand-correct.
+const LOGO_PATHS: Record<string, string> = {
+  'n8n': siN8n.path,
+  'claude': siClaude.path,
+  'hubspot': siHubspot.path,
+  'supabase': siSupabase.path,
+  'clickup': siClickup.path,
+  'webflow': siWebflow.path,
+  'gmail': siGmail.path,
+  'stripe': siStripe.path,
+  'notion': siNotion.path,
+  'airtable': siAirtable.path,
+  'whatsapp': siWhatsapp.path,
+  'gemini': siGooglegemini.path,
+  // Hand-built minimal flame for the two services missing from simple-icons.
+  // Single path on a 24×24 viewBox.
+  'flame': 'M12 2c1.5 4 4 5.5 4 9a4 4 0 1 1-8 0c0-1.6.7-2.6 1.5-3.5C10.3 6.5 12 5 12 2zm0 14a3 3 0 0 0 3-3c0-1-.5-2-2-3 0 1.5-1 2-2 2.5-.7.4-1 1-1 2a2 2 0 0 0 2 1.5z',
+};
+
+const TOOL_TO_SLUG: Record<string, string> = {
+  'n8n': 'n8n',
+  'Claude': 'claude',
+  'HubSpot': 'hubspot',
+  'Supabase': 'supabase',
+  'ClickUp': 'clickup',
+  'Webflow': 'webflow',
+  'Gmail': 'gmail',
+  'Stripe': 'stripe',
+  'Notion': 'notion',
+  'Airtable': 'airtable',
+  'WhatsApp API': 'whatsapp',
+  'Gemini OCR': 'gemini',
+  'Fireflies': 'flame',
+  'Firecrawl': 'flame',
+};
+
+const Logo: React.FC<{ tool: string; size?: number; className?: string }> = ({
+  tool, size = 14, className = '',
+}) => {
+  const slug = TOOL_TO_SLUG[tool];
+  const path = slug ? LOGO_PATHS[slug] : null;
+  if (!path) return null;
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      className={`shrink-0 ${className}`}
+      aria-label={tool}
+    >
+      <path d={path} />
+    </svg>
+  );
+};
 
 /**
  * /walkthrough — recording-only deck route.
@@ -72,33 +139,87 @@ const Slide: React.FC<{ children: React.ReactNode; bg?: string }> = ({
 // ────────────────────────────────────────────────────────────────────────
 
 const Slide01: React.FC = () => (
-  <Slide>
-    <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
-      <MonoLabel delay={0.15}>AGENT-READY OPS™ / WALKTHROUGH</MonoLabel>
+  <Slide bg="bg-paper-sunk">
+    <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center max-w-7xl mx-auto">
+      {/* Left — text column */}
+      <div>
+        <MonoLabel delay={0.15}>AGENT-READY OPS™ / WALKTHROUGH</MonoLabel>
 
-      <motion.h1
-        className="mt-12 text-7xl md:text-9xl font-semibold tracking-tighter leading-[0.95]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-      >
-        A <span className="font-drama italic">five-day</span>
-        <br />
-        walkthrough.
-      </motion.h1>
+        <motion.h1
+          className="mt-12 text-7xl md:text-[8.5rem] font-semibold tracking-tighter leading-[0.92]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
+          The <span className="font-drama-display">Agent-Ready</span>
+          <br />
+          Assessment.
+        </motion.h1>
 
-      <div className="mt-12">
-        <SageRule delay={1.0} />
+        <div className="mt-10">
+          <SageRule delay={1.0} w="w-40" />
+        </div>
+
+        <motion.p
+          className="mt-8 text-2xl text-ink-soft max-w-xl leading-snug"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.3, duration: 0.6, ease: editorial }}
+        >
+          A one-week structured audit of your operation —
+          tools, workflows, data — and the 90-day plan
+          that comes out of it.
+        </motion.p>
+
+        <motion.div
+          className="mt-10 flex items-center gap-4 font-mono text-xs uppercase tracking-[0.18em] text-ink-mute"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.7, duration: 0.6 }}
+        >
+          <span className="px-2 py-1 border border-[color:var(--color-hairline-bold)]">
+            $2,500
+          </span>
+          <span>·</span>
+          <span>5 DAYS</span>
+          <span>·</span>
+          <span>1 DOCUMENT</span>
+        </motion.div>
       </div>
 
-      <motion.p
-        className="mt-10 text-2xl text-ink-soft max-w-2xl leading-snug"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.4, duration: 0.6, ease: editorial }}
+      {/* Right — Ivan portrait, paper-edged */}
+      <motion.div
+        className="hidden md:block relative"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6, duration: 0.8, ease: editorial }}
       >
-        What actually happens when you book an Assessment week.
-      </motion.p>
+        <picture>
+          <source
+            type="image/webp"
+            srcSet="/ivan-portrait-400.webp 400w, /ivan-portrait-800.webp 800w"
+            sizes="320px"
+          />
+          <img
+            src="/ivan-portrait.jpg"
+            alt="Iván Manfredi"
+            width={400}
+            height={500}
+            className="w-80 h-[400px] object-cover border border-[color:var(--color-hairline-bold)] shadow-card-lift portrait-editorial"
+          />
+        </picture>
+        {/* Sage corner mark */}
+        <motion.div
+          className="absolute -bottom-3 -right-3 w-12 h-12 bg-accent flex items-center justify-center"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 1.5, duration: 0.5, ease: editorial }}
+        >
+          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-white text-center leading-tight">
+            IVÁN<br />MANFREDI
+          </span>
+        </motion.div>
+      </motion.div>
     </div>
   </Slide>
 );
@@ -130,7 +251,7 @@ const Slide02: React.FC = () => (
             </div>
             <div
               className={`text-5xl md:text-6xl tracking-tighter leading-[1] ${
-                cell.italic ? 'font-drama italic font-normal' : 'font-semibold stat-numeral'
+                cell.italic ? 'font-drama-display' : 'font-semibold stat-numeral'
               }`}
             >
               {cell.value}
@@ -203,81 +324,110 @@ const Slide03: React.FC = () => (
 // Slide 04 — Day 1-3 process
 // ────────────────────────────────────────────────────────────────────────
 
+// Each row is a category I inspect on day one. The "found" example is illustrative —
+// in a real Assessment it gets replaced by whatever the client actually runs.
+// Score = 0..4 sage pips against the 4 preconditions (input/logic/scope/loop).
+const auditRows: Array<{ category: string; found: string; score: number }> = [
+  { category: 'CRM / source of truth', found: 'HubSpot', score: 3 },
+  { category: 'Database / ops data', found: 'Supabase', score: 4 },
+  { category: 'Automation engine', found: 'n8n', score: 3 },
+  { category: 'AI / LLM layer', found: 'Claude', score: 4 },
+  { category: 'Project tracking', found: 'ClickUp', score: 2 },
+  { category: 'Decision documentation', found: 'Notion', score: 2 },
+  { category: 'Payments / billing', found: 'Stripe', score: 4 },
+];
+
 const Slide04: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
-      <MonoLabel>DAYS ONE THROUGH THREE</MonoLabel>
+      <MonoLabel>DAY ONE — STACK AUDIT</MonoLabel>
 
       <motion.h2
-        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-12 max-w-4xl"
+        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-3 max-w-4xl"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        I sit with your operation.{' '}
-        <span className="font-drama italic font-normal">Then I score it.</span>
+        I review what runs your operation.{' '}
+        <span className="font-drama-display">Then score it.</span>
       </motion.h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mt-6">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-        >
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-ink-mute mb-3">MONDAY</div>
-          <p className="text-lg text-ink-soft leading-relaxed">
-            We walk every workflow together. The data going in. The decisions getting made.
-            The handoffs that stall.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1, duration: 0.6 }}
-        >
-          <div className="font-mono text-xs uppercase tracking-[0.18em] text-ink-mute mb-3">
-            TUE — WED
-          </div>
-          <p className="text-lg text-ink-soft leading-relaxed">
-            Each workflow gets scored against the four. You see which ones are{' '}
-            <span className="font-drama italic">ready</span>, and which need foundation work first.
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Subtle workflow scoreboard hint */}
-      <motion.div
-        className="mt-16 max-w-md grid grid-cols-4 gap-2"
+      <motion.p
+        className="text-lg text-ink-soft mb-10 max-w-3xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
       >
-        {['INPUT', 'LOGIC', 'SCOPE', 'LOOP'].map((axis, i) => {
-          const states = [3, 2, 4, 3]; // 0..4 sage marks per axis
-          return (
-            <div key={axis} className="flex flex-col gap-2">
-              <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-mute">
-                {axis}
-              </div>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map((j) => (
-                  <motion.div
-                    key={j}
-                    className={`w-3 h-3 ${
-                      j < states[i]
-                        ? 'bg-accent'
-                        : 'bg-transparent border border-[color:var(--color-hairline-bold)]'
-                    }`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 1.7 + i * 0.1 + j * 0.08, duration: 0.4 }}
-                  />
-                ))}
-              </div>
+        Seven layers, every audit. Each scored against the four preconditions.
+      </motion.p>
+
+      {/* Audit table */}
+      <div className="border-t border-[color:var(--color-hairline-bold)] max-w-5xl">
+        {/* Header row */}
+        <motion.div
+          className="grid grid-cols-[1fr_220px_140px] gap-6 py-3 border-b border-[color:var(--color-hairline)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          {['CATEGORY', 'FOUND', 'READINESS'].map((h) => (
+            <div
+              key={h}
+              className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute"
+            >
+              {h}
             </div>
-          );
-        })}
+          ))}
+        </motion.div>
+
+        {auditRows.map((row, i) => (
+          <motion.div
+            key={row.category}
+            className="grid grid-cols-[1fr_220px_140px] gap-6 py-4 items-center border-b border-[color:var(--color-hairline)]"
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.0 + i * 0.18, duration: 0.5, ease: editorial }}
+          >
+            <div className="text-base text-ink-soft">{row.category}</div>
+
+            <motion.div
+              className="inline-flex items-center gap-2 self-start px-2.5 py-1.5 border border-[color:var(--color-hairline-bold)] font-mono text-xs uppercase tracking-[0.1em] text-black w-fit"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.0 + i * 0.18 + 0.25, duration: 0.4 }}
+            >
+              <Logo tool={row.found} size={14} className="text-accent-ink" />
+              {row.found}
+            </motion.div>
+
+            <div className="flex gap-1.5">
+              {[0, 1, 2, 3].map((j) => (
+                <motion.div
+                  key={j}
+                  className={`w-3 h-3 ${
+                    j < row.score
+                      ? 'bg-accent'
+                      : 'bg-transparent border border-[color:var(--color-hairline-bold)]'
+                  }`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 1.0 + i * 0.18 + 0.5 + j * 0.06, duration: 0.3 }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <motion.div
+        className="mt-6 flex items-center gap-3 text-xs font-mono uppercase tracking-[0.1em] text-ink-mute"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.5 }}
+      >
+        <span className="w-2 h-2 bg-accent" />
+        <span>1 PIP PER PRECONDITION · INPUTS · DECISIONS · SCOPE · HUMAN-IN-LOOP</span>
       </motion.div>
     </div>
   </Slide>
@@ -335,7 +485,7 @@ const Slide05: React.FC = () => (
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.2, duration: 0.7, ease: editorial }}
         >
-          <span className="font-drama italic font-normal">$156,000</span>
+          <span className="font-drama-display">$156,000</span>
           <span className="text-3xl md:text-4xl text-ink-mute ml-4 font-mono">/ year</span>
         </motion.div>
       </div>
@@ -361,31 +511,34 @@ const Slide05: React.FC = () => (
 
 const cases = [
   {
-    tag: 'PROVALTECH · SALES TECH',
+    tag: 'PROVALTECH · CLIENT OPS',
     headlineA: '5%',
     headlineB: '100%',
-    label: 'OF CALLS GRADED',
-    blurb: 'From 5% sampled to 100% graded. Risk escalation from days to the next morning.',
-    image: '/cases/provaltech.png',
-    imageAlt: 'ProvalTech call performance dashboard',
+    label: 'CHURN SIGNALS CAUGHT',
+    problem: 'Spot-checking 5% of client calls — by the time someone noticed an unhappy account, it was usually too late.',
+    blurb:
+      'Every client call now flows through Fireflies for transcription. Claude reads each transcript for churn signals — frustration, scope drift, dropping engagement — and routes flagged calls to the account lead via Gmail. Customer state syncs to HubSpot, signal tracking to Airtable. First retained account paid for the build.',
+    stack: ['Fireflies', 'Claude', 'n8n', 'HubSpot', 'Airtable', 'Gmail'],
   },
   {
-    tag: 'MARKETING COACH · AGENCY OPS',
+    tag: 'MARKETING SHOP · GROWTH OPS',
     headlineA: '3 days',
-    headlineB: '15 min',
-    label: 'IDEA TO LAUNCHED',
-    blurb: 'One idea in ClickUp produces page, email, smart link, scheduled post. Approved, then shipped.',
-    image: null,
-    imageAlt: '',
+    headlineB: '1 afternoon',
+    label: 'PER LEAD-MAGNET BUILD',
+    problem: 'Each new lead magnet was three full days of research, copywriting, design, and deployment — every single time.',
+    blurb:
+      'ClickUp briefs trigger the pipeline. Claude does the topic research and drafts the copy from a tested structure. n8n routes the draft through human review, then ships the resource page in Webflow with all assets in place. Same editorial quality, roughly five times the throughput.',
+    stack: ['Claude', 'ClickUp', 'Webflow', 'n8n'],
   },
   {
-    tag: 'PROSWPPP · 50 STATES',
-    headlineA: 'Multi-FTE',
-    headlineB: 'Same-day',
-    label: 'PERMITS, AUTOMATED',
-    blurb: 'Work that would have needed multiple full-time researchers now runs intake to delivery, no researcher in the loop.',
-    image: '/cases/proswppp-swppp.png',
-    imageAlt: 'ProSWPPP n8n workflow canvas',
+    tag: 'DESTINO FARMS · INVENTORY OPS',
+    headlineA: '20 sources',
+    headlineB: '1 dashboard',
+    label: 'LIVE SUPPLIER INVENTORY',
+    problem: 'Twenty suppliers, five different channels — WhatsApp messages, supplier websites, shared Google Sheets. Hours of manual reconciliation every morning.',
+    blurb:
+      'WhatsApp API captures supplier messages. Gemini OCR reads stock photos and PDFs. Firecrawl scrapes supplier sites on a schedule. Claude normalizes everything into one inventory model, n8n orchestrates it, and a custom interface displays a single live dashboard — updated automatically through the day.',
+    stack: ['Claude', 'Gemini OCR', 'Firecrawl', 'WhatsApp API', 'n8n'],
   },
 ];
 
@@ -400,7 +553,7 @@ const Slide06: React.FC = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        <span className="font-drama italic font-normal">Receipts.</span>
+        <span className="font-drama-display">Receipts.</span>
       </motion.h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -412,61 +565,48 @@ const Slide06: React.FC = () => (
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 + i * 0.22, duration: 0.7, ease: editorial }}
           >
-            {/* Visual header — real screenshot, or type-only fallback */}
-            {c.image ? (
-              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] overflow-hidden relative">
-                <img
-                  src={c.image}
-                  alt={c.imageAlt}
-                  className="w-full h-full object-cover object-top"
-                />
-                {/* Soft paper-tone wash for editorial register */}
-                <div className="absolute inset-0 bg-paper opacity-[0.04] pointer-events-none" />
-              </div>
-            ) : (
-              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                  ONE IDEA
-                </span>
-                <span className="font-mono text-base text-ink-mute">↓</span>
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-ink-soft font-mono text-xs uppercase tracking-[0.15em]">
-                  <span>Page</span>
-                  <span>·</span>
-                  <span>Email</span>
-                  <span>·</span>
-                  <span>Link</span>
-                  <span>·</span>
-                  <span>Post</span>
-                </div>
-              </div>
-            )}
-
-            <div className="p-7 flex flex-col flex-1">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-5">
-                {c.tag}
-              </div>
-
-              <div className="flex items-baseline gap-3 mb-3">
-                <span className="font-mono text-2xl text-ink-mute line-through tabular-nums">
+            {/* Typographic hero — before → after, oversized, paper-sunk */}
+            <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-4">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+                {c.label}
+              </span>
+              <div className="flex flex-col items-center gap-2">
+                <span className="font-mono text-2xl text-ink-mute line-through tabular-nums leading-none">
                   {c.headlineA}
                 </span>
-                <span className="font-mono text-ink-mute text-lg">→</span>
-                <span className="text-4xl font-semibold tracking-tight text-black leading-none">
+                <span className="font-mono text-ink-mute text-base leading-none">↓</span>
+                <span className="font-drama-display text-5xl text-black tracking-tight leading-none">
                   {c.headlineB}
                 </span>
               </div>
+            </div>
 
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-5">
-                {c.label}
+            <div className="p-7 flex flex-col flex-1">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-4">
+                {c.tag}
               </div>
 
-              <p className="text-sm text-ink-soft leading-relaxed mb-5 flex-1">{c.blurb}</p>
+              <p className="text-sm text-black font-medium leading-relaxed mb-3 italic">
+                {c.problem}
+              </p>
+              <p className="text-sm text-ink-soft leading-relaxed mb-6 flex-1">{c.blurb}</p>
 
-              <div className="flex items-center gap-2 border-t border-[color:var(--color-hairline)] pt-4">
-                <span className="w-1.5 h-1.5 bg-accent" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-mute">
-                  4/4 AGENT-READY
-                </span>
+              {/* Stack — what the build ran on */}
+              <div className="border-t border-[color:var(--color-hairline)] pt-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                  STACK
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {c.stack.map((tool) => (
+                    <span
+                      key={tool}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 border border-[color:var(--color-hairline-bold)] font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft"
+                    >
+                      <Logo tool={tool} size={10} className="text-accent-ink" />
+                      {tool}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -511,7 +651,7 @@ const Slide07: React.FC = () => (
         >
           <div className="font-semibold">Your</div>
           <div className="font-semibold">90-Day AI</div>
-          <div className="font-drama italic font-normal">Rollout Plan.</div>
+          <div className="font-drama-display">Rollout Plan.</div>
         </motion.div>
 
         {/* Sage hairline */}
@@ -607,7 +747,7 @@ const Slide08: React.FC = () => (
         transition={{ delay: 0.3, duration: 0.6 }}
       >
         The $2,500 isn't a{' '}
-        <span className="font-drama italic font-normal">separate fee.</span>
+        <span className="font-drama-display">separate fee.</span>
       </motion.h2>
 
       <motion.p
@@ -699,7 +839,7 @@ const Slide09: React.FC = () => (
         transition={{ delay: 0.4, duration: 0.7, ease: editorial }}
       >
         Sometimes I recommend you{' '}
-        <span className="font-drama italic font-normal">wait.</span>
+        <span className="font-drama-display">wait.</span>
       </motion.h2>
 
       <motion.div
@@ -752,7 +892,7 @@ const Slide10: React.FC = () => (
         <br />
         90-Day AI
         <br />
-        <span className="font-drama italic font-normal">Rollout Plan.</span>
+        <span className="font-drama-display">Rollout Plan.</span>
       </motion.h2>
 
       <motion.div

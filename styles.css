@@ -143,6 +143,19 @@ textarea:focus-visible {
   letter-spacing: -0.02em;
 }
 
+/* Display italic — Bodoni Moda italic has extreme thin/thick contrast that
+   loses its hairlines above ~48px on paper-textured backgrounds. DM Serif
+   Display has chunky uniform strokes built for editorial display sizes —
+   use this class instead of `font-drama italic` whenever the italic word
+   is at headline scale (text-5xl and up). Keep Bodoni for inline italic in
+   body copy, where its contrast is the whole point. */
+.font-drama-display {
+  font-family: 'DM Serif Display', 'Bodoni Moda', Georgia, serif !important;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
 /* Branded range slider — replaces the OS-blue native control on the ROI
    calculator. Sage thumb, paper-tone track, hairline border. */
 input[type='range'].stat-slider {
