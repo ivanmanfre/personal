@@ -725,45 +725,41 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown> }> = ({ answers
       transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
       className="border border-[color:var(--color-hairline-bold)] bg-paper"
     >
-      {/* Hero */}
-      <div className="px-8 md:px-14 py-12 md:py-16 relative">
-        <div className="absolute top-6 left-8 md:left-14 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-          End of intake
+      {/* Hero — stacked editorial leader, big numeral dominates */}
+      <div className="px-8 md:px-14 pt-6 pb-10 md:pb-14">
+        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+          <span>End of intake</span>
+          <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
-        <div className="absolute top-6 right-8 md:right-14 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </div>
-
-        <div className="grid md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-end mt-8">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.32, 0.72, 0, 1] }}
-            className="leading-none"
-          >
-            <span className="font-drama italic text-[8rem] md:text-[12rem] text-black leading-[0.8] tracking-tight">
-              100
-            </span>
-            <span className="font-drama italic text-[8rem] md:text-[12rem] text-accent leading-[0.8]">.</span>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="border-l-2 border-accent pl-6 max-w-md mb-4"
-          >
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-2">
-              Intake submitted
-            </p>
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-[1.1] mb-3">
-              <span className="font-drama italic">Locked in.</span>{' '}
-              Ivan reviews and reaches out within 1 business day.
-            </h2>
-            <p className="text-sm text-ink-soft leading-relaxed">
-              You answered {answeredCount} of {QUESTION_ORDER.length} questions. Want to add more before the working session? Reply to the welcome email, I read every one.
-            </p>
-          </motion.div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.32, 0.72, 0, 1] }}
+          className="leading-none mt-8 md:mt-10 -mb-2"
+          aria-hidden="true"
+        >
+          <span className="font-drama italic text-[7rem] sm:text-[10rem] md:text-[14rem] text-black leading-[0.85] tracking-tight">
+            100
+          </span>
+          <span className="font-drama italic text-[7rem] sm:text-[10rem] md:text-[14rem] text-accent leading-[0.85]">.</span>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="border-l-2 border-accent pl-5 mt-8 max-w-2xl"
+        >
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2">
+            Intake submitted
+          </p>
+          <h2 className="text-2xl md:text-[2.25rem] font-semibold tracking-tight leading-[1.12] mb-4">
+            <span className="font-drama italic">Locked in.</span>{' '}
+            Ivan reviews and reaches out within 1 business day.
+          </h2>
+          <p className="text-sm md:text-base text-ink-soft leading-relaxed max-w-lg">
+            You answered {answeredCount} of {QUESTION_ORDER.length} questions. Want to add more before the working session? Reply to the welcome email, I read every one.
+          </p>
+        </motion.div>
       </div>
 
       {/* Captured manifest — proof of value */}
