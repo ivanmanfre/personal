@@ -1,0 +1,278 @@
+{
+  "name": "Scorecard Followup",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "scorecard-followup",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "n01-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "webhookId": "scorecard-followup"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, queued: !!$('Webhook').first().json.body.email } }}",
+        "options": {}
+      },
+      "id": "n02-respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [440, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n03-if-email",
+      "name": "Has email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 420]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "// Build all 4 email HTML payloads from the webhook payload.\n// Input: $input.item.json.body = { id, email, scores, verdict, weakest_key, ... }\n// Output: an item with: email, subject_*, html_*, verdict, weakest_title, etc.\n\nconst body = $input.item.json.body || {};\nconst { id, email, scores = {}, verdict, weakest } = body;\n\n// Determine weakest precondition (lowest scoring) — fallback if absent\nconst PRECONDITION_KEYS = ['structured_input', 'decision_logic', 'narrow_scope', 'human_loop'];\nlet weakestKey = (Array.isArray(weakest) && weakest[0]) || body.weakest_key;\nif (!weakestKey) {\n  let lowest = 5;\n  for (const k of PRECONDITION_KEYS) {\n    const v = Number(scores[k] ?? 5);\n    if (v < lowest) { lowest = v; weakestKey = k; }\n  }\n}\n\nconst PRECONDITION_TITLES = {\n  structured_input: 'Reliable input pipeline',\n  decision_logic: 'Documentable decision logic',\n  narrow_scope: 'Narrow initial scope',\n  human_loop: 'Human-in-the-loop by design',\n};\n\nconst ROADMAP_SLUGS = {\n  structured_input: 'reliable-input-pipeline',\n  decision_logic: 'documentable-decision-logic',\n  narrow_scope: 'narrow-initial-scope',\n  human_loop: 'human-in-the-loop',\n};\n\nconst weakestTitle = PRECONDITION_TITLES[weakestKey] || 'one of the four preconditions';\nconst weakestTitleLower = weakestTitle.toLowerCase();\nconst roadmapSlug = ROADMAP_SLUGS[weakestKey] || 'reliable-input-pipeline';\nconst total = (scores.structured_input || 0) + (scores.decision_logic || 0) + (scores.narrow_scope || 0) + (scores.human_loop || 0);\n\nconst SITE = 'https://ivanmanfredi.com';\nconst roadmapUrl = `${SITE}/scorecard/roadmap/${roadmapSlug}`;\nconst resultUrl = `${SITE}/scorecard/result/${id}`;\nconst blueprintUrl = `${SITE}/assessment`;\nconst discoveryUrl = `${SITE}/start`;\nconst unsubscribeUrl = `mailto:hello@ivanmanfredi.com?subject=Unsubscribe%20${id}&body=I'd%20like%20to%20stop%20receiving%20these%20emails.`;\n\nconst verdictLabel =\n  verdict === 'agent_ready' ? 'Agent-Ready' :\n  verdict === 'close' ? 'Close' :\n  'Foundation first';\n\nconst verdictOneLiner =\n  verdict === 'agent_ready'\n    ? 'You meet the four preconditions every AI deployment needs before it ships. The infrastructure is there — what\\'s missing is sequencing.'\n    : verdict === 'close'\n    ? 'You\\'re one or two preconditions short of being deployment-ready. The gaps aren\\'t fatal, but they will block the build until you close them.'\n    : 'The preconditions aren\\'t in place yet. That\\'s not a problem — it just means the work to do first is ops work, not AI work. Reverse the order and the rest gets easier.';\n\n// Per-precondition snippets (Email 2 + Email 3)\nconst snippets = {\n  structured_input: {\n    failure: `A founder I worked with last year had a lead-qualification AI that kept misclassifying enterprise leads as SMB. They tuned the prompt for two weeks. Tried three different models. Same result.<br><br>The actual problem: the source data the AI was reading lived in four places — HubSpot, a Notion table their SDR maintained by hand, an Apollo enrichment that fired sometimes, and a Calendly intake form. Each source had a slightly different idea of \"company size.\" When the AI saw conflicting signals, it defaulted to the smallest number, which made every enterprise lead look like a 50-person SMB.<br><br>Fixing the prompt wouldn\\'t have helped. The input pipeline was incoherent.`,\n    fix: `<ol><li><strong>Pick one canonical source per data point.</strong> Pick the one that\\'s most consistently maintained, not the one that\\'s most \"complete.\" A 70%-coverage source that\\'s reliably current beats a 95%-coverage source that\\'s six months stale.</li><li><strong>Make extraction explicit.</strong> If your canonical source is a doc or chat history, that\\'s fine — but write the extraction step. Pretending the AI can \"just read\" unstructured stuff is the most expensive shortcut in this space.</li><li><strong>Test the pipeline before you test the model.</strong> If the same query gives the same answer twice in a row across a week, you\\'re ready. If it doesn\\'t, fix that first.</li></ol>`,\n  },\n  decision_logic: {\n    failure: `A consulting firm I worked with had a senior associate who triaged inbound RFPs better than anyone else. They wanted to encode her judgment so the rest of the team could move faster.<br><br>Six weeks in, the AI was getting roughly half the calls right. The associate would look at an RFP and say \"no, this one\\'s actually a fit, you missed the signal that they mentioned a deadline.\" The team would update the prompt. Next week, a different signal got missed.<br><br>What was actually happening: she had eighteen heuristics in her head, layered, with weights that shifted based on context. She wasn\\'t being unhelpful — she genuinely couldn\\'t tell us all of them. We spent two weeks shadowing her with a transcription tool. That document — not the prompt — was what made it work.`,\n    fix: `<ol><li><strong>Shadow your best operator on the actual work for a week.</strong> Record what they do, ask them to narrate why. The thing you\\'re encoding isn\\'t their conscious decisions — it\\'s the unconscious ones.</li><li><strong>Write the heuristics as if-then rules first, weights second.</strong> Resist starting with weights. The hard part is naming the rules.</li><li><strong>Test the doc before you test the model.</strong> Hand the doc to someone else on the team and have them make ten decisions using only the doc. If they get six right, the doc is ready for an AI.</li></ol>`,\n  },\n  narrow_scope: {\n    failure: `A SaaS founder hired me to help \"automate ops with AI.\" We mapped what that meant. The list had nineteen workflows on it. Lead routing, onboarding emails, support triage, invoice reconciliation, all of it.<br><br>I asked which one was the bottleneck. He couldn\\'t pick. They all seemed important. We agreed to start with one — support triage — and the build shipped in four weeks. It saved the team about twelve hours a week. He immediately wanted to roll the same approach across the other eighteen.<br><br>The next eighteen weren\\'t the same shape. Lead routing required CRM integrations they didn\\'t have. Invoice reconciliation touched a finance system with brittle exports. None of those problems showed up until we tried. The narrow scope wasn\\'t a constraint — it was the reason the first build worked.`,\n    fix: `<ol><li><strong>Pick one workflow. Define it end-to-end.</strong> What\\'s the input? What\\'s the output? Who\\'s the user? What does failure look like? If you can\\'t answer in five minutes, the scope isn\\'t narrow yet.</li><li><strong>Refuse to widen until the first one is in production for 30 days.</strong> Not \"demo\\'d\" — running, with humans not babying it. The 30 days is where you find out which assumptions were wrong.</li><li><strong>Treat each new workflow as a separate scope decision.</strong> Don\\'t assume the second is just like the first. Skipping that surfacing on workflow #2 erases the win from #1.</li></ol>`,\n  },\n  human_loop: {\n    failure: `An agency I worked with had an AI summarizer for client weekly reports. The team loved it. Saved each PM about an hour a week.<br><br>Six months in, a major client churned. Reason given: \"the reports stopped reflecting what was actually happening on our account.\"<br><br>The AI summaries were good 90% of the time. Nobody read them carefully because they were usually fine. The 10% of weeks where the AI missed nuance, the wrong summary went out and the PM didn\\'t catch it. Over six months, the cumulative drift broke the relationship. The summarizer wasn\\'t bad. The review step was missing. \"PM glances at it\" is not a review step — it\\'s a hope.`,\n    fix: `<ol><li><strong>Name the human.</strong> Not \"the team\" — a specific person, by role, who owns review. If review is everyone\\'s job, it\\'s nobody\\'s job.</li><li><strong>Design the review path before the AI ships.</strong> The output needs to land somewhere the reviewer is already looking — their inbox, their Slack, their queue. Adding a new dashboard is how reviews stop happening.</li><li><strong>Plan the failure path.</strong> What happens when the reviewer flags something wrong? \"Reviewer fixes it manually and we hope it doesn\\'t happen again\" is the failure mode of every AI ops project that quietly stops working.</li></ol>`,\n  },\n};\n\nconst snippet = snippets[weakestKey] || snippets.structured_input;\n\n// Common email shell\nconst shell = (preheader, bodyHtml) => `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><style>body{margin:0;padding:0;background:#F7F4EF;color:#1A1A1A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6}a{color:#4C6E3D}</style></head>\n<body><span style=\"display:none;font-size:0;line-height:0;max-height:0;max-width:0;opacity:0;overflow:hidden\">${preheader}</span>\n<div style=\"max-width:560px;margin:32px auto;padding:32px 24px;background:#F7F4EF\">\n<p style=\"font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:28px;margin:0 0 28px 0;color:#1A1A1A\">Manfredi</p>\n${bodyHtml}\n<hr style=\"border:none;border-top:1px solid rgba(26,26,26,0.15);margin:36px 0 14px 0\" />\n<p style=\"font-size:11px;color:#888;margin:0\">Manfredi · <a href=\"${SITE}\" style=\"color:#888\">ivanmanfredi.com</a> · <a href=\"${unsubscribeUrl}\" style=\"color:#888\">Unsubscribe</a></p>\n</div></body></html>`;\n\n// === EMAIL 1 — Immediate ===\nconst subject1 = `Your Agent-Ready verdict (${total}/20)`;\nconst preheader1 = 'Plus your 30-day roadmap.';\nconst body1 = `<p>Hey there,</p>\n<p>You finished the scorecard. Your verdict is <strong>${verdictLabel}</strong>, scored ${total}/20.</p>\n<p style=\"border-left:2px solid #4C6E3D;padding-left:14px;color:#4A4A48;font-style:italic\">${verdictOneLiner}</p>\n<p>The weakest link in your stack right now is <strong>${weakestTitle}</strong>. That\\'s the precondition I\\'d start with — not because the others don\\'t matter, but because most teams fix three out of four and then stall on the one they didn\\'t.</p>\n<p>I put together a short roadmap that walks through how to tighten that specific precondition over the next 30 days. No theory, no jargon. Just the order to do things in.</p>\n<p style=\"text-align:center;margin:32px 0\"><a href=\"${roadmapUrl}\" style=\"background:#4C6E3D;color:#fff;padding:14px 22px;text-decoration:none;font-weight:600\">Read your 30-day roadmap →</a></p>\n<p>Your scorecard result lives at this URL: <a href=\"${resultUrl}\">${resultUrl}</a></p>\n<p>I\\'ll send a couple more notes over the next ten days. After that, I\\'ll go quiet unless you write back.</p>\n<p>— Iván</p>`;\n\n// === EMAIL 2 — Day 3 ===\nconst subject2 = `When ${weakestTitleLower} goes wrong`;\nconst preheader2 = 'A short story from a recent build.';\nconst body2 = `<p>Hey,</p>\n<p>Quick follow-up on your scorecard. You scored lowest on <strong>${weakestTitle}</strong>, so let me show you what that actually looks like when it breaks in production.</p>\n<p>${snippet.failure}</p>\n<p>The pattern is always the same. The team thinks the AI is the problem. The AI is fine — it\\'s working with what it was given. The thing underneath it isn\\'t ready, and the failure shows up as \"the AI isn\\'t accurate enough.\"</p>\n<p>Most of the work I do isn\\'t AI work. It\\'s tightening the ${weakestTitleLower} so the AI can actually do its job.</p>\n<p>Next email I\\'ll walk through the specific moves that fix this.</p>\n<p>— Iván</p>`;\n\n// === EMAIL 3 — Day 7 ===\nconst subject3 = `How to tighten ${weakestTitleLower}`;\nconst preheader3 = 'Three moves, in order.';\nconst body3 = `<p>Hey,</p>\n<p>Here\\'s the order I\\'d fix <strong>${weakestTitle}</strong> in. Not the only way — just the one that\\'s worked across the last twenty-something builds.</p>\n${snippet.fix}\n<p>That\\'s the full sequence. None of it requires AI. Most of it doesn\\'t require code. It\\'s process work, which is why most founders skip it — it doesn\\'t feel like the exciting part.</p>\n<p>If you do this work first, the AI build that comes next takes a fraction of the time and actually holds. If you skip it, the AI build will look like it works in the demo and quietly drift in production.</p>\n<p>If you want help mapping this for your specific operation, that\\'s what the <strong>Agent-Ready Blueprint</strong> does. One week. You leave with the sequenced plan.</p>\n<p style=\"text-align:center;margin:32px 0\"><a href=\"${blueprintUrl}\" style=\"background:#4C6E3D;color:#fff;padding:14px 22px;text-decoration:none;font-weight:600\">Build your Blueprint →</a></p>\n<p>— Iván</p>`;\n\n// === EMAIL 4-A — Day 10 (Agent-Ready / Close) ===\nconst subject4a = 'Last note from me';\nconst preheader4a = 'Then I\\'ll get out of your inbox.';\nconst body4a = `<p>Hey,</p>\n<p>Last note. You scored ${verdictLabel} — meaning you\\'re either there or one or two preconditions away.</p>\n<p>When teams in your spot pay for the <strong>Agent-Ready Blueprint</strong>, here\\'s what they get back:</p>\n<ul><li>A scorecard against all four preconditions, with specific gaps named</li><li>Your <strong>90-Day AI Rollout Plan</strong> — sequenced builds for the next 90 and 180 days</li><li>Costed gap analysis with a dollar number on every gap</li><li>Decision logic for the first project, ready to hand to any builder</li><li>A 60-minute live walkthrough of the findings</li></ul>\n<p>It\\'s $2,500. If you move forward with any follow-on engagement, the full $2,500 is credited back. If I tell you to wait and fix the foundation first, that recommendation is the deliverable.</p>\n<p>If your operation clears the four conditions, AI becomes a force multiplier. If it doesn\\'t, you\\'re funding demos that never ship. The Blueprint is one week of finding out which one you are.</p>\n<p style=\"text-align:center;margin:32px 0\"><a href=\"${blueprintUrl}\" style=\"background:#4C6E3D;color:#fff;padding:14px 22px;text-decoration:none;font-weight:600\">Build your Blueprint →</a></p>\n<p>If now isn\\'t the right time, no follow-up. The roadmap is yours to keep.</p>\n<p>— Iván</p>`;\n\n// === EMAIL 4-B — Day 10 (Foundation) ===\nconst subject4b = 'Last note from me';\nconst preheader4b = 'Then I\\'ll get out of your inbox.';\nconst body4b = `<p>Hey,</p>\n<p>Last note. You scored ${verdictLabel} — meaning the four preconditions aren\\'t quite in place yet, and AI work right now would be premature.</p>\n<p>That\\'s the most useful thing the scorecard can tell someone. Most founders find this out by spending six months and $40k on a build that doesn\\'t hold.</p>\n<p>If you want to talk through what to fix first, I do free 30-minute discovery calls. No pitch. We figure out the right path and what — if anything — I should be involved in. Sometimes the answer is \"you don\\'t need me yet, here\\'s what to do for the next quarter.\" That\\'s a fine outcome.</p>\n<p style=\"text-align:center;margin:32px 0\"><a href=\"${discoveryUrl}\" style=\"background:#4C6E3D;color:#fff;padding:14px 22px;text-decoration:none;font-weight:600\">Book a 30-min call →</a></p>\n<p>If now isn\\'t the right time, no follow-up. The roadmap is yours to keep.</p>\n<p>— Iván</p>`;\n\nreturn {\n  json: {\n    id,\n    email,\n    verdict,\n    weakest_key: weakestKey,\n    weakest_title: weakestTitle,\n    total,\n    subject1, html1: shell(preheader1, body1),\n    subject2, html2: shell(preheader2, body2),\n    subject3, html3: shell(preheader3, body3),\n    subject4a, html4a: shell(preheader4a, body4a),\n    subject4b, html4b: shell(preheader4b, body4b),\n  },\n};"
+      },
+      "id": "n04-build-emails",
+      "name": "Build Email Payloads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Iván Manfredi <hello@ivanmanfredi.com>\",\n  \"to\": [\"{{ $json.email }}\"],\n  \"subject\": \"{{ $json.subject1 }}\",\n  \"html\": {{ JSON.stringify($json.html1) }}\n}",
+        "options": {}
+      },
+      "id": "n05-send-email-1",
+      "name": "Send Email 1 (immediate)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [840, 420]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "n06-wait-3d",
+      "name": "Wait 3 days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1040, 420],
+      "webhookId": "wait-after-email-1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Iván Manfredi <hello@ivanmanfredi.com>\",\n  \"to\": [\"{{ $('Build Email Payloads').first().json.email }}\"],\n  \"subject\": \"{{ $('Build Email Payloads').first().json.subject2 }}\",\n  \"html\": {{ JSON.stringify($('Build Email Payloads').first().json.html2) }}\n}",
+        "options": {}
+      },
+      "id": "n07-send-email-2",
+      "name": "Send Email 2 (day 3)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1240, 420]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "days"
+      },
+      "id": "n08-wait-4d",
+      "name": "Wait 4 days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1440, 420],
+      "webhookId": "wait-after-email-2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Iván Manfredi <hello@ivanmanfredi.com>\",\n  \"to\": [\"{{ $('Build Email Payloads').first().json.email }}\"],\n  \"subject\": \"{{ $('Build Email Payloads').first().json.subject3 }}\",\n  \"html\": {{ JSON.stringify($('Build Email Payloads').first().json.html3) }}\n}",
+        "options": {}
+      },
+      "id": "n09-send-email-3",
+      "name": "Send Email 3 (day 7)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [1640, 420]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "n10-wait-3d-final",
+      "name": "Wait 3 days (final)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1840, 420],
+      "webhookId": "wait-after-email-3"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Build Email Payloads').first().json.verdict }}",
+                    "rightValue": "foundation",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "foundation"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" },
+        "looseTypeValidation": true
+      },
+      "id": "n11-switch-verdict",
+      "name": "Verdict path",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [2040, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Iván Manfredi <hello@ivanmanfredi.com>\",\n  \"to\": [\"{{ $('Build Email Payloads').first().json.email }}\"],\n  \"subject\": \"{{ $('Build Email Payloads').first().json.subject4b }}\",\n  \"html\": {{ JSON.stringify($('Build Email Payloads').first().json.html4b) }}\n}",
+        "options": {}
+      },
+      "id": "n12-send-email-4b",
+      "name": "Send Email 4-B (Foundation → Discovery)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [2240, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Iván Manfredi <hello@ivanmanfredi.com>\",\n  \"to\": [\"{{ $('Build Email Payloads').first().json.email }}\"],\n  \"subject\": \"{{ $('Build Email Payloads').first().json.subject4a }}\",\n  \"html\": {{ JSON.stringify($('Build Email Payloads').first().json.html4a) }}\n}",
+        "options": {}
+      },
+      "id": "n13-send-email-4a",
+      "name": "Send Email 4-A (Agent-Ready/Close → Blueprint)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [2240, 520]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Respond OK", "type": "main", "index": 0 },
+          { "node": "Has email?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Has email?": {
+      "main": [
+        [{ "node": "Build Email Payloads", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Build Email Payloads": {
+      "main": [[{ "node": "Send Email 1 (immediate)", "type": "main", "index": 0 }]]
+    },
+    "Send Email 1 (immediate)": {
+      "main": [[{ "node": "Wait 3 days", "type": "main", "index": 0 }]]
+    },
+    "Wait 3 days": {
+      "main": [[{ "node": "Send Email 2 (day 3)", "type": "main", "index": 0 }]]
+    },
+    "Send Email 2 (day 3)": {
+      "main": [[{ "node": "Wait 4 days", "type": "main", "index": 0 }]]
+    },
+    "Wait 4 days": {
+      "main": [[{ "node": "Send Email 3 (day 7)", "type": "main", "index": 0 }]]
+    },
+    "Send Email 3 (day 7)": {
+      "main": [[{ "node": "Wait 3 days (final)", "type": "main", "index": 0 }]]
+    },
+    "Wait 3 days (final)": {
+      "main": [[{ "node": "Verdict path", "type": "main", "index": 0 }]]
+    },
+    "Verdict path": {
+      "main": [
+        [{ "node": "Send Email 4-B (Foundation → Discovery)", "type": "main", "index": 0 }],
+        [{ "node": "Send Email 4-A (Agent-Ready/Close → Blueprint)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

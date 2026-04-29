@@ -1,6 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import Marquee from './Marquee';
+
+const STACK_WORDMARKS = [
+  'Anthropic',
+  'OpenAI',
+  'n8n',
+  'Supabase',
+  'HubSpot',
+  'HighLevel',
+  'Stripe',
+];
 
 const Hero: React.FC = () => {
   return (
@@ -87,10 +98,10 @@ const Hero: React.FC = () => {
               </a>
 
               <a
-                href="#method"
+                href="/scorecard"
                 className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center flex items-center justify-center gap-2"
               >
-                See the method <ArrowRight aria-hidden="true" size={16} />
+                Are you Agent-Ready? <ArrowRight aria-hidden="true" size={16} />
               </a>
             </motion.div>
           </div>
@@ -122,6 +133,32 @@ const Hero: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Wordmark strip — restrained editorial proof: the stack we ship with */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+        className="absolute bottom-0 left-0 right-0 z-10 border-t border-[color:var(--color-hairline)] bg-paper/80 backdrop-blur-sm py-4"
+      >
+        <div className="container mx-auto px-6 flex items-center gap-6 max-w-6xl">
+          <span className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute shrink-0">
+            Built with
+          </span>
+          <div className="flex-1 min-w-0">
+            <Marquee speed={60} className="opacity-60">
+              {STACK_WORDMARKS.map((mark) => (
+                <span
+                  key={mark}
+                  className="font-mono text-xs uppercase tracking-[0.16em] text-ink-soft mx-8 shrink-0"
+                >
+                  {mark}
+                </span>
+              ))}
+            </Marquee>
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 };

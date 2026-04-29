@@ -1,29 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-
-const preconditions = [
-  {
-    number: '01',
-    title: 'Reliable input pipeline',
-    description: 'The agent reads the same data every time. Either the source is structured, or extraction from it is.',
-  },
-  {
-    number: '02',
-    title: 'Documentable decision logic',
-    description: 'Your best person can write down how they decide. Then we encode it.',
-  },
-  {
-    number: '03',
-    title: 'Narrow initial scope',
-    description: 'One job, done end-to-end, before widening. Small wins compound.',
-  },
-  {
-    number: '04',
-    title: 'Human-in-the-loop by design',
-    description: 'Routed review is the design, not the rescue. Failure paths planned upfront.',
-  },
-];
+import { preconditions } from '../lib/preconditions';
 
 const Method: React.FC = () => {
   return (
@@ -118,7 +96,7 @@ const Method: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-6">
             {preconditions.map((item) => (
               <div
-                key={item.number}
+                key={item.key}
                 className="flex gap-4 border-l border-[color:var(--color-hairline-bold)] pl-5 py-2"
               >
                 <span className="font-mono text-xs text-ink-mute mt-1">{item.number}</span>

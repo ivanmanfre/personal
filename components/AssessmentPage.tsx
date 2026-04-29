@@ -2,35 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
+import { preconditions } from '../lib/preconditions';
 
 // Stripe Payment Link (live): prod_UNL0AY5g21pMLX / price_1TOaK906n8CBtSkjxVlpZcWa
 // Post-checkout redirect: /start?intent=assessment-paid&session_id={CHECKOUT_SESSION_ID}
 // Webhook: we_1TOaKL06n8CBtSkjlBuYIYkk -> stripe-webhook edge function -> paid_assessments table
 const ASSESSMENT_PAYMENT_LINK = 'https://buy.stripe.com/dRm28jfCXbrP9p40v1fEk0G';
 const DISCOVERY_CALL_LINK = '/start';
-
-const preconditions = [
-  {
-    number: '01',
-    title: 'Reliable input pipeline',
-    question: 'Can the agent read the same data every time, either from structured sources or a real extract layer?',
-  },
-  {
-    number: '02',
-    title: 'Documentable decision logic',
-    question: 'Can your best person actually write down how they decide?',
-  },
-  {
-    number: '03',
-    title: 'Narrow initial scope',
-    question: 'Is the first use case tightly bounded, or is it trying to handle everything?',
-  },
-  {
-    number: '04',
-    title: 'Human-in-the-loop by design',
-    question: 'Is routed review built into the design, or bolted on after things break?',
-  },
-];
 
 const deliverables = [
   'Your 90-Day AI Rollout Plan: sequenced builds for the next 90 and 180 days',
@@ -163,7 +141,7 @@ const AssessmentPage: React.FC = () => {
             <div className="grid md:grid-cols-2 gap-6">
               {preconditions.map((item) => (
                 <div
-                  key={item.number}
+                  key={item.key}
                   className="rounded-2xl border border-[color:var(--color-hairline)] bg-paper p-6"
                 >
                   <div className="flex items-center gap-3 mb-3">

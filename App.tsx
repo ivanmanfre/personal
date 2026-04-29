@@ -9,6 +9,8 @@ import AssessmentPage from './components/AssessmentPage';
 import AssessmentWelcomePage from './components/AssessmentWelcomePage';
 import AssessmentIntakePage from './components/AssessmentIntakePage';
 import ConversationalIntake from './components/ConversationalIntake';
+import ScorecardPage from './components/ScorecardPage';
+import RoadmapPage from './components/RoadmapPage';
 import StartPage from './components/StartPage';
 import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
 import ContentSystemPage from './components/ContentSystemPage';
@@ -133,6 +135,8 @@ function App() {
           <Route path="/fractional" element={<FractionalPage />} />
           <Route path="/work" element={<WorkPage />} />
           <Route path="/start" element={<StartPage />} />
+          <Route path="/scorecard" element={<ScorecardPage />} />
+          <Route path="/scorecard/roadmap/:slug" element={<RoadmapPage />} />
           <Route path="/store" element={<StorePage />} />
           <Route path="/store/:slug" element={<ProductDetail />} />
         </Routes>

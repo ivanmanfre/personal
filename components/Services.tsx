@@ -33,6 +33,9 @@ const Services: React.FC = () => {
               viewport={{ once: true }}
               className="w-full lg:w-1/2"
             >
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                Productized build · 4–8 weeks
+              </span>
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">01</span>
                 <h3 className="text-3xl font-semibold tracking-tight">Back-office <span className="font-drama italic font-normal">that runs itself.</span></h3>
@@ -59,6 +62,9 @@ const Services: React.FC = () => {
               viewport={{ once: true }}
               className="w-full lg:w-1/2"
             >
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                Custom build or Fractional · Ongoing fit
+              </span>
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">02</span>
                 <h3 className="text-3xl font-semibold tracking-tight">AI for <span className="font-drama italic font-normal">judgment-heavy work.</span></h3>
@@ -85,6 +91,9 @@ const Services: React.FC = () => {
               viewport={{ once: true }}
               className="w-full lg:w-1/2"
             >
+              <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                Content Engine · 3-week ship
+              </span>
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">03</span>
                 <h3 className="text-3xl font-semibold tracking-tight">Content that <span className="font-drama italic font-normal">sounds like you.</span></h3>

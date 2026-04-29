@@ -21,7 +21,6 @@ const Navbar: React.FC = () => {
     { name: 'Services', href: '#services' },
     { name: 'Method', href: '#method' },
     { name: 'Work', href: '#cases' },
-    { name: 'ROI', href: '#roi-calculator' },
     { name: 'About', href: '#about' },
   ];
 
@@ -60,6 +59,13 @@ const Navbar: React.FC = () => {
               </Link>
             )
           )}
+
+          <Link
+            to="/scorecard"
+            className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
+          >
+            Scorecard
+          </Link>
 
           <a
             href="/start"
@@ -111,6 +117,13 @@ const Navbar: React.FC = () => {
                   </Link>
                 )
               )}
+              <Link
+                to="/scorecard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+              >
+                Scorecard
+              </Link>
               <a
                 href="/assessment"
                 className="mt-6 w-full py-5 bg-black text-white font-semibold text-2xl border-subtle hover:bg-paper hover:text-black transition-colors text-center block shadow-card-subtle"
