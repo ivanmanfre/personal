@@ -655,6 +655,67 @@ const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () 
   );
 };
 
+// Tiny inline-markdown renderer — supports **bold**, *italic*, line breaks,
+// blank-line paragraph breaks, and `- ` bullet lists. No raw HTML, no links.
+const InlineMd: React.FC<{ text: string }> = ({ text }) => {
+  // Split into blocks (paragraphs / lists) by blank lines
+  const blocks = text.split(/\n\s*\n/).filter((b) => b.length > 0);
+  return (
+    <>
+      {blocks.map((block, bi) => {
+        const lines = block.split('\n');
+        const isList = lines.every((l) => l.trim().startsWith('- '));
+        if (isList) {
+          return (
+            <ul key={bi} className="space-y-1 list-none my-2 first:mt-0 last:mb-0">
+              {lines.map((l, li) => (
+                <li key={li} className="flex gap-2.5 leading-[1.55]">
+                  <span className="mt-2 w-1.5 h-1.5 bg-accent flex-shrink-0" aria-hidden="true" />
+                  <span>{renderInline(l.trim().slice(2))}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return (
+          <p key={bi} className="leading-[1.55] my-2 first:mt-0 last:mb-0 whitespace-pre-line">
+            {renderInline(block)}
+          </p>
+        );
+      })}
+    </>
+  );
+};
+
+// Inline parser: **bold** and *italic*. Simple non-overlapping tokens.
+function renderInline(s: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let i = 0;
+  let key = 0;
+  while (i < s.length) {
+    if (s[i] === '*' && s[i + 1] === '*') {
+      const end = s.indexOf('**', i + 2);
+      if (end !== -1) {
+        parts.push(<strong key={key++} className="font-semibold text-ink">{s.slice(i + 2, end)}</strong>);
+        i = end + 2; continue;
+      }
+    }
+    if (s[i] === '*') {
+      const end = s.indexOf('*', i + 1);
+      if (end !== -1 && s[end + 1] !== '*') {
+        parts.push(<em key={key++} className="font-drama italic text-ink">{s.slice(i + 1, end)}</em>);
+        i = end + 1; continue;
+      }
+    }
+    // accumulate plain text until next marker
+    let j = i;
+    while (j < s.length && s[j] !== '*') j++;
+    parts.push(<React.Fragment key={key++}>{s.slice(i, j)}</React.Fragment>);
+    i = j;
+  }
+  return parts;
+}
+
 const BotBubble: React.FC<{ content: string; index: number }> = ({ content, index }) => {
   const turn = String(index + 1).padStart(2, '0');
   return (
@@ -662,14 +723,30 @@ const BotBubble: React.FC<{ content: string; index: number }> = ({ content, inde
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-      className="flex"
+      className="flex gap-3"
     >
-      <div className="max-w-[88%] md:max-w-[80%] relative">
-        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 ml-4">
-          Intake · {turn}
+      {/* Magazine-byline mugshot — sharp square, hairline border, NOT a chatbot avatar */}
+      <div className="flex-shrink-0 mt-5">
+        <picture>
+          <source srcSet="/ivan-portrait-400.webp" type="image/webp" />
+          <img
+            src="/ivan-portrait.jpg"
+            alt=""
+            aria-hidden="true"
+            className="w-9 h-9 object-cover object-top border border-[color:var(--color-hairline-bold)] grayscale-[15%]"
+            loading="lazy"
+            draggable={false}
+          />
+        </picture>
+      </div>
+      <div className="max-w-[88%] md:max-w-[80%] min-w-0">
+        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
+          <span>Iván</span>
+          <span className="text-ink-mute/50">·</span>
+          <span>Intake · {turn}</span>
         </div>
-        <div className="bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent px-5 py-3.5 text-[15px] leading-[1.55] text-ink whitespace-pre-wrap">
-          {content}
+        <div className="bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent px-5 py-3.5 text-[15px] text-ink">
+          <InlineMd text={content} />
         </div>
       </div>
     </motion.div>
@@ -700,12 +777,25 @@ const TypingIndicator: React.FC = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="flex items-center gap-2 text-ink-mute"
+    className="flex gap-3"
     aria-live="polite"
   >
-    <div className="ml-4">
-      <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5">
-        Intake · listening
+    <div className="flex-shrink-0 mt-5">
+      <picture>
+        <source srcSet="/ivan-portrait-400.webp" type="image/webp" />
+        <img
+          src="/ivan-portrait.jpg"
+          alt=""
+          aria-hidden="true"
+          className="w-9 h-9 object-cover object-top border border-[color:var(--color-hairline-bold)] grayscale-[15%] opacity-80"
+        />
+      </picture>
+    </div>
+    <div>
+      <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
+        <span>Iván</span>
+        <span className="text-ink-mute/50">·</span>
+        <span>Thinking</span>
       </div>
       <div className="flex items-center gap-1.5 px-5 py-3.5 bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent">
         <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '0ms' }} />
