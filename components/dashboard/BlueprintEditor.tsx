@@ -144,7 +144,7 @@ const BlueprintEditor: React.FC = () => {
     <div className="min-h-screen bg-paper font-mono text-ink">
       {/* Sticky top bar */}
       <header className="sticky top-0 z-10 bg-paper/95 backdrop-blur border-b border-ink/10">
-        <div className="max-w-[920px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-[1080px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
           <Link to="/dashboard?tab=agentReady" className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-ink-muted hover:text-ink transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
             Back to pipeline
@@ -166,7 +166,7 @@ const BlueprintEditor: React.FC = () => {
         </div>
 
         {/* Format toolbar */}
-        <div className="max-w-[920px] mx-auto px-6 py-2 flex items-center gap-1 border-t border-ink/5">
+        <div className="max-w-[1080px] mx-auto px-6 py-2 flex items-center gap-1 border-t border-ink/5">
           <ToolbarButton onClick={() => exec('bold')} icon={<Bold className="w-3.5 h-3.5" />} label="Bold" />
           <ToolbarButton onClick={() => exec('italic')} icon={<Italic className="w-3.5 h-3.5" />} label="Italic" />
           <ToolbarButton onClick={() => exec('formatBlock', '<h2>')} icon={<Heading2 className="w-3.5 h-3.5" />} label="H2" />
@@ -178,7 +178,7 @@ const BlueprintEditor: React.FC = () => {
       </header>
 
       {/* Editable surface */}
-      <main className="max-w-[920px] mx-auto px-6 py-10">
+      <main className="max-w-[1080px] mx-auto px-6 py-10">
         <div
           ref={editorRef}
           contentEditable
@@ -259,8 +259,14 @@ const BlueprintEditor: React.FC = () => {
         .blueprint-content .bp-band-augmented { background: var(--bp-sage-mid); color: var(--bp-ink); animation-delay: 0.42s; }
         .blueprint-content .bp-band-human { background: var(--bp-paper-deep); color: var(--bp-ink); animation-delay: 0.54s; }
 
-        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
+        /* Critical: columns sized to MATCH the bands above (60% / 25% / 15%) so
+           AGENT / AUGMENTED / HUMAN copy sits directly under its band. */
+        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: 60fr 25fr 15fr; gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
         .blueprint-content .bp-map-col h3 { margin-top: 0; }
+        .blueprint-content .bp-map-col li { font-size: 0.94rem; }
+        @media (max-width: 900px) {
+          .blueprint-content .bp-map-grid { grid-template-columns: 1fr; }
+        }
 
         /* 90-day timeline */
         .blueprint-content .bp-axis-pill {
@@ -314,6 +320,39 @@ const BlueprintEditor: React.FC = () => {
           text-transform: none; letter-spacing: -0.005em; color: var(--bp-ink); margin: 0 0 0.5rem; font-weight: 400;
         }
         .blueprint-content .bp-win-impact { font-size: 0.88rem; color: var(--bp-muted); margin: 0; }
+
+        /* Costed gaps explainer (static — same for every Blueprint) */
+        .blueprint-content .bp-precondition-explainer {
+          padding: 1.1rem 1.4rem; margin: 0.8rem 0 1rem; background: var(--bp-paper-deep);
+          border-left: 2px solid var(--bp-sage); border-radius: 2px;
+        }
+        .blueprint-content .bp-pre-eyebrow {
+          font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.18em;
+          text-transform: uppercase; color: var(--bp-sage); margin: 0 0 0.5rem;
+        }
+        .blueprint-content .bp-precondition-explainer p { margin: 0 0 0.6rem; max-width: 70ch; font-size: 0.95rem; }
+        .blueprint-content .bp-pre-list {
+          list-style: none; padding: 0; margin: 0.6rem 0 0;
+          display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem 1.4rem;
+        }
+        .blueprint-content .bp-pre-list li { font-size: 0.88rem; line-height: 1.5; padding-left: 0; margin: 0; }
+        .blueprint-content .bp-pre-list strong { color: var(--bp-sage); font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; }
+        @media (max-width: 720px) {
+          .blueprint-content .bp-pre-list { grid-template-columns: 1fr; }
+        }
+
+        /* Severity legend */
+        .blueprint-content .bp-sev-legend {
+          display: flex; align-items: center; gap: 0.6rem; margin: 0.8rem 0 0.5rem;
+          font-family: 'IBM Plex Mono', monospace; font-size: 10px; text-transform: uppercase;
+          letter-spacing: 0.14em; color: var(--bp-muted);
+        }
+        .blueprint-content .bp-sev-legend-bar {
+          display: inline-block; width: 80px; height: 4px; background: var(--bp-paper-deep); border-radius: 2px; overflow: hidden; position: relative;
+        }
+        .blueprint-content .bp-sev-legend-fill {
+          display: block; height: 100%; width: 100%; background: linear-gradient(to right, var(--bp-sage-mid), var(--bp-sage));
+        }
 
         /* Costed gaps with severity */
         .blueprint-content .bp-gaps-list { list-style: none; padding: 0; margin: 1rem 0; }
