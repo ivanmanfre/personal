@@ -66,8 +66,16 @@ function relativeTime(iso: string): string {
 const AgentReadyPanel: React.FC = () => {
   const { rows, loading, refresh, updateRow } = useAgentReady();
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['paid_assessments', 'assessment_intakes'] });
+  // Auto-expand the most recently submitted intake the first time we see it
   const [expanded, setExpanded] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('active');
+
+  React.useEffect(() => {
+    if (expanded != null) return;
+    const submitted = rows.filter((r) => r.intake_status === 'submitted')
+      .sort((a, b) => (b.intake_submitted_at ?? '').localeCompare(a.intake_submitted_at ?? ''));
+    if (submitted[0]) setExpanded(submitted[0].stripe_session_id);
+  }, [rows, expanded]);
 
   const stats = useMemo(() => {
     const active = rows.filter((r) => !['converted', 'refunded'].includes(r.pipeline_stage));
@@ -96,11 +104,11 @@ const AgentReadyPanel: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Agent-Ready Pipeline</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Blueprint Pipeline</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
         <EmptyState
-          title="No paid Assessments yet"
+          title="No paid Blueprints yet"
           description="When someone books the $2,500 Agent-Ready Blueprint on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
           icon={<Award className="w-10 h-10" />}
         />
@@ -112,8 +120,8 @@ const AgentReadyPanel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Agent-Ready Pipeline</h1>
-          <p className="text-sm text-zinc-500 mt-1">Paid Assessments, intake submissions, Day 2 scheduling, conversion tracking.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Blueprint Pipeline</h1>
+          <p className="text-sm text-zinc-500 mt-1">Paid Blueprints, intake submissions, Day 2 scheduling, conversion tracking.</p>
         </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
@@ -219,9 +227,13 @@ const AssessmentRow: React.FC<{
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {row.intake_status === 'submitted' ? (
-            <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">Intake ✓</span>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+              {answeredKeys.length}/20 answered · click to view
+            </span>
           ) : row.intake_status === 'in_progress' ? (
-            <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider">Intake {intakeProgress}%</span>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-mono uppercase tracking-wider bg-amber-500/10 text-amber-300 border-amber-500/30">
+              Intake {intakeProgress}% · in progress
+            </span>
           ) : (
             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Intake pending</span>
           )}
