@@ -66,6 +66,7 @@ const LazyAgentReadyPanel = lazy(retryImport(() => import('./AgentReadyPanel')))
 const LazyAudiencePanel = lazy(retryImport(() => import('./AudiencePanel')));
 const LazyLetterPanel = lazy(retryImport(() => import('./LetterPanel')));
 const LazyStrategyPanel = lazy(retryImport(() => import('./StrategyPanel')));
+const LazyBrainPanel = lazy(retryImport(() => import('./BrainPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -90,6 +91,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   'agent-ready': LazyAgentReadyPanel as unknown as React.ComponentType,
   audience: LazyAudiencePanel as unknown as React.ComponentType,
   letter: LazyLetterPanel as unknown as React.ComponentType,
+  brain: LazyBrainPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 
