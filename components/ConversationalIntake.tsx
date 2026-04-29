@@ -80,8 +80,13 @@ const ConversationalIntake: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const interimRef = useRef<string>('');
+  const silenceTimerRef = useRef<number | null>(null);
   const [recording, setRecording] = useState(false);
   const [voiceErr, setVoiceErr] = useState<string | null>(null);
+
+  // Voice auto-stop after N seconds of silence (no new transcript fragments)
+  const VOICE_SILENCE_TIMEOUT_MS = 4000;
+  const VOICE_HARD_CAP_MS = 90000; // hard 90s cap regardless
 
   useMetadata({
     title: 'Blueprint intake | Manfredi',
@@ -248,14 +253,31 @@ const ConversationalIntake: React.FC = () => {
     }
   };
 
+  const stopRecording = useCallback(() => {
+    if (silenceTimerRef.current != null) {
+      window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+  }, []);
+
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current != null) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = window.setTimeout(() => {
+      stopRecording();
+    }, VOICE_SILENCE_TIMEOUT_MS);
+  }, [stopRecording]);
+
   // Voice input toggle. Web Speech API streams interim results into the textarea.
+  // Auto-stops after VOICE_SILENCE_TIMEOUT_MS of no new transcript fragments
+  // OR a hard cap of VOICE_HARD_CAP_MS regardless.
   const toggleRecording = useCallback(() => {
     if (!VOICE_SUPPORTED) {
       setVoiceErr('Your browser does not support voice input. Try Chrome, Edge, or Safari.');
       return;
     }
     if (recording) {
-      recognitionRef.current?.stop();
+      stopRecording();
       return;
     }
     try {
@@ -273,21 +295,26 @@ const ConversationalIntake: React.FC = () => {
           if (r.isFinal) finalChunk += r[0].transcript;
           else interimChunk += r[0].transcript;
         }
-        if (finalChunk) {
-          interimRef.current += finalChunk;
-        }
+        if (finalChunk) interimRef.current += finalChunk;
         const combined = (baseValue ? baseValue.trimEnd() + ' ' : '') +
           interimRef.current + interimChunk;
         setInput(combined.trim());
+        resetSilenceTimer();
       };
       rec.onerror = (ev: any) => {
         const msg = ev?.error === 'not-allowed'
           ? 'Microphone access denied. Enable it in your browser settings.'
+          : ev?.error === 'no-speech'
+          ? null // expected, no UI noise
           : `Voice input error: ${ev?.error ?? 'unknown'}`;
-        setVoiceErr(msg);
-        setRecording(false);
+        if (msg) setVoiceErr(msg);
+        stopRecording();
       };
       rec.onend = () => {
+        if (silenceTimerRef.current != null) {
+          window.clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
         setRecording(false);
         recognitionRef.current = null;
       };
@@ -295,16 +322,22 @@ const ConversationalIntake: React.FC = () => {
       setVoiceErr(null);
       setRecording(true);
       rec.start();
+      // Hard cap fallback
+      window.setTimeout(() => {
+        if (recognitionRef.current === rec) stopRecording();
+      }, VOICE_HARD_CAP_MS);
+      // Initial silence timer (in case user clicks mic but never speaks)
+      resetSilenceTimer();
     } catch (e) {
       setVoiceErr(e instanceof Error ? e.message : 'Voice input failed to start');
       setRecording(false);
     }
-  }, [recording, input]);
+  }, [recording, input, stopRecording, resetSilenceTimer]);
 
   // Stop recording on unmount
   useEffect(() => () => {
-    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-  }, []);
+    try { stopRecording(); } catch { /* ignore */ }
+  }, [stopRecording]);
 
   const answeredCount = useMemo(
     () => QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length,
