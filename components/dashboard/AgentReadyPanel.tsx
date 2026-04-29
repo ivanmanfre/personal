@@ -326,91 +326,112 @@ const AssessmentRow: React.FC<{
   );
 };
 
-// Generate-or-resume Blueprint draft block. Shown when intake is submitted.
+// Two-stage Blueprint state: v1 (pre-call prep) → v2 (post-call deliverable).
 const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => {
-  const [latest, setLatest] = useState<{ id: string; status: string; kind: string; updated_at: string; version: number } | null>(null);
+  const [rows, setRows] = useState<Array<{ id: string; status: string; kind: string; stage: 'pre_call'|'post_call'; updated_at: string; version: number }>>([]);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+
+  const v1 = rows.find((r) => r.stage === 'pre_call');
+  const v2 = rows.find((r) => r.stage === 'post_call');
 
   const refresh = async () => {
     const { data } = await supabase
       .from('blueprints')
-      .select('id, status, kind, updated_at, version')
+      .select('id, status, kind, stage, updated_at, version')
       .eq('stripe_session_id', sessionId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setLatest((data as any) ?? null);
+      .order('created_at', { ascending: false });
+    setRows((data as any) ?? []);
   };
 
   useEffect(() => { void refresh(); }, [sessionId]);
 
-  const generate = async () => {
+  const generateV1 = async () => {
     setGenerating(true);
     setGenError(null);
     try {
       const res = await fetch('https://n8n.ivanmanfredi.com/webhook/blueprint-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
+        body: JSON.stringify({ session_id: sessionId, mode: 'pre_call' }),
       });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`);
-      }
-      // n8n responds with the Code node output: {ok, blueprint_id, ...}
-      await new Promise((r) => setTimeout(r, 1500)); // give DB write a beat
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      await new Promise((r) => setTimeout(r, 1500));
       await refresh();
-    } catch (e: any) {
-      setGenError(e.message ?? String(e));
-    } finally {
-      setGenerating(false);
-    }
+    } catch (e: any) { setGenError(e.message ?? String(e)); }
+    finally { setGenerating(false); }
   };
 
   return (
-    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
-      <p className="text-xs uppercase tracking-widest text-emerald-300 mb-3 font-mono">Blueprint draft</p>
+    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4 space-y-3">
+      <p className="text-xs uppercase tracking-widest text-emerald-300 font-mono">Blueprint pipeline</p>
 
-      {latest ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 font-mono">
-            {latest.status} · v{latest.version}
-          </span>
-          {latest.kind === 'test' && (
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-amber-500/30 text-amber-300 bg-amber-500/10 font-mono">
-              test · won't be RAG'd
+      {/* v1 row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border font-mono w-[110px] justify-center font-bold border-amber-500/30 text-amber-300 bg-amber-500/10">
+          v1 · prep
+        </span>
+        {v1 ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 font-mono">
+              {v1.status} · v{v1.version}
             </span>
-          )}
-          <Link
-            to={`/dashboard/blueprints/${encodeURIComponent(sessionId)}`}
-            className="px-3 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors flex items-center gap-2"
-          >
-            <Edit3 className="w-3 h-3" /> Open editor
-          </Link>
+            {v1.kind === 'test' && (
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-amber-500/30 text-amber-300 bg-amber-500/10 font-mono">
+                test
+              </span>
+            )}
+            <Link
+              to={`/dashboard/blueprints/${encodeURIComponent(sessionId)}`}
+              className="px-3 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors flex items-center gap-2"
+            >
+              <Edit3 className="w-3 h-3" /> Open
+            </Link>
+            <button
+              onClick={generateV1}
+              disabled={generating}
+              className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
+            >
+              <Sparkles className="w-3 h-3" /> {generating ? 'Working…' : 'Regenerate v1'}
+            </button>
+          </>
+        ) : (
           <button
-            onClick={generate}
-            disabled={generating}
-            className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
-          >
-            <Sparkles className="w-3 h-3" /> {generating ? 'Regenerating…' : 'Regenerate'}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <button
-            onClick={generate}
+            onClick={generateV1}
             disabled={generating}
             className="px-4 py-2 text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
-            {generating ? 'Generating draft…' : 'Generate Blueprint draft'}
+            {generating ? 'Generating v1…' : 'Generate v1 prep canvas'}
           </button>
-          <p className="text-[11px] text-zinc-500">
-            Calls the AI generator on n8n. Takes ~30 seconds. You'll get WhatsApp + email when ready.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* v2 row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border font-mono w-[110px] justify-center font-bold ${
+          v2 ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/15' : 'border-zinc-700 text-zinc-500'
+        }`}>
+          v2 · deliverable
+        </span>
+        {v2 ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 font-mono">
+              {v2.status} · v{v2.version}
+            </span>
+            <Link
+              to={`/dashboard/blueprints/${encodeURIComponent(sessionId)}`}
+              className="px-3 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors flex items-center gap-2"
+            >
+              <Edit3 className="w-3 h-3" /> Open
+            </Link>
+          </>
+        ) : (
+          <span className="text-[11px] text-zinc-500">
+            {v1 ? 'Open the editor → add Day 2 call notes → "Generate v2"' : 'Generate v1 first'}
+          </span>
+        )}
+      </div>
 
       {genError && (
         <p className="mt-2 text-xs text-red-400 font-mono">{genError}</p>

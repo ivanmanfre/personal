@@ -1,21 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Bold, Italic, Heading2, List, Save, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Bold, Italic, Heading2, List, Save, AlertCircle, Sparkles, Mic, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 type Status = 'draft' | 'published' | 'archived';
 type Kind = 'real' | 'test';
+type Stage = 'pre_call' | 'post_call';
 
 interface BlueprintRow {
   id: string;
   stripe_session_id: string;
   status: Status;
   kind: Kind;
+  stage: Stage;
+  call_notes: string | null;
+  parent_blueprint_id: string | null;
   html: string;
   json_sections: Record<string, unknown>;
-  generation_metadata: { model?: string; generated_at?: string; input_tokens?: number; output_tokens?: number };
+  generation_metadata: { model?: string; mode?: string; generated_at?: string; input_tokens?: number; output_tokens?: number };
   version: number;
   updated_at: string;
+  created_at: string;
   published_at: string | null;
 }
 
@@ -23,49 +28,93 @@ const SAVE_DEBOUNCE_MS = 2000;
 
 const BlueprintEditor: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const [row, setRow] = useState<BlueprintRow | null>(null);
+  const [allRows, setAllRows] = useState<BlueprintRow[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const row = allRows.find((r) => r.id === activeId) ?? null;
+  const v1Row = allRows.find((r) => r.stage === 'pre_call');
+  const v2Row = allRows.find((r) => r.stage === 'post_call');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [callNotes, setCallNotes] = useState('');
+  const [callNotesOpen, setCallNotesOpen] = useState(false);
+  const [generatingV2, setGeneratingV2] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<number | null>(null);
   const pendingHtmlRef = useRef<string | null>(null);
 
-  // Load latest draft for this session
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!sessionId) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('blueprints')
-        .select('*')
-        .eq('stripe_session_id', sessionId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) {
-        setError(error.message);
-      } else if (!data) {
-        setError('No Blueprint generated yet for this session. Click "Generate Draft" in the pipeline.');
-      } else {
-        setRow(data as BlueprintRow);
-        setLastSavedAt((data as BlueprintRow).updated_at);
-      }
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('blueprints')
+      .select('*')
+      .eq('stripe_session_id', sessionId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      setError(error.message);
+    } else if (!data || data.length === 0) {
+      setError('No Blueprint generated yet for this session. Click "Generate Draft" in the pipeline.');
+    } else {
+      const rows = data as BlueprintRow[];
+      setAllRows(rows);
+      // Default-select v2 if it exists, else v1
+      const initial = rows.find((r) => r.stage === 'post_call') ?? rows[0];
+      setActiveId(initial.id);
+      setLastSavedAt(initial.updated_at);
+      // Pre-fill call notes from v1's stored notes if present (Ivan typed them, generated v2, returns)
+      const pre = rows.find((r) => r.stage === 'pre_call');
+      if (pre?.call_notes) setCallNotes(pre.call_notes);
+    }
+    setLoading(false);
   }, [sessionId]);
 
-  // Mount editor content once row is loaded
+  useEffect(() => { refresh(); }, [refresh]);
+
+  // When switching active row, swap editor contents
   useEffect(() => {
-    if (row && editorRef.current && editorRef.current.innerHTML === '') {
+    if (row && editorRef.current) {
       editorRef.current.innerHTML = row.html || '<p>(empty draft)</p>';
+      setLastSavedAt(row.updated_at);
+      setSaveState('idle');
     }
-  }, [row]);
+  }, [activeId]);
+
+  const generateV2 = useCallback(async () => {
+    if (!sessionId) return;
+    if (!callNotes.trim()) {
+      setGenError('Add call notes before generating v2.');
+      return;
+    }
+    setGeneratingV2(true);
+    setGenError(null);
+    try {
+      // Save call_notes onto the v1 row first (so they're persisted even if generation fails)
+      if (v1Row?.id) {
+        await supabase.from('blueprints').update({ call_notes: callNotes.trim() }).eq('id', v1Row.id);
+      }
+      const res = await fetch('https://n8n.ivanmanfredi.com/webhook/blueprint-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, mode: 'post_call', call_notes: callNotes.trim() }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`);
+      }
+      const result = await res.json();
+      // Reload rows; new v2 will be the active row by default
+      await refresh();
+      if (result.blueprint_id) setActiveId(result.blueprint_id);
+    } catch (e: any) {
+      setGenError(e.message ?? String(e));
+    } finally {
+      setGeneratingV2(false);
+    }
+  }, [sessionId, callNotes, v1Row?.id, refresh]);
 
   const flushSave = useCallback(async () => {
     if (!row || pendingHtmlRef.current === null) return;
@@ -150,7 +199,35 @@ const BlueprintEditor: React.FC = () => {
             Back to pipeline
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Stage toggle (v1 / v2) */}
+            {(v1Row || v2Row) && (
+              <div className="inline-flex border border-ink/15 rounded-sm overflow-hidden">
+                {v1Row && (
+                  <button
+                    onClick={() => setActiveId(v1Row.id)}
+                    title="v1 — Ivan's prep canvas. Internal only, never sent to buyer."
+                    className={`px-2.5 py-1 text-[10px] uppercase tracking-widest font-mono transition-colors ${
+                      row.id === v1Row.id ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    v1 · prep
+                  </button>
+                )}
+                {v2Row && (
+                  <button
+                    onClick={() => setActiveId(v2Row.id)}
+                    title="v2 — Post-call deliverable. The artifact the buyer receives."
+                    className={`px-2.5 py-1 text-[10px] uppercase tracking-widest font-mono transition-colors border-l border-ink/15 ${
+                      row.id === v2Row.id ? 'bg-accent text-paper' : 'bg-paper text-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    v2 · deliverable
+                  </button>
+                )}
+              </div>
+            )}
+
             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border ${
               row.kind === 'test' ? 'border-amber-700/40 text-amber-800 bg-amber-50' : 'border-ink/20 text-ink-muted'
             }`}>
@@ -176,6 +253,75 @@ const BlueprintEditor: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Call-notes panel (only meaningful when viewing v1, before v2 is generated) */}
+      {row.stage === 'pre_call' && !v2Row && (
+        <div className="max-w-[1080px] mx-auto px-6 pt-6">
+          <div className="border border-accent/30 bg-accent/5 rounded-sm">
+            <button
+              onClick={() => setCallNotesOpen((o) => !o)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-accent/10 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Mic className="w-4 h-4 text-accent" />
+                <span className="text-xs uppercase tracking-widest font-mono text-accent font-bold">Day 2 call notes</span>
+                <span className="text-[10px] uppercase tracking-widest font-mono text-ink-muted">
+                  {callNotes.trim().length > 0 ? `${callNotes.trim().length} chars` : 'add notes to unlock v2'}
+                </span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-ink-muted transition-transform ${callNotesOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {callNotesOpen && (
+              <div className="px-4 pb-4 space-y-3">
+                <p className="text-xs text-ink-muted leading-relaxed">
+                  Paste raw call notes, ivan-listener transcript excerpts, or your scratch impressions from Day 2. The model will fuse this with the intake + v1 prep canvas to generate v2 — the post-call deliverable the buyer actually receives.
+                </p>
+                <textarea
+                  value={callNotes}
+                  onChange={(e) => setCallNotes(e.target.value)}
+                  placeholder="e.g.&#10;Sarah pushed back on the geo-restriction — they want US-wide. Partners are about to spin off the IP practice into its own firm so we can drop that scope entirely. Real concern is partner availability for review, not Sarah's bandwidth.&#10;..."
+                  rows={8}
+                  maxLength={8000}
+                  className="w-full px-3 py-2 text-sm font-sans text-ink bg-paper border border-ink/15 rounded-sm focus:outline-none focus:border-accent resize-y"
+                />
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-ink-muted">{callNotes.trim().length} / 8000</span>
+                  <button
+                    onClick={() => void generateV2()}
+                    disabled={generatingV2 || !callNotes.trim()}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono uppercase tracking-widest bg-accent text-paper hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {generatingV2 ? 'Generating v2…' : 'Generate v2 from these notes'}
+                  </button>
+                </div>
+                {genError && <p className="text-xs text-red-700 font-mono">{genError}</p>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stage banner — explicit so Ivan never confuses v1 with v2 */}
+      <div className="max-w-[1080px] mx-auto px-6 pt-6">
+        <div className={`px-4 py-3 border-l-2 text-xs ${
+          row.stage === 'post_call'
+            ? 'border-accent bg-accent/5 text-ink'
+            : 'border-amber-700/40 bg-amber-50 text-ink'
+        }`}>
+          {row.stage === 'post_call' ? (
+            <>
+              <strong className="font-mono uppercase tracking-widest text-accent">v2 · post-call deliverable</strong>
+              <span className="ml-2 text-ink-muted">This is what the buyer receives. Generated from intake + v1 + Day 2 call notes.</span>
+            </>
+          ) : (
+            <>
+              <strong className="font-mono uppercase tracking-widest text-amber-800">v1 · prep canvas (internal)</strong>
+              <span className="ml-2 text-ink-muted">For your eyes only. Use this to prep for the Day 2 working session, then add notes above and generate v2.</span>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Editable surface */}
       <main className="max-w-[1080px] mx-auto px-6 py-10">
