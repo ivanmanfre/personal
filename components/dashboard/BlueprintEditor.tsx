@@ -323,6 +323,35 @@ const BlueprintEditor: React.FC = () => {
         </div>
       </div>
 
+      {/* Call Insights Captured — only on v2, shows the changelog Claude produced */}
+      {row.stage === 'post_call' && Array.isArray((row.json_sections as any)?.changes_from_v1) && (row.json_sections as any).changes_from_v1.length > 0 && (
+        <div className="max-w-[1080px] mx-auto px-6 pt-4">
+          <details className="border border-accent/25 bg-accent/[0.04] rounded-sm" open>
+            <summary className="px-4 py-3 cursor-pointer flex items-center gap-2 select-none">
+              <Sparkles className="w-4 h-4 text-accent" />
+              <span className="text-xs font-mono uppercase tracking-widest text-accent font-bold">Call insights captured</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-ink-muted">
+                {((row.json_sections as any).changes_from_v1 as any[]).length} shifts from v1
+              </span>
+              <span className="ml-auto text-[10px] font-mono uppercase tracking-widest text-ink-muted">click to collapse</span>
+            </summary>
+            <ol className="px-4 pb-4 space-y-3">
+              {((row.json_sections as any).changes_from_v1 as Array<{ section: string; what_changed: string; why_call_drove_it: string }>).map((c, i) => (
+                <li key={i} className="border-l-2 border-accent/40 pl-3 py-1">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold mb-0.5">
+                    {String(i + 1).padStart(2, '0')} · {c.section.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-sm text-ink leading-snug font-sans">{c.what_changed}</p>
+                  <p className="text-xs text-ink-muted leading-snug mt-1 font-sans italic">
+                    From the call: {c.why_call_drove_it}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </details>
+        </div>
+      )}
+
       {/* Editable surface */}
       <main className="max-w-[1080px] mx-auto px-6 py-10">
         <div
