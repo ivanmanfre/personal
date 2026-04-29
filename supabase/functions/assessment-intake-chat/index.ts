@@ -26,6 +26,96 @@ const ANTHROPIC_AGENT_SECRET = Deno.env.get("ANTHROPIC_AGENT_SECRET")!;
 const ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const ANTHROPIC_VERSION = "2023-06-01";
 
+// Notification config (fire-and-forget on intake completion + addendum)
+const IVAN_WHATSAPP = Deno.env.get("IVAN_WHATSAPP_NUMBER") ?? "5491161419965";
+const IVAN_EMAIL = Deno.env.get("IVAN_NOTIFY_EMAIL") ?? "im@ivanmanfredi.com";
+const EVOLUTION_BASE = Deno.env.get("EVOLUTION_API_URL") ?? "http://24.199.118.135:8080";
+const EVOLUTION_INSTANCE = Deno.env.get("EVOLUTION_INSTANCE") ?? "ivan-wa";
+const EVOLUTION_KEY = Deno.env.get("EVOLUTION_API_KEY") ?? "";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "Iván Manfredi <hello@ivanmanfredi.com>";
+
+async function notifyWhatsApp(text: string): Promise<void> {
+  if (!EVOLUTION_KEY) return;
+  try {
+    await fetch(`${EVOLUTION_BASE}/message/sendText/${EVOLUTION_INSTANCE}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": EVOLUTION_KEY },
+      body: JSON.stringify({ number: IVAN_WHATSAPP, text }),
+    });
+  } catch (e) {
+    console.error("[whatsapp-notify-failed]", e instanceof Error ? e.message : String(e));
+  }
+}
+
+async function notifyEmail(subject: string, text: string, html: string): Promise<void> {
+  if (!RESEND_API_KEY) return;
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [IVAN_EMAIL],
+        subject,
+        text,
+        html,
+        tags: [{ name: "type", value: "blueprint_intake_notify" }],
+      }),
+    });
+  } catch (e) {
+    console.error("[email-notify-failed]", e instanceof Error ? e.message : String(e));
+  }
+}
+
+function buildIntakeNotification(
+  intake: IntakeRow,
+  email: string | null,
+  name: string | null,
+): { subject: string; text: string; html: string; whatsapp: string } {
+  const company = String(intake.answers.company ?? "").trim() || "(unknown company)";
+  const sizeRev = String(intake.answers.size_revenue ?? "").trim() || "(no size/revenue)";
+  const work = String(intake.answers.work_description ?? "").trim() || "(no description)";
+  const buyerLabel = name && email ? `${name} <${email}>` : (email ?? "(unknown buyer)");
+
+  const subject = `Blueprint intake: ${company.split(",")[0]}`;
+  const whatsapp =
+    `Blueprint intake submitted.\n\n` +
+    `${company}\n${sizeRev}\n\n` +
+    `Work: ${work.slice(0, 280)}${work.length > 280 ? "…" : ""}\n\n` +
+    `Open dashboard: https://ivanmanfredi.com/dashboard?tab=agentReady`;
+
+  const text =
+    `Blueprint intake submitted by ${buyerLabel}\n\n` +
+    Object.entries(intake.answers).map(([k, v]) => `• ${k}: ${String(v)}`).join("\n") +
+    `\n\nReview: https://ivanmanfredi.com/dashboard?tab=agentReady`;
+
+  const rows = Object.entries(intake.answers)
+    .map(([k, v]) =>
+      `<tr><td style="padding:6px 12px 6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861;text-transform:uppercase;letter-spacing:0.06em;vertical-align:top;white-space:nowrap">${escapeHtml(k)}</td>` +
+      `<td style="padding:6px 0;color:#1A1A1A;font-size:13px;line-height:1.5">${escapeHtml(String(v))}</td></tr>`
+    ).join("");
+
+  const html =
+    `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:640px;margin:32px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF">` +
+    `<p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6B6861;margin:0 0 8px">Blueprint intake submitted</p>` +
+    `<h1 style="font-size:24px;margin:0 0 4px;font-weight:700;letter-spacing:-0.01em">${escapeHtml(company)}</h1>` +
+    `<p style="margin:0 0 24px;color:#6B6861;font-size:13px">${escapeHtml(buyerLabel)}</p>` +
+    `<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;border-top:1px solid rgba(0,0,0,0.1)">${rows}</table>` +
+    `<p style="margin:24px 0 0;font-size:13px"><a href="https://ivanmanfredi.com/dashboard?tab=agentReady" style="color:#2A8F65;font-weight:600">Review in dashboard →</a></p>` +
+    `<p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861">Agent-Ready Ops™</p>` +
+    `</body></html>`;
+
+  return { subject, text, html, whatsapp };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
@@ -372,11 +462,45 @@ async function handleRequest(req: Request): Promise<Response> {
   // 4. Locked session → refuse
   if (row.locked_at) {
     return jsonResponse({
-      message: "Something went wrong with this session. Ivan has been notified — we'll reach out shortly.",
+      message: "Something went wrong with this session. Ivan has been notified, we'll reach out shortly.",
       complete: false,
       locked: true,
       lock_reason: row.lock_reason ?? "unspecified",
     });
+  }
+
+  // 4b. Addendum branch — buyer appended a free-form note after submission.
+  // Append to chat_history + notify Ivan, no Claude call.
+  if (typeof body.addendum === "string" && body.addendum.trim()) {
+    const text = body.addendum.trim().slice(0, 4000);
+    const ts = new Date().toISOString();
+    const newHistory = [
+      ...row.chat_history,
+      { role: "user" as const, content: `[ADDENDUM] ${text}`, ts },
+    ];
+    await supabase
+      .from("assessment_intakes")
+      .update({ chat_history: newHistory })
+      .eq("id", row.id);
+
+    // Fire-and-forget notifications
+    const buyer = await supabase
+      .from("paid_assessments")
+      .select("email, name, answers:assessment_intakes(answers)")
+      .eq("stripe_session_id", sessionId)
+      .maybeSingle();
+    const company = String(row.answers.company ?? "(unknown)").split(",")[0];
+    const buyerEmail = (buyer.data as any)?.email ?? "(unknown)";
+    notifyWhatsApp(
+      `Blueprint addendum from ${company}:\n\n"${text.slice(0, 500)}${text.length > 500 ? "…" : ""}"\n\nDashboard: https://ivanmanfredi.com/dashboard?tab=agentReady`,
+    );
+    notifyEmail(
+      `Blueprint addendum: ${company}`,
+      `${buyerEmail} added a note after submitting their Blueprint intake:\n\n${text}\n\nReview: https://ivanmanfredi.com/dashboard?tab=agentReady`,
+      `<!doctype html><html><body style="font-family:-apple-system,sans-serif;max-width:640px;margin:32px auto;padding:0 20px;background:#F7F4EF"><p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6B6861;margin:0 0 8px">Blueprint addendum</p><h1 style="font-size:20px;margin:0 0 4px">${escapeHtml(company)}</h1><p style="margin:0 0 16px;color:#6B6861;font-size:13px">${escapeHtml(buyerEmail)}</p><blockquote style="border-left:2px solid #2A8F65;margin:0;padding:12px 16px;background:#fff;font-size:14px;line-height:1.6;color:#1A1A1A">${escapeHtml(text).replace(/\n/g, "<br>")}</blockquote><p style="margin:16px 0 0;font-size:13px"><a href="https://ivanmanfredi.com/dashboard?tab=agentReady" style="color:#2A8F65;font-weight:600">Review in dashboard →</a></p></body></html>`,
+    );
+
+    return jsonResponse({ ok: true, addendum_recorded: true });
   }
 
   // 5. IP binding — first request locks the IP
@@ -616,6 +740,23 @@ async function handleRequest(req: Request): Promise<Response> {
       ...(parsed.complete ? { status: "submitted", submitted_at: new Date().toISOString() } : {}),
     })
     .eq("id", row.id);
+
+  // Fire-and-forget notifications on first completion
+  if (parsed.complete && row.status !== "submitted") {
+    const { data: buyer } = await supabase
+      .from("paid_assessments")
+      .select("email, name")
+      .eq("stripe_session_id", sessionId)
+      .maybeSingle();
+    const updatedRow: IntakeRow = { ...row, answers: mergedAnswers };
+    const note = buildIntakeNotification(
+      updatedRow,
+      (buyer as any)?.email ?? null,
+      (buyer as any)?.name ?? null,
+    );
+    notifyWhatsApp(note.whatsapp);
+    notifyEmail(note.subject, note.text, note.html);
+  }
 
   const nextNonce = await makeNonce(sessionId, newTurn, ANTHROPIC_AGENT_SECRET);
 

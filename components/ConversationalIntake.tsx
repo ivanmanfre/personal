@@ -447,7 +447,12 @@ const ConversationalIntake: React.FC = () => {
                 </div>
               )}
 
-              {state === 'submitted' && <SubmittedCard answers={answers} />}
+              {state === 'submitted' && (
+                <SubmittedCard
+                  answers={answers}
+                  sessionId={sessionId}
+                />
+              )}
             </div>
           </div>
 
@@ -716,6 +721,32 @@ function renderInline(s: string): React.ReactNode {
   return parts;
 }
 
+// Brand-aligned agent mark: black square with sage italic DM Serif "i."
+const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 36 36"
+    role="img"
+    aria-label="Ivan's Agent"
+    className="flex-shrink-0"
+  >
+    <rect width="36" height="36" fill="#1A1A1A" />
+    <text
+      x="50%"
+      y="50%"
+      dominantBaseline="central"
+      textAnchor="middle"
+      fontFamily="'DM Serif Display', serif"
+      fontStyle="italic"
+      fontSize="22"
+      fill="var(--color-accent, #2A8F65)"
+    >
+      i.
+    </text>
+  </svg>
+);
+
 const BotBubble: React.FC<{ content: string; index: number }> = ({ content, index }) => {
   const turn = String(index + 1).padStart(2, '0');
   return (
@@ -725,23 +756,12 @@ const BotBubble: React.FC<{ content: string; index: number }> = ({ content, inde
       transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
       className="flex gap-3"
     >
-      {/* Magazine-byline mugshot — sharp square, hairline border, NOT a chatbot avatar */}
       <div className="flex-shrink-0 mt-5">
-        <picture>
-          <source srcSet="/ivan-portrait-400.webp" type="image/webp" />
-          <img
-            src="/ivan-portrait.jpg"
-            alt=""
-            aria-hidden="true"
-            className="w-9 h-9 object-cover object-top border border-[color:var(--color-hairline-bold)] grayscale-[15%]"
-            loading="lazy"
-            draggable={false}
-          />
-        </picture>
+        <AgentMark />
       </div>
       <div className="max-w-[88%] md:max-w-[80%] min-w-0">
         <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
-          <span>Iván</span>
+          <span>Ivan's Agent</span>
           <span className="text-ink-mute/50">·</span>
           <span>Intake · {turn}</span>
         </div>
@@ -780,20 +800,12 @@ const TypingIndicator: React.FC = () => (
     className="flex gap-3"
     aria-live="polite"
   >
-    <div className="flex-shrink-0 mt-5">
-      <picture>
-        <source srcSet="/ivan-portrait-400.webp" type="image/webp" />
-        <img
-          src="/ivan-portrait.jpg"
-          alt=""
-          aria-hidden="true"
-          className="w-9 h-9 object-cover object-top border border-[color:var(--color-hairline-bold)] grayscale-[15%] opacity-80"
-        />
-      </picture>
+    <div className="flex-shrink-0 mt-5 opacity-70">
+      <AgentMark />
     </div>
     <div>
       <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
-        <span>Iván</span>
+        <span>Ivan's Agent</span>
         <span className="text-ink-mute/50">·</span>
         <span>Thinking</span>
       </div>
@@ -806,8 +818,36 @@ const TypingIndicator: React.FC = () => (
   </motion.div>
 );
 
-const SubmittedCard: React.FC<{ answers: Record<string, unknown> }> = ({ answers }) => {
+const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: string | null }> = ({ answers, sessionId }) => {
   const answeredCount = QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length;
+  const [addendum, setAddendum] = useState('');
+  const [addendumStatus, setAddendumStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [addendumErr, setAddendumErr] = useState<string | null>(null);
+
+  const submitAddendum = async () => {
+    if (!sessionId || !addendum.trim() || addendumStatus === 'sending') return;
+    setAddendumStatus('sending');
+    setAddendumErr(null);
+    try {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          addendum: addendum.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setAddendumStatus('sent');
+      setAddendum('');
+    } catch (e) {
+      setAddendumErr(e instanceof Error ? e.message : 'Failed to send');
+      setAddendumStatus('error');
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -896,6 +936,59 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown> }> = ({ answers
               </div>
             );
           })}
+        </div>
+      </motion.div>
+
+      {/* Free-form addendum — buyer can append a note after submission */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.85 }}
+        className="border-t border-[color:var(--color-hairline-bold)] px-8 md:px-14 py-8"
+      >
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
+            Anything else?
+          </p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+            Optional
+          </p>
+        </div>
+        <p className="text-sm text-ink-soft leading-relaxed mb-3 max-w-xl">
+          Context Iván should know before the working session. Constraints, deadlines, an idea you forgot to mention. Goes straight to him.
+        </p>
+        <textarea
+          value={addendum}
+          onChange={(e) => setAddendum(e.target.value)}
+          placeholder="One more thing…"
+          rows={3}
+          maxLength={4000}
+          disabled={addendumStatus === 'sending' || addendumStatus === 'sent'}
+          className="w-full bg-paper-sunk border border-[color:var(--color-hairline-bold)] px-4 py-3 text-[15px] leading-relaxed focus:outline-none focus:border-accent disabled:opacity-60 font-sans resize-y"
+        />
+        <div className="flex items-center justify-between mt-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute">
+            {addendumStatus === 'sent' ? (
+              <span className="text-accent">✓ Sent · Iván has been notified</span>
+            ) : addendumStatus === 'error' ? (
+              <span className="text-red-700">{addendumErr}</span>
+            ) : (
+              <span>{addendum.length}/4000</span>
+            )}
+          </div>
+          <button
+            onClick={submitAddendum}
+            disabled={!addendum.trim() || addendumStatus === 'sending' || addendumStatus === 'sent'}
+            className="px-5 py-2 bg-black text-white border border-black disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[11px] uppercase tracking-[0.14em] hover:bg-ink-soft transition-colors flex items-center gap-2"
+          >
+            {addendumStatus === 'sending' ? (
+              <><Loader2 size={12} className="animate-spin" /> Sending</>
+            ) : addendumStatus === 'sent' ? (
+              <>Sent</>
+            ) : (
+              <>Send to Iván <ArrowUp size={12} className="text-accent" strokeWidth={2.5} /></>
+            )}
+          </button>
         </div>
       </motion.div>
 

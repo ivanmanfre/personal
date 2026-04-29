@@ -67,7 +67,11 @@ export function useAgentReady() {
     }
 
     const mapped: PaidAssessmentRow[] = (data ?? []).map((r: any) => {
-      const intake = Array.isArray(r.assessment_intakes) ? r.assessment_intakes[0] : undefined;
+      // PostgREST returns the embedded relation as a single object (1:1 because
+      // assessment_intakes.stripe_session_id is unique), not an array. Handle both.
+      const intake = Array.isArray(r.assessment_intakes)
+        ? r.assessment_intakes[0]
+        : (r.assessment_intakes ?? undefined);
       return {
         stripe_session_id: r.stripe_session_id,
         email: r.email,
