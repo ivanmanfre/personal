@@ -21,6 +21,24 @@ const VOICE_SUPPORTED = !!SpeechRecognitionImpl;
 const CHAT_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/assessment-intake-chat';
 const LEGACY_FORM_URL = '/assessment/intake-form';
 
+// ─────────────────────────────────────────────────────────────
+// Schema — 5 editorial pillars across 20 keys
+// ─────────────────────────────────────────────────────────────
+
+interface Pillar {
+  numeral: string;
+  label: string;
+  keys: string[];
+}
+
+const PILLARS: Pillar[] = [
+  { numeral: 'I',   label: 'Setup',                 keys: ['company', 'size_revenue', 'work_description'] },
+  { numeral: 'II',  label: 'Reliable input',        keys: ['input_source', 'input_shape', 'input_consistency', 'input_gap'] },
+  { numeral: 'III', label: 'Documentable decision', keys: ['best_person', 'documentability', 'criteria', 'gut_feel', 'frequency'] },
+  { numeral: 'IV',  label: 'Narrow scope',          keys: ['v1_scope', 'excluded', 'success_metric', 'tolerance'] },
+  { numeral: 'V',   label: 'Human review',          keys: ['reviewer', 'review_time', 'uncertain_default', 'downside'] },
+];
+
 const QUESTION_LABELS: Record<string, string> = {
   company: 'Company + your role',
   size_revenue: 'Team size + revenue',
@@ -61,6 +79,50 @@ type SessionState =
   | 'submitted'
   | 'error';
 
+// ─────────────────────────────────────────────────────────────
+// Editorial paper grid background — barely-visible 40px grid
+// ─────────────────────────────────────────────────────────────
+const PAPER_GRID_STYLE: React.CSSProperties = {
+  backgroundImage: `linear-gradient(to right, rgba(26,26,26,0.025) 1px, transparent 1px), linear-gradient(to bottom, rgba(26,26,26,0.025) 1px, transparent 1px)`,
+  backgroundSize: '48px 48px',
+  backgroundPosition: '-1px -1px',
+};
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function pillarOfKey(key: string | null | undefined): number {
+  if (!key) return -1;
+  return PILLARS.findIndex((p) => p.keys.includes(key));
+}
+
+function activePillarIdx(answers: Record<string, unknown>, lastFocusKey: string | null): number {
+  // Prefer the pillar containing the most-recently-touched focus key,
+  // otherwise the first pillar with unanswered keys.
+  const focusIdx = pillarOfKey(lastFocusKey);
+  if (focusIdx >= 0) {
+    const focusPillar = PILLARS[focusIdx];
+    const allDone = focusPillar.keys.every((k) => answers[k] != null && answers[k] !== '');
+    if (!allDone) return focusIdx;
+  }
+  for (let i = 0; i < PILLARS.length; i++) {
+    const allDone = PILLARS[i].keys.every((k) => answers[k] != null && answers[k] !== '');
+    if (!allDone) return i;
+  }
+  return PILLARS.length - 1;
+}
+
+function pillarProgress(pillar: Pillar, answers: Record<string, unknown>): { hit: number; total: number } {
+  const total = pillar.keys.length;
+  const hit = pillar.keys.filter((k) => answers[k] != null && answers[k] !== '').length;
+  return { hit, total };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────
+
 const ConversationalIntake: React.FC = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -69,6 +131,7 @@ const ConversationalIntake: React.FC = () => {
   const [state, setState] = useState<SessionState>('loading');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [lastFocus, setLastFocus] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [turnCount, setTurnCount] = useState(0);
   const [nonce, setNonce] = useState<string | null>(null);
@@ -84,9 +147,8 @@ const ConversationalIntake: React.FC = () => {
   const [recording, setRecording] = useState(false);
   const [voiceErr, setVoiceErr] = useState<string | null>(null);
 
-  // Voice auto-stop after N seconds of silence (no new transcript fragments)
   const VOICE_SILENCE_TIMEOUT_MS = 4000;
-  const VOICE_HARD_CAP_MS = 90000; // hard 90s cap regardless
+  const VOICE_HARD_CAP_MS = 90000;
 
   useMetadata({
     title: 'Blueprint intake | Manfredi',
@@ -95,14 +157,12 @@ const ConversationalIntake: React.FC = () => {
     noindex: true,
   });
 
-  // Auto-scroll on new messages
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [messages, state]);
 
-  // Auto-resize textarea
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -110,7 +170,6 @@ const ConversationalIntake: React.FC = () => {
     ta.style.height = `${Math.min(ta.scrollHeight, 240)}px`;
   }, [input]);
 
-  // Rate-limit countdown
   useEffect(() => {
     if (retryAfter == null) return;
     if (retryAfter <= 0) {
@@ -122,7 +181,6 @@ const ConversationalIntake: React.FC = () => {
     return () => clearTimeout(id);
   }, [retryAfter]);
 
-  // INIT — load existing chat history + nonce
   useEffect(() => {
     if (!sessionId) {
       setError('Missing session ID. Did you arrive from the Stripe checkout?');
@@ -152,10 +210,7 @@ const ConversationalIntake: React.FC = () => {
         setAnswers(data.answers ?? {});
         const history: ChatMessage[] = data.chat_history ?? [];
         setMessages(history);
-        if (data.submitted) {
-          setState('submitted');
-          return;
-        }
+        if (data.submitted) { setState('submitted'); return; }
         if (data.greeting && history.length === 0) {
           setMessages([{ role: 'assistant', content: data.greeting, ts: new Date().toISOString() }]);
         }
@@ -174,9 +229,7 @@ const ConversationalIntake: React.FC = () => {
     if (state !== 'ready') return;
 
     const userMsg: ChatMessage = {
-      role: 'user',
-      content: input.trim(),
-      ts: new Date().toISOString(),
+      role: 'user', content: input.trim(), ts: new Date().toISOString(),
     };
     setMessages((m) => [...m, userMsg]);
     setInput('');
@@ -189,8 +242,7 @@ const ConversationalIntake: React.FC = () => {
         body: JSON.stringify({
           session_id: sessionId,
           message: userMsg.content,
-          nonce,
-          turn_count: turnCount,
+          nonce, turn_count: turnCount,
         }),
       });
 
@@ -200,13 +252,11 @@ const ConversationalIntake: React.FC = () => {
         setState('rate_limited');
         return;
       }
-
       if (res.status === 413) {
-        setError('Message too long. Please trim it under 2,000 characters.');
+        setError('Message too long. Trim it under 2,000 characters.');
         setState('ready');
         return;
       }
-
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setError(body.error ?? `Send failed (${res.status})`);
@@ -218,33 +268,27 @@ const ConversationalIntake: React.FC = () => {
 
       if (data.locked) {
         setMessages((m) => [...m, {
-          role: 'assistant',
-          content: data.message ?? 'Session locked.',
-          ts: new Date().toISOString(),
+          role: 'assistant', content: data.message ?? 'Session locked.', ts: new Date().toISOString(),
         }]);
         setState('locked');
         return;
       }
 
       setMessages((m) => [...m, {
-        role: 'assistant',
-        content: data.message,
-        ts: new Date().toISOString(),
+        role: 'assistant', content: data.message, ts: new Date().toISOString(),
       }]);
       setAnswers((a) => ({ ...a, ...(data.answers ?? data.extracted_answers ?? {}) }));
+      setLastFocus(data.current_focus ?? lastFocus);
       setTurnCount(data.turn_count);
       setNonce(data.nonce);
 
-      if (data.complete) {
-        setState('submitted');
-      } else {
-        setState('ready');
-      }
+      if (data.complete) setState('submitted');
+      else setState('ready');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error');
       setState('ready');
     }
-  }, [input, nonce, sessionId, state, turnCount]);
+  }, [input, nonce, sessionId, state, turnCount, lastFocus]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -263,23 +307,15 @@ const ConversationalIntake: React.FC = () => {
 
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current != null) window.clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = window.setTimeout(() => {
-      stopRecording();
-    }, VOICE_SILENCE_TIMEOUT_MS);
+    silenceTimerRef.current = window.setTimeout(() => stopRecording(), VOICE_SILENCE_TIMEOUT_MS);
   }, [stopRecording]);
 
-  // Voice input toggle. Web Speech API streams interim results into the textarea.
-  // Auto-stops after VOICE_SILENCE_TIMEOUT_MS of no new transcript fragments
-  // OR a hard cap of VOICE_HARD_CAP_MS regardless.
   const toggleRecording = useCallback(() => {
     if (!VOICE_SUPPORTED) {
       setVoiceErr('Your browser does not support voice input. Try Chrome, Edge, or Safari.');
       return;
     }
-    if (recording) {
-      stopRecording();
-      return;
-    }
+    if (recording) { stopRecording(); return; }
     try {
       const rec = new SpeechRecognitionImpl();
       rec.continuous = true;
@@ -296,16 +332,14 @@ const ConversationalIntake: React.FC = () => {
           else interimChunk += r[0].transcript;
         }
         if (finalChunk) interimRef.current += finalChunk;
-        const combined = (baseValue ? baseValue.trimEnd() + ' ' : '') +
-          interimRef.current + interimChunk;
+        const combined = (baseValue ? baseValue.trimEnd() + ' ' : '') + interimRef.current + interimChunk;
         setInput(combined.trim());
         resetSilenceTimer();
       };
       rec.onerror = (ev: any) => {
         const msg = ev?.error === 'not-allowed'
           ? 'Microphone access denied. Enable it in your browser settings.'
-          : ev?.error === 'no-speech'
-          ? null // expected, no UI noise
+          : ev?.error === 'no-speech' ? null
           : `Voice input error: ${ev?.error ?? 'unknown'}`;
         if (msg) setVoiceErr(msg);
         stopRecording();
@@ -322,11 +356,9 @@ const ConversationalIntake: React.FC = () => {
       setVoiceErr(null);
       setRecording(true);
       rec.start();
-      // Hard cap fallback
       window.setTimeout(() => {
         if (recognitionRef.current === rec) stopRecording();
       }, VOICE_HARD_CAP_MS);
-      // Initial silence timer (in case user clicks mic but never speaks)
       resetSilenceTimer();
     } catch (e) {
       setVoiceErr(e instanceof Error ? e.message : 'Voice input failed to start');
@@ -334,118 +366,54 @@ const ConversationalIntake: React.FC = () => {
     }
   }, [recording, input, stopRecording, resetSilenceTimer]);
 
-  // Stop recording on unmount
-  useEffect(() => () => {
-    try { stopRecording(); } catch { /* ignore */ }
-  }, [stopRecording]);
+  useEffect(() => () => { try { stopRecording(); } catch { /* ignore */ } }, [stopRecording]);
 
   const answeredCount = useMemo(
     () => QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length,
     [answers],
   );
-  const progressPct = (answeredCount / QUESTION_ORDER.length) * 100;
+  const activeIdx = useMemo(() => activePillarIdx(answers, lastFocus), [answers, lastFocus]);
 
   const charCount = input.length;
-  const charCountColor =
-    charCount > 1500 ? 'text-amber-700' : charCount > 1800 ? 'text-red-700' : 'text-ink-mute';
+  const charCountColor = charCount > 1500 ? 'text-amber-700' : charCount > 1800 ? 'text-red-700' : 'text-ink-mute';
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      {/* Sticky header */}
-      <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline)]">
-        <div className="container mx-auto max-w-3xl px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-baseline gap-3 min-w-0">
-            <h1 className="text-base md:text-lg font-semibold tracking-tight whitespace-nowrap">
-              <span className="font-drama italic">The</span> Agent-Ready Blueprint
-            </h1>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hidden sm:inline">
-              · Intake
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-xs tabular-nums text-ink-soft">
-              {answeredCount}<span className="text-ink-mute">/{QUESTION_ORDER.length}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((v) => !v)}
-              className="text-xs font-mono uppercase tracking-[0.1em] text-ink-soft hover:text-black px-2 py-1 border border-[color:var(--color-hairline)] rounded"
-              aria-label="Toggle question list"
-            >
-              {sidebarOpen ? 'Close' : 'Questions'}
-            </button>
-          </div>
-        </div>
-        <div className="h-[2px] w-full bg-[color:var(--color-hairline)]">
-          <div
-            className="h-full bg-accent transition-[width] duration-500 ease-out"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </header>
+    <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
+      <Masthead activeIdx={activeIdx} />
+      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} />
 
       <main className="flex-1 flex relative">
-        {/* Sidebar */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.aside
-              initial={{ x: 320 }}
+              initial={{ x: 380 }}
               animate={{ x: 0 }}
-              exit={{ x: 320 }}
-              transition={{ type: 'tween', duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="fixed top-[57px] right-0 bottom-0 w-80 bg-paper-sunk border-l border-[color:var(--color-hairline-bold)] z-30 overflow-y-auto"
+              exit={{ x: 380 }}
+              transition={{ type: 'tween', duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+              className="fixed top-0 right-0 bottom-0 w-[380px] max-w-full bg-paper border-l border-[color:var(--color-hairline-bold)] z-30 overflow-y-auto shadow-2xl"
             >
-              <div className="p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute mb-3">
-                  Intake checklist
-                </p>
-                <ul className="space-y-1.5">
-                  {QUESTION_ORDER.map((key, i) => {
-                    const answered = answers[key] != null && answers[key] !== '';
-                    return (
-                      <li
-                        key={key}
-                        className={`flex items-start gap-2.5 text-sm py-1 ${answered ? 'text-black' : 'text-ink-mute'}`}
-                      >
-                        <span className={`mt-0.5 w-4 h-4 flex items-center justify-center flex-shrink-0 border ${answered ? 'bg-accent border-accent text-white' : 'border-[color:var(--color-hairline-bold)]'}`}>
-                          {answered ? <Check size={10} strokeWidth={3} /> : <span className="text-[10px] font-mono">{i + 1}</span>}
-                        </span>
-                        <span className={answered ? 'line-through decoration-[color:var(--color-hairline-bold)]' : ''}>
-                          {QUESTION_LABELS[key]}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <p className="mt-6 text-xs text-ink-mute leading-relaxed">
-                  These are the 20 things the Blueprint covers. Ivan-bot will weave through them naturally — no need to follow this order.
-                </p>
-              </div>
+              <ChecklistDrawer answers={answers} onClose={() => setSidebarOpen(false)} />
             </motion.aside>
           )}
         </AnimatePresence>
 
-        {/* Chat column */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div
-            ref={chatScrollRef}
-            className="flex-1 overflow-y-auto"
-          >
-            <div className="container mx-auto max-w-3xl px-6 py-8 space-y-5">
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto">
+            <div className="container mx-auto max-w-3xl px-6 md:px-10 py-10 space-y-6">
               {state === 'loading' && (
                 <div className="flex items-center gap-3 text-ink-mute">
                   <Loader2 size={18} className="animate-spin" />
-                  <span className="text-sm">Loading your intake…</span>
+                  <span className="text-sm font-mono uppercase tracking-[0.14em]">Loading your intake</span>
                 </div>
               )}
 
               {state === 'error' && (
-                <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900">
-                  <p className="font-semibold mb-1 flex items-center gap-2">
-                    <AlertTriangle size={14} /> Couldn't open the intake
+                <div className="border border-red-300 bg-red-50/60 p-6">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-red-900 mb-2 flex items-center gap-2">
+                    <AlertTriangle size={12} /> Couldn't open the intake
                   </p>
-                  <p className="text-red-800/80">{error}</p>
-                  <p className="mt-3">
+                  <p className="text-sm text-red-900">{error}</p>
+                  <p className="mt-3 text-sm">
                     <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="underline">
                       Switch to the form version
                     </a>
@@ -454,81 +422,84 @@ const ConversationalIntake: React.FC = () => {
               )}
 
               {messages.map((m, i) => (
-                <ChatBubble key={i} role={m.role} content={m.content} />
+                m.role === 'assistant'
+                  ? <BotBubble key={i} content={m.content} index={i} />
+                  : <UserBubble key={i} content={m.content} />
               ))}
 
               {state === 'sending' && <TypingIndicator />}
 
               {state === 'rate_limited' && (
-                <div className="border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  Take a quick break — we're rate-limiting to protect the session.
-                  Back in <span className="font-mono tabular-nums">{retryAfter}s</span>.
+                <div className="border-l-2 border-amber-500 bg-amber-50/60 px-5 py-4 text-sm text-amber-900">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] mb-1">Pause</p>
+                  Rate limit hit, back in <span className="font-mono tabular-nums">{retryAfter}s</span>.
                 </div>
               )}
 
               {state === 'locked' && (
-                <div className="border border-red-200 bg-red-50 p-5 text-sm text-red-900">
-                  <p className="font-semibold mb-1 flex items-center gap-2">
-                    <AlertTriangle size={14} /> Session locked
+                <div className="border border-red-300 bg-red-50/60 p-6">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-red-900 mb-2 flex items-center gap-2">
+                    <AlertTriangle size={12} /> Session locked
                   </p>
-                  <p className="text-red-800/80">
-                    Something flagged in this session. Ivan has been notified — we'll reach out shortly.
+                  <p className="text-sm text-red-900">
+                    Something flagged in this session. Ivan has been notified, we'll reach out shortly.
                   </p>
                 </div>
               )}
 
-              {state === 'submitted' && (
-                <SubmittedCard answers={answers} />
-              )}
+              {state === 'submitted' && <SubmittedCard answers={answers} />}
             </div>
           </div>
 
-          {/* Composer */}
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && (
-            <div className="border-t border-[color:var(--color-hairline)] bg-paper">
-              <div className="container mx-auto max-w-3xl px-6 py-4">
-                <div className="flex items-end gap-3">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      state === 'rate_limited'
-                        ? 'Hold tight, back in a minute.'
-                        : state === 'sending'
-                        ? 'Thinking…'
-                        : recording
-                        ? 'Listening… speak naturally.'
-                        : 'Type or hit the mic. Enter sends, Shift+Enter newlines.'
-                    }
-                    rows={1}
-                    maxLength={2000}
-                    disabled={state !== 'ready' && !recording}
-                    className="flex-1 resize-none bg-paper-sunk border border-[color:var(--color-hairline-bold)] px-4 py-3 text-sm leading-relaxed focus:outline-none focus:border-accent disabled:opacity-50 font-sans"
-                  />
+            <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
+              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-5">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 relative">
+                    <span className="absolute -top-5 left-0 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+                      Your reply
+                    </span>
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder={
+                        state === 'rate_limited' ? 'Hold tight, back in a minute.'
+                        : state === 'sending' ? 'Thinking…'
+                        : recording ? 'Listening, speak naturally.'
+                        : 'Type or hit the mic. Enter sends.'
+                      }
+                      rows={1}
+                      maxLength={2000}
+                      disabled={state !== 'ready' && !recording}
+                      className="w-full resize-none bg-paper-sunk border border-[color:var(--color-hairline-bold)] px-4 py-3 text-[15px] leading-relaxed focus:outline-none focus:border-accent disabled:opacity-50 font-sans placeholder:text-ink-mute"
+                    />
+                  </div>
                   {VOICE_SUPPORTED && (
                     <button
                       onClick={toggleRecording}
                       disabled={state !== 'ready' && !recording}
-                      className={`self-stretch px-3 border transition-colors flex items-center justify-center ${
+                      className={`self-stretch w-12 border transition-colors flex items-center justify-center ${
                         recording
-                          ? 'bg-red-600 text-white border-red-700 animate-pulse'
+                          ? 'bg-black text-white border-black'
                           : 'bg-paper border-[color:var(--color-hairline-bold)] text-ink hover:bg-paper-sunk'
                       } disabled:opacity-40 disabled:cursor-not-allowed`}
                       aria-label={recording ? 'Stop recording' : 'Start voice input'}
-                      title={recording ? 'Click to stop recording' : 'Click to dictate your answer'}
+                      title={recording ? 'Click to stop recording' : 'Click to dictate'}
                     >
-                      {recording ? <MicOff size={18} /> : <Mic size={18} />}
+                      {recording
+                        ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-accent animate-pulse" /></span>
+                        : <Mic size={18} />}
                     </button>
                   )}
                   <button
                     onClick={send}
                     disabled={state !== 'ready' || !input.trim()}
-                    className="self-stretch px-4 bg-accent text-white border border-accent disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity"
+                    className="self-stretch px-5 bg-black text-white border border-black disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity hover:bg-ink-soft"
                     aria-label="Send"
                   >
-                    {state === 'sending' ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} />}
+                    {state === 'sending' ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} className="text-accent" />}
                   </button>
                 </div>
                 {voiceErr && (
@@ -536,16 +507,15 @@ const ConversationalIntake: React.FC = () => {
                     <AlertTriangle size={12} /> {voiceErr}
                   </div>
                 )}
-                <div className="flex items-center justify-between mt-2 text-[10px] font-mono uppercase tracking-[0.12em]">
-                  <span className="text-ink-mute">
-                    Saves automatically ·{' '}
+                <div className="flex items-center justify-between mt-3 text-[10px] font-mono uppercase tracking-[0.14em]">
+                  <span className="text-ink-mute flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-accent inline-block" />
+                    Saves automatically · {' '}
                     <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="underline hover:text-black">
-                      switch to form
+                      Switch to form
                     </a>
                   </span>
-                  <span className={`tabular-nums ${charCountColor}`}>
-                    {charCount}/2000
-                  </span>
+                  <span className={`tabular-nums ${charCountColor}`}>{charCount}/2000</span>
                 </div>
               </div>
             </div>
@@ -560,23 +530,167 @@ const ConversationalIntake: React.FC = () => {
 // Sub-components
 // ─────────────────────────────────────────────────────────────
 
-const ChatBubble: React.FC<{ role: 'user' | 'assistant'; content: string }> = ({ role, content }) => {
-  const isBot = role === 'assistant';
+const Masthead: React.FC<{ activeIdx: number }> = ({ activeIdx }) => {
+  const active = PILLARS[activeIdx] ?? PILLARS[0];
+  return (
+    <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
+      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-end justify-between gap-6">
+        <div className="flex items-baseline gap-3 min-w-0">
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute hidden sm:inline">
+            00 · Intake
+          </span>
+          <h1 className="text-base md:text-xl font-semibold tracking-tight whitespace-nowrap">
+            <span className="font-drama italic">The</span>{' '}
+            <span className="font-drama italic">Agent-Ready</span>{' '}
+            Blueprint
+          </h1>
+        </div>
+        <div className="hidden md:flex flex-col items-end leading-none">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">Section</span>
+          <span className="font-mono text-xs uppercase tracking-[0.14em] text-ink mt-1">
+            {active.numeral} · {active.label}
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const PillarBar: React.FC<{
+  answers: Record<string, unknown>;
+  activeIdx: number;
+  onOpenList: () => void;
+}> = ({ answers, activeIdx, onOpenList }) => {
+  return (
+    <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
+      <div className="container mx-auto max-w-5xl px-6 md:px-10">
+        <div className="flex items-stretch">
+          {PILLARS.map((p, i) => {
+            const { hit, total } = pillarProgress(p, answers);
+            const complete = hit === total;
+            const active = i === activeIdx;
+            return (
+              <div
+                key={p.numeral}
+                className={`flex-1 py-3 flex items-center gap-3 border-r border-[color:var(--color-hairline)] last:border-r-0 px-3 first:pl-0 ${
+                  active ? 'opacity-100' : complete ? 'opacity-70' : 'opacity-50'
+                } transition-opacity`}
+              >
+                <span className={`flex-shrink-0 inline-flex items-center justify-center w-6 h-6 font-mono text-[10px] uppercase tracking-tight font-bold ${
+                  complete
+                    ? 'bg-black text-accent'
+                    : active
+                      ? 'bg-black text-white'
+                      : 'border border-[color:var(--color-hairline-bold)] text-ink-mute'
+                }`}>
+                  {p.numeral}
+                </span>
+                <div className="min-w-0 hidden md:block">
+                  <div className={`text-[11px] font-mono uppercase tracking-[0.08em] truncate ${active ? 'text-ink' : 'text-ink-mute'}`}>
+                    {p.label}
+                  </div>
+                  <div className="font-mono text-[10px] tabular-nums text-ink-mute mt-0.5">
+                    {hit}/{total}
+                    {complete && <span className="text-accent ml-1">●</span>}
+                  </div>
+                </div>
+                {active && (
+                  <span className="md:hidden font-mono text-[9px] tabular-nums text-ink-mute">{hit}/{total}</span>
+                )}
+              </div>
+            );
+          })}
+          <button
+            onClick={onOpenList}
+            className="flex-shrink-0 px-3 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black border-l border-[color:var(--color-hairline)] transition-colors"
+            aria-label="Open all 20 questions"
+            title="See all 20 questions"
+          >
+            All 20 →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () => void }> = ({ answers, onClose }) => {
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">Intake checklist</p>
+        <button
+          onClick={onClose}
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black px-2 py-1"
+          aria-label="Close checklist"
+        >
+          Close ×
+        </button>
+      </div>
+      {PILLARS.map((p) => (
+        <div key={p.numeral} className="mb-6">
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="font-drama italic text-lg leading-none text-accent">{p.numeral}</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink">{p.label}</span>
+          </div>
+          <ul className="space-y-1.5 ml-1">
+            {p.keys.map((k) => {
+              const answered = answers[k] != null && answers[k] !== '';
+              return (
+                <li key={k} className={`flex items-start gap-2.5 text-[13px] py-0.5 ${answered ? 'text-black' : 'text-ink-mute'}`}>
+                  <span className={`mt-1 w-2 h-2 flex-shrink-0 ${answered ? 'bg-accent' : 'border border-[color:var(--color-hairline-bold)]'}`} />
+                  <span className={answered ? '' : ''}>
+                    {QUESTION_LABELS[k]}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      <p className="mt-8 text-xs text-ink-mute leading-relaxed border-t border-[color:var(--color-hairline)] pt-4">
+        20 questions across 5 pillars. The agent weaves through them naturally, no need to follow this order.
+      </p>
+    </div>
+  );
+};
+
+const BotBubble: React.FC<{ content: string; index: number }> = ({ content, index }) => {
+  const turn = String(index + 1).padStart(2, '0');
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-      className={`flex ${isBot ? 'justify-start' : 'justify-end'}`}
+      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+      className="flex"
     >
-      <div
-        className={`max-w-[85%] md:max-w-[78%] px-5 py-3.5 ${
-          isBot
-            ? 'bg-paper-sunk border-l-2 border-accent text-ink leading-relaxed'
-            : 'bg-accent text-white leading-relaxed'
-        }`}
-      >
-        <div className="text-sm md:text-[15px] whitespace-pre-wrap">{content}</div>
+      <div className="max-w-[88%] md:max-w-[80%] relative">
+        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 ml-4">
+          Intake · {turn}
+        </div>
+        <div className="bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent px-5 py-3.5 text-[15px] leading-[1.55] text-ink whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const UserBubble: React.FC<{ content: string }> = ({ content }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+      className="flex justify-end"
+    >
+      <div className="max-w-[88%] md:max-w-[80%] relative">
+        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 mr-4 text-right">
+          You
+        </div>
+        <div className="bg-paper-sunk border border-[color:var(--color-hairline-bold)] border-r-[3px] border-r-black px-5 py-3.5 text-[15px] leading-[1.55] text-ink whitespace-pre-wrap">
+          {content}
+        </div>
       </div>
     </motion.div>
   );
@@ -589,10 +703,15 @@ const TypingIndicator: React.FC = () => (
     className="flex items-center gap-2 text-ink-mute"
     aria-live="polite"
   >
-    <div className="flex items-center gap-1 px-4 py-3 bg-paper-sunk border-l-2 border-accent">
-      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: '0ms' }} />
-      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: '180ms' }} />
-      <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" style={{ animationDelay: '360ms' }} />
+    <div className="ml-4">
+      <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5">
+        Intake · listening
+      </div>
+      <div className="flex items-center gap-1.5 px-5 py-3.5 bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent">
+        <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '180ms' }} />
+        <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '360ms' }} />
+      </div>
     </div>
   </motion.div>
 );
@@ -601,21 +720,110 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown> }> = ({ answers
   const answeredCount = QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="bg-paper-sunk border border-[color:var(--color-hairline-bold)] p-8 md:p-12 text-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+      className="border border-[color:var(--color-hairline-bold)] bg-paper"
     >
-      <p className="font-drama italic text-6xl md:text-7xl text-accent leading-none mb-2">100%</p>
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-mute mb-4">
-        intake submitted — your Blueprint starts now
-      </p>
-      <h2 className="text-xl md:text-2xl font-semibold tracking-tight mb-3">
-        Got it. Ivan will review and reach out within 1 business day.
-      </h2>
-      <p className="text-sm text-ink-soft max-w-md mx-auto leading-relaxed">
-        You answered {answeredCount} of {QUESTION_ORDER.length} questions. Want to add more before our working session? Reply to the welcome email — I read every one.
-      </p>
+      {/* Hero */}
+      <div className="px-8 md:px-14 py-12 md:py-16 relative">
+        <div className="absolute top-6 left-8 md:left-14 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+          End of intake
+        </div>
+        <div className="absolute top-6 right-8 md:right-14 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </div>
+
+        <div className="grid md:grid-cols-[auto_1fr] gap-8 md:gap-12 items-end mt-8">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.32, 0.72, 0, 1] }}
+            className="leading-none"
+          >
+            <span className="font-drama italic text-[8rem] md:text-[12rem] text-black leading-[0.8] tracking-tight">
+              100
+            </span>
+            <span className="font-drama italic text-[8rem] md:text-[12rem] text-accent leading-[0.8]">.</span>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="border-l-2 border-accent pl-6 max-w-md mb-4"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-2">
+              Intake submitted
+            </p>
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-[1.1] mb-3">
+              <span className="font-drama italic">Locked in.</span>{' '}
+              Ivan reviews and reaches out within 1 business day.
+            </h2>
+            <p className="text-sm text-ink-soft leading-relaxed">
+              You answered {answeredCount} of {QUESTION_ORDER.length} questions. Want to add more before the working session? Reply to the welcome email, I read every one.
+            </p>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Captured manifest — proof of value */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.65 }}
+        className="border-t border-[color:var(--color-hairline-bold)] bg-paper-sunk px-8 md:px-14 py-10"
+      >
+        <div className="flex items-baseline justify-between mb-6">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink">
+            Captured · {answeredCount} fields
+          </p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+            Manifest
+          </p>
+        </div>
+        <div className="space-y-6">
+          {PILLARS.map((p) => {
+            const filled = p.keys.filter((k) => answers[k] != null && answers[k] !== '');
+            if (filled.length === 0) return null;
+            return (
+              <div key={p.numeral}>
+                <div className="flex items-baseline gap-2 mb-2 border-b border-[color:var(--color-hairline)] pb-1.5">
+                  <span className="font-drama italic text-base leading-none text-accent">{p.numeral}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink">{p.label}</span>
+                  <span className="ml-auto font-mono text-[10px] tabular-nums text-ink-mute">{filled.length}/{p.keys.length}</span>
+                </div>
+                <ul className="grid md:grid-cols-2 gap-x-8 gap-y-1.5">
+                  {filled.map((k) => (
+                    <li key={k} className="flex items-start gap-2.5 text-[13px] text-ink leading-relaxed">
+                      <span className="mt-1.5 w-1.5 h-1.5 flex-shrink-0 bg-accent" />
+                      <div className="min-w-0">
+                        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute mb-0.5">
+                          {QUESTION_LABELS[k]}
+                        </div>
+                        <div className="text-ink line-clamp-2">
+                          {String(answers[k])}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Closing rule */}
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: '100%' }}
+        transition={{ duration: 0.9, delay: 0.95, ease: [0.32, 0.72, 0, 1] }}
+        className="h-[2px] bg-accent"
+      />
+      <div className="px-8 md:px-14 py-4 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
+        <span>Iván Manfredi · Agent-Ready Ops™</span>
+        <span>Blueprint begins</span>
+      </div>
     </motion.div>
   );
 };
