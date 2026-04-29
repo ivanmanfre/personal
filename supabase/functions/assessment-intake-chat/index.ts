@@ -26,39 +26,63 @@ const ANTHROPIC_AGENT_SECRET = Deno.env.get("ANTHROPIC_AGENT_SECRET")!;
 const ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const ANTHROPIC_VERSION = "2023-06-01";
 
-// Notification config (fire-and-forget on intake completion + addendum)
-const IVAN_WHATSAPP = Deno.env.get("IVAN_WHATSAPP_NUMBER") ?? "5491161419965";
+// Notification config (fire-and-forget on intake completion + addendum).
+// WhatsApp: matches Proactive Notifications wf (5491159385939 = Ivan's number).
+// Email: reads RESEND_API_KEY_ASSESSMENT + RESEND_FROM from Supabase Vault (matches stripe-webhook pattern).
+const IVAN_WHATSAPP = Deno.env.get("IVAN_WHATSAPP_NUMBER") ?? "5491159385939";
 const IVAN_EMAIL = Deno.env.get("IVAN_NOTIFY_EMAIL") ?? "im@ivanmanfredi.com";
 const EVOLUTION_BASE = Deno.env.get("EVOLUTION_API_URL") ?? "http://24.199.118.135:8080";
 const EVOLUTION_INSTANCE = Deno.env.get("EVOLUTION_INSTANCE") ?? "ivan-wa";
-const EVOLUTION_KEY = Deno.env.get("EVOLUTION_API_KEY") ?? "";
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "Iván Manfredi <hello@ivanmanfredi.com>";
+const EVOLUTION_KEY = Deno.env.get("EVOLUTION_API_KEY") ?? "evo_ivan_n8nclaw_2026";
+
+async function getVaultSecret(name: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("get_vault_secret", { p_name: name });
+  if (error || !data) {
+    console.error("[vault-read-failed]", name, error?.message ?? "no data");
+    return null;
+  }
+  return data as string;
+}
 
 async function notifyWhatsApp(text: string): Promise<void> {
-  if (!EVOLUTION_KEY) return;
+  if (!EVOLUTION_KEY) {
+    console.error("[whatsapp-notify-skipped] no EVOLUTION_API_KEY");
+    return;
+  }
   try {
-    await fetch(`${EVOLUTION_BASE}/message/sendText/${EVOLUTION_INSTANCE}`, {
+    // Match Proactive Notifications wf format exactly: number = bare number string,
+    // not jid@s.whatsapp.net (Evolution accepts either, but bare matches working pattern).
+    const res = await fetch(`${EVOLUTION_BASE}/message/sendText/${EVOLUTION_INSTANCE}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "apikey": EVOLUTION_KEY },
-      body: JSON.stringify({ number: IVAN_WHATSAPP, text }),
+      body: JSON.stringify({ number: IVAN_WHATSAPP, text, options: { delay: 1000 } }),
     });
+    if (!res.ok) {
+      console.error("[whatsapp-notify-http]", res.status, await res.text().catch(() => ""));
+    } else {
+      console.log("[whatsapp-notify-sent]", IVAN_WHATSAPP);
+    }
   } catch (e) {
     console.error("[whatsapp-notify-failed]", e instanceof Error ? e.message : String(e));
   }
 }
 
 async function notifyEmail(subject: string, text: string, html: string): Promise<void> {
-  if (!RESEND_API_KEY) return;
+  const apiKey = await getVaultSecret("RESEND_API_KEY_ASSESSMENT");
+  const from = (await getVaultSecret("RESEND_FROM")) ?? "Iván Manfredi <hello@ivanmanfredi.com>";
+  if (!apiKey) {
+    console.error("[email-notify-skipped] no RESEND_API_KEY_ASSESSMENT in vault");
+    return;
+  }
   try {
-    await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: RESEND_FROM,
+        from,
         to: [IVAN_EMAIL],
         subject,
         text,
@@ -66,6 +90,11 @@ async function notifyEmail(subject: string, text: string, html: string): Promise
         tags: [{ name: "type", value: "blueprint_intake_notify" }],
       }),
     });
+    if (!res.ok) {
+      console.error("[email-notify-http]", res.status, await res.text().catch(() => ""));
+    } else {
+      console.log("[email-notify-sent]", IVAN_EMAIL);
+    }
   } catch (e) {
     console.error("[email-notify-failed]", e instanceof Error ? e.message : String(e));
   }

@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail, Sparkles, Edit3 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useAgentReady, STAGE_LABELS } from '../../hooks/useAgentReady';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -275,6 +277,11 @@ const AssessmentRow: React.FC<{
             </a>
           </div>
 
+          {/* Blueprint draft generator (only when intake is submitted) */}
+          {row.intake_status === 'submitted' && (
+            <BlueprintDraftBlock sessionId={row.stripe_session_id} />
+          )}
+
           {/* Intake answers */}
           {row.intake_status !== 'not_started' && answeredKeys.length > 0 && (
             <div>
@@ -314,6 +321,99 @@ const AssessmentRow: React.FC<{
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+// Generate-or-resume Blueprint draft block. Shown when intake is submitted.
+const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => {
+  const [latest, setLatest] = useState<{ id: string; status: string; kind: string; updated_at: string; version: number } | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    const { data } = await supabase
+      .from('blueprints')
+      .select('id, status, kind, updated_at, version')
+      .eq('stripe_session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    setLatest((data as any) ?? null);
+  };
+
+  useEffect(() => { void refresh(); }, [sessionId]);
+
+  const generate = async () => {
+    setGenerating(true);
+    setGenError(null);
+    try {
+      const res = await fetch('https://n8n.ivanmanfredi.com/webhook/blueprint-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`HTTP ${res.status}: ${t.slice(0, 200)}`);
+      }
+      // n8n responds with the Code node output: {ok, blueprint_id, ...}
+      await new Promise((r) => setTimeout(r, 1500)); // give DB write a beat
+      await refresh();
+    } catch (e: any) {
+      setGenError(e.message ?? String(e));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
+      <p className="text-xs uppercase tracking-widest text-emerald-300 mb-3 font-mono">Blueprint draft</p>
+
+      {latest ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-emerald-500/30 text-emerald-300 bg-emerald-500/10 font-mono">
+            {latest.status} · v{latest.version}
+          </span>
+          {latest.kind === 'test' && (
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border border-amber-500/30 text-amber-300 bg-amber-500/10 font-mono">
+              test · won't be RAG'd
+            </span>
+          )}
+          <Link
+            to={`/dashboard/blueprints/${encodeURIComponent(sessionId)}`}
+            className="px-3 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors flex items-center gap-2"
+          >
+            <Edit3 className="w-3 h-3" /> Open editor
+          </Link>
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
+          >
+            <Sparkles className="w-3 h-3" /> {generating ? 'Regenerating…' : 'Regenerate'}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <button
+            onClick={generate}
+            disabled={generating}
+            className="px-4 py-2 text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            {generating ? 'Generating draft…' : 'Generate Blueprint draft'}
+          </button>
+          <p className="text-[11px] text-zinc-500">
+            Calls the AI generator on n8n. Takes ~30 seconds. You'll get WhatsApp + email when ready.
+          </p>
+        </div>
+      )}
+
+      {genError && (
+        <p className="mt-2 text-xs text-red-400 font-mono">{genError}</p>
       )}
     </div>
   );

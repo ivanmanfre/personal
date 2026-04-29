@@ -40,12 +40,15 @@ function useTrackPageviews(pathname: string) {
 }
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEditor'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 
 function App() {
   const location = useLocation();
-  const isDashboard = location.pathname.startsWith('/dashboard');
+  // Blueprint editor is a fullscreen surface, NOT inside dashboard chrome.
+  const isBlueprintEditor = /^\/dashboard\/blueprints\/[^/]+$/.test(location.pathname);
+  const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
   // Focused intake/checkout flows — no nav, no footer, no distractions.
@@ -66,6 +69,17 @@ function App() {
       }>
         <Routes>
           <Route path="/v/:token" element={<VideoViewer />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Blueprint editor — fullscreen, no nav/footer, no dashboard chrome
+  if (isBlueprintEditor) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/dashboard/blueprints/:sessionId" element={<BlueprintEditor />} />
         </Routes>
       </Suspense>
     );
