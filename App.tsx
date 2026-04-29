@@ -48,6 +48,10 @@ function App() {
   const isDashboard = location.pathname.startsWith('/dashboard');
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
+  // Focused intake/checkout flows — no nav, no footer, no distractions.
+  const isIntake =
+    location.pathname === '/assessment/intake' ||
+    location.pathname === '/assessment/intake-form';
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);
@@ -101,7 +105,7 @@ function App() {
     <div className="relative bg-paper text-black min-h-screen font-sans selection:bg-accent selection:text-white">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-paper focus:text-black focus:border focus:border-[var(--color-hairline)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Skip to content</a>
       <ScrollToTop />
-      <Navbar />
+      {!isIntake && <Navbar />}
 
       <main id="main" className="relative z-10 flex flex-col overflow-hidden">
         <Routes>
@@ -120,7 +124,7 @@ function App() {
         </Routes>
       </main>
 
-      <Footer />
+      {!isIntake && <Footer />}
     </div>
   );
 }
