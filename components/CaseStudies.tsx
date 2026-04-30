@@ -58,11 +58,28 @@ const CaseStudies: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="flex justify-center mb-16"
+          className="flex justify-center mb-8"
         >
           <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
             Agencies · Consultancies · Law &amp; Accounting firms
           </span>
+        </motion.div>
+
+        {/* Featured eat-your-own-cooking case study */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.15 }}
+          className="flex justify-center mb-16"
+        >
+          <Link
+            to="/case-studies/own-content-engine"
+            className="group inline-flex items-center gap-3 font-mono text-xs uppercase tracking-[0.14em] text-ink-soft hover:text-black transition-colors border-b border-[color:var(--color-hairline-bold)] hover:border-black pb-1"
+          >
+            <span>See the engine that runs this site</span>
+            <span className="font-drama italic font-normal text-base normal-case tracking-normal lowercase text-accent group-hover:text-black transition-colors">live numbers →</span>
+          </Link>
         </motion.div>
 
         <div className="flex flex-col lg:flex-row gap-8">
