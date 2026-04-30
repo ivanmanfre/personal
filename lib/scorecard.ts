@@ -1,8 +1,23 @@
-import { PreconditionKey } from './preconditions';
+import { PreconditionKey, preconditions } from './preconditions';
 
 export type Verdict = 'agent_ready' | 'close' | 'foundation';
 
+/** Per-precondition score: 1-5. Computed from 3 sub-scores by averaging. */
 export type ScoreMap = Record<PreconditionKey, number>;
+
+/** Per-sub-question raw answers, keyed by sub.id (e.g. 'structured_input_q1'). */
+export type SubScores = Record<string, number>;
+
+/** Average 3 sub-scores per precondition → integer 1-5 score. */
+export function computeScoresFromSubScores(subs: SubScores): ScoreMap {
+  const out = {} as ScoreMap;
+  for (const p of preconditions) {
+    const vals = p.subQuestions.map((sq) => subs[sq.id] ?? 1);
+    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    out[p.key] = Math.max(1, Math.min(5, Math.round(avg)));
+  }
+  return out;
+}
 
 export interface ScorecardResult {
   scores: ScoreMap;

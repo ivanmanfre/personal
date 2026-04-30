@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
-import { preconditions, PreconditionKey } from '../lib/preconditions';
-import { scoreCard, ScoreMap } from '../lib/scorecard';
+import { preconditions, flatQuestions } from '../lib/preconditions';
+import { computeScoresFromSubScores, scoreCard, SubScores } from '../lib/scorecard';
 import ScorecardQuestion from './scorecard/ScorecardQuestion';
 
 type Stage = 'intro' | 'quiz' | 'submitting' | 'error';
@@ -24,22 +24,23 @@ function extractUtm(): Record<string, string> | null {
   return Object.keys(utm).length ? utm : null;
 }
 
+const TOTAL_QUESTIONS = flatQuestions.length;
+
 const ScorecardPage: React.FC = () => {
   useMetadata({
-    title: 'Are you Agent-Ready? — The 4-precondition Scorecard | Manfredi',
+    title: 'Are you Agent-Ready? — The Agent-Ready Scorecard | Manfredi',
     description:
-      'A 60-second self-check against the four preconditions every AI deployment needs before it ships. Get your score and a personalized 30-day roadmap by email.',
+      'A 2-minute self-check against the four preconditions every AI deployment needs before it ships. Get your score and a personalized 30-day roadmap by email.',
     canonical: 'https://ivanmanfredi.com/scorecard',
   });
 
   const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>('intro');
-  const [answers, setAnswers] = useState<Partial<ScoreMap>>({});
+  const [subScores, setSubScores] = useState<SubScores>({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const total = preconditions.length;
-  const currentPrecondition = preconditions[currentIndex];
+  const current = flatQuestions[currentIndex];
 
   useEffect(() => {
     if (stage === 'submitting' && typeof window !== 'undefined') {
@@ -47,16 +48,17 @@ const ScorecardPage: React.FC = () => {
     }
   }, [stage]);
 
-  const submitScores = async (allAnswers: ScoreMap) => {
+  const submitScores = async (allSubs: SubScores) => {
     setStage('submitting');
     setSubmitError(null);
-    const result = scoreCard(allAnswers);
+    const scores = computeScoresFromSubScores(allSubs);
+    const result = scoreCard(scores);
     try {
       const res = await fetch(SUBMIT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          scores: allAnswers,
+          scores,
           verdict: result.verdict,
           referrer: typeof document !== 'undefined' ? document.referrer || null : null,
           utm: extractUtm(),
@@ -66,9 +68,8 @@ const ScorecardPage: React.FC = () => {
       const json = await res.json();
       if (!json.id) throw new Error('Missing id in response');
 
-      // Hand off to the result viewer with state so it can render without a fresh fetch
       navigate(`/scorecard/result/${json.id}`, {
-        state: { justSubmitted: true, scores: allAnswers },
+        state: { justSubmitted: true, scores },
       });
     } catch (err) {
       console.error('scorecard submit failed', err);
@@ -77,14 +78,13 @@ const ScorecardPage: React.FC = () => {
     }
   };
 
-  const handleAnswer = (key: PreconditionKey, score: number) => {
-    const next = { ...answers, [key]: score };
-    setAnswers(next);
-    if (currentIndex < total - 1) {
-      setTimeout(() => setCurrentIndex((i) => i + 1), 250);
+  const handleAnswer = (subId: string, score: number) => {
+    const next = { ...subScores, [subId]: score };
+    setSubScores(next);
+    if (currentIndex < TOTAL_QUESTIONS - 1) {
+      setTimeout(() => setCurrentIndex((i) => i + 1), 220);
     } else {
-      // Last question — submit + navigate
-      setTimeout(() => submitScores(next as ScoreMap), 350);
+      setTimeout(() => submitScores(next), 320);
     }
   };
 
@@ -93,8 +93,8 @@ const ScorecardPage: React.FC = () => {
   };
 
   const handleRetry = () => {
-    if (preconditions.every((p) => typeof answers[p.key] === 'number')) {
-      submitScores(answers as ScoreMap);
+    if (Object.keys(subScores).length === TOTAL_QUESTIONS) {
+      submitScores(subScores);
     } else {
       setStage('quiz');
     }
@@ -122,7 +122,7 @@ const ScorecardPage: React.FC = () => {
                   Are you <span className="font-drama italic font-normal">Agent-Ready?</span>
                 </h1>
                 <p className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12">
-                  Four questions, one per precondition. 60 seconds. You'll get a verdict, a per-precondition breakdown, and a path to your next move. No email required to see the score.
+                  Twelve questions across the four preconditions every AI deployment needs before it ships. ~2 minutes. You'll get a verdict, a per-precondition breakdown, and a path to your next move. No email required to see the score.
                 </p>
 
                 <div className="bg-paper border border-[color:var(--color-hairline)] p-8 md:p-10 mb-12">
@@ -140,8 +140,11 @@ const ScorecardPage: React.FC = () => {
                           <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-1.5">
                             {p.title}
                           </h3>
-                          <p className="text-sm text-ink-soft leading-relaxed">
+                          <p className="text-sm text-ink-soft leading-relaxed mb-2">
                             {p.description}
+                          </p>
+                          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute">
+                            3 questions
                           </p>
                         </div>
                       </div>
@@ -159,7 +162,7 @@ const ScorecardPage: React.FC = () => {
               </motion.div>
             )}
 
-            {stage === 'quiz' && currentPrecondition && (
+            {stage === 'quiz' && current && (
               <motion.div
                 key={`quiz-${currentIndex}`}
                 initial={{ opacity: 0, y: 16 }}
@@ -167,6 +170,7 @@ const ScorecardPage: React.FC = () => {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3 }}
               >
+                {/* Progress + back */}
                 <div className="flex items-center justify-between mb-6">
                   <button
                     type="button"
@@ -176,22 +180,37 @@ const ScorecardPage: React.FC = () => {
                   >
                     <ArrowLeft aria-hidden="true" size={14} /> Back
                   </button>
-                  <div className="flex items-center gap-2">
-                    {preconditions.map((_, i) => (
-                      <span
-                        key={i}
-                        className={`h-1 transition-all ${i === currentIndex ? 'w-8 bg-accent' : i < currentIndex ? 'w-4 bg-ink-mute' : 'w-4 bg-[color:var(--color-hairline-bold)]'}`}
-                      />
-                    ))}
-                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                    {String(currentIndex + 1).padStart(2, '0')} / {String(TOTAL_QUESTIONS).padStart(2, '0')}
+                  </span>
+                </div>
+
+                {/* Slim 12-step progress bar */}
+                <div className="flex items-center gap-1 mb-6">
+                  {flatQuestions.map((q, i) => (
+                    <span
+                      key={q.sub.id}
+                      className={`h-1 flex-1 transition-all ${
+                        i === currentIndex
+                          ? 'bg-accent'
+                          : i < currentIndex
+                          ? 'bg-ink-mute'
+                          : 'bg-[color:var(--color-hairline-bold)]'
+                      }`}
+                    />
+                  ))}
                 </div>
 
                 <ScorecardQuestion
-                  precondition={currentPrecondition}
-                  index={currentIndex}
-                  total={total}
-                  value={answers[currentPrecondition.key] ?? null}
-                  onChange={(score) => handleAnswer(currentPrecondition.key, score)}
+                  preconditionNumber={current.preconditionNumber}
+                  preconditionTitle={current.preconditionTitle}
+                  subIndex={current.subIndex}
+                  totalSubs={3}
+                  angle={current.sub.angle}
+                  question={current.sub.question}
+                  scoreLabels={current.sub.scoreLabels}
+                  value={subScores[current.sub.id] ?? null}
+                  onChange={(score) => handleAnswer(current.sub.id, score)}
                 />
               </motion.div>
             )}

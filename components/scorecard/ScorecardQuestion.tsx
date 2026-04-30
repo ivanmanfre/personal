@@ -1,16 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { Precondition } from '../../lib/preconditions';
 
 interface Props {
-  precondition: Precondition;
-  index: number;
-  total: number;
+  preconditionNumber: string;
+  preconditionTitle: string;
+  subIndex: number;
+  totalSubs: number;
+  angle: string;
+  question: string;
+  scoreLabels: [string, string, string, string, string];
   value: number | null;
   onChange: (score: number) => void;
 }
 
-const ScorecardQuestion: React.FC<Props> = ({ precondition, index, total, value, onChange }) => {
+const ScorecardQuestion: React.FC<Props> = ({
+  preconditionNumber,
+  preconditionTitle,
+  subIndex,
+  totalSubs,
+  angle,
+  question,
+  scoreLabels,
+  value,
+  onChange,
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -18,21 +31,28 @@ const ScorecardQuestion: React.FC<Props> = ({ precondition, index, total, value,
       transition={{ duration: 0.3 }}
       className="bg-paper border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-10"
     >
-      <div className="flex items-center gap-3 mb-6 border-b border-[color:var(--color-hairline)] pb-4">
-        <span className="font-mono text-xs uppercase tracking-[0.18em] text-ink-mute">
-          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+      {/* Precondition context bar */}
+      <div className="flex items-center justify-between gap-3 mb-6 border-b border-[color:var(--color-hairline)] pb-4">
+        <span className="font-mono text-xs uppercase tracking-[0.18em] text-ink-soft">
+          {preconditionNumber} · {preconditionTitle}
         </span>
-        <span className="font-mono text-xs uppercase tracking-[0.16em] text-ink-soft">
-          {precondition.title}
+        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute shrink-0">
+          q{subIndex + 1} of {totalSubs}
         </span>
       </div>
 
+      {/* Angle eyebrow */}
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+        {angle}
+      </p>
+
+      {/* Question */}
       <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-tight mb-8">
-        {precondition.question}
+        {question}
       </h2>
 
       <div className="flex flex-col gap-2">
-        {precondition.scoreLabels.map((label, i) => {
+        {scoreLabels.map((label, i) => {
           const score = i + 1;
           const selected = value === score;
           return (
