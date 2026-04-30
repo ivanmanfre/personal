@@ -5,7 +5,7 @@ import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
 // Day 2 working session booking (60 min).
-const CALENDLY_DAY2_URL = 'https://calendly.com/ivan-intelligents/30-minute-meeting-clone';
+const CALENDLY_DAY2_URL = 'https://calendly.com/im-ivanmanfredi/60-minute-meeting';
 
 const timeline = [
   {

@@ -62,7 +62,10 @@ Deno.serve(async (req) => {
   }
 
   // Fire the drip webhook now that we have an email
-  const webhookUrl = Deno.env.get("SCORECARD_FOLLOWUP_WEBHOOK_URL");
+  // Default URL is the n8n "Scorecard Followup" workflow (workflow V8aP5t8TqXH2ivRg).
+  const webhookUrl =
+    Deno.env.get("SCORECARD_FOLLOWUP_WEBHOOK_URL") ??
+    "https://n8n.ivanmanfredi.com/webhook/scorecard-followup";
   if (webhookUrl) {
     try {
       await fetch(webhookUrl, {

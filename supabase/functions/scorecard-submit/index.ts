@@ -92,9 +92,13 @@ Deno.serve(async (req) => {
     return json({ error: error.message }, 500);
   }
 
-  // Fire follow-up webhook if configured and email is present.
-  // Webhook is responsible for sending the personalized 30-day roadmap.
-  const webhookUrl = Deno.env.get("SCORECARD_FOLLOWUP_WEBHOOK_URL");
+  // Fire follow-up webhook if email is present. Webhook is responsible for
+  // sending the personalized 30-day roadmap and running the drip sequence.
+  // Default URL is the n8n "Scorecard Followup" workflow on n8n.ivanmanfredi.com
+  // (workflow ID V8aP5t8TqXH2ivRg) — override via env if you ever move it.
+  const webhookUrl =
+    Deno.env.get("SCORECARD_FOLLOWUP_WEBHOOK_URL") ??
+    "https://n8n.ivanmanfredi.com/webhook/scorecard-followup";
   if (webhookUrl && body.email) {
     try {
       await fetch(webhookUrl, {

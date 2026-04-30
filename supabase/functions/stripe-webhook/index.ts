@@ -187,7 +187,7 @@ async function sendWelcomeEmail(sb: any, row: Record<string, unknown>): Promise<
   const name = (row.name as string | null) ?? null;
   const welcomeUrl = `https://ivanmanfredi.com/assessment/welcome?session_id=${encodeURIComponent(sessionId)}`;
   const intakeUrl = `https://ivanmanfredi.com/assessment/intake?session_id=${encodeURIComponent(sessionId)}`;
-  const calendlyUrl = "https://calendly.com/ivan-intelligents/30-minute-meeting-clone";
+  const calendlyUrl = "https://calendly.com/im-ivanmanfredi/60-minute-meeting";
 
   const firstLine = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
 

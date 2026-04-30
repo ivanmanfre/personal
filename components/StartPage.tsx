@@ -52,7 +52,7 @@ const decisionMakerOptions = [
   'I am researching',
 ];
 
-const CALENDLY_URL = 'https://calendly.com/ivan-intelligents/30min';
+const CALENDLY_URL = 'https://calendly.com/im-ivanmanfredi/30min';
 
 const StartPage: React.FC = () => {
   useMetadata({
