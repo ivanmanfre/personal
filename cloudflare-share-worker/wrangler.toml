@@ -5,13 +5,26 @@ compatibility_flags = ["nodejs_compat"]
 
 # Routes: bind to share.ivanmanfredi.com after DNS is set up
 # (one-time: `wrangler deploy` then add the route in Cloudflare dashboard)
-routes = [
-  { pattern = "share.ivanmanfredi.com/*", zone_name = "ivanmanfredi.com" }
-]
+# Workers.dev subdomain enabled — Worker is reachable at scorecard-share.<account>.workers.dev
+# To bind a custom subdomain like share.ivanmanfredi.com, add the domain to Cloudflare DNS
+# (full zone) and uncomment the routes block below.
+workers_dev = true
+
+# routes = [
+#   { pattern = "share.ivanmanfredi.com/*", zone_name = "ivanmanfredi.com" }
+# ]
 
 [vars]
 SUPABASE_URL = "https://bjbvqvzbzczjbatgmccb.supabase.co"
 SITE_URL = "https://ivanmanfredi.com"
 
-# Set via: wrangler secret put SUPABASE_ANON_KEY
-# (anon is fine — scorecard-get edge function is public)
+# Bundle TTFs and Wasm as binary modules
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = true
+
+[[rules]]
+type = "CompiledWasm"
+globs = ["**/*.wasm"]
+fallthrough = true

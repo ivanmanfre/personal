@@ -9,13 +9,16 @@ const SUPABASE_BASE =
   import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
 const ADD_EMAIL_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-add-email`;
 const SHARE_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-share`;
-// Share URL points to /share/scorecard/?ref=ID — a static HTML page with proper OG meta
-// served by GH Pages. LinkedIn scrapers stop at it and read the rich card. Browsers
-// hit it and JS-redirect to /scorecard. The ID is preserved as a ref param for attribution.
-// When the Cloudflare Worker at share.ivanmanfredi.com later ships per-result OG cards,
-// override via VITE_SHARE_DOMAIN to switch to per-result preview.
-const SHARE_DOMAIN = import.meta.env.VITE_SHARE_DOMAIN || 'https://ivanmanfredi.com';
-const USING_WORKER = SHARE_DOMAIN.includes('share.ivanmanfredi.com');
+// Share URL routes through the Cloudflare Worker at scorecard-share.ivanmanfredi.workers.dev
+// which serves per-result OG cards (Satori-rendered PNG with italic-serif verdict + score).
+// LinkedIn scrapers fetch the rich preview; browsers JS-redirect to /scorecard/result/:id.
+// Override via VITE_SHARE_DOMAIN — e.g. once share.ivanmanfredi.com is added to Cloudflare DNS.
+const SHARE_DOMAIN =
+  import.meta.env.VITE_SHARE_DOMAIN ||
+  'https://scorecard-share.ivanmanfredi.workers.dev';
+const USING_WORKER =
+  SHARE_DOMAIN.includes('workers.dev') ||
+  SHARE_DOMAIN.includes('share.ivanmanfredi.com');
 
 interface Props {
   result: ResultType;

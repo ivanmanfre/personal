@@ -3,6 +3,10 @@
 import satori from 'satori';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
+// Bundled TTFs — avoids Google Fonts/CDN flakiness at runtime
+// Variable fonts (Space Grotesk wght-axis) crash Satori — using only static TTFs
+import serifFont from './fonts/dm-serif-display-italic.ttf';
+import monoFont from './fonts/ibm-plex-mono-500.ttf';
 
 // Cloudflare Workers runtime types
 interface Env {
@@ -33,8 +37,6 @@ const VERDICT_LABELS: Record<ScorecardResult['verdict'], string> = {
   foundation: 'Foundation first',
 };
 
-// Cache fonts in a Worker-global to avoid refetching on every request
-let fontsCache: { sans: ArrayBuffer; serif: ArrayBuffer; mono: ArrayBuffer } | null = null;
 let resvgInitialized = false;
 
 async function ensureWasm() {
@@ -44,19 +46,18 @@ async function ensureWasm() {
   }
 }
 
-async function loadFonts() {
-  if (fontsCache) return fontsCache;
-  const [sans, serif, mono] = await Promise.all([
-    fetch('https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPb12ICwOoqr1.woff2')
-      .then((r) => r.arrayBuffer()),
-    fetch('https://fonts.gstatic.com/s/dmserifdisplay/v15/-nFhOHM81r4j6k0gjAW3mujVU2B2K_d709jy92k.woff2')
-      .then((r) => r.arrayBuffer()),
-    fetch('https://fonts.gstatic.com/s/ibmplexmono/v19/-F63fjptAgt5VM-kVkqdyU8n5igg1l9kn-s.woff2')
-      .then((r) => r.arrayBuffer()),
-  ]);
-  fontsCache = { sans, serif, mono };
-  return fontsCache;
+function toArrayBuffer(b: any): ArrayBuffer {
+  if (b instanceof ArrayBuffer) return b;
+  if (b && b.buffer instanceof ArrayBuffer) {
+    return b.buffer.slice(b.byteOffset ?? 0, (b.byteOffset ?? 0) + b.byteLength);
+  }
+  return b;
 }
+
+const FONTS = {
+  serif: toArrayBuffer(serifFont),
+  mono: toArrayBuffer(monoFont),
+};
 
 async function fetchResult(env: Env, id: string): Promise<ScorecardResult | null> {
   const res = await fetch(`${env.SUPABASE_URL}/functions/v1/scorecard-get?id=${id}`);
@@ -127,7 +128,7 @@ function renderShareHtml(env: Env, result: ScorecardResult, requestUrl: string):
 
 async function renderOgPng(result: ScorecardResult): Promise<Uint8Array> {
   await ensureWasm();
-  const fonts = await loadFonts();
+  const fonts = FONTS;
   const verdictLabel = VERDICT_LABELS[result.verdict];
 
   // Build the OG card layout — sage/cream brand, italic-serif verdict + score
@@ -138,11 +139,14 @@ async function renderOgPng(result: ScorecardResult): Promise<Uint8Array> {
         width: '1200px',
         height: '630px',
         background: '#F7F4EF',
-        padding: '64px 80px',
+        paddingTop: '64px',
+        paddingBottom: '64px',
+        paddingLeft: '80px',
+        paddingRight: '80px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        fontFamily: 'Space Grotesk',
+        fontFamily: 'IBM Plex Mono',
         color: '#1A1A1A',
       },
     },
@@ -289,9 +293,8 @@ async function renderOgPng(result: ScorecardResult): Promise<Uint8Array> {
     width: 1200,
     height: 630,
     fonts: [
-      { name: 'Space Grotesk', data: fonts.sans, weight: 500, style: 'normal' },
-      { name: 'DM Serif Display', data: fonts.serif, weight: 400, style: 'italic' },
       { name: 'IBM Plex Mono', data: fonts.mono, weight: 500, style: 'normal' },
+      { name: 'DM Serif Display', data: fonts.serif, weight: 400, style: 'italic' },
     ],
   });
 
@@ -320,6 +323,7 @@ export default {
 
     if (wantsImage) {
       try {
+        console.log('font sizes:', FONTS.sans?.byteLength, FONTS.serif?.byteLength, FONTS.mono?.byteLength);
         const png = await renderOgPng(result);
         return new Response(png, {
           headers: {
