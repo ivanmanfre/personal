@@ -67,6 +67,68 @@ async function notifyWhatsApp(text: string): Promise<void> {
   }
 }
 
+// Buyer-facing acknowledgement after they complete the intake. Branded.
+async function notifyBuyerIntakeComplete(
+  buyerEmail: string,
+  buyerName: string | null,
+  sessionId: string,
+): Promise<void> {
+  const apiKey = await getVaultSecret("RESEND_API_KEY_ASSESSMENT");
+  const from = (await getVaultSecret("RESEND_FROM")) ?? "Iván Manfredi <hello@ivanmanfredi.com>";
+  if (!apiKey) {
+    console.error("[buyer-ack-skipped] no RESEND_API_KEY_ASSESSMENT in vault");
+    return;
+  }
+  const greeting = buyerName ? `Hi ${buyerName.split(" ")[0]},` : "Hi,";
+  const calendlyUrl = "https://calendly.com/im-ivanmanfredi/60-minute-meeting";
+  const welcomeUrl = `https://ivanmanfredi.com/assessment/welcome?session_id=${encodeURIComponent(sessionId)}`;
+
+  const text = `${greeting}
+
+Got your intake. I read every word, that's how I prep for Day 2.
+
+If you haven't already, book the 60-min working session below. We walk the diagnostic together, you push back where it doesn't match reality, and the Blueprint gets sharper because of the conversation.
+
+Book Day 2: ${calendlyUrl}
+
+After our call I deliver the Blueprint within 3 business days. It's the document you actually paid for, and it incorporates what surfaces during the call, not just what you wrote in the intake.
+
+Iván
+Agent-Ready Ops`;
+
+  const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:32px auto;padding:0 20px;color:#1A1A1A;line-height:1.6;background:#F4EFE8">
+<p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#2A8F65;margin:0 0 14px">Agent-Ready Blueprint · Intake received</p>
+<p>${greeting}</p>
+<p>Got your intake. <strong>I read every word</strong>, that's how I prep for Day 2.</p>
+<p>If you haven't already, book the 60-min working session below. We walk the diagnostic together, you push back where it doesn't match reality, and <strong>the Blueprint gets sharper because of the conversation</strong>.</p>
+<p style="margin:28px 0">
+  <a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F4EFE8;padding:12px 22px;text-decoration:none;font-weight:700">Book Day 2 →</a>
+</p>
+<p style="margin:0 0 16px;padding:12px 14px;background:rgba(42,143,101,0.08);border-left:2px solid #2A8F65;color:#1A1A1A;font-size:14px">After our call I deliver the Blueprint within 3 business days. It's the document you actually paid for, and it incorporates what surfaces during the call, not just what you wrote in the intake.</p>
+<p style="margin:24px 0 16px;font-size:13px;color:#6B6861">Reply to this email if anything's off.</p>
+<p style="margin:32px 0 0;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);color:#6B6861;font-size:13px">Iván Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase">Agent-Ready Ops™ · ivanmanfredi.com</span></p>
+</body></html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        from,
+        to: [buyerEmail],
+        subject: "Intake received · book Day 2 if you haven't",
+        text,
+        html,
+        tags: [{ name: "type", value: "intake_complete_ack" }],
+      }),
+    });
+    if (!res.ok) console.error("[buyer-ack-http]", res.status, (await res.text()).slice(0, 200));
+    else console.log("[buyer-ack-sent]", buyerEmail);
+  } catch (e) {
+    console.error("[buyer-ack-failed]", e instanceof Error ? e.message : String(e));
+  }
+}
+
 async function notifyEmail(subject: string, text: string, html: string): Promise<void> {
   const apiKey = await getVaultSecret("RESEND_API_KEY_ASSESSMENT");
   const from = (await getVaultSecret("RESEND_FROM")) ?? "Iván Manfredi <hello@ivanmanfredi.com>";
@@ -777,14 +839,13 @@ async function handleRequest(req: Request): Promise<Response> {
       .select("email, name")
       .eq("stripe_session_id", sessionId)
       .maybeSingle();
+    const buyerEmail = (buyer as any)?.email ?? null;
+    const buyerName = (buyer as any)?.name ?? null;
     const updatedRow: IntakeRow = { ...row, answers: mergedAnswers };
-    const note = buildIntakeNotification(
-      updatedRow,
-      (buyer as any)?.email ?? null,
-      (buyer as any)?.name ?? null,
-    );
-    notifyWhatsApp(note.whatsapp);
-    notifyEmail(note.subject, note.text, note.html);
+    const note = buildIntakeNotification(updatedRow, buyerEmail, buyerName);
+    notifyWhatsApp(note.whatsapp);                         // → Ivan
+    notifyEmail(note.subject, note.text, note.html);       // → Ivan
+    if (buyerEmail) notifyBuyerIntakeComplete(buyerEmail, buyerName, sessionId); // → Buyer
   }
 
   const nextNonce = await makeNonce(sessionId, newTurn, ANTHROPIC_AGENT_SECRET);

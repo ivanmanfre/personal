@@ -203,13 +203,12 @@ Two things to do now:
 2. Book the Day 2 working session:
    ${calendlyUrl}
 
-The 7-day flow:
-  Day 1 - You fill the intake
-  Day 2 - We run a working session (60 min)
-  Day 3-6 - I produce your scorecard + 30-day roadmap
-  Day 7 - Final presentation call
+How this unfolds:
+  Day 0 (today) - Fill the intake + book Day 2 below
+  Day 2 - 60-min working session, walking the diagnostic together
+  Day 3-5 - I deliver the Blueprint, the document you actually paid for
 
-The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
+The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation IS the deliverable.
 
 One thing to set expectation now: I pace to your absorption, not my delivery. Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1 - we ship only what your team can actually integrate, leaving runway for the previous wave to land.
 
@@ -229,12 +228,11 @@ ivanmanfredi.com`;
       <li style="margin-bottom:12px"><strong>Fill the intake questionnaire</strong> (~25 min, saves as you type)<br><a href="${intakeUrl}" style="color:#344B29;font-weight:600">Open the intake -&gt;</a></li>
       <li style="margin-bottom:12px"><strong>Book the Day 2 working session</strong><br><a href="${calendlyUrl}" style="color:#344B29;font-weight:600">Pick a time -&gt;</a></li>
     </ol>
-    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">The 7-day flow</p>
+    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">How this unfolds</p>
     <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;margin-bottom:24px">
-      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861;width:80px">Day 1</td><td style="padding:6px 0;color:#4A4A48">You fill the intake</td></tr>
-      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 2</td><td style="padding:6px 0;color:#4A4A48">Working session (60 min)</td></tr>
-      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 3-6</td><td style="padding:6px 0;color:#4A4A48">I produce your scorecard + 30-day roadmap</td></tr>
-      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 7</td><td style="padding:6px 0;color:#4A4A48">Final presentation call</td></tr>
+      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861;width:80px">Day 0</td><td style="padding:6px 0;color:#4A4A48">Fill the intake + book Day 2 below</td></tr>
+      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 2</td><td style="padding:6px 0;color:#4A4A48">60-min working session, walking the diagnostic together</td></tr>
+      <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 3-5</td><td style="padding:6px 0;color:#4A4A48">I deliver the Blueprint, the document you actually paid for</td></tr>
     </table>
     <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
     <p style="margin:0 0 16px;padding:12px 14px;background:#EAE3D5;border-left:2px solid #344B29;color:#4A4A48;font-size:14px">One thing to set expectation now: <strong>I pace to your absorption, not my delivery.</strong> Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1. We ship only what your team can actually integrate, leaving runway for the previous wave to land.</p>
