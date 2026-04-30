@@ -202,7 +202,7 @@ const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onResta
                   </span>
                 </div>
                 <p className="text-sm text-ink-soft leading-relaxed">
-                  {p.scoreLabels[score - 1]}
+                  {p.description}
                 </p>
               </div>
             );
