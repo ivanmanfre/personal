@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Bold, Italic, Heading2, List, Save, AlertCircle, Sparkles, Mic, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Bold, Italic, Heading2, List, Save, AlertCircle, Sparkles, Mic, ChevronDown, Send, Check, Copy, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 type Status = 'draft' | 'published' | 'archived';
@@ -41,6 +41,15 @@ const BlueprintEditor: React.FC = () => {
   const [callNotesOpen, setCallNotesOpen] = useState(false);
   const [generatingV2, setGeneratingV2] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+
+  // Publish flow state
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishStep, setPublishStep] = useState<'checklist' | 'publishing' | 'review-email' | 'sending' | 'sent'>('checklist');
+  const [checklist, setChecklist] = useState({ names: false, prices: false, voice: false, structure: false });
+  const [publishResult, setPublishResult] = useState<{ public_url: string; share_token: string; email_draft: { to: string; subject: string; text: string; html: string } } | null>(null);
+  const [emailEdits, setEmailEdits] = useState<{ to: string; subject: string; text: string }>({ to: '', subject: '', text: '' });
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -165,6 +174,74 @@ const BlueprintEditor: React.FC = () => {
     editorRef.current?.focus();
   };
 
+  const allChecked = Object.values(checklist).every(Boolean);
+
+  const doPublish = useCallback(async () => {
+    if (!row) return;
+    setPublishStep('publishing');
+    setPublishError(null);
+    try {
+      const res = await fetch('https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/blueprint-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blueprint_id: row.id, allow_test: row.kind === 'test' }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
+      setPublishResult(j);
+      setEmailEdits({ to: j.email_draft.to || '', subject: j.email_draft.subject || '', text: j.email_draft.text || '' });
+      setPublishStep('review-email');
+      // Refresh row state so it shows as published
+      void refresh();
+    } catch (e: any) {
+      setPublishError(e.message ?? String(e));
+      setPublishStep('checklist');
+    }
+  }, [row, refresh]);
+
+  const sendEmail = useCallback(async () => {
+    if (!row || !publishResult) return;
+    setPublishStep('sending');
+    setPublishError(null);
+    try {
+      const res = await fetch('https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/blueprint-send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blueprint_id: row.id,
+          to: emailEdits.to,
+          subject: emailEdits.subject,
+          text: emailEdits.text,
+          // Use the original HTML (Ivan edits text only — HTML stays branded)
+          html: publishResult.email_draft.html,
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
+      setPublishStep('sent');
+      void refresh();
+    } catch (e: any) {
+      setPublishError(e.message ?? String(e));
+      setPublishStep('review-email');
+    }
+  }, [row, publishResult, emailEdits, refresh]);
+
+  const closePublish = () => {
+    setPublishOpen(false);
+    setPublishStep('checklist');
+    setChecklist({ names: false, prices: false, voice: false, structure: false });
+    setPublishResult(null);
+    setPublishError(null);
+    setCopiedUrl(false);
+  };
+
+  const copyUrl = async () => {
+    if (!publishResult) return;
+    await navigator.clipboard.writeText(publishResult.public_url);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center font-mono text-sm text-ink-muted">
@@ -239,6 +316,21 @@ const BlueprintEditor: React.FC = () => {
               {row.status}
             </span>
             <SaveBadge state={saveState} lastSavedAt={lastSavedAt} onClickSave={() => void flushSave()} />
+
+            {/* Publish — only on Blueprint (post_call) */}
+            {row.stage === 'post_call' && (
+              <button
+                onClick={() => setPublishOpen(true)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase tracking-widest font-mono font-bold transition-colors ${
+                  row.status === 'published'
+                    ? 'border border-accent/40 text-accent hover:bg-accent/10'
+                    : 'bg-accent text-paper hover:bg-accent/90'
+                }`}
+              >
+                <Send className="w-3 h-3" />
+                {row.status === 'published' ? 'Published · resend' : 'Publish'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -369,6 +461,153 @@ const BlueprintEditor: React.FC = () => {
           }}
         />
       </main>
+
+      {/* Publish modal — checklist → publish → review email → send */}
+      {publishOpen && (
+        <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm flex items-center justify-center px-4 py-8 overflow-y-auto" onClick={publishStep === 'sent' ? closePublish : undefined}>
+          <div className="bg-paper border border-ink/20 max-w-[640px] w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-ink/10 flex items-center justify-between sticky top-0 bg-paper z-10">
+              <h2 className="font-drama italic text-2xl text-ink">
+                {publishStep === 'checklist' ? 'Final check before publish' : ''}
+                {publishStep === 'publishing' ? 'Publishing…' : ''}
+                {publishStep === 'review-email' ? 'Review the buyer email' : ''}
+                {publishStep === 'sending' ? 'Sending…' : ''}
+                {publishStep === 'sent' ? 'Sent' : ''}
+              </h2>
+              <button onClick={closePublish} className="text-ink-muted hover:text-ink"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="px-6 py-5">
+              {/* Checklist step */}
+              {publishStep === 'checklist' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-ink-muted">
+                    Once published, the Blueprint becomes shareable at a public URL. The buyer email below is a draft — you review and send manually after publish.
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { k: 'names' as const, label: 'Names spelled correctly (buyer + named owners)' },
+                      { k: 'prices' as const, label: 'Prices match the offer ladder (Essential $3.5K · Standard $6.5K · Investor $10K · LMS $7K · Content Engine $6K)' },
+                      { k: 'voice' as const, label: 'Voice feels like Ivan (no AI tells, no em-dashes, no sycophancy)' },
+                      { k: 'structure' as const, label: 'All 7 sections render and the recommendation feels right' },
+                    ].map((c) => (
+                      <label key={c.k} className="flex items-start gap-3 text-sm cursor-pointer p-2 hover:bg-ink/5 rounded-sm">
+                        <input
+                          type="checkbox"
+                          checked={checklist[c.k]}
+                          onChange={(e) => setChecklist((s) => ({ ...s, [c.k]: e.target.checked }))}
+                          className="mt-0.5 accent-accent"
+                        />
+                        <span className="text-ink leading-snug">{c.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {row.kind === 'test' && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-700/30 p-3">
+                      <strong>Heads up:</strong> this is a TEST session. Publishing will work but the embedding will be skipped (won't pollute RAG).
+                    </p>
+                  )}
+                  {publishError && <p className="text-xs text-red-700">{publishError}</p>}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button onClick={closePublish} className="px-4 py-2 text-xs font-mono uppercase tracking-widest text-ink-muted hover:text-ink">Cancel</button>
+                    <button
+                      onClick={() => void doPublish()}
+                      disabled={!allChecked}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest bg-accent text-paper hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Publish now
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Publishing spinner */}
+              {publishStep === 'publishing' && (
+                <p className="py-8 text-center text-sm text-ink-muted">Generating share token, writing embedding…</p>
+              )}
+
+              {/* Review email step */}
+              {publishStep === 'review-email' && publishResult && (
+                <div className="space-y-4">
+                  <div className="bg-accent/5 border border-accent/30 p-3 rounded-sm">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold mb-1">Public URL</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-sm text-ink break-all flex-1">{publishResult.public_url}</code>
+                      <button
+                        onClick={copyUrl}
+                        className="shrink-0 px-2 py-1 text-[10px] font-mono uppercase tracking-widest border border-ink/20 hover:border-ink/40 inline-flex items-center gap-1"
+                      >
+                        {copiedUrl ? <><Check className="w-3 h-3 text-accent" /> Copied</> : <><Copy className="w-3 h-3" /> Copy</>}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-mono uppercase tracking-widest text-ink-muted">To</label>
+                    <input
+                      type="email"
+                      value={emailEdits.to}
+                      onChange={(e) => setEmailEdits((s) => ({ ...s, to: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm font-sans text-ink bg-paper border border-ink/15 focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-mono uppercase tracking-widest text-ink-muted">Subject</label>
+                    <input
+                      type="text"
+                      value={emailEdits.subject}
+                      onChange={(e) => setEmailEdits((s) => ({ ...s, subject: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm font-sans text-ink bg-paper border border-ink/15 focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-mono uppercase tracking-widest text-ink-muted">Plain text body (HTML version stays branded)</label>
+                    <textarea
+                      value={emailEdits.text}
+                      onChange={(e) => setEmailEdits((s) => ({ ...s, text: e.target.value }))}
+                      rows={12}
+                      className="w-full px-3 py-2 text-sm font-sans text-ink bg-paper border border-ink/15 focus:outline-none focus:border-accent resize-y"
+                    />
+                  </div>
+
+                  {publishError && <p className="text-xs text-red-700">{publishError}</p>}
+
+                  <div className="flex justify-between gap-2 pt-2">
+                    <button onClick={closePublish} className="px-4 py-2 text-xs font-mono uppercase tracking-widest text-ink-muted hover:text-ink">
+                      Skip email · I'll send manually
+                    </button>
+                    <button
+                      onClick={() => void sendEmail()}
+                      disabled={!emailEdits.to || !emailEdits.subject || !emailEdits.text}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest bg-accent text-paper hover:bg-accent/90 disabled:opacity-40"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Send via Resend
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {publishStep === 'sending' && (
+                <p className="py-8 text-center text-sm text-ink-muted">Sending email…</p>
+              )}
+
+              {publishStep === 'sent' && (
+                <div className="py-6 text-center space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-accent/15 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-accent" />
+                  </div>
+                  <p className="font-drama italic text-2xl text-ink">Sent</p>
+                  <p className="text-sm text-ink-muted">The buyer just got the Blueprint.</p>
+                  <button onClick={closePublish} className="px-4 py-2 text-xs font-mono uppercase tracking-widest border border-ink/20 hover:border-ink/40">Close</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* === Blueprint editor — Editorial Comic-Grid system === */

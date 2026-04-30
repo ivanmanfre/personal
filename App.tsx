@@ -46,6 +46,7 @@ function useTrackPageviews(pathname: string) {
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEditor'));
+const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 
@@ -53,6 +54,7 @@ function App() {
   const location = useLocation();
   // Blueprint editor is a fullscreen surface, NOT inside dashboard chrome.
   const isBlueprintEditor = /^\/dashboard\/blueprints\/[^/]+$/.test(location.pathname);
+  const isPublishedBlueprint = /^\/blueprint\/[^/]+$/.test(location.pathname);
   const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
@@ -85,6 +87,17 @@ function App() {
       <Suspense fallback={<div className="min-h-screen bg-paper" />}>
         <Routes>
           <Route path="/dashboard/blueprints/:sessionId" element={<BlueprintEditor />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Public Blueprint share page — buyer-facing, anon read by token
+  if (isPublishedBlueprint) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/blueprint/:token" element={<PublishedBlueprint />} />
         </Routes>
       </Suspense>
     );
