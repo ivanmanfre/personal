@@ -206,23 +206,23 @@ const BlueprintEditor: React.FC = () => {
                 {v1Row && (
                   <button
                     onClick={() => setActiveId(v1Row.id)}
-                    title="v1 — Ivan's prep canvas. Internal only, never sent to buyer."
+                    title="Pre-Call Brief — Ivan's prep doc, never sent to buyer."
                     className={`px-2.5 py-1 text-[10px] uppercase tracking-widest font-mono transition-colors ${
                       row.id === v1Row.id ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:text-ink'
                     }`}
                   >
-                    v1 · prep
+                    Pre-Call Brief
                   </button>
                 )}
                 {v2Row && (
                   <button
                     onClick={() => setActiveId(v2Row.id)}
-                    title="v2 — Post-call deliverable. The artifact the buyer receives."
+                    title="Blueprint — the artifact the buyer paid for."
                     className={`px-2.5 py-1 text-[10px] uppercase tracking-widest font-mono transition-colors border-l border-ink/15 ${
                       row.id === v2Row.id ? 'bg-accent text-paper' : 'bg-paper text-ink-muted hover:text-ink'
                     }`}
                   >
-                    v2 · deliverable
+                    Blueprint
                   </button>
                 )}
               </div>
@@ -266,7 +266,7 @@ const BlueprintEditor: React.FC = () => {
                 <Mic className="w-4 h-4 text-accent" />
                 <span className="text-xs uppercase tracking-widest font-mono text-accent font-bold">Day 2 call notes</span>
                 <span className="text-[10px] uppercase tracking-widest font-mono text-ink-muted">
-                  {callNotes.trim().length > 0 ? `${callNotes.trim().length} chars` : 'add notes to unlock v2'}
+                  {callNotes.trim().length > 0 ? `${callNotes.trim().length} chars` : 'add notes to unlock the Blueprint'}
                 </span>
               </div>
               <ChevronDown className={`w-4 h-4 text-ink-muted transition-transform ${callNotesOpen ? 'rotate-180' : ''}`} />
@@ -274,7 +274,7 @@ const BlueprintEditor: React.FC = () => {
             {callNotesOpen && (
               <div className="px-4 pb-4 space-y-3">
                 <p className="text-xs text-ink-muted leading-relaxed">
-                  Paste raw call notes, ivan-listener transcript excerpts, or your scratch impressions from Day 2. The model will fuse this with the intake + v1 prep canvas to generate v2 — the post-call deliverable the buyer actually receives.
+                  Paste raw call notes, ivan-listener transcript excerpts, or your scratch impressions from Day 2. The model will fuse this with the intake + Pre-Call Brief to generate the Blueprint — the deliverable the buyer actually receives.
                 </p>
                 <textarea
                   value={callNotes}
@@ -292,7 +292,7 @@ const BlueprintEditor: React.FC = () => {
                     className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono uppercase tracking-widest bg-accent text-paper hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    {generatingV2 ? 'Generating v2…' : 'Generate v2 from these notes'}
+                    {generatingV2 ? 'Generating Blueprint…' : 'Generate the Blueprint'}
                   </button>
                 </div>
                 {genError && <p className="text-xs text-red-700 font-mono">{genError}</p>}
@@ -311,13 +311,13 @@ const BlueprintEditor: React.FC = () => {
         }`}>
           {row.stage === 'post_call' ? (
             <>
-              <strong className="font-mono uppercase tracking-widest text-accent">v2 · post-call deliverable</strong>
-              <span className="ml-2 text-ink-muted">This is what the buyer receives. Generated from intake + v1 + Day 2 call notes.</span>
+              <strong className="font-mono uppercase tracking-widest text-accent">Blueprint · the deliverable</strong>
+              <span className="ml-2 text-ink-muted">This is what the buyer receives. Generated from intake + Pre-Call Brief + Day 2 call notes.</span>
             </>
           ) : (
             <>
-              <strong className="font-mono uppercase tracking-widest text-amber-800">v1 · prep canvas (internal)</strong>
-              <span className="ml-2 text-ink-muted">For your eyes only. Use this to prep for the Day 2 working session, then add notes above and generate v2.</span>
+              <strong className="font-mono uppercase tracking-widest text-amber-800">Pre-Call Brief · internal prep</strong>
+              <span className="ml-2 text-ink-muted">For your eyes only. Use this to prep for the Day 2 working session, then add notes above and generate the Blueprint.</span>
             </>
           )}
         </div>
@@ -331,7 +331,7 @@ const BlueprintEditor: React.FC = () => {
               <Sparkles className="w-4 h-4 text-accent" />
               <span className="text-xs font-mono uppercase tracking-widest text-accent font-bold">Call insights captured</span>
               <span className="text-[10px] font-mono uppercase tracking-widest text-ink-muted">
-                {((row.json_sections as any).changes_from_v1 as any[]).length} shifts from v1
+                {((row.json_sections as any).changes_from_v1 as any[]).length} shifts from the Pre-Call Brief
               </span>
               <span className="ml-auto text-[10px] font-mono uppercase tracking-widest text-ink-muted">click to collapse</span>
             </summary>

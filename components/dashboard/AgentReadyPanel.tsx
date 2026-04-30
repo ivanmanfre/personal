@@ -369,7 +369,7 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
       {/* v1 row */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border font-mono w-[110px] justify-center font-bold border-amber-500/30 text-amber-300 bg-amber-500/10">
-          v1 · prep
+          Pre-Call Brief
         </span>
         {v1 ? (
           <>
@@ -392,7 +392,7 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
               disabled={generating}
               className="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
             >
-              <Sparkles className="w-3 h-3" /> {generating ? 'Working…' : 'Regenerate v1'}
+              <Sparkles className="w-3 h-3" /> {generating ? 'Working…' : 'Regenerate'}
             </button>
           </>
         ) : (
@@ -402,7 +402,7 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
             className="px-4 py-2 text-sm bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 rounded transition-colors disabled:opacity-60 flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
-            {generating ? 'Generating v1…' : 'Generate v1 prep canvas'}
+            {generating ? 'Generating Pre-Call Brief…' : 'Generate Pre-Call Brief'}
           </button>
         )}
       </div>
@@ -412,7 +412,7 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] uppercase tracking-widest border font-mono w-[110px] justify-center font-bold ${
           v2 ? 'border-emerald-500/40 text-emerald-300 bg-emerald-500/15' : 'border-zinc-700 text-zinc-500'
         }`}>
-          v2 · deliverable
+          Blueprint
         </span>
         {v2 ? (
           <>
@@ -428,7 +428,7 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
           </>
         ) : (
           <span className="text-[11px] text-zinc-500">
-            {v1 ? 'Open the editor → add Day 2 call notes → "Generate v2"' : 'Generate v1 first'}
+            {v1 ? 'Open editor → add Day 2 call notes → "Generate the Blueprint"' : 'Generate the Pre-Call Brief first'}
           </span>
         )}
       </div>
