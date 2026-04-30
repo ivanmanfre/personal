@@ -1,0 +1,17 @@
+name = "scorecard-share"
+main = "src/worker.tsx"
+compatibility_date = "2025-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Routes: bind to share.ivanmanfredi.com after DNS is set up
+# (one-time: `wrangler deploy` then add the route in Cloudflare dashboard)
+[routes]
+pattern = "share.ivanmanfredi.com/*"
+zone_name = "ivanmanfredi.com"
+
+[vars]
+SUPABASE_URL = "https://bjbvqvzbzczjbatgmccb.supabase.co"
+SITE_URL = "https://ivanmanfredi.com"
+
+# Set via: wrangler secret put SUPABASE_ANON_KEY
+# (anon is fine — scorecard-get edge function is public)

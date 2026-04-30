@@ -1,13 +1,28 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { preconditions, PreconditionKey } from '../lib/preconditions';
-import { scoreCard, ScoreMap, ScorecardResult as ResultType } from '../lib/scorecard';
+import { scoreCard, ScoreMap } from '../lib/scorecard';
 import ScorecardQuestion from './scorecard/ScorecardQuestion';
-import ScorecardResult from './scorecard/ScorecardResult';
 
-type Stage = 'intro' | 'quiz' | 'result';
+type Stage = 'intro' | 'quiz' | 'submitting' | 'error';
+
+const SUPABASE_BASE =
+  import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
+const SUBMIT_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-submit`;
+
+function extractUtm(): Record<string, string> | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const utm: Record<string, string> = {};
+  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach((k) => {
+    const v = params.get(k);
+    if (v) utm[k] = v;
+  });
+  return Object.keys(utm).length ? utm : null;
+}
 
 const ScorecardPage: React.FC = () => {
   useMetadata({
@@ -17,44 +32,72 @@ const ScorecardPage: React.FC = () => {
     canonical: 'https://ivanmanfredi.com/scorecard',
   });
 
+  const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>('intro');
   const [answers, setAnswers] = useState<Partial<ScoreMap>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const total = preconditions.length;
   const currentPrecondition = preconditions[currentIndex];
 
-  const result: ResultType | null = useMemo(() => {
-    const allAnswered = preconditions.every((p) => typeof answers[p.key] === 'number');
-    if (!allAnswered) return null;
-    return scoreCard(answers as ScoreMap);
-  }, [answers]);
-
   useEffect(() => {
-    if (stage === 'result' && typeof window !== 'undefined') {
+    if (stage === 'submitting' && typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [stage]);
 
+  const submitScores = async (allAnswers: ScoreMap) => {
+    setStage('submitting');
+    setSubmitError(null);
+    const result = scoreCard(allAnswers);
+    try {
+      const res = await fetch(SUBMIT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scores: allAnswers,
+          verdict: result.verdict,
+          referrer: typeof document !== 'undefined' ? document.referrer || null : null,
+          utm: extractUtm(),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json.id) throw new Error('Missing id in response');
+
+      // Hand off to the result viewer with state so it can render without a fresh fetch
+      navigate(`/scorecard/result/${json.id}`, {
+        state: { justSubmitted: true, scores: allAnswers },
+      });
+    } catch (err) {
+      console.error('scorecard submit failed', err);
+      setSubmitError('Something on our end. Try again in a sec.');
+      setStage('error');
+    }
+  };
+
   const handleAnswer = (key: PreconditionKey, score: number) => {
-    setAnswers((prev) => ({ ...prev, [key]: score }));
+    const next = { ...answers, [key]: score };
+    setAnswers(next);
     if (currentIndex < total - 1) {
       setTimeout(() => setCurrentIndex((i) => i + 1), 250);
     } else {
-      setTimeout(() => setStage('result'), 350);
+      // Last question — submit + navigate
+      setTimeout(() => submitScores(next as ScoreMap), 350);
     }
   };
 
   const handleBack = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((i) => i - 1);
-    }
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   };
 
-  const handleRestart = () => {
-    setAnswers({});
-    setCurrentIndex(0);
-    setStage('intro');
+  const handleRetry = () => {
+    if (preconditions.every((p) => typeof answers[p.key] === 'number')) {
+      submitScores(answers as ScoreMap);
+    } else {
+      setStage('quiz');
+    }
   };
 
   return (
@@ -124,7 +167,6 @@ const ScorecardPage: React.FC = () => {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* Progress + back */}
                 <div className="flex items-center justify-between mb-6">
                   <button
                     type="button"
@@ -154,14 +196,36 @@ const ScorecardPage: React.FC = () => {
               </motion.div>
             )}
 
-            {stage === 'result' && result && (
+            {stage === 'submitting' && (
               <motion.div
-                key="result"
+                key="submitting"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="py-32 text-center"
+              >
+                <div className="inline-flex items-center gap-3 font-mono text-sm uppercase tracking-[0.18em] text-ink-mute">
+                  <span className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                  Calculating your verdict
+                </div>
+              </motion.div>
+            )}
+
+            {stage === 'error' && (
+              <motion.div
+                key="error"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
+                className="py-24 text-center"
               >
-                <ScorecardResult result={result} onRestart={handleRestart} />
+                <p className="text-xl text-ink-soft mb-6">{submitError}</p>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="btn-magnetic px-7 py-3.5 bg-accent text-white font-semibold tracking-wide inline-flex items-center gap-2"
+                >
+                  Try again <ArrowRight aria-hidden="true" size={18} />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,25 +1,43 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Share2 } from 'lucide-react';
 import { preconditions, PreconditionKey } from '../../lib/preconditions';
 import type { ScorecardResult as ResultType } from '../../lib/scorecard';
 
-const SCORECARD_SUBMIT_ENDPOINT =
-  (import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co') +
-  '/functions/v1/scorecard-submit';
+const SUPABASE_BASE =
+  import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
+const ADD_EMAIL_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-add-email`;
+const SHARE_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-share`;
+// Once the Cloudflare Worker at share.ivanmanfredi.com is deployed,
+// switch this to 'https://share.ivanmanfredi.com' so LinkedIn previews show the verdict card.
+// Until then, share the canonical SPA URL — works, no rich preview.
+const SHARE_DOMAIN = import.meta.env.VITE_SHARE_DOMAIN || 'https://ivanmanfredi.com';
+const SHARE_PATH = SHARE_DOMAIN.includes('share.ivanmanfredi.com') ? '/scorecard' : '/scorecard/result';
 
 interface Props {
   result: ResultType;
-  onRestart: () => void;
+  /** Row id from Supabase. When present, share + email-update flows are wired. */
+  id?: string;
+  /** 'submit' = post-quiz, show email gate. 'view' = visitor from share link, hide gate, show "take your own" CTA. */
+  mode?: 'submit' | 'view';
+  onRestart?: () => void;
 }
 
-const ScorecardResult: React.FC<Props> = ({ result, onRestart }) => {
+const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onRestart }) => {
   const [email, setEmail] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const shareUrl = id ? `${SHARE_DOMAIN}${SHARE_PATH}/${id}` : '';
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) {
+      setError('Missing result id — refresh and try again.');
+      return;
+    }
     if (!email || !email.includes('@')) {
       setError('Use a real email so we know where to send the roadmap.');
       return;
@@ -27,26 +45,42 @@ const ScorecardResult: React.FC<Props> = ({ result, onRestart }) => {
     setSubmitState('sending');
     setError(null);
     try {
-      const res = await fetch(SCORECARD_SUBMIT_ENDPOINT, {
+      const res = await fetch(ADD_EMAIL_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          scores: result.scores,
-          verdict: result.verdict,
-          referrer: typeof document !== 'undefined' ? document.referrer || null : null,
-          utm: extractUtm(),
-        }),
+        body: JSON.stringify({ id, email }),
       });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setSubmitState('sent');
     } catch (err) {
-      console.error('scorecard submit failed', err);
+      console.error('add-email failed', err);
       setSubmitState('error');
       setError('Something on our end. Try again in a sec.');
     }
+  };
+
+  const handleShare = async () => {
+    if (!id) return;
+
+    // Best-effort share-count increment
+    fetch(SHARE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+
+    // Copy URL to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2400);
+    } catch {
+      // Fallback: open LinkedIn share dialog directly
+    }
+
+    // Open LinkedIn share dialog
+    const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+    window.open(linkedinUrl, '_blank', 'noopener,noreferrer,width=720,height=600');
   };
 
   return (
@@ -60,7 +94,7 @@ const ScorecardResult: React.FC<Props> = ({ result, onRestart }) => {
       <div className="bg-paper border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 border-b border-[color:var(--color-hairline)] pb-6">
           <span className="font-mono text-xs uppercase tracking-[0.18em] text-ink-mute">
-            Your Agent-Ready score
+            {mode === 'view' ? 'Agent-Ready score' : 'Your Agent-Ready score'}
           </span>
           <span className="font-mono text-xs uppercase tracking-[0.18em] text-ink-mute">
             {result.total} / 20
@@ -97,14 +131,43 @@ const ScorecardResult: React.FC<Props> = ({ result, onRestart }) => {
           >
             {result.ctaLabel} <ArrowRight aria-hidden="true" size={18} />
           </a>
-          <button
-            type="button"
-            onClick={onRestart}
-            className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center"
-          >
-            Retake the scorecard
-          </button>
+
+          {id && (
+            <button
+              type="button"
+              onClick={handleShare}
+              className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center flex items-center justify-center gap-2 border border-[color:var(--color-hairline-bold)]"
+            >
+              <Share2 size={16} aria-hidden="true" />
+              {shareCopied ? 'Link copied' : 'Share to LinkedIn'}
+            </button>
+          )}
+
+          {mode === 'submit' && onRestart && (
+            <button
+              type="button"
+              onClick={onRestart}
+              className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center"
+            >
+              Retake the scorecard
+            </button>
+          )}
+
+          {mode === 'view' && (
+            <Link
+              to="/scorecard"
+              className="w-full sm:w-auto px-7 py-3.5 font-semibold text-base tracking-wide text-ink-mute hover:text-black transition-colors text-center"
+            >
+              Take your own scorecard →
+            </Link>
+          )}
         </div>
+
+        {id && shareCopied && (
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mt-6">
+            URL copied · also opening LinkedIn
+          </p>
+        )}
       </div>
 
       {/* Per-precondition breakdown */}
@@ -144,69 +207,60 @@ const ScorecardResult: React.FC<Props> = ({ result, onRestart }) => {
         )}
       </div>
 
-      {/* Email gate — opt-in, not blocking */}
-      <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-8 md:p-10">
-        {submitState === 'sent' ? (
-          <div className="flex items-start gap-4">
-            <Check size={24} className="text-accent shrink-0 mt-1" strokeWidth={3} />
-            <div>
-              <p className="text-lg font-semibold mb-2">
-                Roadmap is on the way.
-              </p>
-              <p className="text-ink-soft leading-relaxed">
-                Check your inbox in the next few minutes. Reply to that email if you want to talk through the verdict.
-              </p>
+      {/* Email gate — only in submit mode, only if we have an id */}
+      {mode === 'submit' && id && (
+        <div className="bg-paper-sunk border border-[color:var(--color-hairline)] p-8 md:p-10">
+          {submitState === 'sent' ? (
+            <div className="flex items-start gap-4">
+              <Check size={24} className="text-accent shrink-0 mt-1" strokeWidth={3} />
+              <div>
+                <p className="text-lg font-semibold mb-2">
+                  Roadmap is on the way.
+                </p>
+                <p className="text-ink-soft leading-relaxed">
+                  Check your inbox in the next few minutes. Reply to that email if you want to talk through the verdict.
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
-              Optional
-            </p>
-            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
-              Get your <span className="font-drama italic font-normal">30-day roadmap</span> by email
-            </h3>
-            <p className="text-ink-soft leading-relaxed mb-6 max-w-xl">
-              A short PDF that walks through your weak spots, the order to fix them in, and what to ship in the first 30 days. No newsletter spam.
-            </p>
-            <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-xl">
-              <input
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={submitState === 'sending'}
-                className="flex-1 px-5 py-3.5 bg-paper border border-[color:var(--color-hairline-bold)] text-base focus:outline-none focus:border-accent transition-colors"
-                required
-              />
-              <button
-                type="submit"
-                disabled={submitState === 'sending'}
-                className="btn-magnetic px-7 py-3.5 bg-black text-white font-semibold text-base tracking-wide flex items-center justify-center gap-2 disabled:opacity-60"
-              >
-                {submitState === 'sending' ? 'Sending…' : 'Send the roadmap'}
-                {submitState !== 'sending' && <ArrowRight aria-hidden="true" size={18} />}
-              </button>
-            </form>
-            {error && (
-              <p className="text-sm text-red-700 mt-3">{error}</p>
-            )}
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                Optional
+              </p>
+              <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+                Get your <span className="font-drama italic font-normal">30-day roadmap</span> by email
+              </h3>
+              <p className="text-ink-soft leading-relaxed mb-6 max-w-xl">
+                A short PDF that walks through your weak spots, the order to fix them in, and what to ship in the first 30 days. No newsletter spam.
+              </p>
+              <form onSubmit={handleEmailSubmit} className="flex flex-col sm:flex-row gap-3 max-w-xl">
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitState === 'sending'}
+                  className="flex-1 px-5 py-3.5 bg-paper border border-[color:var(--color-hairline-bold)] text-base focus:outline-none focus:border-accent transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={submitState === 'sending'}
+                  className="btn-magnetic px-7 py-3.5 bg-black text-white font-semibold text-base tracking-wide flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {submitState === 'sending' ? 'Sending…' : 'Send the roadmap'}
+                  {submitState !== 'sending' && <ArrowRight aria-hidden="true" size={18} />}
+                </button>
+              </form>
+              {error && (
+                <p className="text-sm text-red-700 mt-3">{error}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 };
-
-function extractUtm(): Record<string, string> | null {
-  if (typeof window === 'undefined') return null;
-  const params = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach((k) => {
-    const v = params.get(k);
-    if (v) utm[k] = v;
-  });
-  return Object.keys(utm).length ? utm : null;
-}
 
 export default ScorecardResult;
