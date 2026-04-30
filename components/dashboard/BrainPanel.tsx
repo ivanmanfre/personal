@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Search, Database, FileText, Sparkles, AlertTriangle, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { Brain, Search, Database, FileText, Sparkles, AlertTriangle, ChevronDown, ChevronRight, Layers, Info, MessageSquare, RefreshCw, Zap } from 'lucide-react';
 import { useBrainStats, type SessionLog, type CompactionReview } from '../../hooks/useBrainStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -92,6 +92,7 @@ const BrainPanel: React.FC = () => {
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['claude_memory'] });
   const [query, setQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('');
+  const [explainerOpen, setExplainerOpen] = useState(false);
 
   const totalRows = tierCounts.reduce((s, t) => s + t.count, 0);
 
@@ -112,8 +113,85 @@ const BrainPanel: React.FC = () => {
             <p className="text-xs text-zinc-500">Cross-project memory · Claude Code + n8nClaw shared layer</p>
           </div>
         </div>
-        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setExplainerOpen((o) => !o)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800/40 hover:bg-zinc-800/70 border border-zinc-800/60 text-zinc-300 transition-colors"
+          >
+            <Info className="w-3.5 h-3.5" />
+            How it works
+            {explainerOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          </button>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
+
+      {explainerOpen && (
+        <div className="border border-violet-500/20 rounded-2xl bg-violet-500/[0.04] overflow-hidden">
+          <div className="px-5 py-4 border-b border-violet-500/15 bg-violet-500/[0.04]">
+            <h2 className="text-sm font-semibold text-violet-300 flex items-center gap-2">
+              <Brain className="w-4 h-4" /> How the Brain works
+            </h2>
+            <p className="text-xs text-zinc-400 mt-1">
+              A shared memory layer between Claude Code (your CLI sessions) and n8nClaw (your WhatsApp agent). Both read from the same Supabase <code className="font-mono text-violet-300">claude_memory</code> table.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 px-5 py-4">
+            {/* Tiers */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-violet-400" /> Three tiers
+              </h3>
+              <ul className="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+                <li><span className="font-mono text-emerald-400">global</span> — your personal preferences, voice, vendor rules. Loaded for every session, every project.</li>
+                <li><span className="font-mono text-cyan-400">shared-tech</span> — cross-client tech (n8n quirks, Supabase patterns, Railway gotchas). Always loaded too.</li>
+                <li><span className="font-mono text-violet-400">ivan</span> / <span className="font-mono text-blue-400">secondmile</span> / etc. — per-client (workflow IDs, ClickUp lists, integration keys). Only loaded when you're working on that client.</li>
+              </ul>
+            </div>
+
+            {/* Auto capture */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-cyan-400" /> Auto-capture
+              </h3>
+              <ul className="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+                <li><span className="text-zinc-200">Session logs</span> — every Claude Code session ends with Haiku summarizing what was discussed/decided/changed, tagged by client.</li>
+                <li><span className="text-zinc-200">Live context</span> — at session start, recent commits + n8nClaw daily summary + active client's compiled context get injected automatically.</li>
+                <li><span className="text-zinc-200">Sync</span> — local memory files mirror to Supabase via Stop hook (rate-limited 60s).</li>
+              </ul>
+            </div>
+
+            {/* Cross-system */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" /> Cross-system
+              </h3>
+              <ul className="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+                <li><span className="text-zinc-200">WhatsApp → Claude</span>: ask n8nClaw something on WhatsApp, the daily summary appears in your next CLI session.</li>
+                <li><span className="text-zinc-200">Claude → WhatsApp</span>: n8nClaw has a <code className="font-mono text-emerald-300">query_engineering_memory</code> tool — ask it on WhatsApp "what's the n8n PUT rule" and it pulls from this same table.</li>
+                <li>The search box below uses the exact same data source — what you see here, n8nClaw can answer with.</li>
+              </ul>
+            </div>
+
+            {/* Compactor */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" /> Compactor
+              </h3>
+              <ul className="text-xs text-zinc-400 space-y-1.5 leading-relaxed">
+                <li>Daily at 11:00 local, a Haiku audit identifies duplicates, stale entries, TODO queues, file pairs to merge, or files in the wrong tier.</li>
+                <li>Proposals appear below — <span className="text-zinc-200">never auto-applied</span>. You review and act.</li>
+                <li>WhatsApp ping if proposals exist.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="px-5 py-3 border-t border-violet-500/15 bg-zinc-900/40 text-[11px] text-zinc-500">
+            <span className="font-medium text-zinc-400">Tip:</span> click a tier card below to filter the search. Search uses substring + tier filter; for fuzzy or semantic matches, ask n8nClaw on WhatsApp.
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <LoadingSkeleton />
