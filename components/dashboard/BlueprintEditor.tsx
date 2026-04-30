@@ -42,6 +42,10 @@ const BlueprintEditor: React.FC = () => {
   const [generatingV2, setGeneratingV2] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
 
+  // Recording auto-pull state
+  const [recording, setRecording] = useState<{ id: string; title: string; date: string; duration_minutes: number; meeting_type: string | null; participants: string[]; summary: string | null; action_items: string[] | null; transcript_text: string } | null>(null);
+  const [recordingDismissed, setRecordingDismissed] = useState(false);
+
   // Publish flow state
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishStep, setPublishStep] = useState<'checklist' | 'publishing' | 'review-email' | 'sending' | 'sent'>('checklist');
@@ -82,6 +86,39 @@ const BlueprintEditor: React.FC = () => {
   }, [sessionId]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Look up a likely matching call recording (only when no v2 yet — once Blueprint is generated this is moot)
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('find_call_recording_for_session', { p_session_id: sessionId });
+      if (!cancelled && Array.isArray(data) && data[0]) {
+        setRecording(data[0] as any);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sessionId]);
+
+  const pullRecordingIntoNotes = useCallback(() => {
+    if (!recording) return;
+    const parts = [
+      `[Day 2 call recording, ${new Date(recording.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}, ${recording.duration_minutes ?? '?'} min]`,
+    ];
+    if (recording.summary) parts.push(`\n## SUMMARY\n${recording.summary}`);
+    if (Array.isArray(recording.action_items) && recording.action_items.length) {
+      parts.push(`\n## ACTION ITEMS\n${recording.action_items.map((a) => `- ${a}`).join('\n')}`);
+    }
+    if (recording.transcript_text) {
+      const tt = recording.transcript_text.length > 5000
+        ? recording.transcript_text.slice(0, 5000) + '\n[…transcript truncated to fit 8K char cap]'
+        : recording.transcript_text;
+      parts.push(`\n## TRANSCRIPT\n${tt}`);
+    }
+    const merged = (callNotes.trim() ? callNotes.trim() + '\n\n' : '') + parts.join('\n');
+    setCallNotes(merged.slice(0, 8000));
+    setCallNotesOpen(true);
+  }, [recording, callNotes]);
 
   // When switching active row, swap editor contents
   useEffect(() => {
@@ -345,6 +382,41 @@ const BlueprintEditor: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Recording auto-pull suggestion (only when matched + no v2 yet + not dismissed) */}
+      {row.stage === 'pre_call' && !v2Row && recording && !recordingDismissed && (
+        <div className="max-w-[1080px] mx-auto px-6 pt-6">
+          <div className="border border-amber-700/30 bg-amber-50 rounded-sm px-4 py-3 flex items-start gap-3">
+            <Mic className="w-4 h-4 text-amber-800 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-mono uppercase tracking-widest text-amber-800 font-bold mb-1">Found a matching call recording</p>
+              <p className="text-sm text-ink leading-snug">
+                <strong>{recording.title || '(untitled)'}</strong>
+                {' · '}{new Date(recording.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {recording.duration_minutes ? ` · ${recording.duration_minutes} min` : ''}
+                {recording.meeting_type ? ` · ${recording.meeting_type}` : ''}
+              </p>
+              {recording.summary && (
+                <p className="text-xs text-ink-muted mt-1 line-clamp-2">{recording.summary.slice(0, 200)}{recording.summary.length > 200 ? '…' : ''}</p>
+              )}
+            </div>
+            <div className="flex-shrink-0 flex items-center gap-2">
+              <button
+                onClick={pullRecordingIntoNotes}
+                className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest bg-amber-800 text-amber-50 hover:bg-amber-900 transition-colors flex items-center gap-1.5"
+              >
+                Pull into notes
+              </button>
+              <button
+                onClick={() => setRecordingDismissed(true)}
+                className="px-2 py-1.5 text-[10px] font-mono uppercase tracking-widest text-ink-muted hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Call-notes panel (only meaningful when viewing v1, before v2 is generated) */}
       {row.stage === 'pre_call' && !v2Row && (
