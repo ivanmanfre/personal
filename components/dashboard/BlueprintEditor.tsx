@@ -673,9 +673,9 @@ const BlueprintEditor: React.FC = () => {
         .blueprint-content .bp-band-augmented { background: var(--bp-sage-mid); color: var(--bp-ink); animation-delay: 0.42s; }
         .blueprint-content .bp-band-human { background: var(--bp-paper-deep); color: var(--bp-ink); animation-delay: 0.54s; }
 
-        /* Critical: columns sized to MATCH the bands above (60% / 25% / 15%) so
-           AGENT / AUGMENTED / HUMAN copy sits directly under its band. */
-        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: 60fr 25fr 15fr; gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
+        /* Three even columns for readability. The proportional bar above already
+           communicates the 60/25/15 split visually; bullets need room to breathe. */
+        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
         .blueprint-content .bp-map-col h3 { margin-top: 0; }
         .blueprint-content .bp-map-col li { font-size: 0.94rem; }
         @media (max-width: 900px) {

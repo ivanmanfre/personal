@@ -129,7 +129,7 @@ const PublishedBlueprint: React.FC = () => {
         .blueprint-content .bp-band-agent { background: var(--bp-sage); color: var(--bp-paper); animation-delay: 0.3s; }
         .blueprint-content .bp-band-augmented { background: var(--bp-sage-mid); color: var(--bp-ink); animation-delay: 0.42s; }
         .blueprint-content .bp-band-human { background: var(--bp-paper-deep); color: var(--bp-ink); animation-delay: 0.54s; }
-        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: 60fr 25fr 15fr; gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
+        .blueprint-content .bp-map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6rem; margin: 1.4rem 0 0.5rem; }
         .blueprint-content .bp-map-col h3 { margin-top: 0; }
         .blueprint-content .bp-map-col li { font-size: 0.94rem; }
         .blueprint-content .bp-axis-pill { display: inline-block; padding: 0.5rem 0.9rem; background: var(--bp-sage-tint); border-left: 2px solid var(--bp-sage); font-size: 0.92rem; margin: 0.5rem 0 1.2rem; }
