@@ -9,11 +9,13 @@ const SUPABASE_BASE =
   import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
 const ADD_EMAIL_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-add-email`;
 const SHARE_ENDPOINT = `${SUPABASE_BASE}/functions/v1/scorecard-share`;
-// Once the Cloudflare Worker at share.ivanmanfredi.com is deployed,
-// switch this to 'https://share.ivanmanfredi.com' so LinkedIn previews show the verdict card.
-// Until then, share the canonical SPA URL — works, no rich preview.
+// Share URL points to /share/scorecard/?ref=ID — a static HTML page with proper OG meta
+// served by GH Pages. LinkedIn scrapers stop at it and read the rich card. Browsers
+// hit it and JS-redirect to /scorecard. The ID is preserved as a ref param for attribution.
+// When the Cloudflare Worker at share.ivanmanfredi.com later ships per-result OG cards,
+// override via VITE_SHARE_DOMAIN to switch to per-result preview.
 const SHARE_DOMAIN = import.meta.env.VITE_SHARE_DOMAIN || 'https://ivanmanfredi.com';
-const SHARE_PATH = SHARE_DOMAIN.includes('share.ivanmanfredi.com') ? '/scorecard' : '/scorecard/result';
+const USING_WORKER = SHARE_DOMAIN.includes('share.ivanmanfredi.com');
 
 interface Props {
   result: ResultType;
@@ -30,7 +32,11 @@ const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onResta
   const [error, setError] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
-  const shareUrl = id ? `${SHARE_DOMAIN}${SHARE_PATH}/${id}` : '';
+  const shareUrl = id
+    ? USING_WORKER
+      ? `${SHARE_DOMAIN}/scorecard/${id}`
+      : `${SHARE_DOMAIN}/share/scorecard/?ref=${id}`
+    : '';
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

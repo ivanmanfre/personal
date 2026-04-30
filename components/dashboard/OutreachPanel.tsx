@@ -373,14 +373,24 @@ const OutreachPanel: React.FC = () => {
           <div className={`space-y-1.5 overflow-y-auto ${showActivity ? 'max-h-96' : 'max-h-48'}`}>
             {(showActivity ? recentActivity : recentActivity.slice(0, 8)).map((e) => {
               const prospect = prospects.find((p) => p.id === e.prospectId);
+              const profileUrl = prospect?.linkedinUrl;
+              const actionUrl = e.targetUrl || profileUrl;
               return (
                 <div key={e.id} className="flex items-start gap-2 text-xs">
                   <span className="text-zinc-600 whitespace-nowrap w-12 shrink-0">
                     {new Date(e.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   <span className={e.success ? 'text-zinc-400' : 'text-red-400'}>
-                    {actionTypeIcons[e.actionType] || e.actionType}
-                    {prospect && <span className="text-zinc-300"> {prospect.name}</span>}
+                    {actionUrl ? (
+                      <a href={actionUrl} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-300 transition-colors">
+                        {actionTypeIcons[e.actionType] || e.actionType}
+                      </a>
+                    ) : (actionTypeIcons[e.actionType] || e.actionType)}
+                    {prospect && (
+                      profileUrl ? (
+                        <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-blue-300 hover:underline transition-colors"> {prospect.name}</a>
+                      ) : <span className="text-zinc-300"> {prospect.name}</span>
+                    )}
                     {prospect?.campaignName && <span className="text-zinc-600"> ({prospect.campaignName})</span>}
                     {!e.success && e.errorMessage && <span className="text-red-500/70"> · {e.errorMessage.slice(0, 60)}</span>}
                   </span>
