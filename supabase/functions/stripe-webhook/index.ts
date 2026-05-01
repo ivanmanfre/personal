@@ -121,6 +121,16 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Allowlist: Stripe webhook subscription is set to "all events" so we get every
+  // event type. Filter here for the only two we care about.
+  const HANDLED = new Set(["checkout.session.completed", "charge.refunded"]);
+  if (!HANDLED.has(event.type)) {
+    return new Response(JSON.stringify({ ignored: event.type }), {
+      status: 200,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
+
   // Refund branch — Stripe sends charge.refunded when an existing charge gets refunded.
   // We mark the paid_assessment as refunded, advance pipeline_stage to 'refunded',
   // archive any published Blueprint (so the public URL stops working), and notify Ivan.
@@ -145,14 +155,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (event.type !== "checkout.session.completed") {
-    // Acknowledge but don't persist other event types.
-    return new Response(JSON.stringify({ ignored: event.type }), {
-      status: 200,
-      headers: { ...CORS, "Content-Type": "application/json" },
-    });
-  }
-
+  // event.type is now guaranteed to be "checkout.session.completed" (allowlist + refund branch above)
   const session = event.data?.object ?? {};
   const email: string | null =
     session.customer_details?.email ?? session.customer_email ?? null;
