@@ -104,7 +104,6 @@ function renderShareHtml(env: Env, result: ScorecardResult, requestUrl: string):
   <meta name="twitter:description" content="${escapeHtml(description)}" />
   <meta name="twitter:image" content="${ogImage}" />
 
-  <meta http-equiv="refresh" content="0; url=${targetUrl}" />
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F4EF; color: #1A1A1A; margin: 0; padding: 48px; }
     .wrap { max-width: 540px; margin: 0 auto; }
@@ -121,7 +120,16 @@ function renderShareHtml(env: Env, result: ScorecardResult, requestUrl: string):
     <p class="score">${result.total}<span style="font-size:20px;color:#888;font-style:normal;font-family:'Courier New',monospace;letter-spacing:0.18em;text-transform:uppercase;margin-left:8px;">of 20</span></p>
     <p>Redirecting to <a href="${targetUrl}">${targetUrl}</a>…</p>
   </div>
-  <script>setTimeout(function(){ window.location.replace(${JSON.stringify(targetUrl)}); }, 100);</script>
+  <script>
+    // JS-only redirect — scrapers (LinkedIn, X, Facebook) don't execute JS so they
+    // stay on this page and read the OG meta above. Real browsers run this and bounce
+    // to the SPA result viewer.
+    (function () {
+      var target = ${JSON.stringify(targetUrl)};
+      // Defer slightly so the browser commits this URL to history first
+      setTimeout(function () { window.location.replace(target); }, 50);
+    })();
+  </script>
 </body>
 </html>`;
 }
