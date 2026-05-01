@@ -121,6 +121,30 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Refund branch — Stripe sends charge.refunded when an existing charge gets refunded.
+  // We mark the paid_assessment as refunded, advance pipeline_stage to 'refunded',
+  // archive any published Blueprint (so the public URL stops working), and notify Ivan.
+  if (event.type === "charge.refunded") {
+    const charge = event.data?.object ?? {};
+    const paymentIntent = charge.payment_intent ?? null;
+    if (!paymentIntent) {
+      return new Response(JSON.stringify({ ignored: "no payment_intent" }), {
+        status: 200, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+    try {
+      await handleRefund(sb, paymentIntent, charge);
+    } catch (e) {
+      console.error("refund handler failed:", String(e));
+      return new Response(JSON.stringify({ error: String(e) }), {
+        status: 500, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ ok: true, refunded: paymentIntent }), {
+      status: 200, headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
+
   if (event.type !== "checkout.session.completed") {
     // Acknowledge but don't persist other event types.
     return new Response(JSON.stringify({ ignored: event.type }), {
@@ -264,4 +288,79 @@ ivanmanfredi.com`;
     const body = await res.text();
     throw new Error(`resend ${res.status}: ${body.slice(0, 200)}`);
   }
+}
+
+async function handleRefund(sb: any, paymentIntent: string, charge: any): Promise<void> {
+  // Find the paid_assessment by stripe_payment_intent
+  const { data: pa } = await sb
+    .from("paid_assessments")
+    .select("stripe_session_id, email, name, pipeline_stage")
+    .eq("stripe_payment_intent", paymentIntent)
+    .maybeSingle();
+
+  if (!pa) {
+    console.warn("[refund] no paid_assessment for payment_intent", paymentIntent);
+    return; // don't error — Stripe might fire for unrelated charges
+  }
+
+  // 1. Flip status + advance pipeline (skip if already converted, that's a different conversation)
+  const newStage = pa.pipeline_stage === "converted" ? pa.pipeline_stage : "refunded";
+  await sb
+    .from("paid_assessments")
+    .update({ status: "refunded", pipeline_stage: newStage })
+    .eq("stripe_session_id", pa.stripe_session_id);
+
+  // 2. Archive any published Blueprint + revoke share_token so /blueprint/<token> 404s
+  const { data: bps } = await sb
+    .from("blueprints")
+    .select("id, status, share_token")
+    .eq("stripe_session_id", pa.stripe_session_id);
+  let archivedCount = 0;
+  for (const bp of bps || []) {
+    if (bp.status === "published") {
+      await sb.from("blueprints").update({ status: "archived", share_token: null }).eq("id", bp.id);
+      archivedCount++;
+    }
+  }
+
+  // 3. Notify Ivan via WhatsApp + email (best-effort)
+  const refundAmount = ((charge.amount_refunded ?? charge.amount ?? 0) / 100).toFixed(2);
+  const reason = charge.refunds?.data?.[0]?.reason || "(no reason given)";
+  const buyerLabel = pa.name ? `${pa.name} <${pa.email}>` : pa.email;
+  const text = `Stripe REFUND issued for ${buyerLabel}\n\n$${refundAmount} ${(charge.currency ?? "usd").toUpperCase()}\nReason: ${reason}\n\npipeline_stage: ${newStage}\nBlueprints archived: ${archivedCount}\n\nDashboard: https://ivanmanfredi.com/dashboard?tab=agentReady`;
+  const html = `<!doctype html><html><body style="font-family:-apple-system,sans-serif;max-width:560px;margin:32px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F4EFE8">
+<p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#a04444;margin:0 0 12px">Stripe · Refund</p>
+<h1 style="font-size:20px;margin:0 0 8px">$${refundAmount} ${(charge.currency ?? "usd").toUpperCase()} refunded</h1>
+<p style="margin:0 0 6px;font-size:14px"><strong>${buyerLabel}</strong></p>
+<p style="margin:0 0 16px;color:#6B6861;font-size:13px">Reason: ${reason}</p>
+<p style="padding:10px 14px;background:#F2E5E5;border-left:2px solid #a04444;font-size:14px;margin:0 0 10px">pipeline_stage → <strong>${newStage}</strong> · ${archivedCount} published Blueprint${archivedCount === 1 ? "" : "s"} archived (share token${archivedCount === 1 ? "" : "s"} revoked)</p>
+<p style="margin:16px 0 0;font-size:13px"><a href="https://ivanmanfredi.com/dashboard?tab=agentReady" style="color:#2A8F65;font-weight:600">Open pipeline →</a></p>
+</body></html>`;
+
+  // WhatsApp
+  try {
+    await fetch("http://24.199.118.135:8080/message/sendText/ivan-wa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: "evo_ivan_n8nclaw_2026" },
+      body: JSON.stringify({ number: "5491159385939", text, options: { delay: 1000 } }),
+    });
+  } catch (e) { console.error("[refund-whatsapp]", e); }
+
+  // Email
+  try {
+    const apiKey = await getSecret(sb, "RESEND_API_KEY_ASSESSMENT");
+    const from = await getSecret(sb, "RESEND_FROM");
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from, to: ["im@ivanmanfredi.com"],
+        subject: `Refund: $${refundAmount} · ${pa.email}`,
+        text, html,
+        tags: [{ name: "type", value: "stripe_refund" }],
+      }),
+    });
+  } catch (e) { console.error("[refund-email]", e); }
+
+  console.log("[refund] processed:", pa.stripe_session_id, "archived:", archivedCount);
 }
