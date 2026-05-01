@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { preconditions, flatQuestions } from '../lib/preconditions';
-import { computeScoresFromSubScores, scoreCard, SubScores } from '../lib/scorecard';
+import { computeScoresFromSubScores, scoreCard, ScoreMap, SubScores } from '../lib/scorecard';
 import ScorecardQuestion from './scorecard/ScorecardQuestion';
 
 type Stage = 'intro' | 'quiz' | 'submitting' | 'error';
@@ -25,6 +25,30 @@ function extractUtm(): Record<string, string> | null {
 }
 
 const TOTAL_QUESTIONS = flatQuestions.length;
+
+// If the submit takes too long (slow network, stalled SPA navigation), surface a
+// manual escape after 6s so users aren't stuck on the spinner forever.
+const SubmittingEscape: React.FC<{ onRetry: () => void }> = ({ onRetry }) => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setShow(true), 6000);
+    return () => window.clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <p className="text-sm text-ink-mute">
+      Taking longer than expected.{' '}
+      <button
+        type="button"
+        onClick={onRetry}
+        className="underline underline-offset-4 decoration-accent hover:text-black transition-colors"
+      >
+        Try again
+      </button>
+      .
+    </p>
+  );
+};
 
 const ScorecardPage: React.FC = () => {
   useMetadata({
@@ -51,8 +75,22 @@ const ScorecardPage: React.FC = () => {
   const submitScores = async (allSubs: SubScores) => {
     setStage('submitting');
     setSubmitError(null);
-    const scores = computeScoresFromSubScores(allSubs);
-    const result = scoreCard(scores);
+    let scores: ScoreMap;
+    let result: ReturnType<typeof scoreCard>;
+    try {
+      scores = computeScoresFromSubScores(allSubs);
+      result = scoreCard(scores);
+    } catch (err) {
+      console.error('scorecard scoring failed', err);
+      setSubmitError('Could not compute your verdict. Refresh and try again.');
+      setStage('error');
+      return;
+    }
+
+    // Hard timeout — if fetch doesn't resolve in 12s, abort.
+    const ctrl = new AbortController();
+    const timeoutId = setTimeout(() => ctrl.abort(), 12000);
+
     try {
       const res = await fetch(SUBMIT_ENDPOINT, {
         method: 'POST',
@@ -63,17 +101,34 @@ const ScorecardPage: React.FC = () => {
           referrer: typeof document !== 'undefined' ? document.referrer || null : null,
           utm: extractUtm(),
         }),
+        signal: ctrl.signal,
       });
+      clearTimeout(timeoutId);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!json.id) throw new Error('Missing id in response');
 
-      navigate(`/scorecard/result/${json.id}`, {
-        state: { justSubmitted: true, scores },
-      });
+      const targetUrl = `/scorecard/result/${json.id}`;
+      try {
+        navigate(targetUrl, { state: { justSubmitted: true, scores } });
+      } catch (navErr) {
+        console.error('navigate failed, falling back to hard redirect', navErr);
+      }
+
+      // Belt-and-braces — if navigate didn't change the URL within 1.2s, force a full redirect.
+      // This catches React Router edge cases where the SPA navigation stalls on the spinner.
+      window.setTimeout(() => {
+        if (window.location.pathname !== targetUrl) {
+          window.location.assign(targetUrl);
+        }
+      }, 1200);
     } catch (err) {
+      clearTimeout(timeoutId);
+      const msg = err instanceof Error && err.name === 'AbortError'
+        ? 'Submission timed out. Check your connection and try again.'
+        : 'Something on our end. Try again in a sec.';
       console.error('scorecard submit failed', err);
-      setSubmitError('Something on our end. Try again in a sec.');
+      setSubmitError(msg);
       setStage('error');
     }
   };
@@ -223,10 +278,11 @@ const ScorecardPage: React.FC = () => {
                 exit={{ opacity: 0 }}
                 className="py-32 text-center"
               >
-                <div className="inline-flex items-center gap-3 font-mono text-sm uppercase tracking-[0.18em] text-ink-mute">
+                <div className="inline-flex items-center gap-3 font-mono text-sm uppercase tracking-[0.18em] text-ink-mute mb-6">
                   <span className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                   Calculating your verdict
                 </div>
+                <SubmittingEscape onRetry={handleRetry} />
               </motion.div>
             )}
 
