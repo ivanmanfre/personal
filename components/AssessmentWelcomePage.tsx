@@ -9,24 +9,19 @@ const CALENDLY_DAY2_URL = 'https://calendly.com/im-ivanmanfredi/60-minute-meetin
 
 const timeline = [
   {
-    day: 'Day 1',
+    day: 'Day 0',
     title: 'Intake',
-    description: 'Check your inbox. I send a structured intake questionnaire - 20-30 questions across the four Agent-Ready preconditions. 30 minutes of focused answering.',
+    description: 'Conversational intake (20 questions across the four Agent-Ready preconditions). About 25 minutes, saves as you type. Open it from the link below or your welcome email.',
   },
   {
     day: 'Day 2',
     title: 'Working session',
-    description: 'A 60-minute video call where I walk through your answers, ask follow-ups, and observe how your current systems actually run. Book the time below.',
+    description: 'A 60-minute video call where we walk your intake together, push back on anything that does not match reality, and the diagnostic gets sharper because of the conversation. Book the time below.',
   },
   {
-    day: 'Day 3-6',
-    title: 'Analysis',
-    description: 'I produce your evaluation, your 90-Day AI Rollout Plan, and specific recommendations. You get time back.',
-  },
-  {
-    day: 'Day 7',
-    title: 'Presentation',
-    description: 'Final 60-minute call. I deliver the findings and recommend the path forward - Fractional, productized project, or wait-and-build.',
+    day: 'Day 3-5',
+    title: 'Blueprint delivered',
+    description: 'You get the Blueprint, the document you actually paid for. It folds in what surfaced during the call: the 60/25/15 work split, a 90-day roadmap, quick wins, costed gaps, and a recommended next step (Fractional, productized project, or wait-and-build).',
   },
 ];
 
@@ -139,7 +134,7 @@ const AssessmentWelcomePage: React.FC = () => {
             className="mb-20"
           >
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-10">
-              The 7-day flow
+              How this unfolds
             </h2>
             <div className="space-y-8">
               {timeline.map((step) => (
@@ -163,7 +158,7 @@ const AssessmentWelcomePage: React.FC = () => {
           >
             <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">The credit clause</p>
             <p className="text-lg text-ink-soft leading-relaxed">
-              The full $2,500 is credited 100% toward any follow-on engagement - Lead Magnet System, Fractional AI Partner, or custom build - within 60 days of your Day 7 presentation. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
+              The full $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days of receiving your Blueprint. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
             </p>
           </motion.div>
 

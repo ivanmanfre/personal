@@ -27,7 +27,7 @@ export const STAGE_LABELS: Record<string, string> = {
   intake_submitted: 'Intake done',
   day2_scheduled: 'Day 2 booked',
   day2_done: 'Day 2 done',
-  day7_done: 'Day 7 done',
+  day7_done: 'Follow-up done', // legacy stage name; now means "Ivan checked in 5-7d after Blueprint delivery"
   converted: 'Converted',
   refunded: 'Refunded',
 };

@@ -257,14 +257,14 @@ const AssessmentRow: React.FC<{
                 Day 2 done
               </button>
               <button onClick={() => markStage('day7_done', { day7_completed_at: new Date().toISOString() })} className="px-3 py-1.5 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded transition-colors">
-                Day 7 done
+                Follow-up done
               </button>
               <button onClick={() => markStage('converted')} className="px-3 py-1.5 text-xs bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded transition-colors">
                 Converted
               </button>
             </div>
             {row.day2_scheduled_at && <p className="text-[11px] text-zinc-500 mt-2">Day 2 scheduled {relativeTime(row.day2_scheduled_at)}</p>}
-            {row.day7_completed_at && <p className="text-[11px] text-zinc-500 mt-1">Day 7 completed {relativeTime(row.day7_completed_at)}</p>}
+            {row.day7_completed_at && <p className="text-[11px] text-zinc-500 mt-1">Follow-up completed {relativeTime(row.day7_completed_at)}</p>}
           </div>
 
           {/* Session ref + actions */}

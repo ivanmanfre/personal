@@ -170,27 +170,21 @@ const AssessmentPage: React.FC = () => {
             </h2>
             <div className="space-y-6">
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 1</span>
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 0</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  You complete a structured intake questionnaire (30 minutes of your time). 20–30 questions across the 4 preconditions.
+                  Conversational intake (20 questions across the 4 Agent-Ready preconditions). About 25 minutes, saves as you type. Book your Day 2 session in the same flow.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
                 <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 2</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  We run a 60-minute working session. I walk through your answers, ask follow-ups, observe your current systems.
+                  60-minute working session. We walk your intake together, you push back where it does not match reality, and the diagnostic gets sharper because of the conversation.
                 </p>
               </div>
               <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 3–6</span>
+                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 3–5</span>
                 <p className="text-lg text-ink-soft leading-relaxed">
-                  I produce your evaluation, your 90-Day AI Rollout Plan, and specific recommendations.
-                </p>
-              </div>
-              <div className="flex gap-6 items-start">
-                <span className="font-mono text-sm text-ink-mute mt-1 shrink-0 w-12">Day 7</span>
-                <p className="text-lg text-ink-soft leading-relaxed">
-                  60-minute presentation call. I deliver the findings and recommend the path forward - Fractional, project, or wait-and-build.
+                  You receive the Blueprint: the 60/25/15 work split, a 90-day roadmap, quick wins, costed gaps, and a recommended next step (Fractional, project, or wait-and-build).
                 </p>
               </div>
             </div>
