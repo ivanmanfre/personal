@@ -7,7 +7,7 @@ const tiers = [
   {
     name: 'Essential',
     price: '$3,500/mo',
-    fit: 'First fractional engagement. One bottleneck at a time, monthly ship.',
+    fit: 'First time bringing in an embedded AI partner. Light cadence, one bottleneck at a time, no commitment to scale until it earns it.',
     features: [
       '1 strategy call per month',
       'Ongoing improvements + 1 new build per month (or equivalent in smaller automations)',
@@ -19,7 +19,7 @@ const tiers = [
   {
     name: 'Standard',
     price: '$6,500/mo',
-    fit: 'Real automation backlog, ready for steady monthly ship cadence.',
+    fit: "You have 3+ AI/automation projects you'd ship if you had the bandwidth, plus a team that can absorb monthly improvements. Most clients land here.",
     features: [
       '2 strategy calls per month',
       'Running backlog — 2-3 builds or improvements per month, prioritized together',
@@ -32,7 +32,7 @@ const tiers = [
   {
     name: 'Partner',
     price: '$10,000/mo',
-    fit: 'AI as a strategic priority. Senior partner across leadership.',
+    fit: "You're shipping AI across multiple workflows already and need a senior partner who owns the strategy, the stack, and the weekly cadence — not a contractor you brief.",
     features: [
       'Weekly strategy calls',
       'Full implementation bandwidth — whatever moves the needle that month',
@@ -74,7 +74,7 @@ const FractionalPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Fractional AI Partner
+              Fractional AI Partner — Senior operator, ongoing
             </span>
           </motion.div>
 
@@ -150,6 +150,21 @@ const FractionalPage: React.FC = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* Loss anchor + bypass link */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20 max-w-3xl space-y-3"
+          >
+            <p className="text-sm text-ink-soft leading-relaxed">
+              For reference: a full-time senior AI hire runs <span className="font-mono">$200k–$400k</span>/yr fully loaded. Partner tier is <span className="font-mono">$120k</span>/yr with no recruiting risk, no ramp, no benefits, no severance — and a 90-day exit if it isn't working.
+            </p>
+            <p className="text-sm text-ink-mute">
+              Already know what you want built? <a href="/start?path=scope" className="underline hover:text-black">Skip the tier match — book a 30-min scope call</a>.
+            </p>
+          </motion.div>
 
           {/* How it works */}
           <motion.div
