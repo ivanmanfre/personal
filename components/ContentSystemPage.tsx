@@ -147,9 +147,11 @@ const ContentSystemPage: React.FC = () => {
                 <ArrowRight aria-hidden="true" size={18} />
               </a>
             </div>
-            <p className="text-sm text-ink-soft border-t border-[color:var(--color-hairline)] pt-6">
-              Price depends on number of channels (LinkedIn only vs multi-platform), format variety, and how sophisticated your voice training and analytics need to be. I quote after a 30-minute scope call.
-            </p>
+            <div className="border-t border-[color:var(--color-hairline)] pt-6 space-y-4">
+              <p className="text-sm text-ink-soft">
+                Price depends on number of channels (LinkedIn only vs multi-platform), format variety, and how sophisticated your voice training and analytics need to be. I quote after a 30-minute scope call.
+              </p>
+            </div>
           </motion.div>
 
           {/* Benefits */}

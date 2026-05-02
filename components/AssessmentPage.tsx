@@ -85,27 +85,37 @@ const AssessmentPage: React.FC = () => {
             transition={{ delay: 0.3 }}
             className="bg-paper border border-zinc-300 shadow-card p-8 md:p-12 mb-16"
           >
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-6">
               <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
                   Blueprint
                 </p>
                 <p className="text-5xl md:text-6xl font-bold tracking-tighter">$2,500</p>
-                <p className="text-sm text-ink-mute mt-2">One-week engagement · 100% credit clause</p>
+                <p className="text-sm text-ink-mute mt-2">One-week engagement · 100% credited toward any follow-on engagement</p>
               </div>
-              <a
-                href={ASSESSMENT_PAYMENT_LINK}
-                target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
-                rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
-                className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-white"
-              >
-                Build your Blueprint
-                <ArrowRight aria-hidden="true" size={18} />
-              </a>
+              <div className="flex flex-col gap-2 md:items-end">
+                <a
+                  href={ASSESSMENT_PAYMENT_LINK}
+                  target={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? '_blank' : undefined}
+                  rel={ASSESSMENT_PAYMENT_LINK.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="btn-magnetic w-full md:w-auto px-8 py-4 bg-accent rounded-lg border-subtle-thick shadow-card-subtle flex items-center justify-center gap-3 font-semibold text-base tracking-wide text-white"
+                >
+                  Build your Blueprint
+                  <ArrowRight aria-hidden="true" size={18} />
+                </a>
+                <p className="text-xs text-ink-soft md:text-right max-w-[260px]">
+                  Credited 100% if you book any follow-on within 60 days.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-ink-soft border-t border-zinc-200 pt-6">
-              The $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
-            </p>
+            <div className="border-t border-zinc-200 pt-6 space-y-4">
+              <p className="text-sm text-ink-soft">
+                The $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
+              </p>
+              <p className="text-sm text-ink-mute">
+                Already know what you want built? <a href={DISCOVERY_CALL_LINK} className="underline hover:text-black">Skip ahead — book a 30-min scope call</a>.
+              </p>
+            </div>
           </motion.div>
 
           {/* What you get */}
@@ -212,6 +222,9 @@ const AssessmentPage: React.FC = () => {
               Build your Blueprint
               <ArrowRight aria-hidden="true" size={20} />
             </a>
+            <p className="mt-4 text-sm text-zinc-300">
+              Credited 100% if you book any follow-on within 60 days.
+            </p>
             <p className="mt-6 text-sm text-ink-mute">
               Not sure yet? <a href={DISCOVERY_CALL_LINK} className="underline text-zinc-300 hover:text-white">Book a call first</a>.
             </p>

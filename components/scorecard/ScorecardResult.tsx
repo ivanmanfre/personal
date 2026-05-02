@@ -129,9 +129,20 @@ const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onResta
           </div>
         </div>
 
-        <p className="text-lg md:text-xl text-ink-soft leading-relaxed mb-10 max-w-2xl">
+        <p className="text-lg md:text-xl text-ink-soft leading-relaxed mb-6 max-w-2xl">
           {result.recommendation}
         </p>
+
+        {result.verdict === 'agent_ready' && (
+          <div className="mb-10 max-w-2xl border-l border-accent pl-5 py-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-2">
+              Scorecard vs Blueprint
+            </p>
+            <p className="text-base md:text-lg leading-relaxed text-black">
+              The Scorecard tells you the <span className="font-drama italic">verdict.</span> The Blueprint maps the <span className="font-drama italic">deployment.</span>
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row items-start gap-3">
           <a

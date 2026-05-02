@@ -40,7 +40,7 @@ const VERDICT_COPY: Record<Verdict, Omit<ScorecardResult, 'scores' | 'total' | '
   agent_ready: {
     verdictLabel: 'Agent-Ready',
     recommendation:
-      'You meet the four preconditions. The Blueprint maps your highest-ROI deployment in 30 days.',
+      "You meet the four preconditions. The Scorecard tells you the verdict; the Blueprint maps the deployment — sequenced builds, costed gaps, and decision logic for the first project, in one week.",
     ctaLabel: 'Build your Blueprint',
     ctaHref: '/assessment',
   },

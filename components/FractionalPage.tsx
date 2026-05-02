@@ -7,7 +7,7 @@ const tiers = [
   {
     name: 'Essential',
     price: '$3,500/mo',
-    fit: 'Firms at $1–2M ARR, easing into AI.',
+    fit: 'First fractional engagement. One bottleneck at a time, monthly ship.',
     features: [
       '1 strategy call per month',
       'Ongoing improvements + 1 new build per month (or equivalent in smaller automations)',
@@ -19,7 +19,7 @@ const tiers = [
   {
     name: 'Standard',
     price: '$6,500/mo',
-    fit: 'Firms at $2–5M ARR with a real backlog.',
+    fit: 'Real automation backlog, ready for steady monthly ship cadence.',
     features: [
       '2 strategy calls per month',
       'Running backlog — 2-3 builds or improvements per month, prioritized together',
@@ -32,7 +32,7 @@ const tiers = [
   {
     name: 'Partner',
     price: '$10,000/mo',
-    fit: 'Firms at $5M+ going all-in on AI.',
+    fit: 'AI as a strategic priority. Senior partner across leadership.',
     features: [
       'Weekly strategy calls',
       'Full implementation bandwidth — whatever moves the needle that month',
@@ -60,7 +60,7 @@ const notIncluded = [
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Monthly retainer. A senior AI and ops partner embedded in your business, shipping systems every month. Three tiers for growing service firms at $1-5M+ ARR.',
+    description: 'Monthly retainer. A senior AI and ops partner embedded in your business, shipping systems every month. Three tiers based on operating maturity, build backlog, and AI ambition.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
   return (

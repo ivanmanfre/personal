@@ -132,9 +132,11 @@ const LeadMagnetSystemPage: React.FC = () => {
                 <ArrowRight aria-hidden="true" size={18} />
               </a>
             </div>
-            <p className="text-sm text-ink-soft border-t border-[color:var(--color-hairline)] pt-6">
-              Price depends on how many magnet formats you want live at launch, CRM routing complexity, and whether you need a custom newsletter integration. I quote after a 30-minute scope call.
-            </p>
+            <div className="border-t border-[color:var(--color-hairline)] pt-6 space-y-4">
+              <p className="text-sm text-ink-soft">
+                Price depends on how many magnet formats you want live at launch, CRM routing complexity, and whether you need a custom newsletter integration. I quote after a 30-minute scope call.
+              </p>
+            </div>
           </motion.div>
 
           {/* Benefits - lead with outcomes, not features */}

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "prerender": "node scripts/prerender.mjs",
+    "build:prerender": "vite build && node scripts/prerender.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -27,6 +29,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "^1.59.1",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
