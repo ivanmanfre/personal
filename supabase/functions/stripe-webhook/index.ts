@@ -167,6 +167,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Wave 0 / P30-1: Pull source-attribution from Stripe.
+  // Two channels supply attribution:
+  //   1. session.metadata (set if Ivan adds metadata on the Payment Link)
+  //   2. session.client_reference_id (set by buildStripeCheckoutUrl in
+  //      lib/utmCapture.ts; format: source__medium__campaign__content__ref)
+  const meta = session.metadata ?? {};
+  const cref: string | null = session.client_reference_id ?? null;
+  const crefParts = (cref ?? "").split("__");
+  const utm_source = meta.utm_source ?? crefParts[0] ?? null;
+  const utm_medium = meta.utm_medium ?? crefParts[1] ?? null;
+  const utm_campaign = meta.utm_campaign ?? crefParts[2] ?? null;
+  const utm_content = meta.utm_content ?? crefParts[3] ?? null;
+  const referral_token = meta.ref ?? meta.referral_token ?? crefParts[4] ?? null;
+  const utm_term = meta.utm_term ?? null;
+
+  // Compute high-level `source` bucket. Falls back to inference from utm_source.
+  const SOURCE_BUCKETS = new Set([
+    "linkedin", "outreach", "nurture", "podcast", "referral",
+    "google", "direct", "upwork", "lm-share",
+  ]);
+  let source: string | null = null;
+  if (utm_source && SOURCE_BUCKETS.has(utm_source)) source = utm_source;
+  else if (referral_token) source = "referral";
+  else if (utm_source) source = "other";
+
+  const isTest =
+    /(@anthropic\.com|@ivanmanfredi\.com|^test|^e2e)/i.test(email) ||
+    (utm_campaign && /wave0-smoke|self-test|pipeline-test|e2e/i.test(utm_campaign));
+
   const row = {
     stripe_session_id: session.id,
     stripe_customer_id: session.customer ?? null,
@@ -178,6 +207,15 @@ Deno.serve(async (req) => {
     status: "paid",
     paid_at: new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000).toISOString(),
     metadata: session.metadata ?? {},
+    // Wave 0 attribution columns
+    source,
+    referral_token: referral_token || null,
+    utm_source: utm_source || null,
+    utm_medium: utm_medium || null,
+    utm_campaign: utm_campaign || null,
+    utm_term: utm_term || null,
+    utm_content: utm_content || null,
+    is_test: isTest,
   };
 
   const { error } = await sb

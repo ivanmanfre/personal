@@ -59,6 +59,62 @@ Deno.serve(async (req) => {
   const scheduledAt = payload.scheduled_event?.start_time || payload.event?.start_time || null;
   if (!email || !scheduledAt) return jr({ ok: false, reason: "missing email or start_time" });
 
+  // Wave 0 / P30-1: Pull UTM/source attribution from Calendly tracking + utm_*
+  // params. Calendly forwards the embedded prefill URL params into the webhook
+  // under `tracking` (utm_source/medium/campaign/etc.) and `utm_*` direct keys.
+  const tracking = payload.tracking || {};
+  const utm_source = tracking.utm_source || payload.utm_source || null;
+  const utm_medium = tracking.utm_medium || payload.utm_medium || null;
+  const utm_campaign = tracking.utm_campaign || payload.utm_campaign || null;
+  const utm_content = tracking.utm_content || payload.utm_content || null;
+  const utm_term = tracking.utm_term || null;
+  const referral_token = tracking.ref || tracking.referral_token || payload.ref || null;
+  const booking_source_path = tracking.booking_source_path || tracking.utm_source_path || null;
+  const SOURCE_BUCKETS = new Set([
+    "linkedin","outreach","nurture","podcast","referral","google","direct","upwork","lm-share",
+  ]);
+  let source: string | null = null;
+  if (utm_source && SOURCE_BUCKETS.has(utm_source)) source = utm_source;
+  else if (referral_token) source = "referral";
+  else if (utm_source) source = "other";
+
+  const isTest =
+    /(@anthropic\.com|@ivanmanfredi\.com|^test|^e2e)/i.test(email);
+
+  // Calendar_events: try to upsert an attribution row keyed by google_event_id.
+  // We don't always have a google_event_id from Calendly directly; if we have
+  // the Calendly event uri, we use that as a fallback synthetic id. Schema
+  // allows TEXT, so any unique string works.
+  const calendlyEventUri =
+    payload.scheduled_event?.uri || payload.event?.uri || payload.uri || null;
+  if (calendlyEventUri) {
+    try {
+      await supabase.from("calendar_events").upsert(
+        {
+          google_event_id: `calendly:${String(calendlyEventUri).slice(-200)}`,
+          title: payload.scheduled_event?.name || "Calendly booking",
+          start_time: scheduledAt,
+          end_time: payload.scheduled_event?.end_time || null,
+          attendees: [email],
+          platform: "calendly",
+          source,
+          referral_token,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_term,
+          utm_content,
+          booking_source_path,
+          meeting_type: payload.scheduled_event?.name || null,
+          is_test: isTest,
+        },
+        { onConflict: "google_event_id" },
+      );
+    } catch (e) {
+      console.error("[calendly-webhook] calendar_events upsert failed:", String(e));
+    }
+  }
+
   // Find the most recent paid_assessment for this email that hasn't already advanced past day2.
   const { data: pa } = await supabase
     .from("paid_assessments")

@@ -3,12 +3,25 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { preconditions } from '../lib/preconditions';
+import { buildStripeCheckoutUrl } from '../lib/utmCapture';
 
 // Stripe Payment Link (live): prod_UNL0AY5g21pMLX / price_1TOaK906n8CBtSkjxVlpZcWa
 // Post-checkout redirect: /start?intent=assessment-paid&session_id={CHECKOUT_SESSION_ID}
 // Webhook: we_1TOaKL06n8CBtSkjlBuYIYkk -> stripe-webhook edge function -> paid_assessments table
-const ASSESSMENT_PAYMENT_LINK = 'https://buy.stripe.com/dRm28jfCXbrP9p40v1fEk0G';
+//
+// Wave 0 / P30-1: client_reference_id carries first-touch UTM fingerprint
+// (utm_source__utm_medium__utm_campaign__utm_content__ref) so the webhook
+// can write attribution to paid_assessments.utm_*. See lib/utmCapture.ts.
+const ASSESSMENT_PAYMENT_LINK_BASE = 'https://buy.stripe.com/dRm28jfCXbrP9p40v1fEk0G';
 const DISCOVERY_CALL_LINK = '/start';
+
+const useAssessmentCheckoutUrl = () => {
+  const [url, setUrl] = React.useState(ASSESSMENT_PAYMENT_LINK_BASE);
+  React.useEffect(() => {
+    setUrl(buildStripeCheckoutUrl(ASSESSMENT_PAYMENT_LINK_BASE));
+  }, []);
+  return url;
+};
 
 const deliverables = [
   'Your 90-Day AI Rollout Plan: sequenced builds for the next 90 and 180 days',
@@ -24,6 +37,7 @@ const AssessmentPage: React.FC = () => {
     description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. $2,500, 100% credited toward any follow-on engagement.',
     canonical: 'https://ivanmanfredi.com/assessment',
   });
+  const ASSESSMENT_PAYMENT_LINK = useAssessmentCheckoutUrl();
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">

@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
+import { withUtmParams } from '../lib/utmCapture';
 
-// Day 2 working session booking (60 min).
-const CALENDLY_DAY2_URL = 'https://calendly.com/im-ivanmanfredi/60-minute-meeting';
+// Day 2 working session booking (60 min). Wave 0 / P30-1: UTMs applied at
+// render so calendar_events.utm_* survives the booking redirect.
+const CALENDLY_DAY2_URL_BASE = 'https://calendly.com/im-ivanmanfredi/60-minute-meeting';
 
 const timeline = [
   {
@@ -116,7 +118,7 @@ const AssessmentWelcomePage: React.FC = () => {
                 Pick a slot in the next 3 business days. I walk through your answers, ask follow-ups, and map your current systems live.
               </p>
               <a
-                href={CALENDLY_DAY2_URL}
+                href={withUtmParams(CALENDLY_DAY2_URL_BASE, { utm_source: 'assessment-welcome', utm_medium: 'calendly_link', utm_campaign: 'blueprint-day2', booking_source_path: '/assessment/welcome' })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-3 px-5 py-3 bg-accent text-white font-semibold tracking-wide hover:bg-paper transition-colors"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
+import { withUtmParams } from '../lib/utmCapture';
 
 interface FormData {
   companySize: string;
@@ -52,7 +53,9 @@ const decisionMakerOptions = [
   'I am researching',
 ];
 
-const CALENDLY_URL = 'https://calendly.com/im-ivanmanfredi/30min';
+// Wave 0 / P30-1: Calendly URL is decorated with first-touch UTMs at click time
+// (see useEffect below) so calendar_events.utm_* gets populated.
+const CALENDLY_URL_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
 const StartPage: React.FC = () => {
   useMetadata({
@@ -128,7 +131,7 @@ const StartPage: React.FC = () => {
             Based on what you shared, let's talk. Pick a time below. I'll come prepped - you don't have to re-explain anything.
           </p>
           <a
-            href={CALENDLY_URL}
+            href={withUtmParams(CALENDLY_URL_BASE, { utm_medium: 'calendly_link', booking_source_path: window.location.pathname })}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-magnetic inline-flex items-center gap-3 px-8 py-4 bg-black text-white font-bold tracking-wide border-subtle shadow-card"
