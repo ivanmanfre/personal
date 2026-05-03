@@ -36,10 +36,12 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import http from 'node:http';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const DIST = join(ROOT, 'dist');
+const HOST = '127.0.0.1';  // explicit IPv4 — CI runners can resolve 'localhost' to ::1, breaking playwright
 
 // Routes to pre-render — priority order from A08-R01.
 // Each route's <head> already comes from useMetadata(); we just freeze
@@ -56,37 +58,51 @@ const ROUTES = [
 ];
 
 const PORT = 4178;
-const BASE = `http://localhost:${PORT}`;
+const BASE = `http://${HOST}:${PORT}`;
 
 if (!existsSync(DIST)) {
   console.error('[prerender] dist/ not found. Run `vite build` first.');
   process.exit(1);
 }
 
-console.log('[prerender] starting vite preview on port', PORT);
-const preview = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
-  cwd: ROOT,
-  stdio: ['ignore', 'pipe', 'pipe'],
-  env: { ...process.env },
+console.log(`[prerender] starting vite preview on ${HOST}:${PORT}`);
+const preview = spawn(
+  'npx',
+  ['vite', 'preview', '--host', HOST, '--port', String(PORT), '--strictPort'],
+  { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env } }
+);
+
+// Mirror server output for debugging; don't rely on it for ready detection.
+preview.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+preview.stderr.on('data', (chunk) => process.stderr.write(`[vite-err] ${chunk}`));
+preview.on('error', (err) => console.error('[vite] spawn error:', err));
+preview.on('exit', (code, sig) => {
+  if (code !== null && code !== 0) console.error(`[vite] exited code=${code} signal=${sig}`);
 });
 
-let serverReady = false;
-const serverReadyPromise = new Promise((resolve, reject) => {
-  const timeout = setTimeout(() => {
-    if (!serverReady) reject(new Error('vite preview did not become ready in 20s'));
-  }, 20000);
-  preview.stdout.on('data', (chunk) => {
-    const out = chunk.toString();
-    process.stdout.write(`[vite] ${out}`);
-    if (out.includes('Local:') || out.includes(`localhost:${PORT}`)) {
-      serverReady = true;
-      clearTimeout(timeout);
-      resolve();
-    }
+// HTTP healthcheck — more reliable than parsing stdout for color-formatted URLs.
+function ping() {
+  return new Promise((resolve) => {
+    const req = http.get(`${BASE}/`, { timeout: 1500 }, (res) => {
+      res.resume();
+      resolve(res.statusCode && res.statusCode < 500);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
   });
-  preview.stderr.on('data', (chunk) => process.stderr.write(`[vite-err] ${chunk}`));
-  preview.on('error', reject);
-});
+}
+
+async function waitForServer(maxMs = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    if (await ping()) {
+      console.log(`[prerender] vite preview reachable after ${Date.now() - start}ms`);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error(`vite preview did not respond on ${BASE} within ${maxMs}ms`);
+}
 
 async function shutdown(code = 0) {
   try {
@@ -99,11 +115,11 @@ process.on('SIGINT', () => shutdown(130));
 process.on('SIGTERM', () => shutdown(143));
 
 (async () => {
-  await serverReadyPromise;
-  // small grace period for the preview server's first response
-  await new Promise((r) => setTimeout(r, 500));
+  await waitForServer();
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({
+    args: ['--no-sandbox', '--disable-dev-shm-usage'],  // CI runners have limited /dev/shm
+  });
   const context = await browser.newContext({
     userAgent:
       'Mozilla/5.0 (compatible; IvanPrerender/1.0; +https://ivanmanfredi.com)',
@@ -116,8 +132,16 @@ process.on('SIGTERM', () => shutdown(143));
     const url = `${BASE}${route}`;
     console.log(`[prerender] -> ${route}`);
     const page = await context.newPage();
+    // Surface browser console errors so CI logs show why a route fails.
+    page.on('pageerror', (err) => console.error(`[prerender][${route}] pageerror:`, err.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') console.error(`[prerender][${route}] console.error:`, msg.text());
+    });
     try {
-      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      // 'networkidle' hangs on apps with Supabase realtime / long-poll connections.
+      // 'domcontentloaded' is enough — useMetadata() runs in useEffect after first paint
+      // anyway, and we explicitly waitForFunction below.
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       // useMetadata() runs in useEffect after first paint. Wait one micro-tick
       // for the title to update from the index.html default to the route title.
       await page.waitForFunction(
