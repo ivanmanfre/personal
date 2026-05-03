@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { captureUtmFromUrl } from './utmCapture';
 
 const SESSION_KEY = '__pv_sid';
 const EXCLUDE_KEY = '__pv_exclude';
@@ -74,12 +75,29 @@ export async function trackPageview(path: string): Promise<void> {
   if (isIgnoredPath(path)) return;
   if (typeof window === 'undefined') return;
 
-  // Skip localhost + preview builds to keep dev traffic out of prod data.
+  // Skip localhost + preview builds + Vercel/Netlify preview hosts to keep
+  // dev traffic out of prod data. Wave 0 / P30-3.
   const host = window.location.hostname;
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return;
+  if (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host.endsWith('.local') ||
+    host.endsWith('.vercel.app') ||
+    host.endsWith('.netlify.app') ||
+    host.includes('staging.') ||
+    host.includes('preview.')
+  ) {
+    return;
+  }
 
   // Owner opt-out: `?me=1` once per browser, then every future visit is skipped.
   if (syncExclusionFlag()) return;
+
+  // Capture first-touch UTMs for replay through Stripe/Calendly redirects.
+  // Safe to call on every pageview; it's first-touch, so it's a no-op once
+  // we already have a UTM payload for the session.
+  try { captureUtmFromUrl(); } catch { /* never let tracker block */ }
 
   try {
     const params = new URLSearchParams(window.location.search);
