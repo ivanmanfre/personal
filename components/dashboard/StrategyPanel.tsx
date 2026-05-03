@@ -3,6 +3,7 @@ import { Map } from 'lucide-react';
 import { useStrategyMap } from '../../hooks/useStrategyMap';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import { ContentStrategySection } from './strategy/ContentStrategySection';
 import { ICPCampaignsSection } from './strategy/ICPCampaignsSection';
 import { LeadMagnetInventorySection } from './strategy/LeadMagnetInventorySection';
 import { OfferLadderSection } from './strategy/OfferLadderSection';
@@ -29,6 +30,7 @@ const StrategyPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
+      <ContentStrategySection />
       <ICPCampaignsSection campaigns={campaigns} campaignsWithoutLM={campaignsWithoutLM} />
       <LeadMagnetInventorySection leadMagnets={leadMagnets} campaignsWithoutLM={campaignsWithoutLM} />
       <OfferLadderSection
