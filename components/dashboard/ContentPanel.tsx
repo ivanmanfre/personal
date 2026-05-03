@@ -34,6 +34,22 @@ function isLeadMagnet(post: ScheduledPost): boolean {
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Build a YYYY-MM-DD key from a Date in the user's timezone (or local if not set).
+// IMPORTANT: do NOT use toISOString() — it returns UTC, which shifts the day for any
+// timezone east of UTC at local-midnight, producing off-by-one calendar highlighting.
+function localDateKey(d: Date, timezone?: string): string {
+  if (timezone) {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+    return fmt.format(d); // en-CA gives YYYY-MM-DD
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function getMonthDays(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -494,7 +510,7 @@ const ContentPanel: React.FC = () => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const monthDays = getMonthDays(year, month);
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateKey(new Date(), userTimezone);
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -588,7 +604,7 @@ const ContentPanel: React.FC = () => {
 
             <div className="grid grid-cols-7 gap-px bg-zinc-800/30 rounded-lg overflow-hidden">
               {monthDays.map(({ date, inMonth }, i) => {
-                const dateKey = date.toISOString().split('T')[0];
+                const dateKey = localDateKey(date, userTimezone);
                 const dayPosts = postsByDate[dateKey] || [];
                 const isToday = dateKey === today;
 
