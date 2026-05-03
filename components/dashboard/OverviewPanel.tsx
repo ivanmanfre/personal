@@ -13,6 +13,7 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
 import AnimateIn from './shared/AnimateIn';
 import TodaysFocus from './shared/TodaysFocus';
+import StackCard from './StackCard';
 import { pipelineConfig } from './system-map/config';
 import { timeAgo, formatNum } from './shared/utils';
 import type { WorkflowStat } from '../../types/dashboard';
@@ -204,6 +205,11 @@ const OverviewPanel: React.FC = () => {
             })}
           </div>
         </button>
+      </AnimateIn>
+
+      {/* Stack Status */}
+      <AnimateIn delay={160}>
+        <StackCard />
       </AnimateIn>
 
       <AnimateIn delay={200}>
