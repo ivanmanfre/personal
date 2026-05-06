@@ -628,19 +628,6 @@ export function useOutreachPipeline(timezone?: string) {
     }
   }, [fetch, fetchMessages, prospects]);
 
-  const rejectDraft = useCallback(async (prospectId: string, messageId: string) => {
-    try {
-      await supabase.from('outreach_messages').delete().eq('id', messageId);
-      // Revert dm_count so workflow can retry
-      await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: new Date().toISOString() }).eq('id', prospectId);
-      toastSuccess('Draft rejected');
-      await fetchMessages(prospectId);
-      await fetch();
-    } catch (err) {
-      toastError('reject draft', err);
-    }
-  }, [fetch, fetchMessages]);
-
   // Pending DM drafts (loaded globally for review queue)
   const [pendingDrafts, setPendingDrafts] = useState<(OutreachMessage & { prospectName?: string })[]>([]);
 
@@ -671,6 +658,26 @@ export function useOutreachPipeline(timezone?: string) {
   }, [prospects]);
 
   useEffect(() => { fetchPendingDrafts(); }, [fetchPendingDrafts]);
+
+  const rejectDraft = useCallback(async (prospectId: string, messageId: string) => {
+    try {
+      // Anon role has no DELETE policy on outreach_messages — use UPDATE to drop
+      // the row out of the pending-drafts filter (sent_at IS NULL AND email_sequence_stopped_at IS NULL).
+      const now = new Date().toISOString();
+      const { error: msgErr } = await supabase
+        .from('outreach_messages')
+        .update({ email_sequence_stopped_at: now })
+        .eq('id', messageId);
+      if (msgErr) throw msgErr;
+      await supabase.from('outreach_prospects').update({ needs_manual_reply: false, updated_at: now }).eq('id', prospectId);
+      toastSuccess('Draft rejected');
+      await fetchPendingDrafts();
+      await fetchMessages(prospectId);
+      await fetch();
+    } catch (err) {
+      toastError('reject draft', err);
+    }
+  }, [fetch, fetchMessages, fetchPendingDrafts]);
 
   // Comment drafts (commenting_log where status='draft')
   const [commentDrafts, setCommentDrafts] = useState<CommentDraft[]>([]);

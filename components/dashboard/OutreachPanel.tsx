@@ -205,8 +205,15 @@ const OutreachPanel: React.FC = () => {
         const wfNames: Record<string, string> = {
           '35HJE7eOpvEdxRwq': 'Import + Enrich', 'kr2lSH1eRGZcDWmO': 'Warm-up', 'wBBL75oqWcTf78yp': 'Trigger Research',
           '5ZXtArhobWrDDpfJ': 'Connect', 'joU7VaM5OiRAwLwP': 'DM Sequence', 'KWxb6JFdpvb3y8w5': 'Monitor',
-          'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Cohort Scraper',
-          '9q4bhlIBQCiCxQpq': 'Comment Drafter', '2AVRUQLoxCIXCzT0': 'Comment Sender',
+          'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Auto Comments — Post Fetch',
+          '9q4bhlIBQCiCxQpq': 'Auto Comments — Drafter', '2AVRUQLoxCIXCzT0': 'Auto Comments — Sender',
+        };
+        // Translate known errors into plain-English status. Returns null = show raw error.
+        const friendlyError = (wfId: string, err: string): { label: string; detail?: string } | null => {
+          if (wfId === 'VaP0RnmFlhkfKE4V' && /403|usage hard limit|platform-feature-disabled/i.test(err)) {
+            return { label: 'Auto comments suspended — Apify credits depleted', detail: 'Resumes when monthly Apify quota resets (or top up Apify plan).' };
+          }
+          return null;
         };
         return (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
@@ -215,15 +222,22 @@ const OutreachPanel: React.FC = () => {
               <span className="text-sm font-medium text-red-300">{errored.length} workflow{errored.length > 1 ? 's' : ''} erroring</span>
             </div>
             <div className="space-y-1.5">
-              {errored.map(([wfId, h]) => (
-                <div key={wfId} className="text-xs">
-                  <span className="text-red-300 font-medium">{wfNames[wfId] || wfId}</span>
-                  <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
-                  {h.lastError && (
-                    <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1">{h.lastError.slice(0, 200)}</p>
-                  )}
-                </div>
-              ))}
+              {errored.map(([wfId, h]) => {
+                const friendly = h.lastError ? friendlyError(wfId, h.lastError) : null;
+                return (
+                  <div key={wfId} className="text-xs">
+                    <span className="text-red-300 font-medium">{friendly ? friendly.label : (wfNames[wfId] || wfId)}</span>
+                    <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
+                    {friendly?.detail ? (
+                      <p className="text-[10px] text-zinc-400 mt-0.5 ml-1">{friendly.detail}</p>
+                    ) : (
+                      h.lastError && (
+                        <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1">{h.lastError.slice(0, 200)}</p>
+                      )
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -1186,9 +1200,9 @@ const OutreachPanel: React.FC = () => {
                       { id: 'joU7VaM5OiRAwLwP', name: 'DM Sequence', schedule: '30m', flag: 'outreach_auto_dm', desc: '3-DM sequence (warm → owned opinion → soft offer)' },
                       { id: 'KWxb6JFdpvb3y8w5', name: 'Monitor', schedule: '15m', flag: null, desc: 'Reply detection (engaged + connected stages) + alerts' },
                       { id: 'kFYlfnWd98YaiErH', name: 'Send Messages', schedule: '2m', flag: null, desc: 'Email + LinkedIn sender (cap-aware)' },
-                      { id: 'VaP0RnmFlhkfKE4V', name: 'Cohort Scraper', schedule: 'Daily 06:00 UTC', flag: null, desc: 'Apify-scrapes commenting_targets posts → cohort_posts (feeds Drafter)' },
-                      { id: '9q4bhlIBQCiCxQpq', name: 'Comment Drafter', schedule: '2h', flag: 'outreach_auto_comment', desc: 'Fetches posts from commenting_targets, generates drafts in Ivan\'s voice (approve before send)' },
-                      { id: '2AVRUQLoxCIXCzT0', name: 'Comment Sender', schedule: '30m', flag: 'outreach_auto_comment_send', desc: 'Posts approved comment drafts via UniPile — enable only after reviewing drafts' },
+                      { id: 'VaP0RnmFlhkfKE4V', name: 'Auto Comments — Post Fetch', schedule: 'Daily 06:00 UTC', flag: null, desc: 'Apify pulls fresh posts from your ICP cohort (feeds the Drafter). Suspends if Apify credits run out.' },
+                      { id: '9q4bhlIBQCiCxQpq', name: 'Auto Comments — Drafter', schedule: '2h', flag: 'outreach_auto_comment', desc: 'Generates comment drafts on cohort posts in Ivan\'s voice (approve before send)' },
+                      { id: '2AVRUQLoxCIXCzT0', name: 'Auto Comments — Sender', schedule: '30m', flag: 'outreach_auto_comment_send', desc: 'Posts approved comment drafts via UniPile — enable only after reviewing drafts' },
                     ].map((wf) => {
                       const isActive = workflowStatuses[wf.id] ?? false;
                       const flagOn = wf.flag ? (featureFlags[wf.flag] ?? false) : true;
