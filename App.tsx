@@ -49,6 +49,10 @@ const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEdito
 const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
+const HeroComparePage = lazy(() => import('./components/HeroComparePage'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
+import AuditPage from './components/AuditPage';
+const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
 
 function App() {
   const location = useLocation();
@@ -58,6 +62,9 @@ function App() {
   const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
+  const isHeroCompare = location.pathname.startsWith('/hero-compare');
+  const isLanding = location.pathname.startsWith('/landing');
+  const isScanReport = /^\/scan\/[^/]+$/.test(location.pathname);
   // Focused intake/checkout flows — no nav, no footer, no distractions.
   const isIntake =
     location.pathname === '/assessment/intake' ||
@@ -114,6 +121,39 @@ function App() {
     );
   }
 
+  // Hero variant comparison — full-bleed, no nav/footer
+  if (isHeroCompare) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/hero-compare" element={<HeroComparePage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // New landing page — full-bleed, no nav/footer
+  if (isLanding) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/landing" element={<LandingPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  // Scan report — full-screen, no nav/footer (standalone report page)
+  if (isScanReport) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/scan/:slug" element={<ScanReportPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   if (isDashboard) {
     return (
       <Suspense fallback={
@@ -154,6 +194,7 @@ function App() {
           <Route path="/scorecard" element={<ScorecardPage />} />
           <Route path="/scorecard/result/:id" element={<ScorecardResultViewerPage />} />
           <Route path="/scorecard/roadmap/:slug" element={<RoadmapPage />} />
+          <Route path="/audit" element={<AuditPage />} />
           <Route path="/case-studies/own-content-engine" element={<CaseStudyOwnEngine />} />
           <Route path="/podcast" element={<PodcastPage />} />
           <Route path="/store" element={<StorePage />} />
