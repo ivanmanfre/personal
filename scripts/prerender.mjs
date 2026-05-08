@@ -92,7 +92,7 @@ function ping() {
   });
 }
 
-async function waitForServer(maxMs = 30000) {
+async function waitForServer(maxMs = 90000) {
   const start = Date.now();
   while (Date.now() - start < maxMs) {
     if (await ping()) {
