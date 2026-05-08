@@ -50,8 +50,6 @@ const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEdito
 const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
-const HeroComparePage = lazy(() => import('./components/HeroComparePage'));
-const LandingPage = lazy(() => import('./components/LandingPage'));
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
 
 function App() {
@@ -62,8 +60,6 @@ function App() {
   const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
-  const isHeroCompare = location.pathname.startsWith('/hero-compare');
-  const isLanding = location.pathname.startsWith('/landing');
   const isScanReport = /^\/scan\/[^/]+$/.test(location.pathname);
   // Focused intake/checkout flows — no nav, no footer, no distractions.
   const isIntake =
@@ -116,28 +112,6 @@ function App() {
       <Suspense fallback={<div className="min-h-screen bg-paper" />}>
         <Routes>
           <Route path="/walkthrough" element={<Walkthrough />} />
-        </Routes>
-      </Suspense>
-    );
-  }
-
-  // Hero variant comparison — full-bleed, no nav/footer
-  if (isHeroCompare) {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
-        <Routes>
-          <Route path="/hero-compare" element={<HeroComparePage />} />
-        </Routes>
-      </Suspense>
-    );
-  }
-
-  // New landing page — full-bleed, no nav/footer
-  if (isLanding) {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
-        <Routes>
-          <Route path="/landing" element={<LandingPage />} />
         </Routes>
       </Suspense>
     );
