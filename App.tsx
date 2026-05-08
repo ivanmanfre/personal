@@ -19,6 +19,7 @@ import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
 import ContentSystemPage from './components/ContentSystemPage';
 import FractionalPage from './components/FractionalPage';
 import WorkPage from './components/WorkPage';
+import AuditPage from './components/AuditPage';
 import ScrollToTop from './components/ScrollToTop';
 import { trackPageview } from './lib/pageviewTracker';
 
@@ -51,7 +52,6 @@ const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 const HeroComparePage = lazy(() => import('./components/HeroComparePage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
-import AuditPage from './components/AuditPage';
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
 
 function App() {
