@@ -323,8 +323,8 @@ const BuildOutcomesSection: React.FC = () => (
             whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(26,26,26,0.06)' }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease, delay: i * 0.1 }}
-            className="border p-7 flex flex-col cursor-default"
-            style={{ borderColor: 'rgba(26,26,26,0.1)', minHeight: '340px' }}
+            className="border p-7 flex flex-col cursor-default md:min-h-[340px]"
+            style={{ borderColor: 'rgba(26,26,26,0.1)' }}
           >
             <div style={{ ...T.mono, marginBottom: '10px' }}>{o.category}</div>
             <h3 style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.5rem,1.8vw,1.85rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
@@ -360,7 +360,7 @@ const PRECONDITIONS = [
 // Decisively breaks the paper rhythm of neighboring sections.
 const AgentReadySection: React.FC = () => (
   <section
-    className="py-16 md:py-24 border-t relative overflow-hidden"
+    className="py-12 md:py-24 border-t relative overflow-hidden"
     style={{ backgroundColor: '#1A1A1A', borderColor: 'rgba(247,244,239,0.08)' }}
   >
     <div className="container mx-auto px-8 max-w-3xl text-center">
@@ -387,7 +387,7 @@ const AgentReadySection: React.FC = () => (
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.9, ease }}
-        className="mb-16 md:mb-24 mx-auto"
+        className="mb-10 md:mb-24 mx-auto"
         style={{
           fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
           fontStyle: 'italic',
@@ -399,10 +399,30 @@ const AgentReadySection: React.FC = () => (
           maxWidth: '20ch',
         }}
       >
-        If they're true, the system works.
+        If they're true,{' '}
+        <span style={{ position: 'relative', display: 'inline-block' }}>
+          the system works.
+          <motion.span
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ delay: 0.7, duration: 0.85, ease }}
+            style={{
+              position: 'absolute',
+              left: '-1.5%',
+              right: '-1.5%',
+              bottom: '0.18em',
+              height: '0.42em',
+              backgroundColor: 'var(--color-accent-light)',
+              transformOrigin: 'left',
+              opacity: 0.4,
+              zIndex: -1,
+            }}
+          />
+        </span>
       </motion.h2>
 
-      <div className="space-y-16 md:space-y-20">
+      <div className="space-y-8 md:space-y-20">
         {PRECONDITIONS.map((p, i) => (
           <motion.div
             key={p.n}
@@ -418,7 +438,7 @@ const AgentReadySection: React.FC = () => (
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -55%)',
-              fontSize: 'clamp(180px, 22vw, 320px)',
+              fontSize: 'clamp(90px, 22vw, 320px)',
               fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
               fontStyle: 'italic',
               fontWeight: 400,
