@@ -703,21 +703,6 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
           >
             Book your Agent-Ready Assessment <ArrowRight size={18} />
           </a>
-          <Link
-            to="/audit"
-            className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
-            style={{
-              fontFamily: BODY_SERIF,
-              fontWeight: 600,
-              fontSize: '16px',
-              fontStyle: 'italic',
-              color: 'rgba(26,26,26,0.55)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
-          >
-            Scan another company <ArrowRight size={16} />
-          </Link>
         </div>
       </div>
     </section>
