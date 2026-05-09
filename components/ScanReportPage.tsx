@@ -235,86 +235,101 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
   return (
     <Section kicker="01 / The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
-      <div className="grid lg:grid-cols-[1fr_280px] gap-10 lg:gap-12">
-        <div className="space-y-6 max-w-2xl min-w-0">
+      {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
+      <div className="space-y-12 max-w-4xl">
+        {/* 1. Description + facts strip */}
+        <div className="space-y-5">
           <SerifBody large>{company_snapshot.one_liner}</SerifBody>
-
           {facts.length > 0 && (
-            <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.6)' }}>
-              {facts.map((f, i) => (
-                <span key={i}>{f}</span>
-              ))}
+            <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.65)' }}>
+              {facts.map((f, i) => (<span key={i}>{f}</span>))}
             </div>
-          )}
-
-          {(anthropic_verified || openai_verified) && (
-            <div
-              className="px-5 py-4 border-l-2"
-              style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.04)' }}
-            >
-              <SerifBody>
-                DNS records confirm active{' '}
-                <Italic>
-                  {anthropic_verified && 'Anthropic'}
-                  {anthropic_verified && openai_verified && ' + '}
-                  {openai_verified && 'OpenAI'}
-                </Italic>{' '}
-                API usage. The gap here isn't awareness. It's deployment.
-              </SerifBody>
-            </div>
-          )}
-
-          {linkedin_summary && (linkedin_summary.followers || linkedin_summary.posts_30d != null) && (
-            <div className="pt-2">
-              <Kicker>LinkedIn presence</Kicker>
-              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '17px', color: '#3D3D3B' }}>
-                {linkedin_summary.followers != null && (
-                  <span><span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A' }}>{linkedin_summary.followers.toLocaleString()}</span> followers</span>
-                )}
-                {linkedin_summary.posts_30d != null && (
-                  <span><span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A' }}>{linkedin_summary.posts_30d}</span> posts / 30d</span>
-                )}
-                {linkedin_summary.last_post_days != null && (
-                  <span style={{ color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#3D3D3B' }}>
-                    Last post {linkedin_summary.last_post_days}d ago
-                  </span>
-                )}
-                {!!linkedin_summary.ai_mentions && linkedin_summary.ai_mentions > 0 && (
-                  <span style={{ color: 'var(--color-accent)' }}>{linkedin_summary.ai_mentions} AI/automation posts</span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {github && (
-            <SerifBody>
-              GitHub: <Italic>{github.repos} public repositories</Italic>. Engineers on staff.
-            </SerifBody>
           )}
         </div>
 
-        {/* Tech stack column — sticky on desktop so it doesn't dead-air */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        {/* 2. LinkedIn + GitHub presence as a stat strip */}
+        {((linkedin_summary && (linkedin_summary.followers || linkedin_summary.posts_30d != null)) || github) && (
+          <div className="flex flex-wrap gap-x-12 gap-y-6 pt-6 border-t border-[color:var(--color-hairline)]">
+            {linkedin_summary?.followers != null && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>LinkedIn followers</p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                  {linkedin_summary.followers.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {linkedin_summary?.posts_30d != null && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Posts / 30d</p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                  {linkedin_summary.posts_30d}
+                </p>
+              </div>
+            )}
+            {linkedin_summary?.last_post_days != null && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Last post</p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#1A1A1A', marginTop: 4 }}>
+                  {linkedin_summary.last_post_days}d ago
+                </p>
+              </div>
+            )}
+            {!!linkedin_summary?.ai_mentions && linkedin_summary.ai_mentions > 0 && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>AI mentions</p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--color-accent)', marginTop: 4 }}>
+                  {linkedin_summary.ai_mentions}
+                </p>
+              </div>
+            )}
+            {github && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>GitHub repos</p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                  {github.repos}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 3. DNS verification callout — high signal, deserves prominence */}
+        {(anthropic_verified || openai_verified) && (
+          <div className="px-6 py-5 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.05)' }}>
+            <SerifBody>
+              DNS records confirm active{' '}
+              <Italic>
+                {anthropic_verified && 'Anthropic'}
+                {anthropic_verified && openai_verified && ' + '}
+                {openai_verified && 'OpenAI'}
+              </Italic>{' '}
+              API usage. The gap here isn't awareness. It's <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>deployment</strong>.
+            </SerifBody>
+          </div>
+        )}
+
+        {/* 4. Tech stack — full-width 2-column (confirmed | missing) side-by-side. No more 280px squeeze. */}
+        <div className="pt-8 border-t border-[color:var(--color-hairline)]">
           <Kicker>Tech stack</Kicker>
-          <div className="mt-4 space-y-5">
+          <div className="grid md:grid-cols-2 gap-8 mt-6">
             <div>
-              <p style={{ fontFamily: MONO, fontSize: '10px', color: 'var(--color-accent)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>Confirmed</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p style={{ fontFamily: MONO, fontSize: '10px', color: 'var(--color-accent)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>Confirmed</p>
+              <div className="flex flex-wrap gap-2">
                 {tech_stack_assessment.confirmed_tools.length > 0
                   ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)' }}>None detected</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.65)' }}>None detected</p>}
               </div>
             </div>
             <div>
-              <p style={{ fontFamily: MONO, fontSize: '10px', color: '#A85439', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>Missing</p>
-              <div className="flex flex-wrap gap-1.5">
+              <p style={{ fontFamily: MONO, fontSize: '10px', color: '#A85439', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>Missing</p>
+              <div className="flex flex-wrap gap-2">
                 {tech_stack_assessment.missing_critical_tools.length > 0
                   ? tech_stack_assessment.missing_critical_tools.slice(0, 6).map(t => <Chip key={t} label={t} variant="missing" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)' }}>No critical gaps</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.65)' }}>No critical gaps</p>}
               </div>
             </div>
-            <SerifBody className="pt-2 border-t border-[color:var(--color-hairline)]">{tech_stack_assessment.sophistication_notes}</SerifBody>
           </div>
+          <SerifBody className="mt-8 max-w-3xl">{tech_stack_assessment.sophistication_notes}</SerifBody>
         </div>
       </div>
     </Section>
@@ -424,7 +439,9 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
   const realTitle = creative.title || creative.headline || null;
   const body = (creative.body || '').trim();
   const cta = creative.cta_text || null;
-  const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
+  // LinkedIn ads: adLibraryUrl points to the actual ad page (not the company page).
+  // Prefer it over advertiser_url which is the company landing page (audit feedback).
+  const link = creative.adLibraryUrl || creative.ad_library_url || creative.link_url || creative.ad_url || creative.advertiser_url || null;
   const platformLabel = platform === 'google' ? 'Google' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
 
   // Three render modes — chosen by what data the platform actually returns:

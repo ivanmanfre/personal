@@ -98,7 +98,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
         </div>
         <div>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-            Monthly cost
+            Costing you monthly
           </p>
           <p style={{
             fontFamily: SERIF,

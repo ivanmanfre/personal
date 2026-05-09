@@ -114,6 +114,8 @@ export interface AdCreative {
   // LinkedIn Ads (when populated)
   headline?: string;
   advertiser_url?: string;
+  adLibraryUrl?: string;
+  ad_library_url?: string;
 }
 
 export interface Scan {
