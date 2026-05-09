@@ -73,7 +73,7 @@ const AssessmentWelcomePage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-16"
           >
-            Thanks for paying for the Agent-Ready Blueprint. The full $2,500 is credited back toward any follow-on engagement within 60 days. Here are your two next actions.
+            Thanks for paying for the Agent-Ready Blueprint. The full $2,000 is credited back toward any follow-on engagement within 60 days. Here are your two next actions.
           </motion.p>
 
           {/* Two immediate actions */}
@@ -160,7 +160,7 @@ const AssessmentWelcomePage: React.FC = () => {
           >
             <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">The credit clause</p>
             <p className="text-lg text-ink-soft leading-relaxed">
-              The full $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days of receiving your Blueprint. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
+              The full $2,000 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days of receiving your Blueprint. If the recommendation is to wait and fix the foundation first, that recommendation is the deliverable.
             </p>
           </motion.div>
 

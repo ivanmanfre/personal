@@ -12,7 +12,7 @@ import { buildStripeCheckoutUrl } from '../lib/utmCapture';
 // Wave 0 / P30-1: client_reference_id carries first-touch UTM fingerprint
 // (utm_source__utm_medium__utm_campaign__utm_content__ref) so the webhook
 // can write attribution to paid_assessments.utm_*. See lib/utmCapture.ts.
-const ASSESSMENT_PAYMENT_LINK_BASE = 'https://buy.stripe.com/dRm28jfCXbrP9p40v1fEk0G';
+const ASSESSMENT_PAYMENT_LINK_BASE = 'https://buy.stripe.com/bJe7sDcqLeE130G2D9fEk0J';
 const DISCOVERY_CALL_LINK = '/start';
 
 const useAssessmentCheckoutUrl = () => {
@@ -34,7 +34,7 @@ const deliverables = [
 const AssessmentPage: React.FC = () => {
   useMetadata({
     title: 'The Agent-Ready Blueprint | Manfredi',
-    description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. $2,500, 100% credited toward any follow-on engagement.',
+    description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. $2,000, 100% credited toward any follow-on engagement.',
     canonical: 'https://ivanmanfredi.com/assessment',
   });
   const ASSESSMENT_PAYMENT_LINK = useAssessmentCheckoutUrl();
@@ -71,7 +71,7 @@ const AssessmentPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-12"
           >
-            A 1-week diagnostic. I evaluate your operation against the four conditions every AI build needs before it ships. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. If you move forward, the full $2,500 is credited back.
+            A 1-week diagnostic. I evaluate your operation against the four conditions every AI build needs before it ships. You leave with your 90-Day AI Rollout Plan: sequenced builds, costed gaps, and decision logic for the first project. If you move forward, the full $2,000 is credited back.
           </motion.p>
 
           {/* Who this is for - self-select gate */}
@@ -104,7 +104,7 @@ const AssessmentPage: React.FC = () => {
                 <p className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2">
                   Blueprint
                 </p>
-                <p className="text-5xl md:text-6xl font-bold tracking-tighter">$2,500</p>
+                <p className="text-5xl md:text-6xl font-bold tracking-tighter">$2,000</p>
                 <p className="text-sm text-ink-mute mt-2">One-week engagement · 100% credited toward any follow-on engagement</p>
               </div>
               <div className="flex flex-col gap-2 md:items-end">
@@ -124,7 +124,7 @@ const AssessmentPage: React.FC = () => {
             </div>
             <div className="border-t border-zinc-200 pt-6 space-y-4">
               <p className="text-sm text-ink-soft">
-                The $2,500 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
+                The $2,000 is credited 100% toward any follow-on engagement (Lead Magnet System, Fractional AI Partner, or custom build) within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.
               </p>
               <p className="text-sm text-ink-mute">
                 Already know what you want built? <a href={DISCOVERY_CALL_LINK} className="underline hover:text-black">Skip ahead — book a 30-min scope call</a>.

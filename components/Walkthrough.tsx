@@ -178,7 +178,7 @@ const Slide01: React.FC = () => (
           transition={{ delay: 1.7, duration: 0.6 }}
         >
           <span className="px-2 py-1 border border-[color:var(--color-hairline-bold)]">
-            $2,500
+            $2,000
           </span>
           <span>·</span>
           <span>5 DAYS</span>
@@ -224,7 +224,7 @@ const Slide02: React.FC = () => (
 
       <div className="mt-16 grid grid-cols-3 gap-12 max-w-5xl">
         {[
-          { label: 'PRICE', value: '$2,500', italic: false, delay: 0.4 },
+          { label: 'PRICE', value: '$2,000', italic: false, delay: 0.4 },
           { label: 'DURATION', value: '1 week', italic: false, delay: 0.7 },
           { label: 'OUTCOME', value: 'a 90-day plan', italic: true, delay: 1.0 },
         ].map((cell) => (
@@ -760,7 +760,7 @@ const Slide08: React.FC = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        The $2,500 isn't a{' '}
+        The $2,000 isn't a{' '}
         <span className="font-drama-display">separate fee.</span>
       </motion.h2>
 
@@ -801,7 +801,7 @@ const Slide08: React.FC = () => (
             transition={{ delay: 2.1 }}
           >
             <span>Blueprint credit</span>
-            <span className="stat-numeral">– $2,500</span>
+            <span className="stat-numeral">– $2,000</span>
           </motion.div>
           <motion.div
             className="border-t border-[color:var(--color-hairline-bold)] pt-3"
@@ -915,7 +915,7 @@ const Slide10: React.FC = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.4, duration: 0.6 }}
       >
-        <span className="stat-numeral text-5xl md:text-6xl font-semibold">$2,500</span>
+        <span className="stat-numeral text-5xl md:text-6xl font-semibold">$2,000</span>
         <span className="font-mono text-base uppercase tracking-[0.2em] text-ink-mute">
           ONE WEEK · CREDITED 100%
         </span>

@@ -44,7 +44,7 @@ const tiers = [
 ];
 
 const howItWorks = [
-  { title: 'Month 1: Agent-Ready Blueprint (credited)', description: 'Every Fractional engagement starts with the $2,500 diagnostic, fully credited to month 1. I score your ops, we agree on scope, you approve the 30-day roadmap.' },
+  { title: 'Month 1: Agent-Ready Blueprint (credited)', description: 'Every Fractional engagement starts with the $2,000 diagnostic, fully credited to month 1. I score your ops, we agree on scope, you approve the 30-day roadmap.' },
   { title: 'Monthly cadence', description: 'Strategy calls happen on a fixed day. Implementation projects get delivered within the month. I track scope in a shared doc so you know where every hour went.' },
   { title: 'Quarterly Recalibration', description: 'Every 90 days I re-run the Blueprint against your evolving stack and goals. What shipped, what shifted, what\'s next. New ordered priorities, new costed gaps. No upcharge — it\'s how we make sure month 7 is as sharp as month 1.' },
   { title: 'No lock-in', description: 'Month-to-month. If the partnership isn\'t working, we end it cleanly.' },

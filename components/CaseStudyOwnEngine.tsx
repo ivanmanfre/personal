@@ -354,7 +354,7 @@ const CaseStudyOwnEngine: React.FC = () => {
               Want the same shape, mapped to your operation?
             </h3>
             <p className="text-zinc-400 mb-8 max-w-xl mx-auto leading-relaxed">
-              The Agent-Ready Blueprint is one week. You leave with the sequenced plan, costed gaps, and decision logic for the first project. $2,500, 100% credited to any follow-on engagement.
+              The Agent-Ready Blueprint is one week. You leave with the sequenced plan, costed gaps, and decision logic for the first project. $2,000, 100% credited to any follow-on engagement.
             </p>
             <a
               href="/assessment"
