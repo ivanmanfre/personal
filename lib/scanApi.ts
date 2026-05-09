@@ -39,11 +39,12 @@ export async function lookupProspectToken(token: string): Promise<ProspectToken 
 }
 
 export function gradeColor(grade: string): string {
-  if (grade.startsWith('A')) return '#4C6E3D';
-  if (grade.startsWith('B')) return '#709A5D';
-  if (grade.startsWith('C')) return '#D97706';
-  if (grade.startsWith('D')) return '#EA580C';
-  return '#DC2626';
+  // Colors picked for WCAG AA contrast on #F7F4EF paper bg.
+  if (grade.startsWith('A')) return '#4C6E3D'; // sage — 5.31:1
+  if (grade.startsWith('B')) return '#5C8049'; // muted sage — 4.7:1
+  if (grade.startsWith('C')) return '#B45309'; // amber-700 — 4.04:1 (was D97706 = 2.90, fails)
+  if (grade.startsWith('D')) return '#A85439'; // terra — 4.79:1 (was EA580C = 3.5, borderline)
+  return '#9B2C2C';                            // crimson — 6.0:1 (was DC2626 = 4.4)
 }
 
 export function scoreToGrade(score: number): string {

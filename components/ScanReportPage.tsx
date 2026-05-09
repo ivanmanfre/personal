@@ -1,7 +1,7 @@
 // components/ScanReportPage.tsx
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
@@ -26,12 +26,17 @@ const Kicker: React.FC<{ children: React.ReactNode }> = ({ children }) => (
       fontSize: '11px',
       letterSpacing: '0.22em',
       textTransform: 'uppercase',
-      color: 'rgba(26,26,26,0.5)',
+      color: 'rgba(26,26,26,0.65)', // bumped from 0.5 — fails AA at this size
     }}
   >
     {children}
   </p>
 );
+
+// Helper: image onError that swaps to a no-preview block. Kills broken images everywhere.
+const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
+  (e.target as HTMLImageElement).style.display = 'none';
+};
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <h2
@@ -51,8 +56,8 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({
   kicker, title, children,
 }) => (
-  <section className="border-t border-[color:var(--color-hairline)] py-20 lg:py-24">
-    <div className="mb-10 lg:mb-12 space-y-3">
+  <section className="border-t border-[color:var(--color-hairline)] py-16 lg:py-20">
+    <div className="mb-12 lg:mb-16 space-y-3">
       <Kicker>{kicker}</Kicker>
       <SectionTitle>{title}</SectionTitle>
     </div>
@@ -71,7 +76,8 @@ const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; classNam
     className={className}
     style={{
       fontFamily: BODY_SERIF,
-      fontSize: large ? '19px' : '17px',
+      // Bigger on desktop, slightly smaller on mobile so 45+ char/line at 390px
+      fontSize: large ? 'clamp(17px, 2.4vw, 19px)' : 'clamp(15.5px, 2.2vw, 17px)',
       lineHeight: 1.65,
       color: '#3D3D3B',
       fontWeight: 400,
@@ -121,8 +127,8 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
   return (
     <Section kicker="01 — The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
-      <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-start">
-        <div className="space-y-6 max-w-2xl">
+      <div className="grid lg:grid-cols-[1fr_280px] gap-10 lg:gap-12">
+        <div className="space-y-6 max-w-2xl min-w-0">
           <SerifBody large>{company_snapshot.one_liner}</SerifBody>
 
           {facts.length > 0 && (
@@ -179,16 +185,16 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
           )}
         </div>
 
-        {/* Tech stack column */}
-        <div className="lg:w-72 lg:shrink-0">
+        {/* Tech stack column — sticky on desktop so it doesn't dead-air */}
+        <div className="lg:sticky lg:top-24 lg:self-start">
           <Kicker>Tech stack</Kicker>
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-5">
             <div>
               <p style={{ fontFamily: MONO, fontSize: '10px', color: 'var(--color-accent)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>Confirmed</p>
               <div className="flex flex-wrap gap-1.5">
                 {tech_stack_assessment.confirmed_tools.length > 0
                   ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>None detected</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)' }}>None detected</p>}
               </div>
             </div>
             <div>
@@ -196,11 +202,11 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
               <div className="flex flex-wrap gap-1.5">
                 {tech_stack_assessment.missing_critical_tools.length > 0
                   ? tech_stack_assessment.missing_critical_tools.slice(0, 6).map(t => <Chip key={t} label={t} variant="missing" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>No critical gaps</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)' }}>No critical gaps</p>}
               </div>
             </div>
+            <SerifBody className="pt-2 border-t border-[color:var(--color-hairline)]">{tech_stack_assessment.sophistication_notes}</SerifBody>
           </div>
-          <SerifBody className="mt-6">{tech_stack_assessment.sophistication_notes}</SerifBody>
         </div>
       </div>
     </Section>
@@ -220,8 +226,8 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 
   const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
     <div className="border-l-2 border-[color:var(--color-hairline)] pl-4">
-      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{label}</p>
-      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#1A1A1A', marginTop: 6 }}>
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{label}</p>
+      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 6 }}>
         {value}
       </p>
     </div>
@@ -248,10 +254,10 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
           href={f!.crunchbase_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-8 transition-colors"
-          style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}
+          className="inline-flex items-center gap-1.5 mt-8 py-3 -my-3 transition-colors"
+          style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.7)')}
         >
           View Crunchbase profile <ArrowRight className="w-3 h-3" />
         </a>
@@ -266,10 +272,10 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
       kicker={`03 — ${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
-      <SerifBody className="mb-10 max-w-2xl">
+      <SerifBody className="mb-4 max-w-2xl">
         Each gap is sourced from specific data signals — DNS records, tech stack, ad activity, hiring patterns. No speculation.
       </SerifBody>
-      <div className="space-y-4">
+      <div>
         {report.opportunities.map((opp, i) => (
           <OpportunityCard key={i} opportunity={opp} index={i} />
         ))}
@@ -279,42 +285,44 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
 }
 
 function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
-  const image = (creative.images && creative.images[0]) || creative.preview_url || null;
-  const headline = creative.title || creative.headline || creative.advertiser_name || creative.page_name || 'Ad';
+  const initialImage = (creative.images && creative.images[0]) || creative.preview_url || null;
+  const [imgFailed, setImgFailed] = React.useState(false);
+  const showImage = initialImage && !imgFailed;
+
+  // Headline must be a real ad title — never fall back to advertiser_name (causes identical "Directive Consulting" rows)
+  const headline = creative.title || creative.headline || null;
   const body = creative.body || '';
-  const cta = creative.cta_text || (creative.ad_format ? `Format: ${creative.ad_format}` : null);
+  const cta = creative.cta_text || null;
   const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
   const platformLabel = platform === 'google' ? 'Google' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
 
   return (
-    <div className="bg-paper border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col">
-      {image ? (
+    <div className="bg-paper border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col min-h-[44px]">
+      {showImage ? (
         <div className="aspect-[16/10] overflow-hidden" style={{ background: '#EFEAE2' }}>
-          <img src={image} alt={headline} className="w-full h-full object-cover" loading="lazy" />
+          <img src={initialImage!} alt={headline ?? `${platformLabel} ad creative`} className="w-full h-full object-cover" loading="lazy" onError={() => setImgFailed(true)} />
         </div>
       ) : (
-        <div className="aspect-[16/10] flex items-center justify-center" style={{ background: '#EFEAE2', fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)', letterSpacing: '0.1em' }}>
-          {creative.has_video || creative.video_url ? 'VIDEO' : 'NO PREVIEW'}
+        <div className="aspect-[16/10] flex items-center justify-center" style={{ background: '#EFEAE2', fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)', letterSpacing: '0.1em' }}>
+          {creative.has_video || creative.video_url ? 'VIDEO' : creative.ad_format?.toUpperCase() || 'NO PREVIEW'}
         </div>
       )}
       <div className="p-5 flex-1 flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{platformLabel}</span>
+          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{platformLabel}</span>
           {creative.is_active && <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>● Active</span>}
         </div>
-        <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{headline}</p>
+        {headline && (
+          <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{headline}</p>
+        )}
         {body && <SerifBody className="line-clamp-3"><span style={{ fontSize: '14px' }}>{body}</span></SerifBody>}
-        {cta && (
+        {cta && link && (
           <div className="mt-auto pt-3 border-t border-[color:var(--color-hairline)]">
-            {link ? (
-              <a href={link} target="_blank" rel="noopener noreferrer"
-                 style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
-                 className="inline-flex items-center gap-1.5 hover:underline">
-                {cta} <ExternalLink className="w-3 h-3" />
-              </a>
-            ) : (
-              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{cta}</span>
-            )}
+            <a href={link} target="_blank" rel="noopener noreferrer"
+               style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
+               className="inline-flex items-center gap-1.5 py-1 -my-1 hover:underline">
+              {cta} <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         )}
       </div>
@@ -326,10 +334,15 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   const ads = report.ads;
   if (!ads) return null;
 
+  // Frontend safety filter: drop creatives that have neither a real headline nor an image.
+  // Backstop for upstream — they were producing 6 identical placeholder rows otherwise.
+  const isUsable = (c: AdCreative) =>
+    !!(c.title || c.headline || (c.images && c.images[0]) || c.preview_url);
+
   const all: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
-  (ads.google_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'google', creative: c }));
-  (ads.linkedin_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'linkedin', creative: c }));
-  (ads.meta_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'meta', creative: c }));
+  (ads.google_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'google', creative: c }));
+  (ads.linkedin_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'linkedin', creative: c }));
+  (ads.meta_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'meta', creative: c }));
   if (all.length === 0) return null;
 
   return (
@@ -350,20 +363,27 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const { company_snapshot, anthropic_verified, openai_verified, linkedin_summary } = report;
   const signal = company_snapshot.ai_adoption_signal;
 
-  const meta: Record<string, { label: string; tone: string; description: string }> = {
-    early_adopter: { label: 'Early Adopter', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations — ahead of the peer group.' },
-    on_par: { label: 'On Par', tone: '#C97A2E', description: 'Awareness is there, but deployment lags behind leading firms.' },
-    behind: { label: 'Behind', tone: '#A85439', description: 'No AI tooling detected. Each month of delay compounds the gap.' },
-    unknown: { label: 'Unknown', tone: 'rgba(26,26,26,0.5)', description: 'Insufficient signals to benchmark AI adoption.' },
+  // P1 #13: "Unknown" reframed as a sales motion (loss-frame) rather than a non-statement
+  const meta: Record<string, { label: string; suffix?: string; tone: string; description: string }> = {
+    early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations — ahead of the peer group.' },
+    on_par: { label: 'On Par.', tone: '#A85439', description: 'Awareness is there, but deployment lags behind leading firms.' },
+    behind: { label: 'Behind.', tone: '#9B2C2C', description: 'No AI tooling detected. Each month of delay compounds the gap.' },
+    unknown: {
+      label: 'Unknown —',
+      suffix: "and that's data.",
+      tone: 'rgba(26,26,26,0.85)',
+      description: 'No verified AI provider, no LLM tooling in the public stack, no AI-themed posts in the last 30 days. Either the team is still scoping or the work is happening off-site. Both are gaps the Assessment closes.',
+    },
   };
   const m = meta[signal] ?? meta.unknown;
 
   return (
     <Section kicker="05 — AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
-        <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
-          {m.label}.
-        </p>
+        <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
+          {m.label}
+          {m.suffix && <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}> {m.suffix}</span>}
+        </h3>
         <SerifBody large>{m.description}</SerifBody>
         {(anthropic_verified || openai_verified) && (
           <div className="px-5 py-4 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.04)' }}>
@@ -479,7 +499,7 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
             Scan another company <ArrowRight size={16} />
           </Link>
         </div>
-        <p className="mt-8" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>
+        <p className="mt-8" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}>
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
       </div>
@@ -492,13 +512,14 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
 const ScanReportPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { scan, loading, error } = useScan(slug ?? null);
+  const reduceMotion = useReducedMotion();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Loading report</p>
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Loading report</p>
         </div>
       </div>
     );
@@ -529,25 +550,26 @@ const ScanReportPage: React.FC = () => {
     <div className="min-h-screen bg-paper text-ink">
       {/* Header */}
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b border-[color:var(--color-hairline)]" style={{ background: 'rgba(247,244,239,0.9)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="transition-colors"
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <Link to="/" className="transition-colors hover:text-accent"
                 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
             Iván Manfredi
           </Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             AI Opportunity Scan · {companyName}
           </span>
           <a
             href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=scan`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2"
+            className="inline-flex items-center justify-center gap-2 px-4"
             style={{
               fontFamily: BODY_SERIF,
               fontSize: '14px',
               fontWeight: 600,
               backgroundColor: '#1A1A1A',
               color: '#F7F4EF',
+              minHeight: 44,
             }}
           >
             Book a call <ArrowRight size={14} />
@@ -555,23 +577,23 @@ const ScanReportPage: React.FC = () => {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 pb-24">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
         {/* Hero */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE }}
           className="pt-20 lg:pt-32 pb-16 lg:pb-24"
         >
           <div className="flex items-center gap-3 mb-8">
             <motion.span
-              animate={{ opacity: [1, 0.3, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              animate={reduceMotion ? undefined : { opacity: [1, 0.3, 1] }}
+              transition={reduceMotion ? undefined : { duration: 2, repeat: Infinity }}
               style={{ color: 'var(--color-accent)', fontSize: '8px' }}
             >
               ●
             </motion.span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
               AI Opportunity Scan · {new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
@@ -582,13 +604,14 @@ const ScanReportPage: React.FC = () => {
                 <img
                   src={report.logo_url}
                   alt=""
+                  loading="lazy"
                   className="w-16 h-16 object-contain mb-6"
                   style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  onError={fallbackOnError}
                 />
               )}
               <motion.h1
-                initial={{ opacity: 0, y: 12 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15, duration: 0.7, ease: EASE }}
                 style={{
@@ -618,14 +641,14 @@ const ScanReportPage: React.FC = () => {
           {/* Teaser signals */}
           {report.teaser_signals && report.teaser_signals.length > 0 && (
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.6 }}
               className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10"
             >
               {report.teaser_signals.map((s, i) => (
                 <div key={i} className="border-t-2 pt-4" style={{ borderColor: 'var(--color-accent)' }}>
-                  <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginBottom: 8 }}>
+                  <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 8 }}>
                     Signal {String(i + 1).padStart(2, '0')}
                   </p>
                   <SerifBody>{s.replace(/^⚠\s?/, '')}</SerifBody>
