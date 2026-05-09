@@ -367,11 +367,11 @@ const AgentReadySection: React.FC = () => (
         transition={{ duration: 0.9, ease }}
         style={{
           fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '10px',
-          letterSpacing: '0.3em',
+          fontSize: '12px',
+          letterSpacing: '0.25em',
           textTransform: 'uppercase',
           color: 'var(--color-accent-light)',
-          marginBottom: '2rem',
+          marginBottom: '1.75rem',
         }}
       >
         03 / What "Agent-Ready" means
@@ -382,21 +382,20 @@ const AgentReadySection: React.FC = () => (
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.9, ease }}
-        className="mb-10 md:mb-24 mx-auto"
+        className="mb-12 md:mb-20 mx-auto"
         style={{
           fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-          fontStyle: 'italic',
           fontWeight: 400,
-          fontSize: 'clamp(2rem, 4.2vw, 3.4rem)',
-          lineHeight: 1.15,
+          fontSize: 'clamp(2.4rem, 5vw, 4.2rem)',
+          lineHeight: 1.1,
           letterSpacing: '-0.02em',
           color: '#F7F4EF',
-          maxWidth: '20ch',
+          maxWidth: '22ch',
         }}
       >
-        If they're true,{' '}
-        <span style={{ position: 'relative', display: 'inline-block' }}>
-          the system works.
+        Four preconditions.<br />
+        <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
+          When they're all true, the system works.
           <motion.span
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
@@ -407,10 +406,10 @@ const AgentReadySection: React.FC = () => (
               left: '-1.5%',
               right: '-1.5%',
               bottom: '0.18em',
-              height: '0.42em',
+              height: '0.38em',
               backgroundColor: 'var(--color-accent-light)',
               transformOrigin: 'left',
-              opacity: 0.4,
+              opacity: 0.32,
               zIndex: -1,
             }}
           />
@@ -453,12 +452,12 @@ const AgentReadySection: React.FC = () => (
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontStyle: 'italic',
                 fontWeight: 400,
-                fontSize: 'clamp(1.6rem, 2.6vw, 2.4rem)',
-                lineHeight: 1.2,
+                fontSize: 'clamp(1.8rem, 3vw, 2.8rem)',
+                lineHeight: 1.15,
                 letterSpacing: '-0.02em',
                 color: '#F7F4EF',
-                marginBottom: '14px',
-                maxWidth: '28ch',
+                marginBottom: '18px',
+                maxWidth: '26ch',
                 marginLeft: 'auto',
                 marginRight: 'auto',
               }}>
@@ -467,10 +466,10 @@ const AgentReadySection: React.FC = () => (
               <p style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
                 fontWeight: 400,
-                fontSize: '16px',
+                fontSize: '18px',
                 color: 'rgba(247,244,239,0.78)',
                 lineHeight: 1.65,
-                maxWidth: '50ch',
+                maxWidth: '52ch',
                 marginLeft: 'auto',
                 marginRight: 'auto',
               }}>
