@@ -361,13 +361,23 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
 }
 
 function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
-  const initialImage = (creative.images && creative.images[0]) || creative.preview_url || null;
+  // Google's "preview_url" is a JS iframe, NOT an image — filter out non-renderable URLs
+  const isRenderableImage = (url: string | null | undefined): boolean => {
+    if (!url) return false;
+    if (/\.(js|html?)(\?|$)/i.test(url)) return false; // JS/HTML iframes (Google ad previews)
+    return true;
+  };
+
+  const candidateImage = (creative.images && creative.images[0]) || creative.preview_url || null;
+  const initialImage = isRenderableImage(candidateImage) ? candidateImage : null;
   const [imgFailed, setImgFailed] = React.useState(false);
   const showImage = initialImage && !imgFailed;
 
-  // Headline must be a real ad title — never fall back to advertiser_name (causes identical "Directive Consulting" rows)
-  const headline = creative.title || creative.headline || null;
-  const body = creative.body || '';
+  // Headline preference: real title → first sentence of body → null (renders nothing in title slot)
+  const realTitle = creative.title || creative.headline || null;
+  const bodyFirstSentence = (creative.body || '').split(/[.!?\n]/)[0]?.trim().slice(0, 80) || null;
+  const headline = realTitle || bodyFirstSentence;
+  const body = realTitle ? (creative.body || '') : (creative.body || '').slice(headline?.length || 0).trim();
   const cta = creative.cta_text || null;
   const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
   const platformLabel = platform === 'google' ? 'Google' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
