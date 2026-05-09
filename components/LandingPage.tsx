@@ -394,25 +394,28 @@ const AgentReadySection: React.FC = () => (
         }}
       >
         Four preconditions.<br />
-        <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
-          When they're all true, the system works.
-          <motion.span
-            initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ delay: 0.7, duration: 0.85, ease }}
-            style={{
-              position: 'absolute',
-              left: '-1.5%',
-              right: '-1.5%',
-              bottom: '0.18em',
-              height: '0.38em',
-              backgroundColor: 'var(--color-accent-light)',
-              transformOrigin: 'left',
-              opacity: 0.32,
-              zIndex: -1,
-            }}
-          />
+        <span style={{ fontStyle: 'italic' }}>
+          When they're all true,{' '}
+          <span style={{ position: 'relative', display: 'inline-block' }}>
+            the system works.
+            <motion.span
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ delay: 0.7, duration: 0.85, ease }}
+              style={{
+                position: 'absolute',
+                left: '-2%',
+                right: '-2%',
+                bottom: '0.16em',
+                height: '0.38em',
+                backgroundColor: 'var(--color-accent-light)',
+                transformOrigin: 'left',
+                opacity: 0.34,
+                zIndex: -1,
+              }}
+            />
+          </span>
         </span>
       </motion.h2>
 
