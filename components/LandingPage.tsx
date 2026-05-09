@@ -775,6 +775,30 @@ const OfferSection: React.FC = () => (
               </li>
             ))}
           </ul>
+          <p style={{
+            fontFamily: '"Source Serif 4", Georgia, serif',
+            fontStyle: 'italic',
+            fontSize: '13px',
+            color: 'rgba(247,244,239,0.5)',
+            marginBottom: '14px',
+            lineHeight: 1.5,
+          }}>
+            Not ready?{' '}
+            <a
+              href="/scorecard"
+              style={{
+                color: 'rgba(247,244,239,0.7)',
+                textDecoration: 'underline',
+                textDecorationColor: 'rgba(247,244,239,0.25)',
+                textUnderlineOffset: '3px',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent-light)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(247,244,239,0.7)')}
+            >
+              take the free Agent-Ready Scorecard →
+            </a>
+          </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <MagneticCTA href="/assessment" variant="primary" dark>
               Build your Blueprint <ArrowRight size={18} />
@@ -783,25 +807,6 @@ const OfferSection: React.FC = () => (
               Prefer to talk first? Book a call <ArrowRight size={15} />
             </MagneticCTA>
           </div>
-          <a
-            href="/scorecard"
-            style={{
-              display: 'inline-block',
-              marginTop: '20px',
-              fontFamily: '"Source Serif 4", Georgia, serif',
-              fontStyle: 'italic',
-              fontSize: '13px',
-              color: 'rgba(247,244,239,0.5)',
-              textDecoration: 'underline',
-              textDecorationColor: 'rgba(247,244,239,0.2)',
-              textUnderlineOffset: '4px',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent-light)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(247,244,239,0.5)')}
-          >
-            Or take the free Agent-Ready Scorecard →
-          </a>
         </motion.div>
 
       </div>
