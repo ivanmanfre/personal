@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_LINKS = [
-  { name: 'Services', href: '#services' },
-  { name: 'Method', href: '#method' },
-  { name: 'Work', href: '#cases' },
-  { name: 'About', href: '#about' },
+  { name: 'Scorecard', href: '/scorecard', internal: true },
+  { name: 'Store', href: '/store', internal: true },
 ];
 
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-  const isHome = location.pathname === '/';
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
@@ -54,20 +49,11 @@ const Navbar: React.FC = () => {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8" style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 500 }}>
-          {NAV_LINKS.map((link) =>
-            isHome ? (
-              <a key={link.name} href={link.href} className={`${linkBase} ${linkColor}`}>
-                {link.name}
-              </a>
-            ) : (
-              <Link key={link.name} to={`/${link.href}`} className={`${linkBase} ${linkColor}`}>
-                {link.name}
-              </Link>
-            )
-          )}
-          <Link to="/scorecard" className={`${linkBase} ${linkColor}`}>
-            Scorecard
-          </Link>
+          {NAV_LINKS.map((link) => (
+            <Link key={link.name} to={link.href} className={`${linkBase} ${linkColor}`}>
+              {link.name}
+            </Link>
+          ))}
 
           <a
             href="/start"
@@ -116,37 +102,17 @@ const Navbar: React.FC = () => {
             }}
           >
             <div className="flex flex-col p-6 gap-1" style={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-              {NAV_LINKS.map((link) =>
-                isHome ? (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
-                    style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
-                  >
-                    {link.name}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.name}
-                    to={`/${link.href}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
-                    style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
-                  >
-                    {link.name}
-                  </Link>
-                )
-              )}
-              <Link
-                to="/scorecard"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
-                style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
-              >
-                Scorecard
-              </Link>
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
+                  style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
+                >
+                  {link.name}
+                </Link>
+              ))}
               <a
                 href="/start"
                 onClick={() => setIsMobileMenuOpen(false)}
