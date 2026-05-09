@@ -56,8 +56,8 @@ const RevealHeadline: React.FC<{ children: React.ReactNode; as?: 'h2' | 'h3'; st
   const Tag = as === 'h2' ? motion.h2 : motion.h3;
   return (
     <Tag
-      initial={reduceMotion ? false : { opacity: 0, y: 20, filter: 'blur(8px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      initial={reduceMotion ? false : { y: 18, filter: 'blur(6px)' }}
+      whileInView={{ y: 0, filter: 'blur(0px)' }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.9, ease: EASE }}
       style={style}
@@ -130,24 +130,25 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
 );
 
 const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => (
-  <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline', color: highlight ? '#1A1A1A' : 'var(--color-accent)' }}>
-    {children}
+  <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block', color: highlight ? '#1A1A1A' : 'var(--color-accent)' }}>
+    {/* Highlight strip is BEHIND text using a stacking-context trick — positioned absolutely with isolation */}
     {highlight && (
       <span
         aria-hidden
         style={{
           position: 'absolute',
-          left: '-1%',
-          right: '-1%',
-          bottom: '0.16em',
-          height: '0.4em',
+          left: '-2%',
+          right: '-2%',
+          bottom: '0.12em',
+          height: '0.42em',
           background: 'var(--color-accent)',
-          opacity: 0.24,
-          zIndex: -1,
+          opacity: 0.28,
           pointerEvents: 'none',
+          // No zIndex: -1 (would escape below paper bg). Render BEFORE text in DOM order; text paints on top naturally.
         }}
       />
     )}
+    <span style={{ position: 'relative' }}>{children}</span>
   </span>
 );
 
@@ -330,8 +331,8 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
         {stats.map((s, i) => (
           <motion.div
             key={s.label}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 12 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease: EASE, delay: i * 0.06 }}
             className="border-l-2 border-[color:var(--color-hairline)] pl-4"
@@ -618,22 +619,7 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
           }}
         >
           Your highest-priority gap is{' '}
-          <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline' }}>
-            {report.top_gap_title}
-            <span
-              aria-hidden
-              style={{
-                position: 'absolute',
-                left: '-0.5%',
-                right: '-0.5%',
-                bottom: '0.18em',
-                height: '0.38em',
-                background: 'var(--color-accent)',
-                opacity: 0.22,
-                zIndex: -1,
-              }}
-            />
-          </span>.
+          <Italic highlight>{report.top_gap_title}</Italic>.
         </h2>
         <SerifBody large className="mb-3 max-w-xl">{report.top_gap_summary}</SerifBody>
         <SerifBody className="mb-10 max-w-xl"><span style={{ color: 'rgba(26,26,26,0.55)' }}>In the Agent-Ready Assessment, we turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.</span></SerifBody>
@@ -750,8 +736,8 @@ const ScanReportPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
         {/* Hero */}
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={reduceMotion ? false : { y: 16 }}
+          animate={{ y: 0 }}
           transition={{ duration: 0.7, ease: EASE }}
           className="pt-10 lg:pt-16 pb-12 lg:pb-20"
         >
@@ -781,8 +767,8 @@ const ScanReportPage: React.FC = () => {
                 />
               )}
               <motion.h1
-                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={reduceMotion ? false : { y: 10 }}
+                animate={{ y: 0 }}
                 transition={{ delay: 0.15, duration: 0.7, ease: EASE }}
                 style={{
                   fontFamily: SERIF,
@@ -811,8 +797,8 @@ const ScanReportPage: React.FC = () => {
           {/* Teaser signals */}
           {report.teaser_signals && report.teaser_signals.length > 0 && (
             <motion.div
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={reduceMotion ? false : { y: 8 }}
+              animate={{ y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
               className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10"
             >
