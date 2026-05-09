@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { DashboardProvider } from '../../contexts/DashboardContext';
 import { Shell } from './Shell';
+import { PwaInstall } from './PwaInstall';
+import { registerServiceWorker } from './registerSW';
 import { Briefing } from './sections/Briefing';
 import { ContentStudio } from './sections/ContentStudio';
 import { ReachPipeline } from './sections/ReachPipeline';
@@ -58,6 +60,7 @@ function ShellInner() {
 }
 
 export default function DemoShell() {
+  useEffect(() => { registerServiceWorker(); }, []);
   return (
     <DashboardProvider>
       <Toaster
@@ -73,6 +76,7 @@ export default function DemoShell() {
         }}
       />
       <ShellInner />
+      <PwaInstall />
     </DashboardProvider>
   );
 }

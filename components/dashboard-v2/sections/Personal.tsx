@@ -1,5 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { HeadRow, SubTabs, SubTab } from '../primitives';
+import { NotificationSettings } from '../NotificationSettings';
 
 /**
  * Phase 6 — Personal.
@@ -46,7 +47,16 @@ export function Personal() {
         ))}
       </SubTabs>
       <Suspense fallback={<Loading />}>
-        {sub === 'health' ? <HealthPanel /> : <SettingsPanel />}
+        {sub === 'health' ? (
+          <HealthPanel />
+        ) : (
+          <>
+            <NotificationSettings />
+            <div style={{ marginTop: '2rem' }}>
+              <SettingsPanel />
+            </div>
+          </>
+        )}
       </Suspense>
     </>
   );
