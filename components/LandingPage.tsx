@@ -355,33 +355,54 @@ const PRECONDITIONS = [
   { n: '04', title: 'You want AI that augments, not replaces', sub: 'Your team stays in the loop. The system handles the repeat work. The people handle judgment.' },
 ];
 
-// Pattern-break section — full-bleed editorial manifesto, no Label, giant numbered items.
-// Resets the visitor's eye after 3 sections of repeating Label+H2+content rhythm.
+// Pattern-break section — DARK editorial pull-quote manifesto.
+// Third dark moment on the page; centered editorial typography with huge ghost numerals.
+// Decisively breaks the paper rhythm of neighboring sections.
 const AgentReadySection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-4xl">
+  <section
+    className="py-16 md:py-24 border-t relative overflow-hidden"
+    style={{ backgroundColor: '#1A1A1A', borderColor: 'rgba(247,244,239,0.08)' }}
+  >
+    <div className="container mx-auto px-8 max-w-3xl text-center">
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.9, ease }}
+        style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: '10px',
+          letterSpacing: '0.3em',
+          textTransform: 'uppercase',
+          color: 'var(--color-accent-light)',
+          marginBottom: '2rem',
+        }}
+      >
+        Four preconditions
+      </motion.div>
 
       <motion.h2
         initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.9, ease }}
-        className="mb-12 md:mb-16"
+        className="mb-16 md:mb-24 mx-auto"
         style={{
           fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
           fontStyle: 'italic',
           fontWeight: 400,
           fontSize: 'clamp(2rem, 4.2vw, 3.4rem)',
-          lineHeight: 1.1,
+          lineHeight: 1.15,
           letterSpacing: '-0.02em',
-          color: '#1A1A1A',
-          maxWidth: '24ch',
+          color: '#F7F4EF',
+          maxWidth: '20ch',
         }}
       >
-        Four preconditions. If they're true, the system works.
+        If they're true, the system works.
       </motion.h2>
 
-      <div className="space-y-8 md:space-y-10">
+      <div className="space-y-16 md:space-y-20">
         {PRECONDITIONS.map((p, i) => (
           <motion.div
             key={p.n}
@@ -389,49 +410,58 @@ const AgentReadySection: React.FC = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.8, ease, delay: i * 0.08 }}
-            className="grid md:grid-cols-[80px_1fr] gap-4 md:gap-10 items-baseline relative"
+            className="relative"
           >
-            {/* Giant numeral */}
-            <span style={{
+            {/* Giant ghost numeral as backdrop */}
+            <div aria-hidden style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -55%)',
+              fontSize: 'clamp(180px, 22vw, 320px)',
               fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
               fontStyle: 'italic',
               fontWeight: 400,
-              fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
+              color: '#F7F4EF',
+              opacity: 0.04,
               lineHeight: 1,
-              letterSpacing: '-0.02em',
-              color: 'var(--color-accent)',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              zIndex: 0,
+              whiteSpace: 'nowrap',
             }}>
-              {p.n}.
-            </span>
-            <div style={{ maxWidth: '55ch' }}>
-              <div style={{
+              {p.n}
+            </div>
+
+            <div className="relative" style={{ zIndex: 1 }}>
+              <h3 style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontStyle: 'italic',
                 fontWeight: 400,
-                fontSize: 'clamp(1.4rem, 2vw, 1.8rem)',
+                fontSize: 'clamp(1.6rem, 2.6vw, 2.4rem)',
                 lineHeight: 1.2,
-                letterSpacing: '-0.015em',
-                color: '#1A1A1A',
-                marginBottom: '12px',
+                letterSpacing: '-0.02em',
+                color: '#F7F4EF',
+                marginBottom: '14px',
+                maxWidth: '28ch',
+                marginLeft: 'auto',
+                marginRight: 'auto',
               }}>
                 {p.title}
-              </div>
+              </h3>
               <p style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
-                fontSize: '17px',
-                color: 'rgba(26,26,26,0.62)',
+                fontStyle: 'italic',
+                fontSize: '16px',
+                color: 'rgba(247,244,239,0.55)',
                 lineHeight: 1.65,
+                maxWidth: '50ch',
+                marginLeft: 'auto',
+                marginRight: 'auto',
               }}>
                 {p.sub}
               </p>
             </div>
-            {/* Sage divider — only between, not after last */}
-            {i < PRECONDITIONS.length - 1 && (
-              <div className="md:col-span-2 mt-8 md:mt-10" style={{
-                height: '1px',
-                background: 'linear-gradient(to right, rgba(42,143,101,0.25) 0%, rgba(42,143,101,0.05) 60%, transparent 100%)',
-              }} />
-            )}
           </motion.div>
         ))}
       </div>
@@ -942,7 +972,7 @@ const LandingFooter: React.FC = () => {
 const AboutStrip: React.FC = () => (
   <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
     <div className="container mx-auto px-8 max-w-5xl">
-      <div className="grid md:grid-cols-[160px_1fr] gap-6 md:gap-12 items-start md:items-center">
+      <div className="grid md:grid-cols-[220px_1fr] gap-8 md:gap-14 items-start md:items-center">
         <motion.div
           initial={{ opacity: 0, scale: 1.05 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -950,11 +980,11 @@ const AboutStrip: React.FC = () => (
           transition={{ duration: 0.9, ease }}
         >
           <picture>
-            <source type="image/webp" srcSet="/ivan-hero-800.webp" />
+            <source type="image/webp" srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w" sizes="(min-width: 768px) 220px, 130px" />
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-20 md:w-full aspect-square object-cover object-top"
+              className="w-32 md:w-full aspect-square object-cover object-top"
               style={{ borderRadius: '0' }}
             />
           </picture>
@@ -965,13 +995,10 @@ const AboutStrip: React.FC = () => (
             Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
           </h2>
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.25rem' }}>Agent-Ready Ops™</div>
-          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.78)', lineHeight: 1.6, marginBottom: '12px' }}>
+          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.78)', lineHeight: 1.6, marginBottom: '14px' }}>
             I've shipped <span style={{ fontStyle: 'italic', color: '#F7F4EF' }}>100+ AI and automation systems</span> for growing service businesses.
           </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '15px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.6, marginBottom: '14px' }}>
-            Every Blueprint is run by me personally. No team handoff, no junior consultant. The diagnostic ships in 7 days because I'm the one writing it.
-          </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(247,244,239,0.38)', lineHeight: 1.5 }}>
+          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(247,244,239,0.42)', lineHeight: 1.5 }}>
             Off-keyboard, I play tennis. With more enthusiasm than skill.
           </p>
         </motion.div>
@@ -1022,9 +1049,10 @@ const LandingPage: React.FC = () => {
           opacity: 0.65,
         }}
       />
-      {/* Fixed sage cursor spotlight — covers all sections */}
+      {/* Fixed sage cursor spotlight — desktop only (touch devices have no cursor;
+          leaving it on creates a static green blob in the middle of the screen). */}
       <motion.div
-        className="pointer-events-none"
+        className="pointer-events-none hidden lg:block"
         style={{ background: spotlight, position: 'fixed', inset: 0, zIndex: 9999 }}
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
