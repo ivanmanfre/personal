@@ -19,11 +19,18 @@ export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
   const reduceMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
-  const [displayed, setDisplayed] = useState(reduceMotion ? score : 0);
-  const [filled, setFilled] = useState(reduceMotion ? score : 0);
+  // Always render the real score by default — animate from 0 only if in view AND motion enabled.
+  // Bug: previously initialized to 0 and only updated on inView fire — if the trigger missed,
+  // the score stayed visually 0 forever. Now the score always shows; animation is decoration.
+  const [displayed, setDisplayed] = useState(score);
+  const [filled, setFilled] = useState(score);
+  const [hasAnimated, setHasAnimated] = useState(false);
 
   useEffect(() => {
-    if (!inView || reduceMotion) return;
+    if (!inView || reduceMotion || hasAnimated) return;
+    setDisplayed(0);
+    setFilled(0);
+    setHasAnimated(true);
     const c1 = animate(0, score, {
       duration: 1.4,
       ease: EASE,
@@ -36,7 +43,7 @@ export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
       onUpdate: (v) => setFilled(v),
     });
     return () => { c1.stop(); c2.stop(); };
-  }, [inView, score, reduceMotion]);
+  }, [inView, score, reduceMotion, hasAnimated]);
 
   return (
     <div className="w-full" ref={ref}>

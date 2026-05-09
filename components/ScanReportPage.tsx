@@ -38,12 +38,14 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
-// Motion presets — match landing page vocabulary (RevealH2, inView)
+// Motion presets — match landing page vocabulary.
+// Sections render fully visible by default; subtle decoration only.
+// (Earlier version used opacity:0 reveals — caused below-fold sections to vanish on slower viewports.)
 const inViewProps = {
-  initial: { opacity: 0, y: 28 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' } as const,
-  transition: { duration: 0.85, ease: EASE },
+  initial: { y: 14 },
+  whileInView: { y: 0 },
+  viewport: { once: true, margin: '-100px' } as const,
+  transition: { duration: 0.7, ease: EASE },
 };
 
 // Blur-in headline on scroll — same as landing page RevealH2
@@ -127,8 +129,26 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
   </motion.section>
 );
 
-const Italic: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{children}</span>
+const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => (
+  <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline', color: highlight ? '#1A1A1A' : 'var(--color-accent)' }}>
+    {children}
+    {highlight && (
+      <span
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: '-1%',
+          right: '-1%',
+          bottom: '0.16em',
+          height: '0.4em',
+          background: 'var(--color-accent)',
+          opacity: 0.24,
+          zIndex: -1,
+          pointerEvents: 'none',
+        }}
+      />
+    )}
+  </span>
 );
 
 const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; className?: string }> = ({
@@ -188,7 +208,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section kicker="01 — The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
+    <Section kicker="01 — The Company" title={<>Who they are, <Italic highlight>what they run on</Italic>.</>}>
       <div className="grid lg:grid-cols-[1fr_280px] gap-10 lg:gap-12">
         <div className="space-y-6 max-w-2xl min-w-0">
           <SerifBody large>{company_snapshot.one_liner}</SerifBody>
@@ -305,7 +325,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   if (stats.length === 0) return null;
 
   return (
-    <Section kicker="02 — Signals" title={<>The numbers <Italic>behind the brand</Italic>.</>}>
+    <Section kicker="02 — Signals" title={<>The numbers <Italic highlight>behind the brand</Italic>.</>}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
         {stats.map((s, i) => (
           <motion.div
@@ -346,7 +366,7 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
       kicker={`03 — ${report.opportunities.length} Opportunities`}
-      title={<>Where time <Italic>quietly leaks</Italic>.</>}
+      title={<>Where time <Italic highlight>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
         Each gap is sourced from specific data signals — DNS records, tech stack, ad activity, hiring patterns. No speculation.
@@ -361,10 +381,9 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
 }
 
 function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
-  // Google's "preview_url" is a JS iframe, NOT an image — filter out non-renderable URLs
   const isRenderableImage = (url: string | null | undefined): boolean => {
     if (!url) return false;
-    if (/\.(js|html?)(\?|$)/i.test(url)) return false; // JS/HTML iframes (Google ad previews)
+    if (/\.(js|html?)(\?|$)/i.test(url)) return false; // Google JS iframes don't render as <img>
     return true;
   };
 
@@ -372,34 +391,94 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
   const initialImage = isRenderableImage(candidateImage) ? candidateImage : null;
   const [imgFailed, setImgFailed] = React.useState(false);
   const showImage = initialImage && !imgFailed;
-
-  // Headline preference: real title → first sentence of body → null (renders nothing in title slot)
   const realTitle = creative.title || creative.headline || null;
-  const bodyFirstSentence = (creative.body || '').split(/[.!?\n]/)[0]?.trim().slice(0, 80) || null;
-  const headline = realTitle || bodyFirstSentence;
-  const body = realTitle ? (creative.body || '') : (creative.body || '').slice(headline?.length || 0).trim();
+  const body = (creative.body || '').trim();
   const cta = creative.cta_text || null;
   const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
   const platformLabel = platform === 'google' ? 'Google' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
 
-  return (
-    <div className="bg-paper border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col min-h-[44px]">
-      {showImage ? (
-        <div className="aspect-[16/10] overflow-hidden" style={{ background: '#EFEAE2' }}>
-          <img src={initialImage!} alt={headline ?? `${platformLabel} ad creative`} className="w-full h-full object-cover" loading="lazy" onError={() => setImgFailed(true)} />
-        </div>
-      ) : (
-        <div className="aspect-[16/10] flex items-center justify-center" style={{ background: '#EFEAE2', fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.6)', letterSpacing: '0.1em' }}>
-          {creative.has_video || creative.video_url ? 'VIDEO' : creative.ad_format?.toUpperCase() || 'NO PREVIEW'}
-        </div>
+  // Three render modes — chosen by what data the platform actually returns:
+  // (a) Image card  — Meta + image-bearing creatives
+  // (b) Pull-quote  — LinkedIn ads (rich body, no image)
+  // (c) Compact tag — Google text-only ads (no body, only ad_format)
+  const mode: 'image' | 'quote' | 'tag' = showImage ? 'image' : (body.length > 30 ? 'quote' : 'tag');
+
+  const platformChip = (
+    <div className="flex items-center gap-2">
+      <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{platformLabel}</span>
+      {creative.is_active && (
+        <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>● Active</span>
       )}
+    </div>
+  );
+
+  if (mode === 'quote') {
+    return (
+      <div
+        className="p-7 flex flex-col gap-4 hover:bg-paper-sunk/30 transition-colors"
+        style={{ borderLeft: '2px solid var(--color-accent)' }}
+      >
+        {platformChip}
+        <blockquote
+          style={{
+            fontFamily: SERIF,
+            fontStyle: 'italic',
+            fontSize: 'clamp(18px, 2.2vw, 22px)',
+            lineHeight: 1.35,
+            letterSpacing: '-0.01em',
+            color: '#1A1A1A',
+          }}
+        >
+          "{body.length > 220 ? body.slice(0, 217) + '…' : body}"
+        </blockquote>
+        {realTitle && (
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)' }}>— {realTitle}</p>
+        )}
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer"
+             style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
+             className="inline-flex items-center gap-1.5 mt-auto py-2 -my-2 hover:underline">
+            {cta || 'View ad'} <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'tag') {
+    // Google text-only ad: render the ad_format + advertiser_name as a quiet badge
+    return (
+      <div className="p-6 border border-[color:var(--color-hairline)] flex flex-col gap-3 hover:border-ink/20 transition-colors">
+        {platformChip}
+        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1.2, color: '#1A1A1A' }}>
+          {creative.ad_format ? `${creative.ad_format.charAt(0).toUpperCase()}${creative.ad_format.slice(1)} creative` : 'Active campaign'}
+        </p>
+        {(creative.first_shown || creative.last_shown) && (
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', color: 'rgba(26,26,26,0.6)' }}>
+            {creative.first_shown && creative.last_shown ? `${creative.first_shown} → ${creative.last_shown}` : (creative.first_shown || creative.last_shown)}
+          </p>
+        )}
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer"
+             style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
+             className="inline-flex items-center gap-1.5 mt-auto py-2 -my-2 hover:underline">
+            View on transparency center <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  // mode === 'image'
+  return (
+    <div className="border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col min-h-[44px]">
+      <div className="aspect-[16/10] overflow-hidden" style={{ background: '#EFEAE2' }}>
+        <img src={initialImage!} alt={realTitle ?? `${platformLabel} ad creative`} className="w-full h-full object-cover" loading="lazy" onError={() => setImgFailed(true)} />
+      </div>
       <div className="p-5 flex-1 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{platformLabel}</span>
-          {creative.is_active && <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>● Active</span>}
-        </div>
-        {headline && (
-          <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{headline}</p>
+        {platformChip}
+        {realTitle && (
+          <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{realTitle}</p>
         )}
         {body && <SerifBody className="line-clamp-3"><span style={{ fontSize: '14px' }}>{body}</span></SerifBody>}
         {cta && link && (
@@ -420,10 +499,15 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   const ads = report.ads;
   if (!ads) return null;
 
-  // Frontend safety filter: drop creatives that have neither a real headline nor an image.
-  // Backstop for upstream — they were producing 6 identical placeholder rows otherwise.
-  const isUsable = (c: AdCreative) =>
-    !!(c.title || c.headline || (c.images && c.images[0]) || c.preview_url);
+  // Frontend safety filter: drop creatives that have NO showable content at all.
+  // Body counts as content (LinkedIn ads are body-only), as does image, title, headline.
+  // Google text-only ads (no body, no image) still pass via ad_format → "tag" mode.
+  const isUsable = (c: AdCreative) => {
+    const hasText = !!(c.title || c.headline || (c.body && c.body.trim().length > 5));
+    const hasImage = !!((c.images && c.images[0]) || c.preview_url);
+    const hasGoogleTag = !!(c.ad_format && (c.first_shown || c.last_shown || c.ad_url));
+    return hasText || hasImage || hasGoogleTag;
+  };
 
   const all: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
   (ads.google_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'google', creative: c }));
@@ -432,7 +516,7 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   if (all.length === 0) return null;
 
   return (
-    <Section kicker="04 — Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
+    <Section kicker="04 — Live Ad Activity" title={<>What they're <Italic highlight>spending on, right now</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
         Pulled live from public ad libraries — Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
       </SerifBody>
@@ -464,7 +548,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="05 — AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+    <Section kicker="05 — AI Adoption" title={<>Where they sit <Italic highlight>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -495,7 +579,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
 function Section5Competitive({ report }: { report: ReportJson }) {
   if (!report.competitive_context && (!report.competitors || report.competitors.length === 0)) return null;
   return (
-    <Section kicker="06 — Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+    <Section kicker="06 — Competitive Context" title={<>The <Italic highlight>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -669,7 +753,7 @@ const ScanReportPage: React.FC = () => {
           initial={reduceMotion ? false : { opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE }}
-          className="pt-20 lg:pt-32 pb-16 lg:pb-24"
+          className="pt-10 lg:pt-16 pb-12 lg:pb-20"
         >
           <div className="flex items-center gap-3 mb-8">
             <motion.span
