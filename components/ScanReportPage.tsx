@@ -737,60 +737,41 @@ const CinematicHero: React.FC<{
 }> = ({ companyName, report, scan, reduceMotion }) => {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const ref = useRef<HTMLDivElement>(null);
+  // Ref is ALWAYS attached so useScroll keeps measuring. Pin behavior is conditionally applied via CSS.
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end start'],
   });
 
-  // 0.0 → 0.4: lede + signals + logo fade. 0.2 → 0.85: score scales up + slides toward center.
+  // 0.0 → 0.4: lede + signals fade out. 0.15 → 0.85: score scales up + slides toward center.
   const fadeOut = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
-  const scoreScale = useTransform(scrollYProgress, [0.15, 0.85], [1, 2.4]);
-  const scoreX = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '-22%']);
-  const scoreY = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '20%']);
+  const scoreScale = useTransform(scrollYProgress, [0.15, 0.85], [1, 2.6]);
+  const scoreX = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '-30%']);
+  const scoreY = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '15%']);
 
-  // Static fallback (mobile, reduced motion, SSR)
-  if (!isDesktop || reduceMotion) {
-    return (
-      <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <div className="pt-10 lg:pt-16 pb-12 lg:pb-20">
-          <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
-          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
-            <div>
-              {report.logo_url && (
-                <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
-                  style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
-                  onError={fallbackOnError} />
-              )}
-              <h1 style={{
-                fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(3rem, 7vw, 6rem)',
-                lineHeight: 0.94, letterSpacing: '-0.025em', color: '#1A1A1A', marginBottom: '1.25rem',
-              }}>{companyName}</h1>
-              <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
-            </div>
-            <div className="lg:w-80 lg:shrink-0">
-              <Kicker>Automation Opportunity Score</Kicker>
-              <div className="mt-4">
-                <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
-              </div>
-            </div>
-          </div>
-          <HeroTeaserSignals signals={report.teaser_signals} />
-        </div>
-      </div>
-    );
-  }
+  const isPinning = isDesktop && !reduceMotion;
 
-  // Cinematic pin (desktop). Tall outer wrapper drives scroll progress; inner sticky child renders the hero.
   return (
-    <div ref={ref} className="relative" style={{ height: '180vh' }}>
-      <div className="sticky top-16 min-h-[calc(100vh-4rem)] flex flex-col">
-        <div className="max-w-6xl mx-auto px-6 w-full pt-10 pb-12 flex-1 flex flex-col">
-          <motion.div style={{ opacity: fadeOut }}>
-            <HeroBylineRow scan={scan} reduceMotion={false} />
+    <div
+      ref={ref}
+      className="relative"
+      // 180vh outer container drives the scroll-progress measurement when pinning.
+      // Mobile / reduced-motion: collapses to natural height (no pin).
+      style={{ height: isPinning ? '180vh' : 'auto' }}
+    >
+      <div
+        className="flex flex-col"
+        style={isPinning
+          ? { position: 'sticky', top: 64, minHeight: 'calc(100vh - 64px)' }
+          : { position: 'static' }}
+      >
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 w-full pt-10 lg:pt-16 pb-12 lg:pb-20 flex-1 flex flex-col">
+          <motion.div style={isPinning ? { opacity: fadeOut } : undefined}>
+            <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
           </motion.div>
 
           <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end flex-1">
-            <motion.div style={{ opacity: fadeOut }}>
+            <motion.div style={isPinning ? { opacity: fadeOut } : undefined}>
               {report.logo_url && (
                 <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
                   style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
@@ -805,9 +786,11 @@ const CinematicHero: React.FC<{
 
             <motion.div
               className="lg:w-80 lg:shrink-0"
-              style={{ scale: scoreScale, x: scoreX, y: scoreY, transformOrigin: 'right bottom' }}
+              style={isPinning
+                ? { scale: scoreScale, x: scoreX, y: scoreY, transformOrigin: 'center center' }
+                : undefined}
             >
-              <motion.div style={{ opacity: fadeOut }}>
+              <motion.div style={isPinning ? { opacity: fadeOut } : undefined}>
                 <Kicker>Automation Opportunity Score</Kicker>
               </motion.div>
               <div className="mt-4">
@@ -816,7 +799,7 @@ const CinematicHero: React.FC<{
             </motion.div>
           </div>
 
-          <motion.div style={{ opacity: fadeOut }}>
+          <motion.div style={isPinning ? { opacity: fadeOut } : undefined}>
             <HeroTeaserSignals signals={report.teaser_signals} />
           </motion.div>
         </div>
