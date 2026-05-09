@@ -33,13 +33,13 @@ export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
     setDisplayed(0);
     setFilled(0);
     const c1 = animate(0, score, {
-      duration: 1.2,
+      duration: 0.8,
       ease: EASE,
       onUpdate: (v) => setDisplayed(Math.round(v)),
       onComplete: () => setDisplayed(score),
     });
     const c2 = animate(0, score, {
-      duration: 1.4,
+      duration: 1.0,
       delay: 0.1,
       ease: EASE,
       onUpdate: (v) => setFilled(v),

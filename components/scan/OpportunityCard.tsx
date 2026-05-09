@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { Opportunity } from '../../lib/scanTypes';
+import { Emphasized } from '../ScanReportPage';
 
 interface Props {
   opportunity: Opportunity;
@@ -63,7 +64,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
             borderLeft: '2px solid var(--color-accent)',
             paddingLeft: '14px',
           }}>
-            "{opportunity.evidence}"
+            "<Emphasized>{opportunity.evidence}</Emphasized>"
           </blockquote>
         </div>
 
@@ -72,7 +73,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
             What replaces it
           </p>
           <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B' }}>
-            {opportunity.automation_solution}
+            <Emphasized>{opportunity.automation_solution}</Emphasized>
           </p>
         </div>
       </div>
@@ -116,7 +117,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
             ROI
           </p>
           <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B', marginTop: 4 }}>
-            {opportunity.roi_estimate}
+            <Emphasized>{opportunity.roi_estimate}</Emphasized>
           </p>
         </div>
       </aside>

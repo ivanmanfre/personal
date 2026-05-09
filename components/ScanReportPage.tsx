@@ -38,6 +38,23 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
+// Renders **markdown bold** segments as <strong>. Per audit: scan page had 0 bold instances → no skim layer.
+// Claude prompt now instructs it to wrap key phrases (dollar amounts, hour counts, key terms) in **double asterisks**.
+export const Emphasized: React.FC<{ children: string }> = ({ children }) => {
+  if (!children || typeof children !== 'string') return <>{children}</>;
+  const parts = children.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (p.startsWith('**') && p.endsWith('**')) {
+          return <strong key={i} style={{ fontWeight: 600, color: '#1A1A1A' }}>{p.slice(2, -2)}</strong>;
+        }
+        return <React.Fragment key={i}>{p}</React.Fragment>;
+      })}
+    </>
+  );
+};
+
 // Motion presets — match landing page vocabulary.
 // Sections render fully visible by default; subtle decoration only.
 // (Earlier version used opacity:0 reveals — caused below-fold sections to vanish on slower viewports.)
@@ -56,10 +73,10 @@ const RevealHeadline: React.FC<{ children: React.ReactNode; as?: 'h2' | 'h3'; st
   const Tag = as === 'h2' ? motion.h2 : motion.h3;
   return (
     <Tag
-      initial={reduceMotion ? false : { y: 18, filter: 'blur(6px)' }}
-      whileInView={{ y: 0, filter: 'blur(0px)' }}
+      initial={reduceMotion ? false : { y: 12 }}
+      whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.9, ease: EASE }}
+      transition={{ duration: 0.6, ease: EASE }}
       style={style}
     >
       {children}
@@ -217,7 +234,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section kicker="01 / The Company" title={<>Who they are, <Italic highlight>what they run on</Italic>.</>}>
+    <Section kicker="01 / The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
       <div className="grid lg:grid-cols-[1fr_280px] gap-10 lg:gap-12">
         <div className="space-y-6 max-w-2xl min-w-0">
           <SerifBody large>{company_snapshot.one_liner}</SerifBody>
@@ -242,7 +259,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
                   {anthropic_verified && openai_verified && ' + '}
                   {openai_verified && 'OpenAI'}
                 </Italic>{' '}
-                API usage. The gap here isn't awareness; it's operationalization.
+                API usage. The gap here isn't awareness. It's deployment.
               </SerifBody>
             </div>
           )}
@@ -334,7 +351,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   if (stats.length === 0) return null;
 
   return (
-    <Section kicker="02 / Signals" title={<>The numbers <Italic highlight>behind the brand</Italic>.</>}>
+    <Section kicker="02 / Signals" title={<>The numbers <Italic>behind the brand</Italic>.</>}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
         {stats.map((s, i) => (
           <motion.div
@@ -354,12 +371,16 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
           </motion.div>
         ))}
       </div>
+      {/* Source attribution: trust signal — every stat traces to a real provider */}
+      <p className="mt-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+        Sources: SimilarWeb (traffic) · Crunchbase (funding) · Apollo (headcount) · DNS verification
+      </p>
       {f?.crunchbase_url && (
         <a
           href={f.crunchbase_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-10 py-3 -my-3 transition-colors"
+          className="inline-flex items-center gap-1.5 mt-4 py-3 -my-3 transition-colors"
           style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.7)')}
@@ -375,7 +396,7 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
       kicker={`03 / ${report.opportunities.length} Opportunities`}
-      title={<>Where time <Italic highlight>quietly leaks</Italic>.</>}
+      title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
         Each gap is sourced from specific data signals: DNS records, tech stack, ad activity, hiring patterns. No speculation.
@@ -454,29 +475,9 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
     );
   }
 
-  if (mode === 'tag') {
-    // Google text-only ad: render the ad_format + advertiser_name as a quiet badge
-    return (
-      <div className="p-6 border border-[color:var(--color-hairline)] flex flex-col gap-3 hover:border-ink/20 transition-colors">
-        {platformChip}
-        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1.2, color: '#1A1A1A' }}>
-          {creative.ad_format ? `${creative.ad_format.charAt(0).toUpperCase()}${creative.ad_format.slice(1)} creative` : 'Active campaign'}
-        </p>
-        {(creative.first_shown || creative.last_shown) && (
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', color: 'rgba(26,26,26,0.6)' }}>
-            {creative.first_shown && creative.last_shown ? `${creative.first_shown} → ${creative.last_shown}` : (creative.first_shown || creative.last_shown)}
-          </p>
-        )}
-        {link && (
-          <a href={link} target="_blank" rel="noopener noreferrer"
-             style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
-             className="inline-flex items-center gap-1.5 mt-auto py-2 -my-2 hover:underline">
-            View on transparency center <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
-    );
-  }
+  // Google text-only "tag" mode dropped per audit (visually inconsistent next to pull-quote/image cards).
+  // Cards with no body, headline, OR image are filtered upstream in SectionAdActivity.
+  if (mode === 'tag') return null;
 
   // mode === 'image'
   return (
@@ -525,7 +526,7 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   if (all.length === 0) return null;
 
   return (
-    <Section kicker="04 / Live Ad Activity" title={<>What they're <Italic highlight>spending on, right now</Italic>.</>}>
+    <Section kicker="04 / Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
         Pulled live from public ad libraries: Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
       </SerifBody>
@@ -557,7 +558,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="05 / AI Adoption" title={<>Where they sit <Italic highlight>on the curve</Italic>.</>}>
+    <Section kicker="05 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -586,9 +587,13 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
 }
 
 function Section5Competitive({ report }: { report: ReportJson }) {
-  if (!report.competitive_context && (!report.competitors || report.competitors.length === 0)) return null;
+  const ctx = report.competitive_context || '';
+  // Hide if no real data OR if Claude apologized for not analyzing (trust-killer admission per audit).
+  const apologized = /not analyzed|wasn'?t analyzed|insufficient|no competit/i.test(ctx);
+  const tooThin = ctx.trim().split(/\s+/).length < 30;
+  if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section kicker="06 / Competitive Context" title={<>The <Italic highlight>field they play in</Italic>.</>}>
+    <Section kicker="06 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -629,8 +634,29 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
           Your highest-priority gap is{' '}
           <Italic highlight>{report.top_gap_title}</Italic>.
         </h2>
-        <SerifBody large className="mb-3 max-w-xl">{report.top_gap_summary}</SerifBody>
-        <SerifBody className="mb-10 max-w-xl"><span style={{ color: 'rgba(26,26,26,0.55)' }}>In the Agent-Ready Assessment, we turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.</span></SerifBody>
+        <SerifBody large className="mb-3 max-w-xl"><Emphasized>{report.top_gap_summary}</Emphasized></SerifBody>
+        <SerifBody className="mb-6 max-w-xl"><span style={{ color: 'rgba(26,26,26,0.55)' }}>In the Agent-Ready Assessment, we turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.</span></SerifBody>
+
+        {/* Authority chain: who Ivan is, why this scan was credible. Audit P1 — page assumed reader already knew. */}
+        <div className="mb-10 max-w-xl flex items-start gap-4 py-5 border-t border-b border-[color:var(--color-hairline)]">
+          <img
+            src="/ivan-portrait-400.webp"
+            alt="Ivan Manfredi"
+            loading="lazy"
+            className="w-12 h-12 object-cover shrink-0"
+            style={{ borderRadius: 0 }}
+            onError={fallbackOnError}
+          />
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
+          </p>
+        </div>
+
+        {/* Price disclosure ABOVE the button per audit (avoids sticker shock after click) */}
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
+          $2,000 · 1 week · 60-min findings walkthrough
+        </p>
+
         <div className="flex flex-col sm:flex-row items-start gap-3">
           <a
             href={calendlyUrl}
@@ -663,9 +689,6 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
             Scan another company <ArrowRight size={16} />
           </Link>
         </div>
-        <p className="mt-8" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}>
-          $2,000 · 1 week · 60-min findings walkthrough
-        </p>
       </div>
     </section>
   );
@@ -736,7 +759,7 @@ const ScanReportPage: React.FC = () => {
               minHeight: 44,
             }}
           >
-            Book a call <ArrowRight size={14} />
+            Book your Assessment <ArrowRight size={14} />
           </a>
         </div>
       </header>
@@ -790,7 +813,7 @@ const ScanReportPage: React.FC = () => {
               >
                 {companyName}
               </motion.h1>
-              <SerifBody large className="max-w-xl">{report.score_rationale}</SerifBody>
+              <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
             </div>
 
             {/* Score */}
