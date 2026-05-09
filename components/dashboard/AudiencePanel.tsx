@@ -20,7 +20,7 @@ const tooltipStyle = {
 };
 
 const DEVICE_COLORS: Record<string, string> = {
-  desktop: '#10b981',
+  desktop: '#22c55e',
   mobile: '#3b82f6',
   tablet: '#f59e0b',
   unknown: '#71717a',
@@ -136,8 +136,8 @@ const AudiencePanel: React.FC = () => {
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="audVis" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="audViews" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
@@ -149,7 +149,7 @@ const AudiencePanel: React.FC = () => {
                 <YAxis tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#a1a1aa', fontSize: 12 }} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} />
                 <Area type="monotone" dataKey="views" name="Views" stroke="#3b82f6" fill="url(#audViews)" strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="visitors" name="Visitors" stroke="#10b981" fill="url(#audVis)" strokeWidth={2} dot={false} />
+                <Area type="monotone" dataKey="visitors" name="Visitors" stroke="#22c55e" fill="url(#audVis)" strokeWidth={2} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
