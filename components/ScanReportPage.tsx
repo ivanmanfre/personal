@@ -4,13 +4,14 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Building2, Globe, Mail, Calendar, Zap, TrendingUp,
-  ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft
+  ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft,
+  Megaphone, DollarSign, Users, BarChart3,
 } from 'lucide-react';
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import { gradeColor } from '../lib/scanApi';
-import type { ReportJson } from '../lib/scanTypes';
+import type { ReportJson, AdCreative } from '../lib/scanTypes';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -303,6 +304,137 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   );
 }
 
+// Renders a single ad creative card (auto-detects platform shape)
+function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
+  // Pick the best image: meta has .images[0], google has preview_url, linkedin has preview_url
+  const image =
+    (creative.images && creative.images[0]) ||
+    creative.preview_url ||
+    null;
+  const headline = creative.title || creative.headline || creative.advertiser_name || creative.page_name || 'Ad';
+  const body = creative.body || '';
+  const cta = creative.cta_text || (creative.ad_format ? `Format: ${creative.ad_format}` : null);
+  const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
+
+  const platformLabel = platform === 'google' ? 'Google Ads' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
+  const platformColor = platform === 'google' ? 'bg-blue-50 text-blue-700' : platform === 'linkedin' ? 'bg-sky-50 text-sky-700' : 'bg-indigo-50 text-indigo-700';
+
+  return (
+    <div className="border border-[color:var(--color-hairline)] rounded-lg overflow-hidden bg-paper hover:border-accent/30 transition-colors">
+      {image ? (
+        <div className="aspect-video bg-paper-sunk overflow-hidden">
+          <img src={image} alt={headline} className="w-full h-full object-cover" loading="lazy" />
+        </div>
+      ) : (
+        <div className="aspect-video bg-paper-sunk flex items-center justify-center text-ink-mute text-xs">
+          {creative.has_video || creative.video_url ? 'Video creative' : 'No preview'}
+        </div>
+      )}
+      <div className="p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded ${platformColor}`}>{platformLabel}</span>
+          {creative.is_active && <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">Active</span>}
+        </div>
+        <p className="text-sm font-semibold text-ink line-clamp-2">{headline}</p>
+        {body && <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">{body}</p>}
+        {cta && (
+          <div className="text-xs text-ink-mute pt-1 border-t border-[color:var(--color-hairline)]/50">
+            {link ? (
+              <a href={link} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
+                {cta} <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : cta}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionAdActivity({ report }: { report: ReportJson }) {
+  const ads = report.ads;
+  if (!ads || !ads.any_paid) return null;
+
+  const platforms: Array<{ key: 'google' | 'linkedin' | 'meta'; data: { detected: boolean; count: number; creatives: AdCreative[] } | undefined }> = [
+    { key: 'google', data: ads.google_ads },
+    { key: 'linkedin', data: ads.linkedin_ads },
+    { key: 'meta', data: ads.meta_ads },
+  ];
+
+  const allCreatives: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
+  platforms.forEach(({ key, data }) => {
+    (data?.creatives || []).slice(0, 3).forEach((c) => allCreatives.push({ platform: key, creative: c }));
+  });
+
+  if (allCreatives.length === 0) return null;
+
+  return (
+    <Section title="Live Ad Activity" icon={<Megaphone className="w-5 h-5" />}>
+      <p className="text-sm text-ink-soft leading-relaxed mb-6">
+        Captured from public ad libraries (Google Ads Transparency, Meta Ads Library, LinkedIn Ad Library).
+        Active campaign creatives surfaced for context — not exhaustive.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {allCreatives.map((item, i) => (
+          <AdCreativeCard key={i} creative={item.creative} platform={item.platform} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function SectionFundingTraffic({ report }: { report: ReportJson }) {
+  const f = report.funding;
+  const t = report.traffic;
+  if (!f && !t) return null;
+  const hasFunding = f && (f.total_funding_usd || f.last_round_type || f.crunchbase_url);
+  const hasTraffic = t && (t.monthly_visits || t.global_rank);
+  if (!hasFunding && !hasTraffic) return null;
+
+  const fmtUsd = (n: number | null) => n == null ? '—' : n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`;
+  const fmtNum = (n: number | null) => n == null ? '—' : n.toLocaleString();
+
+  return (
+    <Section title="Company Signals" icon={<BarChart3 className="w-5 h-5" />}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {hasFunding && (
+          <div className="border border-[color:var(--color-hairline)] rounded-lg p-5 bg-paper-sunk/50">
+            <div className="flex items-center gap-2 mb-4">
+              <DollarSign className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-semibold text-ink">Funding (Crunchbase)</h3>
+            </div>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-ink-mute">Total raised</dt><dd className="text-ink font-medium">{fmtUsd(f!.total_funding_usd)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Last round</dt><dd className="text-ink font-medium">{f!.last_round_type || '—'}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Last round date</dt><dd className="text-ink font-medium">{f!.last_round_date || '—'}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Investors</dt><dd className="text-ink font-medium">{Array.isArray(f!.investors) ? f!.investors.length || '—' : '—'}</dd></div>
+            </dl>
+            {f!.crunchbase_url && (
+              <a href={f!.crunchbase_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-4">
+                View on Crunchbase <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        )}
+        {hasTraffic && (
+          <div className="border border-[color:var(--color-hairline)] rounded-lg p-5 bg-paper-sunk/50">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-4 h-4 text-accent" />
+              <h3 className="text-sm font-semibold text-ink">Web Traffic (SimilarWeb)</h3>
+            </div>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between"><dt className="text-ink-mute">Monthly visits</dt><dd className="text-ink font-medium">{fmtNum(t!.monthly_visits)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Global rank</dt><dd className="text-ink font-medium">#{fmtNum(t!.global_rank)}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Bounce rate</dt><dd className="text-ink font-medium">{t!.bounce_rate != null ? `${(t!.bounce_rate * 100).toFixed(0)}%` : '—'}</dd></div>
+              <div className="flex justify-between"><dt className="text-ink-mute">Top country</dt><dd className="text-ink font-medium">{t!.top_country || '—'}</dd></div>
+            </dl>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 function Section6CTA({ report, companyName }: { report: ReportJson; companyName: string }) {
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
 
@@ -442,8 +574,10 @@ const ScanReportPage: React.FC = () => {
 
         {/* Report sections */}
         <Section1CompanyBrief report={report} />
+        <SectionFundingTraffic report={report} />
         <Section2GapTable report={report} />
         <Section3Opportunities report={report} />
+        <SectionAdActivity report={report} />
         <Section4AiAdoption report={report} />
         <Section5Competitive report={report} />
         <Section6CTA report={report} companyName={companyName} />

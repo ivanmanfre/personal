@@ -59,6 +59,61 @@ export interface ReportJson {
   };
   competitors: Array<{ title: string; url: string; description: string }>;
   github: { repos: number } | null;
+  // Live ad creatives (captured from public ad libraries)
+  ads?: {
+    google_ads?: AdPlatformData;
+    linkedin_ads?: AdPlatformData;
+    meta_ads?: AdPlatformData;
+    any_paid?: boolean;
+  } | null;
+  funding?: {
+    total_funding_usd: number | null;
+    last_round_type: string | null;
+    last_round_date: string | null;
+    investors: Array<{ name: string }> | string[];
+    employees_range: string | null;
+    founded_year: number | null;
+    crunchbase_url: string | null;
+  } | null;
+  traffic?: {
+    monthly_visits: number | null;
+    global_rank: number | null;
+    bounce_rate: number | null;
+    avg_visit_duration: number | null;
+    top_country: string | null;
+  } | null;
+}
+
+export interface AdPlatformData {
+  detected: boolean;
+  count: number;
+  creatives: AdCreative[];
+}
+
+export interface AdCreative {
+  // Common
+  link_url?: string;
+  preview_url?: string;
+  // Google Ads
+  ad_url?: string;
+  ad_format?: string;
+  creative_id?: string;
+  advertiser_name?: string;
+  first_shown?: string;
+  last_shown?: string;
+  // Meta Ads
+  body?: string;
+  title?: string;
+  images?: string[];
+  cta_text?: string;
+  has_video?: boolean;
+  is_active?: boolean;
+  page_name?: string;
+  video_url?: string | null;
+  start_date?: number | string;
+  // LinkedIn Ads (when populated)
+  headline?: string;
+  advertiser_url?: string;
 }
 
 export interface Scan {
