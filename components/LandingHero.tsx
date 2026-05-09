@@ -65,10 +65,10 @@ const LandingHero: React.FC = () => {
         className="border-b px-8 py-3 flex items-center justify-between relative z-10"
         style={{
           fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '11px',
-          letterSpacing: '0.18em',
+          fontSize: '12px',
+          letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: 'rgba(26,26,26,0.65)',
+          color: 'rgba(26,26,26,0.7)',
           borderColor: 'rgba(26,26,26,0.1)',
         }}
       >
@@ -109,7 +109,7 @@ const LandingHero: React.FC = () => {
         className="flex-1 flex flex-col justify-center relative z-10"
       >
         <div className="container mx-auto px-8 max-w-6xl">
-          <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-16">
+          <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-20">
 
             {/* Copy column */}
             <div className="flex-1 min-w-0 pt-8 lg:pt-0">
@@ -124,7 +124,7 @@ const LandingHero: React.FC = () => {
                   fontSize: '11px',
                   letterSpacing: '0.22em',
                   textTransform: 'uppercase',
-                  color: 'rgba(26,26,26,0.5)',
+                  color: 'rgba(26,26,26,0.62)',
                 }}
               >
                 <motion.span
@@ -149,13 +149,13 @@ const LandingHero: React.FC = () => {
                   color: '#1A1A1A',
                 }}
               >
-                {word('Systems', 0.6)}{' '}{word('scale.', 0.78)}
+                {word('Systems', 0.4)}{' '}{word('scale.', 0.52)}
                 <br />
-                {word('Headcount', 0.96)}{' '}
+                {word('Headcount', 0.64)}{' '}
                 <motion.span
                   initial={{ opacity: 0, y: 60, filter: 'blur(18px)', rotateX: 28 }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0 }}
-                  transition={{ delay: 1.5, duration: 1.1, ease }}
+                  transition={{ delay: 0.85, duration: 0.9, ease }}
                   style={{
                     display: 'inline-block',
                     fontStyle: 'italic',
@@ -169,7 +169,7 @@ const LandingHero: React.FC = () => {
                   <motion.span
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
-                    transition={{ delay: 2.4, duration: 0.9, ease }}
+                    transition={{ delay: 1.4, duration: 0.7, ease }}
                     style={{
                       position: 'absolute',
                       left: '-2%',
@@ -189,7 +189,7 @@ const LandingHero: React.FC = () => {
               <motion.p
                 initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
                 animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-                transition={{ delay: 2.2, duration: 1.4, ease }}
+                transition={{ delay: 0.95, duration: 1.1, ease }}
                 className="max-w-xl mb-10"
                 style={{
                   fontFamily: '"Source Serif 4", Georgia, serif',
@@ -210,7 +210,7 @@ const LandingHero: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 2.8, duration: 0.7, ease }}
+                transition={{ delay: 1.15, duration: 0.6, ease }}
                 className="flex flex-col sm:flex-row items-start gap-3"
               >
                 <a
@@ -226,15 +226,18 @@ const LandingHero: React.FC = () => {
                 </a>
                 <a
                   href="/scorecard"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 text-ink-mute hover:text-black transition-colors"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
                   style={{
                     fontFamily: '"Source Serif 4", serif',
                     fontWeight: 600,
-                    fontSize: '16px',
+                    fontSize: '15px',
                     fontStyle: 'italic',
+                    color: 'rgba(26,26,26,0.55)',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
                 >
-                  Are you Agent-Ready? <ArrowRight size={16} />
+                  Are you Agent-Ready? <ArrowRight size={14} />
                 </a>
               </motion.div>
             </div>
@@ -242,9 +245,9 @@ const LandingHero: React.FC = () => {
             {/* Portrait — entrance scale + scroll parallax */}
             <motion.div
               style={{ scale: portraitScale, y: portraitY, position: 'relative' }}
-              initial={{ opacity: 0, scale: 1.12, filter: 'blur(18px)' }}
-              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              transition={{ delay: 0.8, duration: 1.4, ease }}
+              initial={{ opacity: 0, scale: 1.06 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.9, ease }}
               className="hidden lg:block shrink-0 pt-4"
             >
               <picture>

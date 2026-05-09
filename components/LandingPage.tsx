@@ -39,7 +39,7 @@ const T = {
     fontSize: '10px',
     letterSpacing: '0.25em',
     textTransform: 'uppercase' as const,
-    color: 'rgba(26,26,26,0.45)',
+    color: 'rgba(26,26,26,0.62)',
   } as React.CSSProperties,
   serif: {
     fontFamily: '"Source Serif 4", Georgia, serif',
@@ -63,7 +63,7 @@ const DIVIDER = { borderColor: 'rgba(26,26,26,0.1)' };
 
 // ─── Label ───────────────────────────────────────────────────────────────────
 const Label: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ children, dark }) => (
-  <div style={{ ...T.mono, color: dark ? 'rgba(247,244,239,0.38)' : 'rgba(26,26,26,0.45)', marginBottom: '1.75rem' }}>
+  <div style={{ ...T.mono, color: dark ? 'rgba(247,244,239,0.5)' : 'rgba(26,26,26,0.62)', marginBottom: '1.75rem' }}>
     {children}
   </div>
 );
@@ -183,11 +183,11 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   <motion.div
     whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
     transition={{ duration: 0.22, ease: 'easeOut' }}
-    className="shrink-0 p-7 border cursor-default flex flex-col"
-    style={{ width: '380px', height: '260px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+    className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
+    style={{ width: 'min(85vw, 380px)', height: '240px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
   >
     <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '15px', lineHeight: 1.52, color: '#1A1A1A', flex: 1, overflow: 'hidden' }}>
+    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(14px,1.3vw,15px)', lineHeight: 1.52, color: '#1A1A1A', flex: 1, overflow: 'hidden' }}>
       "{r.text}"
     </p>
     <div style={{ marginTop: '14px' }}>
@@ -233,7 +233,7 @@ const ProblemSection: React.FC = () => {
   const rightY = useTransform(scrollYProgress, [0, 1], [-30, 30]);
 
   return (
-    <section ref={sectionRef} className="py-20 border-t relative" style={DIVIDER}>
+    <section ref={sectionRef} className="py-12 md:py-20 border-t relative" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
         <div className="grid lg:grid-cols-[1fr_1px_1fr] items-start">
 
@@ -243,7 +243,7 @@ const ProblemSection: React.FC = () => {
               <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
                 You've hit the<br />headcount wall.
               </RevealH2>
-              <p style={T.serif}>
+              <p style={{ ...T.serif, maxWidth: '50ch' }}>
                 Revenue is growing. The team is full. You're the bottleneck. Hiring
                 another person doesn't fix the process that's eating everyone's time.
                 It just gives the process another victim.
@@ -303,7 +303,7 @@ const OUTCOMES = [
 ];
 
 const BuildOutcomesSection: React.FC = () => (
-  <section className="py-20 border-t" style={DIVIDER}>
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
 
       <motion.div {...inView} className="mb-16 max-w-2xl">
@@ -355,41 +355,83 @@ const PRECONDITIONS = [
   { n: '04', title: 'You want AI that augments, not replaces', sub: 'Your team stays in the loop. The system handles the repeat work. The people handle judgment.' },
 ];
 
+// Pattern-break section — full-bleed editorial manifesto, no Label, giant numbered items.
+// Resets the visitor's eye after 3 sections of repeating Label+H2+content rhythm.
 const AgentReadySection: React.FC = () => (
-  <section className="py-20 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl">
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-4xl">
 
-      <motion.div {...inView} className="mb-16 max-w-2xl">
-        <Label>03 / What "Agent-Ready" means</Label>
-        <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
-          Four preconditions.<br />
-          <span style={{ fontStyle: 'normal', fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '0.55em', fontWeight: 400, color: 'rgba(26,26,26,0.45)', letterSpacing: '0' }}>
-            If they're true, the system works. If they're not, no build.
-          </span>
-        </RevealH2>
-      </motion.div>
+      <motion.h2
+        initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.9, ease }}
+        className="mb-12 md:mb-16"
+        style={{
+          fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: 'clamp(2rem, 4.2vw, 3.4rem)',
+          lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+          color: '#1A1A1A',
+          maxWidth: '24ch',
+        }}
+      >
+        Four preconditions. If they're true, the system works.
+      </motion.h2>
 
-      <div className="grid md:grid-cols-2 gap-x-14 gap-y-12">
+      <div className="space-y-8 md:space-y-10">
         {PRECONDITIONS.map((p, i) => (
           <motion.div
             key={p.n}
-            initial={{ opacity: 0, y: 22 }}
+            initial={{ opacity: 0, y: 28 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease, delay: i * 0.08 }}
-            className="flex gap-5 items-start"
+            transition={{ duration: 0.8, ease, delay: i * 0.08 }}
+            className="grid md:grid-cols-[80px_1fr] gap-4 md:gap-10 items-baseline relative"
           >
-            <span style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '11px', flexShrink: 0, paddingTop: '5px' }}>
-              {p.n}
+            {/* Giant numeral */}
+            <span style={{
+              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              color: 'var(--color-accent)',
+            }}>
+              {p.n}.
             </span>
-            <div>
-              <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '17px', color: '#1A1A1A', lineHeight: 1.35, marginBottom: '8px' }}>
+            <div style={{ maxWidth: '55ch' }}>
+              <div style={{
+                fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+                fontStyle: 'italic',
+                fontWeight: 400,
+                fontSize: 'clamp(1.4rem, 2vw, 1.8rem)',
+                lineHeight: 1.2,
+                letterSpacing: '-0.015em',
+                color: '#1A1A1A',
+                marginBottom: '12px',
+              }}>
                 {p.title}
               </div>
-              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '15px', color: 'rgba(26,26,26,0.58)', lineHeight: 1.65 }}>
+              <p style={{
+                fontFamily: '"Source Serif 4", Georgia, serif',
+                fontSize: '17px',
+                color: 'rgba(26,26,26,0.62)',
+                lineHeight: 1.65,
+              }}>
                 {p.sub}
               </p>
             </div>
+            {/* Sage divider — only between, not after last */}
+            {i < PRECONDITIONS.length - 1 && (
+              <div className="md:col-span-2 mt-8 md:mt-10" style={{
+                height: '1px',
+                background: 'linear-gradient(to right, rgba(42,143,101,0.25) 0%, rgba(42,143,101,0.05) 60%, transparent 100%)',
+              }} />
+            )}
           </motion.div>
         ))}
       </div>
@@ -466,7 +508,7 @@ const WorkSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 border-t" style={DIVIDER}>
+    <section className="py-12 md:py-20 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
         <motion.div {...inView} className="mb-10">
           <Label>05 / How we work together</Label>
@@ -515,7 +557,7 @@ const WorkSection: React.FC = () => {
 
 // ─── Section 4: Testimonials ─────────────────────────────────────────────────
 const TestimonialsSection: React.FC = () => (
-  <section className="pt-20 pb-0 border-t overflow-hidden" style={DIVIDER}>
+  <section className="pt-12 md:pt-20 pb-0 border-t overflow-hidden" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl mb-14">
       <motion.div {...inView}>
         <Label>06 / Client proof</Label>
@@ -552,7 +594,7 @@ const PaybackSection: React.FC = () => {
   const qualifies = maxBuild >= 2000;
 
   return (
-    <section className="py-20 border-t" style={DIVIDER}>
+    <section className="py-12 md:py-20 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
@@ -632,7 +674,7 @@ const PaybackSection: React.FC = () => {
 
 // ─── Section 6: The Offer ─────────────────────────────────────────────────────
 const OfferSection: React.FC = () => (
-  <section className="py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
+  <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
     <div className="container mx-auto px-8 max-w-6xl">
       <div className="grid lg:grid-cols-[1fr_1px_1fr] items-start">
 
@@ -653,8 +695,8 @@ const OfferSection: React.FC = () => (
             map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
             sequenced builds, costed gaps, decision logic for the first project.
           </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.38)', lineHeight: 1.55 }}>
-            100% credited toward the build if you proceed. You keep the scorecard either way.
+          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.55 }}>
+            100% credited toward the build if you proceed. You keep the scorecard either way. If we're not a fit after the 90-min discovery call, you don't pay.
           </p>
         </motion.div>
 
@@ -684,9 +726,28 @@ const OfferSection: React.FC = () => (
               Build your Blueprint <ArrowRight size={18} />
             </MagneticCTA>
             <MagneticCTA href="/start" variant="ghost" dark fontSize="15px">
-              Prefer to talk first? <ArrowRight size={15} />
+              Prefer to talk first? Book a call <ArrowRight size={15} />
             </MagneticCTA>
           </div>
+          <a
+            href="/scorecard"
+            style={{
+              display: 'inline-block',
+              marginTop: '20px',
+              fontFamily: '"Source Serif 4", Georgia, serif',
+              fontStyle: 'italic',
+              fontSize: '13px',
+              color: 'rgba(247,244,239,0.5)',
+              textDecoration: 'underline',
+              textDecorationColor: 'rgba(247,244,239,0.2)',
+              textUnderlineOffset: '4px',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent-light)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(247,244,239,0.5)')}
+          >
+            Or take the free Agent-Ready Scorecard →
+          </a>
         </motion.div>
 
       </div>
@@ -696,7 +757,7 @@ const OfferSection: React.FC = () => (
 
 // ─── Section 7: Final CTA ─────────────────────────────────────────────────────
 const FinalCTA: React.FC = () => (
-  <section className="py-24 border-t relative overflow-hidden" style={DIVIDER}>
+  <section className="py-16 md:py-24 border-t relative overflow-hidden" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-4xl relative z-10">
       <motion.div {...inView} className="text-center">
         <div className="w-8 h-0.5 mx-auto mb-10" style={{ backgroundColor: 'var(--color-accent)' }} />
@@ -712,10 +773,10 @@ const FinalCTA: React.FC = () => (
             Build your Blueprint <ArrowRight size={18} />
           </MagneticCTA>
           <MagneticCTA href="/start" variant="ghost" fontSize="16px" px="px-8 py-4">
-            Or book a call to discuss <ArrowRight size={15} />
+            Prefer to talk first? Book a call <ArrowRight size={15} />
           </MagneticCTA>
         </div>
-        <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.38)', marginTop: '1.75rem' }}>
+        <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.55)', marginTop: '1.75rem' }}>
           Booking {getBookingQuarter()} · 2 diagnostic slots remaining
         </p>
       </motion.div>
@@ -754,11 +815,11 @@ const LandingFooter: React.FC = () => {
   };
 
   return (
-    <footer className="border-t pt-24 pb-10" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
+    <footer className="border-t pt-16 md:pt-24 pb-10" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
       <div className="container mx-auto px-8 max-w-5xl">
 
         {/* Newsletter */}
-        <div className="text-center mb-20 max-w-xl mx-auto">
+        <div className="text-center mb-12 md:mb-20 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
           <h3 style={{ ...T.display('clamp(2rem,3.5vw,3rem)'), marginBottom: '0.75rem' }}>
             Weekly notes on systems<br />
@@ -879,28 +940,27 @@ const LandingFooter: React.FC = () => {
 
 // ─── About strip — dark credibility break before the footer ──────────────────
 const AboutStrip: React.FC = () => (
-  <section className="py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
+  <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
     <div className="container mx-auto px-8 max-w-5xl">
-      <div className="grid md:grid-cols-[160px_1fr] gap-12 items-center">
+      <div className="grid md:grid-cols-[160px_1fr] gap-6 md:gap-12 items-start md:items-center">
         <motion.div
           initial={{ opacity: 0, scale: 1.05 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.9, ease }}
-          className="hidden md:block"
         >
           <picture>
             <source type="image/webp" srcSet="/ivan-hero-800.webp" />
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-full aspect-square object-cover object-top"
+              className="w-20 md:w-full aspect-square object-cover object-top"
               style={{ borderRadius: '0' }}
             />
           </picture>
         </motion.div>
-        <motion.div {...inView}>
-          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.38)', marginBottom: '1.5rem' }}>Behind the work</div>
+        <motion.div {...inView} style={{ maxWidth: '55ch' }}>
+          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.5)', marginBottom: '1.5rem' }}>Behind the work</div>
           <h2 style={{ ...T.display('clamp(1.8rem,2.6vw,2.6rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '6px' }}>
             Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
           </h2>
