@@ -112,8 +112,9 @@ const TasksPanel: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingSkeleton cards={3} rows={6} />;
-
+  // NOTE: do NOT early-return before useMemo calls below — that triggers
+  // React error #310 ("rendered more hooks than during the previous render")
+  // on the loading→loaded transition. Hook calls must be unconditional.
   const agentCount = tasksBySource['agent'] || 0;
   const reminderCount = tasksBySource['reminder'] || 0;
 
@@ -160,6 +161,9 @@ const TasksPanel: React.FC = () => {
 
   const agentPending = rawAll.filter((t) => t.source === 'agent' && t.status !== 'completed' && !t.parentTaskId).length;
   const reminderPending = rawAll.filter((t) => t.source === 'reminder' && t.status !== 'completed').length;
+
+  // Safe to early-return now — all hooks above are unconditional.
+  if (loading) return <LoadingSkeleton cards={3} rows={6} />;
 
   if (agentCount === 0 && reminderCount === 0) {
     return (
