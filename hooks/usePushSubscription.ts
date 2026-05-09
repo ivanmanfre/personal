@@ -1,7 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
-const VAPID_PUBLIC_KEY = (import.meta as any).env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+// VAPID public key — designed to be public (browsers receive it during subscribe).
+// Falls back to env var so we can rotate without a code deploy.
+const VAPID_PUBLIC_KEY: string | undefined =
+  (import.meta as any).env.VITE_VAPID_PUBLIC_KEY ||
+  'BGN2xwcf9qlaL87mrOrnlC41Q1ubrzCxmEjINNV2DmvmmDBb7QxEIJAR2SSU0a6w4qOkamNb4DkIam5xsf6JAw8';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
