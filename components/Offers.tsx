@@ -57,21 +57,22 @@ const offers: Offer[] = [
 
 const Offers: React.FC = () => {
   return (
-    <section id="offers" className="py-32 bg-paper border-t border-zinc-200 relative">
+    <section id="offers" className="py-20 bg-paper border-t relative" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
       <div className="container mx-auto px-6 max-w-6xl">
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16"
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.85 }}
+          className="mb-14"
         >
-          <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-6">
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', marginBottom: '1.5rem', display: 'inline-block' }}>
             Work with me
           </span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1] tracking-tighter">
-            Pick the engagement <br />
-            <span className="font-drama italic">that fits where you are.</span>
+          <h2 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            Pick the engagement<br />
+            <span style={{ fontStyle: 'italic' }}>that fits where you are.</span>
           </h2>
         </motion.div>
 
@@ -84,11 +85,12 @@ const Offers: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className={`group flex flex-col rounded-xl p-8 border shadow-card-subtle hover:shadow-card-lift transition-all ${
+              className={`group flex flex-col p-8 border transition-all ${
                 offer.highlighted
-                  ? 'bg-black text-white border-black'
-                  : 'bg-paper text-black border-[color:var(--color-hairline)] hover:border-black'
+                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]'
+                  : 'bg-paper text-black border-[rgba(26,26,26,0.12)] hover:border-[rgba(26,26,26,0.4)]'
               }`}
+              whileHover={{ y: -4 }}
             >
               <div className="flex items-start justify-between mb-6">
                 <span className={`font-mono text-xs uppercase tracking-widest font-medium ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-ink-mute'}`}>
@@ -101,12 +103,12 @@ const Offers: React.FC = () => {
                 )}
               </div>
 
-              <h3 className={`text-xl font-semibold tracking-tight mb-3 ${offer.highlighted ? 'text-white' : ''}`}>
+              <h3 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontStyle: 'italic', fontWeight: 400, fontSize: '1.6rem', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '0.75rem', color: offer.highlighted ? '#F7F4EF' : '#1A1A1A' }}>
                 {offer.name}
               </h3>
 
               <div className="mb-4">
-                <div className={`stat-numeral text-3xl font-bold font-mono ${offer.highlighted ? 'text-[var(--color-accent-light)]' : 'text-black'}`}>
+                <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '24px', fontWeight: 500, color: offer.highlighted ? 'var(--color-accent-light)' : '#1A1A1A', letterSpacing: '-0.01em' }}>
                   {offer.price}
                 </div>
                 <div className={`text-xs font-mono uppercase tracking-widest font-medium mt-2 ${offer.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>

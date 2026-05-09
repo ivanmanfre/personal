@@ -24,15 +24,15 @@ const ROI: React.FC = () => {
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1"
+                        style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}
                     >
                         90-Day Payback Check
                     </motion.span>
                 </div>
 
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight mb-6">
-                        The <span className="font-drama italic">90-Day Payback</span> Rule
+                <div className="text-center mb-12">
+                    <h2 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
+                        The <span style={{ fontStyle: 'italic' }}>90-Day Payback</span> Rule
                     </h2>
                     <p className="text-xl md:text-2xl font-medium max-w-3xl mx-auto text-ink-soft leading-relaxed">
                         If I can't recoup the project in 90 days, I don't build it. Here's what your number looks like.

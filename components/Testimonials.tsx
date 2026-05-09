@@ -43,18 +43,18 @@ const reviewsOffset = [...reviews.slice(offset), ...reviews.slice(0, offset)];
 const marqueeRow2 = [...reviewsOffset, ...reviewsOffset];
 
 const TestimonialCard: React.FC<{ review: typeof reviews[0] }> = ({ review }) => (
-  <div className="w-[85vw] sm:w-[500px] shrink-0 bg-paper rounded-xl border border-[color:var(--color-hairline)] p-8 relative group hover:shadow-card-hover hover-lift transition-all duration-300 flex flex-col h-full shadow-card-subtle">
+  <div className="w-[85vw] sm:w-[420px] shrink-0 p-7 relative group flex flex-col h-full transition-all duration-200 hover:-translate-y-1" style={{ backgroundColor: 'var(--color-paper)', border: '1px solid rgba(26,26,26,0.1)' }}>
 
     {/* Project Badge */}
-    <div className="mb-8">
-      <span className="text-xs font-mono uppercase text-ink-mute tracking-widest font-medium">
+    <div className="mb-5">
+      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
         {review.project}
       </span>
     </div>
 
-    {/* Content - italic serif pull quote */}
-    <div className="relative z-10 mb-8 flex-grow">
-      <p className="font-drama italic text-2xl md:text-3xl text-ink-soft leading-tight group-hover:text-black transition-colors duration-300">
+    {/* Content — italic serif pull quote */}
+    <div className="relative z-10 mb-6 flex-grow">
+      <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontStyle: 'italic', fontSize: '17px', lineHeight: 1.5, color: '#1A1A1A' }}>
         "{review.text}"
       </p>
     </div>
@@ -78,7 +78,7 @@ const Testimonials: React.FC = () => {
     <section className="py-20 bg-paper border-t border-zinc-200 overflow-hidden relative z-20 flex flex-col gap-8">
       {/* Section Label */}
       <div className="container mx-auto px-6 relative z-40 flex justify-center mb-4">
-        <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
+        <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
           Client Reviews
         </span>
       </div>

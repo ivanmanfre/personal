@@ -126,10 +126,10 @@ const Connector: React.FC = () => (
 
 const Process: React.FC = () => {
     return (
-        <section className="relative bg-paper py-32 border-t border-[color:var(--color-hairline)]">
-            <div className="container mx-auto px-6 mb-16 flex justify-center">
-                <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-                    How We Work Together
+        <section className="relative bg-paper py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
+            <div className="container mx-auto px-6 mb-12 flex justify-center">
+                <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+                    How we work together
                 </span>
             </div>
 
@@ -152,7 +152,7 @@ const Process: React.FC = () => {
                                         </span>
                                         <div className="h-px flex-grow bg-[color:var(--color-hairline-bold)] max-w-16" />
                                     </div>
-                                    <h2 className={`text-3xl md:text-4xl font-semibold mb-4 tracking-tighter leading-none ${step.textColor}`}>
+                                    <h2 className={step.textColor} style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(1.8rem, 2.8vw, 2.4rem)', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '1rem' }}>
                                         {step.title}
                                     </h2>
                                     <p className="text-lg font-medium text-ink-soft leading-relaxed">

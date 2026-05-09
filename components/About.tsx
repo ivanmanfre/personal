@@ -31,8 +31,8 @@ const About: React.FC = () => {
                         <p className="text-xl md:text-3xl font-medium text-ink-soft mb-6 tracking-tight">
                             Most consultants focus on writing strategy decks.
                         </p>
-                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black leading-[1] tracking-tighter">
-                            I focus on <br /> <span className="font-drama italic font-normal">Deploying Systems.</span>
+                        <h2 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+                            I focus on <br /> <span className="italic">Deploying Systems.</span>
                         </h2>
                     </motion.div>
 
@@ -47,7 +47,7 @@ const About: React.FC = () => {
                         <p className="text-xl md:text-3xl font-medium text-ink-soft mb-6 tracking-tight">
                             Most AI projects fail. Not because of the model.
                         </p>
-                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-black leading-[1] tracking-tighter">
+                        <h2 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
                             I make you <br /> <span className="text-accent-ink">Agent-Ready.</span>
                         </h2>
                     </motion.div>

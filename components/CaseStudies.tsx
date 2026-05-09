@@ -41,15 +41,17 @@ const cases = [
 
 const CaseStudies: React.FC = () => {
   return (
-    <section id="cases" className="py-32 bg-paper border-t border-[color:var(--color-hairline)]">
+    <section id="cases" className="py-20 bg-paper border-t" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
       <div className="container mx-auto px-6">
         <motion.h2
-          initial={{ y: 50, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-5xl sm:text-6xl md:text-7xl font-semibold mb-6 text-center tracking-tight"
+          initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.9 }}
+          className="text-center mb-6"
+          style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(3rem, 7vw, 6rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}
         >
-          <span className="font-drama italic">Results.</span>
+          Results.
         </motion.h2>
 
         {/* ICP badge */}
@@ -60,7 +62,7 @@ const CaseStudies: React.FC = () => {
           transition={{ delay: 0.1 }}
           className="flex justify-center mb-8"
         >
-          <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] bg-paper rounded px-2 py-1">
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
             Agencies · Consultancies · Law &amp; Accounting firms
           </span>
         </motion.div>

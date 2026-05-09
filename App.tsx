@@ -2,7 +2,6 @@ import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import HomePage from './components/HomePage';
 import StorePage from './components/StorePage';
 import ProductDetail from './components/ProductDetail';
 import AssessmentPage from './components/AssessmentPage';
@@ -51,6 +50,7 @@ const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'))
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
+const LandingPage = lazy(() => import('./components/LandingPage'));
 
 function App() {
   const location = useLocation();
@@ -61,6 +61,9 @@ function App() {
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
   const isScanReport = /^\/scan\/[^/]+$/.test(location.pathname);
+  // / and /landing both render LandingPage with full-bleed treatment.
+  // /landing kept as alias so existing links don't break.
+  const isLanding = location.pathname === '/' || location.pathname.startsWith('/landing');
   // Focused intake/checkout flows — no nav, no footer, no distractions.
   const isIntake =
     location.pathname === '/assessment/intake' ||
@@ -128,6 +131,19 @@ function App() {
     );
   }
 
+  // Landing page is the homepage — full-bleed, no nav/footer.
+  // Both / and /landing render LandingPage; /landing kept as alias.
+  if (isLanding) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/landing" element={<LandingPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
   if (isDashboard) {
     return (
       <Suspense fallback={
@@ -155,7 +171,6 @@ function App() {
 
       <main id="main" className="relative z-10 flex flex-col overflow-hidden">
         <Routes>
-          <Route path="/" element={<HomePage />} />
           <Route path="/assessment" element={<AssessmentPage />} />
           <Route path="/assessment/welcome" element={<AssessmentWelcomePage />} />
           <Route path="/assessment/intake" element={<ConversationalIntake />} />

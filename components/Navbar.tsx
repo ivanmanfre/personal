@@ -3,6 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const NAV_LINKS = [
+  { name: 'Services', href: '#services' },
+  { name: 'Method', href: '#method' },
+  { name: 'Work', href: '#cases' },
+  { name: 'About', href: '#about' },
+];
+
 const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -10,99 +17,113 @@ const Navbar: React.FC = () => {
   const isHome = location.pathname === '/';
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const homeLinks = [
-    { name: 'Services', href: '#services' },
-    { name: 'Method', href: '#method' },
-    { name: 'Work', href: '#cases' },
-    { name: 'About', href: '#about' },
-  ];
+  const linkBase = 'text-[11px] uppercase tracking-[0.22em] transition-colors';
+  const linkColor = 'text-[rgba(26,26,26,0.55)] hover:text-[#1A1A1A]';
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${scrolled
-        ? 'py-3 bg-paper border-b border-[color:var(--color-hairline-bold)]'
-        : 'py-6 bg-transparent border-b border-transparent'
-      }`}>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+        scrolled
+          ? 'py-3 bg-paper/92 backdrop-blur-md border-b'
+          : 'py-5 bg-transparent border-b border-transparent'
+      }`}
+      style={{ borderColor: scrolled ? 'rgba(26,26,26,0.08)' : 'transparent' }}
+    >
       <div className="container mx-auto px-6 flex justify-between items-center">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center group">
-          <span className="font-drama text-3xl md:text-4xl tracking-tight text-black group-hover:text-accent transition-colors leading-none">
+        <Link to="/" className="flex items-center gap-2 group">
+          <span
+            className="text-[26px] md:text-[28px] tracking-tight leading-none transition-colors group-hover:text-[var(--color-accent)]"
+            style={{
+              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              color: '#1A1A1A',
+              letterSpacing: '-0.01em',
+            }}
+          >
             Manfredi
           </span>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
-          {homeLinks.map((link) =>
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-8" style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 500 }}>
+          {NAV_LINKS.map((link) =>
             isHome ? (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
-              >
+              <a key={link.name} href={link.href} className={`${linkBase} ${linkColor}`}>
                 {link.name}
               </a>
             ) : (
-              <Link
-                key={link.name}
-                to={`/${link.href}`}
-                className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
-              >
+              <Link key={link.name} to={`/${link.href}`} className={`${linkBase} ${linkColor}`}>
                 {link.name}
               </Link>
             )
           )}
-
-          <Link
-            to="/scorecard"
-            className="text-xs font-mono font-semibold uppercase tracking-[0.16em] hover:underline decoration-accent underline-offset-4 transition-all"
-          >
+          <Link to="/scorecard" className={`${linkBase} ${linkColor}`}>
             Scorecard
           </Link>
 
           <a
             href="/start"
-            className="px-4 py-2 bg-accent text-white font-mono font-semibold text-xs uppercase tracking-[0.14em] hover:bg-accent-ink hover:text-white transition-colors"
+            className="px-4 py-2 transition-colors"
+            style={{
+              fontFamily: '"Source Serif 4", Georgia, serif',
+              fontWeight: 600,
+              fontStyle: 'italic',
+              fontSize: '14px',
+              backgroundColor: '#1A1A1A',
+              color: '#F7F4EF',
+              letterSpacing: '0',
+              textTransform: 'none',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-accent)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#1A1A1A')}
           >
             Book a call
           </a>
         </div>
 
-        {/* Mobile Toggle */}
+        {/* Mobile toggle */}
         <button
-          className="md:hidden p-3 border-subtle shadow-card active:shadow-none bg-paper active:translate-y-1 transition-all"
+          className="md:hidden p-2.5"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMobileMenuOpen}
+          style={{ border: '1px solid rgba(26,26,26,0.18)', backgroundColor: 'var(--color-paper)' }}
         >
-          {isMobileMenuOpen ? <X size={28} strokeWidth={3} /> : <Menu size={28} strokeWidth={3} />}
+          {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-accent border-subtle-thick border-l-0 border-r-0 border-b-0 mt-4 overflow-hidden"
+            transition={{ duration: 0.3, ease: [0.22, 0.84, 0.36, 1] }}
+            className="md:hidden overflow-hidden mt-3"
+            style={{
+              backgroundColor: 'var(--color-paper)',
+              borderTop: '1px solid rgba(26,26,26,0.08)',
+            }}
           >
-            <div className="flex flex-col p-6 gap-4">
-              {homeLinks.map((link) =>
+            <div className="flex flex-col p-6 gap-1" style={{ fontFamily: '"IBM Plex Mono", monospace' }}>
+              {NAV_LINKS.map((link) =>
                 isHome ? (
                   <a
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
+                    style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
                   >
                     {link.name}
                   </a>
@@ -111,7 +132,8 @@ const Navbar: React.FC = () => {
                     key={link.name}
                     to={`/${link.href}`}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+                    className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
+                    style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
                   >
                     {link.name}
                   </Link>
@@ -120,15 +142,27 @@ const Navbar: React.FC = () => {
               <Link
                 to="/scorecard"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-mono font-semibold uppercase tracking-[0.14em] border-b border-[color:var(--color-hairline-bold)] pb-4 pt-2 hover:pl-4 transition-all"
+                className="text-[13px] uppercase tracking-[0.2em] py-3 border-b"
+                style={{ borderColor: 'rgba(26,26,26,0.08)', color: 'rgba(26,26,26,0.7)' }}
               >
                 Scorecard
               </Link>
               <a
-                href="/assessment"
-                className="mt-6 w-full py-5 bg-black text-white font-semibold text-2xl border-subtle hover:bg-paper hover:text-black transition-colors text-center block shadow-card-subtle"
+                href="/start"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mt-5 inline-flex items-center justify-center px-6 py-3"
+                style={{
+                  fontFamily: '"Source Serif 4", Georgia, serif',
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                  fontSize: '16px',
+                  backgroundColor: '#1A1A1A',
+                  color: '#F7F4EF',
+                  textTransform: 'none',
+                  letterSpacing: '0',
+                }}
               >
-                Build your Blueprint
+                Book a call
               </a>
             </div>
           </motion.div>

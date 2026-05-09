@@ -6,19 +6,21 @@ import VoiceAnnotationArtifact from './ui/VoiceAnnotationArtifact';
 
 const Services: React.FC = () => {
   return (
-    <section id="services" className="py-32 border-t border-zinc-200 bg-paper overflow-hidden">
+    <section id="services" className="py-20 border-t bg-paper overflow-hidden" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
       <div className="container mx-auto px-6 max-w-6xl">
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          className="mb-24 flex flex-col md:flex-row items-end gap-6 justify-between border-b border-zinc-200 pb-8"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.85 }}
+          className="mb-20 flex flex-col md:flex-row items-end gap-6 justify-between border-b pb-8"
+          style={{ borderColor: 'rgba(26,26,26,0.1)' }}
         >
           <div>
-            <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1 mb-4">What I Build</span>
-            <h2 className="text-5xl md:text-6xl font-bold leading-[0.9] tracking-tight">Systems that handle <br /> <span className="font-drama italic">the thinking work.</span></h2>
+            <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', marginBottom: '1.5rem', display: 'inline-block' }}>What I Build</span>
+            <h2 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Systems that handle <br /> <span style={{ fontStyle: 'italic' }}>the thinking work.</span></h2>
           </div>
-          <p className="text-lg md:text-xl font-medium max-w-sm text-left md:text-right text-ink-soft leading-relaxed border-l md:border-l-0 md:border-r border-accent pl-4 md:pl-0 md:pr-6">
+          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontStyle: 'italic', fontSize: '17px', maxWidth: '24rem', textAlign: 'right', color: 'rgba(26,26,26,0.6)', lineHeight: 1.6, paddingRight: '1.5rem', borderRight: '1px solid var(--color-accent)' }}>
             I don't bill hourly. Every engagement is a productized project or a flat-rate retainer tied to outcomes.
           </p>
         </motion.div>
@@ -37,8 +39,8 @@ const Services: React.FC = () => {
                 Productized build · 4–8 weeks
               </span>
               <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">01</span>
-                <h3 className="text-3xl font-semibold tracking-tight">Back-office <span className="font-drama italic font-normal">that runs itself.</span></h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-mute">01</span>
+                <h3 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(1.8rem, 2.5vw, 2.4rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Back-office <span className="italic">that runs itself.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 Your ops lead writes the same four onboarding emails every week, pulls the same reports, chases the same stuck handoffs. A month from now, the system does it, personalized from intake data, routed through your existing CRM and Slack, flagged to her only when something's off.
@@ -66,8 +68,8 @@ const Services: React.FC = () => {
                 Custom build or Fractional · Ongoing fit
               </span>
               <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">02</span>
-                <h3 className="text-3xl font-semibold tracking-tight">AI for <span className="font-drama italic font-normal">judgment-heavy work.</span></h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-mute">02</span>
+                <h3 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(1.8rem, 2.5vw, 2.4rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>AI for <span className="italic">judgment-heavy work.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 Lead qualification, tier-1 support, document parsing, the work your best person does that creates the bottleneck. I encode how they decide, wire it to the data it needs, and keep them in the loop for the edge cases. The second half is why most AI projects stall.
@@ -95,8 +97,8 @@ const Services: React.FC = () => {
                 Content Engine · 3-week ship
               </span>
               <div className="flex items-center gap-3 mb-4">
-                <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">03</span>
-                <h3 className="text-3xl font-semibold tracking-tight">Content that <span className="font-drama italic font-normal">sounds like you.</span></h3>
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-mute">03</span>
+                <h3 style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(1.8rem, 2.5vw, 2.4rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Content that <span className="italic">sounds like you.</span></h3>
               </div>
               <p className="text-xl font-medium text-ink-soft mb-6 leading-relaxed">
                 Your founder voice is the moat, but you haven't posted in six weeks because you're heads-down running the business. A month from now the system ships your voice weekly: 5-7 drafts land in your review queue every Sunday, topics pre-scored, formats rotated so you stop shipping four text posts in a row by accident. You edit the 5% that matters.

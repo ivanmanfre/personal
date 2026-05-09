@@ -15,21 +15,21 @@ const Method: React.FC = () => {
           viewport={{ once: true }}
           className="mb-8"
         >
-          <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '10px', letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
             The Method
           </span>
         </motion.div>
 
-        {/* Headline */}
         <motion.h2
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.1 }}
-          className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1] tracking-tighter mb-6 max-w-4xl"
+          initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.9 }}
+          className="mb-6 max-w-4xl"
+          style={{ fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif', fontWeight: 400, fontSize: 'clamp(2.4rem, 5vw, 4.5rem)', lineHeight: 1.04, letterSpacing: '-0.02em', color: '#1A1A1A' }}
         >
-          Most AI projects fail <br />
-          <span className="font-drama italic">at the part that isn't AI.</span>
+          Most AI projects fail<br />
+          <span style={{ fontStyle: 'italic' }}>at the part that isn't AI.</span>
         </motion.h2>
 
         <motion.p
