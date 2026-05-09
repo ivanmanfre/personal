@@ -16,7 +16,7 @@ type SubKey = 'workflows' | 'logs' | 'usage' | 'research' | 'tasks';
 
 const SUB_LABELS: Record<SubKey, string> = {
   workflows: 'Workflows',
-  logs: 'Execution Logs',
+  logs: 'Claude Code',
   usage: 'Usage',
   research: 'Auto Research',
   tasks: 'Tasks',

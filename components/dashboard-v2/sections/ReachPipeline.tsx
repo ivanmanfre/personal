@@ -66,7 +66,7 @@ export function ReachPipeline() {
   return (
     <>
       <HeadRow
-        title={<>Reach <em>&amp; pipeline</em></>}
+        title={<>Reach <em>&amp; Pipeline</em></>}
         meta={<>Outreach · Leads · Competitors<br />Upwork · Meetings · Agent-Ready</>}
       />
       <SubTabs>

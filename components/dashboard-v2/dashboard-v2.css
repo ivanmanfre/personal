@@ -7,6 +7,20 @@
  * standard red/amber/green semantic colors. Internal tool, readability-first.
  */
 
+/* Body-level overrides — applied via class added by DemoShell on mount.
+ * Public site sets body { background: #F7F4EF; font-family: 'Source Serif 4' }
+ * which leaks into v2 around panel gutters. Force ink + Inter when v2 active.
+ */
+body.dashboard-v2-active {
+  background: #111114 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  color: #e7e7ea;
+}
+body.dashboard-v2-active * {
+  /* Inputs and elements that explicitly set font-family will still win;
+     this only affects elements that inherit. */
+}
+
 .dashboard-v2 {
   --d-ink: #111114;
   --d-ink-2: #18181c;
@@ -324,9 +338,18 @@
 .dashboard-v2 .bg-emerald-500\/10,
 .dashboard-v2 .bg-emerald-500\/20,
 .dashboard-v2 .bg-emerald-500\/25,
+.dashboard-v2 .bg-emerald-500\/30,
+.dashboard-v2 .bg-emerald-500\/40,
+.dashboard-v2 .bg-emerald-500\/50,
+.dashboard-v2 .bg-emerald-500\/60,
+.dashboard-v2 .bg-emerald-500\/70,
+.dashboard-v2 .bg-emerald-500\/80,
 .dashboard-v2 .bg-emerald-900\/30 { background-color: var(--d-good-bg) !important; }
 .dashboard-v2 .bg-emerald-500,
 .dashboard-v2 .bg-emerald-600 { background-color: var(--d-good) !important; }
+/* Note: inline `style={{ color: '#10b981' }}` and SVG fill props in
+ * Recharts/SVGs cannot be overridden via CSS. Those need a per-panel
+ * restyle later (Audience uses emerald in chart fills). */
 .dashboard-v2 .border-emerald-500,
 .dashboard-v2 .border-emerald-600,
 .dashboard-v2 .border-emerald-500\/30,
