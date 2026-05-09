@@ -129,28 +129,36 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
   </motion.section>
 );
 
-const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => (
-  <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block', color: highlight ? '#1A1A1A' : 'var(--color-accent)' }}>
-    {/* Highlight strip is BEHIND text using a stacking-context trick — positioned absolutely with isolation */}
-    {highlight && (
-      <span
+// Highlight: matches landing-page Hero pattern exactly. Marker-sweep animation, sage strip behind text.
+const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => {
+  const reduceMotion = useReducedMotion();
+  if (!highlight) {
+    return <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{children}</span>;
+  }
+  return (
+    <span style={{ fontStyle: 'italic', position: 'relative', color: '#1A1A1A' }}>
+      {children}
+      <motion.span
         aria-hidden
+        initial={reduceMotion ? false : { scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, margin: '-30px' }}
+        transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
         style={{
           position: 'absolute',
           left: '-2%',
           right: '-2%',
-          bottom: '0.12em',
+          bottom: '0.18em',
           height: '0.42em',
-          background: 'var(--color-accent)',
-          opacity: 0.28,
-          pointerEvents: 'none',
-          // No zIndex: -1 (would escape below paper bg). Render BEFORE text in DOM order; text paints on top naturally.
+          backgroundColor: 'var(--color-accent)',
+          transformOrigin: 'left',
+          opacity: 0.25,
+          zIndex: -1,
         }}
       />
-    )}
-    <span style={{ position: 'relative' }}>{children}</span>
-  </span>
-);
+    </span>
+  );
+};
 
 const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; className?: string }> = ({
   children, large, className = '',
@@ -209,7 +217,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section kicker="01 — The Company" title={<>Who they are, <Italic highlight>what they run on</Italic>.</>}>
+    <Section kicker="01 / The Company" title={<>Who they are, <Italic highlight>what they run on</Italic>.</>}>
       <div className="grid lg:grid-cols-[1fr_280px] gap-10 lg:gap-12">
         <div className="space-y-6 max-w-2xl min-w-0">
           <SerifBody large>{company_snapshot.one_liner}</SerifBody>
@@ -234,7 +242,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
                   {anthropic_verified && openai_verified && ' + '}
                   {openai_verified && 'OpenAI'}
                 </Italic>{' '}
-                API usage. The gap here isn't awareness — it's operationalization.
+                API usage. The gap here isn't awareness; it's operationalization.
               </SerifBody>
             </div>
           )}
@@ -263,7 +271,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
           {github && (
             <SerifBody>
-              GitHub: <Italic>{github.repos} public repositories</Italic> — engineers on staff.
+              GitHub: <Italic>{github.repos} public repositories</Italic>. Engineers on staff.
             </SerifBody>
           )}
         </div>
@@ -326,7 +334,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   if (stats.length === 0) return null;
 
   return (
-    <Section kicker="02 — Signals" title={<>The numbers <Italic highlight>behind the brand</Italic>.</>}>
+    <Section kicker="02 / Signals" title={<>The numbers <Italic highlight>behind the brand</Italic>.</>}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
         {stats.map((s, i) => (
           <motion.div
@@ -366,11 +374,11 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
-      kicker={`03 — ${report.opportunities.length} Opportunities`}
+      kicker={`03 / ${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic highlight>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
-        Each gap is sourced from specific data signals — DNS records, tech stack, ad activity, hiring patterns. No speculation.
+        Each gap is sourced from specific data signals: DNS records, tech stack, ad activity, hiring patterns. No speculation.
       </SerifBody>
       <div className="space-y-2">
         {report.opportunities.map((opp, i) => (
@@ -433,7 +441,7 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
           "{body.length > 220 ? body.slice(0, 217) + '…' : body}"
         </blockquote>
         {realTitle && (
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)' }}>— {realTitle}</p>
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)' }}>from {realTitle}</p>
         )}
         {link && (
           <a href={link} target="_blank" rel="noopener noreferrer"
@@ -517,9 +525,9 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   if (all.length === 0) return null;
 
   return (
-    <Section kicker="04 — Live Ad Activity" title={<>What they're <Italic highlight>spending on, right now</Italic>.</>}>
+    <Section kicker="04 / Live Ad Activity" title={<>What they're <Italic highlight>spending on, right now</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
-        Pulled live from public ad libraries — Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
+        Pulled live from public ad libraries: Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
       </SerifBody>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {all.map((item, i) => (
@@ -536,11 +544,11 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
 
   // P1 #13: "Unknown" reframed as a sales motion (loss-frame) rather than a non-statement
   const meta: Record<string, { label: string; suffix?: string; tone: string; description: string }> = {
-    early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations — ahead of the peer group.' },
+    early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations. Ahead of the peer group.' },
     on_par: { label: 'On Par.', tone: '#A85439', description: 'Awareness is there, but deployment lags behind leading firms.' },
     behind: { label: 'Behind.', tone: '#9B2C2C', description: 'No AI tooling detected. Each month of delay compounds the gap.' },
     unknown: {
-      label: 'Unknown —',
+      label: 'Unknown.',
       suffix: "and that's data.",
       tone: 'rgba(26,26,26,0.85)',
       description: 'No verified AI provider, no LLM tooling in the public stack, no AI-themed posts in the last 30 days. Either the team is still scoping or the work is happening off-site. Both are gaps the Assessment closes.',
@@ -549,7 +557,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="05 — AI Adoption" title={<>Where they sit <Italic highlight>on the curve</Italic>.</>}>
+    <Section kicker="05 / AI Adoption" title={<>Where they sit <Italic highlight>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -563,7 +571,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
               <Italic>
                 {anthropic_verified && 'Anthropic'}{anthropic_verified && openai_verified && ' + '}{openai_verified && 'OpenAI'}
               </Italic>{' '}
-              API usage. They're not experimenting — they're shipping.
+              API usage. They're not experimenting. They're shipping.
             </SerifBody>
           </div>
         )}
@@ -580,7 +588,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
 function Section5Competitive({ report }: { report: ReportJson }) {
   if (!report.competitive_context && (!report.competitors || report.competitors.length === 0)) return null;
   return (
-    <Section kicker="06 — Competitive Context" title={<>The <Italic highlight>field they play in</Italic>.</>}>
+    <Section kicker="06 / Competitive Context" title={<>The <Italic highlight>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
