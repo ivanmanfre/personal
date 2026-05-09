@@ -38,6 +38,66 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
+// Scramble-on-enter — like a slot machine settling. Scrambles digit chars in any string.
+// Non-digit chars (commas, $, %, #, letters) stay put. Triggers once when in view.
+export const Scramble: React.FC<{ value: string; duration?: number; className?: string; style?: React.CSSProperties }> = ({
+  value, duration = 0.7, className, style,
+}) => {
+  const hasDigits = /\d/.test(value);
+  const [display, setDisplay] = useState(value);
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-30px' });
+  const reduceMotion = useReducedMotion();
+  const ran = useRef(false);
+
+  useEffect(() => {
+    if (!inView || reduceMotion || ran.current || !hasDigits) return;
+    ran.current = true;
+    const steps = Math.floor(duration * 30);
+    let step = 0;
+    const id = setInterval(() => {
+      if (step >= steps) {
+        setDisplay(value);
+        clearInterval(id);
+        return;
+      }
+      const lockedCount = Math.floor((step / steps) * value.length);
+      const scrambled = value.split('').map((c, i) =>
+        i < lockedCount ? c : (/\d/.test(c) ? Math.floor(Math.random() * 10).toString() : c)
+      ).join('');
+      setDisplay(scrambled);
+      step++;
+    }, 1000 / 30);
+    return () => clearInterval(id);
+  }, [inView, value, duration, reduceMotion, hasDigits]);
+
+  return <span ref={ref} className={className} style={{ fontVariantNumeric: 'tabular-nums', ...style }}>{display}</span>;
+};
+
+// Document-level scroll progress bar — thin sage line at top of viewport, fills as user scrolls.
+const ScrollProgress: React.FC = () => {
+  const { scrollYProgress } = useScroll();
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) return null;
+  return (
+    <motion.div
+      aria-hidden
+      style={{
+        scaleX: scrollYProgress,
+        transformOrigin: 'left',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 2,
+        background: 'var(--color-accent)',
+        zIndex: 50,
+        opacity: 0.7,
+      }}
+    />
+  );
+};
+
 // Renders **markdown bold** segments as <strong>. Per audit: scan page had 0 bold instances → no skim layer.
 // Claude prompt now instructs it to wrap key phrases (dollar amounts, hour counts, key terms) in **double asterisks**.
 export const Emphasized: React.FC<{ children: string }> = ({ children }) => {
@@ -135,29 +195,38 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({
   kicker, title, children,
-}) => (
-  <motion.section
-    {...inViewProps}
-    className="border-t border-[color:var(--color-hairline)] py-16 lg:py-24"
-  >
-    <div className="mb-12 lg:mb-16 space-y-3">
-      <Kicker>{kicker}</Kicker>
-      <RevealHeadline
-        style={{
-          fontFamily: SERIF,
-          fontWeight: 400,
-          fontSize: 'clamp(2rem, 4vw, 3.25rem)',
-          lineHeight: 1.05,
-          letterSpacing: '-0.02em',
-          color: '#1A1A1A',
-        }}
-      >
-        {title}
-      </RevealHeadline>
-    </div>
-    {children}
-  </motion.section>
-);
+}) => {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.section {...inViewProps} className="py-16 lg:py-24">
+      {/* Hairline sweep — paints in left-to-right when section enters viewport. */}
+      <motion.div
+        aria-hidden
+        initial={reduceMotion ? false : { scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.8, ease: EASE }}
+        style={{ height: 1, background: 'var(--color-hairline)', transformOrigin: 'left', marginBottom: '4rem' }}
+      />
+      <div className="mb-12 lg:mb-16 space-y-3">
+        <Kicker>{kicker}</Kicker>
+        <RevealHeadline
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 400,
+            fontSize: 'clamp(2rem, 4vw, 3.25rem)',
+            lineHeight: 1.05,
+            letterSpacing: '-0.02em',
+            color: '#1A1A1A',
+          }}
+        >
+          {title}
+        </RevealHeadline>
+      </div>
+      {children}
+    </motion.section>
+  );
+};
 
 // Highlight: matches landing-page Hero pattern exactly. Marker-sweep animation, sage strip behind text.
 const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => {
@@ -394,7 +463,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
               {s.label}
             </p>
             <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.25rem, 3.6vw, 3.25rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 8 }}>
-              {s.display}
+              <Scramble value={s.display} />
             </p>
           </motion.div>
         ))}
@@ -831,6 +900,7 @@ const ScanReportPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
+      <ScrollProgress />
       {/* Header */}
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b border-[color:var(--color-hairline)]" style={{ background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">

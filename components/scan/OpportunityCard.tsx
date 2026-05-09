@@ -22,10 +22,11 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
 
   return (
     <motion.article
-      initial={{ y: 14 }}
+      initial={{ y: 18 }}
       whileInView={{ y: 0 }}
+      whileHover={{ y: -2 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.85, ease: [0.22, 0.84, 0.36, 1], delay: index * 0.04 }}
+      transition={{ duration: 0.7, ease: [0.22, 0.84, 0.36, 1], delay: index * 0.12 }}
       className={`grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 ${prominent ? 'py-14 my-2 px-6 lg:px-10 -mx-6 lg:-mx-10' : 'py-10 border-t border-[color:var(--color-hairline)]'}`}
       style={prominent ? {
         background: 'rgba(76,110,61,0.04)',
