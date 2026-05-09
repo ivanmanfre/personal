@@ -422,7 +422,7 @@ const AgentReadySection: React.FC = () => (
         </span>
       </motion.h2>
 
-      <div className="space-y-8 md:space-y-20">
+      <div className="space-y-14 md:space-y-20">
         {PRECONDITIONS.map((p, i) => (
           <motion.div
             key={p.n}
@@ -443,7 +443,7 @@ const AgentReadySection: React.FC = () => (
               fontStyle: 'italic',
               fontWeight: 400,
               color: '#F7F4EF',
-              opacity: 0.04,
+              opacity: 0.025,
               lineHeight: 1,
               pointerEvents: 'none',
               userSelect: 'none',
@@ -471,9 +471,9 @@ const AgentReadySection: React.FC = () => (
               </h3>
               <p style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
-                fontStyle: 'italic',
+                fontWeight: 400,
                 fontSize: '16px',
-                color: 'rgba(247,244,239,0.55)',
+                color: 'rgba(247,244,239,0.78)',
                 lineHeight: 1.65,
                 maxWidth: '50ch',
                 marginLeft: 'auto',
@@ -481,6 +481,16 @@ const AgentReadySection: React.FC = () => (
               }}>
                 {p.sub}
               </p>
+              {/* Sage dot separator — visually demarcates items so they don't run together */}
+              {i < PRECONDITIONS.length - 1 && (
+                <div className="mx-auto mt-10 md:mt-16" style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-accent-light)',
+                  opacity: 0.5,
+                }} />
+              )}
             </div>
           </motion.div>
         ))}
