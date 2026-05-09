@@ -279,6 +279,119 @@
 .dv-funnel-seg--warm { background: rgba(245,158,11,0.10); color: var(--d-warn); }
 .dv-funnel-seg--cold { background: rgba(96,165,250,0.06); color: var(--d-paper); }
 
+/* ============== V1 PANEL OVERRIDES ==============
+ * Wrapped legacy panels (Phase 2-6) use Tailwind classes targeting
+ * zinc/emerald/amber/red. Override them inside `.dashboard-v2` so the
+ * embedded panels inherit the v2 palette without rewriting their JSX.
+ */
+
+/* Backgrounds */
+.dashboard-v2 .bg-zinc-950 { background-color: var(--d-ink) !important; }
+.dashboard-v2 .bg-zinc-900 { background-color: var(--d-ink-2) !important; }
+.dashboard-v2 .bg-zinc-800 { background-color: var(--d-ink-3) !important; }
+.dashboard-v2 .bg-zinc-700 { background-color: var(--d-ink-3) !important; }
+.dashboard-v2 .bg-zinc-900\/50,
+.dashboard-v2 .bg-zinc-800\/50,
+.dashboard-v2 .bg-zinc-900\/60,
+.dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(24, 24, 28, 0.85) !important; }
+
+/* Borders */
+.dashboard-v2 .border-zinc-950 { border-color: var(--d-ink) !important; }
+.dashboard-v2 .border-zinc-900 { border-color: var(--d-rule-strong) !important; }
+.dashboard-v2 .border-zinc-800 { border-color: var(--d-rule-strong) !important; }
+.dashboard-v2 .border-zinc-700 { border-color: var(--d-rule-strong) !important; }
+.dashboard-v2 .border-zinc-700\/60,
+.dashboard-v2 .border-zinc-800\/60 { border-color: var(--d-rule) !important; }
+.dashboard-v2 .divide-zinc-800 > * + *,
+.dashboard-v2 .divide-zinc-700 > * + * { border-color: var(--d-rule) !important; }
+
+/* Text */
+.dashboard-v2 .text-zinc-50,
+.dashboard-v2 .text-zinc-100,
+.dashboard-v2 .text-zinc-200,
+.dashboard-v2 .text-zinc-300 { color: var(--d-paper) !important; }
+.dashboard-v2 .text-zinc-400 { color: var(--d-paper-dim) !important; }
+.dashboard-v2 .text-zinc-500,
+.dashboard-v2 .text-zinc-600 { color: var(--d-paper-dimmer) !important; }
+
+/* Status — emerald → good, red → bad, amber → warn */
+.dashboard-v2 .text-emerald-300,
+.dashboard-v2 .text-emerald-400,
+.dashboard-v2 .text-emerald-500,
+.dashboard-v2 .text-emerald-600,
+.dashboard-v2 .text-green-400,
+.dashboard-v2 .text-green-500 { color: var(--d-good) !important; }
+.dashboard-v2 .bg-emerald-500\/10,
+.dashboard-v2 .bg-emerald-500\/20,
+.dashboard-v2 .bg-emerald-500\/25,
+.dashboard-v2 .bg-emerald-900\/30 { background-color: var(--d-good-bg) !important; }
+.dashboard-v2 .bg-emerald-500,
+.dashboard-v2 .bg-emerald-600 { background-color: var(--d-good) !important; }
+.dashboard-v2 .border-emerald-500,
+.dashboard-v2 .border-emerald-600,
+.dashboard-v2 .border-emerald-500\/30,
+.dashboard-v2 .border-emerald-500\/50 { border-color: var(--d-good) !important; }
+
+.dashboard-v2 .text-red-300,
+.dashboard-v2 .text-red-400,
+.dashboard-v2 .text-red-500,
+.dashboard-v2 .text-rose-400,
+.dashboard-v2 .text-rose-500 { color: var(--d-bad) !important; }
+.dashboard-v2 .bg-red-500\/10,
+.dashboard-v2 .bg-red-500\/20,
+.dashboard-v2 .bg-red-900\/30 { background-color: var(--d-bad-bg) !important; }
+.dashboard-v2 .bg-red-500 { background-color: var(--d-bad) !important; }
+.dashboard-v2 .border-red-500,
+.dashboard-v2 .border-red-500\/30,
+.dashboard-v2 .border-red-500\/50 { border-color: var(--d-bad) !important; }
+
+.dashboard-v2 .text-amber-300,
+.dashboard-v2 .text-amber-400,
+.dashboard-v2 .text-amber-500,
+.dashboard-v2 .text-yellow-400,
+.dashboard-v2 .text-yellow-500,
+.dashboard-v2 .text-orange-400,
+.dashboard-v2 .text-orange-500 { color: var(--d-warn) !important; }
+.dashboard-v2 .bg-amber-500\/10,
+.dashboard-v2 .bg-amber-500\/20,
+.dashboard-v2 .bg-amber-900\/30,
+.dashboard-v2 .bg-yellow-500\/20 { background-color: var(--d-warn-bg) !important; }
+.dashboard-v2 .bg-amber-500 { background-color: var(--d-warn) !important; }
+.dashboard-v2 .border-amber-500,
+.dashboard-v2 .border-amber-500\/30,
+.dashboard-v2 .border-yellow-500\/50 { border-color: var(--d-warn) !important; }
+
+/* Cyan/blue → accent */
+.dashboard-v2 .text-cyan-400,
+.dashboard-v2 .text-cyan-500,
+.dashboard-v2 .text-blue-400,
+.dashboard-v2 .text-blue-500,
+.dashboard-v2 .text-sky-400 { color: var(--d-accent) !important; }
+.dashboard-v2 .bg-cyan-500\/20,
+.dashboard-v2 .bg-blue-500\/20 { background-color: var(--d-accent-bg) !important; }
+.dashboard-v2 .border-cyan-500,
+.dashboard-v2 .border-cyan-500\/30 { border-color: var(--d-accent) !important; }
+
+/* Neutralize gradient buttons → flat */
+.dashboard-v2 .bg-gradient-to-r,
+.dashboard-v2 .bg-gradient-to-br { background-image: none !important; }
+
+/* Rounded — V1 uses lg/xl, V2 normalizes */
+.dashboard-v2 .rounded-xl { border-radius: 6px !important; }
+.dashboard-v2 .rounded-2xl { border-radius: 8px !important; }
+
+/* Hover states inside panels */
+.dashboard-v2 .hover\:bg-zinc-800:hover,
+.dashboard-v2 .hover\:bg-zinc-700:hover { background-color: rgba(231, 231, 234, 0.04) !important; }
+
+/* Inputs */
+.dashboard-v2 input.bg-zinc-900,
+.dashboard-v2 input.bg-zinc-800,
+.dashboard-v2 textarea.bg-zinc-900,
+.dashboard-v2 textarea.bg-zinc-800 { background-color: var(--d-ink-3) !important; color: var(--d-paper) !important; border-color: var(--d-rule-strong) !important; }
+.dashboard-v2 input::placeholder,
+.dashboard-v2 textarea::placeholder { color: var(--d-paper-dimmer) !important; }
+
 /* COMMAND PALETTE */
 .dv-cmdk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-start; justify-content: center; padding-top: 15vh; z-index: 100; }
 .dv-cmdk { width: 560px; max-width: 90vw; background: var(--d-ink-2); border: 1px solid var(--d-rule-strong); border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); overflow: hidden; }
