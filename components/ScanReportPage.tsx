@@ -3,41 +3,102 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Building2, Globe, Mail, Calendar, Zap, TrendingUp,
-  ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft,
-  Megaphone, DollarSign, Users, BarChart3,
+  ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
-import { gradeColor } from '../lib/scanApi';
 import type { ReportJson, AdCreative } from '../lib/scanTypes';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
-// ── Section wrapper ───────────────────────────────────────────────────────────
-const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({
-  title, icon, children,
+const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
+const BODY_SERIF = '"Source Serif 4", Georgia, serif';
+const MONO = '"IBM Plex Mono", monospace';
+const EASE = [0.22, 0.84, 0.36, 1] as const;
+
+// ── Editorial primitives ──────────────────────────────────────────────────────
+
+const Kicker: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p
+    style={{
+      fontFamily: MONO,
+      fontSize: '11px',
+      letterSpacing: '0.22em',
+      textTransform: 'uppercase',
+      color: 'rgba(26,26,26,0.5)',
+    }}
+  >
+    {children}
+  </p>
+);
+
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <h2
+    style={{
+      fontFamily: SERIF,
+      fontWeight: 400,
+      fontSize: 'clamp(1.875rem, 3.4vw, 2.75rem)',
+      lineHeight: 1.05,
+      letterSpacing: '-0.02em',
+      color: '#1A1A1A',
+    }}
+  >
+    {children}
+  </h2>
+);
+
+const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({
+  kicker, title, children,
 }) => (
-  <section className="border-b border-[color:var(--color-hairline)] py-12">
-    <div className="flex items-center gap-3 mb-8">
-      <span className="text-accent">{icon}</span>
-      <h2 className="text-xl font-bold text-ink font-display">{title}</h2>
+  <section className="border-t border-[color:var(--color-hairline)] py-20 lg:py-24">
+    <div className="mb-10 lg:mb-12 space-y-3">
+      <Kicker>{kicker}</Kicker>
+      <SectionTitle>{title}</SectionTitle>
     </div>
     {children}
   </section>
 );
 
-// ── Chip ─────────────────────────────────────────────────────────────────────
+const Italic: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{children}</span>
+);
+
+const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; className?: string }> = ({
+  children, large, className = '',
+}) => (
+  <p
+    className={className}
+    style={{
+      fontFamily: BODY_SERIF,
+      fontSize: large ? '19px' : '17px',
+      lineHeight: 1.65,
+      color: '#3D3D3B',
+      fontWeight: 400,
+    }}
+  >
+    {children}
+  </p>
+);
+
 const Chip: React.FC<{ label: string; variant?: 'found' | 'missing' | 'neutral' }> = ({
   label, variant = 'neutral',
 }) => {
-  const cls =
-    variant === 'found' ? 'bg-accent-soft text-accent-ink border-accent/20' :
-    variant === 'missing' ? 'bg-red-50 text-red-700 border-red-200' :
-    'bg-paper-sunk text-ink-soft border-[color:var(--color-hairline)]';
+  const styles =
+    variant === 'found' ? { color: 'var(--color-accent)', borderColor: 'rgba(76,110,61,0.25)', background: 'rgba(76,110,61,0.06)' } :
+    variant === 'missing' ? { color: '#A85439', borderColor: 'rgba(168,84,57,0.25)', background: 'rgba(168,84,57,0.05)' } :
+    { color: 'rgba(26,26,26,0.7)', borderColor: 'rgba(26,26,26,0.12)', background: 'transparent' };
   return (
-    <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border font-medium ${cls}`}>
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1.5"
+      style={{
+        fontFamily: MONO,
+        fontSize: '11px',
+        letterSpacing: '0.04em',
+        border: '1px solid',
+        ...styles,
+      }}
+    >
       {variant === 'found' && <CheckCircle className="w-3 h-3" />}
       {variant === 'missing' && <XCircle className="w-3 h-3" />}
       {label}
@@ -45,178 +106,240 @@ const Chip: React.FC<{ label: string; variant?: 'found' | 'missing' | 'neutral' 
   );
 };
 
-// ── Report sections ───────────────────────────────────────────────────────────
+// ── Sections ──────────────────────────────────────────────────────────────────
 
 function Section1CompanyBrief({ report }: { report: ReportJson }) {
-  const { company_snapshot, company_name, logo_url, company_size, revenue_range,
-    domain_age_years, email_infra, anthropic_verified, openai_verified,
-    tech_stack_assessment, clutch_data, linkedin_summary, github, ads_summary } = report;
+  const { company_snapshot, anthropic_verified, openai_verified, tech_stack_assessment, linkedin_summary, github } = report;
+  const { domain_age_years, email_infra, company_size, revenue_range } = report;
+
+  const facts: string[] = [];
+  if (company_size) facts.push(`${company_size} employees`);
+  if (revenue_range) facts.push(`${revenue_range} revenue`);
+  if (domain_age_years) facts.push(`${domain_age_years}-year-old domain`);
+  if (email_infra === 'google_workspace') facts.push('Google Workspace');
+  else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section title="Company Intelligence Brief" icon={<Building2 className="w-5 h-5" />}>
-      {/* Snapshot */}
-      <div className="flex items-start gap-5 mb-8">
-        {logo_url && (
-          <img
-            src={logo_url}
-            alt=""
-            className="w-16 h-16 rounded-xl object-contain bg-white border border-[color:var(--color-hairline)] p-1.5 shrink-0"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-        )}
-        <div>
-          <h3 className="text-2xl font-bold font-display text-ink">{company_name}</h3>
-          <p className="text-ink-soft mt-1 leading-relaxed">{company_snapshot.one_liner}</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-ink-mute">
-            {company_size && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{company_size} employees</span>}
-            {revenue_range && <span>{revenue_range} revenue</span>}
-            {domain_age_years && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />Domain age: {domain_age_years} years</span>}
-            {email_infra && (
-              <span className="flex items-center gap-1">
-                <Mail className="w-3 h-3" />
-                {email_infra === 'google_workspace' ? 'Google Workspace' :
-                 email_infra === 'microsoft_365' ? 'Microsoft 365' : 'Custom email infra'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+    <Section kicker="01 — The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
+      <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-start">
+        <div className="space-y-6 max-w-2xl">
+          <SerifBody large>{company_snapshot.one_liner}</SerifBody>
 
-      {/* AI adoption signal */}
-      {(anthropic_verified || openai_verified) && (
-        <div className="flex items-center gap-3 bg-accent-soft border border-accent/20 rounded-lg px-4 py-3 mb-6">
-          <Zap className="w-5 h-5 text-accent shrink-0" />
-          <p className="text-sm text-accent-ink font-medium">
-            DNS records confirm active {anthropic_verified ? 'Anthropic' : ''}{anthropic_verified && openai_verified ? ' + ' : ''}{openai_verified ? 'OpenAI' : ''} API usage — this company is already experimenting with AI. The gap is operationalization, not awareness.
-          </p>
-        </div>
-      )}
+          {facts.length > 0 && (
+            <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.6)' }}>
+              {facts.map((f, i) => (
+                <span key={i}>{f}</span>
+              ))}
+            </div>
+          )}
 
-      {/* Tech stack */}
-      <div className="mb-6">
-        <p className="text-sm font-semibold text-ink mb-3">Tech Stack</p>
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs text-ink-mute w-20 shrink-0 pt-1">Confirmed</span>
-            <div className="flex flex-wrap gap-1.5">
-              {tech_stack_assessment.confirmed_tools.length > 0
-                ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
-                : <span className="text-xs text-ink-mute">None detected</span>}
+          {(anthropic_verified || openai_verified) && (
+            <div
+              className="px-5 py-4 border-l-2"
+              style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.04)' }}
+            >
+              <SerifBody>
+                DNS records confirm active{' '}
+                <Italic>
+                  {anthropic_verified && 'Anthropic'}
+                  {anthropic_verified && openai_verified && ' + '}
+                  {openai_verified && 'OpenAI'}
+                </Italic>{' '}
+                API usage. The gap here isn't awareness — it's operationalization.
+              </SerifBody>
+            </div>
+          )}
+
+          {linkedin_summary && (linkedin_summary.followers || linkedin_summary.posts_30d != null) && (
+            <div className="pt-2">
+              <Kicker>LinkedIn presence</Kicker>
+              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '17px', color: '#3D3D3B' }}>
+                {linkedin_summary.followers != null && (
+                  <span><span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A' }}>{linkedin_summary.followers.toLocaleString()}</span> followers</span>
+                )}
+                {linkedin_summary.posts_30d != null && (
+                  <span><span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A' }}>{linkedin_summary.posts_30d}</span> posts / 30d</span>
+                )}
+                {linkedin_summary.last_post_days != null && (
+                  <span style={{ color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#3D3D3B' }}>
+                    Last post {linkedin_summary.last_post_days}d ago
+                  </span>
+                )}
+                {!!linkedin_summary.ai_mentions && linkedin_summary.ai_mentions > 0 && (
+                  <span style={{ color: 'var(--color-accent)' }}>{linkedin_summary.ai_mentions} AI/automation posts</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {github && (
+            <SerifBody>
+              GitHub: <Italic>{github.repos} public repositories</Italic> — engineers on staff.
+            </SerifBody>
+          )}
+        </div>
+
+        {/* Tech stack column */}
+        <div className="lg:w-72 lg:shrink-0">
+          <Kicker>Tech stack</Kicker>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p style={{ fontFamily: MONO, fontSize: '10px', color: 'var(--color-accent)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>Confirmed</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tech_stack_assessment.confirmed_tools.length > 0
+                  ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>None detected</p>}
+              </div>
+            </div>
+            <div>
+              <p style={{ fontFamily: MONO, fontSize: '10px', color: '#A85439', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>Missing</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tech_stack_assessment.missing_critical_tools.length > 0
+                  ? tech_stack_assessment.missing_critical_tools.slice(0, 6).map(t => <Chip key={t} label={t} variant="missing" />)
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>No critical gaps</p>}
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="text-xs text-ink-mute w-20 shrink-0 pt-1">Missing</span>
-            <div className="flex flex-wrap gap-1.5">
-              {tech_stack_assessment.missing_critical_tools.length > 0
-                ? tech_stack_assessment.missing_critical_tools.map(t => <Chip key={t} label={t} variant="missing" />)
-                : <span className="text-xs text-ink-mute">No critical gaps detected</span>}
-            </div>
-          </div>
+          <SerifBody className="mt-6">{tech_stack_assessment.sophistication_notes}</SerifBody>
         </div>
-        <p className="text-sm text-ink-soft mt-3 leading-relaxed">{tech_stack_assessment.sophistication_notes}</p>
       </div>
-
-      {/* Ad signals */}
-      {ads_summary && (
-        <div className="mb-6">
-          <p className="text-sm font-semibold text-ink mb-3">Advertising Activity</p>
-          <div className="flex flex-wrap gap-2">
-            <Chip
-              label={`Google Ads: ${ads_summary.google_ads ?? 'unknown'}`}
-              variant={ads_summary.google_ads === 'confirmed' || ads_summary.google_ads === 'probable' ? 'found' : 'neutral'}
-            />
-            <Chip
-              label={`LinkedIn Ads: ${ads_summary.linkedin_ads ? 'confirmed' : 'not detected'}`}
-              variant={ads_summary.linkedin_ads ? 'found' : 'neutral'}
-            />
-            <Chip
-              label={`Meta Ads: ${ads_summary.meta_ads === null ? 'n/a' : ads_summary.meta_ads ? 'confirmed' : 'not detected'}`}
-              variant={ads_summary.meta_ads ? 'found' : 'neutral'}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Clutch */}
-      {clutch_data && (
-        <div className="mb-6 border border-[color:var(--color-hairline)] rounded-lg p-4">
-          <p className="text-sm font-semibold text-ink mb-2">Clutch Profile</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-soft">
-            {clutch_data.rating && <span>⭐ {clutch_data.rating} rating</span>}
-            {clutch_data.hourly_rate && <span>💰 {clutch_data.hourly_rate}/hr</span>}
-            {clutch_data.services?.length > 0 && (
-              <span>🎯 {clutch_data.services.slice(0, 2).map(s => s.name).join(', ')}</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* LinkedIn */}
-      {linkedin_summary && (
-        <div>
-          <p className="text-sm font-semibold text-ink mb-2">LinkedIn Activity</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-soft">
-            {linkedin_summary.followers != null && <span>{linkedin_summary.followers.toLocaleString()} followers</span>}
-            {linkedin_summary.posts_30d != null && <span>{linkedin_summary.posts_30d} posts in last 30d</span>}
-            {linkedin_summary.last_post_days != null && (
-              <span className={linkedin_summary.last_post_days > 30 ? 'text-amber-600' : ''}>
-                Last post: {linkedin_summary.last_post_days} days ago
-              </span>
-            )}
-            {linkedin_summary.ai_mentions != null && linkedin_summary.ai_mentions > 0 && (
-              <span className="text-accent">{linkedin_summary.ai_mentions} AI/automation posts</span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* GitHub */}
-      {github && (
-        <div className="mt-4">
-          <p className="text-sm font-semibold text-ink mb-1">GitHub Presence</p>
-          <p className="text-sm text-ink-soft">{github.repos} public repositories — engineers on staff.</p>
-        </div>
-      )}
     </Section>
   );
 }
 
-function Section2GapTable({ report }: { report: ReportJson }) {
-  const { tech_stack_assessment } = report;
+function SectionFundingTraffic({ report }: { report: ReportJson }) {
+  const f = report.funding;
+  const t = report.traffic;
+  const hasFunding = f && (f.total_funding_usd || f.last_round_type || f.crunchbase_url);
+  const hasTraffic = t && (t.monthly_visits || t.global_rank);
+  if (!hasFunding && !hasTraffic) return null;
+
+  const fmtUsd = (n: number | null | undefined) =>
+    n == null ? '—' : n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`;
+  const fmtNum = (n: number | null | undefined) => n == null ? '—' : n.toLocaleString();
+
+  const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+    <div className="border-l-2 border-[color:var(--color-hairline)] pl-4">
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{label}</p>
+      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '32px', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#1A1A1A', marginTop: 6 }}>
+        {value}
+      </p>
+    </div>
+  );
+
   return (
-    <Section title="Automation Stack Assessment" icon={<TrendingUp className="w-5 h-5" />}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="rounded-lg border border-[color:var(--color-hairline)] p-4">
-          <p className="text-xs uppercase tracking-wider font-medium text-accent mb-3">Confirmed tools</p>
-          <div className="flex flex-wrap gap-2">
-            {tech_stack_assessment.confirmed_tools.length > 0
-              ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
-              : <p className="text-sm text-ink-mute">No tools confirmed</p>}
-          </div>
-        </div>
-        <div className="rounded-lg border border-red-100 bg-red-50/30 p-4">
-          <p className="text-xs uppercase tracking-wider font-medium text-red-600 mb-3">Missing / gaps</p>
-          <div className="flex flex-wrap gap-2">
-            {tech_stack_assessment.missing_critical_tools.length > 0
-              ? tech_stack_assessment.missing_critical_tools.map(t => <Chip key={t} label={t} variant="missing" />)
-              : <p className="text-sm text-ink-mute">No critical gaps identified</p>}
-          </div>
-        </div>
+    <Section kicker="02 — Signals" title={<>The numbers <Italic>behind the brand</Italic>.</>}>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        {hasFunding && (
+          <>
+            <Stat label="Total raised" value={fmtUsd(f!.total_funding_usd)} />
+            <Stat label="Last round" value={f!.last_round_type || '—'} />
+          </>
+        )}
+        {hasTraffic && (
+          <>
+            <Stat label="Monthly visits" value={fmtNum(t!.monthly_visits)} />
+            <Stat label="Global rank" value={t!.global_rank ? `#${fmtNum(t!.global_rank)}` : '—'} />
+          </>
+        )}
       </div>
-      <p className="text-sm text-ink-soft mt-4 leading-relaxed">{tech_stack_assessment.sophistication_notes}</p>
+      {hasFunding && f!.crunchbase_url && (
+        <a
+          href={f!.crunchbase_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 mt-8 transition-colors"
+          style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
+        >
+          View Crunchbase profile <ArrowRight className="w-3 h-3" />
+        </a>
+      )}
     </Section>
   );
 }
 
 function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
-    <Section title={`${report.opportunities.length} Automation Opportunities`} icon={<AlertCircle className="w-5 h-5" />}>
-      <p className="text-sm text-ink-soft mb-6">
-        Each gap is sourced from specific data signals — job postings, tech stack, Clutch reviews, ad activity.
-      </p>
-      <div className="space-y-3">
+    <Section
+      kicker={`03 — ${report.opportunities.length} Opportunities`}
+      title={<>Where time <Italic>quietly leaks</Italic>.</>}
+    >
+      <SerifBody className="mb-10 max-w-2xl">
+        Each gap is sourced from specific data signals — DNS records, tech stack, ad activity, hiring patterns. No speculation.
+      </SerifBody>
+      <div className="space-y-4">
         {report.opportunities.map((opp, i) => (
           <OpportunityCard key={i} opportunity={opp} index={i} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
+  const image = (creative.images && creative.images[0]) || creative.preview_url || null;
+  const headline = creative.title || creative.headline || creative.advertiser_name || creative.page_name || 'Ad';
+  const body = creative.body || '';
+  const cta = creative.cta_text || (creative.ad_format ? `Format: ${creative.ad_format}` : null);
+  const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
+  const platformLabel = platform === 'google' ? 'Google' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
+
+  return (
+    <div className="bg-paper border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col">
+      {image ? (
+        <div className="aspect-[16/10] overflow-hidden" style={{ background: '#EFEAE2' }}>
+          <img src={image} alt={headline} className="w-full h-full object-cover" loading="lazy" />
+        </div>
+      ) : (
+        <div className="aspect-[16/10] flex items-center justify-center" style={{ background: '#EFEAE2', fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)', letterSpacing: '0.1em' }}>
+          {creative.has_video || creative.video_url ? 'VIDEO' : 'NO PREVIEW'}
+        </div>
+      )}
+      <div className="p-5 flex-1 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{platformLabel}</span>
+          {creative.is_active && <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>● Active</span>}
+        </div>
+        <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{headline}</p>
+        {body && <SerifBody className="line-clamp-3"><span style={{ fontSize: '14px' }}>{body}</span></SerifBody>}
+        {cta && (
+          <div className="mt-auto pt-3 border-t border-[color:var(--color-hairline)]">
+            {link ? (
+              <a href={link} target="_blank" rel="noopener noreferrer"
+                 style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}
+                 className="inline-flex items-center gap-1.5 hover:underline">
+                {cta} <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{cta}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionAdActivity({ report }: { report: ReportJson }) {
+  const ads = report.ads;
+  if (!ads) return null;
+
+  const all: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
+  (ads.google_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'google', creative: c }));
+  (ads.linkedin_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'linkedin', creative: c }));
+  (ads.meta_ads?.creatives || []).slice(0, 3).forEach(c => all.push({ platform: 'meta', creative: c }));
+  if (all.length === 0) return null;
+
+  return (
+    <Section kicker="04 — Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl">
+        Pulled live from public ad libraries — Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
+      </SerifBody>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {all.map((item, i) => (
+          <AdCreativeCard key={i} creative={item.creative} platform={item.platform} />
         ))}
       </div>
     </Section>
@@ -227,75 +350,57 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const { company_snapshot, anthropic_verified, openai_verified, linkedin_summary } = report;
   const signal = company_snapshot.ai_adoption_signal;
 
-  const labels: Record<string, { label: string; color: string; description: string }> = {
-    early_adopter: {
-      label: 'Early Adopter',
-      color: '#4C6E3D',
-      description: 'This company is actively integrating AI into operations — ahead of their peer group.',
-    },
-    on_par: {
-      label: 'On Par',
-      color: '#D97706',
-      description: 'Awareness is there, but deployment lags behind leading firms in this space.',
-    },
-    behind: {
-      label: 'Behind',
-      color: '#EA580C',
-      description: 'No AI tooling detected. Every month of delay is compounding opportunity cost.',
-    },
-    unknown: {
-      label: 'Unknown',
-      color: '#9CA3AF',
-      description: 'Insufficient signals to benchmark AI adoption for this company.',
-    },
+  const meta: Record<string, { label: string; tone: string; description: string }> = {
+    early_adopter: { label: 'Early Adopter', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations — ahead of the peer group.' },
+    on_par: { label: 'On Par', tone: '#C97A2E', description: 'Awareness is there, but deployment lags behind leading firms.' },
+    behind: { label: 'Behind', tone: '#A85439', description: 'No AI tooling detected. Each month of delay compounds the gap.' },
+    unknown: { label: 'Unknown', tone: 'rgba(26,26,26,0.5)', description: 'Insufficient signals to benchmark AI adoption.' },
   };
-
-  const meta = labels[signal] ?? labels.unknown;
+  const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section title="AI Adoption Signal" icon={<Zap className="w-5 h-5" />}>
-      <div className="flex items-center gap-3 mb-4">
-        <span
-          className="text-xl font-bold font-display"
-          style={{ color: meta.color }}
-        >
-          {meta.label}
-        </span>
-      </div>
-      <p className="text-sm text-ink-soft leading-relaxed mb-4">{meta.description}</p>
-      {(anthropic_verified || openai_verified) && (
-        <div className="bg-accent-soft border border-accent/20 rounded-lg px-4 py-3 text-sm text-accent-ink">
-          DNS verification confirms {anthropic_verified ? 'Anthropic API' : ''}{anthropic_verified && openai_verified ? ' + ' : ''}{openai_verified ? 'OpenAI API' : ''} usage. They're not experimenting — they're shipping.
-        </div>
-      )}
-      {linkedin_summary?.ai_mentions != null && linkedin_summary.ai_mentions > 0 && (
-        <p className="text-sm text-ink-soft mt-3">
-          {linkedin_summary.ai_mentions} LinkedIn posts mentioning AI/automation in the past 30 days.
+    <Section kicker="05 — AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+      <div className="space-y-6 max-w-2xl">
+        <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
+          {m.label}.
         </p>
-      )}
+        <SerifBody large>{m.description}</SerifBody>
+        {(anthropic_verified || openai_verified) && (
+          <div className="px-5 py-4 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.04)' }}>
+            <SerifBody>
+              DNS verification confirms{' '}
+              <Italic>
+                {anthropic_verified && 'Anthropic'}{anthropic_verified && openai_verified && ' + '}{openai_verified && 'OpenAI'}
+              </Italic>{' '}
+              API usage. They're not experimenting — they're shipping.
+            </SerifBody>
+          </div>
+        )}
+        {!!linkedin_summary?.ai_mentions && linkedin_summary.ai_mentions > 0 && (
+          <SerifBody>
+            <Italic>{linkedin_summary.ai_mentions}</Italic> LinkedIn posts mentioning AI/automation in the last 30 days.
+          </SerifBody>
+        )}
+      </div>
     </Section>
   );
 }
 
 function Section5Competitive({ report }: { report: ReportJson }) {
+  if (!report.competitive_context && (!report.competitors || report.competitors.length === 0)) return null;
   return (
-    <Section title="Competitive Context" icon={<Globe className="w-5 h-5" />}>
-      <p className="text-sm text-ink-soft leading-relaxed mb-6">{report.competitive_context}</p>
+    <Section kicker="06 — Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+      <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-px border-y border-[color:var(--color-hairline)]">
           {report.competitors.map((c, i) => (
-            <a
-              key={i}
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-start gap-3 p-3 rounded-lg border border-[color:var(--color-hairline)] hover:border-accent/30 hover:bg-accent-soft/50 transition-colors group"
-            >
-              <ExternalLink className="w-4 h-4 text-ink-mute shrink-0 mt-0.5 group-hover:text-accent" />
-              <div>
-                <p className="text-sm font-medium text-ink group-hover:text-accent">{c.title}</p>
-                <p className="text-xs text-ink-mute mt-0.5 line-clamp-2">{c.description}</p>
+            <a key={i} href={c.url} target="_blank" rel="noopener noreferrer"
+               className="flex items-start gap-4 py-5 hover:bg-[rgba(26,26,26,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0">
+              <div className="flex-1">
+                <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }} className="group-hover:text-accent transition-colors">{c.title}</p>
+                {c.description && <SerifBody className="mt-1 line-clamp-2"><span style={{ fontSize: '15px' }}>{c.description}</span></SerifBody>}
               </div>
+              <ExternalLink className="w-4 h-4 text-ink-mute mt-1.5 group-hover:text-accent transition-colors shrink-0" />
             </a>
           ))}
         </div>
@@ -304,202 +409,113 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   );
 }
 
-// Renders a single ad creative card (auto-detects platform shape)
-function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
-  // Pick the best image: meta has .images[0], google has preview_url, linkedin has preview_url
-  const image =
-    (creative.images && creative.images[0]) ||
-    creative.preview_url ||
-    null;
-  const headline = creative.title || creative.headline || creative.advertiser_name || creative.page_name || 'Ad';
-  const body = creative.body || '';
-  const cta = creative.cta_text || (creative.ad_format ? `Format: ${creative.ad_format}` : null);
-  const link = creative.link_url || creative.ad_url || creative.advertiser_url || null;
-
-  const platformLabel = platform === 'google' ? 'Google Ads' : platform === 'linkedin' ? 'LinkedIn' : 'Meta';
-  const platformColor = platform === 'google' ? 'bg-blue-50 text-blue-700' : platform === 'linkedin' ? 'bg-sky-50 text-sky-700' : 'bg-indigo-50 text-indigo-700';
-
-  return (
-    <div className="border border-[color:var(--color-hairline)] rounded-lg overflow-hidden bg-paper hover:border-accent/30 transition-colors">
-      {image ? (
-        <div className="aspect-video bg-paper-sunk overflow-hidden">
-          <img src={image} alt={headline} className="w-full h-full object-cover" loading="lazy" />
-        </div>
-      ) : (
-        <div className="aspect-video bg-paper-sunk flex items-center justify-center text-ink-mute text-xs">
-          {creative.has_video || creative.video_url ? 'Video creative' : 'No preview'}
-        </div>
-      )}
-      <div className="p-3 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded ${platformColor}`}>{platformLabel}</span>
-          {creative.is_active && <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">Active</span>}
-        </div>
-        <p className="text-sm font-semibold text-ink line-clamp-2">{headline}</p>
-        {body && <p className="text-xs text-ink-soft line-clamp-3 leading-relaxed">{body}</p>}
-        {cta && (
-          <div className="text-xs text-ink-mute pt-1 border-t border-[color:var(--color-hairline)]/50">
-            {link ? (
-              <a href={link} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
-                {cta} <ExternalLink className="w-3 h-3" />
-              </a>
-            ) : cta}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SectionAdActivity({ report }: { report: ReportJson }) {
-  const ads = report.ads;
-  if (!ads || !ads.any_paid) return null;
-
-  const platforms: Array<{ key: 'google' | 'linkedin' | 'meta'; data: { detected: boolean; count: number; creatives: AdCreative[] } | undefined }> = [
-    { key: 'google', data: ads.google_ads },
-    { key: 'linkedin', data: ads.linkedin_ads },
-    { key: 'meta', data: ads.meta_ads },
-  ];
-
-  const allCreatives: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
-  platforms.forEach(({ key, data }) => {
-    (data?.creatives || []).slice(0, 3).forEach((c) => allCreatives.push({ platform: key, creative: c }));
-  });
-
-  if (allCreatives.length === 0) return null;
-
-  return (
-    <Section title="Live Ad Activity" icon={<Megaphone className="w-5 h-5" />}>
-      <p className="text-sm text-ink-soft leading-relaxed mb-6">
-        Captured from public ad libraries (Google Ads Transparency, Meta Ads Library, LinkedIn Ad Library).
-        Active campaign creatives surfaced for context — not exhaustive.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {allCreatives.map((item, i) => (
-          <AdCreativeCard key={i} creative={item.creative} platform={item.platform} />
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-function SectionFundingTraffic({ report }: { report: ReportJson }) {
-  const f = report.funding;
-  const t = report.traffic;
-  if (!f && !t) return null;
-  const hasFunding = f && (f.total_funding_usd || f.last_round_type || f.crunchbase_url);
-  const hasTraffic = t && (t.monthly_visits || t.global_rank);
-  if (!hasFunding && !hasTraffic) return null;
-
-  const fmtUsd = (n: number | null) => n == null ? '—' : n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`;
-  const fmtNum = (n: number | null) => n == null ? '—' : n.toLocaleString();
-
-  return (
-    <Section title="Company Signals" icon={<BarChart3 className="w-5 h-5" />}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {hasFunding && (
-          <div className="border border-[color:var(--color-hairline)] rounded-lg p-5 bg-paper-sunk/50">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-4 h-4 text-accent" />
-              <h3 className="text-sm font-semibold text-ink">Funding (Crunchbase)</h3>
-            </div>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-ink-mute">Total raised</dt><dd className="text-ink font-medium">{fmtUsd(f!.total_funding_usd)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Last round</dt><dd className="text-ink font-medium">{f!.last_round_type || '—'}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Last round date</dt><dd className="text-ink font-medium">{f!.last_round_date || '—'}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Investors</dt><dd className="text-ink font-medium">{Array.isArray(f!.investors) ? f!.investors.length || '—' : '—'}</dd></div>
-            </dl>
-            {f!.crunchbase_url && (
-              <a href={f!.crunchbase_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-accent hover:underline mt-4">
-                View on Crunchbase <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-        )}
-        {hasTraffic && (
-          <div className="border border-[color:var(--color-hairline)] rounded-lg p-5 bg-paper-sunk/50">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-4 h-4 text-accent" />
-              <h3 className="text-sm font-semibold text-ink">Web Traffic (SimilarWeb)</h3>
-            </div>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between"><dt className="text-ink-mute">Monthly visits</dt><dd className="text-ink font-medium">{fmtNum(t!.monthly_visits)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Global rank</dt><dd className="text-ink font-medium">#{fmtNum(t!.global_rank)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Bounce rate</dt><dd className="text-ink font-medium">{t!.bounce_rate != null ? `${(t!.bounce_rate * 100).toFixed(0)}%` : '—'}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-mute">Top country</dt><dd className="text-ink font-medium">{t!.top_country || '—'}</dd></div>
-            </dl>
-          </div>
-        )}
-      </div>
-    </Section>
-  );
-}
-
 function Section6CTA({ report, companyName }: { report: ReportJson; companyName: string }) {
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
 
   return (
-    <section className="py-16 text-center">
-      <p className="text-xs uppercase tracking-wider font-medium text-ink-mute mb-4">Your next step</p>
-      <h2 className="text-3xl font-bold font-display text-ink mb-4 leading-tight max-w-xl mx-auto">
-        Your highest-priority gap is{' '}
-        <span className="text-accent">{report.top_gap_title}</span>.
-      </h2>
-      <p className="text-ink-soft leading-relaxed max-w-lg mx-auto mb-2">
-        {report.top_gap_summary}
-      </p>
-      <p className="text-sm text-ink-mute mb-8 max-w-lg mx-auto">
-        In the Agent-Ready Assessment, we'd turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.
-      </p>
-      <a
-        href={calendlyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-accent text-white font-semibold px-8 py-4 rounded-lg hover:bg-accent-ink transition-colors text-lg"
-      >
-        Book Your Agent-Ready Assessment
-        <Calendar className="w-5 h-5" />
-      </a>
-      <p className="text-xs text-ink-mute mt-4">
-        $2,500 · 1 week · 60-min findings walkthrough
-      </p>
+    <section className="border-t border-[color:var(--color-hairline)] py-24 lg:py-32">
+      <div className="max-w-3xl">
+        <Kicker>Your next step</Kicker>
+        <h2
+          className="mt-6 mb-8"
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 400,
+            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+            lineHeight: 1,
+            letterSpacing: '-0.02em',
+            color: '#1A1A1A',
+          }}
+        >
+          Your highest-priority gap is{' '}
+          <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline' }}>
+            {report.top_gap_title}
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                left: '-0.5%',
+                right: '-0.5%',
+                bottom: '0.18em',
+                height: '0.38em',
+                background: 'var(--color-accent)',
+                opacity: 0.22,
+                zIndex: -1,
+              }}
+            />
+          </span>.
+        </h2>
+        <SerifBody large className="mb-3 max-w-xl">{report.top_gap_summary}</SerifBody>
+        <SerifBody className="mb-10 max-w-xl"><span style={{ color: 'rgba(26,26,26,0.55)' }}>In the Agent-Ready Assessment, we turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.</span></SerifBody>
+        <div className="flex flex-col sm:flex-row items-start gap-3">
+          <a
+            href={calendlyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2.5 px-7 py-3.5"
+            style={{
+              fontFamily: BODY_SERIF,
+              fontWeight: 600,
+              fontSize: '16px',
+              backgroundColor: '#1A1A1A',
+              color: '#F7F4EF',
+            }}
+          >
+            Book your Agent-Ready Assessment <ArrowRight size={18} />
+          </a>
+          <Link
+            to="/audit"
+            className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
+            style={{
+              fontFamily: BODY_SERIF,
+              fontWeight: 600,
+              fontSize: '16px',
+              fontStyle: 'italic',
+              color: 'rgba(26,26,26,0.55)',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
+          >
+            Scan another company <ArrowRight size={16} />
+          </Link>
+        </div>
+        <p className="mt-8" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>
+          $2,000 · 1 week · 60-min findings walkthrough
+        </p>
+      </div>
     </section>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
+
 const ScanReportPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { scan, loading, error } = useScan(slug ?? null);
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
-          <p className="text-sm text-ink-mute">Loading report...</p>
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Loading report</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error || !scan || !scan.report_json) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="text-center max-w-sm px-6">
           <AlertCircle className="w-12 h-12 text-ink-mute mx-auto mb-4" />
-          <h1 className="text-xl font-bold font-display text-ink mb-2">Report not available</h1>
-          <p className="text-sm text-ink-soft mb-6">
-            {error ?? 'This scan report isn\'t ready yet, or the link may be incorrect.'}
-          </p>
-          <Link
-            to="/audit"
-            className="inline-flex items-center gap-2 text-accent font-medium text-sm hover:underline"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Run a new scan
+          <h1 style={{ fontFamily: SERIF, fontSize: '32px', color: '#1A1A1A' }} className="mb-2">Report not available</h1>
+          <SerifBody className="mb-6">
+            {error ?? "This scan report isn't ready yet, or the link may be incorrect."}
+          </SerifBody>
+          <Link to="/audit" className="inline-flex items-center gap-2 hover:underline"
+                style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
+            <ArrowLeft className="w-4 h-4" /> Run a new scan
           </Link>
         </div>
       </div>
@@ -510,72 +526,118 @@ const ScanReportPage: React.FC = () => {
   const companyName = scan.company_name ?? scan.domain;
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper text-ink">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-paper/90 backdrop-blur-sm border-b border-[color:var(--color-hairline)]">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="text-sm font-semibold text-ink hover:text-accent transition-colors">
-            Ivan Manfredi
+      <header className="sticky top-0 z-30 backdrop-blur-sm border-b border-[color:var(--color-hairline)]" style={{ background: 'rgba(247,244,239,0.9)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="transition-colors"
+                style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
+            Iván Manfredi
           </Link>
-          <span className="text-xs text-ink-mute hidden sm:block">
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
             AI Opportunity Scan · {companyName}
           </span>
           <a
             href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=scan`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs font-medium bg-accent text-white px-3 py-1.5 rounded-md hover:bg-accent-ink transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2"
+            style={{
+              fontFamily: BODY_SERIF,
+              fontSize: '14px',
+              fontWeight: 600,
+              backgroundColor: '#1A1A1A',
+              color: '#F7F4EF',
+            }}
           >
-            Book a call →
+            Book a call <ArrowRight size={14} />
           </a>
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-6 pb-24">
+      <div className="max-w-6xl mx-auto px-6 pb-24">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          className="pt-16 pb-12 border-b border-[color:var(--color-hairline)]"
+          transition={{ duration: 0.7, ease: EASE }}
+          className="pt-20 lg:pt-32 pb-16 lg:pb-24"
         >
-          <div className="flex items-center gap-4 mb-6">
-            {report.logo_url && (
-              <img
-                src={report.logo_url}
-                alt=""
-                className="w-14 h-14 rounded-xl object-contain bg-white border border-[color:var(--color-hairline)] p-1.5"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            )}
+          <div className="flex items-center gap-3 mb-8">
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ color: 'var(--color-accent)', fontSize: '8px' }}
+            >
+              ●
+            </motion.span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              AI Opportunity Scan · {new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </div>
+
+          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
             <div>
-              <p className="text-xs uppercase tracking-wider text-ink-mute font-medium mb-1">AI Opportunity Scan</p>
-              <h1 className="text-3xl font-bold font-display text-ink">{companyName}</h1>
+              {report.logo_url && (
+                <img
+                  src={report.logo_url}
+                  alt=""
+                  className="w-16 h-16 object-contain mb-6"
+                  style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              )}
+              <motion.h1
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15, duration: 0.7, ease: EASE }}
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: 400,
+                  fontSize: 'clamp(3rem, 7vw, 6rem)',
+                  lineHeight: 0.94,
+                  letterSpacing: '-0.025em',
+                  color: '#1A1A1A',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                {companyName}
+              </motion.h1>
+              <SerifBody large className="max-w-xl">{report.score_rationale}</SerifBody>
+            </div>
+
+            {/* Score */}
+            <div className="lg:w-80 lg:shrink-0">
+              <Kicker>Automation Opportunity Score</Kicker>
+              <div className="mt-4">
+                <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
+              </div>
             </div>
           </div>
 
-          <div className="max-w-xs">
-            <p className="text-xs uppercase tracking-wider font-medium text-ink-mute mb-3">
-              Automation Opportunity Score
-            </p>
-            <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
-          </div>
-          <p className="text-sm text-ink-soft mt-4 leading-relaxed max-w-xl">{report.score_rationale}</p>
-
           {/* Teaser signals */}
-          <div className="mt-6 space-y-2">
-            {report.teaser_signals.map((s, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                <span className="text-amber-500 shrink-0 mt-0.5">⚠</span>
-                <span>{s.replace(/^⚠\s?/, '')}</span>
-              </div>
-            ))}
-          </div>
+          {report.teaser_signals && report.teaser_signals.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10"
+            >
+              {report.teaser_signals.map((s, i) => (
+                <div key={i} className="border-t-2 pt-4" style={{ borderColor: 'var(--color-accent)' }}>
+                  <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginBottom: 8 }}>
+                    Signal {String(i + 1).padStart(2, '0')}
+                  </p>
+                  <SerifBody>{s.replace(/^⚠\s?/, '')}</SerifBody>
+                </div>
+              ))}
+            </motion.div>
+          )}
         </motion.div>
 
-        {/* Report sections */}
+        {/* Sections */}
         <Section1CompanyBrief report={report} />
         <SectionFundingTraffic report={report} />
-        <Section2GapTable report={report} />
         <Section3Opportunities report={report} />
         <SectionAdActivity report={report} />
         <Section4AiAdoption report={report} />

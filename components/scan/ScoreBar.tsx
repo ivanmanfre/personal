@@ -8,32 +8,44 @@ interface Props {
   size?: 'sm' | 'lg';
 }
 
+const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
+const MONO = '"IBM Plex Mono", monospace';
+
 export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
   const color = gradeColor(grade);
-  const barHeight = size === 'lg' ? 'h-3' : 'h-2';
-  const textSize = size === 'lg' ? 'text-4xl' : 'text-2xl';
+  const big = size === 'lg';
 
   return (
     <div className="w-full">
-      <div className="flex items-end justify-between mb-2">
+      <div className="flex items-baseline gap-3 mb-3">
         <span
-          className={`font-bold font-display leading-none ${textSize}`}
-          style={{ color }}
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 400,
+            fontSize: big ? 'clamp(4rem, 9vw, 7rem)' : '3rem',
+            lineHeight: 0.9,
+            letterSpacing: '-0.03em',
+            color,
+          }}
         >
           {score}
-          <span className="text-sm font-normal text-ink-soft ml-1">/100</span>
         </span>
         <span
-          className="text-sm font-mono font-bold px-2 py-0.5 rounded"
-          style={{ color, background: `${color}18` }}
+          style={{
+            fontFamily: MONO,
+            fontSize: big ? '12px' : '10px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'rgba(26,26,26,0.5)',
+          }}
         >
-          Grade: {grade}
+          / 100 · Grade <span style={{ color, fontWeight: 600 }}>{grade}</span>
         </span>
       </div>
-      <div className="w-full bg-[color:var(--color-paper-sunk)] rounded-full overflow-hidden" style={{ height: size === 'lg' ? 12 : 8 }}>
+      <div className="w-full" style={{ height: 1, background: 'rgba(26,26,26,0.08)' }}>
         <div
-          className={`${barHeight} rounded-full transition-all duration-1000 ease-out`}
-          style={{ width: `${score}%`, background: color }}
+          className="transition-all duration-1000 ease-out"
+          style={{ width: `${score}%`, height: '100%', background: color }}
         />
       </div>
     </div>
