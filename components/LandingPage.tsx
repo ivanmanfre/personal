@@ -28,8 +28,8 @@ const inView = {
 const T = {
   mono: {
     fontFamily: '"IBM Plex Mono", monospace',
-    fontSize: '10px',
-    letterSpacing: '0.25em',
+    fontSize: '11px',
+    letterSpacing: '0.22em',
     textTransform: 'uppercase' as const,
     color: 'rgba(26,26,26,0.62)',
   } as React.CSSProperties,
@@ -426,18 +426,18 @@ const AgentReadySection: React.FC = () => (
             transition={{ duration: 0.8, ease, delay: i * 0.08 }}
             className="relative"
           >
-            {/* Giant ghost numeral as backdrop */}
+            {/* Subtle ghost numeral — texture, not focal */}
             <div aria-hidden style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -55%)',
-              fontSize: 'clamp(90px, 22vw, 320px)',
+              fontSize: 'clamp(80px, 18vw, 240px)',
               fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
               fontStyle: 'italic',
               fontWeight: 400,
               color: '#F7F4EF',
-              opacity: 0.025,
+              opacity: 0.018,
               lineHeight: 1,
               pointerEvents: 'none',
               userSelect: 'none',
@@ -448,16 +448,30 @@ const AgentReadySection: React.FC = () => (
             </div>
 
             <div className="relative" style={{ zIndex: 1 }}>
-              <h3 style={{
+              {/* Visible italic numeral — sage drama anchor (separate type voice from H3) */}
+              <div style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontStyle: 'italic',
                 fontWeight: 400,
-                fontSize: 'clamp(1.8rem, 3vw, 2.8rem)',
-                lineHeight: 1.15,
+                fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
+                lineHeight: 1,
                 letterSpacing: '-0.02em',
-                color: '#F7F4EF',
+                color: 'var(--color-accent-light)',
                 marginBottom: '18px',
-                maxWidth: '26ch',
+              }}>
+                {p.n}.
+              </div>
+              {/* H3 — upright Source Serif bold creates explicit type contrast vs italic display H2 */}
+              <h3 style={{
+                fontFamily: '"Source Serif 4", Georgia, serif',
+                fontStyle: 'normal',
+                fontWeight: 600,
+                fontSize: 'clamp(1.4rem, 2vw, 1.85rem)',
+                lineHeight: 1.25,
+                letterSpacing: '-0.01em',
+                color: '#F7F4EF',
+                marginBottom: '14px',
+                maxWidth: '24ch',
                 marginLeft: 'auto',
                 marginRight: 'auto',
               }}>
@@ -466,8 +480,8 @@ const AgentReadySection: React.FC = () => (
               <p style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
                 fontWeight: 400,
-                fontSize: '18px',
-                color: 'rgba(247,244,239,0.78)',
+                fontSize: '17px',
+                color: 'rgba(247,244,239,0.74)',
                 lineHeight: 1.65,
                 maxWidth: '52ch',
                 marginLeft: 'auto',
@@ -565,7 +579,7 @@ const WorkSection: React.FC = () => {
       <div className="container mx-auto px-8 max-w-6xl">
         <motion.div {...inView} className="mb-10">
           <Label>05 / How we work together</Label>
-          <RevealH2 style={T.display('clamp(1.8rem,3vw,2.6rem)')}>
+          <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
             <span style={{ fontStyle: 'italic' }}>Build second.</span>
           </RevealH2>
@@ -743,7 +757,7 @@ const OfferSection: React.FC = () => (
             Agent-Ready<br />Blueprint
           </motion.div>
           <div style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '22px', color: '#F7F4EF', letterSpacing: '-0.01em', marginBottom: '1.5rem' }}>$2,000</div>
-          <p style={{ ...T.serif, fontSize: '16px', color: 'rgba(247,244,239,0.68)', marginBottom: '1.5rem' }}>
+          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
             A one-week diagnostic. I evaluate your operation against the 4 preconditions,
             map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
             sequenced builds, costed gaps, decision logic for the first project.
