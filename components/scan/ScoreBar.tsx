@@ -36,7 +36,7 @@ export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
             fontSize: big ? '12px' : '10px',
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
-            color: 'rgba(26,26,26,0.5)',
+            color: 'rgba(26,26,26,0.7)', // bumped from 0.5 — 0.5 fails AA at 12px
           }}
         >
           / 100 · Grade <span style={{ color, fontWeight: 600 }}>{grade}</span>
