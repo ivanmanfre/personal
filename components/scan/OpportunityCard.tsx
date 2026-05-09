@@ -1,45 +1,62 @@
 // components/scan/OpportunityCard.tsx
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { Opportunity } from '../../lib/scanTypes';
 
 interface Props {
   opportunity: Opportunity;
   index: number;
+  prominent?: boolean;
 }
 
 const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
 const BODY_SERIF = '"Source Serif 4", Georgia, serif';
 const MONO = '"IBM Plex Mono", monospace';
 
-export const OpportunityCard: React.FC<Props> = ({ opportunity, index }) => {
+export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent = false }) => {
+  const titleSize = prominent ? 'clamp(2rem, 3.6vw, 3rem)' : 'clamp(1.4rem, 2.2vw, 1.75rem)';
+  const evidenceSize = prominent ? '19px' : '17px';
+  const numeralSize = prominent ? 'clamp(3.5rem, 5.5vw, 5rem)' : 'clamp(2.25rem, 3.6vw, 3rem)';
+  const costSize = prominent ? 'clamp(2.5rem, 4.5vw, 4rem)' : 'clamp(1.75rem, 3vw, 2.5rem)';
+
   return (
-    <article className="grid lg:grid-cols-[1fr_220px] gap-8 lg:gap-12 py-10 border-t border-[color:var(--color-hairline)] first:border-t-0">
+    <motion.article
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.85, ease: [0.22, 0.84, 0.36, 1], delay: index * 0.04 }}
+      className={`grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 ${prominent ? 'py-14 my-2 px-6 lg:px-10 -mx-6 lg:-mx-10' : 'py-10 border-t border-[color:var(--color-hairline)]'}`}
+      style={prominent ? {
+        background: 'rgba(76,110,61,0.04)',
+        borderLeft: '3px solid var(--color-accent)',
+      } : undefined}
+    >
       {/* Left: prose */}
       <div className="space-y-5 min-w-0">
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
-            Opportunity {String(index + 1).padStart(2, '0')} · {opportunity.signal_source}
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: prominent ? 'var(--color-accent)' : 'rgba(26,26,26,0.65)' }}>
+            {prominent ? 'Top priority' : `Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
           </p>
           <h3 style={{
             fontFamily: SERIF,
             fontWeight: 400,
-            fontSize: 'clamp(1.5rem, 2.4vw, 1.875rem)',
-            lineHeight: 1.15,
-            letterSpacing: '-0.015em',
+            fontSize: titleSize,
+            lineHeight: 1.1,
+            letterSpacing: '-0.02em',
             color: '#1A1A1A',
-            marginTop: 8,
+            marginTop: prominent ? 12 : 8,
           }}>
             {opportunity.title}
           </h3>
         </div>
 
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)', marginBottom: 6 }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 6 }}>
             Evidence
           </p>
           <blockquote style={{
             fontFamily: BODY_SERIF,
-            fontSize: '17px',
+            fontSize: evidenceSize,
             lineHeight: 1.6,
             color: '#3D3D3B',
             fontStyle: 'italic',
@@ -51,7 +68,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index }) => {
         </div>
 
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)', marginBottom: 6 }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 6 }}>
             What replaces it
           </p>
           <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B' }}>
@@ -63,29 +80,29 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index }) => {
       {/* Right: stats rail */}
       <aside className="lg:border-l lg:border-[color:var(--color-hairline)] lg:pl-8 space-y-6">
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             Weekly hours
           </p>
           <p style={{
             fontFamily: SERIF,
             fontStyle: 'italic',
-            fontSize: 'clamp(2.5rem, 4vw, 3.5rem)',
+            fontSize: numeralSize,
             lineHeight: 1,
             letterSpacing: '-0.02em',
             color: '#1A1A1A',
             marginTop: 4,
           }}>
-            {opportunity.estimated_weekly_hours}<span style={{ fontStyle: 'normal', fontFamily: MONO, fontSize: '14px', color: 'rgba(26,26,26,0.6)', marginLeft: 6 }}>h</span>
+            {opportunity.estimated_weekly_hours}<span style={{ fontStyle: 'normal', fontFamily: MONO, fontSize: '14px', color: 'rgba(26,26,26,0.65)', marginLeft: 6 }}>h</span>
           </p>
         </div>
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             Monthly cost
           </p>
           <p style={{
             fontFamily: SERIF,
             fontStyle: 'italic',
-            fontSize: 'clamp(2rem, 3.4vw, 2.75rem)',
+            fontSize: costSize,
             lineHeight: 1,
             letterSpacing: '-0.02em',
             color: 'var(--color-accent)',
@@ -95,7 +112,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index }) => {
           </p>
         </div>
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             ROI
           </p>
           <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B', marginTop: 4 }}>
@@ -103,6 +120,6 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index }) => {
           </p>
         </div>
       </aside>
-    </article>
+    </motion.article>
   );
 };

@@ -1,7 +1,7 @@
 // components/ScanReportPage.tsx
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, animate, useInView, useReducedMotion } from 'framer-motion';
 import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
@@ -38,6 +38,54 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
+// Motion presets — match landing page vocabulary (RevealH2, inView)
+const inViewProps = {
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-80px' } as const,
+  transition: { duration: 0.85, ease: EASE },
+};
+
+// Blur-in headline on scroll — same as landing page RevealH2
+const RevealHeadline: React.FC<{ children: React.ReactNode; as?: 'h2' | 'h3'; style?: React.CSSProperties }> = ({
+  children, as = 'h2', style,
+}) => {
+  const reduceMotion = useReducedMotion();
+  const Tag = as === 'h2' ? motion.h2 : motion.h3;
+  return (
+    <Tag
+      initial={reduceMotion ? false : { opacity: 0, y: 20, filter: 'blur(8px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.9, ease: EASE }}
+      style={style}
+    >
+      {children}
+    </Tag>
+  );
+};
+
+// Animated counter — counts from 0 to value when in view
+const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
+  const [displayed, setDisplayed] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!isInView) return;
+    if (reduceMotion) { setDisplayed(value); return; }
+    const controls = animate(0, value, {
+      duration: 1.2,
+      ease: EASE as unknown as [number, number, number, number],
+      onUpdate: (v) => setDisplayed(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [value, isInView, reduceMotion]);
+
+  return <span ref={ref} style={style}>{displayed}</span>;
+};
+
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <h2
     style={{
@@ -56,13 +104,27 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({
   kicker, title, children,
 }) => (
-  <section className="border-t border-[color:var(--color-hairline)] py-16 lg:py-20">
+  <motion.section
+    {...inViewProps}
+    className="border-t border-[color:var(--color-hairline)] py-16 lg:py-24"
+  >
     <div className="mb-12 lg:mb-16 space-y-3">
       <Kicker>{kicker}</Kicker>
-      <SectionTitle>{title}</SectionTitle>
+      <RevealHeadline
+        style={{
+          fontFamily: SERIF,
+          fontWeight: 400,
+          fontSize: 'clamp(2rem, 4vw, 3.25rem)',
+          lineHeight: 1.05,
+          letterSpacing: '-0.02em',
+          color: '#1A1A1A',
+        }}
+      >
+        {title}
+      </RevealHeadline>
     </div>
     {children}
-  </section>
+  </motion.section>
 );
 
 const Italic: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -216,45 +278,59 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 function SectionFundingTraffic({ report }: { report: ReportJson }) {
   const f = report.funding;
   const t = report.traffic;
-  const hasFunding = f && (f.total_funding_usd || f.last_round_type || f.crunchbase_url);
-  const hasTraffic = t && (t.monthly_visits || t.global_rank);
-  if (!hasFunding && !hasTraffic) return null;
+  // Build the list of stats that ACTUALLY have values — no "—" placeholders ever.
+  type Stat = { label: string; display: string };
+  const stats: Stat[] = [];
 
-  const fmtUsd = (n: number | null | undefined) =>
-    n == null ? '—' : n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(1)}M` : `$${(n / 1000).toFixed(0)}K`;
-  const fmtNum = (n: number | null | undefined) => n == null ? '—' : n.toLocaleString();
+  if (f?.total_funding_usd) {
+    const v = f.total_funding_usd;
+    stats.push({ label: 'Total raised', display: v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K` });
+  }
+  if (f?.last_round_type) stats.push({ label: 'Last round', display: f.last_round_type });
+  if (f?.last_round_date) stats.push({ label: 'Last round date', display: f.last_round_date });
+  if (f && Array.isArray(f.investors) && f.investors.length > 0) {
+    stats.push({ label: 'Investors', display: String(f.investors.length) });
+  }
+  if (t?.monthly_visits) stats.push({ label: 'Monthly visits', display: t.monthly_visits.toLocaleString() });
+  if (t?.global_rank) stats.push({ label: 'Global rank', display: `#${t.global_rank.toLocaleString()}` });
+  if (t?.bounce_rate != null) stats.push({ label: 'Bounce rate', display: `${(t.bounce_rate * 100).toFixed(0)}%` });
+  if (t?.avg_visit_duration) {
+    // SimilarWeb returns "00:00:53" string; show as-is or convert
+    const v = t.avg_visit_duration as unknown;
+    stats.push({ label: 'Avg visit', display: typeof v === 'string' ? v : String(v) });
+  }
+  if (t?.top_country) stats.push({ label: 'Top country', display: t.top_country });
 
-  const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-    <div className="border-l-2 border-[color:var(--color-hairline)] pl-4">
-      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{label}</p>
-      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.5rem, 4vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 6 }}>
-        {value}
-      </p>
-    </div>
-  );
+  // Hide section entirely if nothing populated
+  if (stats.length === 0) return null;
 
   return (
     <Section kicker="02 — Signals" title={<>The numbers <Italic>behind the brand</Italic>.</>}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-        {hasFunding && (
-          <>
-            <Stat label="Total raised" value={fmtUsd(f!.total_funding_usd)} />
-            <Stat label="Last round" value={f!.last_round_type || '—'} />
-          </>
-        )}
-        {hasTraffic && (
-          <>
-            <Stat label="Monthly visits" value={fmtNum(t!.monthly_visits)} />
-            <Stat label="Global rank" value={t!.global_rank ? `#${fmtNum(t!.global_rank)}` : '—'} />
-          </>
-        )}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+        {stats.map((s, i) => (
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: EASE, delay: i * 0.06 }}
+            className="border-l-2 border-[color:var(--color-hairline)] pl-4"
+          >
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+              {s.label}
+            </p>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.25rem, 3.6vw, 3.25rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 8 }}>
+              {s.display}
+            </p>
+          </motion.div>
+        ))}
       </div>
-      {hasFunding && f!.crunchbase_url && (
+      {f?.crunchbase_url && (
         <a
-          href={f!.crunchbase_url}
+          href={f.crunchbase_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-8 py-3 -my-3 transition-colors"
+          className="inline-flex items-center gap-1.5 mt-10 py-3 -my-3 transition-colors"
           style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.7)')}
@@ -272,12 +348,12 @@ function Section3Opportunities({ report }: { report: ReportJson }) {
       kicker={`03 — ${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
-      <SerifBody className="mb-4 max-w-2xl">
+      <SerifBody className="mb-10 max-w-2xl">
         Each gap is sourced from specific data signals — DNS records, tech stack, ad activity, hiring patterns. No speculation.
       </SerifBody>
-      <div>
+      <div className="space-y-2">
         {report.opportunities.map((opp, i) => (
-          <OpportunityCard key={i} opportunity={opp} index={i} />
+          <OpportunityCard key={i} opportunity={opp} index={i} prominent={i === 0} />
         ))}
       </div>
     </Section>
