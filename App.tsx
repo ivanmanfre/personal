@@ -45,6 +45,7 @@ function useTrackPageviews(pathname: string) {
 }
 
 const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
+const DashboardV2Demo = lazy(() => import('./components/dashboard-v2/DemoShell'));
 const BlueprintEditor = lazy(() => import('./components/dashboard/BlueprintEditor'));
 const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'));
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
@@ -57,7 +58,8 @@ function App() {
   // Blueprint editor is a fullscreen surface, NOT inside dashboard chrome.
   const isBlueprintEditor = /^\/dashboard\/blueprints\/[^/]+$/.test(location.pathname);
   const isPublishedBlueprint = /^\/blueprint\/[^/]+$/.test(location.pathname);
-  const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor;
+  const isDashboardV2 = location.pathname.startsWith('/dashboard-v2');
+  const isDashboard = location.pathname.startsWith('/dashboard') && !isBlueprintEditor && !isDashboardV2;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
   const isScanReport = /^\/scan\/[^/]+$/.test(location.pathname);
@@ -140,6 +142,18 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
         </Routes>
+      </Suspense>
+    );
+  }
+
+  if (isDashboardV2) {
+    return (
+      <Suspense fallback={
+        <div style={{ minHeight: '100vh', background: '#111114', color: '#a3a3aa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          Loading dashboard v2…
+        </div>
+      }>
+        <DashboardV2Demo />
       </Suspense>
     );
   }
