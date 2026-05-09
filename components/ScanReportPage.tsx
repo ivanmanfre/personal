@@ -1,7 +1,7 @@
 // components/ScanReportPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, animate, useInView, useReducedMotion } from 'framer-motion';
+import { motion, animate, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
@@ -82,6 +82,19 @@ const RevealHeadline: React.FC<{ children: React.ReactNode; as?: 'h2' | 'h3'; st
       {children}
     </Tag>
   );
+};
+
+// Media-query hook (desktop-only effects; mobile gets the static version)
+const useMediaQuery = (query: string): boolean => {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    setMatches(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [query]);
+  return matches;
 };
 
 // Animated counter — counts from 0 to value when in view
@@ -711,6 +724,137 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
   );
 }
 
+// ── Cinematic Hero (Apple-style scroll-driven pin) ──────────────────────────
+// On desktop: hero pins for ~180vh of scroll. Score scales 1 → 2.4x while lede + signals fade out.
+// Once user scrolls past, hero releases and sections start.
+// Mobile + reduce-motion: static fallback.
+
+const CinematicHero: React.FC<{
+  companyName: string;
+  report: ReportJson;
+  scan: { completed_at: string | null; created_at: string };
+  reduceMotion: boolean;
+}> = ({ companyName, report, scan, reduceMotion }) => {
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start start', 'end start'],
+  });
+
+  // 0.0 → 0.4: lede + signals + logo fade. 0.2 → 0.85: score scales up + slides toward center.
+  const fadeOut = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+  const scoreScale = useTransform(scrollYProgress, [0.15, 0.85], [1, 2.4]);
+  const scoreX = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '-22%']);
+  const scoreY = useTransform(scrollYProgress, [0.15, 0.85], ['0%', '20%']);
+
+  // Static fallback (mobile, reduced motion, SSR)
+  if (!isDesktop || reduceMotion) {
+    return (
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <div className="pt-10 lg:pt-16 pb-12 lg:pb-20">
+          <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
+          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
+            <div>
+              {report.logo_url && (
+                <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
+                  style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+                  onError={fallbackOnError} />
+              )}
+              <h1 style={{
+                fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(3rem, 7vw, 6rem)',
+                lineHeight: 0.94, letterSpacing: '-0.025em', color: '#1A1A1A', marginBottom: '1.25rem',
+              }}>{companyName}</h1>
+              <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
+            </div>
+            <div className="lg:w-80 lg:shrink-0">
+              <Kicker>Automation Opportunity Score</Kicker>
+              <div className="mt-4">
+                <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
+              </div>
+            </div>
+          </div>
+          <HeroTeaserSignals signals={report.teaser_signals} />
+        </div>
+      </div>
+    );
+  }
+
+  // Cinematic pin (desktop). Tall outer wrapper drives scroll progress; inner sticky child renders the hero.
+  return (
+    <div ref={ref} className="relative" style={{ height: '180vh' }}>
+      <div className="sticky top-16 min-h-[calc(100vh-4rem)] flex flex-col">
+        <div className="max-w-6xl mx-auto px-6 w-full pt-10 pb-12 flex-1 flex flex-col">
+          <motion.div style={{ opacity: fadeOut }}>
+            <HeroBylineRow scan={scan} reduceMotion={false} />
+          </motion.div>
+
+          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end flex-1">
+            <motion.div style={{ opacity: fadeOut }}>
+              {report.logo_url && (
+                <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
+                  style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+                  onError={fallbackOnError} />
+              )}
+              <h1 style={{
+                fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(3rem, 7vw, 6rem)',
+                lineHeight: 0.94, letterSpacing: '-0.025em', color: '#1A1A1A', marginBottom: '1.25rem',
+              }}>{companyName}</h1>
+              <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
+            </motion.div>
+
+            <motion.div
+              className="lg:w-80 lg:shrink-0"
+              style={{ scale: scoreScale, x: scoreX, y: scoreY, transformOrigin: 'right bottom' }}
+            >
+              <motion.div style={{ opacity: fadeOut }}>
+                <Kicker>Automation Opportunity Score</Kicker>
+              </motion.div>
+              <div className="mt-4">
+                <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
+              </div>
+            </motion.div>
+          </div>
+
+          <motion.div style={{ opacity: fadeOut }}>
+            <HeroTeaserSignals signals={report.teaser_signals} />
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Shared sub-components for the hero (used in both pinned + static modes)
+const HeroBylineRow: React.FC<{ scan: { completed_at: string | null; created_at: string }; reduceMotion: boolean }> = ({ scan, reduceMotion }) => (
+  <div className="flex items-center gap-3 mb-8">
+    <motion.span
+      animate={reduceMotion ? undefined : { opacity: [1, 0.3, 1] }}
+      transition={reduceMotion ? undefined : { duration: 2, repeat: Infinity }}
+      style={{ color: 'var(--color-accent)', fontSize: '8px' }}
+    >●</motion.span>
+    <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+      AI Opportunity Scan · {new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+    </span>
+  </div>
+);
+
+const HeroTeaserSignals: React.FC<{ signals: string[] | undefined }> = ({ signals }) => {
+  if (!signals || signals.length === 0) return null;
+  return (
+    <div className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10">
+      {signals.map((s, i) => (
+        <div key={i} className="border-t-2 pt-4" style={{ borderColor: 'var(--color-accent)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 8 }}>
+            Signal {String(i + 1).padStart(2, '0')}
+          </p>
+          <SerifBody>{s.replace(/^⚠\s?/, '')}</SerifBody>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const ScanReportPage: React.FC = () => {
@@ -781,87 +925,16 @@ const ScanReportPage: React.FC = () => {
         </div>
       </header>
 
+      {/* CINEMATIC HERO PIN — Apple-style scroll-driven scale + fade.
+         Desktop only (lg+). Mobile + reduced-motion get the static fallback. */}
+      <CinematicHero
+        companyName={companyName}
+        report={report}
+        scan={scan}
+        reduceMotion={!!reduceMotion}
+      />
+
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        {/* Hero */}
-        <motion.div
-          initial={reduceMotion ? false : { y: 16 }}
-          animate={{ y: 0 }}
-          transition={{ duration: 0.7, ease: EASE }}
-          className="pt-10 lg:pt-16 pb-12 lg:pb-20"
-        >
-          <div className="flex items-center gap-3 mb-8">
-            <motion.span
-              animate={reduceMotion ? undefined : { opacity: [1, 0.3, 1] }}
-              transition={reduceMotion ? undefined : { duration: 2, repeat: Infinity }}
-              style={{ color: 'var(--color-accent)', fontSize: '8px' }}
-            >
-              ●
-            </motion.span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-              AI Opportunity Scan · {new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
-          </div>
-
-          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
-            <div>
-              {report.logo_url && (
-                <img
-                  src={report.logo_url}
-                  alt=""
-                  loading="lazy"
-                  className="w-16 h-16 object-contain mb-6"
-                  style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
-                  onError={fallbackOnError}
-                />
-              )}
-              <motion.h1
-                initial={reduceMotion ? false : { y: 10 }}
-                animate={{ y: 0 }}
-                transition={{ delay: 0.15, duration: 0.7, ease: EASE }}
-                style={{
-                  fontFamily: SERIF,
-                  fontWeight: 400,
-                  fontSize: 'clamp(3rem, 7vw, 6rem)',
-                  lineHeight: 0.94,
-                  letterSpacing: '-0.025em',
-                  color: '#1A1A1A',
-                  marginBottom: '1.25rem',
-                }}
-              >
-                {companyName}
-              </motion.h1>
-              <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
-            </div>
-
-            {/* Score */}
-            <div className="lg:w-80 lg:shrink-0">
-              <Kicker>Automation Opportunity Score</Kicker>
-              <div className="mt-4">
-                <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
-              </div>
-            </div>
-          </div>
-
-          {/* Teaser signals */}
-          {report.teaser_signals && report.teaser_signals.length > 0 && (
-            <motion.div
-              initial={reduceMotion ? false : { y: 8 }}
-              animate={{ y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10"
-            >
-              {report.teaser_signals.map((s, i) => (
-                <div key={i} className="border-t-2 pt-4" style={{ borderColor: 'var(--color-accent)' }}>
-                  <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 8 }}>
-                    Signal {String(i + 1).padStart(2, '0')}
-                  </p>
-                  <SerifBody>{s.replace(/^⚠\s?/, '')}</SerifBody>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </motion.div>
-
         {/* Sections */}
         <Section1CompanyBrief report={report} />
         <SectionFundingTraffic report={report} />
