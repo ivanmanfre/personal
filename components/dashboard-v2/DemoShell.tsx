@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Toaster } from 'sonner';
 import { DashboardProvider } from '../../contexts/DashboardContext';
 import { Shell } from './Shell';
 import { Briefing } from './sections/Briefing';
-import { HeadRow } from './primitives';
+import { ContentStudio } from './sections/ContentStudio';
+import { ReachPipeline } from './sections/ReachPipeline';
+import { Operations } from './sections/Operations';
+import { Clients } from './sections/Clients';
+import { Knowledge } from './sections/Knowledge';
+import { Agent } from './sections/Agent';
+import { Personal } from './sections/Personal';
 import type { NavItem, SectionId } from './types';
 
 /**
- * Phase 1 entry point.
- * Briefing wired to live Supabase data. Other 7 sections still placeholder
- * (filled in phases 2-6).
- *
- * Mount via /dashboard-v2 route. Existing /dashboard untouched.
+ * Dashboard v2 entry point.
+ * All 8 sections wired. Briefing uses live data via composed hooks (Phase 1).
+ * Phases 2-6 wrap existing panels in v2 sub-tabs to preserve every write
+ * path documented in INVENTORY.md without rewriting them.
  */
 function ShellInner() {
-  const [_, setActiveSection] = useState<SectionId>('briefing');
-
-  // Nav items — badge counts will become live in phase 5+ (currently static).
-  // Briefing badge will compute from `Action Required` count once we lift it.
   const navItems: NavItem[] = [
     { id: 'briefing', name: 'Briefing', emphasis: 'Briefing', num: '⊙', group: 'briefing' },
     { id: 'content', name: 'Content Studio', num: '01', group: 'operate' },
@@ -29,45 +30,31 @@ function ShellInner() {
     { id: 'personal', name: 'Personal', num: '07', group: 'personal' },
   ];
 
-  // Helper handed to Briefing so it can deep-link to other sections.
-  // Once phases 2-6 ship, Shell will own this navigation directly.
-  const handleNav = (sec: SectionId, _sub?: string) => {
-    setActiveSection(sec);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('section', sec);
-      if (_sub) url.searchParams.set('sub', _sub);
-      window.history.replaceState(null, '', url.toString());
-      // Force Shell to pick up by reloading the section state — for now
-      // the Shell reads from its own state, so refresh as a stopgap.
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }
+  // Briefing's onNavigate signature includes optional sub-tab.
+  // We sync section + sub via URL params so each section reads its own
+  // ?sub= on mount.
+  const handleNav = (sec: SectionId, sub?: string) => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', sec);
+    if (sub) url.searchParams.set('sub', sub);
+    else url.searchParams.delete('sub');
+    window.history.pushState(null, '', url.toString());
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const sectionRenderers: Partial<Record<SectionId, () => React.ReactNode>> = {
     briefing: () => <Briefing onNavigate={handleNav} />,
-    content: () => <Placeholder title="Content Studio" />,
-    reach: () => <Placeholder title="Reach & Pipeline" />,
-    ops: () => <Placeholder title="Operations" />,
-    clients: () => <Placeholder title="Clients" />,
-    knowledge: () => <Placeholder title="Knowledge" />,
-    agent: () => <Placeholder title="Agent" />,
-    personal: () => <Placeholder title="Personal" />,
+    content: () => <ContentStudio />,
+    reach: () => <ReachPipeline />,
+    ops: () => <Operations />,
+    clients: () => <Clients />,
+    knowledge: () => <Knowledge />,
+    agent: () => <Agent />,
+    personal: () => <Personal />,
   };
 
   return <Shell navItems={navItems} sectionRenderers={sectionRenderers} />;
-}
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <>
-      <HeadRow title={title} meta="Coming in next phase" />
-      <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 14 }}>
-        This section will be wired in subsequent phases. The shell, primitives,
-        and Briefing data wiring (Phase 1) are live.
-      </div>
-    </>
-  );
 }
 
 export default function DemoShell() {
