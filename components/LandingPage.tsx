@@ -13,18 +13,10 @@ import {
 import { ArrowRight, Star, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
+import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
-
-// Auto-rolling booking quarter — always next calendar quarter
-const getBookingQuarter = (): string => {
-  const now = new Date();
-  const currentQ = Math.floor(now.getMonth() / 3) + 1;
-  const nextQ = currentQ === 4 ? 1 : currentQ + 1;
-  const year = currentQ === 4 ? now.getFullYear() + 1 : now.getFullYear();
-  return `Q${nextQ} ${year}`;
-};
 
 const inView = {
   initial: { opacity: 0, y: 28 },
@@ -285,6 +277,7 @@ const OUTCOMES = [
     metric: '5% → 100%',
     metricLabel: 'of calls graded',
     story: "Their best manager could only sample 5% of sales calls. I encoded her 8-criteria rubric into an agent that grades every call and routes risk to leadership within the hour.",
+    qualifier: 'Running daily',
   },
   {
     type: 'Lead Magnet System',
@@ -292,6 +285,7 @@ const OUTCOMES = [
     metric: '15 min',
     metricLabel: 'idea to launched',
     story: "Every lead magnet took days of manual work across disconnected tools. One idea in ClickUp now generates the full package: landing page, email, smart link, scheduled post.",
+    qualifier: 'Self-serve since launch',
   },
   {
     type: 'SWPPP Automation',
@@ -299,6 +293,7 @@ const OUTCOMES = [
     metric: 'Multi-FTE → same-day',
     metricLabel: 'permit turnaround',
     story: "Every permit needed hours of manual environmental research across 50 states. Intake to delivered documents now runs end-to-end, no researcher in the loop.",
+    qualifier: 'Live across 50 states',
   },
 ];
 
@@ -338,7 +333,7 @@ const BuildOutcomesSection: React.FC = () => (
               {o.story}
             </p>
             <div style={{ ...T.mono, color: 'var(--color-accent)', marginTop: '20px', fontSize: '9px' }}>
-              4/4 Agent-Ready
+              {o.qualifier} · 4/4 Agent-Ready
             </div>
           </motion.div>
         ))}
@@ -379,7 +374,7 @@ const AgentReadySection: React.FC = () => (
           marginBottom: '2rem',
         }}
       >
-        Four preconditions
+        03 / What "Agent-Ready" means
       </motion.div>
 
       <motion.h2
@@ -481,14 +476,13 @@ const AgentReadySection: React.FC = () => (
               }}>
                 {p.sub}
               </p>
-              {/* Sage dot separator — visually demarcates items so they don't run together */}
+              {/* Sage rule separator — small horizontal line, audible at desktop scale */}
               {i < PRECONDITIONS.length - 1 && (
                 <div className="mx-auto mt-10 md:mt-16" style={{
-                  width: '4px',
-                  height: '4px',
-                  borderRadius: '50%',
+                  width: '40px',
+                  height: '1px',
                   backgroundColor: 'var(--color-accent-light)',
-                  opacity: 0.5,
+                  opacity: 0.4,
                 }} />
               )}
             </div>
@@ -837,7 +831,7 @@ const FinalCTA: React.FC = () => (
           </MagneticCTA>
         </div>
         <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.55)', marginTop: '1.75rem' }}>
-          Booking {getBookingQuarter()} · 2 diagnostic slots remaining
+          Booking {getBookingQuarter()} · {OPEN_SLOTS} diagnostic slots remaining
         </p>
       </motion.div>
     </div>

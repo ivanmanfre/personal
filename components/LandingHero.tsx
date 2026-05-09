@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
 // Motion: status strip drops → byline → words blur in one-by-one → italic
@@ -8,15 +9,6 @@ import { ArrowRight } from 'lucide-react';
 // Portrait does entrance scale + scroll parallax. Page-level cursor spotlight in LandingPage.
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
-
-// Auto-rolling booking quarter — always next calendar quarter
-const getBookingQuarter = (): string => {
-  const now = new Date();
-  const currentQ = Math.floor(now.getMonth() / 3) + 1;
-  const nextQ = currentQ === 4 ? 1 : currentQ + 1;
-  const year = currentQ === 4 ? now.getFullYear() + 1 : now.getFullYear();
-  return `Q${nextQ} ${year}`;
-};
 
 const LandingHero: React.FC = () => {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -80,7 +72,7 @@ const LandingHero: React.FC = () => {
           >
             ●
           </motion.span>
-          <span style={{ color: '#2A8F65' }}>Booking {getBookingQuarter()} · 2 slots open</span>
+          <span style={{ color: '#2A8F65' }}>Booking {getBookingQuarter()} · {OPEN_SLOTS} slots open</span>
         </div>
         <div className="hidden md:block">90-day payback or no-build</div>
       </motion.div>
@@ -134,7 +126,7 @@ const LandingHero: React.FC = () => {
                 >
                   ●
                 </motion.span>
-                <span>Iván Manfredi · Agent-Ready Ops</span>
+                <span>Iván Manfredi · Agent-Ready Ops™</span>
               </motion.div>
 
               {/* Headline — word-by-word blur reveal */}
