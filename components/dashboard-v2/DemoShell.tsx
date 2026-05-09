@@ -60,7 +60,15 @@ function ShellInner() {
 }
 
 export default function DemoShell() {
-  useEffect(() => { registerServiceWorker(); }, []);
+  useEffect(() => {
+    registerServiceWorker();
+    // If we landed here via /dashboard?tab=foo, rewrite to v2 equivalent
+    import('../../lib/dashboardUrlMigration').then(({ migrateV1Url }) => {
+      if (migrateV1Url()) {
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    });
+  }, []);
   return (
     <DashboardProvider>
       <Toaster
