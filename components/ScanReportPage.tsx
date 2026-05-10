@@ -316,7 +316,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section kicker="01 / The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
+    <Section kicker="The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
       <div className="space-y-12 max-w-4xl">
         {/* 1. Description + facts strip */}
@@ -453,32 +453,120 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   }
   if (t?.top_country) stats.push({ label: 'Top country', display: t.top_country });
 
+  // New traffic-context blocks (only shown when SimilarWeb returned them)
+  const sources = t?.traffic_sources;
+  const sourceRows: Array<{ label: string; pct: number; tone: string }> = [];
+  if (sources) {
+    const push = (label: string, val: number | undefined, tone: string) => {
+      if (val != null && val > 0.005) sourceRows.push({ label, pct: val, tone });
+    };
+    push('Organic search', sources.search, 'var(--color-accent)');
+    push('Direct',         sources.direct, '#1A1A1A');
+    push('Referrals',      sources.referrals, 'rgba(26,26,26,0.6)');
+    push('Social',         sources.social, 'rgba(26,26,26,0.6)');
+    push('Paid',           sources.paidReferrals, '#A85439');
+    push('Email',          sources.mail, 'rgba(26,26,26,0.6)');
+  }
+  const topKeywords = (t?.top_keywords || []).slice(0, 5);
+  const topCountries = (t?.top_countries || []).slice(0, 3);
+
   // Hide section entirely if nothing populated
-  if (stats.length === 0) return null;
+  if (stats.length === 0 && sourceRows.length === 0 && topKeywords.length === 0) return null;
 
   return (
-    <Section kicker="02 / Signals" title={<>The numbers <Italic>behind the brand</Italic>.</>}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-        {stats.map((s, i) => (
-          <motion.div
-            key={s.label}
-            initial={{ y: 12 }}
-            whileInView={{ y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease: EASE, delay: i * 0.06 }}
-            className="border-l-2 border-[color:var(--color-hairline)] pl-4"
-          >
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-              {s.label}
-            </p>
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.25rem, 3.6vw, 3.25rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 8 }}>
-              <Scramble value={s.display} />
-            </p>
-          </motion.div>
-        ))}
-      </div>
+    <Section kicker="The Numbers" title={<>The signals <Italic>behind the brand</Italic>.</>}>
+      {stats.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12 mb-16">
+          {stats.map((s, i) => (
+            <motion.div
+              key={s.label}
+              initial={{ y: 12 }}
+              whileInView={{ y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.7, ease: EASE, delay: i * 0.06 }}
+              className="border-l-2 border-[color:var(--color-hairline)] pl-4"
+            >
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                {s.label}
+              </p>
+              <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.25rem, 3.6vw, 3.25rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 8 }}>
+                <Scramble value={s.display} />
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Traffic-source breakdown + keyword + country context (only when SimilarWeb returned them) */}
+      {(sourceRows.length > 0 || topKeywords.length > 0 || topCountries.length > 0) && (
+        <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 pt-12 border-t border-[color:var(--color-hairline)]">
+          {sourceRows.length > 0 && (
+            <div>
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                Where the traffic comes from
+              </p>
+              <div className="mt-6 space-y-4">
+                {sourceRows.map((row) => (
+                  <div key={row.label}>
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{row.label}</span>
+                      <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: row.tone, fontVariantNumeric: 'tabular-nums' }}>
+                        {(row.pct * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <div style={{ height: 2, background: 'rgba(26,26,26,0.08)' }}>
+                      <motion.div
+                        initial={{ scaleX: 0 }}
+                        whileInView={{ scaleX: row.pct }}
+                        viewport={{ once: true, margin: '-30px' }}
+                        transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
+                        style={{ height: '100%', background: row.tone, transformOrigin: 'left' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-10">
+            {topKeywords.length > 0 && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                  Top search queries
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {topKeywords.map((k) => (
+                    <li key={k} style={{ fontFamily: BODY_SERIF, fontSize: '16px', color: '#1A1A1A', fontStyle: 'italic' }}>
+                      "{k}"
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {topCountries.length > 0 && (
+              <div>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                  Audience geography
+                </p>
+                <div className="mt-4 space-y-1.5">
+                  {topCountries.map((c) => (
+                    <div key={c.countryName} className="flex items-baseline justify-between gap-3">
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{c.countryName}</span>
+                      <span style={{ fontFamily: MONO, fontSize: '12px', color: 'rgba(26,26,26,0.6)', fontVariantNumeric: 'tabular-nums' }}>
+                        {(c.visitsShare * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Source attribution: trust signal — every stat traces to a real provider */}
-      <p className="mt-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+      <p className="mt-12" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
         Sources: SimilarWeb (traffic) · Apollo (headcount + revenue) · DNS verification
       </p>
       {f?.crunchbase_url && (
@@ -501,11 +589,11 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
-      kicker={`04 / ${report.opportunities.length} Opportunities`}
+      kicker={`${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
-        Each gap is sourced from specific data signals: DNS records, tech stack, ad activity, hiring patterns. No speculation.
+        Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost.
       </SerifBody>
       <div className="space-y-2">
         {report.opportunities.map((opp, i) => (
@@ -634,9 +722,9 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   if (all.length === 0) return null;
 
   return (
-    <Section kicker="05 / Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
+    <Section kicker="Live Ad Activity" title={<>Where their <Italic>spend lands</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
-        Pulled live from public ad libraries: Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
+        Pulled live from Google, Meta, and LinkedIn ad libraries. Look at the rotation cadence and creative variety: that's the test velocity, or absence of it.
       </SerifBody>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {all.map((item, i) => (
@@ -666,7 +754,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="09 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+    <Section kicker="AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -701,7 +789,7 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   const tooThin = ctx.trim().split(/\s+/).length < 30;
   if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section kicker="10 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+    <Section kicker="Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -721,80 +809,141 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   );
 }
 
-// PHASE 1: Score breakdown — 5 sub-bars showing how the score was computed.
-function SectionScoreBreakdown({ report }: { report: ReportJson }) {
+// ACT 2: Dark full-bleed score reveal — the cinematic moment.
+// AI-anchored labels: tech_stack → AI-ready stack, ad_activity → Spend visibility,
+// content_engine → Content velocity, ai_signals → AI adoption, traffic_quality → Audience quality.
+function SectionScoreRevealDark({ report }: { report: ReportJson }) {
   const sb = report.score_breakdown;
+  const reduceMotion = useReducedMotion();
   if (!sb) return null;
   const cats: Array<{ key: keyof NonNullable<ReportJson['score_breakdown']>; label: string }> = [
-    { key: 'tech_stack', label: 'Tech stack' },
-    { key: 'ad_activity', label: 'Ad activity' },
-    { key: 'content_engine', label: 'Content engine' },
-    { key: 'ai_signals', label: 'AI signals' },
-    { key: 'traffic_quality', label: 'Traffic quality' },
+    { key: 'tech_stack',     label: 'AI-ready stack' },
+    { key: 'ai_signals',     label: 'AI adoption' },
+    { key: 'content_engine', label: 'Content velocity' },
+    { key: 'ad_activity',    label: 'Spend visibility' },
+    { key: 'traffic_quality',label: 'Audience quality' },
   ];
+
+  // Sage on dark for high; soft warm for low. Brighter than the light-mode palette so it pops on #0F0F0F.
+  const toneFor = (pct: number) =>
+    pct >= 70 ? '#7FA868' : pct >= 40 ? '#D89254' : '#C76354';
+
   return (
-    <Section kicker="03 / Score Breakdown" title={<>How the <Italic>{report.automation_score} was earned</Italic>.</>}>
-      <SerifBody className="mb-10 max-w-2xl">
-        Five categories, each scored 0 to 20. The sum is the automation opportunity score. Hover any bar for the rationale.
-      </SerifBody>
-      <div className="space-y-6 max-w-3xl">
-        {cats.map(({ key, label }) => {
-          const c = sb[key];
-          if (!c) return null;
-          const pct = (c.value / c.max) * 100;
-          const tone = pct >= 70 ? 'var(--color-accent)' : pct >= 40 ? '#C97A2E' : '#A85439';
-          return (
-            <div key={key} className="group">
-              <div className="flex items-baseline justify-between mb-2">
-                <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                  {label}
-                </p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', lineHeight: 1, color: tone }}>
-                  <Scramble value={String(c.value)} />
-                  <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.5)', marginLeft: 6 }}>/ {c.max}</span>
-                </p>
-              </div>
-              <div style={{ height: 4, background: 'rgba(26,26,26,0.08)', position: 'relative' }}>
-                <motion.div
-                  initial={{ scaleX: 0 }}
-                  whileInView={{ scaleX: pct / 100 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
-                  style={{ height: '100%', background: tone, transformOrigin: 'left' }}
-                />
-              </div>
-              <p className="mt-2 group-hover:opacity-100 opacity-60 transition-opacity" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: '#3D3D3B', lineHeight: 1.45 }}>
-                {c.rationale}
-              </p>
-            </div>
-          );
-        })}
+    <section
+      className="py-20 lg:py-32"
+      style={{ background: '#0F0F0F', color: '#F7F4EF' }}
+    >
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        {/* Hairline sweep in sage — paints in left-to-right when section enters viewport */}
+        <motion.div
+          aria-hidden
+          initial={reduceMotion ? false : { scaleX: 0 }}
+          whileInView={{ scaleX: 1 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.9, ease: EASE }}
+          style={{ height: 1, background: 'rgba(247,244,239,0.18)', transformOrigin: 'left', marginBottom: '4rem' }}
+        />
+
+        <div className="mb-14 lg:mb-20">
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+            The AI Verdict
+          </p>
+          <RevealHeadline
+            style={{
+              fontFamily: SERIF, fontWeight: 400,
+              fontSize: 'clamp(2.25rem, 5vw, 4rem)', lineHeight: 1.02,
+              letterSpacing: '-0.025em', color: '#F7F4EF', marginTop: 12,
+            }}
+          >
+            How the <span style={{ fontStyle: 'italic', color: '#7FA868' }}>{report.automation_score}</span> was earned.
+          </RevealHeadline>
+        </div>
+
+        <div className="grid lg:grid-cols-[auto_1fr] gap-12 lg:gap-20 items-start">
+          {/* Left: massive score */}
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+              Automation Opportunity Score
+            </p>
+            <p style={{
+              fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic',
+              fontSize: 'clamp(7rem, 14vw, 12rem)', lineHeight: 0.92,
+              letterSpacing: '-0.04em', color: '#7FA868', marginTop: 12,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              <Scramble value={String(report.automation_score)} duration={1.2} />
+            </p>
+            <p style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)', marginTop: 8 }}>
+              / 100  ·  Grade <span style={{ color: '#7FA868' }}>{report.automation_grade}</span>
+            </p>
+          </div>
+
+          {/* Right: 5 breakdown rows. Wider, calmer than the old version. */}
+          <div className="space-y-7 lg:pt-2">
+            {cats.map(({ key, label }) => {
+              const c = sb[key];
+              if (!c) return null;
+              const pct = Math.min(100, (c.value / c.max) * 100);
+              const tone = toneFor(pct);
+              return (
+                <div key={key}>
+                  <div className="flex items-baseline justify-between mb-2 gap-4">
+                    <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)' }}>
+                      {label}
+                    </p>
+                    <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '22px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums' }}>
+                      {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.45)', marginLeft: 6, fontStyle: 'normal' }}>/ {c.max}</span>
+                    </p>
+                  </div>
+                  <div style={{ height: 3, background: 'rgba(247,244,239,0.10)', position: 'relative', overflow: 'hidden' }}>
+                    <motion.div
+                      initial={reduceMotion ? false : { scaleX: 0 }}
+                      whileInView={{ scaleX: pct / 100 }}
+                      viewport={{ once: true, margin: '-40px' }}
+                      transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
+                      style={{ height: '100%', background: tone, transformOrigin: 'left' }}
+                    />
+                  </div>
+                  <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', color: 'rgba(247,244,239,0.72)', lineHeight: 1.5 }}>
+                    {c.rationale}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Peer comparison — only when meaningfully different */}
+        <PeerComparisonInlineDark report={report} />
       </div>
-    </Section>
+    </section>
   );
 }
 
-// PHASE 1: Peer comparison (small, sits adjacent to score breakdown)
-function PeerComparisonInline({ report }: { report: ReportJson }) {
+// Dark-mode variant of peer comparison (lives inside the dark band)
+function PeerComparisonInlineDark({ report }: { report: ReportJson }) {
   const pm = report.peer_median;
   if (!pm) return null;
   const diff = report.automation_score - pm.score;
-  const tone = diff > 0 ? 'var(--color-accent)' : diff < 0 ? '#A85439' : 'rgba(26,26,26,0.65)';
+  if (diff === 0) return null;
+  const tone = diff > 0 ? '#7FA868' : '#D89254';
   const label = diff > 0 ? `+${diff}` : `${diff}`;
   return (
-    <div className="mt-8 pt-6 border-t border-[color:var(--color-hairline)]">
-      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(247,244,239,0.12)' }}>
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
         Peer median, {pm.size_tier_compared}
       </p>
-      <div className="flex items-baseline gap-4 mt-3">
-        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 1, color: '#1A1A1A' }}>
+      <div className="flex items-baseline gap-5 mt-3">
+        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 1, color: '#F7F4EF', fontVariantNumeric: 'tabular-nums' }}>
           {pm.score}
         </p>
         <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: tone }}>
-          ({label} vs you)
+          ({label} vs them)
         </p>
       </div>
-      <SerifBody className="mt-3 max-w-2xl">{pm.interpretation}</SerifBody>
+      <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(247,244,239,0.78)' }}>
+        {pm.interpretation}
+      </p>
     </div>
   );
 }
@@ -804,9 +953,9 @@ function SectionContentSample({ report }: { report: ReportJson }) {
   const posts = report.linkedin_summary?.posts;
   if (!posts || posts.length === 0) return null;
   return (
-    <Section kicker="06 / Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
+    <Section kicker="Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
-        Two of their most recent LinkedIn posts. We read what they write. The opportunity titles below cite specific themes from this content where relevant.
+        Two recent LinkedIn posts, verbatim. Cadence matters more than content here.
       </SerifBody>
       <div className="grid md:grid-cols-2 gap-6">
         {posts.slice(0, 2).map((p, i) => (
@@ -838,24 +987,48 @@ function SectionHiring({ report }: { report: ReportJson }) {
   const h = report.hiring;
   if (!h || (h.open_count === 0 && (!h.sample_titles || h.sample_titles.length === 0))) return null;
   return (
-    <Section kicker="07 / Hiring Signals" title={<>What they're <Italic>trying to scale</Italic>.</>}>
-      <SerifBody className="mb-10 max-w-2xl">
-        Open roles reveal the manual work they're trying to absorb with headcount. Each open SDR, ops, or coordinator role is automation opportunity in waiting.
+    <Section kicker="Hiring" title={<>What they're <Italic>paying humans</Italic> to do.</>}>
+      <SerifBody className="mb-12 max-w-2xl">
+        Each open seat is current evidence of a workflow that exists today. Some roles are core human work. Others are repetitive patterns where agents are starting to compete.
       </SerifBody>
-      <div className="grid lg:grid-cols-[auto_1fr] gap-10 lg:gap-16 items-start">
+      <div className="grid lg:grid-cols-[auto_1fr] gap-12 lg:gap-20 items-start">
         <div>
-          <Kicker>Open roles</Kicker>
-          <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(3rem, 5vw, 4.5rem)', lineHeight: 1, color: 'var(--color-accent)', marginTop: 8 }}>
-            <Scramble value={String(h.open_count)} />
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            Open roles
+          </p>
+          <p style={{
+            fontFamily: SERIF, fontStyle: 'italic',
+            fontSize: 'clamp(5rem, 9vw, 8rem)', lineHeight: 0.9,
+            letterSpacing: '-0.04em', color: 'var(--color-accent)', marginTop: 10,
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            <Scramble value={String(h.open_count)} duration={1.0} />
+          </p>
+          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            via LinkedIn jobs
           </p>
         </div>
         {h.sample_titles && h.sample_titles.length > 0 && (
-          <div className="space-y-px border-y border-[color:var(--color-hairline)]">
-            {h.sample_titles.slice(0, 5).map((t, i) => (
-              <div key={i} className="py-4 border-b border-[color:var(--color-hairline)] last:border-b-0">
-                <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }}>{t}</p>
-              </div>
-            ))}
+          <div>
+            <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+              A sample of what they're hiring
+            </p>
+            <div className="space-y-px border-y border-[color:var(--color-hairline)]">
+              {h.sample_titles.slice(0, 5).map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ y: 8 }}
+                  whileInView={{ y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.5, ease: EASE, delay: i * 0.06 }}
+                  className="py-4 border-b border-[color:var(--color-hairline)] last:border-b-0"
+                >
+                  <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+                    {t.replace(/\s*\([^)]*\)\s*$/, '').trim()}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -868,9 +1041,9 @@ function SectionNews({ report }: { report: ReportJson }) {
   const news = report.recent_news;
   if (!news || news.length === 0) return null;
   return (
-    <Section kicker="08 / Recent Momentum" title={<>What's happened in <Italic>the last 90 days</Italic>.</>}>
+    <Section kicker="Recent Momentum" title={<>What's happened in <Italic>the last 90 days</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
-        News mentions, announcements, or coverage. Surfaced from public sources to give context on momentum or recent shifts.
+        Public mentions and announcements. New funding or product launches usually mean new workflows worth automating early.
       </SerifBody>
       <div className="space-y-px border-y border-[color:var(--color-hairline)]">
         {news.slice(0, 3).map((n, i) => (
@@ -924,7 +1097,7 @@ function SectionWeekOneAction({ report }: { report: ReportJson }) {
         )}
         <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.7)' }}>
           <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginRight: 8 }}>Outcome:</span>
-          {w.expected_outcome}
+          <Emphasized>{w.expected_outcome}</Emphasized>
         </p>
       </div>
     </motion.section>
@@ -1040,7 +1213,6 @@ const CinematicHero: React.FC<{
             <div className="mt-4">
               <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
             </div>
-            <PeerComparisonInline report={report} />
           </div>
         </div>
         <HeroTeaserSignals signals={report.teaser_signals} />
@@ -1159,15 +1331,19 @@ const ScanReportPage: React.FC = () => {
         reduceMotion={!!reduceMotion}
       />
 
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        {/* Sections */}
+      {/* ACT 1 → ACT 2: company brief, then full-bleed dark score reveal (the wow beat) */}
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <Section1CompanyBrief report={report} />
-        <SectionFundingTraffic report={report} />
-        <SectionScoreBreakdown report={report} />
+      </div>
+      <SectionScoreRevealDark report={report} />
+
+      {/* ACT 3 → ACT 5: gaps, then proof, then action */}
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
         <Section3Opportunities report={report} />
+        <SectionFundingTraffic report={report} />
         <SectionAdActivity report={report} />
-        <SectionContentSample report={report} />
         <SectionHiring report={report} />
+        <SectionContentSample report={report} />
         <SectionNews report={report} />
         <Section4AiAdoption report={report} />
         <Section5Competitive report={report} />

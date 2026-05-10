@@ -112,6 +112,10 @@ export interface ReportJson {
     bounce_rate: number | null;
     avg_visit_duration: number | null;
     top_country: string | null;
+    top_keywords?: string[];
+    top_countries?: Array<{ countryName: string; visitsShare: number }>;
+    traffic_sources?: { search?: number; direct?: number; social?: number; referrals?: number; mail?: number; paidReferrals?: number };
+    pages_per_visit?: number | null;
   } | null;
 }
 
