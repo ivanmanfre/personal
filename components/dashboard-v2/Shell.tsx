@@ -39,6 +39,22 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     }
   }, [active]);
 
+  // Listen for URL changes (popstate from history pushState in Briefing's
+  // onNavigate, browser back/forward, deeplink rewrite). Without this, the
+  // URL updates silently and the Shell never switches sections.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get('section') as SectionId | null;
+      if (s && ALL_SECTIONS.includes(s) && s !== active) {
+        setActive(s);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [active]);
+
   // Keyboard ⌘0–⌘7 jump
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
