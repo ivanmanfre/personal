@@ -1,32 +1,44 @@
 // components/AuditPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, AlertCircle, ExternalLink, Zap } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { ArrowRight, AlertCircle, ExternalLink } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
-import { submitScan, lookupProspectToken, gradeColor } from '../lib/scanApi';
+import { submitScan, lookupProspectToken } from '../lib/scanApi';
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 
 type Stage = 'form' | 'processing' | 'teaser' | 'error';
 
-const PROCESSING_STEPS = [
-  'Scanning company data...',
-  'Analyzing tech stack and job postings...',
-  'Identifying automation gaps...',
-  'Generating your report...',
+const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
+const BODY_SERIF = '"Source Serif 4", Georgia, serif';
+const MONO = '"IBM Plex Mono", monospace';
+const EASE = [0.22, 0.84, 0.36, 1] as const;
+
+// Pipeline phases. Each starts at the listed elapsed second.
+// Real pipeline averages 150-200s. The bar fills against EXPECTED_SECONDS — if the
+// real scan completes earlier, useScan flips us to teaser immediately. If it takes
+// longer, the bar caps at 95% so we never claim done before the data is in.
+const EXPECTED_SECONDS = 180;
+const PHASES: Array<{ at: number; label: string }> = [
+  { at: 0,   label: 'Pulling DNS records and homepage stack' },
+  { at: 25,  label: 'Reading their LinkedIn, jobs, and ad libraries' },
+  { at: 75,  label: 'Cross-checking traffic and headcount signals' },
+  { at: 130, label: 'Stitching the report together' },
+  { at: 175, label: 'Almost ready' },
 ];
 
 const AuditPage: React.FC = () => {
   useMetadata({
     title: 'Free AI Opportunity Scan | Manfredi',
     description:
-      'See what your business looks like from the outside — and what it\'s costing you. Enter your website URL and get a full automation gap analysis.',
+      'See your business through the lens of an AI consultant. Enter your URL and get a full automation gap analysis in three minutes.',
     canonical: 'https://ivanmanfredi.com/audit',
   });
 
   const [searchParams] = useSearchParams();
   const ref = searchParams.get('ref');
+  const reduceMotion = useReducedMotion();
 
   const [stage, setStage] = useState<Stage>('form');
   const [urlInput, setUrlInput] = useState('');
@@ -35,7 +47,6 @@ const AuditPage: React.FC = () => {
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [prospectCompanyName, setProspectCompanyName] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [processingStep, setProcessingStep] = useState(0);
   const [formMountedAt] = useState(() => Date.now());
 
   // Pre-fill from prospect token
@@ -47,15 +58,6 @@ const AuditPage: React.FC = () => {
       if (token.company_name) setProspectCompanyName(token.company_name);
     });
   }, [ref]);
-
-  // Cycle processing step text while pipeline runs
-  useEffect(() => {
-    if (stage !== 'processing') return;
-    const interval = setInterval(() => {
-      setProcessingStep((s) => Math.min(s + 1, PROCESSING_STEPS.length - 1));
-    }, 20000);
-    return () => clearInterval(interval);
-  }, [stage]);
 
   // Subscribe to realtime once we have a company_slug
   const { scan } = useScan(companySlug, { realtime: true });
@@ -77,7 +79,7 @@ const AuditPage: React.FC = () => {
 
     // Anti-spam: bot caught
     if (honeypot.trim().length > 0) {
-      // Silent fail — don't tell the bot why. Pretend it succeeded but never actually submit.
+      // Silent fail. Pretend it succeeded but never actually submit.
       setStage('processing');
       return;
     }
@@ -89,16 +91,10 @@ const AuditPage: React.FC = () => {
     }
 
     setStage('processing');
-    setProcessingStep(0);
 
     try {
       const result = await submitScan({ url: urlVal, email: emailVal, prospectToken: ref });
       setCompanySlug(result.company_slug);
-
-      // If already cached (< 7 days), it's already complete — fetch directly
-      if (result.is_cached) {
-        // useScan will pick it up on next render since company_slug is now set
-      }
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
       setStage('form');
@@ -106,40 +102,64 @@ const AuditPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-paper">
-      <section className="pt-32 pb-24 px-6">
-        <div className="container mx-auto max-w-2xl">
+    <div className="min-h-screen bg-paper text-ink overflow-hidden">
+      {/* Top progress sliver — only during processing, lives at the very edge of the viewport */}
+      <ProcessingTopBar visible={stage === 'processing'} />
 
-          {/* Eyebrow */}
+      <section className="pt-28 lg:pt-36 pb-24 px-5 sm:px-6">
+        <div className="max-w-2xl mx-auto">
+
+          {/* Byline — same vocabulary as landing hero */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mb-7 flex items-center gap-3"
+            style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}
           >
-            <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Free · No credit card · 60 seconds
-            </span>
+            <motion.span
+              animate={reduceMotion ? undefined : { opacity: [1, 0.3, 1] }}
+              transition={reduceMotion ? undefined : { duration: 2, repeat: Infinity }}
+              style={{ color: 'var(--color-accent)', fontSize: '8px' }}
+            >●</motion.span>
+            <span>Free · No credit card · ~3 minutes</span>
           </motion.div>
 
-          {/* Headline */}
+          {/* Editorial headline — sage marker-sweep on the italic word, matches landing Hero */}
           <motion.h1
-            initial={{ opacity: 0, y: 24 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="text-4xl sm:text-5xl font-bold font-display text-ink leading-tight mb-4"
+            transition={{ duration: 0.85, ease: EASE }}
+            className="mb-7"
+            style={{
+              fontFamily: SERIF, fontWeight: 400,
+              fontSize: 'clamp(2.5rem, 6.5vw, 5rem)',
+              lineHeight: 0.96,
+              letterSpacing: '-0.02em',
+              color: '#1A1A1A',
+            }}
           >
-            {prospectCompanyName
-              ? `Scanning ${prospectCompanyName}`
-              : 'AI Opportunity Scan'}
+            {prospectCompanyName ? (
+              <>Scanning <Italic highlight reduce={!!reduceMotion}>{prospectCompanyName}</Italic>.</>
+            ) : (
+              <>See your business <Italic highlight reduce={!!reduceMotion}>through the lens</Italic> of an AI consultant.</>
+            )}
           </motion.h1>
 
+          {/* Lede — body serif, no em-dashes */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-lg text-ink-soft mb-12 leading-relaxed"
+            transition={{ delay: 0.35, duration: 0.7 }}
+            className="mb-12 max-w-xl"
+            style={{
+              fontFamily: BODY_SERIF, fontWeight: 400,
+              fontSize: 'clamp(17px, 2.4vw, 19px)',
+              lineHeight: 1.55,
+              color: '#3D3D3B',
+            }}
           >
-            See what your business looks like from the outside — and what it's costing you.
+            We pull your tech stack, ad activity, hiring, and traffic from 14 public sources. Then a model reads it all and tells you exactly where the AI gaps live, in plain English.
           </motion.p>
 
           <AnimatePresence mode="wait">
@@ -148,16 +168,14 @@ const AuditPage: React.FC = () => {
             {stage === 'form' && (
               <motion.form
                 key="form"
-                initial={{ opacity: 0, y: 16 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.5 }}
                 onSubmit={handleSubmit}
-                className="space-y-4"
+                className="space-y-7"
               >
-                <div>
-                  <label htmlFor="scan-url" className="block text-sm font-medium text-ink mb-1.5">
-                    Company website
-                  </label>
+                <FieldRow label="Company website" hint="we accept any format">
                   <input
                     id="scan-url"
                     type="text"
@@ -165,14 +183,12 @@ const AuditPage: React.FC = () => {
                     onChange={(e) => setUrlInput(e.target.value)}
                     placeholder="acmerevops.com"
                     required
-                    className="w-full px-4 py-3 bg-paper-raise border border-[color:var(--color-hairline-bold)] rounded-lg text-ink placeholder:text-ink-mute focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+                    style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#1A1A1A' }}
+                    className="w-full bg-transparent border-0 border-b border-[color:var(--color-hairline-bold)] py-3 placeholder:text-[rgba(26,26,26,0.35)] focus:outline-none focus:border-accent transition-colors"
                   />
-                </div>
+                </FieldRow>
 
-                <div>
-                  <label htmlFor="scan-email" className="block text-sm font-medium text-ink mb-1.5">
-                    Work email <span className="text-ink-mute font-normal">(we'll send the full report here)</span>
-                  </label>
+                <FieldRow label="Work email" hint="we send the full report here">
                   <input
                     id="scan-email"
                     type="email"
@@ -180,9 +196,10 @@ const AuditPage: React.FC = () => {
                     onChange={(e) => setEmailInput(e.target.value)}
                     placeholder="you@company.com"
                     required
-                    className="w-full px-4 py-3 bg-paper-raise border border-[color:var(--color-hairline-bold)] rounded-lg text-ink placeholder:text-ink-mute focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
+                    style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#1A1A1A' }}
+                    className="w-full bg-transparent border-0 border-b border-[color:var(--color-hairline-bold)] py-3 placeholder:text-[rgba(26,26,26,0.35)] focus:outline-none focus:border-accent transition-colors"
                   />
-                </div>
+                </FieldRow>
 
                 {/* Honeypot: hidden from real users via off-screen positioning + tab-skip + autocomplete-off.
                     Bots that auto-fill all form fields will populate this and get silently rejected. */}
@@ -198,7 +215,7 @@ const AuditPage: React.FC = () => {
                 />
 
                 {submitError && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '12px', color: '#9B2C2C' }}>
                     <AlertCircle className="w-4 h-4 shrink-0" />
                     {submitError}
                   </div>
@@ -206,94 +223,62 @@ const AuditPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-accent text-white font-semibold px-6 py-3.5 rounded-lg hover:bg-accent-ink transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-2.5 px-7 py-4 transition-colors"
+                  style={{
+                    fontFamily: BODY_SERIF, fontWeight: 600, fontSize: '16px',
+                    backgroundColor: '#1A1A1A', color: '#F7F4EF',
+                  }}
                 >
-                  Run Free Scan
+                  Run free scan
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                <p className="text-xs text-ink-mute text-center">
-                  Pulls from 14+ public data sources · Takes ~60 seconds · No spam
+                <p className="text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+                  14 public sources · 3 min · No spam, no follow-ups
                 </p>
               </motion.form>
             )}
 
             {/* ── PROCESSING STAGE ─────────────────────────────────── */}
             {stage === 'processing' && (
-              <motion.div
+              <ProcessingPanel
                 key="processing"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="text-center space-y-6"
-              >
-                <div className="relative mx-auto w-16 h-16">
-                  <div className="absolute inset-0 rounded-full border-2 border-accent/20" />
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-accent animate-spin" />
-                  <Zap className="absolute inset-0 m-auto w-6 h-6 text-accent" />
-                </div>
-
-                <div>
-                  <p className="font-semibold text-ink text-lg">
-                    {PROCESSING_STEPS[processingStep]}
-                  </p>
-                  <p className="text-ink-mute text-sm mt-1">
-                    Usually completes in 60–90 seconds
-                  </p>
-                </div>
-
-                <div className="flex justify-center gap-1.5">
-                  {PROCESSING_STEPS.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-1 rounded-full transition-all duration-500 ${
-                        i <= processingStep
-                          ? 'w-6 bg-accent'
-                          : 'w-2 bg-[color:var(--color-hairline-bold)]'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </motion.div>
+                companyName={prospectCompanyName ?? extractDomainFromInput(urlInput)}
+                onComplete={() => { /* useScan realtime fires the transition */ }}
+              />
             )}
 
             {/* ── TEASER STAGE ─────────────────────────────────────── */}
             {stage === 'teaser' && scan && scan.report_json && (
               <motion.div
                 key="teaser"
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="space-y-6"
+                transition={{ duration: 0.6, ease: EASE }}
+                className="space-y-8"
               >
-                {/* Teaser card */}
-                <div className="border border-[color:var(--color-hairline-bold)] rounded-xl p-6 bg-paper-raise shadow-card-lift space-y-5">
+                <div className="border-t-2 border-[color:var(--color-accent)] pt-8 space-y-7">
                   {/* Company header */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     {scan.logo_url && (
                       <img
                         src={scan.logo_url}
                         alt=""
-                        className="w-12 h-12 rounded-lg object-contain bg-white border border-[color:var(--color-hairline)] p-1"
+                        className="w-12 h-12 object-contain shrink-0 mt-1"
+                        style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 4 }}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     )}
-                    <div>
-                      <p className="font-bold text-ink text-lg leading-tight">
+                    <div className="min-w-0">
+                      <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', lineHeight: 1.1, color: '#1A1A1A' }}>
                         {scan.company_name || scan.domain}
-                      </p>
-                      <p className="text-xs text-ink-mute mt-0.5">
+                      </h2>
+                      <p className="mt-1.5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
                         {[
                           scan.company_size && `${scan.company_size} employees`,
                           scan.revenue_range,
-                          scan.domain_age_years && `Founded ~${new Date().getFullYear() - scan.domain_age_years}`,
-                        ].filter(Boolean).join(' · ')}
-                      </p>
-                      <p className="text-xs text-ink-mute">
-                        {[
-                          scan.email_infra === 'google_workspace' ? '📧 Google Workspace' :
-                          scan.email_infra === 'microsoft_365' ? '📧 Microsoft 365' : null,
-                          scan.domain_age_years && `🌐 Domain age: ${scan.domain_age_years} years`,
+                          scan.domain_age_years && `${scan.domain_age_years}-year-old domain`,
                         ].filter(Boolean).join(' · ')}
                       </p>
                     </div>
@@ -301,7 +286,7 @@ const AuditPage: React.FC = () => {
 
                   {/* Score */}
                   <div>
-                    <p className="text-xs uppercase tracking-wider font-medium text-ink-mute mb-3">
+                    <p className="mb-3" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
                       Automation Opportunity Score
                     </p>
                     <ScoreBar
@@ -311,39 +296,39 @@ const AuditPage: React.FC = () => {
                   </div>
 
                   {/* Signals */}
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-wider font-medium text-ink-mute">
-                      3 signals found
+                  <div>
+                    <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                      What we found
                     </p>
-                    {scan.report_json.teaser_signals.map((signal, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm text-ink-soft">
-                        <span className="shrink-0 mt-0.5">⚠</span>
-                        <span>{signal.replace(/^⚠\s?/, '')}</span>
-                      </div>
-                    ))}
+                    <ul className="space-y-3">
+                      {scan.report_json.teaser_signals.map((signal, i) => (
+                        <li key={i} className="flex items-start gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#1A1A1A' }}>
+                          <span aria-hidden style={{ color: 'var(--color-accent)', fontSize: '14px', marginTop: 4 }}>—</span>
+                          <span>{signal.replace(/^⚠\s?/, '')}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  {/* Count */}
-                  <p className="text-sm text-ink font-medium">
-                    We found {scan.report_json.opportunities.length} automation gaps in{' '}
-                    {scan.company_name || scan.domain}.
-                  </p>
                 </div>
 
-                {/* Email + report CTA */}
-                <div className="text-center space-y-3">
-                  <p className="text-sm text-ink-mute">
-                    Full analysis in your inbox — usually &lt; 5 min.
-                  </p>
+                {/* CTA + email line */}
+                <div className="space-y-4">
                   {companySlug && (
                     <Link
                       to={`/scan/${companySlug}`}
-                      className="inline-flex items-center gap-2 bg-accent text-white font-semibold px-6 py-3 rounded-lg hover:bg-accent-ink transition-colors"
+                      className="w-full inline-flex items-center justify-center gap-2.5 px-7 py-4 transition-colors"
+                      style={{
+                        fontFamily: BODY_SERIF, fontWeight: 600, fontSize: '16px',
+                        backgroundColor: '#1A1A1A', color: '#F7F4EF',
+                      }}
                     >
-                      View Full Report
+                      View full report on {scan.company_name || scan.domain}
                       <ExternalLink className="w-4 h-4" />
                     </Link>
                   )}
+                  <p className="text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+                    Full report also sent to {emailInput || 'your inbox'}
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -354,5 +339,219 @@ const AuditPage: React.FC = () => {
     </div>
   );
 };
+
+// ── Pieces ──────────────────────────────────────────────────────────────────
+
+// Shared label/hint chrome above each editorial form field
+const FieldRow: React.FC<{ label: string; hint?: string; children: React.ReactNode }> = ({
+  label, hint, children,
+}) => (
+  <div>
+    <div className="flex items-baseline justify-between gap-3 mb-1">
+      <label style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+        {label}
+      </label>
+      {hint && (
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          {hint}
+        </span>
+      )}
+    </div>
+    {children}
+  </div>
+);
+
+// Italic with optional sage marker-sweep behind text — same primitive used in Hero + ScanReport
+const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean; reduce?: boolean }> = ({
+  children, highlight, reduce,
+}) => {
+  if (!highlight) return <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{children}</span>;
+  return (
+    <span style={{ fontStyle: 'italic', position: 'relative', color: '#1A1A1A' }}>
+      {children}
+      <motion.span
+        aria-hidden
+        initial={reduce ? false : { scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 0.9, duration: 0.9, ease: EASE }}
+        style={{
+          position: 'absolute',
+          left: '-2%',
+          right: '-2%',
+          bottom: '0.18em',
+          height: '0.42em',
+          backgroundColor: 'var(--color-accent)',
+          transformOrigin: 'left',
+          opacity: 0.25,
+          zIndex: -1,
+        }}
+      />
+    </span>
+  );
+};
+
+// Top-of-viewport sage progress sliver — fills against EXPECTED_SECONDS, caps at 95%.
+const ProcessingTopBar: React.FC<{ visible: boolean }> = ({ visible }) => {
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    if (!visible) { setPct(0); return; }
+    const start = Date.now();
+    const id = setInterval(() => {
+      const elapsed = (Date.now() - start) / 1000;
+      // Cap at 95% — last 5% reserved for the "complete" transition
+      setPct(Math.min(95, (elapsed / EXPECTED_SECONDS) * 100));
+    }, 200);
+    return () => clearInterval(id);
+  }, [visible]);
+  if (!visible) return null;
+  return (
+    <div
+      aria-hidden
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, background: 'rgba(26,26,26,0.06)', zIndex: 60 }}
+    >
+      <div
+        style={{
+          height: '100%',
+          width: `${pct}%`,
+          background: 'var(--color-accent)',
+          transition: 'width 0.2s linear',
+        }}
+      />
+    </div>
+  );
+};
+
+// Processing stage panel — phase copy, big typographic progress bar, elapsed / expected counter.
+const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }> = ({
+  companyName,
+}) => {
+  const reduceMotion = useReducedMotion();
+  const [elapsed, setElapsed] = useState(0);
+  const start = useRef(Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setElapsed((Date.now() - start.current) / 1000);
+    }, 250);
+    return () => clearInterval(id);
+  }, []);
+
+  const phase = PHASES.slice().reverse().find((p) => elapsed >= p.at) ?? PHASES[0];
+  // Progress against EXPECTED_SECONDS, capped at 95% so we never claim done early
+  const pct = Math.min(95, (elapsed / EXPECTED_SECONDS) * 100);
+  const elapsedDisplay = formatElapsed(elapsed);
+  const remainingDisplay = elapsed >= EXPECTED_SECONDS
+    ? 'finishing up'
+    : `${Math.ceil((EXPECTED_SECONDS - elapsed) / 5) * 5}s left`;
+
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-10"
+    >
+      {/* Phase headline */}
+      <div className="border-t-2 border-[color:var(--color-accent)] pt-8">
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+          Scanning {companyName || 'your company'}
+        </p>
+        <AnimatePresence mode="wait">
+          <motion.h2
+            key={phase.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            className="mt-3"
+            style={{
+              fontFamily: SERIF, fontWeight: 400,
+              fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', lineHeight: 1.15, letterSpacing: '-0.015em',
+              color: '#1A1A1A',
+            }}
+          >
+            {phase.label}<span style={{ color: 'var(--color-accent)' }}>.</span>
+          </motion.h2>
+        </AnimatePresence>
+      </div>
+
+      {/* Big progress bar */}
+      <div>
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            Progress
+          </p>
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+            <span style={{ color: '#1A1A1A' }}>{elapsedDisplay}</span> elapsed · {remainingDisplay}
+          </p>
+        </div>
+        <div style={{ height: 4, background: 'rgba(26,26,26,0.08)', position: 'relative', overflow: 'hidden' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${pct}%`,
+              background: 'var(--color-accent)',
+              transition: 'width 0.3s linear',
+            }}
+          />
+          {/* Subtle pulse shimmer at the leading edge so it reads as alive even when width updates are slow */}
+          {!reduceMotion && (
+            <motion.div
+              animate={{ opacity: [0.4, 0.85, 0.4] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute', top: 0, bottom: 0,
+                left: `calc(${pct}% - 4px)`,
+                width: 8,
+                background: 'var(--color-accent)',
+                filter: 'blur(3px)',
+              }}
+            />
+          )}
+        </div>
+
+        {/* Phase ticks under the bar — visualizes the pipeline as 5 beats */}
+        <div className="flex items-center mt-4" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+          {PHASES.map((p, i) => {
+            const reached = elapsed >= p.at;
+            const flex = i === PHASES.length - 1 ? 0 : (PHASES[i + 1].at - p.at);
+            return (
+              <div
+                key={p.at}
+                style={{ flex: flex || 0, color: reached ? 'var(--color-accent)' : 'rgba(26,26,26,0.35)' }}
+                className="relative flex items-start gap-2"
+              >
+                <span style={{ fontSize: '7px', lineHeight: '12px' }}>●</span>
+                <span className="hidden sm:inline truncate" style={{ paddingRight: 8 }}>{p.label.split(' ').slice(0, 3).join(' ')}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Reassurance line */}
+      <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.6)' }}>
+        We're hitting Apollo, LinkedIn, SimilarWeb, SerpApi, GitHub, your DNS, and your homepage. The full report typically lands in two to three minutes. You can leave this tab open or close it: we email the link when it's ready.
+      </p>
+    </motion.div>
+  );
+};
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatElapsed(seconds: number): string {
+  const s = Math.floor(seconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (m === 0) return `${r}s`;
+  return `${m}m ${String(r).padStart(2, '0')}s`;
+}
+
+// Strip protocol + path so we can show "acmerevops.com" instead of "https://acmerevops.com/about"
+function extractDomainFromInput(raw: string): string {
+  const t = raw.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/^www\./i, '');
+  return t || 'your company';
+}
 
 export default AuditPage;

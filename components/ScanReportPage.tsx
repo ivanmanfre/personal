@@ -846,7 +846,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
 
         <div className="mb-14 lg:mb-20">
           <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
-            The AI Verdict
+            The Breakdown
           </p>
           <RevealHeadline
             style={{
@@ -855,7 +855,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
               letterSpacing: '-0.025em', color: '#F7F4EF', marginTop: 12,
             }}
           >
-            How the <span style={{ fontStyle: 'italic', color: '#7FA868' }}>{report.automation_score}</span> was earned.
+            Where they're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where they're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
           </RevealHeadline>
         </div>
 
