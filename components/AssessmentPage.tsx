@@ -175,7 +175,7 @@ const AssessmentPage: React.FC = () => {
                     </h3>
                   </div>
                   <p className="text-ink-soft leading-relaxed">
-                    {item.question}
+                    {item.description}
                   </p>
                 </div>
               ))}

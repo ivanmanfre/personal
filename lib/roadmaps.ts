@@ -166,55 +166,55 @@ export const roadmaps: Record<PreconditionKey, Roadmap> = {
     whenToReturn:
       'When the scope is locked and you want to validate the build estimate before signing a SOW with anyone.',
   },
-  human_loop: {
-    key: 'human_loop',
-    slug: 'human-in-the-loop',
-    title: '30 Days to Human-in-the-Loop by Design',
-    subtitle: 'How to build review into the system, not bolt it on later',
+  repeatability: {
+    key: 'repeatability',
+    slug: 'repeatability',
+    title: '30 Days to a Workflow Worth Encoding',
+    subtitle: 'How to verify your bottleneck recurs often enough to justify automation',
     intro:
-      "AI projects don't fail at deployment — they fail six months later when the team stops noticing the 5% of outputs that are wrong. Human-in-the-loop isn't a fallback; it's how you stop drift before it costs a relationship. This roadmap walks through naming the reviewer and designing the review path before any AI work.",
+      "AI projects don't fail at deployment. They fail when the workflow you automated turns out to be a one-off in disguise. Repeatability isn't about volume. It's about pattern stability. This roadmap walks through proving that the workflow you'd most love to automate actually recurs in a way a system can absorb.",
     weeks: [
       {
         number: 1,
-        title: 'Name the human',
+        title: 'Count the runs',
         steps: [
-          'Day 1–3: For your target workflow, identify the specific role that owns review. Not "the team" — one role.',
-          'Day 4–5: Talk to the person in that role. Ask: "if AI did this work and 5% of it was wrong, how would you find the 5%?"',
-          "Day 6–7: If they don't have an answer, the review path doesn't exist yet. That's what Week 2 is for.",
+          'Day 1–3: For your target workflow, list every time it ran in the last 90 days. Use calendar, project tracker, inbox, Slack searches. Only count actual runs. Not "I planned to" or "we should have."',
+          'Day 4–5: Note the date and the operator on each run. Patterns of who-runs-when matter.',
+          "Day 6–7: If the count is under 8, the workflow may be too rare to justify automation. Either widen the definition or pick a different workflow.",
         ],
       },
       {
         number: 2,
-        title: 'Design the review path',
+        title: 'Compare the patterns',
         steps: [
-          "Day 8–10: Map where the AI's output needs to land. Inbox? Slack? CRM queue? It needs to be somewhere the reviewer is already looking.",
-          'Day 11–12: Design the review UI. What does the reviewer see? What\'s their lightest possible action — approve, reject, edit?',
-          "Day 13–14: Write the SLA. How fast does review need to happen? What happens if it doesn't?",
+          'Day 8–10: Pick 5 representative runs. Map each one: input, steps, output. Use the same 3-column format for all 5.',
+          'Day 11–12: Highlight what is the same across the 5. That is the encodeable core.',
+          'Day 13–14: Highlight what varies. If variation exceeds 30% of total work, the workflow may not be stable enough yet.',
         ],
       },
       {
         number: 3,
-        title: 'Plan the failure path',
+        title: 'Pressure-test the pattern',
         steps: [
-          'Day 15–17: When the reviewer flags an error, where does that signal go? Back into AI training? Routes to human-only next time? Logged for later?',
-          'Day 18–19: Define escalation. If a reviewer is unsure, who do they escalate to?',
-          'Day 20–21: Pressure-test with the reviewer. Walk them through three hypothetical failure scenarios. Adjust if their answer is "I\'d just fix it manually."',
+          'Day 15–17: Walk the most recent 3 runs with whoever did them. Ask: "if I gave you this exact input next month, would you produce this exact output?"',
+          'Day 18–19: Identify the 2–3 decision points where they say "depends." Those are the variability nodes. They need encoded logic, not a fixed flow.',
+          'Day 20–21: Estimate what % of variability is rule-based (encodeable) vs genuine new judgment (not).',
         ],
       },
       {
         number: 4,
-        title: 'Build review before AI',
+        title: 'Project forward',
         steps: [
-          'Day 22–26: Build the review surface FIRST. Even if the AI side is just a dummy that outputs random data, the review step needs to be real.',
-          'Day 27–28: Have the reviewer use it for a week. Iterate based on friction.',
-          'Day 29–30: Now connect the AI side. Review step is already proven.',
+          'Day 22–26: Project the next 90 days. Will the workflow run at the same frequency or rarer? Anything in your roadmap that would change the pattern (new product, restructure, seasonal shift)?',
+          'Day 27–28: Run the math. Annual cost × (90/365). Does it clear $2k? If not, consider widening the workflow or picking a different one.',
+          'Day 29–30: If repeatability passes, you are ready to scope the build. Move to the Blueprint.',
         ],
       },
     ],
     howToKnow:
-      "The reviewer can spot errors in under 30 seconds per item. The failure path actually closes the loop — errors don't repeat. New team members in the reviewer role can be trained in under a day.",
+      'You can describe the pattern in two sentences. Frequency holds at 5+ runs per month. Variability is a finite set of branches, not a creative judgment call each time.',
     whenToReturn:
-      "When the review surface is live and you want to validate it before connecting the AI, or when you've discovered the workflow you wanted to automate is actually one where review can't be designed in (sometimes the answer is: don't automate this).",
+      "When you're not sure whether your workflow has stable patterns or you'd be automating chaos. This roadmap makes that distinction visible before you commit to a build.",
   },
 };
 

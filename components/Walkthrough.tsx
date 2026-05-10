@@ -269,7 +269,7 @@ const preconditions = [
   { num: '01', label: 'Clean inputs.', tag: 'data the system can read every time' },
   { num: '02', label: 'Documentable decisions.', tag: 'someone can write down how they decide' },
   { num: '03', label: 'A narrow first job.', tag: 'one workflow, end to end, before widening' },
-  { num: '04', label: 'A human in the loop.', tag: 'review built into the design' },
+  { num: '04', label: 'Repeatable enough to encode.', tag: 'the work runs often enough that automation compounds' },
 ];
 
 const Slide03: React.FC = () => (

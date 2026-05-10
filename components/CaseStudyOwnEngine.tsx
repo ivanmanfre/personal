@@ -295,10 +295,10 @@ const CaseStudyOwnEngine: React.FC = () => {
               </div>
               <div className="border-l border-[color:var(--color-hairline-bold)] pl-5 py-2">
                 <p className="font-mono text-xs uppercase tracking-[0.16em] text-ink-soft mb-2">
-                  04 · Human-in-the-loop by design
+                  04 · Repeatable enough to encode
                 </p>
                 <p className="text-ink-soft leading-relaxed">
-                  Sunday review is the design, not the rescue. Drafts can't ship without it.
+                  Five posts a week, every week. Same shape, same review queue, same publishing surface. The pattern repeats often enough that automation compounds.
                 </p>
               </div>
             </div>

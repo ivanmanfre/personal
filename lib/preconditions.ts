@@ -2,7 +2,7 @@ export type PreconditionKey =
   | 'structured_input'
   | 'decision_logic'
   | 'narrow_scope'
-  | 'human_loop';
+  | 'repeatability';
 
 export interface SubQuestion {
   /** Unique id, e.g. 'structured_input_q1' */
@@ -168,48 +168,48 @@ export const preconditions: Precondition[] = [
     ],
   },
   {
-    key: 'human_loop',
+    key: 'repeatability',
     number: '04',
-    title: 'Human-in-the-loop by design',
-    description: 'Routed review is the design, not the rescue. Failure paths planned upfront.',
+    title: 'Repeatable enough to encode',
+    description: 'The work runs often enough that automating it compounds. One-off projects don\'t qualify.',
     subQuestions: [
       {
-        id: 'human_loop_q1',
-        angle: 'Named reviewer',
+        id: 'repeatability_q1',
+        angle: 'Frequency',
         question:
-          'Is there a named human who reviews the AI\'s output before it touches a customer?',
+          'How often does the workflow you want to automate actually run?',
         scoreLabels: [
-          'No review, AI ships direct',
-          'Spot checks, no clear owner',
-          'Owner exists, no real workflow',
-          'Routed review for risky outputs',
-          'Routed review designed in from day one',
+          'Once a year or rarer',
+          'A few times a year',
+          'Monthly',
+          'Weekly',
+          'Daily or continuous',
         ],
       },
       {
-        id: 'human_loop_q2',
-        angle: 'Review surface',
+        id: 'repeatability_q2',
+        angle: 'Volume',
         question:
-          'Where does the AI\'s output land for review — somewhere the reviewer is already looking, or somewhere new they\'d have to remember to check?',
+          'How many times has this exact workflow run in the last 90 days?',
         scoreLabels: [
-          'New dashboard nobody looks at',
-          'Email digest reviewer ignores',
-          'Slack channel they sometimes check',
-          'Their existing inbox or queue',
-          'A workflow tool they live in daily',
+          'Less than 5',
+          '5 to 20',
+          '20 to 50',
+          '50 to 200',
+          'More than 200',
         ],
       },
       {
-        id: 'human_loop_q3',
-        angle: 'Feedback path',
+        id: 'repeatability_q3',
+        angle: 'Predictability',
         question:
-          'When the reviewer catches an error, what happens — does it loop back into the system, or just get fixed manually?',
+          'When the workflow runs again next month, will it look basically the same as last month?',
         scoreLabels: [
-          'Reviewer fixes silently, system never learns',
-          'Sometimes flagged, no formal path',
-          'Logged but not actioned',
-          'Errors route to human-only next time',
-          'Errors feed back into training or rules',
+          'It\'s never the same twice',
+          'Slight variations each time',
+          'Mostly the same, with edge cases',
+          'Same shape, occasional new patterns',
+          'Identical pattern every time',
         ],
       },
     ],
