@@ -141,8 +141,9 @@ body.dashboard-v2-active * {
 
 /* MAIN */
 .dv-main { overflow-y: auto; }
-.dv-panel { padding: 2.25rem 2.75rem 3rem; max-width: 1280px; margin: 0 auto; animation: dvFadeIn 0.2s ease-out; }
-@keyframes dvFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.dv-panel { padding: 2.25rem 2.75rem 3rem; max-width: 1280px; margin: 0 auto; }
+/* dvFadeIn was firing on every panel switch + every realtime data update —
+ * read as "screen refresh." Removed. Native React reconciliation is silent. */
 
 /* HEAD ROW (per-section masthead) */
 .dv-head { border-bottom: 1px solid var(--d-rule-strong); padding-bottom: 1.4rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
@@ -150,8 +151,8 @@ body.dashboard-v2-active * {
 .dv-h1 em { font-style: normal; font-weight: 700; color: var(--d-good); }
 .dv-meta { text-align: right; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.7; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .dv-meta-live { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--d-good); }
-.dv-meta-live::before { content: ''; width: 6px; height: 6px; background: var(--d-good); border-radius: 50%; animation: dvPulse 2s ease-in-out infinite; }
-@keyframes dvPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.dv-meta-live::before { content: ''; width: 6px; height: 6px; background: var(--d-good); border-radius: 50%; }
+/* No pulse — the dot's presence is enough signal; constant motion is noise. */
 
 /* STATUS CHIP */
 .dv-chip { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.3rem 0.6rem; border-radius: 3px; border: 1px solid currentColor; align-self: center; position: relative; top: -2px; }
