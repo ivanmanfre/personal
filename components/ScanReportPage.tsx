@@ -1258,6 +1258,45 @@ function SectionMethodology() {
   );
 }
 
+// W2.2 v2 — Single client card for the Track Record strip. Logo via Google s2/favicons (reliable,
+// auth-free, ~128px PNG). On image error, fall back to a typeset wordmark so the layout never breaks.
+function ClientCard({ name, domain, outcome }: { name: string; domain: string; outcome: React.ReactNode }) {
+  const [imgFailed, setImgFailed] = React.useState(false);
+  return (
+    <div className="space-y-3">
+      {imgFailed ? (
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: 44, height: 44, background: '#fff',
+            border: '1px solid rgba(26,26,26,0.1)',
+            fontFamily: MONO, fontSize: '11px', letterSpacing: '0.05em', color: '#1A1A1A', fontWeight: 600,
+          }}
+          aria-hidden
+        >
+          {name.split(' ').map((w) => w[0]).join('').slice(0, 3).toUpperCase()}
+        </div>
+      ) : (
+        <img
+          src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
+          alt={`${name} logo`}
+          loading="lazy"
+          width={44}
+          height={44}
+          style={{ width: 44, height: 44, objectFit: 'contain', background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 4 }}
+          onError={() => setImgFailed(true)}
+        />
+      )}
+      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: '#1A1A1A', fontWeight: 600, lineHeight: 1.3 }}>
+        {name}
+      </p>
+      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)' }}>
+        {outcome}
+      </p>
+    </div>
+  );
+}
+
 // CLOSING ARC — merged per CEO audit. Was two competing closes (week-1 callout + final CTA);
 // now a single block: highest-priority gap (verdict) → Monday move (action) → Ivan + price → CTA.
 function SectionClosingArc({ report, companyName }: { report: ReportJson; companyName: string }) {
@@ -1329,40 +1368,31 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           </p>
         </div>
 
-        {/* W2.2 — Track Record strip. Specific outcomes per named client, not a logo wall.
-            Sits between the bio (who) and the price (cost) so the proof comes right before the ask.
-            Outcome-led copy: each line names the client, their domain, and a concrete result.
-            Replaces the unsupported "90 days payback" claim with comparable-firm evidence. */}
-        <div className="mb-10 max-w-2xl py-6 border-t border-b border-[color:var(--color-hairline)]">
-          <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+        {/* W2.2 — Track Record strip, horizontal layout with logos (per user feedback after first
+            vertical version felt too text-heavy). Logos via Google's s2/favicons API with onError
+            fallback to a typeset wordmark. 3-column grid on desktop, single column on mobile.
+            Compact: each cell is logo + 1-line outcome. No industry tag (logo conveys brand). */}
+        <div className="mb-10 max-w-3xl py-7 border-t border-b border-[color:var(--color-hairline)]">
+          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             Recent builds
           </p>
-          <ul className="space-y-5" style={{ listStyle: 'none', padding: 0 }}>
-            <li>
-              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
-                ProSWPPP <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Environmental Compliance</span>
-              </p>
-              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
-                Three content formats and 50-state SWPPP docs ship from a single interface. Eliminated the Google Sheet dependency. State-aware sales follow-up runs zero-touch.
-              </p>
-            </li>
-            <li>
-              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
-                Destino Farms <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Cannabis Distribution</span>
-              </p>
-              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
-                Supplier menu reconciles itself overnight. No spreadsheet juggling, no manual reordering, no Monday catch-up.
-              </p>
-            </li>
-            <li>
-              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
-                BNP Paribas Fortis <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Enterprise Banking</span>
-              </p>
-              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
-                Internal automation build delivered in days, not quarters. <span style={{ fontStyle: 'italic', color: 'rgba(26,26,26,0.6)' }}>"Quality work and lightning fast." — Michel de Wachter</span>
-              </p>
-            </li>
-          </ul>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            <ClientCard
+              name="ProSWPPP"
+              domain="proswppp.com"
+              outcome="50-state SWPPP docs ship from one interface. Sales follow-up runs zero-touch."
+            />
+            <ClientCard
+              name="Destino Farms"
+              domain="destinofarms.com"
+              outcome="Supplier menu reconciles itself overnight. No spreadsheet juggling."
+            />
+            <ClientCard
+              name="BNP Paribas Fortis"
+              domain="bnpparibasfortis.be"
+              outcome={<>Internal automation build in days, not quarters. <span style={{ fontStyle: 'italic', color: 'rgba(26,26,26,0.55)' }}>— Michel de Wachter</span></>}
+            />
+          </div>
         </div>
 
         <p className="mb-4" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
