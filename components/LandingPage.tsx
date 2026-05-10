@@ -316,7 +316,7 @@ const BuildOutcomesSection: React.FC = () => (
       <motion.div {...inView} className="mb-16 max-w-2xl">
         <Label>04 / Built. Shipped. Live.</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
-          Four systems,<br />
+          Recent builds,<br />
           <span style={{ fontStyle: 'italic' }}>already in production.</span>
         </RevealH2>
       </motion.div>
