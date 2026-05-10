@@ -666,7 +666,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="07 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+    <Section kicker="09 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -701,7 +701,7 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   const tooThin = ctx.trim().split(/\s+/).length < 30;
   if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section kicker="08 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+    <Section kicker="10 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -827,6 +827,70 @@ function SectionContentSample({ report }: { report: ReportJson }) {
               {p.reactions != null && <span>{p.reactions} reactions</span>}
             </div>
           </motion.blockquote>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// PHASE 2: Hiring signals — open roles tell you what they're trying to scale.
+function SectionHiring({ report }: { report: ReportJson }) {
+  const h = report.hiring;
+  if (!h || (h.open_count === 0 && (!h.sample_titles || h.sample_titles.length === 0))) return null;
+  return (
+    <Section kicker="07 / Hiring Signals" title={<>What they're <Italic>trying to scale</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl">
+        Open roles reveal the manual work they're trying to absorb with headcount. Each open SDR, ops, or coordinator role is automation opportunity in waiting.
+      </SerifBody>
+      <div className="grid lg:grid-cols-[auto_1fr] gap-10 lg:gap-16 items-start">
+        <div>
+          <Kicker>Open roles</Kicker>
+          <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(3rem, 5vw, 4.5rem)', lineHeight: 1, color: 'var(--color-accent)', marginTop: 8 }}>
+            <Scramble value={String(h.open_count)} />
+          </p>
+        </div>
+        {h.sample_titles && h.sample_titles.length > 0 && (
+          <div className="space-y-px border-y border-[color:var(--color-hairline)]">
+            {h.sample_titles.slice(0, 5).map((t, i) => (
+              <div key={i} className="py-4 border-b border-[color:var(--color-hairline)] last:border-b-0">
+                <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }}>{t}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+// PHASE 2: Recent news — momentum signals from the last 90 days.
+function SectionNews({ report }: { report: ReportJson }) {
+  const news = report.recent_news;
+  if (!news || news.length === 0) return null;
+  return (
+    <Section kicker="08 / Recent Momentum" title={<>What's happened in <Italic>the last 90 days</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl">
+        News mentions, announcements, or coverage. Surfaced from public sources to give context on momentum or recent shifts.
+      </SerifBody>
+      <div className="space-y-px border-y border-[color:var(--color-hairline)]">
+        {news.slice(0, 3).map((n, i) => (
+          <a
+            key={i}
+            href={n.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-4 py-5 hover:bg-[rgba(26,26,26,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0"
+          >
+            <div className="flex-1">
+              <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }} className="group-hover:text-accent transition-colors">{n.title}</p>
+              <div className="mt-1 flex items-center gap-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+                {n.source && <span>{n.source}</span>}
+                {n.date && <span>{n.date}</span>}
+              </div>
+              {n.snippet && <SerifBody className="mt-2 line-clamp-2"><span style={{ fontSize: '15px' }}>{n.snippet}</span></SerifBody>}
+            </div>
+            <ExternalLink className="w-4 h-4 text-ink-mute mt-1.5 group-hover:text-accent transition-colors shrink-0" />
+          </a>
         ))}
       </div>
     </Section>
@@ -1103,6 +1167,8 @@ const ScanReportPage: React.FC = () => {
         <Section3Opportunities report={report} />
         <SectionAdActivity report={report} />
         <SectionContentSample report={report} />
+        <SectionHiring report={report} />
+        <SectionNews report={report} />
         <Section4AiAdoption report={report} />
         <Section5Competitive report={report} />
         <SectionWeekOneAction report={report} />

@@ -50,6 +50,17 @@ export interface ReportJson {
     size_tier_compared: string;
     interpretation: string;
   };
+  hiring?: {
+    open_count: number;
+    sample_titles: string[];
+  } | null;
+  recent_news?: Array<{
+    title: string;
+    source: string | null;
+    date: string | null;
+    link: string;
+    snippet: string;
+  }>;
   // Display data fields
   company_name: string;
   logo_url: string | null;
