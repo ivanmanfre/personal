@@ -379,13 +379,13 @@ const PRECONDITIONS = [
   },
   {
     n: '03',
-    title: 'You can name the workflow nobody wants to touch on Friday',
-    sub: 'Don’t overthink it. It’s the one your team reroutes around. The one that always slips to next week.',
+    title: 'You can name the workflow eating the most hours',
+    sub: 'Don’t overthink it. You know which one. It’s the one your team reroutes around — the one you’d love to delete.',
   },
   {
     n: '04',
-    title: 'You want to remove the bottleneck, not the people',
-    sub: 'AI handles the repeat work. Your people handle the calls only humans should make. Nobody gets fired. The bottleneck does.',
+    title: 'The work happens often enough to be worth encoding',
+    sub: 'It’s not a one-off project. The same workflow runs every week — every client, every cycle, every billing run. That’s where automation compounds.',
   },
 ];
 
