@@ -482,7 +482,9 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
               Source breakdown
             </p>
             {/* W2.3 — Single FT/Bloomberg-style stacked horizontal bar (was 5 separate sage rectangles
-                with zero data-ink per Visual specialist). One thick bar, segmented, labeled inline. */}
+                with zero data-ink per Visual specialist). One thick bar, segmented, labeled inline.
+                P0.1 fix: explicit width + flexShrink:0 so segments don't collapse on mobile when the
+                first segment is largest (was rendering with sage Organic Search empty at 390px). */}
             <div className="mt-6">
               <div className="flex w-full" style={{ height: 28, background: 'rgba(26,26,26,0.06)' }}>
                 {sourceRows.map((row, i) => (
@@ -494,7 +496,8 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
                     transition={{ duration: 0.6, ease: EASE, delay: i * 0.08 }}
                     title={`${row.label}: ${(row.pct * 100).toFixed(1)}%`}
                     style={{
-                      flexBasis: `${row.pct * 100}%`,
+                      width: `${row.pct * 100}%`,
+                      flexShrink: 0,
                       background: row.tone,
                       transformOrigin: 'left',
                       borderRight: i < sourceRows.length - 1 ? '1px solid #F7F4EF' : 'none',
@@ -616,21 +619,24 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
 }
 
 function Section3Opportunities({ report, companyName }: { report: ReportJson; companyName: string }) {
-  // W1.1 — Calendly URL for the inline CTA on the prominent (top) card. Same query params as the
-  // closing arc CTA so analytics + Calendly prefill work identically across both touchpoints.
+  // W1.1 — Calendly URL for the inline CTA on the prominent (top) card.
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
-  // W1.5 — italic-pivot removed from this section (kept only on Hero, Dark band, Traffic mix, Closing arc)
+  // P1.6 — Don't sort by dollars (would break top_gap_summary's specific number references).
+  // Instead, frame explicitly: "ranked by build-readiness, not dollar size" — addresses the
+  // visual "wait, why is #2 a bigger number?" parse without breaking Claude's strategic order.
+  const opps = report.opportunities;
+  // W1.5 — italic-pivot kept on this section header (restored post-feedback)
   return (
     <Section
       id="opportunities"
-      kicker={`${report.opportunities.length} Opportunities`}
+      kicker={`${opps.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
-        Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost. Tap any to expand.
+        Ranked by build-readiness, not dollar size. Each gap is sourced from a specific signal we observed. Dollar values assume mid-tier ops cost ($75–$120/hr loaded). Tap any to expand.
       </SerifBody>
       <div className="space-y-2">
-        {report.opportunities.map((opp, i) => (
+        {opps.map((opp, i) => (
           <OpportunityCard
             key={i}
             opportunity={opp}
@@ -638,6 +644,7 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
             prominent={i === 0}
             inlineCtaHref={i === 0 ? calendlyUrl : undefined}
             collapsibleByDefault={i > 0}
+            collapsedCount={i === 1 && opps.length > 1 ? opps.length - 1 : undefined}
           />
         ))}
       </div>
@@ -941,7 +948,10 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             </p>
             <p style={{
               fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic',
-              fontSize: 'clamp(7rem, 14vw, 12rem)', lineHeight: 0.92,
+              // P2.14 — was clamp(7rem, 14vw, 12rem). Hero score caps at 7rem; dark band was 1.7×
+              // bigger which read as a re-statement. Now closer to 1.3× — still the visual climax
+              // of the dark band, but felt as the same number, not a different one.
+              fontSize: 'clamp(5.5rem, 11vw, 9rem)', lineHeight: 0.92,
               letterSpacing: '-0.04em', color: scoreColor, marginTop: 12,
               fontVariantNumeric: 'tabular-nums',
             }}>
@@ -1209,13 +1219,19 @@ function SectionMethodology() {
 
   return (
     <section className="py-12 lg:py-16 max-w-3xl">
+      {/* P1.7 — surface the reciprocity payoff. The collapsible was buried; 95% of readers never
+          opened it. Always-visible 1-liner names the source count + model so the credibility
+          signal lands before the click. The full source breakdown stays behind the disclosure. */}
+      <p className="mb-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)' }}>
+        Built from <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>14 public sources</strong>, synthesized by Claude Opus 4.7, reviewed by Ivan before shipping.
+      </p>
       <details className="group">
         <summary
           className="cursor-pointer inline-flex items-center gap-2 list-none transition-colors"
           style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}
         >
           <span className="transition-transform group-open:rotate-90" aria-hidden style={{ display: 'inline-block', fontSize: '10px' }}>▸</span>
-          View methodology + sources
+          See sources + what we couldn't see
         </summary>
 
         <div className="mt-8 space-y-8">
@@ -1310,7 +1326,8 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
       <div className="max-w-3xl">
         <Kicker>Your Move</Kicker>
 
-        {/* Verdict headline */}
+        {/* P1.8 — pivot from "Your highest-priority gap is X" (which restated the priority block
+            verbatim) to action framing. The closing arc's job is the move, not the gap re-statement. */}
         <h2
           className="mt-6 mb-6"
           style={{
@@ -1322,17 +1339,22 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             color: '#1A1A1A',
           }}
         >
-          Your highest-priority gap is{' '}
-          <Italic highlight>{report.top_gap_title}</Italic>.
+          Two ways to <Italic highlight>scope this</Italic>.
         </h2>
 
-        <SerifBody large className="mb-10 max-w-xl"><Emphasized>{report.top_gap_summary}</Emphasized></SerifBody>
+        <SerifBody large className="mb-10 max-w-xl">
+          <span style={{ color: 'rgba(26,26,26,0.8)' }}>
+            One you can ship by Friday on your own. One that turns the whole scan into a 90-day plan with build sequence + ROI model. Both start below.
+          </span>
+        </SerifBody>
 
-        {/* Monday move — the week-1 action, folded inline */}
+        {/* P0.2 — Monday move now framed explicitly as the QUICK WIN, distinct from the
+            biggest-gap verdict above. Reader gets two complementary actions: the easiest tactical
+            ship + the strategic priority. No more contradiction. */}
         {w && (
           <div className="mb-10 max-w-2xl px-6 lg:px-8 py-7 lg:py-8 -mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
             <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-              Monday move
+              Quick win you can ship this week
             </p>
             <h3 style={{
               fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
@@ -1346,14 +1368,11 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
                 {w.tools.map((t) => <Chip key={t} label={t} variant="found" />)}
               </div>
             )}
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+              The bigger play (your <strong style={{ color: '#1A1A1A', fontWeight: 600, fontStyle: 'normal' }}>#1 gap</strong> + the rest of the system) lives in the Assessment below.
+            </p>
           </div>
         )}
-
-        <SerifBody className="mb-8 max-w-xl">
-          <span style={{ color: 'rgba(26,26,26,0.7)' }}>
-            The Monday move buys time. The Agent-Ready Assessment turns this whole scan into a 90-day plan: tool selection, build sequence, and ROI model specific to your team.
-          </span>
-        </SerifBody>
 
         {/* Authority chain — who Ivan is, why this scan was credible */}
         <div className="mb-10 max-w-xl flex items-start gap-4 py-5 border-t border-b border-[color:var(--color-hairline)]">
@@ -1392,21 +1411,30 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             <ClientCard
               name="BNP Paribas Fortis"
               domain="bnpparibasfortis.be"
-              outcome={<>Internal automation build in days, not quarters. <span style={{ fontStyle: 'italic', color: 'rgba(26,26,26,0.55)' }}>— Michel de Wachter</span></>}
+              outcome="Internal automation build delivered in days, not quarters. Repeat-hire on the same day."
             />
           </div>
         </div>
 
-        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
+        {/* P2.13 — price anchor: connect the dollar leakage above to the cost of fixing it.
+            Lifts the price line from "$2,000" (which floats) to a value framing the buyer can do
+            the math on. The number $2,000 < the lowest opportunity card's monthly cost. */}
+        <p className="mb-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+          Costs less than the smallest opportunity above. Pays back inside the first month if even one ships.
+        </p>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        {/* P1.10 — free-call CTA gets equal visual gravity. Was a tight italic underline tucked
+            beside the paid button (read as apology). Now its own line below, with a hairline rule
+            separating, in body serif at near-equal weight. Cold prospects deserve a real on-ramp. */}
+        <div className="flex flex-col gap-5">
           <a
             href={calendlyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2.5 px-7 py-3.5"
+            className="inline-flex items-center justify-center sm:justify-start gap-2.5 px-7 py-4 self-start"
             style={{
               fontFamily: BODY_SERIF,
               fontWeight: 600,
@@ -1417,25 +1445,28 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           >
             Book your Agent-Ready Assessment <ArrowRight size={18} />
           </a>
-          {/* Free-call alternative — for cold prospects not ready to commit $2K cold.
-              Different utm_content so we can track conversion against the paid path. */}
-          <a
-            href={`${CALENDLY_BASE}?utm_source=scan&utm_content=free-walkthrough-${encodeURIComponent(companyName)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-baseline gap-1.5 group transition-colors"
-            style={{
-              fontFamily: BODY_SERIF,
-              fontSize: '15px',
-              fontStyle: 'italic',
-              color: 'var(--color-accent)',
-              textDecoration: 'underline',
-              textUnderlineOffset: '4px',
-              textDecorationColor: 'rgba(76,110,61,0.4)',
-            }}
-          >
-            Or talk first — book a free 30-min walkthrough <ArrowRight className="w-3.5 h-3.5 self-center transition-transform group-hover:translate-x-0.5" />
-          </a>
+          <div className="pt-5 border-t border-[color:var(--color-hairline)] flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+              Not ready to commit
+            </span>
+            <a
+              href={`${CALENDLY_BASE}?utm_source=scan&utm_content=free-walkthrough-${encodeURIComponent(companyName)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-baseline gap-1.5 group transition-colors self-start"
+              style={{
+                fontFamily: BODY_SERIF,
+                fontWeight: 600,
+                fontSize: '16px',
+                color: 'var(--color-accent)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '5px',
+                textDecorationColor: 'rgba(76,110,61,0.45)',
+              }}
+            >
+              Book a free 30-min walkthrough <ArrowRight className="w-4 h-4 self-center transition-transform group-hover:translate-x-0.5" />
+            </a>
+          </div>
         </div>
       </div>
     </section>

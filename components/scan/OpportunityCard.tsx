@@ -13,6 +13,8 @@ interface Props {
   inlineCtaHref?: string;
   /** When true, render as a collapsed summary row that expands on click. Top card uses prominent (always full); cards 2-5 use collapsibleByDefault. */
   collapsibleByDefault?: boolean;
+  /** P0.4 — count microcopy: when set, this card renders a "+N more · click to expand" header above the row to signal there are collapsed siblings. Only set on the FIRST collapsible card (typically index 1). */
+  collapsedCount?: number;
 }
 
 const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
@@ -21,7 +23,7 @@ const MONO = '"IBM Plex Mono", monospace';
 const EASE = [0.22, 0.84, 0.36, 1] as const;
 
 export const OpportunityCard: React.FC<Props> = ({
-  opportunity, index, prominent = false, inlineCtaHref, collapsibleByDefault = false,
+  opportunity, index, prominent = false, inlineCtaHref, collapsibleByDefault = false, collapsedCount,
 }) => {
   const [expanded, setExpanded] = useState(!collapsibleByDefault);
 
@@ -41,6 +43,14 @@ export const OpportunityCard: React.FC<Props> = ({
         transition={{ duration: 0.5, ease: EASE, delay: Math.min(index, 4) * 0.06 }}
         className="border-t border-[color:var(--color-hairline)]"
       >
+        {/* P0.4 — count microcopy on the FIRST collapsed card. Signals to the reader that
+            the rows below are interactive and there are N hidden details. Without this,
+            UX + Visual specialists both flagged the affordance as too quiet. */}
+        {collapsedCount != null && collapsedCount > 0 && (
+          <p className="pt-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            +{collapsedCount} more · click any to expand
+          </p>
+        )}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
