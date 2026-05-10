@@ -969,6 +969,11 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
 
           {/* Right: 5 breakdown rows. Wider, calmer than the old version. */}
           <div className="space-y-7 lg:pt-2">
+            {/* Color key — quiet 1-liner so the reader knows sage = strength, coral = gap.
+                IA + Visual specialists both flagged the page uses 3 semantic colors with no key. */}
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.45)', marginBottom: -4 }}>
+              <span style={{ color: '#7FA868' }}>● Sage</span> = strength &nbsp; <span style={{ color: '#D89254' }}>● Warm</span> = gap
+            </p>
             {cats.map(({ key, label }) => {
               const c = sb[key];
               if (!c) return null;
@@ -1411,7 +1416,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             <ClientCard
               name="BNP Paribas Fortis"
               domain="bnpparibasfortis.be"
-              outcome="Conversational Ops AI agent for internal teams. Shipped in days, not quarters."
+              outcome="Conversational Ops AI agent for internal teams."
             />
           </div>
         </div>
@@ -1731,21 +1736,25 @@ const ScanReportPage: React.FC = () => {
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             AI Opportunity Scan · {companyName}
           </span>
+          {/* Mobile: tighter CTA so it doesn't compete with the brand H1 below at 390px (Visual flag).
+              Desktop: full label. Same destination either way. */}
           <a
             href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=scan`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-4"
+            className="inline-flex items-center justify-center gap-2 px-3 sm:px-4"
             style={{
               fontFamily: BODY_SERIF,
               fontSize: '14px',
               fontWeight: 600,
               backgroundColor: '#1A1A1A',
               color: '#F7F4EF',
-              minHeight: 44,
+              minHeight: 40,
             }}
           >
-            Book your Assessment <ArrowRight size={14} />
+            <span className="sm:hidden">Book</span>
+            <span className="hidden sm:inline">Book your Assessment</span>
+            <ArrowRight size={14} />
           </a>
         </div>
       </header>
