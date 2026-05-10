@@ -564,11 +564,11 @@ const AgentReadySection: React.FC = () => (
           maxWidth: '22ch',
         }}
       >
-        Four preconditions.<br />
+        What does it mean<br />
         <span style={{ fontStyle: 'italic' }}>
-          If they're all true,{' '}
+          to be{' '}
           <span style={{ position: 'relative', display: 'inline-block' }}>
-            you're Agent-Ready.
+            Agent-Ready?
             <motion.span
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
