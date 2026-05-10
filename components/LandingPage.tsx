@@ -401,12 +401,16 @@ const PreconditionItem: React.FC<{
     target: ref,
     offset: ['start end', 'end start'],
   });
-  // Ghost numeral drifts horizontally as the item passes through viewport
-  const ghostX = useTransform(scrollYProgress, [0, 1], [-80, 80]);
+  // Lateral parallax — alternating direction per item creates visual rhythm
+  // (item 0 + 2 drift right, item 1 + 3 drift left)
+  const parallaxDir = index % 2 === 0 ? 1 : -1;
+  const ghostX = useTransform(scrollYProgress, [0, 1], [-280 * parallaxDir, 280 * parallaxDir]);
+  // Subtle counter-parallax on the visible numeral — feels like depth layers
+  const visibleNumeralX = useTransform(scrollYProgress, [0, 1], [20 * parallaxDir, -20 * parallaxDir]);
 
   return (
     <motion.div ref={ref} className="relative">
-      {/* Ghost numeral — centered + parallax-drifted */}
+      {/* Ghost numeral — drifts dramatically horizontally on scroll */}
       <div aria-hidden style={{
         position: 'absolute',
         top: '50%',
@@ -418,12 +422,12 @@ const PreconditionItem: React.FC<{
         <motion.div
           style={{
             x: ghostX,
-            fontSize: 'clamp(80px, 18vw, 240px)',
+            fontSize: 'clamp(120px, 22vw, 320px)',
             fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
             fontStyle: 'italic',
             fontWeight: 400,
             color: '#F7F4EF',
-            opacity: 0.018,
+            opacity: 0.06,
             lineHeight: 1,
             userSelect: 'none',
             whiteSpace: 'nowrap',
@@ -434,24 +438,30 @@ const PreconditionItem: React.FC<{
       </div>
 
       <div className="relative" style={{ zIndex: 1 }}>
-        {/* Numeral — slides in from left */}
+        {/* Numeral — entrance slides in from left, then continuous parallax counter-drift */}
         <motion.div
           initial={{ opacity: 0, x: -80 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.9, ease, delay: index * 0.06 }}
-          style={{
-            fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
-            lineHeight: 1,
-            letterSpacing: '-0.02em',
-            color: 'var(--color-accent-light)',
-            marginBottom: '18px',
-          }}
+          style={{ display: 'inline-block' }}
         >
-          {p.n}.
+          <motion.span
+            style={{
+              x: visibleNumeralX,
+              display: 'inline-block',
+              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              color: 'var(--color-accent-light)',
+              marginBottom: '18px',
+            }}
+          >
+            {p.n}.
+          </motion.span>
         </motion.div>
 
         {/* H3 — fades in from right with delay */}
