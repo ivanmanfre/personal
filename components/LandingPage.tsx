@@ -374,18 +374,18 @@ const PRECONDITIONS = [
   },
   {
     n: '02',
-    title: 'The playbook lives in one person’s head',
-    sub: 'Your senior operator makes the call without thinking. That means a playbook exists. It’s just never been written down. We write it down.',
+    title: 'Your best operator decides by instinct',
+    sub: 'Their calls are fast and consistent, but the logic has never been written down. The first job is documenting the rules. Then we automate them.',
   },
   {
     n: '03',
-    title: 'You can name the workflow eating the most hours',
-    sub: 'Don’t overthink it. You know which one. It’s the one your team reroutes around. The one you’d love to delete.',
+    title: 'Three people on your team name the same problem',
+    sub: 'Ask them: "what work do you wish would just go away?" If you get the same answer from three people, that workflow is the build target.',
   },
   {
     n: '04',
-    title: 'The work happens often enough to be worth encoding',
-    sub: 'It’s not a one-off project. The same workflow runs every week. Every client, every cycle, every billing run. That’s where automation compounds.',
+    title: 'The same work repeats every week',
+    sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever. One-off projects don\'t qualify.',
   },
 ];
 
