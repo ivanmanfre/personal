@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check, Share2 } from 'lucide-react';
 import { preconditions, PreconditionKey } from '../../lib/preconditions';
 import type { ScorecardResult as ResultType } from '../../lib/scorecard';
+import { IndustryKey, industryFlavorLine, industryByKey } from '../../lib/industries';
 
 const SUPABASE_BASE =
   import.meta.env.VITE_SUPABASE_URL || 'https://bjbvqvzbzczjbatgmccb.supabase.co';
@@ -26,10 +27,14 @@ interface Props {
   id?: string;
   /** 'submit' = post-quiz, show email gate. 'view' = visitor from share link, hide gate, show "take your own" CTA. */
   mode?: 'submit' | 'view';
+  /** Self-reported industry — drives the per-vertical weak-spot framing line under the verdict. */
+  industry?: IndustryKey | null;
   onRestart?: () => void;
 }
 
-const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onRestart }) => {
+const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', industry, onRestart }) => {
+  const flavorLine = industry ? industryFlavorLine(industry, result.weakest) : null;
+  const industryLabel = industry ? industryByKey(industry).label : null;
   const [email, setEmail] = useState('');
   const [submitState, setSubmitState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -132,6 +137,17 @@ const ScorecardResult: React.FC<Props> = ({ result, id, mode = 'submit', onResta
         <p className="text-lg md:text-xl text-ink-soft leading-relaxed mb-6 max-w-2xl">
           {result.recommendation}
         </p>
+
+        {flavorLine && industryLabel && (
+          <div className="mb-8 max-w-2xl border-l border-[color:var(--color-hairline-bold)] pl-5 py-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-2">
+              For {industryLabel}
+            </p>
+            <p className="text-base md:text-lg leading-relaxed text-black">
+              {flavorLine}
+            </p>
+          </div>
+        )}
 
         {result.verdict === 'agent_ready' && (
           <div className="mb-10 max-w-2xl border-l border-accent pl-5 py-1">

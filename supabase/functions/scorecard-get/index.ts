@@ -1,5 +1,5 @@
 // Public sanitized read of a scorecard result by id.
-// GET ?id=:uuid -> { id, scores, total, verdict, weakest_keys, share_count }
+// GET ?id=:uuid -> { id, scores, total, verdict, industry, weakest_keys, share_count }
 // No email, no UTM, no referrer leaked. Used by:
 //   1. SPA result viewer at /scorecard/result/:id
 //   2. Cloudflare Worker at share.ivanmanfredi.com for OG meta + image rendering
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
   const { data, error } = await sb
     .from("free_diagnostics")
-    .select("id, scores, total, verdict, share_count")
+    .select("id, scores, total, verdict, industry, share_count")
     .eq("id", id)
     .maybeSingle();
 
@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
     scores,
     total: data.total,
     verdict: data.verdict,
+    industry: data.industry ?? null,
     weakest_keys,
     share_count: data.share_count ?? 0,
   });

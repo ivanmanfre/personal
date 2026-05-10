@@ -40,21 +40,21 @@ const VERDICT_COPY: Record<Verdict, Omit<ScorecardResult, 'scores' | 'total' | '
   agent_ready: {
     verdictLabel: 'Agent-Ready',
     recommendation:
-      "You meet the four preconditions. The Scorecard tells you the verdict; the Blueprint maps the deployment — sequenced builds, costed gaps, and decision logic for the first project, in one week.",
+      "All four preconditions are in place — the system you'd ship onto would actually hold the agent. The Scorecard tells you the verdict; the Blueprint maps the deployment — sequenced builds, costed gaps, and decision logic for the first project, in one week.",
     ctaLabel: 'Build your Blueprint',
     ctaHref: '/assessment',
   },
   close: {
     verdictLabel: 'Close',
     recommendation:
-      'One or two preconditions need work. The Blueprint surfaces exactly which gaps to close before deploying.',
+      "One or two preconditions short of shipping cleanly. Build now and you'll spend the next quarter fighting the gap instead of compounding the win — the Blueprint surfaces exactly which gaps to close, in what order, before any code lands.",
     ctaLabel: 'Build your Blueprint',
     ctaHref: '/assessment',
   },
   foundation: {
     verdictLabel: 'Foundation first',
     recommendation:
-      'Foundation work first. Let\'s prioritize before any AI build, so the system you ship actually holds.',
+      "An agent shipped onto this stack would break in production within weeks, and the team would be back where they started — minus the build cost. Foundation work first. Let's prioritize before any AI build, so the system you ship actually holds.",
     ctaLabel: 'Book a 30-min call',
     ctaHref: '/start',
   },

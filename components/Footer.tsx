@@ -42,7 +42,8 @@ const Footer: React.FC = () => {
   return (
     <footer
       id="newsletter"
-      className="border-t pt-24 pb-10 relative z-10"
+      data-site-footer
+      className="site-footer border-t pt-24 pb-10 relative z-10"
       style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
     >
       <div className="container mx-auto px-8 max-w-5xl">

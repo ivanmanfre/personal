@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { ScoreMap, scoreCard, ScorecardResult as ResultType } from '../lib/scorecard';
+import { IndustryKey } from '../lib/industries';
 import ScorecardResult from './scorecard/ScorecardResult';
 
 const SUPABASE_BASE =
@@ -15,6 +16,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 interface LocationState {
   justSubmitted?: boolean;
   scores?: ScoreMap;
+  industry?: IndustryKey | null;
 }
 
 const ScorecardResultViewerPage: React.FC = () => {
@@ -25,6 +27,7 @@ const ScorecardResultViewerPage: React.FC = () => {
   const [result, setResult] = useState<ResultType | null>(
     state.scores ? scoreCard(state.scores) : null
   );
+  const [industry, setIndustry] = useState<IndustryKey | null>(state.industry ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(!result);
 
@@ -56,6 +59,7 @@ const ScorecardResultViewerPage: React.FC = () => {
         const data = await res.json();
         if (cancelled) return;
         setResult(scoreCard(data.scores as ScoreMap));
+        if (data.industry) setIndustry(data.industry as IndustryKey);
       } catch (err) {
         if (cancelled) return;
         console.error('scorecard-get failed', err);
@@ -139,6 +143,7 @@ const ScorecardResultViewerPage: React.FC = () => {
             <ScorecardResult
               result={result}
               id={id}
+              industry={industry}
               mode={state.justSubmitted ? 'submit' : 'view'}
             />
           )}

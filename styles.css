@@ -104,6 +104,13 @@ textarea:focus-visible {
   border-radius: var(--radius-sm);
 }
 
+/* Hide the global site footer when a focused flow (e.g. /scorecard quiz)
+   sets `body.hide-site-footer`. Keeps the funnel from bleeding into the
+   newsletter capture below the fold. */
+body.hide-site-footer .site-footer {
+  display: none;
+}
+
 /* Editorial portrait regrade - desaturate heavily (kill the green backdrop),
    warm undertone, lift contrast. Without real reshoot this CSS filter
    is what takes the green-gradient studio portrait and tones it toward

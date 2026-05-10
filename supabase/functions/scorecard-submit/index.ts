@@ -1,5 +1,5 @@
 // Free Agent-Ready Scorecard submission handler.
-// POST { scores, verdict, email?, referrer?, utm? } -> inserts into free_diagnostics.
+// POST { scores, verdict, industry?, email?, referrer?, utm? } -> inserts into free_diagnostics.
 // If SCORECARD_FOLLOWUP_WEBHOOK_URL env var is set AND email is present,
 // fires that webhook with the row payload (used by n8n to send the 30-day roadmap).
 
@@ -23,6 +23,16 @@ const PRECONDITION_KEYS = [
 
 const VALID_VERDICTS = new Set(["agent_ready", "close", "foundation"]);
 
+const VALID_INDUSTRIES = new Set([
+  "professional_services",
+  "agency_consulting",
+  "financial_services",
+  "property_real_estate",
+  "ecommerce_retail",
+  "solar_energy",
+  "other",
+]);
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: CORS });
 }
@@ -44,6 +54,7 @@ Deno.serve(async (req) => {
   let body: {
     scores?: unknown;
     verdict?: string;
+    industry?: string;
     email?: string;
     referrer?: string;
     utm?: Record<string, string>;
@@ -63,6 +74,11 @@ Deno.serve(async (req) => {
   if (body.email && (typeof body.email !== "string" || !body.email.includes("@") || body.email.length > 320)) {
     return json({ error: "invalid email" }, 400);
   }
+  if (body.industry !== undefined && body.industry !== null) {
+    if (typeof body.industry !== "string" || !VALID_INDUSTRIES.has(body.industry)) {
+      return json({ error: "invalid industry" }, 400);
+    }
+  }
 
   const scores = body.scores as Record<string, number>;
   const total = PRECONDITION_KEYS.reduce((sum, k) => sum + scores[k], 0);
@@ -77,6 +93,7 @@ Deno.serve(async (req) => {
     scores,
     total,
     verdict: body.verdict,
+    industry: body.industry ?? null,
     referrer: body.referrer ?? null,
     utm: body.utm ?? null,
   };
