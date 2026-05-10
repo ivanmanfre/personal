@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useWorkflowStats } from '../../../hooks/useWorkflowStats';
 import { useContentPipeline } from '../../../hooks/useContentPipeline';
 import { useOutreachPipeline } from '../../../hooks/useOutreachPipeline';
 import { useClientMonitoring } from '../../../hooks/useClientMonitoring';
 import { useLeads } from '../../../hooks/useLeads';
+import { supabase } from '../../../lib/supabase';
+import { dashboardAction } from '../../../lib/dashboardActions';
 import {
   HeadRow, Pulse, PulseCell, SectionLabel, ActionGrid, ActionCard,
   KpiRow, KpiTile, RowList, Row, ClientRow, Marginalia,
@@ -22,10 +25,14 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
   }, []);
 
   const { workflows, stats: wfStats, loading: wfLoading } = useWorkflowStats();
-  const { posts, loading: postsLoading } = useContentPipeline(userTz);
+  const { posts, loading: postsLoading, refresh: refreshPosts } = useContentPipeline(userTz);
   const { stats: orStats, loading: orLoading } = useOutreachPipeline(userTz);
-  const { clients, errors, getClientHealth, loading: clLoading } = useClientMonitoring();
+  const { clients, errors, getClientHealth, loading: clLoading, refresh: refreshClients } = useClientMonitoring();
   const { leads, loading: leadsLoading } = useLeads();
+
+  // Track manually-dismissed action items so they disappear immediately
+  // (don't wait for the data refresh to remove them).
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   // Derived: pulse cells (workflows / posting / leadMagnets / agent)
   const pulse = useMemo(() => {
@@ -49,49 +56,124 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
     };
   }, [wfStats, posts, errors]);
 
-  // Action Required: top 3 highest-severity unresolved across content + workflows + clients
-  const actions = useMemo(() => {
-    const items: Array<{ verb: string; when: string; head: React.ReactNode; body: string; warn?: boolean; cta?: string; onClick?: () => void }> = [];
+  // Action handlers — actually do the thing, then refresh + show toast
+  const retryFailedPost = async (postId: string) => {
+    try {
+      await dashboardAction('scheduled_posts', postId, 'status', 'pending');
+      // Bump scheduled_at to 5 min from now so the publisher picks it up
+      const newTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      await dashboardAction('scheduled_posts', postId, 'scheduled_at', newTime);
+      toast.success('Queued for retry in 5 min');
+      await refreshPosts();
+    } catch (err) {
+      toast.error('Retry failed: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
-    // Failed posts
-    const failedPosts = posts.filter(p => p.status === 'failed').slice(0, 1);
-    failedPosts.forEach(p => items.push({
-      verb: 'Replay',
-      when: new Date(p.scheduledAt).toLocaleDateString(),
-      head: <>Post failed: <em>"{p.postText.slice(0, 30)}…"</em></>,
-      body: p.errorMessage || 'Publish failed.',
-      cta: 'Retry now →',
-      onClick: () => onNavigate?.('content', 'pipeline'),
-    }));
+  const clearStuckPost = async (postId: string) => {
+    try {
+      await dashboardAction('scheduled_posts', postId, 'status', 'failed');
+      toast.success('Status cleared (now retryable)');
+      await refreshPosts();
+    } catch (err) {
+      toast.error('Clear failed: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
-    // Stuck posts
-    const stuckPosts = posts.filter(p => p.status === 'posting').slice(0, 1);
-    stuckPosts.forEach(p => {
-      const stuckDays = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24));
-      items.push({
-        verb: 'Reset',
-        when: `Stuck ${stuckDays}d`,
-        head: <>Post locked in <em>"posting"</em></>,
-        body: 'Status never cleared. Manual reset required.',
-        cta: 'Clear status →',
-        onClick: () => onNavigate?.('content', 'pipeline'),
+  const dismissPost = async (postId: string) => {
+    setDismissed(prev => new Set(prev).add(`post:${postId}`));
+    try {
+      await dashboardAction('scheduled_posts', postId, 'status', 'cancelled');
+      await refreshPosts();
+    } catch (err) {
+      toast.error('Dismiss failed: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const resolveError = async (errorId: string) => {
+    setDismissed(prev => new Set(prev).add(`err:${errorId}`));
+    try {
+      await dashboardAction('client_workflow_errors', errorId, 'is_resolved', 'true');
+      await refreshClients();
+    } catch (err) {
+      toast.error('Resolve failed: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  // Action Required: only items needing attention from the LAST 14 DAYS.
+  // Anything older is either stale or already in the noise — surface in
+  // detail panels, don't clutter the front page.
+  const FRESHNESS_DAYS = 14;
+  const freshnessCutoff = Date.now() - FRESHNESS_DAYS * 24 * 60 * 60 * 1000;
+
+  type ActionItem = {
+    key: string;
+    verb: string;
+    when: string;
+    head: React.ReactNode;
+    body: string;
+    warn?: boolean;
+    primary: { label: string; onClick: () => void };
+    secondary?: { label: string; onClick: () => void };
+  };
+
+  const actions: ActionItem[] = useMemo(() => {
+    const items: ActionItem[] = [];
+
+    // Failed posts — fresh only
+    posts
+      .filter(p => p.status === 'failed')
+      .filter(p => new Date(p.scheduledAt).getTime() > freshnessCutoff)
+      .filter(p => !dismissed.has(`post:${p.id}`))
+      .slice(0, 1)
+      .forEach(p => items.push({
+        key: `post-fail:${p.id}`,
+        verb: 'Replay',
+        when: new Date(p.scheduledAt).toLocaleDateString(),
+        head: <>Post failed: <em>"{p.postText.slice(0, 40)}…"</em></>,
+        body: (p.errorMessage || 'Publish failed.').slice(0, 140),
+        primary: { label: 'Retry in 5min →', onClick: () => retryFailedPost(p.id) },
+        secondary: { label: 'Dismiss', onClick: () => dismissPost(p.id) },
+      }));
+
+    // Stuck "posting" — fresh only (same 14d window)
+    posts
+      .filter(p => p.status === 'posting')
+      .filter(p => new Date(p.createdAt).getTime() > freshnessCutoff)
+      .filter(p => !dismissed.has(`post:${p.id}`))
+      .slice(0, 1)
+      .forEach(p => {
+        const stuckDays = Math.floor((Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+        items.push({
+          key: `post-stuck:${p.id}`,
+          verb: 'Reset',
+          when: `Stuck ${stuckDays}d`,
+          head: <>Post locked in <em>"posting"</em></>,
+          body: 'Status never cleared. Reset to retryable, or dismiss.',
+          primary: { label: 'Clear status →', onClick: () => clearStuckPost(p.id) },
+          secondary: { label: 'Dismiss', onClick: () => dismissPost(p.id) },
+        });
       });
-    });
 
-    // High-severity client errors
-    const highSev = errors.filter(e => !e.isResolved && e.severity === 'high').slice(0, 1);
-    highSev.forEach(e => items.push({
-      verb: 'Fix',
-      when: 'Today',
-      head: <>{e.workflowName}: <em>{e.errorMessage?.slice(0, 40) || 'error'}</em></>,
-      body: e.aiAnalysis?.slice(0, 80) || 'High-severity error needs attention.',
-      warn: true,
-      cta: 'Open log →',
-      onClick: () => onNavigate?.('clients'),
-    }));
+    // High-severity client errors — fresh only, unresolved
+    errors
+      .filter(e => !e.isResolved && e.severity === 'high')
+      .filter(e => e.createdAt && new Date(e.createdAt).getTime() > freshnessCutoff)
+      .filter(e => !dismissed.has(`err:${e.id}`))
+      .slice(0, 1)
+      .forEach(e => items.push({
+        key: `err:${e.id}`,
+        verb: 'Fix',
+        when: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : 'recent',
+        head: <>{e.workflowName}: <em>{(e.errorMessage || 'error').slice(0, 50)}</em></>,
+        body: (e.aiAnalysis || 'High-severity error needs attention.').slice(0, 140),
+        warn: true,
+        primary: { label: 'Open log →', onClick: () => onNavigate?.('clients') },
+        secondary: { label: 'Mark resolved', onClick: () => resolveError(e.id) },
+      }));
 
     return items.slice(0, 3);
-  }, [posts, errors, onNavigate]);
+  }, [posts, errors, onNavigate, dismissed, freshnessCutoff]);
 
   // Upcoming posts for content panel
   const upcoming = useMemo(() => {
@@ -144,23 +226,28 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
 
       {actions.length > 0 ? (
         <>
-          <SectionLabel label="Action Required" alert count={actions.length} />
+          <SectionLabel label="Action Required" alert count={actions.length} hint="Last 14 days only" />
           <ActionGrid>
-            {actions.map((a, i) => (
-              <ActionCard
-                key={i}
-                verb={a.verb}
-                when={a.when}
-                head={a.head}
-                body={a.body}
-                warn={a.warn}
-                cta={a.cta ? { label: a.cta, onClick: a.onClick } : undefined}
-              />
+            {actions.map(a => (
+              <div key={a.key} className={`dv-action-card ${a.warn ? 'dv-action-card--warn' : ''}`}>
+                <div className="dv-action-card-verb-row">
+                  <span className="dv-action-card-verb">{a.verb}</span>
+                  <span className="dv-action-card-when">{a.when}</span>
+                </div>
+                <div className="dv-action-card-head">{a.head}</div>
+                <div className="dv-action-card-body">{a.body}</div>
+                <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button className="dv-btn dv-btn--good" onClick={a.primary.onClick}>{a.primary.label}</button>
+                  {a.secondary && (
+                    <button className="dv-btn dv-btn--dim" onClick={a.secondary.onClick}>{a.secondary.label}</button>
+                  )}
+                </div>
+              </div>
             ))}
           </ActionGrid>
         </>
       ) : !isLoading ? (
-        <Marginalia>All clear. No urgent items.</Marginalia>
+        <Marginalia>All clear. No urgent items in the last 14 days.</Marginalia>
       ) : null}
 
       <SectionLabel label="At a glance" />
