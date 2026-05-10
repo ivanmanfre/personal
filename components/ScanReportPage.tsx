@@ -627,7 +627,7 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
       title="Where time quietly leaks."
     >
       <SerifBody className="mb-10 max-w-2xl">
-        Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost.
+        Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost. Tap any to expand.
       </SerifBody>
       <div className="space-y-2">
         {report.opportunities.map((opp, i) => (
@@ -637,6 +637,7 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
             index={i}
             prominent={i === 0}
             inlineCtaHref={i === 0 ? calendlyUrl : undefined}
+            collapsibleByDefault={i > 0}
           />
         ))}
       </div>

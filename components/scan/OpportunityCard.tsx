@@ -1,7 +1,7 @@
 // components/scan/OpportunityCard.tsx
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Plus, Minus } from 'lucide-react';
 import type { Opportunity } from '../../lib/scanTypes';
 import { Emphasized } from '../ScanReportPage';
 
@@ -11,26 +11,132 @@ interface Props {
   prominent?: boolean;
   /** Calendly URL for the prominent card's editorial-link CTA (W1.1). Only rendered when prominent is true. */
   inlineCtaHref?: string;
+  /** When true, render as a collapsed summary row that expands on click. Top card uses prominent (always full); cards 2-5 use collapsibleByDefault. */
+  collapsibleByDefault?: boolean;
 }
 
 const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
 const BODY_SERIF = '"Source Serif 4", Georgia, serif';
 const MONO = '"IBM Plex Mono", monospace';
+const EASE = [0.22, 0.84, 0.36, 1] as const;
 
-export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent = false, inlineCtaHref }) => {
+export const OpportunityCard: React.FC<Props> = ({
+  opportunity, index, prominent = false, inlineCtaHref, collapsibleByDefault = false,
+}) => {
+  const [expanded, setExpanded] = useState(!collapsibleByDefault);
+
   const titleSize = prominent ? 'clamp(2rem, 3.6vw, 3rem)' : 'clamp(1.4rem, 2.2vw, 1.75rem)';
   const evidenceSize = prominent ? '19px' : '17px';
-  // W1.7 — money column hierarchy: dollar figure is the buying argument, must dominate visually.
-  // Hours demoted to a small mono microcopy line above (was a competing italic numeral).
-  const costSize = prominent ? 'clamp(3.5rem, 6vw, 5rem)' : 'clamp(2.25rem, 4vw, 3.25rem)';
+  // W1.7 — money column hierarchy: dollar figure dominates.
+  const costSize = prominent ? 'clamp(3.5rem, 6vw, 5rem)' : 'clamp(2rem, 3.4vw, 2.75rem)';
 
+  // Collapsed row: kicker + title + dollar figure on the right. Click row to expand.
+  // Top card (prominent) is never collapsible; renders full content always.
+  if (collapsibleByDefault) {
+    return (
+      <motion.article
+        initial={{ y: 12 }}
+        whileInView={{ y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.5, ease: EASE, delay: Math.min(index, 4) * 0.06 }}
+        className="border-t border-[color:var(--color-hairline)]"
+      >
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="w-full grid grid-cols-[1fr_auto_24px] gap-4 sm:gap-8 items-baseline py-5 sm:py-6 text-left transition-colors hover:bg-[rgba(76,110,61,0.04)] focus:outline-none focus-visible:bg-[rgba(76,110,61,0.06)] -mx-3 px-3"
+        >
+          <div className="min-w-0">
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              {`Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
+            </p>
+            <h3 style={{
+              fontFamily: SERIF, fontWeight: 400,
+              fontSize: 'clamp(1.25rem, 2vw, 1.6rem)',
+              lineHeight: 1.15, letterSpacing: '-0.015em',
+              color: '#1A1A1A', marginTop: 6,
+            }}>
+              {opportunity.title}
+            </h3>
+          </div>
+          <p style={{
+            fontFamily: SERIF, fontStyle: 'italic',
+            fontSize: 'clamp(1.5rem, 2.4vw, 2rem)', lineHeight: 1,
+            color: 'var(--color-accent)', whiteSpace: 'nowrap',
+          }}>
+            ${opportunity.estimated_monthly_cost.toLocaleString()}
+            <span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(26,26,26,0.55)', marginLeft: 6, fontStyle: 'normal' }}>/mo</span>
+          </p>
+          <span aria-hidden style={{ color: 'rgba(26,26,26,0.55)' }}>
+            {expanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              key="content"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.32, ease: EASE }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 pb-8 pt-2">
+                <div className="space-y-5 min-w-0">
+                  <div>
+                    <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 6 }}>
+                      Evidence
+                    </p>
+                    <blockquote style={{
+                      fontFamily: BODY_SERIF, fontSize: evidenceSize, lineHeight: 1.6,
+                      color: '#3D3D3B', fontStyle: 'italic',
+                      borderLeft: '2px solid var(--color-accent)', paddingLeft: '14px',
+                    }}>
+                      "<Emphasized>{opportunity.evidence}</Emphasized>"
+                    </blockquote>
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 6 }}>
+                      What replaces it
+                    </p>
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B' }}>
+                      <Emphasized>{opportunity.automation_solution}</Emphasized>
+                    </p>
+                  </div>
+                </div>
+                <aside className="lg:border-l lg:border-[color:var(--color-hairline)] lg:pl-8 space-y-4">
+                  <div>
+                    <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', color: 'rgba(26,26,26,0.55)', textTransform: 'uppercase' }}>
+                      {opportunity.estimated_weekly_hours}h / week of leverage lost
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                      ROI
+                    </p>
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B', marginTop: 4 }}>
+                      <Emphasized>{opportunity.roi_estimate}</Emphasized>
+                    </p>
+                  </div>
+                </aside>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.article>
+    );
+  }
+
+  // Prominent (top card) — always expanded, full-bleed sage tint, large numerals
   return (
     <motion.article
       initial={{ y: 18 }}
       whileInView={{ y: 0 }}
       whileHover={{ y: -2 }}
       viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.7, ease: [0.22, 0.84, 0.36, 1], delay: index * 0.12 }}
+      transition={{ duration: 0.7, ease: EASE, delay: index * 0.12 }}
       className={`grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 ${prominent ? 'py-14 my-2 px-6 lg:px-10 -mx-6 lg:-mx-10' : 'py-10 border-t border-[color:var(--color-hairline)]'}`}
       style={prominent ? {
         background: 'rgba(76,110,61,0.04)',
@@ -116,8 +222,7 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
         </div>
 
         {/* W1.1 — Editorial-link inline CTA on the prominent card only.
-            Quiet underlined sage text, not a button. Catches the prospect at arousal peak
-            (right after the highest-leverage opportunity) instead of waiting for the close. */}
+            Quiet underlined sage text, not a button. Catches the prospect at arousal peak. */}
         {prominent && inlineCtaHref && (
           <a
             href={inlineCtaHref}
