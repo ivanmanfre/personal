@@ -193,12 +193,12 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </h2>
 );
 
-const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({
-  kicker, title, children,
+const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode; id?: string }> = ({
+  kicker, title, children, id,
 }) => {
   const reduceMotion = useReducedMotion();
   return (
-    <motion.section {...inViewProps} className="py-16 lg:py-24">
+    <motion.section id={id} {...inViewProps} className="py-16 lg:py-24" style={{ scrollMarginTop: 80 }}>
       {/* Hairline sweep — paints in left-to-right when section enters viewport. */}
       <motion.div
         aria-hidden
@@ -316,7 +316,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section kicker="The Company" title={<>Who they are, <Italic>what they run on</Italic>.</>}>
+    <Section id="company" kicker="The Company" title={<>Who you are, <Italic>what you run on</Italic>.</>}>
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
       <div className="space-y-12 max-w-4xl">
         {/* 1. Description + facts strip */}
@@ -418,42 +418,26 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   );
 }
 
+// Compressed per CEO audit. Stats grid + geography + monthly-visit redundancy cut.
+// Kept: traffic source breakdown (still load-bearing per user) + top search queries.
 function SectionFundingTraffic({ report }: { report: ReportJson }) {
   const f = report.funding;
   const t = report.traffic;
-  // Build the list of stats that ACTUALLY have values — no "—" placeholders ever.
-  type Stat = { label: string; display: string };
-  const stats: Stat[] = [];
 
+  // Funding only — kept as a small inline strip when present (rare for service biz)
+  type Stat = { label: string; display: string };
+  const fundingStats: Stat[] = [];
   if (f?.total_funding_usd) {
     const v = f.total_funding_usd;
-    stats.push({ label: 'Total raised', display: v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K` });
+    fundingStats.push({ label: 'Total raised', display: v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K` });
   }
-  if (f?.last_round_type) stats.push({ label: 'Last round', display: f.last_round_type });
-  if (f?.last_round_date) stats.push({ label: 'Last round date', display: f.last_round_date });
+  if (f?.last_round_type) fundingStats.push({ label: 'Last round', display: f.last_round_type });
+  if (f?.last_round_date) fundingStats.push({ label: 'Last round date', display: f.last_round_date });
   if (f && Array.isArray(f.investors) && f.investors.length > 0) {
-    stats.push({ label: 'Investors', display: String(f.investors.length) });
+    fundingStats.push({ label: 'Investors', display: String(f.investors.length) });
   }
-  if (t?.monthly_visits) stats.push({ label: 'Monthly visits', display: t.monthly_visits.toLocaleString() });
-  if (t?.global_rank) stats.push({ label: 'Global rank', display: `#${t.global_rank.toLocaleString()}` });
-  if (t?.bounce_rate != null) stats.push({ label: 'Bounce rate', display: `${(t.bounce_rate * 100).toFixed(0)}%` });
-  if (t?.avg_visit_duration) {
-    const v = t.avg_visit_duration as unknown;
-    let display = '';
-    if (typeof v === 'number') {
-      // Fast SimilarWeb returns raw seconds (e.g. 53.32). Format as MM:SS.
-      const total = Math.round(v);
-      const m = Math.floor(total / 60);
-      const s = total % 60;
-      display = m > 0 ? `${m}m ${s}s` : `${s}s`;
-    } else {
-      display = String(v);
-    }
-    stats.push({ label: 'Avg visit', display });
-  }
-  if (t?.top_country) stats.push({ label: 'Top country', display: t.top_country });
 
-  // New traffic-context blocks (only shown when SimilarWeb returned them)
+  // Traffic source breakdown — load-bearing signal: high search + low paid = inbound engine, no AI optimization
   const sources = t?.traffic_sources;
   const sourceRows: Array<{ label: string; pct: number; tone: string }> = [];
   if (sources) {
@@ -465,116 +449,91 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
     push('Referrals',      sources.referrals, 'rgba(26,26,26,0.6)');
     push('Social',         sources.social, 'rgba(26,26,26,0.6)');
     push('Paid',           sources.paidReferrals, '#A85439');
-    push('Email',          sources.mail, 'rgba(26,26,26,0.6)');
   }
   const topKeywords = (t?.top_keywords || []).slice(0, 5);
-  const topCountries = (t?.top_countries || []).slice(0, 3);
 
-  // Hide section entirely if nothing populated
-  if (stats.length === 0 && sourceRows.length === 0 && topKeywords.length === 0) return null;
+  if (fundingStats.length === 0 && sourceRows.length === 0 && topKeywords.length === 0) return null;
+
+  // Editorial line: data-derived inference about the traffic mix
+  const searchPct = sources?.search ?? 0;
+  const paidPct = sources?.paidReferrals ?? 0;
+  const verdict =
+    searchPct > 0.40 && paidPct < 0.05
+      ? `${(searchPct * 100).toFixed(0)}% of traffic comes from search. Almost none from paid. Inbound engine running, not bought.`
+      : paidPct > 0.20
+      ? `${(paidPct * 100).toFixed(0)}% of traffic is paid. The funnel breathes through the wallet.`
+      : sourceRows.length > 0
+      ? `Traffic mix below. Where the visitors actually come from, not where the marketing budget assumes.`
+      : 'Traffic context.';
 
   return (
-    <Section kicker="The Numbers" title={<>The signals <Italic>behind the brand</Italic>.</>}>
-      {stats.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12 mb-16">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ y: 12 }}
-              whileInView={{ y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.7, ease: EASE, delay: i * 0.06 }}
-              className="border-l-2 border-[color:var(--color-hairline)] pl-4"
-            >
-              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                {s.label}
-              </p>
-              <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.25rem, 3.6vw, 3.25rem)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 8 }}>
-                <Scramble value={s.display} />
-              </p>
-            </motion.div>
+    <Section id="numbers" kicker="Traffic Mix" title={<>Where your <Italic>visitors come from</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl"><Emphasized>{`**${verdict}**`}</Emphasized></SerifBody>
+
+      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16">
+        {sourceRows.length > 0 && (
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+              Source breakdown
+            </p>
+            <div className="mt-6 space-y-4">
+              {sourceRows.map((row) => (
+                <div key={row.label}>
+                  <div className="flex items-baseline justify-between mb-1.5">
+                    <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{row.label}</span>
+                    <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: row.tone, fontVariantNumeric: 'tabular-nums' }}>
+                      {(row.pct * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div style={{ height: 2, background: 'rgba(26,26,26,0.08)' }}>
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      whileInView={{ scaleX: row.pct }}
+                      viewport={{ once: true, margin: '-30px' }}
+                      transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
+                      style={{ height: '100%', background: row.tone, transformOrigin: 'left' }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {topKeywords.length > 0 && (
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+              Top search queries
+            </p>
+            <ul className="mt-4 space-y-2">
+              {topKeywords.map((k) => (
+                <li key={k} style={{ fontFamily: BODY_SERIF, fontSize: '16px', color: '#1A1A1A', fontStyle: 'italic' }}>
+                  "{k}"
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Funding strip (rare for service biz, hidden when empty) */}
+      {fundingStats.length > 0 && (
+        <div className="mt-12 pt-8 border-t border-[color:var(--color-hairline)] flex flex-wrap gap-x-10 gap-y-4">
+          {fundingStats.map((s) => (
+            <div key={s.label}>
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{s.label}</p>
+              <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A', marginTop: 2 }}>{s.display}</p>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Traffic-source breakdown + keyword + country context (only when SimilarWeb returned them) */}
-      {(sourceRows.length > 0 || topKeywords.length > 0 || topCountries.length > 0) && (
-        <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16 pt-12 border-t border-[color:var(--color-hairline)]">
-          {sourceRows.length > 0 && (
-            <div>
-              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                Where the traffic comes from
-              </p>
-              <div className="mt-6 space-y-4">
-                {sourceRows.map((row) => (
-                  <div key={row.label}>
-                    <div className="flex items-baseline justify-between mb-1.5">
-                      <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{row.label}</span>
-                      <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: row.tone, fontVariantNumeric: 'tabular-nums' }}>
-                        {(row.pct * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    <div style={{ height: 2, background: 'rgba(26,26,26,0.08)' }}>
-                      <motion.div
-                        initial={{ scaleX: 0 }}
-                        whileInView={{ scaleX: row.pct }}
-                        viewport={{ once: true, margin: '-30px' }}
-                        transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
-                        style={{ height: '100%', background: row.tone, transformOrigin: 'left' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-10">
-            {topKeywords.length > 0 && (
-              <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                  Top search queries
-                </p>
-                <ul className="mt-4 space-y-2">
-                  {topKeywords.map((k) => (
-                    <li key={k} style={{ fontFamily: BODY_SERIF, fontSize: '16px', color: '#1A1A1A', fontStyle: 'italic' }}>
-                      "{k}"
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {topCountries.length > 0 && (
-              <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                  Audience geography
-                </p>
-                <div className="mt-4 space-y-1.5">
-                  {topCountries.map((c) => (
-                    <div key={c.countryName} className="flex items-baseline justify-between gap-3">
-                      <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{c.countryName}</span>
-                      <span style={{ fontFamily: MONO, fontSize: '12px', color: 'rgba(26,26,26,0.6)', fontVariantNumeric: 'tabular-nums' }}>
-                        {(c.visitsShare * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Source attribution: trust signal — every stat traces to a real provider */}
-      <p className="mt-12" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-        Sources: SimilarWeb (traffic) · Apollo (headcount + revenue) · DNS verification
-      </p>
       {f?.crunchbase_url && (
         <a
           href={f.crunchbase_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 mt-4 py-3 -my-3 transition-colors"
+          className="inline-flex items-center gap-1.5 mt-6 py-3 -my-3 transition-colors"
           style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}
           onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.7)')}
@@ -589,6 +548,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
+      id="opportunities"
       kicker={`${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
@@ -716,18 +676,31 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   };
 
   const all: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
-  (ads.google_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'google', creative: c }));
-  (ads.linkedin_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'linkedin', creative: c }));
-  (ads.meta_ads?.creatives || []).filter(isUsable).slice(0, 3).forEach(c => all.push({ platform: 'meta', creative: c }));
+  (ads.google_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'google', creative: c }));
+  (ads.linkedin_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'linkedin', creative: c }));
+  (ads.meta_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'meta', creative: c }));
   if (all.length === 0) return null;
+  // Trim to 2 sample creatives total per CEO audit — they're a sample, not a gallery
+  const sample = all.slice(0, 2);
+
+  // Synthesize the verdict line from data we already have. Uses platform counts + total creatives.
+  const platforms: string[] = [];
+  if (ads.google_ads?.detected || (ads.google_ads?.count ?? 0) > 0) platforms.push('Google');
+  if (ads.linkedin_ads?.detected || (ads.linkedin_ads?.count ?? 0) > 0) platforms.push('LinkedIn');
+  if (ads.meta_ads?.detected || (ads.meta_ads?.count ?? 0) > 0) platforms.push('Meta');
+  const totalCount = (ads.google_ads?.count ?? 0) + (ads.linkedin_ads?.count ?? 0) + (ads.meta_ads?.count ?? 0);
+  const platformsLine = platforms.length > 1 ? platforms.slice(0, -1).join(', ') + ' + ' + platforms[platforms.length - 1] : (platforms[0] ?? 'paid channels');
+  const cadenceLine = totalCount > 0
+    ? `${totalCount} active creatives across ${platformsLine}. Sample below.`
+    : `Active on ${platformsLine}. Sample below.`;
 
   return (
-    <Section kicker="Live Ad Activity" title={<>Where their <Italic>spend lands</Italic>.</>}>
-      <SerifBody className="mb-10 max-w-2xl">
-        Pulled live from Google, Meta, and LinkedIn ad libraries. Look at the rotation cadence and creative variety: that's the test velocity, or absence of it.
+    <Section id="ad-activity" kicker="Live Ad Activity" title={<>Where your <Italic>spend lands</Italic>.</>}>
+      <SerifBody className="mb-8 max-w-2xl">
+        <Emphasized>{`**${cadenceLine}**`}</Emphasized> Pulled live from public ad libraries. Look for repeated hooks: each rerun is a creative refresh you didn't run.
       </SerifBody>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {all.map((item, i) => (
+      <div className={`grid gap-5 ${sample.length === 1 ? 'grid-cols-1 max-w-xl' : 'grid-cols-1 sm:grid-cols-2'}`}>
+        {sample.map((item, i) => (
           <AdCreativeCard key={i} creative={item.creative} platform={item.platform} />
         ))}
       </div>
@@ -741,20 +714,20 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
 
   // P1 #13: "Unknown" reframed as a sales motion (loss-frame) rather than a non-statement
   const meta: Record<string, { label: string; suffix?: string; tone: string; description: string }> = {
-    early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'Actively integrating AI into operations. Ahead of the peer group.' },
-    on_par: { label: 'On Par.', tone: '#A85439', description: 'Awareness is there, but deployment lags behind leading firms.' },
-    behind: { label: 'Behind.', tone: '#9B2C2C', description: 'No AI tooling detected. Each month of delay compounds the gap.' },
+    early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'You are actively integrating AI into operations. Ahead of the peer group.' },
+    on_par: { label: 'On Par.', tone: '#A85439', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
+    behind: { label: 'Behind.', tone: '#9B2C2C', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
     unknown: {
       label: 'Unknown.',
       suffix: "and that's data.",
       tone: 'rgba(26,26,26,0.85)',
-      description: 'No verified AI provider, no LLM tooling in the public stack, no AI-themed posts in the last 30 days. Either the team is still scoping or the work is happening off-site. Both are gaps the Assessment closes.',
+      description: 'No verified AI provider, no LLM tooling in your public stack, no AI-themed posts in the last 30 days. Either your team is still scoping or the work is happening off-site. Both are gaps the Assessment closes.',
     },
   };
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+    <Section id="ai-adoption" kicker="AI Adoption" title={<>Where you sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -768,7 +741,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
               <Italic>
                 {anthropic_verified && 'Anthropic'}{anthropic_verified && openai_verified && ' + '}{openai_verified && 'OpenAI'}
               </Italic>{' '}
-              API usage. They're not experimenting. They're shipping.
+              API usage. You're not experimenting. You're shipping.
             </SerifBody>
           </div>
         )}
@@ -789,7 +762,7 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   const tooThin = ctx.trim().split(/\s+/).length < 30;
   if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section kicker="Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+    <Section id="competitive" kicker="Competitive Context" title={<>The <Italic>field you play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -855,7 +828,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
               letterSpacing: '-0.025em', color: '#F7F4EF', marginTop: 12,
             }}
           >
-            Where they're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where they're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
+            Where you're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where you're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
           </RevealHeadline>
         </div>
 
@@ -913,10 +886,42 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           </div>
         </div>
 
+        {/* AI posture — was a standalone section, folded in here per CEO audit (it's just a verdict line, not a full act) */}
+        <AiPostureRowDark report={report} />
+
         {/* Peer comparison — only when meaningfully different */}
         <PeerComparisonInlineDark report={report} />
       </div>
     </section>
+  );
+}
+
+// Dark-mode AI posture row — folded into the breakdown band.
+function AiPostureRowDark({ report }: { report: ReportJson }) {
+  const signal = report.company_snapshot.ai_adoption_signal;
+  const meta: Record<string, { label: string; tone: string; description: string }> = {
+    early_adopter: { label: 'Early Adopter.', tone: '#7FA868', description: 'You are actively integrating AI into operations. Ahead of the peer group.' },
+    on_par:        { label: 'On Par.',        tone: '#D89254', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
+    behind:        { label: 'Behind.',        tone: '#C76354', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
+    unknown:       { label: 'Unknown.',       tone: 'rgba(247,244,239,0.85)', description: "No verified AI provider, no LLM tooling in your public stack, no AI-themed posts in the last 30 days. Either your team is still scoping or the work is happening off-site." },
+  };
+  const m = meta[signal] ?? meta.unknown;
+  return (
+    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(247,244,239,0.12)' }}>
+      <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-12 items-baseline">
+        <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+          AI Posture
+        </p>
+        <div>
+          <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1, color: m.tone }}>
+            {m.label}
+          </p>
+          <p className="mt-2 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(247,244,239,0.78)' }}>
+            {m.description}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -953,9 +958,9 @@ function SectionContentSample({ report }: { report: ReportJson }) {
   const posts = report.linkedin_summary?.posts;
   if (!posts || posts.length === 0) return null;
   return (
-    <Section kicker="Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
+    <Section id="voice" kicker="Your Voice" title={<>What you're <Italic>publishing</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
-        Two recent LinkedIn posts, verbatim. Cadence matters more than content here.
+        Two of your most recent LinkedIn posts, verbatim. Cadence matters more than content here.
       </SerifBody>
       <div className="grid md:grid-cols-2 gap-6">
         {posts.slice(0, 2).map((p, i) => (
@@ -987,7 +992,7 @@ function SectionHiring({ report }: { report: ReportJson }) {
   const h = report.hiring;
   if (!h || (h.open_count === 0 && (!h.sample_titles || h.sample_titles.length === 0))) return null;
   return (
-    <Section kicker="Hiring" title={<>What they're <Italic>paying humans</Italic> to do.</>}>
+    <Section id="hiring" kicker="Hiring" title={<>What you're <Italic>paying humans</Italic> to do.</>}>
       <SerifBody className="mb-12 max-w-2xl">
         Each open seat is current evidence of a workflow that exists today. Some roles are core human work. Others are repetitive patterns where agents are starting to compete.
       </SerifBody>
@@ -1011,7 +1016,7 @@ function SectionHiring({ report }: { report: ReportJson }) {
         {h.sample_titles && h.sample_titles.length > 0 && (
           <div>
             <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-              A sample of what they're hiring
+              A sample of what you're hiring
             </p>
             <div className="space-y-px border-y border-[color:var(--color-hairline)]">
               {h.sample_titles.slice(0, 5).map((t, i) => (
@@ -1251,6 +1256,131 @@ const HeroTeaserSignals: React.FC<{ signals: string[] | undefined }> = ({ signal
   );
 };
 
+// ── Sidebar nav ──────────────────────────────────────────────────────────────
+// Sticky left rail listing major sections. Active section highlights as user scrolls.
+// Only renders sections that are actually present in the DOM (sections that hide when
+// data is empty are auto-omitted). Desktop only.
+
+type NavSection = { id: string; label: string };
+
+const SECTION_REGISTRY: NavSection[] = [
+  { id: 'hero',         label: 'Overview' },
+  { id: 'company',      label: 'The Company' },
+  { id: 'breakdown',    label: 'The Breakdown' },
+  { id: 'opportunities',label: 'Opportunities' },
+  { id: 'numbers',      label: 'The Numbers' },
+  { id: 'ad-activity',  label: 'Ad Activity' },
+  { id: 'hiring',       label: 'Hiring' },
+  { id: 'voice',        label: 'Your Voice' },
+  { id: 'news',         label: 'Recent News' },
+  { id: 'ai-adoption',  label: 'AI Adoption' },
+  { id: 'competitive',  label: 'Competitive' },
+  { id: 'week-one',     label: 'The Play' },
+  { id: 'cta',          label: 'Book a Call' },
+];
+
+const SidebarNav: React.FC = () => {
+  const [available, setAvailable] = useState<NavSection[]>([]);
+  const [activeId, setActiveId] = useState<string>('hero');
+
+  // Detect which sections are actually rendered (some hide when data is empty)
+  useEffect(() => {
+    const found = SECTION_REGISTRY.filter((s) => document.getElementById(s.id) !== null);
+    setAvailable(found);
+  }, []);
+
+  // IntersectionObserver: the section whose top is closest to viewport top + 30% wins
+  useEffect(() => {
+    if (available.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Pick the entry that is intersecting AND has its top closest to (but under) viewport top
+        const intersecting = entries.filter((e) => e.isIntersecting);
+        if (intersecting.length === 0) return;
+        const sorted = intersecting.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const topVisible = sorted.find((e) => e.boundingClientRect.top <= 100) ?? sorted[0];
+        if (topVisible.target.id) setActiveId(topVisible.target.id);
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    );
+    available.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [available]);
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveId(id);
+    }
+  };
+
+  if (available.length < 3) return null; // don't render for thin reports
+
+  return (
+    <nav
+      aria-label="Section navigation"
+      className="hidden xl:block"
+      style={{
+        position: 'fixed',
+        left: 24,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: 25,
+        maxHeight: '70vh',
+        overflowY: 'auto',
+      }}
+    >
+      <ul className="space-y-1.5" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {available.map((s) => {
+          const isActive = activeId === s.id;
+          return (
+            <li key={s.id}>
+              <a
+                href={`#${s.id}`}
+                onClick={(e) => handleClick(e, s.id)}
+                className="group flex items-center gap-2.5 py-1.5 transition-colors"
+                style={{
+                  fontFamily: MONO,
+                  fontSize: '10px',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: isActive ? 'var(--color-accent)' : 'rgba(26,26,26,0.4)',
+                  fontWeight: isActive ? 600 : 400,
+                  textDecoration: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.color = 'rgba(26,26,26,0.75)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.color = 'rgba(26,26,26,0.4)';
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'inline-block',
+                    width: isActive ? 18 : 8,
+                    height: 1,
+                    background: isActive ? 'var(--color-accent)' : 'currentColor',
+                    transition: 'width 0.25s ease',
+                    flexShrink: 0,
+                  }}
+                />
+                <span>{s.label}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+};
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const ScanReportPage: React.FC = () => {
@@ -1345,7 +1475,7 @@ const ScanReportPage: React.FC = () => {
         <SectionHiring report={report} />
         <SectionContentSample report={report} />
         <SectionNews report={report} />
-        <Section4AiAdoption report={report} />
+        {/* Section4AiAdoption removed per CEO audit — folded into dark band as AiPostureRowDark */}
         <Section5Competitive report={report} />
         <SectionWeekOneAction report={report} />
         <Section6CTA report={report} companyName={companyName} />
