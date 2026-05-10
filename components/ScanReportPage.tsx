@@ -624,7 +624,7 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
     <Section
       id="opportunities"
       kicker={`${report.opportunities.length} Opportunities`}
-      title="Where time quietly leaks."
+      title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
         Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost. Tap any to expand.
@@ -746,23 +746,24 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   const ads = report.ads;
   if (!ads) return null;
 
-  // Frontend safety filter: drop creatives that have NO showable content at all.
-  // Body counts as content (LinkedIn ads are body-only), as does image, title, headline.
-  // Google text-only ads (no body, no image) still pass via ad_format → "tag" mode.
-  const isUsable = (c: AdCreative) => {
-    const hasText = !!(c.title || c.headline || (c.body && c.body.trim().length > 5));
+  // Filter for creatives that will ACTUALLY render. Google text-only ads with no body/image
+  // currently return null from AdCreativeCard (tag mode dropped per prior audit), so they were
+  // filling the slice with empty cards. This keeps only cards with showable content.
+  const willRender = (c: AdCreative) => {
+    const hasText = !!(c.title || c.headline || (c.body && c.body.trim().length > 30));
     const hasImage = !!((c.images && c.images[0]) || c.preview_url);
-    const hasGoogleTag = !!(c.ad_format && (c.first_shown || c.last_shown || c.ad_url));
-    return hasText || hasImage || hasGoogleTag;
+    return hasText || hasImage;
   };
 
   const all: Array<{ platform: 'google' | 'linkedin' | 'meta'; creative: AdCreative }> = [];
-  (ads.google_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'google', creative: c }));
-  (ads.linkedin_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'linkedin', creative: c }));
-  (ads.meta_ads?.creatives || []).filter(isUsable).slice(0, 2).forEach(c => all.push({ platform: 'meta', creative: c }));
-  if (all.length === 0) return null;
+  (ads.linkedin_ads?.creatives || []).filter(willRender).slice(0, 2).forEach(c => all.push({ platform: 'linkedin', creative: c }));
+  (ads.meta_ads?.creatives || []).filter(willRender).slice(0, 2).forEach(c => all.push({ platform: 'meta', creative: c }));
+  (ads.google_ads?.creatives || []).filter(willRender).slice(0, 2).forEach(c => all.push({ platform: 'google', creative: c }));
   // Trim to 2 sample creatives total per CEO audit — they're a sample, not a gallery
   const sample = all.slice(0, 2);
+  // If we have NO renderable cards (e.g. only Google text-only ads), hide the section entirely
+  // rather than showing the contradictory "6 active creatives. Sample below." with nothing below.
+  if (sample.length === 0) return null;
 
   // Synthesize the verdict line from data we already have. Uses platform counts + total creatives.
   const platforms: string[] = [];
@@ -1101,7 +1102,7 @@ function SectionHiring({ report }: { report: ReportJson }) {
   const h = report.hiring;
   if (!h || (h.open_count === 0 && (!h.sample_titles || h.sample_titles.length === 0))) return null;
   return (
-    <Section id="hiring" kicker="Hiring" title="What you're paying humans to do.">
+    <Section id="hiring" kicker="Hiring" title={<>What you're <Italic>paying humans</Italic> to do.</>}>
       <SerifBody className="mb-12 max-w-2xl">
         Each open seat is current evidence of a workflow that exists today. Some roles are core human work. Others are repetitive patterns where agents are starting to compete.
       </SerifBody>
@@ -1400,7 +1401,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
 
-        <div className="flex flex-col sm:flex-row items-start gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
           <a
             href={calendlyUrl}
             target="_blank"
@@ -1415,6 +1416,25 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             }}
           >
             Book your Agent-Ready Assessment <ArrowRight size={18} />
+          </a>
+          {/* Free-call alternative — for cold prospects not ready to commit $2K cold.
+              Different utm_content so we can track conversion against the paid path. */}
+          <a
+            href={`${CALENDLY_BASE}?utm_source=scan&utm_content=free-walkthrough-${encodeURIComponent(companyName)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-baseline gap-1.5 group transition-colors"
+            style={{
+              fontFamily: BODY_SERIF,
+              fontSize: '15px',
+              fontStyle: 'italic',
+              color: 'var(--color-accent)',
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
+              textDecorationColor: 'rgba(76,110,61,0.4)',
+            }}
+          >
+            Or talk first — book a free 30-min walkthrough <ArrowRight className="w-3.5 h-3.5 self-center transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
       </div>
