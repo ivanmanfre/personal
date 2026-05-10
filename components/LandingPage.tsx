@@ -278,6 +278,7 @@ const OUTCOMES = [
     metricLabel: 'of calls graded',
     story: "Their best manager could only sample 5% of sales calls. I encoded her 8-criteria rubric into an agent that grades every call and routes risk to leadership within the hour.",
     qualifier: 'Running daily',
+    href: '/work#case-01',
   },
   {
     type: 'Lead Magnet System',
@@ -286,6 +287,7 @@ const OUTCOMES = [
     metricLabel: 'idea to launched',
     story: "Every lead magnet took days of manual work across disconnected tools. One idea in ClickUp now generates the full package: landing page, email, smart link, scheduled post.",
     qualifier: 'Self-serve since launch',
+    href: '/work#case-02',
   },
   {
     type: 'SWPPP Automation',
@@ -294,6 +296,7 @@ const OUTCOMES = [
     metricLabel: 'permit turnaround',
     story: "Every permit needed hours of manual environmental research across 50 states. Intake to delivered documents now runs end-to-end, no researcher in the loop.",
     qualifier: 'Live across 50 states',
+    href: '/work#case-03',
   },
 ];
 
@@ -311,15 +314,16 @@ const BuildOutcomesSection: React.FC = () => (
 
       <div className="grid md:grid-cols-3 gap-x-6 gap-y-10">
         {OUTCOMES.map((o, i) => (
-          <motion.div
+          <motion.a
             key={o.type}
+            href={o.href}
             initial={{ opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(26,26,26,0.06)' }}
+            whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease, delay: i * 0.1 }}
-            className="border p-7 flex flex-col cursor-default md:min-h-[340px]"
-            style={{ borderColor: 'rgba(26,26,26,0.1)' }}
+            className="group border p-7 flex flex-col md:min-h-[340px] transition-colors"
+            style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
           >
             <div style={{ ...T.mono, marginBottom: '10px' }}>{o.category}</div>
             <h3 style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.5rem,1.8vw,1.85rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
@@ -332,10 +336,20 @@ const BuildOutcomesSection: React.FC = () => (
             <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(26,26,26,0.6)', lineHeight: 1.6, flex: 1 }}>
               {o.story}
             </p>
-            <div style={{ ...T.mono, color: 'var(--color-accent)', marginTop: '20px', fontSize: '9px' }}>
-              {o.qualifier} · 4/4 Agent-Ready
+            <div className="flex items-center justify-between gap-4 mt-5">
+              <div style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '9px' }}>
+                {o.qualifier} · 4/4 Agent-Ready
+              </div>
+              <span style={{
+                fontFamily: '"Source Serif 4",serif',
+                fontStyle: 'italic',
+                fontSize: '13px',
+                color: 'rgba(26,26,26,0.5)',
+              }} className="group-hover:text-[var(--color-accent)] transition-colors whitespace-nowrap">
+                Read case →
+              </span>
             </div>
-          </motion.div>
+          </motion.a>
         ))}
       </div>
     </div>
@@ -405,10 +419,10 @@ const AgentReadySection: React.FC = () => (
               transition={{ delay: 0.7, duration: 0.85, ease }}
               style={{
                 position: 'absolute',
-                left: '-2%',
-                right: '-2%',
-                bottom: '0.16em',
-                height: '0.38em',
+                left: 0,
+                right: 0,
+                bottom: '0.14em',
+                height: '0.34em',
                 backgroundColor: 'var(--color-accent-light)',
                 transformOrigin: 'left',
                 opacity: 0.34,

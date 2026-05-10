@@ -150,11 +150,12 @@ const WorkPage: React.FC = () => {
           {cases.map((c, i) => (
             <motion.article
               key={c.id}
+              id={`case-${c.id}`}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.5 }}
-              className="grid md:grid-cols-12 gap-8 md:gap-12"
+              className="grid md:grid-cols-12 gap-8 md:gap-12 scroll-mt-32"
             >
               {/* Meta column */}
               <div className="md:col-span-4 space-y-4">
