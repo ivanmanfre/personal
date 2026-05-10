@@ -298,6 +298,15 @@ const OUTCOMES = [
     qualifier: 'Live across 50 states',
     href: '/work#case-03',
   },
+  {
+    type: 'Supplier Menu Sync',
+    category: 'Inventory orchestration',
+    metric: '15+ hrs/week',
+    metricLabel: 'manual entry removed',
+    story: "A cannabis distributor was reconciling inventory from WhatsApp, supplier sites, and Google Sheets daily. Now n8n auto-consolidates every channel into one sheet, standardizes formats, refreshes every 60–120 min.",
+    qualifier: 'Refreshes hourly',
+    href: '/work#case-06',
+  },
 ];
 
 const BuildOutcomesSection: React.FC = () => (
@@ -312,7 +321,7 @@ const BuildOutcomesSection: React.FC = () => (
         </RevealH2>
       </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-x-6 gap-y-10">
+      <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
         {OUTCOMES.map((o, i) => (
           <motion.a
             key={o.type}
