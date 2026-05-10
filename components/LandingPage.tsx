@@ -385,7 +385,7 @@ const PRECONDITIONS = [
   {
     n: '04',
     title: 'The same work repeats every week',
-    sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever. One-off projects don\'t qualify.',
+    sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever.',
   },
 ];
 
