@@ -712,6 +712,152 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   );
 }
 
+// PHASE 1: Score breakdown — 5 sub-bars showing how the score was computed.
+function SectionScoreBreakdown({ report }: { report: ReportJson }) {
+  const sb = report.score_breakdown;
+  if (!sb) return null;
+  const cats: Array<{ key: keyof NonNullable<ReportJson['score_breakdown']>; label: string }> = [
+    { key: 'tech_stack', label: 'Tech stack' },
+    { key: 'ad_activity', label: 'Ad activity' },
+    { key: 'content_engine', label: 'Content engine' },
+    { key: 'ai_signals', label: 'AI signals' },
+    { key: 'traffic_quality', label: 'Traffic quality' },
+  ];
+  return (
+    <Section kicker="03 / Score Breakdown" title={<>How the <Italic>52 was earned</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl">
+        Five categories, each scored 0 to 20. The sum is the automation opportunity score. Hover any bar for the rationale.
+      </SerifBody>
+      <div className="space-y-6 max-w-3xl">
+        {cats.map(({ key, label }) => {
+          const c = sb[key];
+          if (!c) return null;
+          const pct = (c.value / c.max) * 100;
+          const tone = pct >= 70 ? 'var(--color-accent)' : pct >= 40 ? '#C97A2E' : '#A85439';
+          return (
+            <div key={key} className="group">
+              <div className="flex items-baseline justify-between mb-2">
+                <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+                  {label}
+                </p>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', lineHeight: 1, color: tone }}>
+                  <Scramble value={String(c.value)} />
+                  <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.5)', marginLeft: 6 }}>/ {c.max}</span>
+                </p>
+              </div>
+              <div style={{ height: 4, background: 'rgba(26,26,26,0.08)', position: 'relative' }}>
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: pct / 100 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
+                  style={{ height: '100%', background: tone, transformOrigin: 'left' }}
+                />
+              </div>
+              <p className="mt-2 group-hover:opacity-100 opacity-60 transition-opacity" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: '#3D3D3B', lineHeight: 1.45 }}>
+                {c.rationale}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+// PHASE 1: Peer comparison (small, sits adjacent to score breakdown)
+function PeerComparisonInline({ report }: { report: ReportJson }) {
+  const pm = report.peer_median;
+  if (!pm) return null;
+  const diff = report.automation_score - pm.score;
+  const tone = diff > 0 ? 'var(--color-accent)' : diff < 0 ? '#A85439' : 'rgba(26,26,26,0.65)';
+  const label = diff > 0 ? `+${diff}` : `${diff}`;
+  return (
+    <div className="mt-8 pt-6 border-t border-[color:var(--color-hairline)]">
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+        Peer median, {pm.size_tier_compared}
+      </p>
+      <div className="flex items-baseline gap-4 mt-3">
+        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 1, color: '#1A1A1A' }}>
+          {pm.score}
+        </p>
+        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: tone }}>
+          ({label} vs you)
+        </p>
+      </div>
+      <SerifBody className="mt-3 max-w-2xl">{pm.interpretation}</SerifBody>
+    </div>
+  );
+}
+
+// PHASE 1: LinkedIn content sample — show 1-2 actual posts they published.
+function SectionContentSample({ report }: { report: ReportJson }) {
+  const posts = report.linkedin_summary?.posts;
+  if (!posts || posts.length === 0) return null;
+  return (
+    <Section kicker="07 / Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
+      <SerifBody className="mb-10 max-w-2xl">
+        Two of their most recent LinkedIn posts. We read what they write. The opportunity titles below cite specific themes from this content where relevant.
+      </SerifBody>
+      <div className="grid md:grid-cols-2 gap-6">
+        {posts.slice(0, 2).map((p, i) => (
+          <motion.blockquote
+            key={i}
+            initial={{ y: 12 }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.7, ease: EASE, delay: i * 0.1 }}
+            className="px-6 py-5 hover:bg-paper-sunk/30 transition-colors"
+            style={{ borderLeft: '2px solid var(--color-accent)' }}
+          >
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(16px, 1.6vw, 18px)', lineHeight: 1.5, color: '#1A1A1A' }}>
+              "{p.text.length > 320 ? p.text.slice(0, 317) + '…' : p.text}"
+            </p>
+            <div className="mt-4 flex items-center gap-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+              {p.date && <span>{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+              {p.reactions != null && <span>{p.reactions} reactions</span>}
+            </div>
+          </motion.blockquote>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// PHASE 1: Week-1 action card — sage-bordered "if you only do one thing this month" callout before the CTA.
+function SectionWeekOneAction({ report }: { report: ReportJson }) {
+  const w = report.week_one_action;
+  if (!w) return null;
+  return (
+    <motion.section
+      {...inViewProps}
+      className="py-16 lg:py-20"
+    >
+      <div className="max-w-3xl px-6 lg:px-10 py-10 lg:py-12 -mx-6 lg:-mx-10" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
+          If you only do one thing this month
+        </p>
+        <h3 style={{
+          fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.875rem, 3.4vw, 2.75rem)',
+          lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 12,
+        }}>
+          {w.title}
+        </h3>
+        <SerifBody large className="mt-5"><Emphasized>{w.why}</Emphasized></SerifBody>
+        {w.tools && w.tools.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {w.tools.map((t) => <Chip key={t} label={t} variant="found" />)}
+          </div>
+        )}
+        <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.7)' }}>
+          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginRight: 8 }}>Outcome:</span>
+          {w.expected_outcome}
+        </p>
+      </div>
+    </motion.section>
+  );
+}
+
 function Section6CTA({ report, companyName }: { report: ReportJson; companyName: string }) {
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
 
@@ -821,6 +967,7 @@ const CinematicHero: React.FC<{
             <div className="mt-4">
               <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
             </div>
+            <PeerComparisonInline report={report} />
           </div>
         </div>
         <HeroTeaserSignals signals={report.teaser_signals} />
@@ -943,10 +1090,13 @@ const ScanReportPage: React.FC = () => {
         {/* Sections */}
         <Section1CompanyBrief report={report} />
         <SectionFundingTraffic report={report} />
+        <SectionScoreBreakdown report={report} />
         <Section3Opportunities report={report} />
         <SectionAdActivity report={report} />
+        <SectionContentSample report={report} />
         <Section4AiAdoption report={report} />
         <Section5Competitive report={report} />
+        <SectionWeekOneAction report={report} />
         <Section6CTA report={report} companyName={companyName} />
       </div>
     </div>

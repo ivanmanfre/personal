@@ -31,6 +31,25 @@ export interface ReportJson {
   top_gap_title: string;
   top_gap_summary: string;
   teaser_signals: [string, string, string];
+  // Phase 1 additions
+  score_breakdown?: {
+    tech_stack: { value: number; max: number; rationale: string };
+    ad_activity: { value: number; max: number; rationale: string };
+    content_engine: { value: number; max: number; rationale: string };
+    ai_signals: { value: number; max: number; rationale: string };
+    traffic_quality: { value: number; max: number; rationale: string };
+  };
+  week_one_action?: {
+    title: string;
+    why: string;
+    tools: string[];
+    expected_outcome: string;
+  };
+  peer_median?: {
+    score: number;
+    size_tier_compared: string;
+    interpretation: string;
+  };
   // Display data fields
   company_name: string;
   logo_url: string | null;
@@ -51,6 +70,7 @@ export interface ReportJson {
     posts_30d: number | null;
     last_post_days: number | null;
     ai_mentions: number | null;
+    posts?: Array<{ text: string; date?: string; reactions?: number }>;
   };
   ads_summary: {
     google_ads: 'confirmed' | 'probable' | 'not_detected' | null;
