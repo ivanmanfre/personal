@@ -1411,7 +1411,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             <ClientCard
               name="BNP Paribas Fortis"
               domain="bnpparibasfortis.be"
-              outcome="Internal automation build delivered in days, not quarters. Repeat-hire on the same day."
+              outcome="Conversational Ops AI agent for internal teams. Shipped in days, not quarters."
             />
           </div>
         </div>
