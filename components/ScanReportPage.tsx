@@ -272,6 +272,10 @@ const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; classNam
       lineHeight: 1.65,
       color: '#3D3D3B',
       fontWeight: 400,
+      // W2.4 — cap line length at ~68ch per Visual spec (Tufte/Refactoring UI optimal). Callers
+      // that pass max-w-* override via Tailwind cascade. Without this, long-form paragraphs
+      // (one_liner, AI adoption description) ran 95-110ch on 1440 desktop.
+      maxWidth: '68ch',
     }}
   >
     {children}
@@ -477,26 +481,41 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
             <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
               Source breakdown
             </p>
-            <div className="mt-6 space-y-4">
-              {sourceRows.map((row) => (
-                <div key={row.label}>
-                  <div className="flex items-baseline justify-between mb-1.5">
-                    <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>{row.label}</span>
-                    <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: row.tone, fontVariantNumeric: 'tabular-nums' }}>
+            {/* W2.3 — Single FT/Bloomberg-style stacked horizontal bar (was 5 separate sage rectangles
+                with zero data-ink per Visual specialist). One thick bar, segmented, labeled inline. */}
+            <div className="mt-6">
+              <div className="flex w-full" style={{ height: 28, background: 'rgba(26,26,26,0.06)' }}>
+                {sourceRows.map((row, i) => (
+                  <motion.div
+                    key={row.label}
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    viewport={{ once: true, margin: '-30px' }}
+                    transition={{ duration: 0.6, ease: EASE, delay: i * 0.08 }}
+                    title={`${row.label}: ${(row.pct * 100).toFixed(1)}%`}
+                    style={{
+                      flexBasis: `${row.pct * 100}%`,
+                      background: row.tone,
+                      transformOrigin: 'left',
+                      borderRight: i < sourceRows.length - 1 ? '1px solid #F7F4EF' : 'none',
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Inline legend below the bar, mono caps, dot marker matches segment color */}
+              <ul className="mt-5 space-y-2.5" style={{ listStyle: 'none', padding: 0 }}>
+                {sourceRows.map((row) => (
+                  <li key={row.label} className="flex items-baseline gap-3">
+                    <span aria-hidden style={{ display: 'inline-block', width: 10, height: 10, background: row.tone, flexShrink: 0 }} />
+                    <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', flex: 1 }}>
+                      {row.label}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(26,26,26,0.7)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                       {(row.pct * 100).toFixed(0)}%
                     </span>
-                  </div>
-                  <div style={{ height: 2, background: 'rgba(26,26,26,0.08)' }}>
-                    <motion.div
-                      initial={{ scaleX: 0 }}
-                      whileInView={{ scaleX: row.pct }}
-                      viewport={{ once: true, margin: '-30px' }}
-                      transition={{ duration: 1.0, ease: EASE, delay: 0.1 }}
-                      style={{ height: '100%', background: row.tone, transformOrigin: 'left' }}
-                    />
-                  </div>
-                </div>
-              ))}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}
@@ -881,7 +900,9 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
 
   return (
     <section
-      className="py-20 lg:py-32"
+      // W2.4 — bumped vertical padding on mobile from py-20 (5rem = 80px) to py-24 (6rem = 96px) so
+      // the score 52 has breathing room from the section edges; desktop unchanged
+      className="py-24 sm:py-20 lg:py-32"
       style={{ background: '#0F0F0F', color: '#F7F4EF' }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
@@ -1162,6 +1183,81 @@ function SectionNews({ report }: { report: ReportJson }) {
   );
 }
 
+// W2.1 — Methodology + sources footer. Collapsible <details> per Owner Decision 4.
+// Sits BEFORE the closing arc so a forwarded report's reader (CFO/COO on the buying committee)
+// can verify any number before the CTA hits. Trust specialist's load-bearing fix.
+function SectionMethodology() {
+  const SOURCES = [
+    { name: 'BuiltWith',          what: 'Tech stack detection + DNS-verified tools' },
+    { name: 'Apollo.io',          what: 'Headcount, revenue range, industry' },
+    { name: 'LinkedIn Company',   what: 'Followers, posts, AI mentions, employee count' },
+    { name: 'LinkedIn Jobs',      what: 'Open role count + sample titles' },
+    { name: 'SimilarWeb',         what: 'Monthly visits, traffic mix, top search queries' },
+    { name: 'SerpApi (News)',     what: 'Recent press mentions in the last 90 days' },
+    { name: 'SerpApi (Ads)',      what: 'Google Ads detection + cross-platform signals' },
+    { name: 'Meta Ad Library',    what: 'Active Facebook + Instagram ad creatives' },
+    { name: 'LinkedIn Ad Library',what: 'Active LinkedIn ad creatives' },
+    { name: 'Google Ads Transparency', what: 'Active Google ad creatives' },
+    { name: 'GitHub',             what: 'Public repository count (engineering signal)' },
+    { name: 'Crunchbase',         what: 'Funding rounds + investor signals (when present)' },
+    { name: 'Public DNS',         what: 'TXT records (Anthropic, OpenAI, HubSpot, Workspace, etc.)' },
+    { name: 'Homepage HTML',      what: 'CDN, frameworks, booking widgets, live chat detection' },
+  ];
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  return (
+    <section className="py-12 lg:py-16 max-w-3xl">
+      <details className="group">
+        <summary
+          className="cursor-pointer inline-flex items-center gap-2 list-none transition-colors"
+          style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}
+        >
+          <span className="transition-transform group-open:rotate-90" aria-hidden style={{ display: 'inline-block', fontSize: '10px' }}>▸</span>
+          View methodology + sources
+        </summary>
+
+        <div className="mt-8 space-y-8">
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              How this report was generated
+            </p>
+            <SerifBody className="mt-3 max-w-2xl">
+              We pulled signals from the 14 public sources below. Claude Opus 4.7 synthesized the patterns into the gap analysis and dollar estimates. Ivan reviews every report before it ships. <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>Generated {today}.</strong>
+            </SerifBody>
+          </div>
+
+          <div>
+            <p className="mb-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              Sources pulled
+            </p>
+            <ul className="space-y-2 border-t border-[color:var(--color-hairline)]" style={{ listStyle: 'none', padding: 0 }}>
+              {SOURCES.map((s) => (
+                <li key={s.name} className="flex items-baseline gap-4 py-2 border-b border-[color:var(--color-hairline)]">
+                  <span className="shrink-0" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A', fontWeight: 600, minWidth: '180px' }}>
+                    {s.name}
+                  </span>
+                  <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.7)', lineHeight: 1.5 }}>
+                    {s.what}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              What we couldn't see
+            </p>
+            <SerifBody className="mt-3 max-w-2xl">
+              We can't see internal tools (anything not exposed via DNS, headers, or homepage HTML), private analytics, contracts, headcount roles inside teams, or anything behind authentication. The hour and dollar estimates assume mid-tier ops cost ($75-$120/hr loaded) and are conservative within plausible ranges. Where the data was thin, the report says so explicitly rather than guessing.
+            </SerifBody>
+          </div>
+        </div>
+      </details>
+    </section>
+  );
+}
+
 // CLOSING ARC — merged per CEO audit. Was two competing closes (week-1 callout + final CTA);
 // now a single block: highest-priority gap (verdict) → Monday move (action) → Ivan + price → CTA.
 function SectionClosingArc({ report, companyName }: { report: ReportJson; companyName: string }) {
@@ -1231,6 +1327,42 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
             <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
           </p>
+        </div>
+
+        {/* W2.2 — Track Record strip. Specific outcomes per named client, not a logo wall.
+            Sits between the bio (who) and the price (cost) so the proof comes right before the ask.
+            Outcome-led copy: each line names the client, their domain, and a concrete result.
+            Replaces the unsupported "90 days payback" claim with comparable-firm evidence. */}
+        <div className="mb-10 max-w-2xl py-6 border-t border-b border-[color:var(--color-hairline)]">
+          <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            Recent builds
+          </p>
+          <ul className="space-y-5" style={{ listStyle: 'none', padding: 0 }}>
+            <li>
+              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
+                ProSWPPP <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Environmental Compliance</span>
+              </p>
+              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
+                Three content formats and 50-state SWPPP docs ship from a single interface. Eliminated the Google Sheet dependency. State-aware sales follow-up runs zero-touch.
+              </p>
+            </li>
+            <li>
+              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
+                Destino Farms <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Cannabis Distribution</span>
+              </p>
+              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
+                Supplier menu reconciles itself overnight. No spreadsheet juggling, no manual reordering, no Monday catch-up.
+              </p>
+            </li>
+            <li>
+              <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', fontWeight: 600 }}>
+                BNP Paribas Fortis <span style={{ fontWeight: 400, color: 'rgba(26,26,26,0.55)' }}>· Enterprise Banking</span>
+              </p>
+              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.75)' }}>
+                Internal automation build delivered in days, not quarters. <span style={{ fontStyle: 'italic', color: 'rgba(26,26,26,0.6)' }}>"Quality work and lightning fast." — Michel de Wachter</span>
+              </p>
+            </li>
+          </ul>
         </div>
 
         <p className="mb-4" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
@@ -1563,6 +1695,9 @@ const ScanReportPage: React.FC = () => {
         <SectionNews report={report} />
         {/* Section4AiAdoption removed per CEO audit — folded into dark band as AiPostureRowDark */}
         <Section5Competitive report={report} />
+        {/* W2.1 — Methodology footer (collapsible). Sits before closing arc so a forwarded report
+            reader can verify any number before being asked to book. */}
+        <SectionMethodology />
         {/* Week-1 + CTA merged per CEO audit into one closing arc */}
         <SectionClosingArc report={report} companyName={companyName} />
       </div>

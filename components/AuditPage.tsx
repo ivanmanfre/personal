@@ -431,7 +431,30 @@ const ProcessingTopBar: React.FC<{ visible: boolean }> = ({ visible }) => {
   );
 };
 
-// Processing stage panel — phase copy, big typographic progress bar, elapsed / expected counter.
+// W2.1 — Narrated wait screen: 14 sources flip checked one-by-one as elapsed time progresses.
+// Solves two problems with one fix: (a) silent 3-min wait was the highest-risk drop-off in the
+// funnel; (b) the buying committee can see what we actually pulled, building trust before the
+// report even loads. Source list mirrors the methodology footer on the report page.
+
+// Sources distributed evenly across EXPECTED_SECONDS so the last one checks near the end.
+// Order roughly mirrors actual pipeline order (DNS first, AI synthesis last) for narrative coherence.
+const SCAN_SOURCES: Array<{ name: string; what: string }> = [
+  { name: 'Public DNS',          what: 'TXT records, MX, AI provider verification' },
+  { name: 'Homepage HTML',       what: 'CDN, frameworks, booking widgets, live chat' },
+  { name: 'BuiltWith',           what: 'Tech stack detection' },
+  { name: 'Apollo.io',           what: 'Headcount, revenue range, industry' },
+  { name: 'LinkedIn Company',    what: 'Followers, posts, AI mentions' },
+  { name: 'LinkedIn Jobs',       what: 'Open roles + sample titles' },
+  { name: 'SimilarWeb',          what: 'Traffic mix, top search queries' },
+  { name: 'Meta Ad Library',     what: 'Active Facebook + Instagram ads' },
+  { name: 'LinkedIn Ad Library', what: 'Active LinkedIn ads' },
+  { name: 'Google Ads',          what: 'Active Google ad creatives' },
+  { name: 'GitHub',              what: 'Public repos (engineering signal)' },
+  { name: 'Crunchbase',          what: 'Funding + investor signals' },
+  { name: 'SerpApi News',        what: 'Recent press, last 90 days' },
+  { name: 'Claude synthesis',    what: 'Patterns into gap analysis' },
+];
+
 const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }> = ({
   companyName,
 }) => {
@@ -446,8 +469,10 @@ const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }>
     return () => clearInterval(id);
   }, []);
 
-  const phase = PHASES.slice().reverse().find((p) => elapsed >= p.at) ?? PHASES[0];
-  // Progress against EXPECTED_SECONDS, capped at 95% so we never claim done early
+  // Distribute the 14 sources across ~85% of EXPECTED_SECONDS so the last checks near the end
+  // (don't claim 100% before the real scan completes).
+  const checkInterval = (EXPECTED_SECONDS * 0.85) / SCAN_SOURCES.length;
+  const checkedCount = Math.min(SCAN_SOURCES.length, Math.floor(elapsed / checkInterval));
   const pct = Math.min(95, (elapsed / EXPECTED_SECONDS) * 100);
   const elapsedDisplay = formatElapsed(elapsed);
   const remainingDisplay = elapsed >= EXPECTED_SECONDS
@@ -462,31 +487,21 @@ const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }>
       transition={{ duration: 0.5 }}
       className="space-y-10"
     >
-      {/* Phase headline */}
+      {/* Headline */}
       <div className="border-t-2 border-[color:var(--color-accent)] pt-8">
         <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
           Scanning {companyName || 'your company'}
         </p>
-        <AnimatePresence mode="wait">
-          <motion.h2
-            key={phase.label}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.5, ease: EASE }}
-            className="mt-3"
-            style={{
-              fontFamily: SERIF, fontWeight: 400,
-              fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', lineHeight: 1.15, letterSpacing: '-0.015em',
-              color: '#1A1A1A',
-            }}
-          >
-            {phase.label}<span style={{ color: 'var(--color-accent)' }}>.</span>
-          </motion.h2>
-        </AnimatePresence>
+        <h2 className="mt-3" style={{
+          fontFamily: SERIF, fontWeight: 400,
+          fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', lineHeight: 1.15, letterSpacing: '-0.015em',
+          color: '#1A1A1A',
+        }}>
+          Pulling {checkedCount} of {SCAN_SOURCES.length} sources<span style={{ color: 'var(--color-accent)' }}>.</span>
+        </h2>
       </div>
 
-      {/* Big progress bar */}
+      {/* Thin progress bar with elapsed/remaining counter */}
       <div>
         <div className="flex items-baseline justify-between gap-3 mb-3">
           <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
@@ -496,7 +511,7 @@ const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }>
             <span style={{ color: '#1A1A1A' }}>{elapsedDisplay}</span> elapsed · {remainingDisplay}
           </p>
         </div>
-        <div style={{ height: 4, background: 'rgba(26,26,26,0.08)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ height: 2, background: 'rgba(26,26,26,0.08)', position: 'relative', overflow: 'hidden' }}>
           <div
             style={{
               height: '100%',
@@ -505,44 +520,62 @@ const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }>
               transition: 'width 0.3s linear',
             }}
           />
-          {/* Subtle pulse shimmer at the leading edge so it reads as alive even when width updates are slow */}
-          {!reduceMotion && (
-            <motion.div
-              animate={{ opacity: [0.4, 0.85, 0.4] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              style={{
-                position: 'absolute', top: 0, bottom: 0,
-                left: `calc(${pct}% - 4px)`,
-                width: 8,
-                background: 'var(--color-accent)',
-                filter: 'blur(3px)',
-              }}
-            />
-          )}
-        </div>
-
-        {/* Phase ticks under the bar — visualizes the pipeline as 5 beats */}
-        <div className="flex items-center mt-4" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-          {PHASES.map((p, i) => {
-            const reached = elapsed >= p.at;
-            const flex = i === PHASES.length - 1 ? 0 : (PHASES[i + 1].at - p.at);
-            return (
-              <div
-                key={p.at}
-                style={{ flex: flex || 0, color: reached ? 'var(--color-accent)' : 'rgba(26,26,26,0.35)' }}
-                className="relative flex items-start gap-2"
-              >
-                <span style={{ fontSize: '7px', lineHeight: '12px' }}>●</span>
-                <span className="hidden sm:inline truncate" style={{ paddingRight: 8 }}>{p.label.split(' ').slice(0, 3).join(' ')}</span>
-              </div>
-            );
-          })}
         </div>
       </div>
 
-      {/* Reassurance line — generic; never name vendors */}
+      {/* 14-source checklist — flips checked as elapsed time progresses */}
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5" style={{ listStyle: 'none', padding: 0 }}>
+        {SCAN_SOURCES.map((s, i) => {
+          const isChecked = i < checkedCount;
+          const isCurrent = i === checkedCount && checkedCount < SCAN_SOURCES.length;
+          return (
+            <motion.li
+              key={s.name}
+              animate={isCurrent && !reduceMotion ? { opacity: [0.5, 1, 0.5] } : { opacity: 1 }}
+              transition={isCurrent && !reduceMotion ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.3 }}
+              className="flex items-baseline gap-3 py-1.5 border-b border-[color:var(--color-hairline)]"
+            >
+              <span
+                aria-hidden
+                className="shrink-0"
+                style={{
+                  display: 'inline-block',
+                  width: 10,
+                  fontFamily: MONO,
+                  fontSize: '11px',
+                  color: isChecked ? 'var(--color-accent)' : isCurrent ? 'var(--color-accent)' : 'rgba(26,26,26,0.25)',
+                  fontWeight: 600,
+                }}
+              >
+                {isChecked ? '✓' : isCurrent ? '●' : '○'}
+              </span>
+              <span style={{
+                fontFamily: BODY_SERIF,
+                fontSize: '14px',
+                color: isChecked || isCurrent ? '#1A1A1A' : 'rgba(26,26,26,0.45)',
+                fontWeight: isCurrent ? 600 : 400,
+                minWidth: '130px',
+                lineHeight: 1.4,
+              }}>
+                {s.name}
+              </span>
+              <span className="hidden sm:inline" style={{
+                fontFamily: BODY_SERIF,
+                fontSize: '13px',
+                color: 'rgba(26,26,26,0.55)',
+                fontStyle: 'italic',
+                lineHeight: 1.4,
+              }}>
+                {s.what}
+              </span>
+            </motion.li>
+          );
+        })}
+      </ul>
+
+      {/* Reassurance line */}
       <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.6)' }}>
-        Pulling tech stack, traffic, ad activity, hiring, and public DNS. The full report typically lands in two to three minutes. Leave this tab open or close it. We'll email the link when it's ready.
+        The full report typically lands in two to three minutes. Leave this tab open or close it. We'll email the link when it's ready.
       </p>
     </motion.div>
   );
