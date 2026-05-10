@@ -367,11 +367,149 @@ const BuildOutcomesSection: React.FC = () => (
 
 // ─── Section 3: What Agent-Ready means ──────────────────────────────────────
 const PRECONDITIONS = [
-  { n: '01', title: 'Your process runs on data, not gut calls', sub: 'Someone could pull a spreadsheet of past decisions: what came in, what went out, what got decided.' },
-  { n: '02', title: 'The decision logic is documentable', sub: 'If I sat with your team for a day, we could write the rules down. There are rules. They just live in heads.' },
-  { n: '03', title: 'One workflow costs you the most hours', sub: "You already know which one. It's the one no one wants to touch and everyone reroutes around." },
-  { n: '04', title: 'You want AI that augments, not replaces', sub: 'Your team stays in the loop. The system handles the repeat work. The people handle judgment.' },
+  {
+    n: '01',
+    title: 'You decide with data, not vibes',
+    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?" — they should point to a row in a spreadsheet, not a feeling.',
+  },
+  {
+    n: '02',
+    title: 'The rules are in someone’s head',
+    sub: 'Your best person makes the call without thinking. That means there ARE rules — you just haven’t written them down yet. We can.',
+  },
+  {
+    n: '03',
+    title: 'You already know which workflow is the bottleneck',
+    sub: 'Don’t think too hard. It’s the one your team reroutes around. The one nobody wants to touch on a Friday afternoon.',
+  },
+  {
+    n: '04',
+    title: 'You want a system that doesn’t replace your team',
+    sub: 'AI handles the repeat work. Your people handle the calls only humans should make. Nobody gets fired. The bottleneck does.',
+  },
 ];
+
+// PreconditionItem — side-stage entrance (numeral from left, content from right) +
+// horizontal parallax on the ghost numeral. Each item tracks its own scroll progress.
+const PreconditionItem: React.FC<{
+  p: typeof PRECONDITIONS[0];
+  index: number;
+  isLast: boolean;
+}> = ({ p, index, isLast }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
+  });
+  // Ghost numeral drifts horizontally as the item passes through viewport
+  const ghostX = useTransform(scrollYProgress, [0, 1], [-80, 80]);
+
+  return (
+    <motion.div ref={ref} className="relative">
+      {/* Ghost numeral — centered + parallax-drifted */}
+      <div aria-hidden style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -55%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}>
+        <motion.div
+          style={{
+            x: ghostX,
+            fontSize: 'clamp(80px, 18vw, 240px)',
+            fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            color: '#F7F4EF',
+            opacity: 0.018,
+            lineHeight: 1,
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {p.n}
+        </motion.div>
+      </div>
+
+      <div className="relative" style={{ zIndex: 1 }}>
+        {/* Numeral — slides in from left */}
+        <motion.div
+          initial={{ opacity: 0, x: -80 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.9, ease, delay: index * 0.06 }}
+          style={{
+            fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
+            lineHeight: 1,
+            letterSpacing: '-0.02em',
+            color: 'var(--color-accent-light)',
+            marginBottom: '18px',
+          }}
+        >
+          {p.n}.
+        </motion.div>
+
+        {/* H3 — fades in from right with delay */}
+        <motion.h3
+          initial={{ opacity: 0, x: 60 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.85, ease, delay: 0.25 + index * 0.06 }}
+          style={{
+            fontFamily: '"Source Serif 4", Georgia, serif',
+            fontStyle: 'normal',
+            fontWeight: 600,
+            fontSize: 'clamp(1.4rem, 2vw, 1.85rem)',
+            lineHeight: 1.25,
+            letterSpacing: '-0.01em',
+            color: '#F7F4EF',
+            marginBottom: '14px',
+            maxWidth: '24ch',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          {p.title}
+        </motion.h3>
+
+        {/* Body — fades in from right with more delay */}
+        <motion.p
+          initial={{ opacity: 0, x: 80 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.85, ease, delay: 0.4 + index * 0.06 }}
+          style={{
+            fontFamily: '"Source Serif 4", Georgia, serif',
+            fontWeight: 400,
+            fontSize: '17px',
+            color: 'rgba(247,244,239,0.74)',
+            lineHeight: 1.65,
+            maxWidth: '52ch',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }}
+        >
+          {p.sub}
+        </motion.p>
+
+        {/* Sage rule separator — between items only */}
+        {!isLast && (
+          <div className="mx-auto mt-10 md:mt-16" style={{
+            width: '40px',
+            height: '1px',
+            backgroundColor: 'var(--color-accent-light)',
+            opacity: 0.4,
+          }} />
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 // Pattern-break section — DARK editorial pull-quote manifesto.
 // Third dark moment on the page; centered editorial typography with huge ghost numerals.
@@ -442,90 +580,14 @@ const AgentReadySection: React.FC = () => (
         </span>
       </motion.h2>
 
-      <div className="space-y-14 md:space-y-20">
+      <div className="space-y-14 md:space-y-20 overflow-x-clip">
         {PRECONDITIONS.map((p, i) => (
-          <motion.div
+          <PreconditionItem
             key={p.n}
-            initial={{ opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.8, ease, delay: i * 0.08 }}
-            className="relative"
-          >
-            {/* Subtle ghost numeral — texture, not focal */}
-            <div aria-hidden style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -55%)',
-              fontSize: 'clamp(80px, 18vw, 240px)',
-              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-              fontStyle: 'italic',
-              fontWeight: 400,
-              color: '#F7F4EF',
-              opacity: 0.018,
-              lineHeight: 1,
-              pointerEvents: 'none',
-              userSelect: 'none',
-              zIndex: 0,
-              whiteSpace: 'nowrap',
-            }}>
-              {p.n}
-            </div>
-
-            <div className="relative" style={{ zIndex: 1 }}>
-              {/* Visible italic numeral — sage drama anchor (separate type voice from H3) */}
-              <div style={{
-                fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-                fontStyle: 'italic',
-                fontWeight: 400,
-                fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
-                lineHeight: 1,
-                letterSpacing: '-0.02em',
-                color: 'var(--color-accent-light)',
-                marginBottom: '18px',
-              }}>
-                {p.n}.
-              </div>
-              {/* H3 — upright Source Serif bold creates explicit type contrast vs italic display H2 */}
-              <h3 style={{
-                fontFamily: '"Source Serif 4", Georgia, serif',
-                fontStyle: 'normal',
-                fontWeight: 600,
-                fontSize: 'clamp(1.4rem, 2vw, 1.85rem)',
-                lineHeight: 1.25,
-                letterSpacing: '-0.01em',
-                color: '#F7F4EF',
-                marginBottom: '14px',
-                maxWidth: '24ch',
-                marginLeft: 'auto',
-                marginRight: 'auto',
-              }}>
-                {p.title}
-              </h3>
-              <p style={{
-                fontFamily: '"Source Serif 4", Georgia, serif',
-                fontWeight: 400,
-                fontSize: '17px',
-                color: 'rgba(247,244,239,0.74)',
-                lineHeight: 1.65,
-                maxWidth: '52ch',
-                marginLeft: 'auto',
-                marginRight: 'auto',
-              }}>
-                {p.sub}
-              </p>
-              {/* Sage rule separator — small horizontal line, audible at desktop scale */}
-              {i < PRECONDITIONS.length - 1 && (
-                <div className="mx-auto mt-10 md:mt-16" style={{
-                  width: '40px',
-                  height: '1px',
-                  backgroundColor: 'var(--color-accent-light)',
-                  opacity: 0.4,
-                }} />
-              )}
-            </div>
-          </motion.div>
+            p={p}
+            index={i}
+            isLast={i === PRECONDITIONS.length - 1}
+          />
         ))}
       </div>
     </div>
