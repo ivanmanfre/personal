@@ -198,9 +198,11 @@ const OutreachPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Workflow error banner — only shown when something errored */}
+      {/* Workflow error banner — only shown when something errored AND not acknowledged */}
       {(() => {
-        const errored = Object.entries(workflowHealth).filter(([, h]) => h.lastStatus === 'error');
+        const errored = Object.entries(workflowHealth).filter(([, h]) =>
+          h.lastStatus === 'error' && !h.errorAcknowledged
+        );
         if (errored.length === 0) return null;
         const wfNames: Record<string, string> = {
           '35HJE7eOpvEdxRwq': 'Import + Enrich', 'kr2lSH1eRGZcDWmO': 'Warm-up', 'wBBL75oqWcTf78yp': 'Trigger Research',
@@ -208,12 +210,22 @@ const OutreachPanel: React.FC = () => {
           'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Auto Comments — Post Fetch',
           '9q4bhlIBQCiCxQpq': 'Auto Comments — Drafter', '2AVRUQLoxCIXCzT0': 'Auto Comments — Sender',
         };
-        // Translate known errors into plain-English status. Returns null = show raw error.
         const friendlyError = (wfId: string, err: string): { label: string; detail?: string } | null => {
           if (wfId === 'VaP0RnmFlhkfKE4V' && /403|usage hard limit|platform-feature-disabled/i.test(err)) {
             return { label: 'Auto comments suspended — Apify credits depleted', detail: 'Resumes when monthly Apify quota resets (or top up Apify plan).' };
           }
+          if (/403/i.test(err)) {
+            return { label: 'API access denied (403)', detail: 'Likely UniPile/Apify credential rotation. Check the workflow node credentials.' };
+          }
           return null;
+        };
+        const acknowledge = async (rowId: string | null) => {
+          if (!rowId) return;
+          try {
+            const { dashboardAction } = await import('../../lib/dashboardActions');
+            await dashboardAction('dashboard_workflow_stats', rowId, 'error_acknowledged', 'true');
+            refresh();
+          } catch (e) { /* swallow */ }
         };
         return (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
@@ -221,20 +233,39 @@ const OutreachPanel: React.FC = () => {
               <AlertTriangle className="w-4 h-4 text-red-400" />
               <span className="text-sm font-medium text-red-300">{errored.length} workflow{errored.length > 1 ? 's' : ''} erroring</span>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {errored.map(([wfId, h]) => {
                 const friendly = h.lastError ? friendlyError(wfId, h.lastError) : null;
                 return (
-                  <div key={wfId} className="text-xs">
-                    <span className="text-red-300 font-medium">{friendly ? friendly.label : (wfNames[wfId] || wfId)}</span>
-                    <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
-                    {friendly?.detail ? (
-                      <p className="text-[10px] text-zinc-400 mt-0.5 ml-1">{friendly.detail}</p>
-                    ) : (
-                      h.lastError && (
-                        <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1">{h.lastError.slice(0, 200)}</p>
-                      )
-                    )}
+                  <div key={wfId} className="text-xs flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-red-300 font-medium">{friendly ? friendly.label : (wfNames[wfId] || wfId)}</span>
+                      <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
+                      {friendly?.detail ? (
+                        <p className="text-[10px] text-zinc-400 mt-0.5 ml-1">{friendly.detail}</p>
+                      ) : (
+                        h.lastError && (
+                          <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1 break-all">{h.lastError.slice(0, 200)}</p>
+                        )
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                      <a
+                        href={`https://n8n.ivanmanfredi.com/workflow/${wfId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] uppercase tracking-wider text-red-300 hover:text-red-200 underline underline-offset-2"
+                      >
+                        Open in n8n
+                      </a>
+                      <button
+                        onClick={() => acknowledge(h.statsRowId)}
+                        className="text-[10px] uppercase tracking-wider text-zinc-400 hover:text-zinc-200 px-1.5 py-0.5 border border-zinc-700/60 rounded"
+                        title="Hide this error until it next fires"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
                   </div>
                 );
               })}

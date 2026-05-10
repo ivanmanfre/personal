@@ -191,7 +191,7 @@ export function useOutreachPipeline(timezone?: string) {
   const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
-  const [workflowHealth, setWorkflowHealth] = useState<Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number }>>({});
+  const [workflowHealth, setWorkflowHealth] = useState<Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number; errorAcknowledged: boolean; statsRowId: string | null }>>({});
 
   // Optimistic locks
   const locks = useRef<Map<string, OptimisticLock>>(new Map());
@@ -312,7 +312,7 @@ export function useOutreachPipeline(timezone?: string) {
 
       // Workflow statuses + health
       const ws: Record<string, boolean> = {};
-      const wh: Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number }> = {};
+      const wh: Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number; errorAcknowledged: boolean; statsRowId: string | null }> = {};
       (wfStatusRes.data || []).forEach((r: any) => {
         ws[r.workflow_id] = r.is_active === true;
         wh[r.workflow_id] = {
@@ -321,6 +321,8 @@ export function useOutreachPipeline(timezone?: string) {
           lastError: r.last_error_message,
           errorCount24h: r.error_count_24h ?? 0,
           totalExecutions24h: r.total_executions_24h ?? 0,
+          errorAcknowledged: r.error_acknowledged ?? false,
+          statsRowId: r.id || null,
         };
       });
       setWorkflowStatuses(ws);
