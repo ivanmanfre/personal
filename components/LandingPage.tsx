@@ -566,9 +566,9 @@ const AgentReadySection: React.FC = () => (
       >
         Four preconditions.<br />
         <span style={{ fontStyle: 'italic' }}>
-          When they're all true,{' '}
+          If they're all true,{' '}
           <span style={{ position: 'relative', display: 'inline-block' }}>
-            the system works.
+            you're Agent-Ready.
             <motion.span
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
