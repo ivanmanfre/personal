@@ -836,7 +836,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           {/* Left: massive score */}
           <div>
             <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
-              Automation Opportunity Score
+              Automation Maturity Score
             </p>
             <p style={{
               fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic',
@@ -848,6 +848,9 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             </p>
             <p style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)', marginTop: 8 }}>
               / 100  ·  Grade <span style={{ color: '#7FA868' }}>{report.automation_grade}</span>
+            </p>
+            <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(247,244,239,0.55)', marginTop: 14, fontStyle: 'italic' }}>
+              Higher means more systems doing the work, fewer humans pasting fields.
             </p>
           </div>
 
@@ -1075,49 +1078,20 @@ function SectionNews({ report }: { report: ReportJson }) {
   );
 }
 
-// PHASE 1: Week-1 action card — sage-bordered "if you only do one thing this month" callout before the CTA.
-function SectionWeekOneAction({ report }: { report: ReportJson }) {
+// CLOSING ARC — merged per CEO audit. Was two competing closes (week-1 callout + final CTA);
+// now a single block: highest-priority gap (verdict) → Monday move (action) → Ivan + price → CTA.
+function SectionClosingArc({ report, companyName }: { report: ReportJson; companyName: string }) {
   const w = report.week_one_action;
-  if (!w) return null;
-  return (
-    <motion.section
-      {...inViewProps}
-      className="py-16 lg:py-20"
-    >
-      <div className="max-w-3xl px-6 lg:px-10 py-10 lg:py-12 -mx-6 lg:-mx-10" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
-        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-          If you only do one thing this month
-        </p>
-        <h3 style={{
-          fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.875rem, 3.4vw, 2.75rem)',
-          lineHeight: 1.05, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 12,
-        }}>
-          {w.title}
-        </h3>
-        <SerifBody large className="mt-5"><Emphasized>{w.why}</Emphasized></SerifBody>
-        {w.tools && w.tools.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {w.tools.map((t) => <Chip key={t} label={t} variant="found" />)}
-          </div>
-        )}
-        <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.7)' }}>
-          <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginRight: 8 }}>Outcome:</span>
-          <Emphasized>{w.expected_outcome}</Emphasized>
-        </p>
-      </div>
-    </motion.section>
-  );
-}
-
-function Section6CTA({ report, companyName }: { report: ReportJson; companyName: string }) {
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
 
   return (
-    <section className="border-t border-[color:var(--color-hairline)] py-24 lg:py-32">
+    <section id="cta" className="border-t border-[color:var(--color-hairline)] py-20 lg:py-28" style={{ scrollMarginTop: 80 }}>
       <div className="max-w-3xl">
-        <Kicker>Your next step</Kicker>
+        <Kicker>Your Move</Kicker>
+
+        {/* Verdict headline */}
         <h2
-          className="mt-6 mb-8"
+          className="mt-6 mb-6"
           style={{
             fontFamily: SERIF,
             fontWeight: 400,
@@ -1130,10 +1104,37 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
           Your highest-priority gap is{' '}
           <Italic highlight>{report.top_gap_title}</Italic>.
         </h2>
-        <SerifBody large className="mb-3 max-w-xl"><Emphasized>{report.top_gap_summary}</Emphasized></SerifBody>
-        <SerifBody className="mb-6 max-w-xl"><span style={{ color: 'rgba(26,26,26,0.55)' }}>In the Agent-Ready Assessment, we turn this into a 90-day implementation plan with tool selection, build sequence, and ROI model specific to your team.</span></SerifBody>
 
-        {/* Authority chain: who Ivan is, why this scan was credible. Audit P1 — page assumed reader already knew. */}
+        <SerifBody large className="mb-10 max-w-xl"><Emphasized>{report.top_gap_summary}</Emphasized></SerifBody>
+
+        {/* Monday move — the week-1 action, folded inline */}
+        {w && (
+          <div className="mb-10 max-w-2xl px-6 lg:px-8 py-7 lg:py-8 -mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
+              Monday move
+            </p>
+            <h3 style={{
+              fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
+              lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A', marginTop: 10,
+            }}>
+              {w.title}
+            </h3>
+            <SerifBody className="mt-3"><Emphasized>{w.why}</Emphasized></SerifBody>
+            {w.tools && w.tools.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {w.tools.map((t) => <Chip key={t} label={t} variant="found" />)}
+              </div>
+            )}
+          </div>
+        )}
+
+        <SerifBody className="mb-8 max-w-xl">
+          <span style={{ color: 'rgba(26,26,26,0.7)' }}>
+            The Monday move buys time. The Agent-Ready Assessment turns this whole scan into a 90-day plan: tool selection, build sequence, and ROI model specific to your team.
+          </span>
+        </SerifBody>
+
+        {/* Authority chain — who Ivan is, why this scan was credible */}
         <div className="mb-10 max-w-xl flex items-start gap-4 py-5 border-t border-b border-[color:var(--color-hairline)]">
           <img
             src="/ivan-portrait-400.webp"
@@ -1148,7 +1149,6 @@ function Section6CTA({ report, companyName }: { report: ReportJson; companyName:
           </p>
         </div>
 
-        {/* Price disclosure ABOVE the button per audit (avoids sticker shock after click) */}
         <p className="mb-4" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
@@ -1214,7 +1214,7 @@ const CinematicHero: React.FC<{
             <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
           </div>
           <div className="lg:w-80 lg:shrink-0">
-            <Kicker>Automation Opportunity Score</Kicker>
+            <Kicker>Automation Maturity Score</Kicker>
             <div className="mt-4">
               <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
             </div>
@@ -1477,8 +1477,8 @@ const ScanReportPage: React.FC = () => {
         <SectionNews report={report} />
         {/* Section4AiAdoption removed per CEO audit — folded into dark band as AiPostureRowDark */}
         <Section5Competitive report={report} />
-        <SectionWeekOneAction report={report} />
-        <Section6CTA report={report} companyName={companyName} />
+        {/* Week-1 + CTA merged per CEO audit into one closing arc */}
+        <SectionClosingArc report={report} companyName={companyName} />
       </div>
     </div>
   );

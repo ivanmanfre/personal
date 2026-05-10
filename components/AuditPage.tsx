@@ -62,12 +62,22 @@ const AuditPage: React.FC = () => {
   // Subscribe to realtime once we have a company_slug
   const { scan } = useScan(companySlug, { realtime: true });
 
-  // Transition to teaser when scan completes
+  // Transition to teaser only when complete AND the report payload has arrived.
+  // Without the report_json gate, status can flip first and leave the teaser render blank.
   useEffect(() => {
-    if (scan && scan.status === 'complete' && stage === 'processing') {
+    if (scan && scan.status === 'complete' && scan.report_json && stage === 'processing') {
       setStage('teaser');
     }
   }, [scan, stage]);
+
+  // Safety: if status is complete but report_json never arrives within 8s, just redirect to /scan/<slug>.
+  // Avoids a permanently-blank screen if the realtime subscription loses the report payload.
+  useEffect(() => {
+    if (stage !== 'processing' || !companySlug) return;
+    if (!scan || scan.status !== 'complete' || scan.report_json) return;
+    const id = setTimeout(() => { window.location.href = `/scan/${companySlug}`; }, 8000);
+    return () => clearTimeout(id);
+  }, [stage, scan, companySlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,7 +297,7 @@ const AuditPage: React.FC = () => {
                   {/* Score */}
                   <div>
                     <p className="mb-3" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-                      Automation Opportunity Score
+                      Automation Maturity Score
                     </p>
                     <ScoreBar
                       score={scan.automation_score ?? 0}
@@ -530,9 +540,9 @@ const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }>
         </div>
       </div>
 
-      {/* Reassurance line */}
+      {/* Reassurance line — generic; never name vendors */}
       <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.6)' }}>
-        We're hitting Apollo, LinkedIn, SimilarWeb, SerpApi, GitHub, your DNS, and your homepage. The full report typically lands in two to three minutes. You can leave this tab open or close it: we email the link when it's ready.
+        Pulling tech stack, traffic, ad activity, hiring, and public DNS. The full report typically lands in two to three minutes. Leave this tab open or close it. We'll email the link when it's ready.
       </p>
     </motion.div>
   );
