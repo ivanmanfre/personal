@@ -438,9 +438,18 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   if (t?.global_rank) stats.push({ label: 'Global rank', display: `#${t.global_rank.toLocaleString()}` });
   if (t?.bounce_rate != null) stats.push({ label: 'Bounce rate', display: `${(t.bounce_rate * 100).toFixed(0)}%` });
   if (t?.avg_visit_duration) {
-    // SimilarWeb returns "00:00:53" string; show as-is or convert
     const v = t.avg_visit_duration as unknown;
-    stats.push({ label: 'Avg visit', display: typeof v === 'string' ? v : String(v) });
+    let display = '';
+    if (typeof v === 'number') {
+      // Fast SimilarWeb returns raw seconds (e.g. 53.32). Format as MM:SS.
+      const total = Math.round(v);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      display = m > 0 ? `${m}m ${s}s` : `${s}s`;
+    } else {
+      display = String(v);
+    }
+    stats.push({ label: 'Avg visit', display });
   }
   if (t?.top_country) stats.push({ label: 'Top country', display: t.top_country });
 
@@ -492,7 +501,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 function Section3Opportunities({ report }: { report: ReportJson }) {
   return (
     <Section
-      kicker={`03 / ${report.opportunities.length} Opportunities`}
+      kicker={`04 / ${report.opportunities.length} Opportunities`}
       title={<>Where time <Italic>quietly leaks</Italic>.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
@@ -625,7 +634,7 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
   if (all.length === 0) return null;
 
   return (
-    <Section kicker="04 / Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
+    <Section kicker="05 / Live Ad Activity" title={<>What they're <Italic>spending on, right now</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
         Pulled live from public ad libraries: Google Ads Transparency Center, Meta Ads Library, LinkedIn Ad Library. Active campaigns, surfaced for context.
       </SerifBody>
@@ -657,7 +666,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section kicker="05 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
+    <Section kicker="07 / AI Adoption" title={<>Where they sit <Italic>on the curve</Italic>.</>}>
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -692,7 +701,7 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   const tooThin = ctx.trim().split(/\s+/).length < 30;
   if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section kicker="06 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
+    <Section kicker="08 / Competitive Context" title={<>The <Italic>field they play in</Italic>.</>}>
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -724,7 +733,7 @@ function SectionScoreBreakdown({ report }: { report: ReportJson }) {
     { key: 'traffic_quality', label: 'Traffic quality' },
   ];
   return (
-    <Section kicker="03 / Score Breakdown" title={<>How the <Italic>52 was earned</Italic>.</>}>
+    <Section kicker="03 / Score Breakdown" title={<>How the <Italic>{report.automation_score} was earned</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
         Five categories, each scored 0 to 20. The sum is the automation opportunity score. Hover any bar for the rationale.
       </SerifBody>
@@ -795,7 +804,7 @@ function SectionContentSample({ report }: { report: ReportJson }) {
   const posts = report.linkedin_summary?.posts;
   if (!posts || posts.length === 0) return null;
   return (
-    <Section kicker="07 / Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
+    <Section kicker="06 / Their Voice" title={<>What they're <Italic>publishing</Italic>.</>}>
       <SerifBody className="mb-10 max-w-2xl">
         Two of their most recent LinkedIn posts. We read what they write. The opportunity titles below cite specific themes from this content where relevant.
       </SerifBody>
