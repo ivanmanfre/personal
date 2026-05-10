@@ -479,7 +479,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
       </div>
       {/* Source attribution: trust signal — every stat traces to a real provider */}
       <p className="mt-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-        Sources: SimilarWeb (traffic) · Crunchbase (funding) · Apollo (headcount) · DNS verification
+        Sources: SimilarWeb (traffic) · Apollo (headcount + revenue) · DNS verification
       </p>
       {f?.crunchbase_url && (
         <a

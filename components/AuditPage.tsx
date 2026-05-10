@@ -31,10 +31,12 @@ const AuditPage: React.FC = () => {
   const [stage, setStage] = useState<Stage>('form');
   const [urlInput, setUrlInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
+  const [honeypot, setHoneypot] = useState(''); // Anti-spam: real users never see this. Bots auto-fill it.
   const [companySlug, setCompanySlug] = useState<string | null>(null);
   const [prospectCompanyName, setProspectCompanyName] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState(0);
+  const [formMountedAt] = useState(() => Date.now());
 
   // Pre-fill from prospect token
   useEffect(() => {
@@ -72,6 +74,19 @@ const AuditPage: React.FC = () => {
     const urlVal = urlInput.trim();
     const emailVal = emailInput.trim().toLowerCase();
     if (!urlVal || !emailVal) return;
+
+    // Anti-spam: bot caught
+    if (honeypot.trim().length > 0) {
+      // Silent fail — don't tell the bot why. Pretend it succeeded but never actually submit.
+      setStage('processing');
+      return;
+    }
+    // Anti-spam: form filled in <3 seconds → almost certainly a bot
+    const fillTime = Date.now() - formMountedAt;
+    if (fillTime < 3000) {
+      setSubmitError('Please take a moment to verify the details and try again.');
+      return;
+    }
 
     setStage('processing');
     setProcessingStep(0);
@@ -168,6 +183,19 @@ const AuditPage: React.FC = () => {
                     className="w-full px-4 py-3 bg-paper-raise border border-[color:var(--color-hairline-bold)] rounded-lg text-ink placeholder:text-ink-mute focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent transition-colors"
                   />
                 </div>
+
+                {/* Honeypot: hidden from real users via off-screen positioning + tab-skip + autocomplete-off.
+                    Bots that auto-fill all form fields will populate this and get silently rejected. */}
+                <input
+                  type="text"
+                  name="company_role"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  aria-hidden="true"
+                  style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+                />
 
                 {submitError && (
                   <div className="flex items-center gap-2 text-red-600 text-sm">
