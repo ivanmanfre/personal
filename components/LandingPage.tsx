@@ -370,22 +370,22 @@ const PRECONDITIONS = [
   {
     n: '01',
     title: 'You decide with data, not vibes',
-    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?" — they should point to a row in a spreadsheet, not a feeling.',
+    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should point to a row in a spreadsheet, not a feeling.',
   },
   {
     n: '02',
     title: 'The playbook lives in one person’s head',
-    sub: 'Your senior operator makes the call without thinking. That means a playbook exists — it’s just never been written down. We write it down.',
+    sub: 'Your senior operator makes the call without thinking. That means a playbook exists. It’s just never been written down. We write it down.',
   },
   {
     n: '03',
     title: 'You can name the workflow eating the most hours',
-    sub: 'Don’t overthink it. You know which one. It’s the one your team reroutes around — the one you’d love to delete.',
+    sub: 'Don’t overthink it. You know which one. It’s the one your team reroutes around. The one you’d love to delete.',
   },
   {
     n: '04',
     title: 'The work happens often enough to be worth encoding',
-    sub: 'It’s not a one-off project. The same workflow runs every week — every client, every cycle, every billing run. That’s where automation compounds.',
+    sub: 'It’s not a one-off project. The same workflow runs every week. Every client, every cycle, every billing run. That’s where automation compounds.',
   },
 ];
 
