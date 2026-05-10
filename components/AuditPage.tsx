@@ -244,7 +244,7 @@ const AuditPage: React.FC = () => {
                 </button>
 
                 <p className="text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-                  14 public sources · 3 min · No spam, no follow-ups
+                  14 public sources · 3 min · Report sent to your inbox
                 </p>
               </motion.form>
             )}

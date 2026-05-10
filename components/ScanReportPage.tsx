@@ -568,10 +568,52 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   );
 }
 
+// Stakes-of-failure block. Compounds opportunity dollar leakage to 12 months.
+// Sits right under the dark band as the visceral stakes beat (Conversion specialist's PAS Agitate).
+// Quick, oversized number, no preamble.
+function SectionStakes({ report }: { report: ReportJson }) {
+  const reduceMotion = useReducedMotion();
+  const monthly = (report.opportunities || []).reduce((sum, o) => sum + (o.estimated_monthly_cost || 0), 0);
+  if (monthly <= 0) return null;
+  const annual = monthly * 12;
+  const annualDisplay = annual >= 100_000
+    ? `$${(annual / 1000).toFixed(0)}K`
+    : `$${annual.toLocaleString()}`;
+  return (
+    <motion.section
+      id="stakes"
+      initial={reduceMotion ? false : { y: 14 }}
+      whileInView={{ y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="py-14 lg:py-20"
+      style={{ scrollMarginTop: 80 }}
+    >
+      <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-baseline max-w-5xl">
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+          12-month cost of inaction
+        </p>
+        <div>
+          <p style={{
+            fontFamily: SERIF, fontStyle: 'italic',
+            fontSize: 'clamp(4rem, 8vw, 6.5rem)', lineHeight: 0.92,
+            letterSpacing: '-0.035em', color: '#A85439',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            <Scramble value={annualDisplay} duration={0.5} />
+          </p>
+          <SerifBody className="mt-4 max-w-2xl">
+            <Emphasized>
+              {`If nothing changes in the next 12 months, the gaps below compound to **${annualDisplay}** in unleveraged time and missed conversion. The earlier the system gets built, the less of that bill you actually pay.`}
+            </Emphasized>
+          </SerifBody>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
 // W1.2 — Priority gap appears immediately after the dark band, before the 5-card enumeration.
-// Tells the user what matters most BEFORE drowning them in parallel options. UX + Conversion both
-// flagged that "highest-priority gap" was buried at scroll position 5; this lifts the verdict to
-// position 2. The full Closing Arc still ships at the end (with the Monday move + CTA).
 function SectionPriorityGap({ report }: { report: ReportJson }) {
   const reduceMotion = useReducedMotion();
   return (
@@ -903,9 +945,11 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
   const scoreColor = lightenForDark(gradeColor(report.automation_grade));
 
   // Breakdown bar tones stay independent (high/mid/low) — these are PER-DIMENSION verdicts,
-  // not the overall score. Keeping them dimension-specific preserves the "winning vs not" reveal.
+  // not the overall score. Tones SOFTENED per IA spec ("AI ADOPTION 3/20 in coral red competes
+  // with the 52 for attention" — louder than the headline). Failed dims now in muted coral instead
+  // of bright red, so the headline score keeps its rank as the loudest thing on the band.
   const toneFor = (pct: number) =>
-    pct >= 70 ? '#7FA868' : pct >= 40 ? '#D89254' : '#C76354';
+    pct >= 70 ? '#7FA868' : pct >= 40 ? '#C7864E' : '#A8625C';
 
   return (
     <section
@@ -1776,6 +1820,8 @@ const ScanReportPage: React.FC = () => {
 
       {/* ACT 3 → ACT 5: gaps, then proof, then action */}
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
+        {/* Stakes-of-failure beat: 12-month cost compounded from opp leakage. PAS Agitate. */}
+        <SectionStakes report={report} />
         {/* W1.2 — verdict before enumeration: tell the user the #1 gap before showing all 5 cards */}
         <SectionPriorityGap report={report} />
         <Section3Opportunities report={report} companyName={companyName} />
