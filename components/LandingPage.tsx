@@ -374,17 +374,17 @@ const PRECONDITIONS = [
   },
   {
     n: '02',
-    title: 'The rules are in someone’s head',
-    sub: 'Your best person makes the call without thinking. That means there ARE rules — you just haven’t written them down yet. We can.',
+    title: 'The playbook lives in one person’s head',
+    sub: 'Your senior operator makes the call without thinking. That means a playbook exists — it’s just never been written down. We write it down.',
   },
   {
     n: '03',
-    title: 'You already know which workflow is the bottleneck',
-    sub: 'Don’t think too hard. It’s the one your team reroutes around. The one nobody wants to touch on a Friday afternoon.',
+    title: 'You can name the workflow nobody wants to touch on Friday',
+    sub: 'Don’t overthink it. It’s the one your team reroutes around. The one that always slips to next week.',
   },
   {
     n: '04',
-    title: 'You want a system that doesn’t replace your team',
+    title: 'You want to remove the bottleneck, not the people',
     sub: 'AI handles the repeat work. Your people handle the calls only humans should make. Nobody gets fired. The bottleneck does.',
   },
 ];
