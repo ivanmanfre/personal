@@ -1,6 +1,7 @@
 // components/scan/OpportunityCard.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 import type { Opportunity } from '../../lib/scanTypes';
 import { Emphasized } from '../ScanReportPage';
 
@@ -8,17 +9,20 @@ interface Props {
   opportunity: Opportunity;
   index: number;
   prominent?: boolean;
+  /** Calendly URL for the prominent card's editorial-link CTA (W1.1). Only rendered when prominent is true. */
+  inlineCtaHref?: string;
 }
 
 const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
 const BODY_SERIF = '"Source Serif 4", Georgia, serif';
 const MONO = '"IBM Plex Mono", monospace';
 
-export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent = false }) => {
+export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent = false, inlineCtaHref }) => {
   const titleSize = prominent ? 'clamp(2rem, 3.6vw, 3rem)' : 'clamp(1.4rem, 2.2vw, 1.75rem)';
   const evidenceSize = prominent ? '19px' : '17px';
-  const numeralSize = prominent ? 'clamp(3.5rem, 5.5vw, 5rem)' : 'clamp(2.25rem, 3.6vw, 3rem)';
-  const costSize = prominent ? 'clamp(2.5rem, 4.5vw, 4rem)' : 'clamp(1.75rem, 3vw, 2.5rem)';
+  // W1.7 — money column hierarchy: dollar figure is the buying argument, must dominate visually.
+  // Hours demoted to a small mono microcopy line above (was a competing italic numeral).
+  const costSize = prominent ? 'clamp(3.5rem, 6vw, 5rem)' : 'clamp(2.25rem, 4vw, 3.25rem)';
 
   return (
     <motion.article
@@ -79,24 +83,9 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
         </div>
       </div>
 
-      {/* Right: stats rail */}
-      <aside className="lg:border-l lg:border-[color:var(--color-hairline)] lg:pl-8 space-y-6">
-        <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-            Weekly hours
-          </p>
-          <p style={{
-            fontFamily: SERIF,
-            fontStyle: 'italic',
-            fontSize: numeralSize,
-            lineHeight: 1,
-            letterSpacing: '-0.02em',
-            color: '#1A1A1A',
-            marginTop: 4,
-          }}>
-            {opportunity.estimated_weekly_hours}<span style={{ fontStyle: 'normal', fontFamily: MONO, fontSize: '14px', color: 'rgba(26,26,26,0.65)', marginLeft: 6 }}>h</span>
-          </p>
-        </div>
+      {/* Right: stats rail. W1.7 — dollar figure dominates; hours becomes microcopy. */}
+      <aside className="lg:border-l lg:border-[color:var(--color-hairline)] lg:pl-8 space-y-5">
+        {/* Cost — visually dominant */}
         <div>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             Costing you monthly
@@ -108,11 +97,15 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
             lineHeight: 1,
             letterSpacing: '-0.02em',
             color: 'var(--color-accent)',
-            marginTop: 4,
+            marginTop: 6,
           }}>
             ${opportunity.estimated_monthly_cost.toLocaleString()}
           </p>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', color: 'rgba(26,26,26,0.55)', marginTop: 8, textTransform: 'uppercase' }}>
+            {opportunity.estimated_weekly_hours}h / week of leverage lost
+          </p>
         </div>
+        {/* ROI body */}
         <div>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
             ROI
@@ -121,6 +114,30 @@ export const OpportunityCard: React.FC<Props> = ({ opportunity, index, prominent
             <Emphasized>{opportunity.roi_estimate}</Emphasized>
           </p>
         </div>
+
+        {/* W1.1 — Editorial-link inline CTA on the prominent card only.
+            Quiet underlined sage text, not a button. Catches the prospect at arousal peak
+            (right after the highest-leverage opportunity) instead of waiting for the close. */}
+        {prominent && inlineCtaHref && (
+          <a
+            href={inlineCtaHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-baseline gap-1.5 pt-3"
+            style={{
+              fontFamily: BODY_SERIF,
+              fontSize: '14px',
+              fontStyle: 'italic',
+              color: 'var(--color-accent)',
+              borderTop: '1px solid rgba(76,110,61,0.25)',
+              textDecoration: 'underline',
+              textUnderlineOffset: '3px',
+              textDecorationColor: 'rgba(76,110,61,0.4)',
+            }}
+          >
+            See how the Assessment scopes this <ArrowRight className="w-3 h-3 self-center transition-transform group-hover:translate-x-0.5" />
+          </a>
+        )}
       </aside>
     </motion.article>
   );

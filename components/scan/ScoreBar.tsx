@@ -29,18 +29,19 @@ export const ScoreBar: React.FC<Props> = ({ score, grade, size = 'sm' }) => {
   useEffect(() => {
     if (animationStarted.current || reduceMotion || !inView) return;
     animationStarted.current = true;
-    // Brief animation: 0 → score over 1.2s. If JS fails / IO never fires, the user still sees the real number.
+    // W1.3 — animation capped at 0.4s (was 0.8s counter / 1.0s fill) per Doherty Threshold.
+    // Pre-fix: scrolling from hero to dark band caught a mid-count "94" instead of the real "52".
     setDisplayed(0);
     setFilled(0);
     const c1 = animate(0, score, {
-      duration: 0.8,
+      duration: 0.4,
       ease: EASE,
       onUpdate: (v) => setDisplayed(Math.round(v)),
       onComplete: () => setDisplayed(score),
     });
     const c2 = animate(0, score, {
-      duration: 1.0,
-      delay: 0.1,
+      duration: 0.5,
+      delay: 0.05,
       ease: EASE,
       onUpdate: (v) => setFilled(v),
       onComplete: () => setFilled(score),

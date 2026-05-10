@@ -9,6 +9,7 @@ import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative } from '../lib/scanTypes';
+import { gradeColor } from '../lib/scanApi';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -316,7 +317,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section id="company" kicker="The Company" title={<>Who you are, <Italic>what you run on</Italic>.</>}>
+    <Section id="company" kicker="The Company" title="Who you are, what you run on.">
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
       <div className="space-y-12 max-w-4xl">
         {/* 1. Description + facts strip */}
@@ -545,19 +546,79 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
   );
 }
 
-function Section3Opportunities({ report }: { report: ReportJson }) {
+// W1.2 — Priority gap appears immediately after the dark band, before the 5-card enumeration.
+// Tells the user what matters most BEFORE drowning them in parallel options. UX + Conversion both
+// flagged that "highest-priority gap" was buried at scroll position 5; this lifts the verdict to
+// position 2. The full Closing Arc still ships at the end (with the Monday move + CTA).
+function SectionPriorityGap({ report }: { report: ReportJson }) {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.section
+      id="priority-gap"
+      initial={reduceMotion ? false : { y: 14 }}
+      whileInView={{ y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="py-16 lg:py-24"
+      style={{ scrollMarginTop: 80 }}
+    >
+      <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-baseline max-w-5xl">
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
+          Your #1 Gap
+        </p>
+        <div>
+          <h2 style={{
+            fontFamily: SERIF, fontWeight: 400,
+            fontSize: 'clamp(2rem, 4.2vw, 3.25rem)', lineHeight: 1.05,
+            letterSpacing: '-0.02em', color: '#1A1A1A',
+          }}>
+            {report.top_gap_title}.
+          </h2>
+          <SerifBody large className="mt-5 max-w-2xl">
+            <Emphasized>{report.top_gap_summary}</Emphasized>
+          </SerifBody>
+          <a
+            href="#opportunities"
+            className="inline-flex items-baseline gap-1.5 mt-6 group"
+            style={{
+              fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
+          >
+            See the full {report.opportunities.length} opportunities below ↓
+          </a>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
+
+function Section3Opportunities({ report, companyName }: { report: ReportJson; companyName: string }) {
+  // W1.1 — Calendly URL for the inline CTA on the prominent (top) card. Same query params as the
+  // closing arc CTA so analytics + Calendly prefill work identically across both touchpoints.
+  const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent(report.top_gap_title)}`;
+  // W1.5 — italic-pivot removed from this section (kept only on Hero, Dark band, Traffic mix, Closing arc)
   return (
     <Section
       id="opportunities"
       kicker={`${report.opportunities.length} Opportunities`}
-      title={<>Where time <Italic>quietly leaks</Italic>.</>}
+      title="Where time quietly leaks."
     >
       <SerifBody className="mb-10 max-w-2xl">
         Each gap below is sourced from a specific signal we observed. No speculation. The dollar values assume mid-tier ops cost.
       </SerifBody>
       <div className="space-y-2">
         {report.opportunities.map((opp, i) => (
-          <OpportunityCard key={i} opportunity={opp} index={i} prominent={i === 0} />
+          <OpportunityCard
+            key={i}
+            opportunity={opp}
+            index={i}
+            prominent={i === 0}
+            inlineCtaHref={i === 0 ? calendlyUrl : undefined}
+          />
         ))}
       </div>
     </Section>
@@ -695,7 +756,7 @@ function SectionAdActivity({ report }: { report: ReportJson }) {
     : `Active on ${platformsLine}. Sample below.`;
 
   return (
-    <Section id="ad-activity" kicker="Live Ad Activity" title={<>Where your <Italic>spend lands</Italic>.</>}>
+    <Section id="ad-activity" kicker="Live Ad Activity" title="Where your spend lands.">
       <SerifBody className="mb-8 max-w-2xl">
         <Emphasized>{`**${cadenceLine}**`}</Emphasized> Pulled live from public ad libraries. Look for repeated hooks: each rerun is a creative refresh you didn't run.
       </SerifBody>
@@ -727,7 +788,7 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   const m = meta[signal] ?? meta.unknown;
 
   return (
-    <Section id="ai-adoption" kicker="AI Adoption" title={<>Where you sit <Italic>on the curve</Italic>.</>}>
+    <Section id="ai-adoption" kicker="AI Adoption" title="Where you sit on the curve.">
       <div className="space-y-6 max-w-2xl">
         <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
@@ -762,7 +823,7 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   const tooThin = ctx.trim().split(/\s+/).length < 30;
   if (!ctx || apologized || (tooThin && (!report.competitors || report.competitors.length === 0))) return null;
   return (
-    <Section id="competitive" kicker="Competitive Context" title={<>The <Italic>field you play in</Italic>.</>}>
+    <Section id="competitive" kicker="Competitive Context" title="The field you play in.">
       <SerifBody large className="mb-8 max-w-2xl">{report.competitive_context}</SerifBody>
       {report.competitors.length > 0 && (
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -797,7 +858,24 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
     { key: 'traffic_quality',label: 'Audience quality' },
   ];
 
-  // Sage on dark for high; soft warm for low. Brighter than the light-mode palette so it pops on #0F0F0F.
+  // W1.3 — color-lock the dark band score to the SAME color as the hero score.
+  // Pre-fix: hero was warm orange (Grade C), dark band was sage green — looked like two different
+  // numbers. Now both surfaces use gradeColor() so the score keeps a single visual identity.
+  // Lighten gradeColor on the dark background so it stays legible (same hue, brighter for contrast).
+  const lightenForDark = (hex: string): string => {
+    const map: Record<string, string> = {
+      '#4C6E3D': '#7FA868', // A → bright sage
+      '#5C8049': '#8FB677', // B → mid sage
+      '#B45309': '#E8A23F', // C → warm gold
+      '#A85439': '#D89254', // D → warm coral
+      '#9B2C2C': '#D26D6D', // F → soft red
+    };
+    return map[hex] ?? hex;
+  };
+  const scoreColor = lightenForDark(gradeColor(report.automation_grade));
+
+  // Breakdown bar tones stay independent (high/mid/low) — these are PER-DIMENSION verdicts,
+  // not the overall score. Keeping them dimension-specific preserves the "winning vs not" reveal.
   const toneFor = (pct: number) =>
     pct >= 70 ? '#7FA868' : pct >= 40 ? '#D89254' : '#C76354';
 
@@ -841,13 +919,15 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             <p style={{
               fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic',
               fontSize: 'clamp(7rem, 14vw, 12rem)', lineHeight: 0.92,
-              letterSpacing: '-0.04em', color: '#7FA868', marginTop: 12,
+              letterSpacing: '-0.04em', color: scoreColor, marginTop: 12,
               fontVariantNumeric: 'tabular-nums',
             }}>
-              <Scramble value={String(report.automation_score)} duration={1.2} />
+              {/* W1.3 — animation capped at 0.4s (was 1.2s) per Doherty Threshold; user reads the
+                  real number quickly instead of getting stuck on mid-scramble digits like "94" */}
+              <Scramble value={String(report.automation_score)} duration={0.4} />
             </p>
             <p style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)', marginTop: 8 }}>
-              / 100  ·  Grade <span style={{ color: '#7FA868' }}>{report.automation_grade}</span>
+              / 100  ·  Grade <span style={{ color: scoreColor }}>{report.automation_grade}</span>
             </p>
             <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(247,244,239,0.55)', marginTop: 14, fontStyle: 'italic' }}>
               Higher means more systems doing the work, fewer humans pasting fields.
@@ -892,8 +972,12 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
         {/* AI posture — was a standalone section, folded in here per CEO audit (it's just a verdict line, not a full act) */}
         <AiPostureRowDark report={report} />
 
-        {/* Peer comparison — only when meaningfully different */}
-        <PeerComparisonInlineDark report={report} />
+        {/* W1.6 — Peer comparison hidden until we have real benchmark data.
+            Currently `peer_median.score` is a hardcoded estimate per size_tier in the Claude prompt
+            (micro: 35, small: 42, mid: 50, large: 58) — not aggregated from prior scans.
+            Will rebuild from Supabase aggregation once we have 50+ scans per tier (Week 3+).
+            Component kept defined below so re-enabling is a one-line change. */}
+        {/* <PeerComparisonInlineDark report={report} /> */}
       </div>
     </section>
   );
@@ -961,7 +1045,7 @@ function SectionContentSample({ report }: { report: ReportJson }) {
   const posts = report.linkedin_summary?.posts;
   if (!posts || posts.length === 0) return null;
   return (
-    <Section id="voice" kicker="Your Voice" title={<>What you're <Italic>publishing</Italic>.</>}>
+    <Section id="voice" kicker="Your Voice" title="What you're publishing.">
       <SerifBody className="mb-10 max-w-2xl">
         Two of your most recent LinkedIn posts, verbatim. Cadence matters more than content here.
       </SerifBody>
@@ -995,7 +1079,7 @@ function SectionHiring({ report }: { report: ReportJson }) {
   const h = report.hiring;
   if (!h || (h.open_count === 0 && (!h.sample_titles || h.sample_titles.length === 0))) return null;
   return (
-    <Section id="hiring" kicker="Hiring" title={<>What you're <Italic>paying humans</Italic> to do.</>}>
+    <Section id="hiring" kicker="Hiring" title="What you're paying humans to do.">
       <SerifBody className="mb-12 max-w-2xl">
         Each open seat is current evidence of a workflow that exists today. Some roles are core human work. Others are repetitive patterns where agents are starting to compete.
       </SerifBody>
@@ -1049,7 +1133,7 @@ function SectionNews({ report }: { report: ReportJson }) {
   const news = report.recent_news;
   if (!news || news.length === 0) return null;
   return (
-    <Section kicker="Recent Momentum" title={<>What's happened in <Italic>the last 90 days</Italic>.</>}>
+    <Section id="news" kicker="Recent Momentum" title="What's happened in the last 90 days.">
       <SerifBody className="mb-10 max-w-2xl">
         Public mentions and announcements. New funding or product launches usually mean new workflows worth automating early.
       </SerifBody>
@@ -1469,7 +1553,9 @@ const ScanReportPage: React.FC = () => {
 
       {/* ACT 3 → ACT 5: gaps, then proof, then action */}
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        <Section3Opportunities report={report} />
+        {/* W1.2 — verdict before enumeration: tell the user the #1 gap before showing all 5 cards */}
+        <SectionPriorityGap report={report} />
+        <Section3Opportunities report={report} companyName={companyName} />
         <SectionFundingTraffic report={report} />
         <SectionAdActivity report={report} />
         <SectionHiring report={report} />

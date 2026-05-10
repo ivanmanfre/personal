@@ -169,7 +169,7 @@ const AuditPage: React.FC = () => {
               color: '#3D3D3B',
             }}
           >
-            We pull your tech stack, ad activity, hiring, and traffic from 14 public sources. Then a model reads it all and tells you exactly where the AI gaps live, in plain English.
+            We pull your tech stack, ad activity, hiring, and traffic from 14 public sources. AI synthesizes the patterns. Ivan reviews every report before it ships.
           </motion.p>
 
           <AnimatePresence mode="wait">
