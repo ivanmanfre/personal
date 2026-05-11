@@ -1669,6 +1669,36 @@ function JawDropSignal({ report }: { report: ReportJson }) {
     );
   }
 
+  // Fallback: paid ads without an image creative — surface count + platforms anyway
+  if (totalAds > 0) {
+    const adPlatforms: string[] = [];
+    if (report.ads?.google_ads?.detected) adPlatforms.push('Google');
+    if (report.ads?.linkedin_ads?.detected) adPlatforms.push('LinkedIn');
+    if (report.ads?.meta_ads?.detected) adPlatforms.push('Meta');
+    const platformStr = adPlatforms.length > 0 ? adPlatforms.join(' + ') : 'paid channels';
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { y: 12, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
+      >
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          Spotted · Live Spend
+        </p>
+        <div className="max-w-3xl">
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
+          </p>
+          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+            Public ad library confirms current spend — captured today.
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
   if (hiringCount > 0) {
     return (
       <motion.div
@@ -2033,7 +2063,12 @@ const ScanReportPage: React.FC = () => {
   }
 
   const report = scan.report_json;
-  const companyName = scan.company_name ?? scan.domain;
+  const rawName = scan.company_name ?? scan.domain;
+  // Apollo sometimes returns names in ALL CAPS — normalize to title case so the H1 doesn't shout.
+  // Conservative: only adjusts when the name is entirely uppercase. Preserves intentional caps like "BNP Paribas".
+  const companyName = (rawName === rawName.toUpperCase() && rawName.length > 2)
+    ? rawName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+    : rawName;
 
   return (
     <div className="min-h-screen bg-paper text-ink">
