@@ -439,20 +439,20 @@ const ProcessingTopBar: React.FC<{ visible: boolean }> = ({ visible }) => {
 // Sources distributed evenly across EXPECTED_SECONDS so the last one checks near the end.
 // Order roughly mirrors actual pipeline order (DNS first, AI synthesis last) for narrative coherence.
 const SCAN_SOURCES: Array<{ name: string; what: string }> = [
-  { name: 'Public DNS',          what: 'TXT records, MX, AI provider verification' },
-  { name: 'Homepage HTML',       what: 'CDN, frameworks, booking widgets, live chat' },
-  { name: 'BuiltWith',           what: 'Tech stack detection' },
-  { name: 'Apollo.io',           what: 'Headcount, revenue range, industry' },
-  { name: 'LinkedIn Company',    what: 'Followers, posts, AI mentions' },
-  { name: 'LinkedIn Jobs',       what: 'Open roles + sample titles' },
-  { name: 'SimilarWeb',          what: 'Traffic mix, top search queries' },
-  { name: 'Meta Ad Library',     what: 'Active Facebook + Instagram ads' },
-  { name: 'LinkedIn Ad Library', what: 'Active LinkedIn ads' },
-  { name: 'Google Ads',          what: 'Active Google ad creatives' },
-  { name: 'GitHub',              what: 'Public repos (engineering signal)' },
-  { name: 'Crunchbase',          what: 'Funding + investor signals' },
-  { name: 'SerpApi News',        what: 'Recent press, last 90 days' },
-  { name: 'Claude synthesis',    what: 'Patterns into gap analysis' },
+  { name: 'Verifying domain records',   what: 'TXT records, MX, AI provider verification' },
+  { name: 'Reading the website',        what: 'Frameworks, booking tools, live chat' },
+  { name: 'Mapping the tech stack',     what: 'Software categories, integrations' },
+  { name: 'Looking up company data',    what: 'Headcount, revenue range, industry' },
+  { name: 'Checking LinkedIn presence', what: 'Followers, posts, AI mentions' },
+  { name: 'Reviewing job postings',     what: 'Open roles + sample titles' },
+  { name: 'Checking web traffic',       what: 'Traffic mix, top search queries' },
+  { name: 'Scanning social ads',        what: 'Active Facebook + Instagram campaigns' },
+  { name: 'Scanning LinkedIn ads',      what: 'Active LinkedIn campaigns' },
+  { name: 'Checking search ads',        what: 'Active Google ad creatives' },
+  { name: 'Looking at public code',     what: 'Engineering activity signal' },
+  { name: 'Checking funding history',   what: 'Investment + growth signals' },
+  { name: 'Finding recent press',       what: 'News coverage, last 90 days' },
+  { name: 'Synthesising findings',      what: 'Patterns into gap analysis' },
 ];
 
 const ProcessingPanel: React.FC<{ companyName: string; onComplete: () => void }> = ({
