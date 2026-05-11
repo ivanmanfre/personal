@@ -45,6 +45,7 @@ const AuditPage: React.FC = () => {
   const [emailInput, setEmailInput] = useState('');
   const [honeypot, setHoneypot] = useState(''); // Anti-spam: real users never see this. Bots auto-fill it.
   const [companySlug, setCompanySlug] = useState<string | null>(null);
+  const [processingStartedAt, setProcessingStartedAt] = useState<number | null>(null);
   const [prospectCompanyName, setProspectCompanyName] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [formMountedAt] = useState(() => Date.now());
@@ -79,6 +80,20 @@ const AuditPage: React.FC = () => {
     return () => clearTimeout(id);
   }, [stage, scan, companySlug]);
 
+  // Hard timeout: scans normally finish in 2-4 min. If we've been polling for 8 min without finding
+  // a complete scan, surface a recovery option instead of looping forever. Handles edge cases like
+  // a deleted record, a polling slug mismatch, or a workflow crash that never updates status.
+  useEffect(() => {
+    if (stage !== 'processing' || !processingStartedAt) return;
+    const id = setTimeout(() => {
+      if (stage === 'processing') {
+        setSubmitError("Scan is taking longer than expected. The workflow may have crashed — try submitting again, or check your inbox for the report.");
+        setStage('form');
+      }
+    }, 8 * 60 * 1000);
+    return () => clearTimeout(id);
+  }, [stage, processingStartedAt]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -101,6 +116,7 @@ const AuditPage: React.FC = () => {
     }
 
     setStage('processing');
+    setProcessingStartedAt(Date.now());
 
     try {
       const result = await submitScan({ url: urlVal, email: emailVal, prospectToken: ref });
@@ -108,6 +124,7 @@ const AuditPage: React.FC = () => {
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
       setStage('form');
+      setProcessingStartedAt(null);
     }
   };
 
