@@ -39,6 +39,7 @@ export const OpportunityCard: React.FC<Props> = ({
       <motion.article
         initial={{ y: 12 }}
         whileInView={{ y: 0 }}
+        whileHover={{ y: -2 }}
         viewport={{ once: true, margin: '-50px' }}
         transition={{ duration: 0.5, ease: EASE, delay: Math.min(index, 4) * 0.06 }}
         className="border-t border-[color:var(--color-hairline)]"
@@ -58,9 +59,21 @@ export const OpportunityCard: React.FC<Props> = ({
           className="w-full grid grid-cols-[1fr_auto_24px] gap-4 sm:gap-8 items-baseline py-5 sm:py-6 text-left transition-colors hover:bg-[rgba(76,110,61,0.04)] focus:outline-none focus-visible:bg-[rgba(76,110,61,0.06)] -mx-3 px-3"
         >
           <div className="min-w-0">
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-              {`Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+                {`Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
+              </p>
+              {opportunity.confidence_tier && (
+                <span style={{
+                  fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+                  padding: '2px 6px',
+                  color: opportunity.confidence_tier === '1' ? '#4C6E3D' : opportunity.confidence_tier === '2' ? '#B45309' : 'rgba(26,26,26,0.45)',
+                  background: opportunity.confidence_tier === '1' ? 'rgba(76,110,61,0.1)' : opportunity.confidence_tier === '2' ? 'rgba(180,83,9,0.08)' : 'rgba(26,26,26,0.05)',
+                }}>
+                  {opportunity.confidence_tier === '1' ? '● Verified' : opportunity.confidence_tier === '2' ? '◐ Inferred' : '○ Industry avg'}
+                </span>
+              )}
+            </div>
             <h3 style={{
               fontFamily: SERIF, fontWeight: 400,
               fontSize: 'clamp(1.25rem, 2vw, 1.6rem)',
@@ -130,6 +143,20 @@ export const OpportunityCard: React.FC<Props> = ({
                       <Emphasized>{opportunity.roi_estimate}</Emphasized>
                     </p>
                   </div>
+                  {(opportunity.complexity || opportunity.time_to_implement) && (
+                    <div className="flex flex-wrap gap-1.5 pt-2">
+                      {opportunity.complexity && (
+                        <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 7px', background: 'rgba(26,26,26,0.06)', color: 'rgba(26,26,26,0.6)' }}>
+                          {opportunity.complexity} complexity
+                        </span>
+                      )}
+                      {opportunity.time_to_implement && (
+                        <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 7px', background: 'rgba(26,26,26,0.06)', color: 'rgba(26,26,26,0.6)' }}>
+                          {opportunity.time_to_implement}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </aside>
               </div>
             </motion.div>
@@ -156,9 +183,21 @@ export const OpportunityCard: React.FC<Props> = ({
       {/* Left: prose */}
       <div className="space-y-5 min-w-0">
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: prominent ? 'var(--color-accent)' : 'rgba(26,26,26,0.65)' }}>
-            {prominent ? 'Top priority' : `Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: prominent ? 'var(--color-accent)' : 'rgba(26,26,26,0.65)' }}>
+              {prominent ? 'Top priority' : `Opportunity ${String(index + 1).padStart(2, '0')}`} · {opportunity.signal_source}
+            </p>
+            {opportunity.confidence_tier && (
+              <span style={{
+                fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase',
+                padding: '2px 6px',
+                color: opportunity.confidence_tier === '1' ? '#4C6E3D' : opportunity.confidence_tier === '2' ? '#B45309' : 'rgba(26,26,26,0.45)',
+                background: opportunity.confidence_tier === '1' ? 'rgba(76,110,61,0.1)' : opportunity.confidence_tier === '2' ? 'rgba(180,83,9,0.08)' : 'rgba(26,26,26,0.05)',
+              }}>
+                {opportunity.confidence_tier === '1' ? '● Verified' : opportunity.confidence_tier === '2' ? '◐ Inferred' : '○ Industry avg'}
+              </span>
+            )}
+          </div>
           <h3 style={{
             fontFamily: SERIF,
             fontWeight: 400,
@@ -230,6 +269,22 @@ export const OpportunityCard: React.FC<Props> = ({
             <Emphasized>{opportunity.roi_estimate}</Emphasized>
           </p>
         </div>
+
+        {/* Complexity + time chips */}
+        {(opportunity.complexity || opportunity.time_to_implement) && (
+          <div className="flex flex-wrap gap-1.5">
+            {opportunity.complexity && (
+              <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 7px', background: 'rgba(26,26,26,0.06)', color: 'rgba(26,26,26,0.6)' }}>
+                {opportunity.complexity} complexity
+              </span>
+            )}
+            {opportunity.time_to_implement && (
+              <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 7px', background: 'rgba(26,26,26,0.06)', color: 'rgba(26,26,26,0.6)' }}>
+                {opportunity.time_to_implement}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* W1.1 — Editorial-link inline CTA on the prominent card only.
             Quiet underlined sage text, not a button. Catches the prospect at arousal peak. */}

@@ -1,7 +1,7 @@
 // components/ScanReportPage.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, animate, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { motion, animate, AnimatePresence, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
@@ -616,6 +616,9 @@ function SectionStakes({ report }: { report: ReportJson }) {
 // W1.2 — Priority gap appears immediately after the dark band, before the 5-card enumeration.
 function SectionPriorityGap({ report }: { report: ReportJson }) {
   const reduceMotion = useReducedMotion();
+  const monthly = (report.opportunities || []).reduce((sum, o) => sum + (o.estimated_monthly_cost || 0), 0);
+  const annualCost = monthly * 12;
+  const annualDisplay = annualCost >= 100_000 ? `$${(annualCost / 1000).toFixed(0)}K` : `$${annualCost.toLocaleString()}`;
   return (
     <motion.section
       id="priority-gap"
@@ -641,6 +644,11 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
           <SerifBody large className="mt-5 max-w-2xl">
             <Emphasized>{report.top_gap_summary}</Emphasized>
           </SerifBody>
+          {annualCost > 0 && (
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+              If nothing changes: <span style={{ color: '#A85439', fontStyle: 'normal', fontWeight: 600 }}>{annualDisplay}</span> in unleveraged capacity over the next 12 months.
+            </p>
+          )}
           <a
             href="#opportunities"
             className="inline-flex items-baseline gap-1.5 mt-6 group"
@@ -913,6 +921,98 @@ function Section5Competitive({ report }: { report: ReportJson }) {
   );
 }
 
+// Pentagon/radar SVG for the 5-dimension score breakdown.
+function PentagonRadarChart({
+  sb, cats, toneFor, reduceMotion,
+}: {
+  sb: NonNullable<ReportJson['score_breakdown']>;
+  cats: Array<{ key: keyof NonNullable<ReportJson['score_breakdown']>; label: string }>;
+  toneFor: (pct: number) => string;
+  reduceMotion: boolean;
+}) {
+  const cx = 130, cy = 120, maxR = 90;
+  const n = cats.length;
+  const getAngle = (i: number) => -Math.PI / 2 + i * (2 * Math.PI / n);
+  const getPoint = (i: number, r: number) => ({
+    x: cx + r * Math.cos(getAngle(i)),
+    y: cy + r * Math.sin(getAngle(i)),
+  });
+  const gridRings = [0.25, 0.5, 0.75, 1.0];
+  const scores = cats.map(({ key }) => {
+    const c = sb[key];
+    return c ? Math.min(1, c.value / c.max) : 0;
+  });
+  const scorePoints = cats.map((_, i) => getPoint(i, maxR * scores[i]));
+  const scorePath = scorePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
+
+  return (
+    <svg viewBox="0 0 270 255" width="270" height="255" style={{ overflow: 'visible', display: 'block' }}>
+      {gridRings.map((ring) => {
+        const pts = cats.map((_, i) => getPoint(i, maxR * ring));
+        return (
+          <polygon
+            key={ring}
+            points={pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
+            fill="none"
+            stroke="rgba(247,244,239,0.12)"
+            strokeWidth="1"
+          />
+        );
+      })}
+      {cats.map((_, i) => {
+        const outer = getPoint(i, maxR);
+        return (
+          <line key={i}
+            x1={cx} y1={cy}
+            x2={outer.x.toFixed(1)} y2={outer.y.toFixed(1)}
+            stroke="rgba(247,244,239,0.08)" strokeWidth="1"
+          />
+        );
+      })}
+      <motion.path
+        d={scorePath}
+        fill="rgba(127,168,104,0.20)"
+        stroke="#7FA868"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.4 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.8, ease: EASE }}
+        style={{ transformOrigin: `${cx}px ${cy}px` }}
+      />
+      {scorePoints.map((p, i) => {
+        const pct = scores[i] * 100;
+        return (
+          <motion.circle
+            key={i}
+            cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={4}
+            fill={toneFor(pct)}
+            initial={reduceMotion ? false : { r: 0 }}
+            whileInView={{ r: 4 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.4, delay: 0.6 + i * 0.06 }}
+          />
+        );
+      })}
+      {cats.map(({ label }, i) => {
+        const pt = getPoint(i, maxR + 22);
+        const isLeft = pt.x < cx - 8;
+        const textAnchor = isLeft ? 'end' : pt.x > cx + 8 ? 'start' : 'middle';
+        return (
+          <text key={i}
+            x={pt.x.toFixed(1)} y={pt.y.toFixed(1)}
+            textAnchor={textAnchor} dominantBaseline="middle"
+            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.12em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
+          >
+            {label}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
 // ACT 2: Dark full-bleed score reveal — the cinematic moment.
 // AI-anchored labels: tech_stack → AI-ready stack, ad_activity → Spend visibility,
 // content_engine → Content velocity, ai_signals → AI adoption, traffic_quality → Audience quality.
@@ -1011,43 +1111,35 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             </p>
           </div>
 
-          {/* Right: 5 breakdown rows. Wider, calmer than the old version. */}
-          <div className="space-y-7 lg:pt-2">
-            {/* Color key — quiet 1-liner so the reader knows sage = strength, coral = gap.
-                IA + Visual specialists both flagged the page uses 3 semantic colors with no key. */}
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.45)', marginBottom: -4 }}>
-              <span style={{ color: '#7FA868' }}>● Sage</span> = strength &nbsp; <span style={{ color: '#D89254' }}>● Warm</span> = gap
-            </p>
-            {cats.map(({ key, label }) => {
-              const c = sb[key];
-              if (!c) return null;
-              const pct = Math.min(100, (c.value / c.max) * 100);
-              const tone = toneFor(pct);
-              return (
-                <div key={key}>
-                  <div className="flex items-baseline justify-between mb-2 gap-4">
-                    <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)' }}>
-                      {label}
-                    </p>
-                    <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '22px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums' }}>
-                      {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.45)', marginLeft: 6, fontStyle: 'normal' }}>/ {c.max}</span>
+          {/* Right: pentagon radar chart + compact dimension legend */}
+          <div className="lg:pt-2 flex flex-col gap-6 items-start">
+            <PentagonRadarChart sb={sb} cats={cats} toneFor={toneFor} reduceMotion={!!reduceMotion} />
+            <div className="w-full space-y-3">
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.35)' }}>
+                <span style={{ color: '#7FA868' }}>● Sage</span> = strength &nbsp; <span style={{ color: '#D89254' }}>● Warm</span> = gap
+              </p>
+              {cats.map(({ key, label }) => {
+                const c = sb[key];
+                if (!c) return null;
+                const pct = Math.min(100, (c.value / c.max) * 100);
+                const tone = toneFor(pct);
+                return (
+                  <div key={key} className="grid grid-cols-[1fr_auto] gap-4 items-start border-b pb-3" style={{ borderColor: 'rgba(247,244,239,0.08)' }}>
+                    <div>
+                      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+                        {label}
+                      </p>
+                      <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.4, marginTop: 2 }}>
+                        {c.rationale}
+                      </p>
+                    </div>
+                    <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                      {c.value}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(247,244,239,0.35)', marginLeft: 5, fontStyle: 'normal' }}>/{c.max}</span>
                     </p>
                   </div>
-                  <div style={{ height: 3, background: 'rgba(247,244,239,0.10)', position: 'relative', overflow: 'hidden' }}>
-                    <motion.div
-                      initial={reduceMotion ? false : { scaleX: 0 }}
-                      whileInView={{ scaleX: pct / 100 }}
-                      viewport={{ once: true, margin: '-40px' }}
-                      transition={{ duration: 1.1, ease: EASE, delay: 0.15 }}
-                      style={{ height: '100%', background: tone, transformOrigin: 'left' }}
-                    />
-                  </div>
-                  <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', color: 'rgba(247,244,239,0.72)', lineHeight: 1.5 }}>
-                    {c.rationale}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -1412,10 +1504,10 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
               {w.title}
             </h3>
             <SerifBody className="mt-3"><Emphasized>{w.why}</Emphasized></SerifBody>
-            {w.tools && w.tools.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {w.tools.map((t) => <Chip key={t} label={t} variant="found" />)}
-              </div>
+            {(w.approach || (w.tools && w.tools.length > 0)) && (
+              <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+                {w.approach ?? w.tools?.join(', ')}
+              </p>
             )}
             <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
               The bigger play (your <strong style={{ color: '#1A1A1A', fontWeight: 600, fontStyle: 'normal' }}>#1 gap</strong> + the rest of the system) lives in the Assessment below.
@@ -1519,6 +1611,182 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
         </div>
       </div>
     </section>
+  );
+}
+
+// JawDropSignal — surfaces the single most visually striking verified signal right after
+// the company brief. Picks: image ad creative > hiring count > LinkedIn post excerpt.
+function JawDropSignal({ report }: { report: ReportJson }) {
+  const reduceMotion = useReducedMotion();
+  const totalAds = (report.ads?.google_ads?.count ?? 0) + (report.ads?.linkedin_ads?.count ?? 0) + (report.ads?.meta_ads?.count ?? 0);
+  const isRenderableImg = (url: string | null | undefined) => url && !/\.(js|html?)(\?|$)/i.test(url);
+  const firstImageCreative =
+    report.ads?.meta_ads?.creatives?.find(c => isRenderableImg(c.images?.[0] || c.preview_url)) ??
+    report.ads?.linkedin_ads?.creatives?.find(c => isRenderableImg(c.preview_url));
+  const hiringCount = report.hiring?.open_count ?? 0;
+  const topPost = report.linkedin_summary?.posts?.[0];
+
+  if (totalAds === 0 && hiringCount === 0 && !topPost) return null;
+
+  const wrapperStyle = { fontFamily: BODY_SERIF };
+
+  if (firstImageCreative && totalAds > 0) {
+    const imgSrc = firstImageCreative.images?.[0] || firstImageCreative.preview_url;
+    const adPlatforms: string[] = [];
+    if (report.ads?.google_ads?.detected) adPlatforms.push('Google');
+    if (report.ads?.linkedin_ads?.detected) adPlatforms.push('LinkedIn');
+    if (report.ads?.meta_ads?.detected) adPlatforms.push('Meta');
+    const platformStr = adPlatforms.length > 0 ? adPlatforms.join(' + ') : 'paid channels';
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { y: 12, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
+      >
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          Spotted · Live Signal
+        </p>
+        <div className="flex gap-6 lg:gap-10 items-start max-w-3xl">
+          {imgSrc && (
+            <div className="shrink-0 w-20 h-20 lg:w-28 lg:h-28 overflow-hidden" style={{ border: '1px solid rgba(26,26,26,0.1)', background: '#EFEAE2' }}>
+              <img src={imgSrc} alt="Active ad creative" className="w-full h-full object-cover" loading="lazy" />
+            </div>
+          )}
+          <div style={wrapperStyle}>
+            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              Running <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
+            </p>
+            {firstImageCreative.body && firstImageCreative.body.trim().length > 20 && (
+              <p className="mt-2 max-w-xl line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)', fontStyle: 'italic' }}>
+                "{firstImageCreative.body.length > 160 ? firstImageCreative.body.slice(0, 157) + '…' : firstImageCreative.body}"
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (hiringCount > 0) {
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { y: 12, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
+      >
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          Spotted · Hiring Signal
+        </p>
+        <div className="max-w-3xl">
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{hiringCount}</span> open {hiringCount === 1 ? 'role' : 'roles'} right now.
+          </p>
+          {report.hiring?.sample_titles && report.hiring.sample_titles.length > 0 && (
+            <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)' }}>
+              Including: <Italic>{report.hiring.sample_titles[0]}</Italic>
+              {report.hiring.sample_titles[1] ? `, ${report.hiring.sample_titles[1]}` : ''}
+              {report.hiring.sample_titles.length > 2 ? ` + ${report.hiring.sample_titles.length - 2} more` : ''}.
+            </p>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (topPost) {
+    return (
+      <motion.div
+        initial={reduceMotion ? false : { y: 12, opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: EASE }}
+        className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
+      >
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          Spotted · Recent Post
+        </p>
+        <blockquote
+          className="max-w-2xl"
+          style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.1rem, 2vw, 1.5rem)', lineHeight: 1.4, color: '#1A1A1A', borderLeft: '2px solid var(--color-accent)', paddingLeft: 16 }}
+        >
+          "{topPost.text.length > 280 ? topPost.text.slice(0, 277) + '…' : topPost.text}"
+        </blockquote>
+        {topPost.reactions != null && (
+          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+            {topPost.reactions} reactions
+          </p>
+        )}
+      </motion.div>
+    );
+  }
+
+  return null;
+}
+
+// SupportingEvidenceAccordion — collapses all evidence sections behind a single expand toggle.
+// Collapsed by default so the core report (score → gap → opps → CTA) is scannable first.
+function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
+  const [open, setOpen] = React.useState(false);
+
+  const hasAnything =
+    !!(report.traffic?.monthly_visits) ||
+    !!(report.ads?.google_ads?.detected || report.ads?.linkedin_ads?.detected || report.ads?.meta_ads?.detected) ||
+    !!(report.hiring?.open_count) ||
+    !!(report.linkedin_summary?.posts?.length) ||
+    !!(report.recent_news?.length) ||
+    !!(report.competitors?.length);
+
+  if (!hasAnything) return null;
+
+  return (
+    <div className="border-t border-[color:var(--color-hairline)] py-10 lg:py-14">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-start justify-between gap-6 text-left group"
+      >
+        <div>
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', marginBottom: 8 }}>
+            {open ? 'Hide' : 'Expand'} supporting evidence
+          </p>
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            The data behind these findings.
+          </p>
+        </div>
+        <motion.span
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.25 }}
+          aria-hidden
+          style={{ fontSize: '28px', color: 'rgba(26,26,26,0.3)', flexShrink: 0, lineHeight: 1, marginTop: 4 }}
+        >
+          +
+        </motion.span>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="evidence-content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: EASE }}
+            style={{ overflow: 'hidden' }}
+          >
+            <SectionFundingTraffic report={report} />
+            <SectionAdActivity report={report} />
+            <SectionHiring report={report} />
+            <SectionContentSample report={report} />
+            <SectionNews report={report} />
+            <Section5Competitive report={report} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -1812,26 +2080,22 @@ const ScanReportPage: React.FC = () => {
         reduceMotion={!!reduceMotion}
       />
 
-      {/* ACT 1 → ACT 2: company brief, then full-bleed dark score reveal (the wow beat) */}
+      {/* ACT 2: Dark full-bleed score reveal — comes immediately after the hero for instant impact */}
+      <SectionScoreRevealDark report={report} />
+
+      {/* ACT 1: Company brief + jaw-drop signal (swapped after dark band for pacing) */}
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <Section1CompanyBrief report={report} />
+        <JawDropSignal report={report} />
       </div>
-      <SectionScoreRevealDark report={report} />
 
       {/* ACT 3 → ACT 5: gaps, then proof, then action */}
       <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        {/* Stakes-of-failure beat: 12-month cost compounded from opp leakage. PAS Agitate. */}
-        <SectionStakes report={report} />
-        {/* W1.2 — verdict before enumeration: tell the user the #1 gap before showing all 5 cards */}
+        {/* W1.2 — verdict before enumeration: annual cost folded in here, Stakes section removed */}
         <SectionPriorityGap report={report} />
         <Section3Opportunities report={report} companyName={companyName} />
-        <SectionFundingTraffic report={report} />
-        <SectionAdActivity report={report} />
-        <SectionHiring report={report} />
-        <SectionContentSample report={report} />
-        <SectionNews report={report} />
-        {/* Section4AiAdoption removed per CEO audit — folded into dark band as AiPostureRowDark */}
-        <Section5Competitive report={report} />
+        {/* Supporting evidence collapsed by default — expands on demand */}
+        <SupportingEvidenceAccordion report={report} />
         {/* W2.1 — Methodology footer (collapsible). Sits before closing arc so a forwarded report
             reader can verify any number before being asked to book. */}
         <SectionMethodology />

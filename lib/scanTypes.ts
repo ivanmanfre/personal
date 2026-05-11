@@ -8,6 +8,9 @@ export interface Opportunity {
   estimated_monthly_cost: number;
   automation_solution: string;
   roi_estimate: string;
+  confidence_tier?: '1' | '2' | '3';
+  complexity?: 'low' | 'medium' | 'high';
+  time_to_implement?: string;
 }
 
 export interface ReportJson {
@@ -25,7 +28,9 @@ export interface ReportJson {
     confirmed_tools: string[];
     missing_critical_tools: string[];
     sophistication_notes: string;
+    apollo_listed_unverified?: string[];
   };
+  data_quality_notes?: string;
   opportunities: Opportunity[];
   competitive_context: string;
   top_gap_title: string;
@@ -42,7 +47,8 @@ export interface ReportJson {
   week_one_action?: {
     title: string;
     why: string;
-    tools: string[];
+    tools?: string[];
+    approach?: string;
     expected_outcome: string;
   };
   peer_median?: {
