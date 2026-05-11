@@ -11,11 +11,14 @@ const SCAN_COLUMNS = [
   'report_url', 'report_json',
 ].join(', ');
 
+const POLL_INTERVAL_MS = 10_000;
+
 export function useScan(companySlug: string | null, opts: { realtime?: boolean } = {}) {
   const [scan, setScan] = useState<Scan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!companySlug) {
@@ -25,7 +28,7 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
 
     let cancelled = false;
 
-    async function fetchScan() {
+    async function fetchScan(): Promise<boolean> {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('scans')
@@ -34,14 +37,22 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
         .eq('status', 'complete')
         .maybeSingle();
 
-      if (cancelled) return;
+      if (cancelled) return false;
 
       if (fetchError) {
         setError(fetchError.message);
-      } else {
-        setScan(data as unknown as Scan | null);
+        setLoading(false);
+        return false;
       }
+
+      if (data) {
+        setScan(data as unknown as Scan);
+        setLoading(false);
+        return true;
+      }
+
       setLoading(false);
+      return false;
     }
 
     fetchScan();
@@ -60,14 +71,29 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
           (payload) => {
             const updated = payload.new as Scan;
             if (updated.status === 'complete') {
-              setScan(updated);
-              setLoading(false);
+              if (updated.report_json) {
+                setScan(updated);
+                setLoading(false);
+              } else {
+                // Realtime payload missing report_json — fetch the full row
+                fetchScan();
+              }
             }
           }
         )
         .subscribe();
 
       channelRef.current = channel;
+
+      // Polling fallback: realtime WebSocket can drop silently over long scans
+      pollRef.current = setInterval(async () => {
+        if (cancelled) return;
+        const done = await fetchScan();
+        if (done && pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }, POLL_INTERVAL_MS);
     }
 
     return () => {
@@ -75,6 +101,10 @@ export function useScan(companySlug: string | null, opts: { realtime?: boolean }
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+      }
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
       }
     };
   }, [companySlug, opts.realtime]);
