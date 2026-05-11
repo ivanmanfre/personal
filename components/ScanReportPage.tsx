@@ -309,6 +309,43 @@ const Chip: React.FC<{ label: string; variant?: 'found' | 'missing' | 'neutral' 
 
 // ── Sections ──────────────────────────────────────────────────────────────────
 
+// Homepage screenshot card — captured by the n8n pipeline via Firecrawl, stored in Supabase.
+// Failure mode: if the <img> fails to load (expired URL, deleted asset, captured during bot
+// challenge), hide the whole block instead of showing a broken image.
+function HomepageScreenshot({ src, domain }: { src: string; domain: string }) {
+  const [failed, setFailed] = React.useState(false);
+  if (failed) return null;
+  return (
+    <motion.figure
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="space-y-3"
+    >
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+        Your homepage, captured today
+      </p>
+      <div
+        className="overflow-hidden"
+        style={{
+          border: '1px solid rgba(26,26,26,0.12)',
+          background: '#EFEAE2',
+          boxShadow: '0 8px 32px rgba(26,26,26,0.08)',
+        }}
+      >
+        <img
+          src={src}
+          alt={`Homepage screenshot of ${domain}`}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          style={{ display: 'block', width: '100%', height: 'auto' }}
+        />
+      </div>
+    </motion.figure>
+  );
+}
+
 function Section1CompanyBrief({ report }: { report: ReportJson }) {
   const { company_snapshot, anthropic_verified, openai_verified, tech_stack_assessment, linkedin_summary, github } = report;
   const { domain_age_years, email_infra, company_size, revenue_range } = report;
@@ -333,6 +370,12 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
             </div>
           )}
         </div>
+
+        {/* Homepage screenshot — visual anchor proving we actually looked at their site.
+            Renders only when capture succeeded; degrades silently otherwise. */}
+        {report.homepage_screenshot_url && (
+          <HomepageScreenshot src={report.homepage_screenshot_url} domain={report.company_snapshot.name} />
+        )}
 
         {/* 2. LinkedIn + GitHub presence as a stat strip */}
         {((linkedin_summary && (linkedin_summary.followers || linkedin_summary.posts_30d != null)) || github) && (

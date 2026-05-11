@@ -31,6 +31,7 @@ export interface ReportJson {
     apollo_listed_unverified?: string[];
   };
   data_quality_notes?: string;
+  homepage_screenshot_url?: string | null;
   opportunities: Opportunity[];
   competitive_context: string;
   top_gap_title: string;
