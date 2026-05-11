@@ -1480,7 +1480,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             separating, in body serif at near-equal weight. Cold prospects deserve a real on-ramp. */}
         <div className="flex flex-col gap-5">
           <a
-            href={calendlyUrl}
+            href="https://buy.stripe.com/bJe7sDcqLeE130G2D9fEk0J"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center sm:justify-start gap-2.5 px-7 py-4 self-start"
