@@ -1171,18 +1171,24 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                 const pct = Math.min(100, (c.value / c.max) * 100);
                 const tone = toneFor(pct);
                 return (
-                  <div key={key} className="border-b pb-3" style={{ borderColor: 'rgba(247,244,239,0.08)' }}>
-                    {/* Header row: label + score side-by-side on all viewports */}
-                    <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.65)', fontWeight: 600 }}>
+                  <div key={key} className="border-b pb-4 lg:pb-5" style={{ borderColor: 'rgba(247,244,239,0.10)' }}>
+                    {/* Label + big italic score sit on the same baseline so each dimension reads
+                        as its own scorecard. Score sized 2x the previous (was 20px). */}
+                    <div className="flex items-baseline justify-between gap-4 mb-2">
+                      <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)', fontWeight: 600 }}>
                         {label}
                       </p>
-                      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                        {c.value}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
+                      <p style={{
+                        fontFamily: SERIF, fontStyle: 'italic',
+                        fontSize: 'clamp(2rem, 3.2vw, 2.4rem)', lineHeight: 1,
+                        letterSpacing: '-0.02em',
+                        color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                      }}>
+                        {c.value}<span style={{ fontFamily: MONO, fontSize: '12px', color: 'rgba(247,244,239,0.45)', marginLeft: 6, fontStyle: 'normal', letterSpacing: '0.05em' }}>/{c.max}</span>
                       </p>
                     </div>
-                    {/* Thin bar — gives an at-a-glance read alongside the radar chart */}
-                    <div style={{ height: 2, background: 'rgba(247,244,239,0.08)', position: 'relative', marginBottom: 8 }}>
+                    {/* Slightly thicker bar so it pulls visual weight under the score */}
+                    <div style={{ height: 3, background: 'rgba(247,244,239,0.10)', position: 'relative', marginBottom: 10 }}>
                       <motion.div
                         initial={reduceMotion ? false : { scaleX: 0 }}
                         whileInView={{ scaleX: pct / 100 }}
@@ -1191,7 +1197,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                         style={{ height: '100%', background: tone, transformOrigin: 'left' }}
                       />
                     </div>
-                    <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', color: 'rgba(247,244,239,0.6)', lineHeight: 1.45 }}>
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(247,244,239,0.65)', lineHeight: 1.5 }}>
                       {c.rationale}
                     </p>
                   </div>
