@@ -307,18 +307,35 @@ const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' 
       transition={{ duration: 0.6, ease: EASE }}
       className="py-14 lg:py-20"
     >
-      {/* Centered rule + text + rule — reads as "between chapters" */}
-      <div className="flex items-center gap-6 max-w-3xl mx-auto">
-        <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
-        <p style={{
+      {/* Desktop: centered rule + text + rule (chapter-break pattern). Mobile: rule above
+          + centered text + rule below (stacked vertically). Text never overflows. */}
+      <div className="max-w-3xl mx-auto">
+        {/* Mobile-only: single rule above */}
+        <div className="sm:hidden mb-6" style={{ height: 1, background: ruleColor }} />
+        {/* Desktop: 3-column flex with text in center */}
+        <div className="hidden sm:flex items-center gap-6">
+          <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
+          <p style={{
+            fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+            fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.4,
+            letterSpacing: '-0.005em', color: proseColor, textAlign: 'center',
+            flexShrink: 1, maxWidth: '480px',
+          }}>
+            {children}
+          </p>
+          <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
+        </div>
+        {/* Mobile-only: text spans full width, centered, no flanking rules */}
+        <p className="sm:hidden" style={{
           fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
-          fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.4,
+          fontSize: '17px', lineHeight: 1.45,
           letterSpacing: '-0.005em', color: proseColor, textAlign: 'center',
-          flexShrink: 0, maxWidth: '480px',
+          padding: '0 16px',
         }}>
           {children}
         </p>
-        <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
+        {/* Mobile-only: single rule below */}
+        <div className="sm:hidden mt-6" style={{ height: 1, background: ruleColor }} />
       </div>
     </motion.div>
   );
@@ -1174,7 +1191,7 @@ function PentagonRadarChart({
   const scorePath = scorePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 
   return (
-    <svg viewBox="0 0 270 255" width="270" height="255" style={{ overflow: 'visible', display: 'block' }}>
+    <svg viewBox="-30 -25 320 290" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '320px' }}>
       {gridRings.map((ring) => {
         const pts = cats.map((_, i) => getPoint(i, maxR * ring));
         return (
@@ -1303,7 +1320,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             <div className="flex items-center gap-3 mb-2">
               <span aria-hidden style={{ display: 'inline-block', height: 1, width: 28, background: '#7FA868' }} />
               <span style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
-                §1
+                01
               </span>
             </div>
             <p style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
