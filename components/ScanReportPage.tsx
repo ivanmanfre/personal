@@ -81,24 +81,29 @@ const CardPanel: React.FC<{ children: React.ReactNode; className?: string; tone?
 // distribution is read in 2 seconds.
 const OpportunityBarChart: React.FC<{ opps: Opportunity[] }> = ({ opps }) => {
   const reduceMotion = useReducedMotion();
-  const sorted = [...opps].sort((a, b) => (b.estimated_monthly_cost || 0) - (a.estimated_monthly_cost || 0));
-  const max = Math.max(...sorted.map(o => o.estimated_monthly_cost || 0));
+  // Keep Claude's order (build-readiness, not $-value) so the bars match the card list below.
+  // The first bar IS the top priority — same labeling as the prominent card.
+  const max = Math.max(...opps.map(o => o.estimated_monthly_cost || 0));
   if (max <= 0) return null;
   return (
     <CardPanel className="mb-12">
       <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)', fontWeight: 600 }}>
-        Five opportunities at a glance
+        {opps.length} opportunities at a glance · ranked by build-readiness
       </p>
       <div className="space-y-3">
-        {sorted.map((o, i) => {
+        {opps.map((o, i) => {
           const pct = (o.estimated_monthly_cost || 0) / max;
+          const isTop = i === 0;
           return (
             <div key={i} className="flex items-center gap-4">
-              <p className="flex-shrink-0" style={{
-                width: 'clamp(140px, 22vw, 240px)',
+              <p className="flex-shrink-0 flex items-center gap-2" style={{
+                width: 'clamp(160px, 24vw, 260px)',
                 fontFamily: BODY_SERIF, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3,
               }}>
-                {o.title.length > 36 ? o.title.slice(0, 34) + '…' : o.title}
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: isTop ? 'var(--color-accent)' : 'rgba(26,26,26,0.45)', fontWeight: 600 }}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span>{o.title.length > 32 ? o.title.slice(0, 30) + '…' : o.title}</span>
               </p>
               <div className="flex-1" style={{ height: 18, background: 'rgba(26,26,26,0.06)', position: 'relative' }}>
                 <motion.div
@@ -106,13 +111,14 @@ const OpportunityBarChart: React.FC<{ opps: Opportunity[] }> = ({ opps }) => {
                   whileInView={{ scaleX: pct }}
                   viewport={{ once: true, margin: '-30px' }}
                   transition={{ duration: 0.8, ease: EASE, delay: 0.1 + i * 0.08 }}
-                  style={{ height: '100%', background: 'var(--color-accent)', transformOrigin: 'left' }}
+                  style={{ height: '100%', background: isTop ? 'var(--color-accent)' : 'rgba(76,110,61,0.5)', transformOrigin: 'left' }}
                 />
               </div>
               <p className="flex-shrink-0 text-right" style={{
                 width: '110px',
                 fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px',
-                color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums',
+                color: isTop ? 'var(--color-accent)' : 'rgba(26,26,26,0.7)',
+                fontVariantNumeric: 'tabular-nums',
               }}>
                 ${(o.estimated_monthly_cost || 0).toLocaleString()}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(26,26,26,0.5)', fontStyle: 'normal', marginLeft: 2 }}>/mo</span>
               </p>
@@ -508,7 +514,8 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   return (
     <Section id="company" section={2} kicker="The Company" title="Who you are, what you run on.">
       <SectionAnswer>
-        {company_size ? `${company_size} ` : ''}{report.company_snapshot.sophistication_tier === 'low' ? 'business running a paper-era stack' : report.company_snapshot.sophistication_tier === 'medium' ? 'business with baseline ops tooling' : 'business with a mature stack'}{domain_age_years ? `, ${domain_age_years} years online` : ''}.
+        {report.company_snapshot.size_tier === 'micro' ? 'Micro (1-10) ' : report.company_snapshot.size_tier === 'small' ? 'Small (10-50) ' : report.company_snapshot.size_tier === 'mid' ? 'Mid-market ' : 'Large '}
+        business {report.company_snapshot.sophistication_tier === 'low' ? 'running a paper-era stack' : report.company_snapshot.sophistication_tier === 'medium' ? 'with baseline ops tooling' : 'with a mature stack'}{domain_age_years ? `, ${domain_age_years} years online` : ''}.
       </SectionAnswer>
 
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
