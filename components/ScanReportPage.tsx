@@ -194,6 +194,66 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </h2>
 );
 
+// Transition — italic one-line bridge between sections. Lives outside the Section
+// component so it can sit in the gutter and create a felt handoff. The hairline rule
+// above it works as a visual chapter break without shouting "new section".
+const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' }> = ({ children, tone = 'paper' }) => {
+  const reduceMotion = useReducedMotion();
+  const color = tone === 'sage' ? 'rgba(76,110,61,0.85)' : 'rgba(26,26,26,0.55)';
+  const rule = tone === 'sage' ? 'rgba(76,110,61,0.25)' : 'rgba(26,26,26,0.12)';
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-30px' }}
+      transition={{ duration: 0.5, ease: EASE }}
+      className="py-8 lg:py-10 max-w-2xl"
+    >
+      <div style={{ height: 1, background: rule, marginBottom: 18 }} />
+      <p style={{
+        fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+        fontSize: 'clamp(1.05rem, 1.5vw, 1.25rem)', lineHeight: 1.45,
+        letterSpacing: '-0.005em', color,
+      }}>
+        {children}
+      </p>
+    </motion.div>
+  );
+};
+
+// ReframeBand — sage-tinted full-bleed band for the load-bearing "but here's what you missed"
+// section (§3). Designed to be the visual hinge — different palette, different rhythm than
+// surrounding paper sections, so the reader feels the chapter break before reading it.
+const ReframeBand: React.FC<{ kicker: string; children: React.ReactNode; id?: string }> = ({ kicker, children, id }) => {
+  const reduceMotion = useReducedMotion();
+  return (
+    <motion.section
+      id={id}
+      initial={reduceMotion ? false : { opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.8, ease: EASE }}
+      className="py-20 lg:py-28"
+      style={{
+        background: 'linear-gradient(180deg, rgba(76,110,61,0.06) 0%, rgba(76,110,61,0.10) 100%)',
+        borderTop: '1px solid rgba(76,110,61,0.18)',
+        borderBottom: '1px solid rgba(76,110,61,0.18)',
+        scrollMarginTop: 80,
+      }}
+    >
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <p className="mb-8" style={{
+          fontFamily: MONO, fontSize: '11px', letterSpacing: '0.24em', textTransform: 'uppercase',
+          color: 'var(--color-accent)', fontWeight: 600,
+        }}>
+          {kicker}
+        </p>
+        {children}
+      </div>
+    </motion.section>
+  );
+};
+
 const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode; id?: string }> = ({
   kicker, title, children, id,
 }) => {
@@ -1680,6 +1740,91 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 
 // JawDropSignal — surfaces the single most visually striking verified signal right after
 // the company brief. Picks: image ad creative > hiring count > LinkedIn post excerpt.
+// ReframeSection — the load-bearing §3 hinge. Sage full-bleed band, oversized type.
+// Picks the strongest surprising signal: ad spend without lead capture / hiring count /
+// content cadence / traffic. Falls through to NULL if no genuinely surprising data exists,
+// in which case the page degrades to a §2 → §4 direct flow (still coherent).
+function ReframeSection({ report }: { report: ReportJson }) {
+  // Pick the strongest reframe-able signal in priority order.
+  const ads = report.ads;
+  const totalAds = (ads?.google_ads?.count ?? 0) + (ads?.linkedin_ads?.count ?? 0) + (ads?.meta_ads?.count ?? 0);
+  const isImg = (url: string | null | undefined) => !!url && !/\.(js|html?)(\?|$)/i.test(url);
+  const adCreative =
+    ads?.meta_ads?.creatives?.find(c => isImg(c.images?.[0] || c.preview_url)) ??
+    ads?.linkedin_ads?.creatives?.find(c => isImg(c.preview_url));
+  const hiringCount = report.hiring?.open_count ?? 0;
+  const hiringTitles = report.hiring?.sample_titles || [];
+  const topPost = report.linkedin_summary?.posts?.[0];
+  const monthlyVisits = report.traffic?.monthly_visits ?? 0;
+
+  type ReframeContent = { reframe_pre: string; reframe_emphasis: React.ReactNode; reframe_post: string; supporting?: React.ReactNode };
+  let content: ReframeContent | null = null;
+
+  // 1. Live ad spend with no CRM/booking is the gold-standard reframe — most prospects miss it
+  const stack = report.tech_stack_assessment;
+  const missingCapture = stack?.missing_critical_tools?.some(t => /crm|booking|live chat|workflow/i.test(t));
+  if (totalAds > 0 && missingCapture) {
+    const platforms: string[] = [];
+    if (ads?.google_ads?.detected) platforms.push('Google');
+    if (ads?.linkedin_ads?.detected) platforms.push('LinkedIn');
+    if (ads?.meta_ads?.detected) platforms.push('Meta');
+    const platformStr = platforms.join(' + ') || 'paid channels';
+    content = {
+      reframe_pre: "You're paying for clicks on ",
+      reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{platformStr}</em>,
+      reframe_post: ` — ${totalAds} active ads running right now — but the path from click to booked meeting goes through a contact form into a Gmail inbox. The most expensive part of the funnel is the part with no system.`,
+    };
+  }
+  // 2. Heavy hiring with no automation roles
+  else if (hiringCount >= 3 && hiringTitles.length > 0) {
+    const hasAiRole = hiringTitles.some(t => /AI|Automation|ML|Agent|Engineer/i.test(t));
+    if (!hasAiRole) {
+      content = {
+        reframe_pre: 'You have ',
+        reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{hiringCount} open roles</em>,
+        reframe_post: ` — ${hiringTitles.slice(0, 2).join(', ')} and more — and zero AI or automation titles among them. The fastest way to scale headcount is to scale systems first.`,
+      };
+    }
+  }
+  // 3. Content cadence vs follower count (under-publishing)
+  else if (report.linkedin_summary?.followers && report.linkedin_summary?.posts_30d != null) {
+    const followers = report.linkedin_summary.followers;
+    const posts = report.linkedin_summary.posts_30d;
+    if (followers >= 500 && posts < 8) {
+      content = {
+        reframe_pre: 'You have ',
+        reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{followers.toLocaleString()} followers</em>,
+        reframe_post: ` and published ${posts} posts in 30 days. That's an audience that's already opted in — being talked to less often than your competitors' audiences.`,
+      };
+    }
+  }
+  // 4. High traffic, no visible conversion path
+  else if (monthlyVisits >= 5000 && missingCapture) {
+    content = {
+      reframe_pre: 'Roughly ',
+      reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{monthlyVisits.toLocaleString()} monthly visitors</em>,
+      reframe_post: " hit your site — and the only paths off the page are a contact form and a phone number. Everything in between (qualification, scheduling, follow-up) is human.",
+    };
+  }
+
+  if (!content) return null;
+
+  return (
+    <ReframeBand kicker="Here's what most miss" id="reframe">
+      <p style={{
+        fontFamily: SERIF, fontWeight: 400,
+        fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
+        letterSpacing: '-0.02em', color: '#1A1A1A',
+      }}>
+        {content.reframe_pre}{content.reframe_emphasis}{content.reframe_post}
+      </p>
+      {content.supporting && (
+        <div className="mt-8">{content.supporting}</div>
+      )}
+    </ReframeBand>
+  );
+}
+
 function JawDropSignal({ report }: { report: ReportJson }) {
   const reduceMotion = useReducedMotion();
   const totalAds = (report.ads?.google_ads?.count ?? 0) + (report.ads?.linkedin_ads?.count ?? 0) + (report.ads?.meta_ads?.count ?? 0);
@@ -2186,26 +2331,64 @@ const ScanReportPage: React.FC = () => {
         reduceMotion={!!reduceMotion}
       />
 
-      {/* ACT 2: Dark full-bleed score reveal — comes immediately after the hero for instant impact */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          Challenger arc — 8 beats. Each section changes emotional register.
+          §1 Answer-first → §2 Warmer → §3 Reframe → §4 Cost → §5 (deferred) →
+          §6 New Way → §7 Trust ballast → §8 Solution
+          Transitions between beats hand off the reader mentally.
+          ═══════════════════════════════════════════════════════════════════════ */}
+
+      {/* §1 — Answer-first. The score reveal. */}
       <SectionScoreRevealDark report={report} />
 
-      {/* ACT 1: Company brief + jaw-drop signal (swapped after dark band for pacing) */}
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <Section1CompanyBrief report={report} />
-        <JawDropSignal report={report} />
+        <Transition>
+          Before we tell you why — let's confirm we're looking at the same company.
+        </Transition>
       </div>
 
-      {/* ACT 3 → ACT 5: gaps, then proof, then action */}
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        {/* W1.2 — verdict before enumeration: annual cost folded in here, Stakes section removed */}
+      {/* §2 — Warmer. Earn the right to keep talking. */}
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <Section1CompanyBrief report={report} />
+      </div>
+
+      {/* §3 — Reframe (load-bearing). The "but here's what you missed" hinge. */}
+      <ReframeSection report={report} />
+
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <Transition>
+          It's not just an observation. Here's the math behind what it's costing.
+        </Transition>
+      </div>
+
+      {/* §4 — Rational Drowning. Priority gap + cost. */}
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <SectionPriorityGap report={report} />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-5 sm:px-6">
+        <Transition>
+          So here's where it's happening — five places, ranked by leverage.
+        </Transition>
+      </div>
+
+      {/* §6 — New Way. The ranked opportunities. */}
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
         <Section3Opportunities report={report} companyName={companyName} />
-        {/* Supporting evidence collapsed by default — expands on demand */}
+
+        <Transition>
+          If you want to check our work — every number above traces back to this.
+        </Transition>
+
+        {/* §7 — Trust ballast. Quiet, optional. */}
         <SupportingEvidenceAccordion report={report} />
-        {/* W2.1 — Methodology footer (collapsible). Sits before closing arc so a forwarded report
-            reader can verify any number before being asked to book. */}
         <SectionMethodology />
-        {/* Week-1 + CTA merged per CEO audit into one closing arc */}
+
+        <Transition tone="sage">
+          You've now seen what we see. Two ways forward.
+        </Transition>
+
+        {/* §8 — Your Solution. CTA. */}
         <SectionClosingArc report={report} companyName={companyName} />
       </div>
     </div>
