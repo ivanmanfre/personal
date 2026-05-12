@@ -292,36 +292,34 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // Transition — bridge between sections. Visually marked as a CHAPTER BREAK
 // (sage left rule + indented kicker + italic prose) so the reader feels the
 // handoff instead of seeing isolated body copy.
+// Transition — visual SECTION BREAK between major chapters. Distinct from internal
+// callouts (which use the sage left rule). Section breaks are centered with horizontal
+// rules on each side so they read as "between sections" not "inside a section".
 const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' }> = ({ children, tone = 'paper' }) => {
   const reduceMotion = useReducedMotion();
-  const accent = tone === 'sage' ? 'var(--color-accent)' : 'rgba(26,26,26,0.45)';
-  const proseColor = tone === 'sage' ? 'rgba(76,110,61,0.9)' : 'rgba(26,26,26,0.72)';
+  const proseColor = tone === 'sage' ? 'rgba(76,110,61,0.85)' : 'rgba(26,26,26,0.65)';
+  const ruleColor = tone === 'sage' ? 'rgba(76,110,61,0.3)' : 'rgba(26,26,26,0.15)';
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, x: -8 }}
-      whileInView={{ opacity: 1, x: 0 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-30px' }}
       transition={{ duration: 0.6, ease: EASE }}
-      className="py-10 lg:py-14 max-w-2xl"
-      style={{
-        borderLeft: `2px solid ${accent}`,
-        paddingLeft: 'clamp(16px, 1.6vw, 22px)',
-      }}
+      className="py-14 lg:py-20"
     >
-      <p style={{
-        fontFamily: MONO, fontSize: '10px', letterSpacing: '0.24em',
-        textTransform: 'uppercase', color: accent,
-        marginBottom: 10, fontWeight: 600,
-      }}>
-        ▸ Next
-      </p>
-      <p style={{
-        fontFamily: SERIF, fontWeight: 400,
-        fontSize: 'clamp(1.25rem, 1.9vw, 1.5rem)', lineHeight: 1.4,
-        letterSpacing: '-0.012em', color: proseColor,
-      }}>
-        {children}
-      </p>
+      {/* Centered rule + text + rule — reads as "between chapters" */}
+      <div className="flex items-center gap-6 max-w-3xl mx-auto">
+        <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
+        <p style={{
+          fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+          fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.4,
+          letterSpacing: '-0.005em', color: proseColor, textAlign: 'center',
+          flexShrink: 0, maxWidth: '480px',
+        }}>
+          {children}
+        </p>
+        <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
+      </div>
     </motion.div>
   );
 };
@@ -1810,62 +1808,16 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           </p>
         </div>
 
-        {/* Authority chain — who Ivan is, why this scan was credible */}
-        <div className="mb-10 max-w-xl flex items-start gap-4 py-5 border-t border-b border-[color:var(--color-hairline)]">
-          <img
-            src="/ivan-portrait-400.webp"
-            alt="Ivan Manfredi"
-            loading="lazy"
-            className="w-12 h-12 object-cover shrink-0"
-            style={{ borderRadius: 0 }}
-            onError={fallbackOnError}
-          />
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
-          </p>
-        </div>
-
-        {/* W2.2 — Track Record strip, horizontal layout with logos (per user feedback after first
-            vertical version felt too text-heavy). Logos via Google's s2/favicons API with onError
-            fallback to a typeset wordmark. 3-column grid on desktop, single column on mobile.
-            Compact: each cell is logo + 1-line outcome. No industry tag (logo conveys brand). */}
-        <div className="mb-10 max-w-3xl py-7 border-t border-b border-[color:var(--color-hairline)]">
-          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-            Recent builds
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-            <ClientCard
-              name="ProSWPPP"
-              domain="proswppp.com"
-              outcome="50-state SWPPP docs ship from one interface. Sales follow-up runs zero-touch."
-            />
-            <ClientCard
-              name="Destino Farms"
-              domain="destinofarms.com"
-              outcome="Supplier menu reconciles itself overnight. No spreadsheet juggling."
-            />
-            <ClientCard
-              name="BNP Paribas Fortis"
-              domain="bnpparibasfortis.be"
-              outcome="Conversational Ops AI agent for internal teams."
-            />
-          </div>
-        </div>
-
-        {/* P2.13 — price anchor: connect the dollar leakage above to the cost of fixing it.
-            Lifts the price line from "$2,000" (which floats) to a value framing the buyer can do
-            the math on. The number $2,000 < the lowest opportunity card's monthly cost. */}
-        <p className="mb-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+        {/* PRICE ANCHOR + CTA — comes IMMEDIATELY after Step 02 description so the action
+            is adjacent to the prompt. No social-proof gap to scroll through first. */}
+        <p className="mb-2 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
           Costs less than the smallest opportunity above. Pays back inside the first month if even one ships.
         </p>
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
 
-        {/* P1.10 — free-call CTA gets equal visual gravity. Was a tight italic underline tucked
-            beside the paid button (read as apology). Now its own line below, with a hairline rule
-            separating, in body serif at near-equal weight. Cold prospects deserve a real on-ramp. */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 mb-16">
           <a
             href="https://buy.stripe.com/bJe7sDcqLeE130G2D9fEk0J"
             target="_blank"
@@ -1881,7 +1833,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           >
             Book your Agent-Ready Assessment <ArrowRight size={18} />
           </a>
-          <div className="pt-5 border-t border-[color:var(--color-hairline)] flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
             <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
               Not ready to commit
             </span>
@@ -1902,6 +1854,51 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             >
               Book a free 30-min walkthrough <ArrowRight className="w-4 h-4 self-center transition-transform group-hover:translate-x-0.5" />
             </a>
+          </div>
+        </div>
+
+        {/* SOCIAL PROOF moved BELOW the CTA. Buyer who clicks doesn't have to scroll past this.
+            Buyer who needs more reassurance scrolls down and finds it. */}
+        <div className="pt-10 max-w-3xl" style={{ borderTop: '1px solid rgba(26,26,26,0.10)' }}>
+          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            Who's building this
+          </p>
+
+          {/* Ivan portrait + bio */}
+          <div className="mb-10 max-w-xl flex items-start gap-4">
+            <img
+              src="/ivan-portrait-400.webp"
+              alt="Ivan Manfredi"
+              loading="lazy"
+              className="w-12 h-12 object-cover shrink-0"
+              style={{ borderRadius: 0 }}
+              onError={fallbackOnError}
+            />
+            <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+              <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
+            </p>
+          </div>
+
+          {/* Recent builds — client logos */}
+          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            Recent builds
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+            <ClientCard
+              name="ProSWPPP"
+              domain="proswppp.com"
+              outcome="50-state SWPPP docs ship from one interface. Sales follow-up runs zero-touch."
+            />
+            <ClientCard
+              name="Destino Farms"
+              domain="destinofarms.com"
+              outcome="Supplier menu reconciles itself overnight. No spreadsheet juggling."
+            />
+            <ClientCard
+              name="BNP Paribas Fortis"
+              domain="bnpparibasfortis.be"
+              outcome="Conversational Ops AI agent for internal teams."
+            />
           </div>
         </div>
       </div>
