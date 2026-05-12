@@ -21,15 +21,14 @@ const EASE = [0.22, 0.84, 0.36, 1] as const;
 // ── Editorial primitives ──────────────────────────────────────────────────────
 
 // Section masthead. Each section starts with this so the reader always knows
-// "I am now in section X". Hard-to-miss kicker + sage accent rule.
+// "I am now in section X". Sage accent rule + zero-padded chapter number + kicker label.
 const Kicker: React.FC<{ children: React.ReactNode; section?: string | number }> = ({ children, section }) => (
   <div className="mb-1">
-    {/* Sage accent rule + section label sit on the same baseline above the kicker text */}
     {section != null && (
       <div className="flex items-center gap-3 mb-2">
         <span aria-hidden style={{ display: 'inline-block', height: 1, width: 28, background: 'var(--color-accent)' }} />
         <span style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600 }}>
-          §{section}
+          {typeof section === 'number' ? String(section).padStart(2, '0') : section}
         </span>
       </div>
     )}
@@ -854,9 +853,9 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
             "moments": the score reveal (good) and the cost of inaction (bad), bracketing the
             emotional arc. Coral italic so it reads as the loss-aversion frame. */}
         {annualCost > 0 && (
-          <div className="mt-12 lg:mt-16 pt-10 lg:pt-12 border-t border-[color:var(--color-hairline)]">
+          <div className="mt-12 lg:mt-16">
             <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-              If nothing changes — 12-month cost
+              12-month cost of inaction
             </p>
             <p style={{
               fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
@@ -867,7 +866,7 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
               <Scramble value={annualDisplay} duration={0.6} />
             </p>
             <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
-              That's the compounding cost across the 5 opportunities below — unleveraged time and missed conversion if nothing in the system changes for 12 months.
+              That's the compounding cost across the 5 opportunities below. Unleveraged time and missed conversion if nothing in the system changes for 12 months.
             </p>
           </div>
         )}
@@ -1323,7 +1322,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
             Where you're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where you're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
           </RevealHeadline>
           <SectionAnswer tone="dark">
-            You scored {report.automation_score}/100 — Grade {report.automation_grade}. Score below means more humans pasting fields; higher means more systems doing the work.
+            You scored {report.automation_score} out of 100. Grade {report.automation_grade}. Score below means more humans pasting fields. Higher means more systems doing the work.
           </SectionAnswer>
         </div>
 
@@ -1376,10 +1375,21 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                         The bar visually connects label to score so the eye reads them as one unit
                         instead of "label on left, score floating in void". Standard dashboard UX. */}
                     <div className="flex items-center gap-5 mb-3">
+                      {/* Score sits on the LEFT now (user feedback: scores stuck to right read weird).
+                          Layout: SCORE → LABEL → BAR fills remaining width. */}
+                      <p style={{
+                        fontFamily: SERIF, fontStyle: 'italic',
+                        fontSize: 'clamp(1.75rem, 2.6vw, 2rem)', lineHeight: 1,
+                        letterSpacing: '-0.02em', color: tone,
+                        fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                        flexShrink: 0, minWidth: '64px',
+                      }}>
+                        {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
+                      </p>
                       <p style={{
                         fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
                         textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)',
-                        fontWeight: 600, flexShrink: 0, minWidth: '140px',
+                        fontWeight: 600, flexShrink: 0, minWidth: '150px',
                       }}>
                         {label}
                       </p>
@@ -1392,21 +1402,12 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                           style={{ height: '100%', background: tone, transformOrigin: 'left' }}
                         />
                       </div>
-                      <p style={{
-                        fontFamily: SERIF, fontStyle: 'italic',
-                        fontSize: 'clamp(1.75rem, 2.6vw, 2rem)', lineHeight: 1,
-                        letterSpacing: '-0.02em', color: tone,
-                        fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}>
-                        {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
-                      </p>
                     </div>
                     <p style={{
                       fontFamily: BODY_SERIF, fontSize: '14px',
                       color: 'rgba(247,244,239,0.65)', lineHeight: 1.5,
-                      paddingLeft: '160px',  // align with bar start
-                    }} className="lg:pl-[160px] pl-0">
+                      paddingLeft: '88px',  // align under label (after score)
+                    }} className="lg:pl-[88px] pl-0">
                       {c.rationale}
                     </p>
                   </div>
@@ -1758,21 +1759,24 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 
         <SerifBody large className="mb-10 max-w-xl">
           <span style={{ color: 'rgba(26,26,26,0.8)' }}>
-            Ship the quick win below yourself this week. Or hand us the whole scan and we build the 90-day system around it.
+            Two steps, in order. The first one you can ship this week on your own. The second is the full 90-day build.
           </span>
         </SerifBody>
 
-        {/* P0.2 — Monday move now framed explicitly as the QUICK WIN, distinct from the
-            biggest-gap verdict above. Reader gets two complementary actions: the easiest tactical
-            ship + the strategic priority. No more contradiction. */}
+        {/* STEP 1 — Quick win the buyer can do themselves */}
         {w && (
           <div className="mb-10 max-w-2xl px-6 lg:px-8 py-7 lg:py-8 -mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
-            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-              Quick win you can ship this week
-            </p>
+            <div className="flex items-center gap-3 mb-4">
+              <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
+                Step 01
+              </span>
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+                This week, on your own
+              </span>
+            </div>
             <h3 style={{
               fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
-              lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A', marginTop: 10,
+              lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A',
             }}>
               {w.title}
             </h3>
@@ -1782,11 +1786,29 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
                 {w.approach ?? w.tools?.join(', ')}
               </p>
             )}
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
-              The full <strong style={{ color: '#1A1A1A', fontWeight: 600, fontStyle: 'normal' }}>build sequence</strong> — what ships first, what depends on what, ROI per phase — lives in the Assessment below.
-            </p>
           </div>
         )}
+
+        {/* STEP 2 marker — clear visual signal that the CTA below is the second of two steps */}
+        <div className="mb-6 max-w-2xl">
+          <div className="flex items-center gap-3 mb-3">
+            <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
+              Step 02
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              When you're ready to scale
+            </span>
+          </div>
+          <h3 style={{
+            fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
+            lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A',
+          }}>
+            Hand us the whole scan. We build the 90-day system around it.
+          </h3>
+          <p className="mt-3 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+            The Assessment converts this report into a full build sequence (what ships first, what depends on what, ROI per phase) plus a 60-minute walkthrough with Ivan.
+          </p>
+        </div>
 
         {/* Authority chain — who Ivan is, why this scan was credible */}
         <div className="mb-10 max-w-xl flex items-start gap-4 py-5 border-t border-b border-[color:var(--color-hairline)]">
@@ -1897,7 +1919,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
   if (report.reframe && report.reframe.emphasis) {
     const { pre, emphasis, post } = report.reframe;
     return (
-      <ReframeBand kicker="Here's what most miss" id="reframe">
+      <ReframeBand kicker="The Signal" id="reframe">
         <p style={{
           fontFamily: SERIF, fontWeight: 400,
           fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
@@ -1976,7 +1998,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
   if (!content) return null;
 
   return (
-    <ReframeBand kicker="Here's what most miss" id="reframe">
+    <ReframeBand kicker="The Signal" id="reframe">
       <p style={{
         fontFamily: SERIF, fontWeight: 400,
         fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
@@ -2067,7 +2089,7 @@ function JawDropSignal({ report }: { report: ReportJson }) {
             <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
           </p>
           <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
-            Public ad library confirms current spend — captured today.
+            Public ad library confirms current spend. Captured today.
           </p>
         </div>
       </motion.div>
@@ -2162,9 +2184,11 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
         }}
       >
         <div>
-          <Kicker section={6}>Want to verify</Kicker>
-          <p className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
             See the data behind every claim above.
+          </p>
+          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)' }}>
+            Built from 14 public sources.
           </p>
         </div>
         <motion.span
@@ -2507,7 +2531,7 @@ const ScanReportPage: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <Transition>
-          Before we tell you why — let's confirm we're looking at the same company.
+          First, let's confirm we're looking at the same company.
         </Transition>
       </div>
 
@@ -2532,7 +2556,7 @@ const ScanReportPage: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <Transition>
-          So here's where it's happening — five places, ranked by leverage.
+          Five places it's happening today. Ranked by leverage.
         </Transition>
       </div>
 
@@ -2541,7 +2565,7 @@ const ScanReportPage: React.FC = () => {
         <Section3Opportunities report={report} companyName={companyName} />
 
         <Transition>
-          If you want to check our work — every number above traces back to this.
+          Every number above traces back to this.
         </Transition>
 
         {/* §7 — Trust ballast. Quiet, optional. */}
