@@ -338,7 +338,6 @@ function HomepageScreenshot({ src, domain }: { src: string; domain: string }) {
           src={src}
           alt={`Homepage screenshot of ${domain}`}
           loading="lazy"
-          crossOrigin="anonymous"
           onError={() => setFailed(true)}
           style={{ display: 'block', width: '100%', height: 'auto' }}
         />
@@ -1156,9 +1155,13 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           </div>
 
           {/* Right: pentagon radar chart + compact dimension legend */}
-          <div className="lg:pt-2 flex flex-col gap-6 items-start">
-            <PentagonRadarChart sb={sb} cats={cats} toneFor={toneFor} reduceMotion={!!reduceMotion} />
-            <div className="w-full space-y-3">
+          <div className="lg:pt-2 flex flex-col gap-6 items-stretch lg:items-start">
+            {/* Pentagon centers on mobile (where the auto-flow column is full-width) and
+                left-aligns on desktop (where there's a left score column). */}
+            <div className="flex justify-center lg:justify-start">
+              <PentagonRadarChart sb={sb} cats={cats} toneFor={toneFor} reduceMotion={!!reduceMotion} />
+            </div>
+            <div className="w-full space-y-4 lg:space-y-3">
               <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.35)' }}>
                 <span style={{ color: '#7FA868' }}>● Sage</span> = strength &nbsp; <span style={{ color: '#D89254' }}>● Warm</span> = gap
               </p>
@@ -1168,17 +1171,28 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                 const pct = Math.min(100, (c.value / c.max) * 100);
                 const tone = toneFor(pct);
                 return (
-                  <div key={key} className="grid grid-cols-[1fr_auto] gap-4 items-start border-b pb-3" style={{ borderColor: 'rgba(247,244,239,0.08)' }}>
-                    <div>
-                      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+                  <div key={key} className="border-b pb-3" style={{ borderColor: 'rgba(247,244,239,0.08)' }}>
+                    {/* Header row: label + score side-by-side on all viewports */}
+                    <div className="flex items-baseline justify-between gap-3 mb-1.5">
+                      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.65)', fontWeight: 600 }}>
                         {label}
                       </p>
-                      <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.4, marginTop: 2 }}>
-                        {c.rationale}
+                      <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                        {c.value}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
                       </p>
                     </div>
-                    <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', lineHeight: 1, color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                      {c.value}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(247,244,239,0.35)', marginLeft: 5, fontStyle: 'normal' }}>/{c.max}</span>
+                    {/* Thin bar — gives an at-a-glance read alongside the radar chart */}
+                    <div style={{ height: 2, background: 'rgba(247,244,239,0.08)', position: 'relative', marginBottom: 8 }}>
+                      <motion.div
+                        initial={reduceMotion ? false : { scaleX: 0 }}
+                        whileInView={{ scaleX: pct / 100 }}
+                        viewport={{ once: true, margin: '-40px' }}
+                        transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
+                        style={{ height: '100%', background: tone, transformOrigin: 'left' }}
+                      />
+                    </div>
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', color: 'rgba(247,244,239,0.6)', lineHeight: 1.45 }}>
+                      {c.rationale}
                     </p>
                   </div>
                 );
@@ -1408,7 +1422,7 @@ function SectionMethodology() {
           opened it. Always-visible 1-liner names the source count + model so the credibility
           signal lands before the click. The full source breakdown stays behind the disclosure. */}
       <p className="mb-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)' }}>
-        Built from <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>14 public sources</strong>, synthesized by Claude Opus 4.7, reviewed by Ivan before shipping.
+        Built from <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>14 public sources</strong>.
       </p>
       <details className="group">
         <summary
@@ -1818,14 +1832,21 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
 
   return (
     <div className="border-t border-[color:var(--color-hairline)] py-10 lg:py-14">
-      <button
+      <motion.button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-start justify-between gap-6 text-left group"
+        whileHover={{ x: 2 }}
+        transition={{ duration: 0.2 }}
+        className="w-full flex items-center justify-between gap-6 text-left group px-5 lg:px-7 py-5 -mx-5 lg:-mx-7"
+        style={{
+          background: open ? 'rgba(76,110,61,0.07)' : 'rgba(76,110,61,0.04)',
+          borderLeft: '3px solid var(--color-accent)',
+          transition: 'background 0.2s ease',
+        }}
       >
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', marginBottom: 8 }}>
-            {open ? 'Hide' : 'Expand'} supporting evidence
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6, fontWeight: 600 }}>
+            {open ? '↑ Hide' : '↓ Expand'} supporting evidence
           </p>
           <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
             The data behind these findings.
@@ -1833,13 +1854,13 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
         </div>
         <motion.span
           animate={{ rotate: open ? 45 : 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.3, ease: EASE }}
           aria-hidden
-          style={{ fontSize: '28px', color: 'rgba(26,26,26,0.3)', flexShrink: 0, lineHeight: 1, marginTop: 4 }}
+          style={{ fontSize: '32px', color: 'var(--color-accent)', flexShrink: 0, lineHeight: 1, fontWeight: 300 }}
         >
           +
         </motion.span>
-      </button>
+      </motion.button>
 
       <AnimatePresence initial={false}>
         {open && (
