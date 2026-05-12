@@ -1,4 +1,4 @@
-// components/ScanReportPage.tsx
+// components/ScanReportPage.tsx — build-id: nudge-2026-05-12-1
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, animate, AnimatePresence, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
