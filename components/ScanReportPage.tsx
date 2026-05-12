@@ -782,11 +782,11 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
   return (
     <Section
       id="opportunities"
-      kicker={`${opps.length} Opportunities`}
-      title={<>Where time <Italic>quietly leaks</Italic>.</>}
+      kicker={`${opps.length} Moves`}
+      title={<>Ranked by <Italic>leverage</Italic>, not dollar size.</>}
     >
       <SerifBody className="mb-10 max-w-2xl">
-        Ranked by build-readiness, not dollar size. Each gap is sourced from a specific signal we observed. Dollar values assume mid-tier ops cost ($75–$120/hr loaded). Tap any to expand.
+        Each move is sourced from a specific signal we observed. Dollar values assume mid-tier ops cost ($75–$120/hr loaded). Tap any to expand.
       </SerifBody>
       <div className="space-y-2">
         {opps.map((opp, i) => (
@@ -1741,11 +1741,28 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 // JawDropSignal — surfaces the single most visually striking verified signal right after
 // the company brief. Picks: image ad creative > hiring count > LinkedIn post excerpt.
 // ReframeSection — the load-bearing §3 hinge. Sage full-bleed band, oversized type.
-// Picks the strongest surprising signal: ad spend without lead capture / hiring count /
-// content cadence / traffic. Falls through to NULL if no genuinely surprising data exists,
-// in which case the page degrades to a §2 → §4 direct flow (still coherent).
+// Prefers a Claude-generated reframe (threads to top_gap_title); falls back to a
+// deterministic signal pick when Claude didn't produce one or QA dropped it.
 function ReframeSection({ report }: { report: ReportJson }) {
-  // Pick the strongest reframe-able signal in priority order.
+  // Prefer Claude's reframe — it's authored to thread with top_gap_title.
+  if (report.reframe && report.reframe.emphasis) {
+    const { pre, emphasis, post } = report.reframe;
+    return (
+      <ReframeBand kicker="Here's what most miss" id="reframe">
+        <p style={{
+          fontFamily: SERIF, fontWeight: 400,
+          fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
+          letterSpacing: '-0.02em', color: '#1A1A1A',
+        }}>
+          {pre}
+          <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{emphasis}</em>
+          {post}
+        </p>
+      </ReframeBand>
+    );
+  }
+
+  // Fallback: deterministic pick if Claude didn't produce a reframe (or QA dropped it).
   const ads = report.ads;
   const totalAds = (ads?.google_ads?.count ?? 0) + (ads?.linkedin_ads?.count ?? 0) + (ads?.meta_ads?.count ?? 0);
   const isImg = (url: string | null | undefined) => !!url && !/\.(js|html?)(\?|$)/i.test(url);
@@ -1997,10 +2014,10 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
       >
         <div>
           <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6, fontWeight: 600 }}>
-            {open ? '↑ Hide' : '↓ Expand'} supporting evidence
+            Want to verify
           </p>
           <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
-            The data behind these findings.
+            See the data behind every claim above.
           </p>
         </div>
         <motion.span

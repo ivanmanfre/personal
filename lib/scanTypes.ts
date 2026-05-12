@@ -32,6 +32,12 @@ export interface ReportJson {
   };
   data_quality_notes?: string;
   homepage_screenshot_url?: string | null;
+  reframe?: {
+    pre: string;
+    emphasis: string;
+    post: string;
+    surprise_score?: number;
+  } | null;
   opportunities: Opportunity[];
   competitive_context: string;
   top_gap_title: string;
