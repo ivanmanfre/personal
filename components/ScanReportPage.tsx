@@ -20,18 +20,30 @@ const EASE = [0.22, 0.84, 0.36, 1] as const;
 
 // ── Editorial primitives ──────────────────────────────────────────────────────
 
-const Kicker: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p
-    style={{
+// Section masthead. Each section starts with this so the reader always knows
+// "I am now in section X". Hard-to-miss kicker + sage accent rule.
+const Kicker: React.FC<{ children: React.ReactNode; section?: string | number }> = ({ children, section }) => (
+  <div className="mb-1">
+    {/* Sage accent rule + section label sit on the same baseline above the kicker text */}
+    {section != null && (
+      <div className="flex items-center gap-3 mb-2">
+        <span aria-hidden style={{ display: 'inline-block', height: 1, width: 28, background: 'var(--color-accent)' }} />
+        <span style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600 }}>
+          §{section}
+        </span>
+      </div>
+    )}
+    <p style={{
       fontFamily: MONO,
-      fontSize: '11px',
-      letterSpacing: '0.22em',
+      fontSize: '13px',
+      letterSpacing: '0.28em',
       textTransform: 'uppercase',
-      color: 'rgba(26,26,26,0.65)', // bumped from 0.5 — fails AA at this size
-    }}
-  >
-    {children}
-  </p>
+      color: 'var(--color-accent)',
+      fontWeight: 600,
+    }}>
+      {children}
+    </p>
+  </div>
 );
 
 // Helper: image onError that swaps to a no-preview block. Kills broken images everywhere.
@@ -252,32 +264,28 @@ const ReframeBand: React.FC<{ kicker: string; children: React.ReactNode; id?: st
       }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <p className="mb-8" style={{
-          fontFamily: MONO, fontSize: '11px', letterSpacing: '0.24em', textTransform: 'uppercase',
-          color: 'var(--color-accent)', fontWeight: 600,
-        }}>
-          {kicker}
-        </p>
+        <div className="mb-8">
+          <Kicker section={3}>{kicker}</Kicker>
+        </div>
         {children}
       </div>
     </motion.section>
   );
 };
 
-const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode; id?: string }> = ({
-  kicker, title, children, id,
+const Section: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode; id?: string; section?: string | number }> = ({
+  kicker, title, children, id, section,
 }) => {
   const reduceMotion = useReducedMotion();
   return (
     <motion.section id={id} {...inViewProps} className="py-20 lg:py-28" style={{ scrollMarginTop: 80 }}>
-      {/* Hairline sweep removed — was visual noise. Kicker + headline IS the section start. */}
       <div className="mb-12 lg:mb-16 space-y-3">
-        <Kicker>{kicker}</Kicker>
+        <Kicker section={section}>{kicker}</Kicker>
         <RevealHeadline
           style={{
             fontFamily: SERIF,
             fontWeight: 400,
-            fontSize: 'clamp(1.875rem, 3.6vw, 2.5rem)',
+            fontSize: 'clamp(2.5rem, 4.5vw, 3.5rem)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
             color: '#1A1A1A',
@@ -420,7 +428,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
   else if (email_infra === 'microsoft_365') facts.push('Microsoft 365');
 
   return (
-    <Section id="company" kicker="The Company" title="Who you are, what you run on.">
+    <Section id="company" section={2} kicker="The Company" title="Who you are, what you run on.">
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
       <div className="space-y-12 max-w-4xl">
         {/* 1. Description + facts strip */}
@@ -735,9 +743,7 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
       style={{ scrollMarginTop: 80 }}
     >
       <div className="max-w-5xl">
-        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
-          Your #1 Gap
-        </p>
+        <Kicker section={4}>Your #1 Gap</Kicker>
         <h2 style={{
           fontFamily: SERIF, fontWeight: 400,
           fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', lineHeight: 1.05,
@@ -803,6 +809,7 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
       id="opportunities"
       kicker={`${opps.length} Moves`}
       title={<>Ranked by <Italic>leverage</Italic>, not dollar size.</>}
+      section={5}
     >
       <SerifBody className="mb-10 max-w-2xl">
         Each move is sourced from a specific signal we observed. Dollar values assume mid-tier ops cost ($75–$120/hr loaded). Tap any to expand.
@@ -1192,9 +1199,18 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
         />
 
         <div className="mb-14 lg:mb-20">
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.24em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
-            The Breakdown
-          </p>
+          {/* Dark-band kicker — same pattern as paper sections but inverted (sage on dark stays sage) */}
+          <div className="mb-1">
+            <div className="flex items-center gap-3 mb-2">
+              <span aria-hidden style={{ display: 'inline-block', height: 1, width: 28, background: '#7FA868' }} />
+              <span style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
+                §1
+              </span>
+            </div>
+            <p style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
+              The Breakdown
+            </p>
+          </div>
           <RevealHeadline
             style={{
               fontFamily: SERIF, fontWeight: 400,
@@ -1617,7 +1633,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
   return (
     <section id="cta" className="border-t border-[color:var(--color-hairline)] py-20 lg:py-28" style={{ scrollMarginTop: 80 }}>
       <div className="max-w-3xl">
-        <Kicker>Your Move</Kicker>
+        <Kicker section={7}>Your Move</Kicker>
 
         {/* P1.8 — pivot from "Your highest-priority gap is X" (which restated the priority block
             verbatim) to action framing. The closing arc's job is the move, not the gap re-statement. */}
@@ -2041,10 +2057,8 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
         }}
       >
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6, fontWeight: 600 }}>
-            Want to verify
-          </p>
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <Kicker section={6}>Want to verify</Kicker>
+          <p className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
             See the data behind every claim above.
           </p>
         </div>
