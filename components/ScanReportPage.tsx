@@ -1250,33 +1250,42 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                 const pct = Math.min(100, (c.value / c.max) * 100);
                 const tone = toneFor(pct);
                 return (
-                  <div key={key} className="border-b pb-4 lg:pb-5" style={{ borderColor: 'rgba(247,244,239,0.10)' }}>
-                    {/* Label + score adjacent on the LEFT (eye doesn't travel 800px to read them).
-                        Big italic score sits right after the label; bar + rationale below. */}
-                    <div className="flex items-baseline gap-4 mb-2 flex-wrap">
-                      <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)', fontWeight: 600 }}>
+                  <div key={key} className="pb-5" style={{ borderBottom: '1px solid rgba(247,244,239,0.10)' }}>
+                    {/* Single horizontal row: label LEFT, bar BRIDGES the gap, score RIGHT.
+                        The bar visually connects label to score so the eye reads them as one unit
+                        instead of "label on left, score floating in void". Standard dashboard UX. */}
+                    <div className="flex items-center gap-5 mb-3">
+                      <p style={{
+                        fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
+                        textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)',
+                        fontWeight: 600, flexShrink: 0, minWidth: '140px',
+                      }}>
                         {label}
                       </p>
+                      <div className="flex-1" style={{ height: 4, background: 'rgba(247,244,239,0.10)', position: 'relative' }}>
+                        <motion.div
+                          initial={reduceMotion ? false : { scaleX: 0 }}
+                          whileInView={{ scaleX: pct / 100 }}
+                          viewport={{ once: true, margin: '-40px' }}
+                          transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
+                          style={{ height: '100%', background: tone, transformOrigin: 'left' }}
+                        />
+                      </div>
                       <p style={{
                         fontFamily: SERIF, fontStyle: 'italic',
-                        fontSize: 'clamp(2rem, 3.2vw, 2.4rem)', lineHeight: 1,
-                        letterSpacing: '-0.02em',
-                        color: tone, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                        fontSize: 'clamp(1.75rem, 2.6vw, 2rem)', lineHeight: 1,
+                        letterSpacing: '-0.02em', color: tone,
+                        fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}>
-                        {c.value}<span style={{ fontFamily: MONO, fontSize: '12px', color: 'rgba(247,244,239,0.45)', marginLeft: 6, fontStyle: 'normal', letterSpacing: '0.05em' }}>/{c.max}</span>
+                        {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
                       </p>
                     </div>
-                    {/* Slightly thicker bar so it pulls visual weight under the score */}
-                    <div style={{ height: 3, background: 'rgba(247,244,239,0.10)', position: 'relative', marginBottom: 10 }}>
-                      <motion.div
-                        initial={reduceMotion ? false : { scaleX: 0 }}
-                        whileInView={{ scaleX: pct / 100 }}
-                        viewport={{ once: true, margin: '-40px' }}
-                        transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
-                        style={{ height: '100%', background: tone, transformOrigin: 'left' }}
-                      />
-                    </div>
-                    <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(247,244,239,0.65)', lineHeight: 1.5 }}>
+                    <p style={{
+                      fontFamily: BODY_SERIF, fontSize: '14px',
+                      color: 'rgba(247,244,239,0.65)', lineHeight: 1.5,
+                      paddingLeft: '160px',  // align with bar start
+                    }} className="lg:pl-[160px] pl-0">
                       {c.rationale}
                     </p>
                   </div>
@@ -1623,12 +1632,12 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             color: '#1A1A1A',
           }}
         >
-          Two ways to <Italic highlight>scope this</Italic>.
+          Here's the <Italic highlight>move</Italic>.
         </h2>
 
         <SerifBody large className="mb-10 max-w-xl">
           <span style={{ color: 'rgba(26,26,26,0.8)' }}>
-            One you can ship by Friday on your own. One that turns the whole scan into a 90-day plan with build sequence + ROI model. Both start below.
+            Ship the quick win below yourself this week. Or hand us the whole scan and we build the 90-day system around it.
           </span>
         </SerifBody>
 
@@ -1653,7 +1662,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
               </p>
             )}
             <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
-              The bigger play (your <strong style={{ color: '#1A1A1A', fontWeight: 600, fontStyle: 'normal' }}>#1 gap</strong> + the rest of the system) lives in the Assessment below.
+              The full <strong style={{ color: '#1A1A1A', fontWeight: 600, fontStyle: 'normal' }}>build sequence</strong> — what ships first, what depends on what, ROI per phase — lives in the Assessment below.
             </p>
           </div>
         )}
