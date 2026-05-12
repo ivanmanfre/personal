@@ -194,26 +194,36 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </h2>
 );
 
-// Transition — italic one-line bridge between sections. Lives outside the Section
-// component so it can sit in the gutter and create a felt handoff. The hairline rule
-// above it works as a visual chapter break without shouting "new section".
+// Transition — bridge between sections. Visually marked as a CHAPTER BREAK
+// (sage left rule + indented kicker + italic prose) so the reader feels the
+// handoff instead of seeing isolated body copy.
 const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' }> = ({ children, tone = 'paper' }) => {
   const reduceMotion = useReducedMotion();
-  const color = tone === 'sage' ? 'rgba(76,110,61,0.85)' : 'rgba(26,26,26,0.55)';
-  const rule = tone === 'sage' ? 'rgba(76,110,61,0.25)' : 'rgba(26,26,26,0.12)';
+  const accent = tone === 'sage' ? 'var(--color-accent)' : 'rgba(26,26,26,0.45)';
+  const proseColor = tone === 'sage' ? 'rgba(76,110,61,0.9)' : 'rgba(26,26,26,0.72)';
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduceMotion ? false : { opacity: 0, x: -8 }}
+      whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: '-30px' }}
-      transition={{ duration: 0.5, ease: EASE }}
-      className="py-8 lg:py-10 max-w-2xl"
+      transition={{ duration: 0.6, ease: EASE }}
+      className="py-10 lg:py-14 max-w-2xl"
+      style={{
+        borderLeft: `2px solid ${accent}`,
+        paddingLeft: 'clamp(16px, 1.6vw, 22px)',
+      }}
     >
-      <div style={{ height: 1, background: rule, marginBottom: 18 }} />
       <p style={{
-        fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
-        fontSize: 'clamp(1.05rem, 1.5vw, 1.25rem)', lineHeight: 1.45,
-        letterSpacing: '-0.005em', color,
+        fontFamily: MONO, fontSize: '10px', letterSpacing: '0.24em',
+        textTransform: 'uppercase', color: accent,
+        marginBottom: 10, fontWeight: 600,
+      }}>
+        ▸ Next
+      </p>
+      <p style={{
+        fontFamily: SERIF, fontWeight: 400,
+        fontSize: 'clamp(1.25rem, 1.9vw, 1.5rem)', lineHeight: 1.4,
+        letterSpacing: '-0.012em', color: proseColor,
       }}>
         {children}
       </p>
@@ -1249,9 +1259,9 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                 const tone = toneFor(pct);
                 return (
                   <div key={key} className="border-b pb-4 lg:pb-5" style={{ borderColor: 'rgba(247,244,239,0.10)' }}>
-                    {/* Label + big italic score sit on the same baseline so each dimension reads
-                        as its own scorecard. Score sized 2x the previous (was 20px). */}
-                    <div className="flex items-baseline justify-between gap-4 mb-2">
+                    {/* Label + score adjacent on the LEFT (eye doesn't travel 800px to read them).
+                        Big italic score sits right after the label; bar + rationale below. */}
+                    <div className="flex items-baseline gap-4 mb-2 flex-wrap">
                       <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)', fontWeight: 600 }}>
                         {label}
                       </p>
