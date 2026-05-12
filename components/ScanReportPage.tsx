@@ -338,6 +338,7 @@ function HomepageScreenshot({ src, domain }: { src: string; domain: string }) {
           src={src}
           alt={`Homepage screenshot of ${domain}`}
           loading="lazy"
+          crossOrigin="anonymous"
           onError={() => setFailed(true)}
           style={{ display: 'block', width: '100%', height: 'auto' }}
         />
