@@ -269,23 +269,15 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
 }) => {
   const reduceMotion = useReducedMotion();
   return (
-    <motion.section id={id} {...inViewProps} className="py-16 lg:py-24" style={{ scrollMarginTop: 80 }}>
-      {/* Hairline sweep — paints in left-to-right when section enters viewport. */}
-      <motion.div
-        aria-hidden
-        initial={reduceMotion ? false : { scaleX: 0 }}
-        whileInView={{ scaleX: 1 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.8, ease: EASE }}
-        style={{ height: 1, background: 'var(--color-hairline)', transformOrigin: 'left', marginBottom: '4rem' }}
-      />
+    <motion.section id={id} {...inViewProps} className="py-20 lg:py-28" style={{ scrollMarginTop: 80 }}>
+      {/* Hairline sweep removed — was visual noise. Kicker + headline IS the section start. */}
       <div className="mb-12 lg:mb-16 space-y-3">
         <Kicker>{kicker}</Kicker>
         <RevealHeadline
           style={{
             fontFamily: SERIF,
             fontWeight: 400,
-            fontSize: 'clamp(2rem, 4vw, 3.25rem)',
+            fontSize: 'clamp(1.875rem, 3.6vw, 2.5rem)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
             color: '#1A1A1A',
@@ -433,7 +425,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
       <div className="space-y-12 max-w-4xl">
         {/* 1. Description + facts strip */}
         <div className="space-y-5">
-          <SerifBody large>{company_snapshot.one_liner}</SerifBody>
+          <SerifBody large className="max-w-2xl">{company_snapshot.one_liner}</SerifBody>
           {facts.length > 0 && (
             <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.65)' }}>
               {facts.map((f, i) => (<span key={i}>{f}</span>))}
@@ -449,11 +441,11 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
         {/* 2. LinkedIn + GitHub presence as a stat strip */}
         {((linkedin_summary && (linkedin_summary.followers || linkedin_summary.posts_30d != null)) || github) && (
-          <div className="flex flex-wrap gap-x-12 gap-y-6 pt-6 border-t border-[color:var(--color-hairline)]">
+          <div className="flex flex-wrap gap-x-12 gap-y-6 pt-2">
             {linkedin_summary?.followers != null && (
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>LinkedIn followers</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
                   {linkedin_summary.followers.toLocaleString()}
                 </p>
               </div>
@@ -461,7 +453,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
             {linkedin_summary?.posts_30d != null && (
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Posts / 30d</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
                   {linkedin_summary.posts_30d}
                 </p>
               </div>
@@ -469,7 +461,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
             {linkedin_summary?.last_post_days != null && (
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Last post</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#1A1A1A', marginTop: 4 }}>
                   {linkedin_summary.last_post_days}d ago
                 </p>
               </div>
@@ -477,7 +469,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
             {!!linkedin_summary?.ai_mentions && linkedin_summary.ai_mentions > 0 && (
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>AI mentions</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--color-accent)', marginTop: 4 }}>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--color-accent)', marginTop: 4 }}>
                   {linkedin_summary.ai_mentions}
                 </p>
               </div>
@@ -485,7 +477,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
             {github && (
               <div>
                 <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>GitHub repos</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3.4vw, 2.75rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
                   {github.repos}
                 </p>
               </div>
@@ -509,7 +501,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
         )}
 
         {/* 4. Tech stack — full-width 2-column (confirmed | missing) side-by-side. No more 280px squeeze. */}
-        <div className="pt-8 border-t border-[color:var(--color-hairline)]">
+        <div className="pt-4">
           <Kicker>Tech stack</Kicker>
           <div className="grid md:grid-cols-2 gap-8 mt-6">
             <div>
@@ -699,7 +691,7 @@ function SectionStakes({ report }: { report: ReportJson }) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.7, ease: EASE }}
-      className="py-14 lg:py-20"
+      className="py-20 lg:py-28"
       style={{ scrollMarginTop: 80 }}
     >
       <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-baseline max-w-5xl">
@@ -739,7 +731,7 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.7, ease: EASE }}
-      className="py-16 lg:py-24"
+      className="py-20 lg:py-28"
       style={{ scrollMarginTop: 80 }}
     >
       <div className="max-w-5xl">
@@ -748,7 +740,7 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
         </p>
         <h2 style={{
           fontFamily: SERIF, fontWeight: 400,
-          fontSize: 'clamp(2.25rem, 5vw, 4rem)', lineHeight: 1.02,
+          fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', lineHeight: 1.05,
           letterSpacing: '-0.025em', color: '#1A1A1A',
           marginTop: 16,
         }}>
@@ -1185,7 +1177,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
     <section
       // W2.4 — bumped vertical padding on mobile from py-20 (5rem = 80px) to py-24 (6rem = 96px) so
       // the score 52 has breathing room from the section edges; desktop unchanged
-      className="py-24 sm:py-20 lg:py-32"
+      className="py-20 lg:py-28"
       style={{ background: '#0F0F0F', color: '#F7F4EF' }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
@@ -1206,7 +1198,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           <RevealHeadline
             style={{
               fontFamily: SERIF, fontWeight: 400,
-              fontSize: 'clamp(2.25rem, 5vw, 4rem)', lineHeight: 1.02,
+              fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', lineHeight: 1.05,
               letterSpacing: '-0.025em', color: '#F7F4EF', marginTop: 12,
             }}
           >
@@ -1625,8 +1617,8 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           style={{
             fontFamily: SERIF,
             fontWeight: 400,
-            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
-            lineHeight: 1,
+            fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
+            lineHeight: 1.05,
             letterSpacing: '-0.02em',
             color: '#1A1A1A',
           }}
@@ -2026,7 +2018,7 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
   if (!hasAnything) return null;
 
   return (
-    <div className="border-t border-[color:var(--color-hairline)] py-10 lg:py-14">
+    <div className="py-12 lg:py-16">
       <motion.button
         type="button"
         onClick={() => setOpen((v) => !v)}
