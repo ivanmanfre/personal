@@ -8,7 +8,7 @@ import {
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
-import type { ReportJson, AdCreative } from '../lib/scanTypes';
+import type { ReportJson, AdCreative, Opportunity } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
@@ -45,6 +45,84 @@ const Kicker: React.FC<{ children: React.ReactNode; section?: string | number }>
     </p>
   </div>
 );
+
+// SectionAnswer — bold lede sentence after the headline. Pyramid principle:
+// answer-first per section so a scanner gets the gist in 3 seconds without reading body.
+// Sized between headline (40-56px) and body (17px) — a "deck" in magazine layout terms.
+const SectionAnswer: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'dark' }> = ({ children, tone = 'paper' }) => (
+  <p className="mt-4 mb-8 max-w-3xl" style={{
+    fontFamily: BODY_SERIF, fontWeight: 600,
+    fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.45,
+    letterSpacing: '-0.005em',
+    color: tone === 'dark' ? 'rgba(247,244,239,0.88)' : '#1A1A1A',
+  }}>
+    {children}
+  </p>
+);
+
+// CardPanel — subtle cream-darker container that groups related content (Gestalt proximity).
+// Used for stats, tech stack, cost block, bar chart preview. Reads as "this is one thing,
+// not floating elements."
+const CardPanel: React.FC<{ children: React.ReactNode; className?: string; tone?: 'paper' | 'dark' }> = ({ children, className = '', tone = 'paper' }) => (
+  <div
+    className={`${className}`}
+    style={{
+      background: tone === 'dark' ? 'rgba(247,244,239,0.04)' : '#ECE7DC',
+      border: tone === 'dark' ? '1px solid rgba(247,244,239,0.10)' : '1px solid rgba(26,26,26,0.06)',
+      padding: 'clamp(20px, 2.2vw, 32px)',
+    }}
+  >
+    {children}
+  </div>
+);
+
+// OpportunityBarChart — at-a-glance preview of the 5 opp $-values. Dual coding: visual
+// companion to the text list below. Sorted by cost descending so the loss-magnitude
+// distribution is read in 2 seconds.
+const OpportunityBarChart: React.FC<{ opps: Opportunity[] }> = ({ opps }) => {
+  const reduceMotion = useReducedMotion();
+  const sorted = [...opps].sort((a, b) => (b.estimated_monthly_cost || 0) - (a.estimated_monthly_cost || 0));
+  const max = Math.max(...sorted.map(o => o.estimated_monthly_cost || 0));
+  if (max <= 0) return null;
+  return (
+    <CardPanel className="mb-12">
+      <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)', fontWeight: 600 }}>
+        Five opportunities at a glance
+      </p>
+      <div className="space-y-3">
+        {sorted.map((o, i) => {
+          const pct = (o.estimated_monthly_cost || 0) / max;
+          return (
+            <div key={i} className="flex items-center gap-4">
+              <p className="flex-shrink-0" style={{
+                width: 'clamp(140px, 22vw, 240px)',
+                fontFamily: BODY_SERIF, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3,
+              }}>
+                {o.title.length > 36 ? o.title.slice(0, 34) + '…' : o.title}
+              </p>
+              <div className="flex-1" style={{ height: 18, background: 'rgba(26,26,26,0.06)', position: 'relative' }}>
+                <motion.div
+                  initial={reduceMotion ? false : { scaleX: 0 }}
+                  whileInView={{ scaleX: pct }}
+                  viewport={{ once: true, margin: '-30px' }}
+                  transition={{ duration: 0.8, ease: EASE, delay: 0.1 + i * 0.08 }}
+                  style={{ height: '100%', background: 'var(--color-accent)', transformOrigin: 'left' }}
+                />
+              </div>
+              <p className="flex-shrink-0 text-right" style={{
+                width: '110px',
+                fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px',
+                color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums',
+              }}>
+                ${(o.estimated_monthly_cost || 0).toLocaleString()}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(26,26,26,0.5)', fontStyle: 'normal', marginLeft: 2 }}>/mo</span>
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </CardPanel>
+  );
+};
 
 // Helper: image onError that swaps to a no-preview block. Kills broken images everywhere.
 const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
@@ -429,8 +507,12 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
   return (
     <Section id="company" section={2} kicker="The Company" title="Who you are, what you run on.">
+      <SectionAnswer>
+        {company_size ? `${company_size} ` : ''}{report.company_snapshot.sophistication_tier === 'low' ? 'business running a paper-era stack' : report.company_snapshot.sophistication_tier === 'medium' ? 'business with baseline ops tooling' : 'business with a mature stack'}{domain_age_years ? `, ${domain_age_years} years online` : ''}.
+      </SectionAnswer>
+
       {/* Editorial single-column flow. No more 280px sidebar (chips overflowed, Apollo paragraph wrapped cramped). */}
-      <div className="space-y-12 max-w-4xl">
+      <div className="space-y-10 max-w-4xl">
         {/* 1. Description + facts strip */}
         <div className="space-y-5">
           <SerifBody large className="max-w-2xl">{company_snapshot.one_liner}</SerifBody>
@@ -752,7 +834,12 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
         }}>
           {report.top_gap_title}.
         </h2>
-        <SerifBody large className="mt-6 max-w-2xl">
+        {annualCost > 0 && (
+          <SectionAnswer>
+            {annualDisplay} of margin leaks over the next 12 months if this stays unbuilt.
+          </SectionAnswer>
+        )}
+        <SerifBody large className="mt-2 max-w-2xl">
           <Emphasized>{report.top_gap_summary}</Emphasized>
         </SerifBody>
 
@@ -811,9 +898,17 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
       title={<>Ranked by <Italic>leverage</Italic>, not dollar size.</>}
       section={5}
     >
-      <SerifBody className="mb-10 max-w-2xl">
+      <SectionAnswer>
+        {opps.length} places this is happening today{opps[0]?.time_to_implement ? `. The first ships in ${opps[0].time_to_implement}` : ''}.
+      </SectionAnswer>
+      <SerifBody className="mb-8 max-w-2xl">
         Each move is sourced from a specific signal we observed. Dollar values assume mid-tier ops cost ($75–$120/hr loaded). Tap any to expand.
       </SerifBody>
+
+      {/* Bar chart preview — all 5 $-values at a glance, sorted by cost, before the cards.
+          Dual-coding: visual companion to the text-heavy card list. */}
+      <OpportunityBarChart opps={opps} />
+
       <div className="space-y-2">
         {opps.map((opp, i) => (
           <OpportunityCard
@@ -1220,6 +1315,9 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           >
             Where you're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where you're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
           </RevealHeadline>
+          <SectionAnswer tone="dark">
+            You scored {report.automation_score}/100 — Grade {report.automation_grade}. Score below means more humans pasting fields; higher means more systems doing the work.
+          </SectionAnswer>
         </div>
 
         <div className="grid lg:grid-cols-[auto_1fr] gap-12 lg:gap-20 items-start">
