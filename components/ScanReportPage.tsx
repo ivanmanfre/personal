@@ -732,40 +732,57 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
       className="py-16 lg:py-24"
       style={{ scrollMarginTop: 80 }}
     >
-      <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-baseline max-w-5xl">
+      <div className="max-w-5xl">
         <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>
           Your #1 Gap
         </p>
-        <div>
-          <h2 style={{
-            fontFamily: SERIF, fontWeight: 400,
-            fontSize: 'clamp(2rem, 4.2vw, 3.25rem)', lineHeight: 1.05,
-            letterSpacing: '-0.02em', color: '#1A1A1A',
-          }}>
-            {report.top_gap_title}.
-          </h2>
-          <SerifBody large className="mt-5 max-w-2xl">
-            <Emphasized>{report.top_gap_summary}</Emphasized>
-          </SerifBody>
-          {annualCost > 0 && (
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
-              If nothing changes: <span style={{ color: '#A85439', fontStyle: 'normal', fontWeight: 600 }}>{annualDisplay}</span> in unleveraged capacity over the next 12 months.
+        <h2 style={{
+          fontFamily: SERIF, fontWeight: 400,
+          fontSize: 'clamp(2.25rem, 5vw, 4rem)', lineHeight: 1.02,
+          letterSpacing: '-0.025em', color: '#1A1A1A',
+          marginTop: 16,
+        }}>
+          {report.top_gap_title}.
+        </h2>
+        <SerifBody large className="mt-6 max-w-2xl">
+          <Emphasized>{report.top_gap_summary}</Emphasized>
+        </SerifBody>
+
+        {/* Hero cost number — co-equal weight with the score in §1. The page now has two
+            "moments": the score reveal (good) and the cost of inaction (bad), bracketing the
+            emotional arc. Coral italic so it reads as the loss-aversion frame. */}
+        {annualCost > 0 && (
+          <div className="mt-12 lg:mt-16 pt-10 lg:pt-12 border-t border-[color:var(--color-hairline)]">
+            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              If nothing changes — 12-month cost
             </p>
-          )}
-          <a
-            href="#opportunities"
-            className="inline-flex items-baseline gap-1.5 mt-6 group"
-            style={{
-              fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
-              textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
-          >
-            See the full {report.opportunities.length} opportunities below ↓
-          </a>
-        </div>
+            <p style={{
+              fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+              fontSize: 'clamp(4.5rem, 11vw, 9rem)', lineHeight: 0.92,
+              letterSpacing: '-0.04em', color: '#A85439',
+              fontVariantNumeric: 'tabular-nums', marginTop: 8,
+            }}>
+              <Scramble value={annualDisplay} duration={0.6} />
+            </p>
+            <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+              That's the compounding cost across the 5 opportunities below — unleveraged time and missed conversion if nothing in the system changes for 12 months.
+            </p>
+          </div>
+        )}
+
+        <a
+          href="#opportunities"
+          className="inline-flex items-baseline gap-1.5 mt-10 group"
+          style={{
+            fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
+        >
+          See the {report.opportunities.length} moves below ↓
+        </a>
       </div>
     </motion.section>
   );
