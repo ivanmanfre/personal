@@ -89,7 +89,7 @@ const NODE_H = 64;
 
 function layoutDagre(nodes: Node[], edges: Edge[], rankdir: 'LR' | 'TB' = 'LR'): Node[] {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir, nodesep: 60, ranksep: 130, marginx: 30, marginy: 30, ranker: 'tight-tree' });
+  g.setGraph({ rankdir, nodesep: 40, ranksep: 90, marginx: 24, marginy: 24, ranker: 'tight-tree' });
   g.setDefaultEdgeLabel(() => ({}));
   nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }));
   edges.forEach((e) => g.setEdge(e.source, e.target));
@@ -106,7 +106,7 @@ const BrainGraphFlowInner: React.FC<{ height: number }> = ({ height }) => {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<{ kind: string; id: string; label: string } | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [rankdir, setRankdir] = useState<'LR' | 'TB'>('LR');
+  const [rankdir, setRankdir] = useState<'LR' | 'TB'>('TB');
   const [refreshKey, setRefreshKey] = useState(0);
   const { fitView } = useReactFlow();
 
@@ -229,7 +229,7 @@ const BrainGraphFlowInner: React.FC<{ height: number }> = ({ height }) => {
 
   useEffect(() => {
     // Fit view after layout settles
-    const t = setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 100);
+    const t = setTimeout(() => fitView({ padding: 0.08, duration: 500, maxZoom: 1.3 }), 150);
     return () => clearTimeout(t);
   }, [rankdir, refreshKey, fitView]);
 
@@ -296,7 +296,7 @@ const BrainGraphFlowInner: React.FC<{ height: number }> = ({ height }) => {
             edges={edges}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.15, duration: 400 }}
+            fitViewOptions={{ padding: 0.08, duration: 500, maxZoom: 1.3, minZoom: 0.3 }}
             proOptions={{ hideAttribution: true }}
             minZoom={0.15}
             maxZoom={2}
@@ -416,6 +416,10 @@ const SelectedDetail: React.FC<{ entity: { kind: string; id: string; label: stri
       </div>
       {loading ? (
         <div className="text-xs text-zinc-500 py-2">Loading details…</div>
+      ) : !details || (typeof details === 'object' && Object.keys(details as object).length === 0) ? (
+        <div className="text-xs text-zinc-500 py-2 text-center bg-zinc-950/40 border border-zinc-800/40 rounded-lg">
+          No details for this entity yet.
+        </div>
       ) : content ? (
         <div className="space-y-1.5">
           <div className="text-[11px] text-zinc-500 flex items-center gap-2 flex-wrap">
@@ -433,13 +437,73 @@ const SelectedDetail: React.FC<{ entity: { kind: string; id: string; label: stri
           </pre>
         </div>
       ) : (
-        <pre className="text-[11px] text-zinc-300 bg-zinc-950/70 border border-zinc-800/50 rounded-lg p-3 overflow-auto max-h-64 leading-snug">
-          {JSON.stringify(details, null, 2)}
-        </pre>
+        <DetailJsonOrList details={details} />
       )}
     </motion.div>
   );
 };
+
+
+function DetailJsonOrList({ details }: { details: unknown }) {
+  const d = details as Record<string, unknown>;
+  // Client proposals shape
+  if (d && Array.isArray(d.proposals)) {
+    const props = d.proposals as Array<Record<string, unknown>>;
+    const totals = d.totals as Record<string, number> | undefined;
+    return (
+      <div className="space-y-2">
+        {totals && Object.keys(totals).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(totals).map(([cur, amt]) => (
+              <span key={cur} className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-xs font-mono">
+                {cur}{(amt as number).toLocaleString()}
+              </span>
+            ))}
+          </div>
+        )}
+        <ul className="divide-y divide-zinc-800/40 bg-zinc-950/50 border border-zinc-800/50 rounded-lg overflow-hidden">
+          {props.map((p, i) => (
+            <li key={i} className="px-3 py-2 text-xs flex items-center gap-2">
+              <FileText className="w-3 h-3 text-amber-300 shrink-0" />
+              <span className="text-zinc-200 truncate flex-1">{(p.project_title as string) || (p.slug as string)}</span>
+              {p.amount != null && (
+                <span className="font-mono text-emerald-300 shrink-0">
+                  {(p.currency as string) || ''}{p.amount as string}
+                </span>
+              )}
+              {p.clickup_task != null && (
+                <a href={`https://app.clickup.com/t/${p.clickup_task}`} target="_blank" rel="noreferrer" className="text-orange-300 hover:text-orange-200 font-mono text-[10px]">
+                  {p.clickup_task as string}
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  // Backlinks shape
+  if (d && Array.isArray(d.backlinks)) {
+    const bl = d.backlinks as Array<Record<string, unknown>>;
+    if (bl.length === 0) return <div className="text-xs text-zinc-500 py-2">No connections found.</div>;
+    return (
+      <ul className="divide-y divide-zinc-800/40 bg-zinc-950/50 border border-zinc-800/50 rounded-lg overflow-hidden">
+        {bl.map((b, i) => (
+          <li key={i} className="px-3 py-2 text-xs flex items-center gap-2">
+            <Link2 className="w-3 h-3 text-cyan-300 shrink-0" />
+            <span className="text-zinc-300 font-mono truncate flex-1">{b.from_path as string}</span>
+            {b.line_no != null && <span className="text-zinc-500 font-mono text-[10px]">L{b.line_no as number}</span>}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  return (
+    <pre className="text-[11px] text-zinc-300 bg-zinc-950/70 border border-zinc-800/50 rounded-lg p-3 overflow-auto max-h-64 leading-snug">
+      {JSON.stringify(details, null, 2)}
+    </pre>
+  );
+}
 
 const BrainGraphFlow: React.FC<{ height?: number }> = ({ height = 540 }) => (
   <ReactFlowProvider>
