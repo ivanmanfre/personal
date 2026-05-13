@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, Search, Database, FileText, Sparkles, AlertTriangle, ChevronDown, ChevronRight, Layers, Info, MessageSquare, RefreshCw, Zap } from 'lucide-react';
+import { Brain, Search, Database, FileText, Sparkles, AlertTriangle, ChevronDown, ChevronRight, Layers, Info, MessageSquare, RefreshCw, Zap, Link2 } from 'lucide-react';
 import { useBrainStats, type SessionLog, type CompactionReview } from '../../hooks/useBrainStats';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
@@ -8,6 +8,7 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import PanelCard from './shared/PanelCard';
 import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
+import BrainGraphSection from './BrainGraphSection';
 
 const tierColors: Record<string, string> = {
   global: 'text-emerald-400',
@@ -126,6 +127,9 @@ const BrainPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Brain v2 — hybrid retrieval + entity graph */}
+      <BrainGraphSection />
+
       {explainerOpen && (
         <div className="border border-violet-500/20 rounded-2xl bg-violet-500/[0.04] overflow-hidden">
           <div className="px-5 py-4 border-b border-violet-500/15 bg-violet-500/[0.04]">
@@ -187,8 +191,51 @@ const BrainPanel: React.FC = () => {
             </div>
           </div>
 
+          {/* Brain v2 — retrieval modes + entity graph */}
+          <div className="px-5 py-4 border-t border-violet-500/15 bg-zinc-900/30">
+            <h3 className="text-xs font-semibold text-violet-300 uppercase tracking-wider flex items-center gap-1.5 mb-3">
+              <Sparkles className="w-3.5 h-3.5" /> Brain v2 — three ways to recall
+            </h3>
+            <div className="grid md:grid-cols-3 gap-3 text-xs text-zinc-400 leading-relaxed">
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
+                <div className="text-zinc-200 font-medium mb-1">1. Grep — exact strings</div>
+                <p className="text-zinc-400">Workflow IDs, custom field IDs, API keys, file names. Already lived here — the <code className="font-mono text-violet-300">/recall</code> skill.</p>
+              </div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
+                <div className="text-zinc-200 font-medium mb-1">2. Vector — by meaning</div>
+                <p className="text-zinc-400">All 179 memory files embedded with <code className="font-mono text-cyan-300">text-embedding-3-small</code>. Hybrid BM25+vector via the <code className="font-mono text-violet-300">claude-memory-recall</code> edge fn.</p>
+              </div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg p-3">
+                <div className="text-zinc-200 font-medium mb-1">3. Wikilinks — by connection</div>
+                <p className="text-zinc-400">Write <code className="font-mono text-emerald-300">[[client:veripro]]</code> anywhere. The extractor indexes them into <code className="font-mono text-violet-300">claude_memory_backlinks</code>.</p>
+              </div>
+            </div>
+            <h3 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider flex items-center gap-1.5 mt-4 mb-2">
+              <Link2 className="w-3.5 h-3.5" /> Entity kinds (used in wikilinks + relations)
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-emerald-300">client</span> <span className="text-zinc-500">— a direct client</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-amber-300">proposal</span> <span className="text-zinc-500">— a quote sent</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-violet-300">call</span> <span className="text-zinc-500">— a sales call</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-cyan-300">workflow</span> <span className="text-zinc-500">— an n8n workflow</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-orange-300">clickup</span> <span className="text-zinc-500">— a ClickUp task</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-emerald-300">payment</span> <span className="text-zinc-500">— a Stripe payment</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-zinc-300">memory_file</span> <span className="text-zinc-500">— another note</span></div>
+              <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-lg px-2.5 py-1.5"><span className="font-mono text-blue-300">task</span> <span className="text-zinc-500">— a todo</span></div>
+            </div>
+            <h3 className="text-xs font-semibold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 mt-4 mb-2">
+              <Database className="w-3.5 h-3.5" /> Where things live
+            </h3>
+            <ul className="text-xs text-zinc-400 space-y-1 leading-relaxed">
+              <li>• <span className="text-zinc-200">Markdown source</span> — <code className="font-mono text-violet-300">~/.claude/memory/</code> on your Mac (the source of truth)</li>
+              <li>• <span className="text-zinc-200">Mirror + embeddings</span> — Supabase <code className="font-mono text-violet-300">claude_memory</code> (+ <code className="font-mono">embedding</code> column)</li>
+              <li>• <span className="text-zinc-200">Typed relations</span> — Supabase <code className="font-mono text-violet-300">claude_memory_relations</code> (client → proposal → clickup, etc.)</li>
+              <li>• <span className="text-zinc-200">Wikilink index</span> — Supabase <code className="font-mono text-violet-300">claude_memory_backlinks</code> (extracted from <code className="font-mono">[[...]]</code>)</li>
+            </ul>
+          </div>
+
           <div className="px-5 py-3 border-t border-violet-500/15 bg-zinc-900/40 text-[11px] text-zinc-500">
-            <span className="font-medium text-zinc-400">Tip:</span> click a tier card below to filter the search. Search uses substring + tier filter; for fuzzy or semantic matches, ask n8nClaw on WhatsApp.
+            <span className="font-medium text-zinc-400">Tip:</span> the search at the very top of this page uses hybrid BM25+vector retrieval. The search below this card is the legacy substring+tier filter. Both query the same data.
           </div>
         </div>
       )}
