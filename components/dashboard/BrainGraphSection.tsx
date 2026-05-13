@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
+const BrainGraphFlow = lazy(() => import('./BrainGraphFlow'));
 import {
   Users, FileText, Link2, Search, Sparkles, ChevronDown, ChevronRight,
   ExternalLink, Database, RefreshCw,
@@ -180,6 +181,9 @@ const BrainGraphSection: React.FC = () => {
         )}
       </PanelCard>
 
+      {/* Force-directed graph view (lazy) */}
+      <BrainGraphToggleSection />
+
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
@@ -274,5 +278,33 @@ const BrainGraphSection: React.FC = () => {
     </div>
   );
 };
+
+function BrainGraphToggleSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <PanelCard
+      title="Entity graph"
+      icon={<Link2 className="w-4 h-4 text-cyan-400" />}
+      accent="cyan"
+      headerRight={
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="text-xs text-zinc-400 hover:text-zinc-200 font-medium"
+        >
+          {open ? "hide graph" : "show graph"}
+        </button>
+      }
+    >
+      {open ? (
+        <Suspense fallback={<div className="h-[480px] flex items-center justify-center text-xs text-zinc-500">Loading graph engine…</div>}>
+          <BrainGraphFlow height={520} />
+        </Suspense>
+      ) : (
+        <p className="text-xs text-zinc-500">Force-directed view of clients · proposals · ClickUp tasks · workflows · memory files and the typed edges between them. Click a node for details.</p>
+      )}
+    </PanelCard>
+  );
+}
 
 export default BrainGraphSection;
