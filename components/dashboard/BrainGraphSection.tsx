@@ -1,5 +1,6 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 const BrainGraphFlow = lazy(() => import('./BrainGraphFlow'));
+const BrainToolUsage = lazy(() => import('./BrainToolUsage'));
 import {
   Users, FileText, Link2, Search, Sparkles, ChevronDown, ChevronRight,
   ExternalLink, Database, RefreshCw,
@@ -90,6 +91,9 @@ const ClientRow: React.FC<{ client: ClientEntity }> = ({ client }) => {
           )}
         </div>
       )}
+      <Suspense fallback={null}>
+        <BrainToolUsage />
+      </Suspense>
     </div>
   );
 };
