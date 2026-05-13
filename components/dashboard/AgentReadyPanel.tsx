@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail, Sparkles, Edit3 } from 'lucide-react';
+import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail, Sparkles, Edit3, Search, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAgentReady, STAGE_LABELS } from '../../hooks/useAgentReady';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useScansList, type ScanListRow } from '../../hooks/useScansList';
+import { gradeColor } from '../../lib/scanApi';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -106,9 +108,10 @@ const AgentReadyPanel: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Blueprint Pipeline</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Agent-Ready</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
+        <FreeAuditsSection />
         <EmptyState
           title="No paid Blueprints yet"
           description="When someone books the $2,500 Agent-Ready Blueprint on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
@@ -122,10 +125,17 @@ const AgentReadyPanel: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Blueprint Pipeline</h1>
-          <p className="text-sm text-zinc-500 mt-1">Paid Blueprints, intake submissions, Day 2 scheduling, conversion tracking.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Agent-Ready</h1>
+          <p className="text-sm text-zinc-500 mt-1">Free audit submissions feeding the $2,500 Blueprint pipeline.</p>
         </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+      </div>
+
+      <FreeAuditsSection />
+
+      <div className="pt-2">
+        <h2 className="text-lg font-semibold tracking-tight">Blueprint Pipeline</h2>
+        <p className="text-xs text-zinc-500 mt-1">Paid Blueprints, intake submissions, Day 2 scheduling, conversion tracking.</p>
       </div>
 
       {/* Stats */}
@@ -435,6 +445,109 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
 
       {genError && (
         <p className="mt-2 text-xs text-red-400 font-mono">{genError}</p>
+      )}
+    </div>
+  );
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-zinc-700/40 text-zinc-300 border-zinc-600/40',
+  processing: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  complete: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  error: 'bg-red-500/15 text-red-300 border-red-500/30',
+};
+
+const FreeAuditsSection: React.FC = () => {
+  const { rows, loading } = useScansList();
+
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const processing = rows.filter((r) => r.status === 'processing' || r.status === 'pending').length;
+    const complete = rows.filter((r) => r.status === 'complete').length;
+    const last24h = rows.filter((r) => Date.now() - new Date(r.created_at).getTime() < 86400000).length;
+    return { total, processing, complete, last24h };
+  }, [rows]);
+
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <Search className="w-5 h-5 text-zinc-400" />
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Free Audits</h2>
+          <p className="text-xs text-zinc-500">Last 30 submissions from <span className="font-mono">/audit</span> (your own emails filtered out).</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Last 24h" value={stats.last24h} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Processing" value={stats.processing} icon={<Sparkles className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Complete" value={stats.complete} icon={<Award className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Total (30)" value={stats.total} icon={<FileText className="w-5 h-5" />} color="text-zinc-300" />
+      </div>
+
+      {loading && rows.length === 0 ? (
+        <p className="text-xs text-zinc-500 font-mono">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-zinc-500 font-mono">No external submissions yet.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {rows.map((row) => <ScanRow key={row.id} row={row} />)}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ScanRow: React.FC<{ row: ScanListRow }> = ({ row }) => {
+  const isComplete = row.status === 'complete';
+  const grade = row.automation_grade;
+  const score = row.automation_score;
+  const reportHref = isComplete ? `/scan/${row.company_slug}` : null;
+
+  const time = relativeTime(row.created_at);
+
+  return (
+    <div className="flex items-center gap-3 py-1.5 px-3 rounded border border-zinc-800/60 bg-zinc-950/40 hover:bg-zinc-900/40 transition-colors">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm text-zinc-200 truncate font-medium">{row.company_name || row.domain}</span>
+          <span className="text-[11px] text-zinc-500 font-mono truncate">{row.email}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500 mt-0.5">
+          <span className="font-mono truncate">{row.domain}</span>
+          <span>·</span>
+          <span>{time}</span>
+          {row.source === 'outreach' && (
+            <>
+              <span>·</span>
+              <span className="text-amber-400/80 font-mono">outreach</span>
+            </>
+          )}
+        </div>
+      </div>
+      <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded border text-[10px] uppercase tracking-wider font-mono ${STATUS_BADGE[row.status] ?? STATUS_BADGE.pending}`}>
+        {row.status}
+      </span>
+      {isComplete && grade && typeof score === 'number' && (
+        <span
+          className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono uppercase tracking-wider"
+          style={{ color: gradeColor(grade), borderColor: gradeColor(grade) + '55', backgroundColor: gradeColor(grade) + '15' }}
+        >
+          {grade} · {score}
+        </span>
+      )}
+      {reportHref ? (
+        <a
+          href={reportHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-zinc-300 hover:text-emerald-300 border border-zinc-700 hover:border-emerald-500/40 rounded transition-colors"
+          title="Open scan report"
+        >
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      ) : (
+        <span className="shrink-0 w-[26px]" />
       )}
     </div>
   );
