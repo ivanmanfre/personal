@@ -4,6 +4,7 @@ import { HeadRow, SubTabs, SubTab } from '../primitives';
 /**
  * Phase 4 — Operations.
  * Wraps WorkflowsPanel, CodePanel (logs), UsagePanel, AutoResearchPanel, TasksPanel.
+ * Plus Tools sub-tab (EditTokenPanel etc).
  */
 
 const WorkflowsPanel = lazy(() => import('../../dashboard/WorkflowsPanel'));
@@ -11,8 +12,9 @@ const CodePanel = lazy(() => import('../../dashboard/CodePanel'));
 const UsagePanel = lazy(() => import('../../dashboard/UsagePanel'));
 const AutoResearchPanel = lazy(() => import('../../dashboard/AutoResearchPanel'));
 const TasksPanel = lazy(() => import('../../dashboard/TasksPanel'));
+const EditTokenPanel = lazy(() => import('../../dashboard/EditTokenPanel'));
 
-type SubKey = 'workflows' | 'logs' | 'usage' | 'research' | 'tasks';
+type SubKey = 'workflows' | 'logs' | 'usage' | 'research' | 'tasks' | 'tools';
 
 const SUB_LABELS: Record<SubKey, string> = {
   workflows: 'Workflows',
@@ -20,9 +22,10 @@ const SUB_LABELS: Record<SubKey, string> = {
   usage: 'Usage',
   research: 'Auto Research',
   tasks: 'Tasks',
+  tools: 'Tools',
 };
 
-const SUB_ORDER: SubKey[] = ['workflows', 'logs', 'usage', 'research', 'tasks'];
+const SUB_ORDER: SubKey[] = ['workflows', 'logs', 'usage', 'research', 'tasks', 'tools'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'workflows';
@@ -45,6 +48,14 @@ const Loading = () => (
   <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading panel…</div>
 );
 
+function ToolsSub() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '12px 0' }}>
+      <EditTokenPanel />
+    </div>
+  );
+}
+
 export function Operations() {
   const [sub, setSub] = useState<SubKey>(getInitialSub);
   const handleSub = (s: string) => { setSub(s as SubKey); syncSubToUrl(s as SubKey); };
@@ -56,6 +67,7 @@ export function Operations() {
       case 'usage':     return <UsagePanel />;
       case 'research':  return <AutoResearchPanel />;
       case 'tasks':     return <TasksPanel />;
+      case 'tools':     return <ToolsSub />;
     }
   };
 
@@ -63,7 +75,7 @@ export function Operations() {
     <>
       <HeadRow
         title="Operations"
-        meta={<>Workflows · Logs · Usage<br />Auto Research · Tasks</>}
+        meta={<>Workflows · Logs · Usage<br />Auto Research · Tasks · Tools</>}
       />
       <SubTabs>
         {SUB_ORDER.map(key => (
