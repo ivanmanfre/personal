@@ -8,13 +8,12 @@ const tiers = [
     name: 'Heavy month',
     price: '$10,000/mo',
     badge: 'Recommended starting point',
-    fit: 'New engagements with significant build scope. Includes the 90-Day Blueprint audit, 2-3 major systems shipped, weekly working sessions, and Slack support.',
+    fit: 'Best for new engagements with significant build scope.',
     features: [
       '**90-Day Blueprint audit** delivered week 1 — yours regardless',
-      '2-3 major systems built (LM engine, post engine, custom)',
+      '2-3 major systems built',
       'Weekly working sessions',
       'Slack support throughout',
-      'In-browser editor so your team self-edits content',
     ],
     bestFor: 'First month with a new partner. Post-pivot rebuilds. "I need a lot built fast."',
   },
@@ -22,31 +21,30 @@ const tiers = [
     name: 'Active build',
     price: '$6,500/mo',
     bundleNote: 'Most clients here for months 2-3. Bundle both at $12k (saves $1k).',
-    fit: 'Ongoing builds + strategy. 1-2 new systems per month, bi-weekly working sessions, Slack support, continuous voice and prompt tuning.',
+    fit: 'Ongoing builds + strategy after the heavy month.',
     features: [
       '1-2 new systems per month from your 90-day plan',
       'Bi-weekly working sessions',
       'Slack support + async builds',
-      'Continuous voice + prompt tuning',
       'Monthly recap + next-month priority alignment',
     ],
     bestFor: 'Months 2-3 after Heavy month, executing the 90-day plan priorities. Or smaller new engagements that don\'t need a full Heavy month start.',
     highlighted: true,
   },
-  {
-    name: 'Slow lane',
-    price: '$3,500/mo',
-    fit: 'Light cadence + ongoing tuning. 1 small build per month, monthly strategy call, async Slack, monthly system health report.',
-    features: [
-      '1 small build per month',
-      'Monthly strategy call',
-      'Async Slack support',
-      'Voice + prompt tuning as needed',
-      'Monthly system health report',
-    ],
-    bestFor: 'After the 90-day plan ships, when you want to keep the relationship lighter but not exit entirely. Or smallest-scope new engagements.',
-  },
 ];
+
+const slowLaneTier = {
+  name: 'Slow lane',
+  price: '$3,500/mo',
+  fit: 'Light cadence after the build queue empties.',
+  features: [
+    '1 small build per month',
+    'Monthly strategy call',
+    'Async Slack support',
+    'Monthly system health report',
+  ],
+  bestFor: 'After the 90-day plan ships, when you want to keep the relationship lighter but not exit entirely. Or smallest-scope new engagements.',
+};
 
 const howItWorks = [
   {
@@ -221,14 +219,15 @@ const FractionalPage: React.FC = () => {
             className="mb-4"
           >
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
-              Three intensities. Pick what matches the work ahead.
+              Two main options. Pick what matches the work ahead.
             </h2>
             <p className="text-ink-soft mb-10 max-w-2xl">
               Switch tiers month-to-month as your needs change. You're never locked in.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-3">
+          {/* Heavy + Active — two main options, equal weight */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             {tiers.map((tier) => (
               <motion.div
                 key={tier.name}
@@ -298,6 +297,41 @@ const FractionalPage: React.FC = () => {
             ))}
           </div>
 
+          {/* Slow Lane — secondary tier, smaller, full-width below the main two */}
+          <motion.div
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true }}
+            className="mb-3 max-w-3xl mx-auto bg-paper-sunk border border-zinc-300 p-6 md:p-7"
+          >
+            <div className="flex items-start gap-6 flex-wrap md:flex-nowrap">
+              <div className="flex-shrink-0">
+                <span className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-2 block">
+                  Step-down tier
+                </span>
+                <h3 className="text-xl font-semibold tracking-tight mb-1">{slowLaneTier.name}</h3>
+                <p className="text-2xl font-bold tracking-tighter font-mono text-black mb-2">{slowLaneTier.price}</p>
+                <p className="text-xs italic text-ink-mute max-w-[180px]">{slowLaneTier.fit}</p>
+              </div>
+              <ul className="flex-1 space-y-2 text-sm text-ink-soft">
+                {slowLaneTier.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <Check size={14} className="shrink-0 mt-1 text-ink-mute" strokeWidth={3} />
+                    <span>{renderInline(f)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex-shrink-0 self-center">
+                <a
+                  href="/start"
+                  className="inline-block px-5 py-2.5 border border-black bg-paper text-black font-bold tracking-wide text-xs transition-colors hover:bg-black hover:text-white"
+                >
+                  Discuss
+                </a>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Care Plan footnote — visually subordinate */}
           <div className="mb-20 max-w-3xl mx-auto text-center">
             <p className="text-xs text-ink-mute italic">
@@ -312,9 +346,6 @@ const FractionalPage: React.FC = () => {
             viewport={{ once: true }}
             className="mb-20 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
           >
-            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent mb-4">
-              The honest part
-            </p>
             <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
               The 90-Day Blueprint <span className="font-drama italic">is honest.</span>
             </h3>
@@ -322,7 +353,7 @@ const FractionalPage: React.FC = () => {
               The audit I deliver in your first Heavy month surfaces 5-7 priority builds across content, outbound, production, and partnerships. It's your roadmap, owned by you.
             </p>
             <p className="text-lg text-black leading-relaxed font-medium">
-              If we don't find enough to justify continuation, I tell you straight. You graduate to Care Plan or just walk. <span className="font-drama italic">I'd rather lose a month of revenue than ship a padded roadmap.</span>
+              If we don't find enough to justify continuation, I tell you straight. You graduate to Care Plan or just walk.
             </p>
           </motion.div>
 
