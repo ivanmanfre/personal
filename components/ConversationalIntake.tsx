@@ -63,16 +63,16 @@ const PAID_QUESTION_LABELS: Record<string, string> = {
   downside: 'Downstream damage',
 };
 
-// Fractional m1 schema — 30 keys, 8 dimensions (business landscape)
+// Fractional m1 schema (v3, 2026-05-17) — 25 keys, 8 dimensions (operations landscape)
 const FRACTIONAL_PILLARS: Pillar[] = [
-  { numeral: 'I',    label: 'Context',         keys: ['company', 'size_revenue', 'founders_team', 'icp_description', 'current_revenue_mix'] },
-  { numeral: 'II',   label: 'Content state',   keys: ['post_cadence', 'voice_maturity', 'ideation_source', 'distribution_channels', 'audience_size'] },
-  { numeral: 'III',  label: 'Outbound',        keys: ['outbound_channels', 'outbound_volume', 'outbound_whats_working', 'outbound_automation_level'] },
-  { numeral: 'IV',   label: 'Lead magnets',    keys: ['current_lms', 'lm_conversion_data', 'lm_gaps'] },
-  { numeral: 'V',    label: 'Production',      keys: ['team_roles', 'animator_designer_load', 'current_bottleneck', 'delivery_pain'] },
-  { numeral: 'VI',   label: 'Partnerships',    keys: ['existing_partners', 'referral_pipeline', 'partner_kickback_structure'] },
-  { numeral: 'VII',  label: 'Ops baseline',    keys: ['pm_tooling', 'client_onboarding_pain', 'prompt_library_state'] },
-  { numeral: 'VIII', label: 'Brand + voice',   keys: ['identity_statement', 'audience_pov', 'voice_pitfalls_to_avoid'] },
+  { numeral: 'I',    label: 'Context',           keys: ['company', 'size_revenue', 'founders_team', 'icp_description'] },
+  { numeral: 'II',   label: 'Trigger + outcomes', keys: ['why_now', 'desired_outcomes_12mo', 'success_metric'] },
+  { numeral: 'III',  label: 'Automation state',  keys: ['existing_automations', 'ai_tools_paid_for', 'past_failures', 'automation_appetite'] },
+  { numeral: 'IV',   label: 'Tech stack',        keys: ['daily_tech_stack'] },
+  { numeral: 'V',    label: 'Founder time',      keys: ['weekly_hours_breakdown', 'top_time_sucks', 'repeating_judgment_tasks'] },
+  { numeral: 'VI',   label: 'Content + outbound', keys: ['post_cadence_and_owner', 'lead_magnets_state', 'outbound_channels_volume', 'outbound_bottleneck'] },
+  { numeral: 'VII',  label: 'Client delivery',   keys: ['recent_client_examples', 'delivery_workflow_specific', 'client_reporting_cadence'] },
+  { numeral: 'VIII', label: 'Integration + scale', keys: ['tools_that_dont_talk', 'monthly_manual_data_work', 'five_more_clients_what_breaks'] },
 ];
 
 const FRACTIONAL_QUESTION_LABELS: Record<string, string> = {
@@ -80,32 +80,27 @@ const FRACTIONAL_QUESTION_LABELS: Record<string, string> = {
   size_revenue: 'Team size + revenue',
   founders_team: 'Founders/partners + roles',
   icp_description: 'Who you sell to',
-  current_revenue_mix: 'Where revenue comes from',
-  post_cadence: 'Current posting cadence',
-  voice_maturity: 'Voice consistency',
-  ideation_source: 'Where topics come from',
-  distribution_channels: 'Distribution channels',
-  audience_size: 'Audience size per channel',
-  outbound_channels: 'Outbound channels',
-  outbound_volume: 'Outbound volume + reply rate',
-  outbound_whats_working: "What's currently working",
-  outbound_automation_level: 'Outbound automation level',
-  current_lms: 'Existing lead magnets',
-  lm_conversion_data: 'LM conversion data',
-  lm_gaps: 'LM opportunities not built',
-  team_roles: 'Team members + roles',
-  animator_designer_load: 'Creative production load',
-  current_bottleneck: 'Current bottleneck',
-  delivery_pain: 'Delivery friction',
-  existing_partners: 'Named partners',
-  referral_pipeline: 'Referral pipeline',
-  partner_kickback_structure: 'Kickback structure',
-  pm_tooling: 'Project mgmt tooling',
-  client_onboarding_pain: 'Onboarding friction',
-  prompt_library_state: 'Prompt library state',
-  identity_statement: 'Identity statement',
-  audience_pov: 'Audience POV',
-  voice_pitfalls_to_avoid: 'Voice/language to avoid',
+  why_now: 'What changed (last 30 days)',
+  desired_outcomes_12mo: '12-month outcome',
+  success_metric: 'How you measure success',
+  existing_automations: "What's automated today",
+  ai_tools_paid_for: 'AI tools you pay for',
+  past_failures: "What didn't stick (and why)",
+  automation_appetite: 'Build appetite (hands-on?)',
+  daily_tech_stack: 'Daily tools + which to kill',
+  weekly_hours_breakdown: 'Weekly hours split',
+  top_time_sucks: 'Top 3 time-sucks',
+  repeating_judgment_tasks: 'Repeating judgment calls',
+  post_cadence_and_owner: 'Content cadence + owner',
+  lead_magnets_state: 'Lead magnets state',
+  outbound_channels_volume: 'Outbound channels + volume',
+  outbound_bottleneck: 'Outbound bottleneck',
+  recent_client_examples: 'Last 2 clients (anonymised)',
+  delivery_workflow_specific: 'Project workflow walk-through',
+  client_reporting_cadence: 'Client reporting cadence',
+  tools_that_dont_talk: "Tools that don't talk",
+  monthly_manual_data_work: 'Hours/week moving data',
+  five_more_clients_what_breaks: '5 more clients — what breaks',
 };
 
 // Backward-compat: keep old names pointing to paid schema (used in non-component-scoped helpers).
@@ -536,7 +531,7 @@ const ConversationalIntake: React.FC = () => {
   return (
     <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
       <Masthead activeIdx={activeIdx} activePillars={activePillars} />
-      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} />
+      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} totalQuestions={activeQuestionOrder.length} />
 
       <main className="flex-1 flex relative">
         <AnimatePresence>
@@ -736,7 +731,8 @@ const PillarBar: React.FC<{
   activeIdx: number;
   onOpenList: () => void;
   activePillars: Pillar[];
-}> = ({ answers, activeIdx, onOpenList, activePillars }) => {
+  totalQuestions: number;
+}> = ({ answers, activeIdx, onOpenList, activePillars, totalQuestions }) => {
   return (
     <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
       <div className="container mx-auto max-w-5xl px-6 md:px-10">
@@ -779,10 +775,10 @@ const PillarBar: React.FC<{
           <button
             onClick={onOpenList}
             className="flex-shrink-0 px-3 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black border-l border-[color:var(--color-hairline)] transition-colors"
-            aria-label="Open all 20 questions"
-            title="See all 20 questions"
+            aria-label={`Open all ${totalQuestions} questions`}
+            title={`See all ${totalQuestions} questions`}
           >
-            All 20 →
+            All {totalQuestions} →
           </button>
         </div>
       </div>
@@ -825,7 +821,7 @@ const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () 
         </div>
       ))}
       <p className="mt-8 text-xs text-ink-mute leading-relaxed border-t border-[color:var(--color-hairline)] pt-4">
-        20 questions across 5 pillars. The agent weaves through them naturally, no need to follow this order.
+        {activePillars.reduce((sum, p) => sum + p.keys.length, 0)} questions across {activePillars.length} {activePillars.length === 1 ? 'section' : 'sections'}. The agent weaves through them naturally, no need to follow this order.
       </p>
     </div>
   );
