@@ -31,7 +31,8 @@ interface Pillar {
   keys: string[];
 }
 
-const PILLARS: Pillar[] = [
+// Paid Assessment schema — 20 keys, 5 pillars (Agent-Ready preconditions)
+const PAID_PILLARS: Pillar[] = [
   { numeral: 'I',   label: 'Setup',                 keys: ['company', 'size_revenue', 'work_description'] },
   { numeral: 'II',  label: 'Reliable input',        keys: ['input_source', 'input_shape', 'input_consistency', 'input_gap'] },
   { numeral: 'III', label: 'Documentable decision', keys: ['best_person', 'documentability', 'criteria', 'gut_feel', 'frequency'] },
@@ -39,7 +40,7 @@ const PILLARS: Pillar[] = [
   { numeral: 'V',   label: 'Human review',          keys: ['reviewer', 'review_time', 'uncertain_default', 'downside'] },
 ];
 
-const QUESTION_LABELS: Record<string, string> = {
+const PAID_QUESTION_LABELS: Record<string, string> = {
   company: 'Company + your role',
   size_revenue: 'Team size + revenue',
   work_description: 'The work AI should handle',
@@ -62,6 +63,55 @@ const QUESTION_LABELS: Record<string, string> = {
   downside: 'Downstream damage',
 };
 
+// Fractional m1 schema — 30 keys, 8 dimensions (business landscape)
+const FRACTIONAL_PILLARS: Pillar[] = [
+  { numeral: 'I',    label: 'Context',         keys: ['company', 'size_revenue', 'founders_team', 'icp_description', 'current_revenue_mix'] },
+  { numeral: 'II',   label: 'Content state',   keys: ['post_cadence', 'voice_maturity', 'ideation_source', 'distribution_channels', 'audience_size'] },
+  { numeral: 'III',  label: 'Outbound',        keys: ['outbound_channels', 'outbound_volume', 'outbound_whats_working', 'outbound_automation_level'] },
+  { numeral: 'IV',   label: 'Lead magnets',    keys: ['current_lms', 'lm_conversion_data', 'lm_gaps'] },
+  { numeral: 'V',    label: 'Production',      keys: ['team_roles', 'animator_designer_load', 'current_bottleneck', 'delivery_pain'] },
+  { numeral: 'VI',   label: 'Partnerships',    keys: ['existing_partners', 'referral_pipeline', 'partner_kickback_structure'] },
+  { numeral: 'VII',  label: 'Ops baseline',    keys: ['pm_tooling', 'client_onboarding_pain', 'prompt_library_state'] },
+  { numeral: 'VIII', label: 'Brand + voice',   keys: ['identity_statement', 'audience_pov', 'voice_pitfalls_to_avoid'] },
+];
+
+const FRACTIONAL_QUESTION_LABELS: Record<string, string> = {
+  company: 'Company + your role',
+  size_revenue: 'Team size + revenue',
+  founders_team: 'Founders/partners + roles',
+  icp_description: 'Who you sell to',
+  current_revenue_mix: 'Where revenue comes from',
+  post_cadence: 'Current posting cadence',
+  voice_maturity: 'Voice consistency',
+  ideation_source: 'Where topics come from',
+  distribution_channels: 'Distribution channels',
+  audience_size: 'Audience size per channel',
+  outbound_channels: 'Outbound channels',
+  outbound_volume: 'Outbound volume + reply rate',
+  outbound_whats_working: "What's currently working",
+  outbound_automation_level: 'Outbound automation level',
+  current_lms: 'Existing lead magnets',
+  lm_conversion_data: 'LM conversion data',
+  lm_gaps: 'LM opportunities not built',
+  team_roles: 'Team members + roles',
+  animator_designer_load: 'Creative production load',
+  current_bottleneck: 'Current bottleneck',
+  delivery_pain: 'Delivery friction',
+  existing_partners: 'Named partners',
+  referral_pipeline: 'Referral pipeline',
+  partner_kickback_structure: 'Kickback structure',
+  pm_tooling: 'Project mgmt tooling',
+  client_onboarding_pain: 'Onboarding friction',
+  prompt_library_state: 'Prompt library state',
+  identity_statement: 'Identity statement',
+  audience_pov: 'Audience POV',
+  voice_pitfalls_to_avoid: 'Voice/language to avoid',
+};
+
+// Backward-compat: keep old names pointing to paid schema (used in non-component-scoped helpers).
+// The component reads mode-aware versions via useMemo (see below).
+const PILLARS = PAID_PILLARS;
+const QUESTION_LABELS = PAID_QUESTION_LABELS;
 const QUESTION_ORDER = Object.keys(QUESTION_LABELS);
 
 interface ChatMessage {
@@ -92,25 +142,25 @@ const PAPER_GRID_STYLE: React.CSSProperties = {
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
-function pillarOfKey(key: string | null | undefined): number {
+function pillarOfKey(key: string | null | undefined, pillars: Pillar[] = PILLARS): number {
   if (!key) return -1;
-  return PILLARS.findIndex((p) => p.keys.includes(key));
+  return pillars.findIndex((p) => p.keys.includes(key));
 }
 
-function activePillarIdx(answers: Record<string, unknown>, lastFocusKey: string | null): number {
+function activePillarIdx(answers: Record<string, unknown>, lastFocusKey: string | null, pillars: Pillar[] = PILLARS): number {
   // Prefer the pillar containing the most-recently-touched focus key,
   // otherwise the first pillar with unanswered keys.
-  const focusIdx = pillarOfKey(lastFocusKey);
+  const focusIdx = pillarOfKey(lastFocusKey, pillars);
   if (focusIdx >= 0) {
-    const focusPillar = PILLARS[focusIdx];
+    const focusPillar = pillars[focusIdx];
     const allDone = focusPillar.keys.every((k) => answers[k] != null && answers[k] !== '');
     if (!allDone) return focusIdx;
   }
-  for (let i = 0; i < PILLARS.length; i++) {
-    const allDone = PILLARS[i].keys.every((k) => answers[k] != null && answers[k] !== '');
+  for (let i = 0; i < pillars.length; i++) {
+    const allDone = pillars[i].keys.every((k) => answers[k] != null && answers[k] !== '');
     if (!allDone) return i;
   }
-  return PILLARS.length - 1;
+  return pillars.length - 1;
 }
 
 function pillarProgress(pillar: Pillar, answers: Record<string, unknown>): { hit: number; total: number } {
@@ -130,8 +180,14 @@ const ConversationalIntake: React.FC = () => {
   const sessionId = params.get('session_id') ?? params.get('token');
 
   const [state, setState] = useState<SessionState>('loading');
+  const [mode, setMode] = useState<'paid_assessment' | 'fractional_m1'>('paid_assessment');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+
+  // Mode-aware pillars + labels (overrides the top-level constants for component-scoped usage)
+  const activePillars = mode === 'fractional_m1' ? FRACTIONAL_PILLARS : PAID_PILLARS;
+  const activeLabels = mode === 'fractional_m1' ? FRACTIONAL_QUESTION_LABELS : PAID_QUESTION_LABELS;
+  const activeQuestionOrder = Object.keys(activeLabels);
   const [lastFocus, setLastFocus] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [turnCount, setTurnCount] = useState(0);
@@ -221,6 +277,8 @@ const ConversationalIntake: React.FC = () => {
         setTurnCount(data.turn_count ?? 0);
         setNonce(data.nonce ?? null);
         setAnswers(data.answers ?? {});
+        // Set mode from init response (defaults to paid_assessment if missing)
+        if (data.mode === 'fractional_m1' || data.mode === 'paid_assessment') setMode(data.mode);
         const history: ChatMessage[] = data.chat_history ?? [];
         setMessages(history);
         if (data.submitted) { setState('submitted'); return; }
@@ -467,10 +525,10 @@ const ConversationalIntake: React.FC = () => {
   }, []);
 
   const answeredCount = useMemo(
-    () => QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length,
+    () => activeQuestionOrder.filter((k) => answers[k] != null && answers[k] !== '').length,
     [answers],
   );
-  const activeIdx = useMemo(() => activePillarIdx(answers, lastFocus), [answers, lastFocus]);
+  const activeIdx = useMemo(() => activePillarIdx(answers, lastFocus, activePillars), [answers, lastFocus]);
 
   const charCount = input.length;
   const charCountColor = charCount > 1500 ? 'text-amber-700' : charCount > 1800 ? 'text-red-700' : 'text-ink-mute';
@@ -648,7 +706,7 @@ const ConversationalIntake: React.FC = () => {
 // ─────────────────────────────────────────────────────────────
 
 const Masthead: React.FC<{ activeIdx: number }> = ({ activeIdx }) => {
-  const active = PILLARS[activeIdx] ?? PILLARS[0];
+  const active = activePillars[activeIdx] ?? activePillars[0];
   return (
     <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
       <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-end justify-between gap-6">
@@ -682,7 +740,7 @@ const PillarBar: React.FC<{
     <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
       <div className="container mx-auto max-w-5xl px-6 md:px-10">
         <div className="flex items-stretch">
-          {PILLARS.map((p, i) => {
+          {activePillars.map((p, i) => {
             const { hit, total } = pillarProgress(p, answers);
             const complete = hit === total;
             const active = i === activeIdx;
@@ -744,7 +802,7 @@ const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () 
           Close ×
         </button>
       </div>
-      {PILLARS.map((p) => (
+      {activePillars.map((p) => (
         <div key={p.numeral} className="mb-6">
           <div className="flex items-baseline gap-2 mb-2">
             <span className="font-drama italic text-lg leading-none text-accent">{p.numeral}</span>
@@ -757,7 +815,7 @@ const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () 
                 <li key={k} className={`flex items-start gap-2.5 text-[13px] py-0.5 ${answered ? 'text-black' : 'text-ink-mute'}`}>
                   <span className={`mt-1 w-2 h-2 flex-shrink-0 ${answered ? 'bg-accent' : 'border border-[color:var(--color-hairline-bold)]'}`} />
                   <span className={answered ? '' : ''}>
-                    {QUESTION_LABELS[k]}
+                    {activeLabels[k]}
                   </span>
                 </li>
               );
@@ -931,7 +989,7 @@ const TypingIndicator: React.FC = () => (
 );
 
 const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: string | null }> = ({ answers, sessionId }) => {
-  const answeredCount = QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length;
+  const answeredCount = activeQuestionOrder.filter((k) => answers[k] != null && answers[k] !== '').length;
   const [addendum, setAddendum] = useState('');
   const [addendumStatus, setAddendumStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [addendumErr, setAddendumErr] = useState<string | null>(null);
@@ -999,7 +1057,7 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: str
             Ivan reviews and reaches out within 1 business day.
           </h2>
           <p className="text-sm md:text-base text-ink-soft leading-relaxed max-w-lg">
-            You answered {answeredCount} of {QUESTION_ORDER.length} questions. Want to add more before the working session? Reply to the welcome email, I read every one.
+            You answered {answeredCount} of {activeQuestionOrder.length} questions. Want to add more before the working session? Reply to the welcome email, I read every one.
           </p>
         </motion.div>
       </div>
@@ -1020,7 +1078,7 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: str
           </p>
         </div>
         <div className="space-y-6">
-          {PILLARS.map((p) => {
+          {activePillars.map((p) => {
             const filled = p.keys.filter((k) => answers[k] != null && answers[k] !== '');
             if (filled.length === 0) return null;
             return (
@@ -1036,7 +1094,7 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: str
                       <span className="mt-1.5 w-1.5 h-1.5 flex-shrink-0 bg-accent" />
                       <div className="min-w-0">
                         <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-ink-mute mb-0.5">
-                          {QUESTION_LABELS[k]}
+                          {activeLabels[k]}
                         </div>
                         <div className="text-ink line-clamp-2">
                           {String(answers[k])}
