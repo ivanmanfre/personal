@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff } from 'lucide-react';
+import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
 // Browser SpeechRecognition (Web Speech API) — Chromium/Safari
@@ -148,8 +148,18 @@ const ConversationalIntake: React.FC = () => {
   const [recording, setRecording] = useState(false);
   const [voiceErr, setVoiceErr] = useState<string | null>(null);
 
+  // TTS playback (Path A v1 — voice agent response audio)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [speakerOn, setSpeakerOn] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('intake_speaker_on') === 'true';
+  });
+  const [ttsPlaying, setTtsPlaying] = useState(false);
+  const lastSpokenIdxRef = useRef<number>(-1);
+
   const VOICE_SILENCE_TIMEOUT_MS = 4000;
   const VOICE_HARD_CAP_MS = 90000;
+  const TTS_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-tts';
 
   useMetadata({
     title: 'Blueprint intake | Manfredi',
@@ -369,6 +379,74 @@ const ConversationalIntake: React.FC = () => {
 
   useEffect(() => () => { try { stopRecording(); } catch { /* ignore */ } }, [stopRecording]);
 
+  // TTS playback for agent responses
+  const playAudio = useCallback(async (text: string) => {
+    if (!sessionId || !text.trim()) return;
+    // Stop any in-flight playback
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch { /* ignore */ }
+      audioRef.current = null;
+    }
+    try {
+      setTtsPlaying(true);
+      const res = await fetch(TTS_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, text }),
+      });
+      if (!res.ok) {
+        console.warn('[tts-fetch-failed]', res.status);
+        setTtsPlaying(false);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setTtsPlaying(false); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setTtsPlaying(false); URL.revokeObjectURL(url); };
+      await audio.play();
+    } catch (e) {
+      console.warn('[tts-play-error]', e instanceof Error ? e.message : String(e));
+      setTtsPlaying(false);
+    }
+  }, [sessionId]);
+
+  // Toggle speaker on/off — persists across reloads
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn((on) => {
+      const next = !on;
+      try { window.localStorage.setItem('intake_speaker_on', String(next)); } catch { /* ignore */ }
+      // If turning off, stop any in-flight playback
+      if (!next && audioRef.current) {
+        try { audioRef.current.pause(); } catch { /* ignore */ }
+        audioRef.current = null;
+        setTtsPlaying(false);
+      }
+      return next;
+    });
+  }, []);
+
+  // Auto-play TTS when a new assistant message arrives (only if speakerOn)
+  useEffect(() => {
+    if (!speakerOn) return;
+    if (messages.length === 0) return;
+    const lastIdx = messages.length - 1;
+    const last = messages[lastIdx];
+    if (last.role !== 'assistant') return;
+    if (lastIdx <= lastSpokenIdxRef.current) return; // already spoken
+    lastSpokenIdxRef.current = lastIdx;
+    playAudio(last.content);
+  }, [messages, speakerOn, playAudio]);
+
+  // Stop audio on unmount
+  useEffect(() => () => {
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch { /* ignore */ }
+      audioRef.current = null;
+    }
+  }, []);
+
   const answeredCount = useMemo(
     () => QUESTION_ORDER.filter((k) => answers[k] != null && answers[k] !== '').length,
     [answers],
@@ -499,6 +577,20 @@ const ConversationalIntake: React.FC = () => {
                         : <Mic size={18} />}
                     </button>
                   )}
+                  <button
+                    onClick={toggleSpeaker}
+                    className={`self-stretch w-12 border transition-colors flex items-center justify-center ${
+                      speakerOn
+                        ? 'bg-accent text-white border-accent'
+                        : 'bg-paper border-[color:var(--color-hairline-bold)] text-ink hover:bg-paper-sunk'
+                    }`}
+                    aria-label={speakerOn ? 'Mute agent voice' : 'Enable agent voice'}
+                    title={speakerOn ? 'Agent voice ON — click to mute' : 'Agent voice OFF — click to enable (replies will be spoken)'}
+                  >
+                    {speakerOn
+                      ? <span className="relative inline-flex items-center justify-center"><Volume2 size={18} />{ttsPlaying && <span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-white animate-pulse" />}</span>
+                      : <VolumeX size={18} />}
+                  </button>
                   <button
                     onClick={send}
                     disabled={state !== 'ready' || !input.trim()}
