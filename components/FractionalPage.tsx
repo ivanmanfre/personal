@@ -142,7 +142,7 @@ const FractionalPage: React.FC = () => {
 
           {/* HERO */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
@@ -152,7 +152,7 @@ const FractionalPage: React.FC = () => {
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
@@ -181,8 +181,8 @@ const FractionalPage: React.FC = () => {
 
           {/* HOW IT WORKS — process before tiers */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20"
           >
@@ -215,8 +215,8 @@ const FractionalPage: React.FC = () => {
 
           {/* TIERS — intensity menu, not parallel monthly choices */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 10 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-4"
           >
@@ -232,8 +232,8 @@ const FractionalPage: React.FC = () => {
             {tiers.map((tier) => (
               <motion.div
                 key={tier.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ y: 30 }}
+                whileInView={{ y: 0 }}
                 viewport={{ once: true }}
                 className={`flex flex-col p-8 border shadow-card ${
                   tier.highlighted
@@ -299,21 +299,16 @@ const FractionalPage: React.FC = () => {
           </div>
 
           {/* Care Plan footnote — visually subordinate */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="mb-20 max-w-3xl mx-auto text-center"
-          >
+          <div className="mb-20 max-w-3xl mx-auto text-center">
             <p className="text-xs text-ink-mute italic">
               After your active engagement winds down, optional <strong className="not-italic text-ink-soft font-semibold">Care Plan at $1k/mo</strong> available for ongoing maintenance — fixes, prompt updates, monitoring. No new builds.
             </p>
-          </motion.div>
+          </div>
 
           {/* NON-MANDATORY HONESTY CALLOUT */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
           >
@@ -333,8 +328,8 @@ const FractionalPage: React.FC = () => {
 
           {/* 90-DAY BLUEPRINT SECTION */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20"
           >
@@ -360,8 +355,8 @@ const FractionalPage: React.FC = () => {
 
           {/* PACE-TO-ABSORPTION */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
           >
@@ -375,8 +370,8 @@ const FractionalPage: React.FC = () => {
 
           {/* ROI vs FULL-TIME HIRE */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 10 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20 max-w-3xl space-y-3"
           >
@@ -399,8 +394,8 @@ const FractionalPage: React.FC = () => {
 
           {/* OUT OF SCOPE */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20"
           >
@@ -420,8 +415,8 @@ const FractionalPage: React.FC = () => {
 
           {/* FAQ */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="mb-20"
           >
@@ -444,8 +439,8 @@ const FractionalPage: React.FC = () => {
 
           {/* FINAL CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
             viewport={{ once: true }}
             className="bg-black text-white p-10 md:p-16 text-center border border-[color:var(--color-hairline-bold)]"
           >
