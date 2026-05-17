@@ -5,69 +5,142 @@ import { useMetadata } from '../hooks/useMetadata';
 
 const tiers = [
   {
-    name: 'Essential',
-    price: '$3,500/mo',
-    fit: 'First time bringing in an embedded AI partner. Light cadence, one bottleneck at a time, no commitment to scale until it earns it.',
+    name: 'Heavy month',
+    price: '$10,000/mo',
+    badge: 'Recommended starting point',
+    fit: 'New engagements with significant build scope. Includes the 90-Day Blueprint audit, 2-3 major systems shipped, weekly working sessions, and Slack support.',
     features: [
-      '1 strategy call per month',
-      'Ongoing improvements + 1 new build per month (or equivalent in smaller automations)',
-      'Async support (Slack or email)',
-      'Proactive system monitoring',
-      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
+      '**90-Day Blueprint audit** delivered week 1 — yours regardless',
+      '2-3 major systems built (LM engine, post engine, custom)',
+      'Weekly working sessions',
+      'Slack support throughout',
+      'In-browser editor so your team self-edits content',
     ],
+    bestFor: 'First month with a new partner. Post-pivot rebuilds. "I need a lot built fast."',
   },
   {
-    name: 'Standard',
+    name: 'Active build',
     price: '$6,500/mo',
-    fit: "You have 3+ AI/automation projects you'd ship if you had the bandwidth, plus a team that can absorb monthly improvements. Most clients land here.",
+    bundleNote: 'Most clients here for months 2-3. Bundle both at $12k (saves $1k).',
+    fit: 'Ongoing builds + strategy. 1-2 new systems per month, bi-weekly working sessions, Slack support, continuous voice and prompt tuning.',
     features: [
-      '2 strategy calls per month',
-      'Running backlog — 2-3 builds or improvements per month, prioritized together',
-      'Dedicated Slack channel',
-      'Monthly AI roadmap doc',
-      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
+      '1-2 new systems per month from your 90-day plan',
+      'Bi-weekly working sessions',
+      'Slack support + async builds',
+      'Continuous voice + prompt tuning',
+      'Monthly recap + next-month priority alignment',
     ],
+    bestFor: 'Months 2-3 after Heavy month, executing the 90-day plan priorities. Or smaller new engagements that don\'t need a full Heavy month start.',
     highlighted: true,
   },
   {
-    name: 'Partner',
-    price: '$10,000/mo',
-    fit: "You're shipping AI across multiple workflows already and need a senior partner who owns the strategy, the stack, and the weekly cadence — not a contractor you brief.",
+    name: 'Slow lane',
+    price: '$3,500/mo',
+    fit: 'Light cadence + ongoing tuning. 1 small build per month, monthly strategy call, async Slack, monthly system health report.',
     features: [
-      'Weekly strategy calls',
-      'Full implementation bandwidth — whatever moves the needle that month',
-      'Priority response (24-hr SLA)',
-      'Full AI and ops strategy ownership',
-      'Quarterly Recalibration: a fresh Blueprint every 3 months — new priorities, new costed gaps, no upcharge',
+      '1 small build per month',
+      'Monthly strategy call',
+      'Async Slack support',
+      'Voice + prompt tuning as needed',
+      'Monthly system health report',
     ],
+    bestFor: 'After the 90-day plan ships, when you want to keep the relationship lighter but not exit entirely. Or smallest-scope new engagements.',
   },
 ];
 
 const howItWorks = [
-  { title: 'Month 1: Agent-Ready Blueprint (credited)', description: 'Every Fractional engagement starts with the $2,000 diagnostic, fully credited to month 1. I score your ops, we agree on scope, you approve the 30-day roadmap.' },
-  { title: 'Monthly cadence', description: 'Strategy calls happen on a fixed day. Implementation projects get delivered within the month. I track scope in a shared doc so you know where every hour went.' },
-  { title: 'Quarterly Recalibration', description: 'Every 90 days I re-run the Blueprint against your evolving stack and goals. What shipped, what shifted, what\'s next. New ordered priorities, new costed gaps. No upcharge — it\'s how we make sure month 7 is as sharp as month 1.' },
-  { title: 'No lock-in', description: 'Month-to-month. If the partnership isn\'t working, we end it cleanly.' },
+  {
+    title: 'Discovery call',
+    duration: '30-45 min · free',
+    description: 'We figure out scope, fit, and the right starting intensity. Not every business needs Heavy month — some start at Active build, some only want Slow Lane.',
+  },
+  {
+    title: 'Intake',
+    duration: '~20 min · conversational AI',
+    description: 'You walk an AI agent through your business: content state, outbound, production capacity, team structure, ICP. I prep the Blueprint from your answers.',
+  },
+  {
+    title: 'Kickoff + audit walkthrough',
+    duration: 'Week 1 · 60-75 min',
+    description: 'Combined call. I walk the 90-Day Blueprint audit findings, you push back where they don\'t match reality, we lock the first month\'s scope and shipping order.',
+  },
+  {
+    title: 'Builds shipping',
+    duration: 'Weeks 2-3',
+    description: 'Priority systems go live. Voice profile trained. Content engine drafting daily. You self-edit copy through the in-browser editor — no Ivan dependency for text changes.',
+  },
+  {
+    title: '90-Day Plan Review',
+    duration: 'Week 3-4 · pre-scheduled',
+    description: 'We look at the audit findings together, decide what\'s next, recalibrate intensity. Continue, step down, or graduate to Care Plan. No surprises — already on the calendar from day one.',
+  },
+];
+
+const blueprintCovers = [
+  '**Business + system map** — where AI/automation can move the needle, where it can\'t, what\'s blocking what',
+  '**5-7 priority builds** — costed gaps, severity, sequencing',
+  '**90-day roadmap** — 3 phases, who does what, what ships when',
+  '**Quick wins** — first 2-3 things to build for fastest visible payoff',
+];
+
+const faqs = [
+  {
+    q: 'Can I start at $6,500 instead of $10,000?',
+    a: 'Yes. Heavy month is recommended for first months with a new partner because it covers the audit + 2-3 priority builds. But if your scope is smaller or you already know what you want built, Active build is a fine starting point.',
+  },
+  {
+    q: 'What happens after the first few months?',
+    a: 'Most clients move to Slow Lane ($3,500/mo) or the optional Care Plan as the heavy build queue empties. You can also stay at Active build indefinitely.',
+  },
+  {
+    q: 'Can I switch tiers month-to-month?',
+    a: 'Yes. Tiers are intensity dials, not contracts. We recalibrate monthly based on what\'s actually needed. Step up if a big build is coming, step down when things settle.',
+  },
+  {
+    q: 'What if I just want one thing built — like a lead magnet system?',
+    a: 'That\'s a Single Project at $7,500 (see /lead-magnet-system). No engagement, no audit, you own the build. Single Project works best when you know exactly what you want and don\'t need strategic input.',
+  },
+  {
+    q: 'What\'s the 90-Day Blueprint?',
+    a: 'The strategic audit + roadmap I deliver in your first Heavy month. Includes a business + system map, 5-7 priority builds with costed gaps, a 3-phase 90-day plan, and quick wins. It\'s yours regardless of whether you continue past month 1.',
+  },
+  {
+    q: 'Refund policy?',
+    a: 'Month-to-month. If month 1 ships and you don\'t see value, no continuation. The audit is yours regardless. I\'d rather lose a month\'s revenue than have you stuck in a tier that isn\'t earning it.',
+  },
 ];
 
 const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
-  'On-site presence - this is remote-first, async-first',
-  '24/7 on-call response - real emergencies handled same-day, but I sleep',
+  'On-site presence — this is remote-first, async-first',
+  '24/7 on-call response — real emergencies handled same-day, but I sleep',
   'Unlimited implementation volume — each tier has a defined monthly scope',
 ];
+
+// Renders **bold** markdown inline
+function renderInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold text-black">{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
 
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Monthly retainer. A senior AI and ops partner embedded in your business, shipping systems every month. Three tiers based on operating maturity, build backlog, and AI ambition.',
+    description: 'Monthly engagement. A senior AI partner embedded in your business, shipping systems every month. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
+
   return (
     <div className="min-h-screen bg-paper">
       <section className="pt-32 pb-24 px-6">
         <div className="container mx-auto max-w-5xl">
 
+          {/* HERO */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -92,13 +165,70 @@ const FractionalPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-16"
+            className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-4"
           >
-            Monthly retainer. Three tiers based on the volume and depth of work your team needs. Systems ship every month.
+            Monthly engagement. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle.
           </motion.p>
 
-          {/* Tiers */}
-          <div className="grid md:grid-cols-3 gap-6 mb-20">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="text-base text-ink-mute max-w-2xl leading-relaxed mb-16"
+          >
+            Systems ship every month. Your team owns what gets built. Switch tiers month-to-month as needs change.
+          </motion.p>
+
+          {/* HOW IT WORKS — process before tiers */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              How the engagement works
+            </h2>
+            <p className="text-ink-soft mb-8 max-w-2xl">
+              Every Fractional engagement follows the same five steps, whether you start at Heavy month or Slow Lane.
+            </p>
+            <div className="space-y-6">
+              {howItWorks.map((step, i) => (
+                <div key={step.title} className="border-l border-accent pl-6 relative">
+                  <span className="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-accent" aria-hidden="true" />
+                  <div className="flex items-baseline justify-between gap-4 flex-wrap mb-1">
+                    <h3 className="font-semibold text-lg text-black tracking-tight">
+                      <span className="font-mono text-[11px] uppercase tracking-widest text-ink-mute mr-3">0{i + 1}</span>
+                      {step.title}
+                    </h3>
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-ink-mute">
+                      {step.duration}
+                    </span>
+                  </div>
+                  <p className="text-ink-soft leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* TIERS — intensity menu, not parallel monthly choices */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-4"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              Three intensities. Pick what matches the work ahead.
+            </h2>
+            <p className="text-ink-soft mb-10 max-w-2xl">
+              Switch tiers month-to-month as your needs change. You're never locked in.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-3">
             {tiers.map((tier) => (
               <motion.div
                 key={tier.name}
@@ -117,25 +247,42 @@ const FractionalPage: React.FC = () => {
                       Most common
                     </span>
                   )}
+                  {tier.badge && !tier.highlighted && (
+                    <span className="font-mono text-xs uppercase tracking-widest text-ink-mute mb-3 block">
+                      {tier.badge}
+                    </span>
+                  )}
                   <h3 className={`text-2xl font-semibold tracking-tight mb-2 ${tier.highlighted ? 'text-white' : ''}`}>
                     {tier.name}
                   </h3>
-                  <p className={`text-3xl font-bold tracking-tighter font-mono mb-2 ${tier.highlighted ? 'text-accent' : 'text-black'}`}>
+                  <p className={`text-3xl font-bold tracking-tighter font-mono mb-3 ${tier.highlighted ? 'text-accent' : 'text-black'}`}>
                     {tier.price}
                   </p>
                   <p className={`text-sm italic leading-relaxed ${tier.highlighted ? 'text-zinc-400' : 'text-ink-mute'}`}>
                     {tier.fit}
                   </p>
+                  {tier.bundleNote && (
+                    <p className={`text-xs mt-3 font-mono ${tier.highlighted ? 'text-accent' : 'text-accent'}`}>
+                      → {tier.bundleNote}
+                    </p>
+                  )}
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-3 mb-6 flex-1">
                   {tier.features.map((f) => (
                     <li key={f} className={`flex items-start gap-3 text-sm leading-relaxed ${tier.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
                       <Check size={16} className={`shrink-0 mt-1 ${tier.highlighted ? 'text-accent' : 'text-black'}`} strokeWidth={3} />
-                      <span>{f}</span>
+                      <span>{renderInline(f)}</span>
                     </li>
                   ))}
                 </ul>
+
+                <div className={`text-xs italic mb-6 pb-4 border-t pt-4 ${tier.highlighted ? 'border-zinc-700 text-zinc-400' : 'border-zinc-200 text-ink-mute'}`}>
+                  <span className={`font-mono not-italic uppercase tracking-widest text-[10px] block mb-1 ${tier.highlighted ? 'text-zinc-500' : 'text-ink-mute'}`}>
+                    Best for
+                  </span>
+                  {tier.bestFor}
+                </div>
 
                 <a
                   href="/start"
@@ -151,51 +298,72 @@ const FractionalPage: React.FC = () => {
             ))}
           </div>
 
-          {/* Loss anchor + bypass link */}
+          {/* Care Plan footnote — visually subordinate */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            className="mb-20 max-w-3xl space-y-3"
+            className="mb-20 max-w-3xl mx-auto text-center"
           >
-            <p className="text-sm text-ink-soft leading-relaxed">
-              For reference: a full-time senior AI hire runs <span className="font-mono">$200k–$400k</span>/yr fully loaded. Partner tier is <span className="font-mono">$120k</span>/yr with no recruiting risk, no ramp, no benefits, no severance — and a 90-day exit if it isn't working.
-            </p>
-            <p className="text-sm text-ink-mute">
-              Already know what you want built? <a href="/start?path=scope" className="underline hover:text-black">Skip the tier match — book a 30-min scope call</a>.
+            <p className="text-xs text-ink-mute italic">
+              After your active engagement winds down, optional <strong className="not-italic text-ink-soft font-semibold">Care Plan at $1k/mo</strong> available for ongoing maintenance — fixes, prompt updates, monitoring. No new builds.
             </p>
           </motion.div>
 
-          {/* How it works */}
+          {/* NON-MANDATORY HONESTY CALLOUT */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16"
+            className="mb-20 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
           >
-            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-8">
-              How the partnership works
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-accent mb-4">
+              The honest part
+            </p>
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
+              The 90-Day Blueprint <span className="font-drama italic">is honest.</span>
+            </h3>
+            <p className="text-lg text-ink-soft leading-relaxed mb-3">
+              The audit I deliver in your first Heavy month surfaces 5-7 priority builds across content, outbound, production, and partnerships. It's your roadmap, owned by you.
+            </p>
+            <p className="text-lg text-black leading-relaxed font-medium">
+              If we don't find enough to justify continuation, I tell you straight. You graduate to Care Plan or just walk. <span className="font-drama italic">I'd rather lose a month of revenue than ship a padded roadmap.</span>
+            </p>
+          </motion.div>
+
+          {/* 90-DAY BLUEPRINT SECTION */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              What the 90-Day Blueprint covers
             </h2>
-            <div className="space-y-6">
-              {howItWorks.map((step) => (
-                <div key={step.title} className="border-l border-accent pl-6">
-                  <h3 className="font-mono text-sm uppercase tracking-widest font-bold mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-lg text-ink-soft leading-relaxed">
-                    {step.description}
+            <p className="text-ink-soft mb-8 max-w-2xl">
+              Delivered in your first Heavy month, yours regardless of whether you continue.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              {blueprintCovers.map((item) => (
+                <div key={item} className="bg-paper-sunk border-l-2 border-accent p-5">
+                  <p className="text-ink-soft leading-relaxed text-sm">
+                    {renderInline(item)}
                   </p>
                 </div>
               ))}
             </div>
+            <p className="text-sm text-ink-mute mt-6 italic max-w-2xl leading-relaxed">
+              Delivered via conversational AI intake → working session with me → published deliverable. Same engine that ships the standalone <a href="/assessment" className="underline hover:text-black not-italic">Agent-Ready Blueprint</a>, but scoped to your full system, not just one workflow.
+            </p>
           </motion.div>
 
-          {/* Pace-to-absorption */}
+          {/* PACE-TO-ABSORPTION */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
+            className="mb-20 bg-paper-sunk border-l-2 border-accent p-8 md:p-10"
           >
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-ink-mute mb-3">
               How we pace
@@ -205,12 +373,36 @@ const FractionalPage: React.FC = () => {
             </p>
           </motion.div>
 
-          {/* Not included */}
+          {/* ROI vs FULL-TIME HIRE */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20 max-w-3xl space-y-3"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              vs full-time hire
+            </h2>
+            <p className="text-base text-ink-soft leading-relaxed">
+              Full-time senior AI hire runs <span className="font-mono">$200k–$400k</span>/yr fully loaded.
+            </p>
+            <p className="text-base text-ink-soft leading-relaxed">
+              Heavy month is <span className="font-mono">$120k</span>/yr if maintained — but most clients step down to Active build or Slow Lane after the build-heavy months. Real-world average: <span className="font-mono">$80-100k</span>/yr for an active partnership.
+            </p>
+            <p className="text-base text-ink-soft leading-relaxed">
+              No recruiting risk. No ramp. No benefits. No severance. Switch intensities month-to-month. Walk anytime.
+            </p>
+            <p className="text-sm text-ink-mute pt-2">
+              Already know what you want built? <a href="/start?path=scope" className="underline hover:text-black">Skip the tier match — book a 30-min scope call</a>.
+            </p>
+          </motion.div>
+
+          {/* OUT OF SCOPE */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16"
+            className="mb-20"
           >
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4">
               What's not in scope
@@ -226,7 +418,31 @@ const FractionalPage: React.FC = () => {
             </ul>
           </motion.div>
 
-          {/* Final CTA */}
+          {/* FAQ */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-8">
+              Common questions
+            </h2>
+            <div className="space-y-6">
+              {faqs.map((faq) => (
+                <div key={faq.q} className="border-b border-[color:var(--color-hairline)] pb-6">
+                  <h3 className="font-semibold text-lg text-black tracking-tight mb-2">
+                    {faq.q}
+                  </h3>
+                  <p className="text-ink-soft leading-relaxed">
+                    {faq.a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* FINAL CTA */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -234,20 +450,20 @@ const FractionalPage: React.FC = () => {
             className="bg-black text-white p-10 md:p-16 text-center border border-[color:var(--color-hairline-bold)]"
           >
             <h2 className="text-3xl md:text-4xl font-semibold mb-4 tracking-tight">
-              Talk through the fit
+              Start with the discovery
             </h2>
             <p className="text-zinc-400 mb-8 max-w-xl mx-auto leading-relaxed">
-              Fractional is a relationship sale. Fill out the 5-minute intake, then we jump on a call and figure out which tier actually matches your situation. No pressure to commit.
+              30-45 min call. We figure out if there's a fit, what intensity matches your situation, what shipping order makes sense. Free.
             </p>
             <a
               href="/start"
               className="btn-magnetic inline-flex items-center gap-3 px-10 py-5 bg-accent text-white font-bold text-lg tracking-wide border-subtle-thick shadow-card"
             >
-              Start the conversation
+              Book the discovery call
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
-              Not ready for retainer? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint</a>.
+              Cold to my work? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint ($2,500)</a> — credited toward any engagement.
             </p>
           </motion.div>
         </div>
