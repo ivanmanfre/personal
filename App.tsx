@@ -74,7 +74,8 @@ function App() {
   // Focused intake/checkout flows — no nav, no footer, no distractions.
   const isIntake =
     location.pathname === '/assessment/intake' ||
-    location.pathname === '/assessment/intake-form';
+    location.pathname === '/assessment/intake-form' ||
+    location.pathname === '/fractional/intake';
 
   useRouteViewTransition(location.pathname);
   useTrackPageviews(location.pathname);

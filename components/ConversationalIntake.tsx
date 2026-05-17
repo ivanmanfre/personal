@@ -156,8 +156,10 @@ const ConversationalIntake: React.FC = () => {
   });
   const [ttsPlaying, setTtsPlaying] = useState(false);
   const lastSpokenIdxRef = useRef<number>(-1);
+  // Track whether stopRecording was triggered by silence (auto-send) vs manual click
+  const stoppedBySilenceRef = useRef<boolean>(false);
 
-  const VOICE_SILENCE_TIMEOUT_MS = 4000;
+  const VOICE_SILENCE_TIMEOUT_MS = 3000;
   const VOICE_HARD_CAP_MS = 90000;
   const TTS_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-tts';
 
@@ -318,7 +320,11 @@ const ConversationalIntake: React.FC = () => {
 
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current != null) window.clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = window.setTimeout(() => stopRecording(), VOICE_SILENCE_TIMEOUT_MS);
+    silenceTimerRef.current = window.setTimeout(() => {
+      // Mark that this stop was triggered by silence (auto-send) — onend handler will trigger send()
+      stoppedBySilenceRef.current = true;
+      stopRecording();
+    }, VOICE_SILENCE_TIMEOUT_MS);
   }, [stopRecording]);
 
   const toggleRecording = useCallback(() => {
@@ -362,6 +368,15 @@ const ConversationalIntake: React.FC = () => {
         }
         setRecording(false);
         recognitionRef.current = null;
+        // If silence timeout triggered the stop (vs manual click), auto-send if there's content
+        if (stoppedBySilenceRef.current) {
+          stoppedBySilenceRef.current = false;
+          // Read latest textarea value (input state may not have flushed yet) + schedule send
+          setTimeout(() => {
+            const latest = textareaRef.current?.value?.trim();
+            if (latest) send();
+          }, 50);
+        }
       };
       recognitionRef.current = rec;
       setVoiceErr(null);
@@ -412,29 +427,33 @@ const ConversationalIntake: React.FC = () => {
     }
   }, [sessionId]);
 
-  // Toggle speaker on/off — persists across reloads
+  // Toggle speaker on/off — persists across reloads.
+  // When turning ON, mark existing messages as "already spoken" so we don't replay history.
+  // Only new agent messages from this point forward will auto-play.
   const toggleSpeaker = useCallback(() => {
     setSpeakerOn((on) => {
       const next = !on;
       try { window.localStorage.setItem('intake_speaker_on', String(next)); } catch { /* ignore */ }
-      // If turning off, stop any in-flight playback
-      if (!next && audioRef.current) {
-        try { audioRef.current.pause(); } catch { /* ignore */ }
-        audioRef.current = null;
+      if (next) {
+        // Mark all current messages as already-spoken so the next useEffect run doesn't replay them
+        lastSpokenIdxRef.current = messages.length - 1;
+      } else {
+        // Turning off — stop any in-flight playback
+        if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
         setTtsPlaying(false);
       }
       return next;
     });
-  }, []);
+  }, [messages.length]);
 
-  // Auto-play TTS when a new assistant message arrives (only if speakerOn)
+  // Auto-play TTS when a NEW assistant message arrives (only if speakerOn AND it's not historical)
   useEffect(() => {
     if (!speakerOn) return;
     if (messages.length === 0) return;
     const lastIdx = messages.length - 1;
     const last = messages[lastIdx];
     if (last.role !== 'assistant') return;
-    if (lastIdx <= lastSpokenIdxRef.current) return; // already spoken
+    if (lastIdx <= lastSpokenIdxRef.current) return; // already spoken or marked-as-spoken at toggle time
     lastSpokenIdxRef.current = lastIdx;
     playAudio(last.content);
   }, [messages, speakerOn, playAudio]);

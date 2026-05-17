@@ -24,6 +24,7 @@ const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 const ANTHROPIC_AGENT_SECRET = Deno.env.get("ANTHROPIC_AGENT_SECRET")!;
 // ClickUp prompt source (Sub-Project A Phase 1 — 2026-05-17). Falls back to inline if fetch fails.
 const CLICKUP_API_TOKEN = Deno.env.get("CLICKUP_API_TOKEN") ?? "pk_87373562_0H19M12W19DTIMVPL6LQIA5B8Q8OAOJG";
+const CLICKUP_WORKSPACE_ID = "90132938061";
 const CLICKUP_DOC_ID = "2ky5ezad-853";
 const PROMPT_PAGE_IDS: Record<string, string> = {
   paid_assessment: "2ky5ezad-2753",
@@ -334,7 +335,7 @@ async function fetchClickUpPagePrompt(pageId: string): Promise<string | null> {
     return cached.content;
   }
   try {
-    const url = `https://api.clickup.com/api/v3/docs/${CLICKUP_DOC_ID}/pages/${pageId}?content_format=text/md`;
+    const url = `https://api.clickup.com/api/v3/workspaces/${CLICKUP_WORKSPACE_ID}/docs/${CLICKUP_DOC_ID}/pages/${pageId}?content_format=text/md`;
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 4000);
     const res = await fetch(url, {
