@@ -535,7 +535,7 @@ const ConversationalIntake: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
-      <Masthead activeIdx={activeIdx} />
+      <Masthead activeIdx={activeIdx} activePillars={activePillars} />
       <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} />
 
       <main className="flex-1 flex relative">
@@ -607,7 +607,7 @@ const ConversationalIntake: React.FC = () => {
                 <SubmittedCard
                   answers={answers}
                   sessionId={sessionId}
-                />
+                 activePillars={activePillars} activeLabels={activeLabels} activeQuestionOrder={activeQuestionOrder} />
               )}
             </div>
           </div>
@@ -705,7 +705,7 @@ const ConversationalIntake: React.FC = () => {
 // Sub-components
 // ─────────────────────────────────────────────────────────────
 
-const Masthead: React.FC<{ activeIdx: number }> = ({ activeIdx }) => {
+const Masthead: React.FC<{ activeIdx: number; activePillars: Pillar[] }> = ({ activeIdx, activePillars }) => {
   const active = activePillars[activeIdx] ?? activePillars[0];
   return (
     <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
@@ -735,7 +735,8 @@ const PillarBar: React.FC<{
   answers: Record<string, unknown>;
   activeIdx: number;
   onOpenList: () => void;
-}> = ({ answers, activeIdx, onOpenList }) => {
+  activePillars: Pillar[];
+}> = ({ answers, activeIdx, onOpenList, activePillars }) => {
   return (
     <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
       <div className="container mx-auto max-w-5xl px-6 md:px-10">
@@ -789,7 +790,7 @@ const PillarBar: React.FC<{
   );
 };
 
-const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () => void }> = ({ answers, onClose }) => {
+const ChecklistDrawer: React.FC<{ answers: Record<string, unknown>; onClose: () => void; activePillars: Pillar[]; activeLabels: Record<string, string> }> = ({ answers, onClose, activePillars, activeLabels }) => {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -988,7 +989,7 @@ const TypingIndicator: React.FC = () => (
   </motion.div>
 );
 
-const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: string | null }> = ({ answers, sessionId }) => {
+const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: string | null; activePillars: Pillar[]; activeLabels: Record<string, string>; activeQuestionOrder: string[] }> = ({ answers, sessionId, activePillars, activeLabels, activeQuestionOrder }) => {
   const answeredCount = activeQuestionOrder.filter((k) => answers[k] != null && answers[k] !== '').length;
   const [addendum, setAddendum] = useState('');
   const [addendumStatus, setAddendumStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
