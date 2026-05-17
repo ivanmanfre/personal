@@ -194,6 +194,7 @@ function App() {
           <Route path="/assessment/welcome" element={<AssessmentWelcomePage />} />
           <Route path="/assessment/intake" element={<ConversationalIntake />} />
           <Route path="/assessment/intake-form" element={<AssessmentIntakePage />} />
+          <Route path="/fractional/intake" element={<ConversationalIntake />} />
           <Route path="/lead-magnet-system" element={<LeadMagnetSystemPage />} />
           <Route path="/content-system" element={<ContentSystemPage />} />
           <Route path="/fractional" element={<FractionalPage />} />

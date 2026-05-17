@@ -126,7 +126,8 @@ function pillarProgress(pillar: Pillar, answers: Record<string, unknown>): { hit
 const ConversationalIntake: React.FC = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const sessionId = params.get('session_id');
+  // Accept either ?session_id= (paid Assessment, from Stripe redirect) or ?token= (Fractional, from issued link)
+  const sessionId = params.get('session_id') ?? params.get('token');
 
   const [state, setState] = useState<SessionState>('loading');
   const [messages, setMessages] = useState<ChatMessage[]>([]);

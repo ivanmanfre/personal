@@ -13,6 +13,7 @@ import FilterBar from './shared/FilterBar';
 import { formatDate as formatDateUtil, formatTime } from './shared/utils';
 import { meetingTypeConfig, MEETING_TYPE_OPTIONS } from '../../lib/meetingTypes';
 import SalesScriptViewer from './SalesScriptViewer';
+import IssueFractionalIntakeButton from './IssueFractionalIntakeButton';
 import type { MeetingTranscript, CalendarEvent, MeetingType } from '../../types/dashboard';
 
 function parseItem(item: any): Record<string, any> {
@@ -512,6 +513,9 @@ const MeetingsPanel: React.FC = () => {
 
       {/* Sales Script Viewer (live, edits saved to Supabase) */}
       <SalesScriptViewer />
+
+      {/* Issue Fractional Intake Link (post-close, for warm Fractional buyers) */}
+      <IssueFractionalIntakeButton />
 
       {/* Call Playbook + Upcoming Events */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
