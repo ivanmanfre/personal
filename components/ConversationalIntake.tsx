@@ -536,7 +536,7 @@ const ConversationalIntake: React.FC = () => {
   return (
     <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
       <Masthead activeIdx={activeIdx} activePillars={activePillars} />
-      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} />
+      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} />
 
       <main className="flex-1 flex relative">
         <AnimatePresence>
@@ -548,7 +548,7 @@ const ConversationalIntake: React.FC = () => {
               transition={{ type: 'tween', duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
               className="fixed top-0 right-0 bottom-0 w-[380px] max-w-full bg-paper border-l border-[color:var(--color-hairline-bold)] z-30 overflow-y-auto shadow-2xl"
             >
-              <ChecklistDrawer answers={answers} onClose={() => setSidebarOpen(false)} />
+              <ChecklistDrawer answers={answers} onClose={() => setSidebarOpen(false)} activePillars={activePillars} activeLabels={activeLabels} />
             </motion.aside>
           )}
         </AnimatePresence>
