@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ChevronDown, ChevronUp, Edit3, Save, X, Loader2, Target } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Edit3, Save, X, Loader2, Target, ExternalLink } from 'lucide-react';
 import { useSalesScript } from '../../hooks/useSalesScript';
 import { meetingTypeConfig, MEETING_TYPE_OPTIONS } from '../../lib/meetingTypes';
 import type { MeetingType, SalesScriptPhase } from '../../types/dashboard';
@@ -183,13 +183,26 @@ const SalesScriptViewer: React.FC<SalesScriptViewerProps> = ({ defaultMeetingTyp
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => setEditing(true)}
-                  disabled={!script}
-                  className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 transition-colors flex items-center gap-1 disabled:opacity-50"
-                >
-                  <Edit3 className="w-3 h-3" /> Edit
-                </button>
+                <>
+                  {selectedType === 'discovery_sales' && (
+                    <a
+                      href="https://resources.ivanmanfredi.com/internal/discovery-script.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] px-2.5 py-1 rounded bg-emerald-700/30 text-emerald-100 hover:bg-emerald-700/50 border border-emerald-600/40 transition-colors flex items-center gap-1"
+                      title="Open live-call view (one-phase-per-screen, keyboard nav)"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Live call view
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setEditing(true)}
+                    disabled={!script}
+                    className="text-[11px] px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Edit3 className="w-3 h-3" /> Edit
+                  </button>
+                </>
               )}
             </div>
           </div>
