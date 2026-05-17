@@ -190,9 +190,20 @@ const SalesScriptViewer: React.FC<SalesScriptViewerProps> = ({ defaultMeetingTyp
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[11px] px-2.5 py-1 rounded bg-emerald-700/30 text-emerald-100 hover:bg-emerald-700/50 border border-emerald-600/40 transition-colors flex items-center gap-1"
-                      title="Open live-call view (one-phase-per-screen, keyboard nav)"
+                      title="Cold/lukewarm path · one-phase-per-screen, keyboard nav"
                     >
-                      <ExternalLink className="w-3 h-3" /> Live call view
+                      <ExternalLink className="w-3 h-3" /> Cold view
+                    </a>
+                  )}
+                  {(selectedType === 'discovery_sales' || (selectedType as string) === 'discovery_warm') && (
+                    <a
+                      href="https://resources.ivanmanfredi.com/internal/discovery-warm.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] px-2.5 py-1 rounded bg-orange-700/30 text-orange-100 hover:bg-orange-700/50 border border-orange-600/40 transition-colors flex items-center gap-1"
+                      title="Warm referral path · 6 phases, Option 1/2 pitch, ~30 min"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Warm view
                     </a>
                   )}
                   <button
