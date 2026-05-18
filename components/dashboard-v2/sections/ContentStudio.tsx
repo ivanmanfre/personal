@@ -24,8 +24,9 @@ const StrategyPanel = lazy(() => import('../../dashboard/StrategyPanel'));
 const LetterPanel = lazy(() => import('../../dashboard/LetterPanel'));
 const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
+const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
 
-type SubKey = 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video';
+type SubKey = 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'ideas';
 
 const SUB_LABELS: Record<SubKey, string> = {
   pipeline: 'Pipeline',
@@ -35,9 +36,10 @@ const SUB_LABELS: Record<SubKey, string> = {
   newsletter: 'Newsletter',
   recordings: 'Recordings · Calls',
   video: 'Video Pipeline',
+  ideas: 'Ideas',
 };
 
-const SUB_ORDER: SubKey[] = ['pipeline', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video'];
+const SUB_ORDER: SubKey[] = ['pipeline', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'ideas'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'pipeline';
@@ -79,6 +81,7 @@ export function ContentStudio() {
       case 'newsletter':  return <LetterPanel />;
       case 'recordings':  return <RecordingsPanel />;
       case 'video':       return <VideoIdeasPanel />;
+      case 'ideas':       return <LmIdeasPanel />;
     }
   };
 
@@ -86,7 +89,7 @@ export function ContentStudio() {
     <>
       <HeadRow
         title={<>Content <em>Studio</em></>}
-        meta={<>Pipeline · Performance · Audience · Strategy<br />Newsletter · Recordings · Video</>}
+        meta={<>Pipeline · Performance · Audience · Strategy<br />Newsletter · Recordings · Video · Ideas</>}
       />
       <SubTabs>
         {SUB_ORDER.map(key => (
