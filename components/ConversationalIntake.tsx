@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, MessageSquare, PhoneOff, Radio } from 'lucide-react';
+import { useConversation } from '@elevenlabs/react';
 import { useMetadata } from '../hooks/useMetadata';
 
 // Browser SpeechRecognition (Web Speech API) — Chromium/Safari
@@ -19,6 +20,7 @@ const SpeechRecognitionImpl: any =
 const VOICE_SUPPORTED = !!SpeechRecognitionImpl;
 
 const CHAT_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/assessment-intake-chat';
+const VOICE_SIGNED_URL_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-voice-signed-url';
 const LEGACY_FORM_URL = '/assessment/intake-form';
 
 // ─────────────────────────────────────────────────────────────
@@ -214,6 +216,29 @@ const ConversationalIntake: React.FC = () => {
   const VOICE_HARD_CAP_MS = 90000;
   const TTS_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-tts';
 
+  // Path B: full voice agent mode (ElevenAgents WebRTC + custom-LLM webhook → Claude)
+  // 'text' = current REST flow (Path A). 'voice' = ElevenAgents conversation.
+  // State is shared via DB; switching modes triggers a re-init to pull latest answers.
+  const [voiceMode, setVoiceMode] = useState<'text' | 'voice'>('text');
+  const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'ending' | 'error'>('idle');
+  const [voiceModeError, setVoiceModeError] = useState<string | null>(null);
+  const elevenConversation = useConversation({
+    onConnect: () => { setVoiceStatus('live'); setVoiceModeError(null); },
+    onDisconnect: () => { setVoiceStatus('idle'); },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('[eleven-conversation-error]', msg);
+      setVoiceModeError(msg);
+      setVoiceStatus('error');
+    },
+    onMessage: (msg: { message: string; source: 'user' | 'ai' }) => {
+      // Append voice transcripts to the chat scroll so bubbles stay in sync
+      if (!msg?.message) return;
+      const role = msg.source === 'user' ? 'user' : 'assistant';
+      setMessages((m) => [...m, { role, content: msg.message, ts: new Date().toISOString() }]);
+    },
+  });
+
   useMetadata({
     title: 'Blueprint intake | Manfredi',
     description: 'Walk through your Agent-Ready Blueprint intake conversationally.',
@@ -289,6 +314,75 @@ const ConversationalIntake: React.FC = () => {
     })();
     return () => { cancelled = true; };
   }, [sessionId]);
+
+  // Re-init from server: pulls fresh chat_history + answers after a voice
+  // session (where server-side state advanced but client didn't see updates).
+  const reinitFromServer = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(CHAT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, init: true }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTurnCount(data.turn_count ?? 0);
+      setNonce(data.nonce ?? null);
+      setAnswers(data.answers ?? {});
+      if (data.mode === 'fractional_m1' || data.mode === 'paid_assessment') setMode(data.mode);
+      setMessages(data.chat_history ?? []);
+      if (data.submitted) setState('submitted');
+    } catch (e) {
+      console.warn('[reinit-failed]', e instanceof Error ? e.message : String(e));
+    }
+  }, [sessionId]);
+
+  const startVoiceMode = useCallback(async () => {
+    if (!sessionId) return;
+    setVoiceStatus('connecting');
+    setVoiceModeError(null);
+    try {
+      // Stop any browser-STT recording + TTS playback before voice mode takes over
+      try { recognitionRef.current?.stop(); } catch { /* ignore */ }
+      if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
+      setTtsPlaying(false);
+
+      const res = await fetch(VOICE_SIGNED_URL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!data.signed_url) throw new Error('no_signed_url_returned');
+
+      await elevenConversation.startSession({
+        signedUrl: data.signed_url,
+        connectionType: 'websocket',
+        // Pass intake_token through to the custom-LLM webhook so it can load state
+        customLlmExtraBody: { intake_token: data.intake_token },
+      });
+      setVoiceMode('voice');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[voice-mode-start-failed]', msg);
+      setVoiceModeError(msg);
+      setVoiceStatus('error');
+    }
+  }, [sessionId, elevenConversation]);
+
+  const endVoiceMode = useCallback(async () => {
+    setVoiceStatus('ending');
+    try { await elevenConversation.endSession(); } catch { /* ignore */ }
+    setVoiceMode('text');
+    setVoiceStatus('idle');
+    // Pull the canonical state from server — voice turns advanced it server-side
+    await reinitFromServer();
+  }, [elevenConversation, reinitFromServer]);
 
   const send = useCallback(async () => {
     if (!input.trim() || !nonce || !sessionId) return;
@@ -530,7 +624,14 @@ const ConversationalIntake: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
-      <Masthead activeIdx={activeIdx} activePillars={activePillars} />
+      <Masthead
+        activeIdx={activeIdx}
+        activePillars={activePillars}
+        voiceMode={voiceMode}
+        voiceStatus={voiceStatus}
+        onStartVoice={startVoiceMode}
+        onEndVoice={endVoiceMode}
+      />
       <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} totalQuestions={activeQuestionOrder.length} />
 
       <main className="flex-1 flex relative">
@@ -607,7 +708,56 @@ const ConversationalIntake: React.FC = () => {
             </div>
           </div>
 
-          {state !== 'submitted' && state !== 'locked' && state !== 'error' && (
+          {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'voice' && (
+            <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
+              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-10 h-10 flex items-center justify-center bg-accent text-white">
+                      <Radio size={18} className={voiceStatus === 'live' ? 'animate-pulse' : ''} />
+                      {voiceStatus === 'live' && (
+                        <span className="absolute -right-1 -top-1 w-2 h-2 bg-accent animate-ping" aria-hidden="true" />
+                      )}
+                    </div>
+                    <div className="leading-tight">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                        {voiceStatus === 'connecting' && 'Connecting'}
+                        {voiceStatus === 'live' && 'Voice mode · live'}
+                        {voiceStatus === 'ending' && 'Wrapping up'}
+                        {voiceStatus === 'error' && 'Voice error'}
+                        {voiceStatus === 'idle' && 'Voice mode'}
+                      </div>
+                      <div className="text-[13px] text-ink-soft">
+                        {voiceStatus === 'live'
+                          ? 'Just speak. The agent will wait for natural pauses.'
+                          : voiceStatus === 'connecting'
+                            ? 'Establishing connection to the agent…'
+                            : voiceStatus === 'error'
+                              ? (voiceModeError ?? 'Connection failed. Switch to text or retry.')
+                              : 'Ending session…'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={endVoiceMode}
+                    disabled={voiceStatus === 'ending'}
+                    className="flex items-center gap-2 px-4 py-2 bg-black text-white border border-black font-mono text-[11px] uppercase tracking-[0.14em] hover:bg-ink-soft transition-colors disabled:opacity-50"
+                    aria-label="End voice session and return to text"
+                  >
+                    {voiceStatus === 'ending' ? <Loader2 size={14} className="animate-spin" /> : <PhoneOff size={14} />}
+                    End call
+                  </button>
+                </div>
+                {voiceModeError && voiceStatus !== 'error' && (
+                  <div className="mt-3 text-[11px] text-red-700 flex items-center gap-1.5">
+                    <AlertTriangle size={12} /> {voiceModeError}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'text' && (
             <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
               <div className="container mx-auto max-w-3xl px-6 md:px-10 py-5">
                 <div className="flex items-end gap-2">
@@ -700,8 +850,59 @@ const ConversationalIntake: React.FC = () => {
 // Sub-components
 // ─────────────────────────────────────────────────────────────
 
-const Masthead: React.FC<{ activeIdx: number; activePillars: Pillar[] }> = ({ activeIdx, activePillars }) => {
+const ModalityToggle: React.FC<{
+  voiceMode: 'text' | 'voice';
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error';
+  voiceBusy: boolean;
+  onStartVoice: () => void;
+  onEndVoice: () => void;
+}> = ({ voiceMode, voiceStatus, voiceBusy, onStartVoice, onEndVoice }) => {
+  const isVoice = voiceMode === 'voice';
+  return (
+    <div className="flex items-center border border-[color:var(--color-hairline-bold)] bg-paper text-[11px] font-mono uppercase tracking-[0.14em]">
+      <button
+        onClick={isVoice && !voiceBusy ? onEndVoice : undefined}
+        disabled={voiceBusy || !isVoice}
+        className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
+          !isVoice ? 'bg-black text-white' : 'text-ink-mute hover:text-black'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
+        aria-label={isVoice ? 'Switch to text mode' : 'Currently in text mode'}
+        title={isVoice ? 'Switch back to text' : 'Type your replies'}
+      >
+        <MessageSquare size={12} />
+        Text
+      </button>
+      <span className="w-px h-4 bg-[color:var(--color-hairline-bold)]" aria-hidden="true" />
+      <button
+        onClick={!isVoice && !voiceBusy ? onStartVoice : undefined}
+        disabled={voiceBusy || isVoice}
+        className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
+          isVoice ? 'bg-accent text-white' : 'text-ink-mute hover:text-black'
+        } disabled:opacity-50 disabled:cursor-not-allowed`}
+        aria-label={isVoice ? 'Currently in voice mode' : 'Switch to voice mode'}
+        title={isVoice ? 'Talk with the agent live' : 'Switch to a live voice conversation'}
+      >
+        {voiceStatus === 'connecting' || voiceStatus === 'ending'
+          ? <Loader2 size={12} className="animate-spin" />
+          : voiceStatus === 'live'
+            ? <Radio size={12} className="animate-pulse" />
+            : <Mic size={12} />}
+        Voice
+      </button>
+    </div>
+  );
+};
+
+const Masthead: React.FC<{
+  activeIdx: number;
+  activePillars: Pillar[];
+  voiceMode: 'text' | 'voice';
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error';
+  onStartVoice: () => void;
+  onEndVoice: () => void;
+}> = ({ activeIdx, activePillars, voiceMode, voiceStatus, onStartVoice, onEndVoice }) => {
   const active = activePillars[activeIdx] ?? activePillars[0];
+  const voiceBusy = voiceStatus === 'connecting' || voiceStatus === 'ending';
   return (
     <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
       <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-end justify-between gap-6">
@@ -715,11 +916,20 @@ const Masthead: React.FC<{ activeIdx: number; activePillars: Pillar[] }> = ({ ac
             Blueprint
           </h1>
         </div>
-        <div className="hidden md:flex flex-col items-end leading-none">
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">Section</span>
-          <span className="font-mono text-xs uppercase tracking-[0.14em] text-ink mt-1">
-            {active.numeral} · {active.label}
-          </span>
+        <div className="flex items-center gap-4">
+          <ModalityToggle
+            voiceMode={voiceMode}
+            voiceStatus={voiceStatus}
+            voiceBusy={voiceBusy}
+            onStartVoice={onStartVoice}
+            onEndVoice={onEndVoice}
+          />
+          <div className="hidden md:flex flex-col items-end leading-none">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">Section</span>
+            <span className="font-mono text-xs uppercase tracking-[0.14em] text-ink mt-1">
+              {active.numeral} · {active.label}
+            </span>
+          </div>
         </div>
       </div>
     </header>
