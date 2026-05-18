@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, MessageSquare, PhoneOff, Radio } from 'lucide-react';
-import { useConversation } from '@elevenlabs/react';
+import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { useMetadata } from '../hooks/useMetadata';
 
 // Browser SpeechRecognition (Web Speech API) — Chromium/Safari
@@ -170,7 +170,7 @@ function pillarProgress(pillar: Pillar, answers: Record<string, unknown>): { hit
 // Main component
 // ─────────────────────────────────────────────────────────────
 
-const ConversationalIntake: React.FC = () => {
+const ConversationalIntakeInner: React.FC = () => {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   // Accept either ?session_id= (paid Assessment, from Stripe redirect) or ?token= (Fractional, from issued link)
@@ -1396,5 +1396,13 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: str
     </motion.div>
   );
 };
+
+// Wrap with ConversationProvider — @elevenlabs/react's useConversation hook
+// requires this context. Provider has no props for our use case.
+const ConversationalIntake: React.FC = () => (
+  <ConversationProvider>
+    <ConversationalIntakeInner />
+  </ConversationProvider>
+);
 
 export default ConversationalIntake;
