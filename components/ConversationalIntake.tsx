@@ -216,20 +216,50 @@ const ConversationalIntakeInner: React.FC = () => {
   const VOICE_HARD_CAP_MS = 90000;
   const TTS_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-tts';
 
-  // Path B: full voice agent mode (ElevenAgents WebRTC + custom-LLM webhook → Claude)
+  // Path B: full voice agent mode (ElevenAgents + custom-LLM webhook → Claude)
   // 'text' = current REST flow (Path A). 'voice' = ElevenAgents conversation.
   // State is shared via DB; switching modes triggers a re-init to pull latest answers.
   const [voiceMode, setVoiceMode] = useState<'text' | 'voice'>('text');
-  const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'ending' | 'error'>('idle');
+  const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped'>('idle');
   const [voiceModeError, setVoiceModeError] = useState<string | null>(null);
+  const [voiceToast, setVoiceToast] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
+  // Tracks whether the most recent disconnect was user-initiated (End call) vs
+  // a network drop, so onDisconnect can route accordingly.
+  const intentionalEndRef = useRef(false);
+  const wasLiveRef = useRef(false);
   const elevenConversation = useConversation({
-    onConnect: () => { setVoiceStatus('live'); setVoiceModeError(null); },
-    onDisconnect: () => { setVoiceStatus('idle'); },
+    onConnect: () => {
+      setVoiceStatus('live');
+      setVoiceModeError(null);
+      wasLiveRef.current = true;
+    },
+    onDisconnect: () => {
+      if (intentionalEndRef.current) {
+        // User clicked End call — endVoiceMode() handles state transitions
+        intentionalEndRef.current = false;
+        return;
+      }
+      // Unintentional disconnect mid-session
+      if (wasLiveRef.current) {
+        setVoiceStatus('dropped');
+        setVoiceToast({ kind: 'info', text: 'Voice connection dropped. Switching to text — click Voice to reconnect.' });
+        wasLiveRef.current = false;
+        // Re-sync server state and flip back to text mode
+        (async () => {
+          await reinitFromServer();
+          setVoiceMode('text');
+          setVoiceStatus('idle');
+        })();
+      } else {
+        setVoiceStatus('idle');
+      }
+    },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn('[eleven-conversation-error]', msg);
       setVoiceModeError(msg);
       setVoiceStatus('error');
+      setVoiceToast({ kind: 'error', text: `Voice error: ${msg.slice(0, 100)}` });
     },
     onMessage: (msg: { message: string; source: 'user' | 'ai' }) => {
       // Append voice transcripts to the chat scroll so bubbles stay in sync
@@ -251,6 +281,13 @@ const ConversationalIntakeInner: React.FC = () => {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [messages, state]);
+
+  // Auto-dismiss voice toast after 6s
+  useEffect(() => {
+    if (!voiceToast) return;
+    const id = setTimeout(() => setVoiceToast(null), 6000);
+    return () => clearTimeout(id);
+  }, [voiceToast]);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -389,6 +426,8 @@ const ConversationalIntakeInner: React.FC = () => {
   }, [sessionId, elevenConversation]);
 
   const endVoiceMode = useCallback(async () => {
+    intentionalEndRef.current = true;
+    wasLiveRef.current = false;
     setVoiceStatus('ending');
     try { await elevenConversation.endSession(); } catch { /* ignore */ }
     setVoiceMode('text');
@@ -647,6 +686,35 @@ const ConversationalIntakeInner: React.FC = () => {
       />
       <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} totalQuestions={activeQuestionOrder.length} />
 
+      {/* Voice toast — fixed top, dismissable, auto-clears after 6s */}
+      <AnimatePresence>
+        {voiceToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            className="fixed top-[120px] md:top-[140px] left-1/2 -translate-x-1/2 z-40 pointer-events-auto"
+          >
+            <div className={`flex items-center gap-3 px-5 py-3 border shadow-lg ${
+              voiceToast.kind === 'error'
+                ? 'bg-red-50 border-red-300 text-red-900'
+                : 'bg-paper border-accent text-ink'
+            }`}>
+              <AlertTriangle size={14} className={voiceToast.kind === 'error' ? 'text-red-700' : 'text-accent'} />
+              <span className="text-[13px] leading-snug max-w-md">{voiceToast.text}</span>
+              <button
+                onClick={() => setVoiceToast(null)}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black ml-2"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="flex-1 flex relative">
         <AnimatePresence>
           {sidebarOpen && (
@@ -722,50 +790,67 @@ const ConversationalIntakeInner: React.FC = () => {
           </div>
 
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'voice' && (
-            <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
-              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 flex items-center justify-center bg-accent text-white">
-                      <Radio size={18} className={voiceStatus === 'live' ? 'animate-pulse' : ''} />
+            <div className="border-t-2 border-accent bg-paper-sunk">
+              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-7 md:py-9">
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-5 min-w-0">
+                    {/* Pulsing voice indicator — editorial sage orb */}
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className={`w-14 h-14 rounded-full bg-accent flex items-center justify-center text-white transition-transform ${
+                          voiceStatus === 'live' ? 'shadow-[0_0_0_8px_rgba(42,143,101,0.12)]' : ''
+                        }`}
+                      >
+                        {voiceStatus === 'connecting' || voiceStatus === 'ending'
+                          ? <Loader2 size={22} className="animate-spin" />
+                          : voiceStatus === 'error'
+                            ? <AlertTriangle size={22} />
+                            : <Radio size={22} className={voiceStatus === 'live' ? 'animate-pulse' : ''} />}
+                      </div>
                       {voiceStatus === 'live' && (
-                        <span className="absolute -right-1 -top-1 w-2 h-2 bg-accent animate-ping" aria-hidden="true" />
+                        <span
+                          className="absolute inset-0 rounded-full border-2 border-accent animate-ping"
+                          aria-hidden="true"
+                        />
                       )}
                     </div>
-                    <div className="leading-tight">
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute">
+                    <div className="leading-tight min-w-0">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute mb-1.5">
                         {voiceStatus === 'connecting' && 'Connecting'}
                         {voiceStatus === 'live' && 'Voice mode · live'}
                         {voiceStatus === 'ending' && 'Wrapping up'}
                         {voiceStatus === 'error' && 'Voice error'}
                         {voiceStatus === 'idle' && 'Voice mode'}
                       </div>
-                      <div className="text-[13px] text-ink-soft">
-                        {voiceStatus === 'live'
-                          ? 'Just speak. The agent will wait for natural pauses.'
-                          : voiceStatus === 'connecting'
-                            ? 'Establishing connection to the agent…'
-                            : voiceStatus === 'error'
-                              ? (voiceModeError ?? 'Connection failed. Switch to text or retry.')
-                              : 'Ending session…'}
-                      </div>
+                      <p className="text-[17px] md:text-[18px] leading-snug text-ink">
+                        {voiceStatus === 'live' && (
+                          <>
+                            <span className="font-drama italic">Just speak.</span>{' '}
+                            <span className="text-ink-soft">The agent waits for natural pauses.</span>
+                          </>
+                        )}
+                        {voiceStatus === 'connecting' && (
+                          <span className="text-ink-soft">Establishing the connection…</span>
+                        )}
+                        {voiceStatus === 'ending' && (
+                          <span className="text-ink-soft">Saving your progress…</span>
+                        )}
+                        {voiceStatus === 'error' && (
+                          <span className="text-red-800">{voiceModeError ?? 'Connection failed. Switch to text or retry.'}</span>
+                        )}
+                      </p>
                     </div>
                   </div>
                   <button
                     onClick={endVoiceMode}
                     disabled={voiceStatus === 'ending'}
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white border border-black font-mono text-[11px] uppercase tracking-[0.14em] hover:bg-ink-soft transition-colors disabled:opacity-50"
+                    className="flex-shrink-0 flex items-center gap-2 px-5 py-3 bg-black text-white border border-black font-mono text-[11px] uppercase tracking-[0.16em] hover:bg-ink-soft transition-colors disabled:opacity-50"
                     aria-label="End voice session and return to text"
                   >
                     {voiceStatus === 'ending' ? <Loader2 size={14} className="animate-spin" /> : <PhoneOff size={14} />}
                     End call
                   </button>
                 </div>
-                {voiceModeError && voiceStatus !== 'error' && (
-                  <div className="mt-3 text-[11px] text-red-700 flex items-center gap-1.5">
-                    <AlertTriangle size={12} /> {voiceModeError}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -865,7 +950,7 @@ const ConversationalIntakeInner: React.FC = () => {
 
 const ModalityToggle: React.FC<{
   voiceMode: 'text' | 'voice';
-  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error';
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped';
   voiceBusy: boolean;
   onStartVoice: () => void;
   onEndVoice: () => void;
@@ -910,15 +995,16 @@ const Masthead: React.FC<{
   activeIdx: number;
   activePillars: Pillar[];
   voiceMode: 'text' | 'voice';
-  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error';
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped';
   onStartVoice: () => void;
   onEndVoice: () => void;
 }> = ({ activeIdx, activePillars, voiceMode, voiceStatus, onStartVoice, onEndVoice }) => {
-  const active = activePillars[activeIdx] ?? activePillars[0];
   const voiceBusy = voiceStatus === 'connecting' || voiceStatus === 'ending';
+  // unused now that PillarBar owns the active-section label
+  void activeIdx; void activePillars;
   return (
     <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
-      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-end justify-between gap-6">
+      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-center justify-between gap-6">
         <div className="flex items-baseline gap-3 min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute hidden sm:inline">
             00 · Intake
@@ -929,21 +1015,13 @@ const Masthead: React.FC<{
             Blueprint
           </h1>
         </div>
-        <div className="flex items-center gap-4">
-          <ModalityToggle
-            voiceMode={voiceMode}
-            voiceStatus={voiceStatus}
-            voiceBusy={voiceBusy}
-            onStartVoice={onStartVoice}
-            onEndVoice={onEndVoice}
-          />
-          <div className="hidden md:flex flex-col items-end leading-none">
-            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">Section</span>
-            <span className="font-mono text-xs uppercase tracking-[0.14em] text-ink mt-1">
-              {active.numeral} · {active.label}
-            </span>
-          </div>
-        </div>
+        <ModalityToggle
+          voiceMode={voiceMode}
+          voiceStatus={voiceStatus}
+          voiceBusy={voiceBusy}
+          onStartVoice={onStartVoice}
+          onEndVoice={onEndVoice}
+        />
       </div>
     </header>
   );
@@ -956,53 +1034,64 @@ const PillarBar: React.FC<{
   activePillars: Pillar[];
   totalQuestions: number;
 }> = ({ answers, activeIdx, onOpenList, activePillars, totalQuestions }) => {
+  const activePillar = activePillars[activeIdx] ?? activePillars[0];
+  const { hit: activeHit, total: activeTotal } = pillarProgress(activePillar, answers);
+  const answeredTotal = activePillars.reduce(
+    (sum, p) => sum + p.keys.filter((k) => answers[k] != null && answers[k] !== '').length,
+    0,
+  );
+
   return (
     <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
-      <div className="container mx-auto max-w-5xl px-6 md:px-10">
-        <div className="flex items-stretch">
+      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-3">
+        {/* Numeral row — clean editorial sequence, always one line */}
+        <div className="flex items-center gap-1.5 md:gap-2">
           {activePillars.map((p, i) => {
             const { hit, total } = pillarProgress(p, answers);
             const complete = hit === total;
             const active = i === activeIdx;
             return (
-              <div
+              <span
                 key={p.numeral}
-                className={`flex-1 py-3 flex items-center gap-3 border-r border-[color:var(--color-hairline)] last:border-r-0 px-3 first:pl-0 ${
-                  active ? 'opacity-100' : complete ? 'opacity-70' : 'opacity-50'
-                } transition-opacity`}
-              >
-                <span className={`flex-shrink-0 inline-flex items-center justify-center w-6 h-6 font-mono text-[10px] uppercase tracking-tight font-bold ${
+                className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 font-mono text-[10px] uppercase tracking-tight font-bold transition-all duration-300 ${
                   complete
-                    ? 'bg-black text-accent'
+                    ? 'bg-accent text-white'
                     : active
-                      ? 'bg-black text-white'
-                      : 'border border-[color:var(--color-hairline-bold)] text-ink-mute'
-                }`}>
-                  {p.numeral}
-                </span>
-                <div className="min-w-0 hidden md:block">
-                  <div className={`text-[11px] font-mono uppercase tracking-[0.08em] truncate ${active ? 'text-ink' : 'text-ink-mute'}`}>
-                    {p.label}
-                  </div>
-                  <div className="font-mono text-[10px] tabular-nums text-ink-mute mt-0.5">
-                    {hit}/{total}
-                    {complete && <span className="text-accent ml-1">●</span>}
-                  </div>
-                </div>
-                {active && (
-                  <span className="md:hidden font-mono text-[9px] tabular-nums text-ink-mute">{hit}/{total}</span>
-                )}
-              </div>
+                      ? 'bg-black text-white scale-110'
+                      : hit > 0
+                        ? 'bg-paper-sunk text-ink border border-[color:var(--color-hairline-bold)]'
+                        : 'bg-paper text-ink-mute border border-[color:var(--color-hairline)]'
+                }`}
+                title={`${p.label} — ${hit}/${total}`}
+                aria-label={`Section ${p.numeral}, ${p.label}, ${hit} of ${total} complete`}
+              >
+                {p.numeral}
+              </span>
             );
           })}
+          <div className="flex-1" aria-hidden="true" />
           <button
             onClick={onOpenList}
-            className="flex-shrink-0 px-3 py-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black border-l border-[color:var(--color-hairline)] transition-colors"
+            className="flex-shrink-0 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black border border-[color:var(--color-hairline)] hover:border-[color:var(--color-hairline-bold)] transition-colors"
             aria-label={`Open all ${totalQuestions} questions`}
             title={`See all ${totalQuestions} questions`}
           >
-            All {totalQuestions} →
+            <span className="tabular-nums">{answeredTotal}/{totalQuestions}</span> · All →
           </button>
+        </div>
+
+        {/* Section label row — single readable line for active pillar */}
+        <div className="mt-2.5 flex items-baseline gap-3">
+          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">
+            Section {activePillar.numeral}
+          </span>
+          <span className="font-drama italic text-[15px] md:text-base text-ink leading-none">
+            {activePillar.label}
+          </span>
+          <span className="font-mono text-[10px] tabular-nums text-ink-mute ml-auto">
+            {activeHit}/{activeTotal}
+            {activeHit === activeTotal && activeTotal > 0 && <span className="text-accent ml-1">●</span>}
+          </span>
         </div>
       </div>
     </div>
