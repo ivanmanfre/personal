@@ -360,11 +360,24 @@ const ConversationalIntake: React.FC = () => {
       const data = await res.json();
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
+      // Dynamic first message: fresh sessions get a proper opener; resumed
+      // sessions (where text turns already happened) get a brief continuation
+      // note so the agent doesn't greet the buyer all over again.
+      const isResuming = messages.length > 0;
+      const firstMessage = isResuming
+        ? "Picking up where we left off. Continue when you're ready."
+        : "Welcome. Tell me about your business when you're ready. Name, what you do, who's running it.";
+
       await elevenConversation.startSession({
         signedUrl: data.signed_url,
         connectionType: 'websocket',
         // Pass intake_token through to the custom-LLM webhook so it can load state
         customLlmExtraBody: { intake_token: data.intake_token },
+        overrides: {
+          agent: {
+            firstMessage,
+          },
+        },
       });
       setVoiceMode('voice');
     } catch (e) {

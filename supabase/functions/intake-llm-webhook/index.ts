@@ -93,11 +93,14 @@ const VOICE_MODE_ADDENDUM = `
 ## Voice mode addendum (ACTIVE — this conversation is being SPOKEN, not read)
 
 The user is hearing your response as audio. Adjust accordingly:
-- Replies must be ≤45 words (a single short paragraph). The buyer is listening, not scanning.
-- NO markdown formatting in the message text. No **bold**, no *italic*, no bullets, no lists, no fences. Just plain spoken English.
+- Replies MUST be ≤45 words (a single short paragraph). The buyer is listening, not scanning.
+- NO markdown formatting in the \`message\` field text. No **bold**, no *italic*, no bullets, no lists, no fences. Just plain spoken English.
 - Numbers spelled out only when natural ("twenty grand" not "$20,000" — but "5 to 7 builds" is fine).
 - One question per turn. Don't stack two questions.
-- Still output strict JSON per the OUTPUT SCHEMA — but \`message\` is plain text that will be spoken aloud.`;
+- DOUBLE-ENFORCED anti-sycophantic ban: NEVER open with "Good", "Great", "Got it", "Perfect", "Awesome", "Nice", "Cool", "Thanks for", "I hear you". Open with substance. If you must acknowledge, use neutral verbs ("Noted", "Understood briefly").
+- Acknowledge ONLY when correcting/clarifying a prior answer. Default: skip acknowledgment, go straight to the next question.
+- The \`message\` field is read aloud verbatim. Imagine someone speaks every character. If a brace or bracket appears in your message text, the TTS will say "open bracket". DO NOT include JSON-looking syntax in \`message\`.
+- Still output strict JSON per the OUTPUT SCHEMA at the structural level — but \`message\` is plain English text only.`;
 
 // ───────────────────────────────────────────
 // Claude response parsing (mirrors assessment-intake-chat)
@@ -452,6 +455,25 @@ async function handleRequest(req: Request): Promise<Response> {
     .replace(/^\s*-\s+/gm, "")
     .replace(/\n{2,}/g, " ")
     .trim();
+
+  // 12b. JSON-safety belt-and-suspenders: if Claude's response slipped through
+  // the parser with a literal `{"message":"..."}` wrapper (parser fallback (e)
+  // when JSON.parse fails on a typo), regex-extract the inner string. Better
+  // than letting TTS speak raw JSON braces.
+  if (/^\s*[{[]/.test(safeMessage)) {
+    const innerMessage = safeMessage.match(/"message"\s*:\s*"((?:\\.|[^"\\])*)"/);
+    if (innerMessage?.[1]) {
+      safeMessage = innerMessage[1].replace(/\\"/g, '"').replace(/\\n/g, " ").trim();
+    } else {
+      // Final fallback: strip all curly braces + quoted keys
+      safeMessage = safeMessage
+        .replace(/[{}\[\]]/g, "")
+        .replace(/"[a-z_]+"\s*:\s*/gi, "")
+        .replace(/,\s*/g, ". ")
+        .replace(/"/g, "")
+        .trim();
+    }
+  }
 
   // 13. Persist new state — voice turn appended to history
   const newTurn = row.turn_count + 1;
