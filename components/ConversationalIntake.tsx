@@ -380,10 +380,13 @@ const ConversationalIntakeInner: React.FC = () => {
     setVoiceStatus('connecting');
     setVoiceModeError(null);
     try {
-      // Stop any browser-STT recording + TTS playback before voice mode takes over
+      // Stop any browser-STT recording + Path A TTS playback before ElevenAgents
+      // takes over. Lock lastSpokenIdx forward so newly-arriving voice transcript
+      // bubbles don't trigger Path A re-speaking them.
       try { recognitionRef.current?.stop(); } catch { /* ignore */ }
       if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
       setTtsPlaying(false);
+      lastSpokenIdxRef.current = messages.length - 1;
 
       const res = await fetch(VOICE_SIGNED_URL_ENDPOINT, {
         method: 'POST',
@@ -397,11 +400,12 @@ const ConversationalIntakeInner: React.FC = () => {
       const data = await res.json();
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
-      // Dynamic first message: fresh sessions get a proper opener; resumed
-      // sessions (where text turns already happened) get a brief continuation
-      // note so the agent doesn't greet the buyer all over again.
-      const isResuming = messages.length > 0;
-      const firstMessage = isResuming
+      // Dynamic first message: a session is "resumed" only if the buyer has
+      // actually SAID something (user turn exists). The seeded greeting bubble
+      // alone doesn't count — bumping into Voice from a fresh page should give
+      // a proper opener, not a continuation note.
+      const hasUserTurns = messages.some((m) => m.role === 'user');
+      const firstMessage = hasUserTurns
         ? "Picking up where we left off. Continue when you're ready."
         : "Welcome. Tell me about your business when you're ready. Name, what you do, who's running it.";
 
@@ -423,7 +427,7 @@ const ConversationalIntakeInner: React.FC = () => {
       setVoiceModeError(msg);
       setVoiceStatus('error');
     }
-  }, [sessionId, elevenConversation]);
+  }, [sessionId, elevenConversation, messages]);
 
   const endVoiceMode = useCallback(async () => {
     intentionalEndRef.current = true;
@@ -645,17 +649,20 @@ const ConversationalIntakeInner: React.FC = () => {
     });
   }, [messages.length]);
 
-  // Auto-play TTS when a NEW assistant message arrives (only if speakerOn AND it's not historical)
+  // Auto-play TTS when a NEW assistant message arrives (only if speakerOn AND
+  // we are in TEXT mode — voice mode has its own real-time TTS via ElevenAgents
+  // and double-firing causes the buyer to hear two voices saying the same line).
   useEffect(() => {
     if (!speakerOn) return;
+    if (voiceMode === 'voice') return;
     if (messages.length === 0) return;
     const lastIdx = messages.length - 1;
     const last = messages[lastIdx];
     if (last.role !== 'assistant') return;
-    if (lastIdx <= lastSpokenIdxRef.current) return; // already spoken or marked-as-spoken at toggle time
+    if (lastIdx <= lastSpokenIdxRef.current) return;
     lastSpokenIdxRef.current = lastIdx;
     playAudio(last.content);
-  }, [messages, speakerOn, playAudio]);
+  }, [messages, speakerOn, playAudio, voiceMode]);
 
   // Stop audio on unmount
   useEffect(() => () => {
@@ -732,7 +739,7 @@ const ConversationalIntakeInner: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-h-0">
           <div ref={chatScrollRef} className="flex-1 overflow-y-auto">
-            <div className="container mx-auto max-w-3xl px-6 md:px-10 py-10 space-y-6">
+            <div className="container mx-auto max-w-3xl px-6 md:px-10 py-12 md:py-16 space-y-8 md:space-y-10">
               {state === 'loading' && (
                 <div className="flex items-center gap-3 text-ink-mute">
                   <Loader2 size={18} className="animate-spin" />
@@ -754,11 +761,13 @@ const ConversationalIntakeInner: React.FC = () => {
                 </div>
               )}
 
-              {messages.map((m, i) => (
-                m.role === 'assistant'
-                  ? <BotBubble key={i} content={m.content} index={i} />
-                  : <UserBubble key={i} content={m.content} />
-              ))}
+              {messages.map((m, i) => {
+                if (m.role !== 'assistant') return <UserBubble key={i} content={m.content} />;
+                // First bubble OR first assistant after a user turn gets the agent mark
+                const prev = i > 0 ? messages[i - 1] : null;
+                const isFirst = !prev || prev.role !== 'assistant';
+                return <BotBubble key={i} content={m.content} index={i} isFirst={isFirst} />;
+              })}
 
               {state === 'sending' && <TypingIndicator />}
 
@@ -857,83 +866,90 @@ const ConversationalIntakeInner: React.FC = () => {
 
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'text' && (
             <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
-              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-5">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 relative">
-                    <span className="absolute -top-5 left-0 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
-                      Your reply
-                    </span>
-                    <textarea
-                      ref={textareaRef}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={
-                        state === 'rate_limited' ? 'Hold tight, back in a minute.'
-                        : state === 'sending' ? 'Thinking…'
-                        : recording ? 'Listening, speak naturally.'
-                        : 'Type or hit the mic. Enter sends.'
-                      }
-                      rows={1}
-                      maxLength={2000}
-                      disabled={state !== 'ready' && !recording}
-                      className="w-full resize-none bg-paper-sunk border border-[color:var(--color-hairline-bold)] px-4 py-3 text-[15px] leading-relaxed focus:outline-none focus:border-accent disabled:opacity-50 font-sans placeholder:text-ink-mute"
-                    />
-                  </div>
-                  {VOICE_SUPPORTED && (
+              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-6 md:py-7">
+                <div className="flex items-baseline justify-between mb-3">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
+                    Your reply
+                  </span>
+                  <span className={`font-mono text-[10px] tabular-nums ${charCountColor}`}>{charCount}<span className="text-ink-mute">/2000</span></span>
+                </div>
+                <div className="group relative flex items-end gap-2 border border-[color:var(--color-hairline-bold)] bg-paper-sunk transition-colors focus-within:border-accent">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      state === 'rate_limited' ? 'Hold tight, back in a minute.'
+                      : state === 'sending' ? 'Thinking…'
+                      : recording ? 'Listening, speak naturally.'
+                      : 'Type, or hit the mic. Enter sends.'
+                    }
+                    rows={1}
+                    maxLength={2000}
+                    disabled={state !== 'ready' && !recording}
+                    className="flex-1 resize-none bg-transparent px-5 py-4 text-[17px] md:text-[18px] leading-[1.5] focus:outline-none disabled:opacity-50 font-sans placeholder:text-ink-mute placeholder:italic"
+                  />
+                  <div className="flex items-stretch self-stretch border-l border-[color:var(--color-hairline)]">
+                    {VOICE_SUPPORTED && (
+                      <button
+                        onClick={toggleRecording}
+                        disabled={state !== 'ready' && !recording}
+                        className={`w-12 border-r border-[color:var(--color-hairline)] last:border-r-0 transition-all flex items-center justify-center ${
+                          recording
+                            ? 'bg-black text-white'
+                            : 'text-ink-soft hover:bg-paper hover:text-accent'
+                        } disabled:opacity-40 disabled:cursor-not-allowed`}
+                        aria-label={recording ? 'Stop recording' : 'Start voice input'}
+                        title={recording ? 'Click to stop recording' : 'Dictate your reply'}
+                      >
+                        {recording
+                          ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-accent animate-pulse" /></span>
+                          : <Mic size={18} />}
+                      </button>
+                    )}
                     <button
-                      onClick={toggleRecording}
-                      disabled={state !== 'ready' && !recording}
-                      className={`self-stretch w-12 border transition-colors flex items-center justify-center ${
-                        recording
-                          ? 'bg-black text-white border-black'
-                          : 'bg-paper border-[color:var(--color-hairline-bold)] text-ink hover:bg-paper-sunk'
-                      } disabled:opacity-40 disabled:cursor-not-allowed`}
-                      aria-label={recording ? 'Stop recording' : 'Start voice input'}
-                      title={recording ? 'Click to stop recording' : 'Click to dictate'}
+                      onClick={toggleSpeaker}
+                      className={`w-12 border-r border-[color:var(--color-hairline)] last:border-r-0 transition-all flex items-center justify-center ${
+                        speakerOn
+                          ? 'bg-accent text-white'
+                          : 'text-ink-soft hover:bg-paper hover:text-accent'
+                      }`}
+                      aria-label={speakerOn ? 'Mute agent voice' : 'Enable agent voice'}
+                      title={speakerOn ? 'Agent voice ON — click to mute' : 'Hear replies aloud'}
                     >
-                      {recording
-                        ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-accent animate-pulse" /></span>
-                        : <Mic size={18} />}
+                      {speakerOn
+                        ? <span className="relative inline-flex items-center justify-center"><Volume2 size={18} />{ttsPlaying && <span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-white animate-pulse" />}</span>
+                        : <VolumeX size={18} />}
                     </button>
-                  )}
-                  <button
-                    onClick={toggleSpeaker}
-                    className={`self-stretch w-12 border transition-colors flex items-center justify-center ${
-                      speakerOn
-                        ? 'bg-accent text-white border-accent'
-                        : 'bg-paper border-[color:var(--color-hairline-bold)] text-ink hover:bg-paper-sunk'
-                    }`}
-                    aria-label={speakerOn ? 'Mute agent voice' : 'Enable agent voice'}
-                    title={speakerOn ? 'Agent voice ON — click to mute' : 'Agent voice OFF — click to enable (replies will be spoken)'}
-                  >
-                    {speakerOn
-                      ? <span className="relative inline-flex items-center justify-center"><Volume2 size={18} />{ttsPlaying && <span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-white animate-pulse" />}</span>
-                      : <VolumeX size={18} />}
-                  </button>
-                  <button
-                    onClick={send}
-                    disabled={state !== 'ready' || !input.trim()}
-                    className="self-stretch px-5 bg-black text-white border border-black disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-opacity hover:bg-ink-soft"
-                    aria-label="Send"
-                  >
-                    {state === 'sending' ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} strokeWidth={2.5} className="text-accent" />}
-                  </button>
+                    <button
+                      onClick={send}
+                      disabled={state !== 'ready' || !input.trim()}
+                      className="px-5 bg-black text-white disabled:bg-paper disabled:text-ink-mute disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors hover:bg-ink-soft group/send"
+                      aria-label="Send"
+                    >
+                      {state === 'sending'
+                        ? <Loader2 size={18} className="animate-spin" />
+                        : <>
+                            <span className="font-mono text-[10px] uppercase tracking-[0.16em] hidden md:inline">Send</span>
+                            <ArrowUp size={18} strokeWidth={2.5} className="text-accent group-hover/send:translate-y-[-1px] transition-transform" />
+                          </>}
+                    </button>
+                  </div>
                 </div>
                 {voiceErr && (
-                  <div className="mt-2 text-[11px] text-red-700 flex items-center gap-1.5">
+                  <div className="mt-3 text-[11px] text-red-700 flex items-center gap-1.5">
                     <AlertTriangle size={12} /> {voiceErr}
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-3 text-[10px] font-mono uppercase tracking-[0.14em]">
                   <span className="text-ink-mute flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-accent inline-block" />
-                    Saves automatically · {' '}
-                    <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="underline hover:text-black">
-                      Switch to form
-                    </a>
+                    Autosaving every reply
                   </span>
-                  <span className={`tabular-nums ${charCountColor}`}>{charCount}/2000</span>
+                  <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="text-ink-mute hover:text-black underline-offset-2 hover:underline transition-colors">
+                    Switch to form →
+                  </a>
                 </div>
               </div>
             </div>
@@ -1042,56 +1058,87 @@ const PillarBar: React.FC<{
   );
 
   return (
-    <div className="sticky top-[56px] md:top-[64px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
-      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-3">
-        {/* Numeral row — clean editorial sequence, always one line */}
-        <div className="flex items-center gap-1.5 md:gap-2">
-          {activePillars.map((p, i) => {
-            const { hit, total } = pillarProgress(p, answers);
-            const complete = hit === total;
-            const active = i === activeIdx;
-            return (
-              <span
-                key={p.numeral}
-                className={`flex-shrink-0 inline-flex items-center justify-center w-7 h-7 font-mono text-[10px] uppercase tracking-tight font-bold transition-all duration-300 ${
-                  complete
-                    ? 'bg-accent text-white'
-                    : active
-                      ? 'bg-black text-white scale-110'
-                      : hit > 0
-                        ? 'bg-paper-sunk text-ink border border-[color:var(--color-hairline-bold)]'
-                        : 'bg-paper text-ink-mute border border-[color:var(--color-hairline)]'
-                }`}
-                title={`${p.label} — ${hit}/${total}`}
-                aria-label={`Section ${p.numeral}, ${p.label}, ${hit} of ${total} complete`}
+    <div className="sticky top-[64px] md:top-[72px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
+      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-6 md:py-7">
+        <div className="flex items-end justify-between gap-8">
+          {/* Big editorial numeral + section title — the focal point */}
+          <div className="flex items-end gap-5 min-w-0">
+            <motion.span
+              key={activePillar.numeral}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+              className="font-drama italic text-[4rem] md:text-[5.5rem] leading-[0.85] text-black flex-shrink-0 select-none"
+              aria-hidden="true"
+            >
+              {activePillar.numeral.toLowerCase()}
+              <span className="text-accent">.</span>
+            </motion.span>
+            <div className="min-w-0 pb-2">
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute mb-1.5">
+                Section · {activePillar.numeral} of {activePillars.length}
+              </div>
+              <motion.h2
+                key={activePillar.label}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.32 }}
+                className="text-2xl md:text-[1.875rem] font-semibold tracking-tight leading-tight text-ink"
               >
-                {p.numeral}
-              </span>
-            );
-          })}
-          <div className="flex-1" aria-hidden="true" />
-          <button
-            onClick={onOpenList}
-            className="flex-shrink-0 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute hover:text-black border border-[color:var(--color-hairline)] hover:border-[color:var(--color-hairline-bold)] transition-colors"
-            aria-label={`Open all ${totalQuestions} questions`}
-            title={`See all ${totalQuestions} questions`}
-          >
-            <span className="tabular-nums">{answeredTotal}/{totalQuestions}</span> · All →
-          </button>
-        </div>
+                {activePillar.label.split(' + ').map((part, i, arr) => (
+                  <React.Fragment key={i}>
+                    {i === 1 ? <span className="font-drama italic">{part}</span> : part}
+                    {i < arr.length - 1 && <span className="text-ink-mute"> + </span>}
+                  </React.Fragment>
+                ))}
+              </motion.h2>
+              <div className="mt-2 flex items-center gap-3 font-mono text-[11px] tabular-nums">
+                <span className="text-ink-soft">
+                  <span className={activeHit === activeTotal ? 'text-accent' : ''}>{activeHit}</span>
+                  <span className="text-ink-mute">/{activeTotal}</span>
+                </span>
+                {activeHit === activeTotal && activeTotal > 0 && (
+                  <span className="text-[9px] uppercase tracking-[0.18em] text-accent">Complete</span>
+                )}
+              </div>
+            </div>
+          </div>
 
-        {/* Section label row — single readable line for active pillar */}
-        <div className="mt-2.5 flex items-baseline gap-3">
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-ink-mute">
-            Section {activePillar.numeral}
-          </span>
-          <span className="font-drama italic text-[15px] md:text-base text-ink leading-none">
-            {activePillar.label}
-          </span>
-          <span className="font-mono text-[10px] tabular-nums text-ink-mute ml-auto">
-            {activeHit}/{activeTotal}
-            {activeHit === activeTotal && activeTotal > 0 && <span className="text-accent ml-1">●</span>}
-          </span>
+          {/* Right-rail: section dots + total progress + drawer link */}
+          <div className="flex flex-col items-end gap-2 pb-2">
+            <div className="flex items-center gap-1.5">
+              {activePillars.map((p, i) => {
+                const { hit, total } = pillarProgress(p, answers);
+                const complete = hit === total;
+                const active = i === activeIdx;
+                return (
+                  <span
+                    key={p.numeral}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      complete
+                        ? 'bg-accent'
+                        : active
+                          ? 'bg-black scale-150'
+                          : hit > 0
+                            ? 'bg-ink-mute'
+                            : 'bg-[color:var(--color-hairline-bold)]'
+                    }`}
+                    title={`${p.numeral} · ${p.label} — ${hit}/${total}`}
+                    aria-label={`Section ${p.numeral}, ${p.label}, ${hit} of ${total}`}
+                  />
+                );
+              })}
+            </div>
+            <button
+              onClick={onOpenList}
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute hover:text-black transition-colors group"
+              aria-label={`Open all ${totalQuestions} questions`}
+            >
+              <span className="tabular-nums text-ink">{answeredTotal}</span>
+              <span className="text-ink-mute">/{totalQuestions}</span>
+              <span className="ml-2 inline-block transition-transform group-hover:translate-x-0.5">All →</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1226,25 +1273,28 @@ const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
   </svg>
 );
 
-const BotBubble: React.FC<{ content: string; index: number }> = ({ content, index }) => {
+const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }> = ({ content, index, isFirst }) => {
   const turn = String(index + 1).padStart(2, '0');
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-      className="flex gap-3"
+      transition={{ duration: 0.36, ease: [0.32, 0.72, 0, 1] }}
+      className="flex gap-4"
     >
-      <div className="flex-shrink-0 mt-5">
-        <AgentMark />
+      <div className="flex-shrink-0 w-9">
+        {isFirst ? <AgentMark size={36} /> : (
+          <div className="w-9 h-9 flex items-center justify-center" aria-hidden="true">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+          </div>
+        )}
       </div>
-      <div className="max-w-[88%] md:max-w-[80%] min-w-0">
-        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
-          <span>Ivan's Agent</span>
-          <span className="text-ink-mute/50">·</span>
-          <span>Intake · {turn}</span>
+      <div className="max-w-[88%] md:max-w-[78%] min-w-0">
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 flex items-center gap-2">
+          {isFirst && <><span>Ivan's Agent</span><span className="text-ink-mute/50">·</span></>}
+          <span>Turn {turn}</span>
         </div>
-        <div className="bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent px-5 py-3.5 text-[15px] text-ink">
+        <div className="text-[16px] md:text-[17px] leading-[1.6] text-ink">
           <InlineMd text={content} />
         </div>
       </div>
@@ -1255,16 +1305,16 @@ const BotBubble: React.FC<{ content: string; index: number }> = ({ content, inde
 const UserBubble: React.FC<{ content: string }> = ({ content }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
       className="flex justify-end"
     >
-      <div className="max-w-[88%] md:max-w-[80%] relative">
-        <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 mr-4 text-right">
+      <div className="max-w-[88%] md:max-w-[78%] relative">
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 mr-4 text-right">
           You
         </div>
-        <div className="bg-paper-sunk border border-[color:var(--color-hairline-bold)] border-r-[3px] border-r-black px-5 py-3.5 text-[15px] leading-[1.55] text-ink whitespace-pre-wrap">
+        <div className="bg-paper-sunk border-r-[3px] border-r-black px-5 py-4 text-[16px] md:text-[17px] leading-[1.55] text-ink whitespace-pre-wrap">
           {content}
         </div>
       </div>
@@ -1276,19 +1326,19 @@ const TypingIndicator: React.FC = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    className="flex gap-3"
+    className="flex gap-4"
     aria-live="polite"
   >
-    <div className="flex-shrink-0 mt-5 opacity-70">
-      <AgentMark />
+    <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center" aria-hidden="true">
+      <span className="w-1 h-1 rounded-full bg-accent animate-pulse" />
     </div>
     <div>
-      <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-ink-mute mb-1.5 flex items-center gap-2">
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 flex items-center gap-2">
         <span>Ivan's Agent</span>
         <span className="text-ink-mute/50">·</span>
         <span>Thinking</span>
       </div>
-      <div className="flex items-center gap-1.5 px-5 py-3.5 bg-paper border border-[color:var(--color-hairline-bold)] border-l-[3px] border-l-accent">
+      <div className="flex items-center gap-1.5 py-2">
         <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '0ms' }} />
         <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '180ms' }} />
         <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '360ms' }} />
