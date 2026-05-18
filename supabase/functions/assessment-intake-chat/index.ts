@@ -699,13 +699,17 @@ async function handleRequest(req: Request): Promise<Response> {
   // 6. INIT request — return nonce for turn 0 + chat history (no Claude call)
   if (body.init === true) {
     const nonce = await makeNonce(sessionId, row.turn_count, ANTHROPIC_AGENT_SECRET);
+    const effectiveMode = row.mode ?? intakeMode;
     const greeting = row.chat_history.length === 0
-      ? "Welcome. Let's get your Blueprint started. To kick off, what's your company name, website, and your role there?"
+      ? (effectiveMode === "fractional_m1"
+          ? "Welcome. Let's get your 90-Day Blueprint started. Tell me about your business when you're ready, name, what you do, who's running it, rough size."
+          : "Welcome. Let's get your Blueprint started. To kick off, what's your company name, website, and your role there?")
       : null;
     return jsonResponse({
       ok: true,
       turn_count: row.turn_count,
       nonce,
+      mode: effectiveMode,
       chat_history: row.chat_history,
       answers: row.answers,
       greeting,
