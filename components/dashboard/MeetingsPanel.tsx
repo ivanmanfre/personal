@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink, Tag } from 'lucide-react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink, Tag, Sparkles, Target, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -14,7 +14,7 @@ import { formatDate as formatDateUtil, formatTime } from './shared/utils';
 import { meetingTypeConfig, MEETING_TYPE_OPTIONS } from '../../lib/meetingTypes';
 import SalesScriptViewer from './SalesScriptViewer';
 import IssueFractionalIntakeButton from './IssueFractionalIntakeButton';
-import type { MeetingTranscript, CalendarEvent, MeetingType } from '../../types/dashboard';
+import type { MeetingTranscript, MeetingBrief, CalendarEvent, MeetingType } from '../../types/dashboard';
 
 function parseItem(item: any): Record<string, any> {
   if (typeof item === 'string') {
@@ -98,6 +98,153 @@ const TopicPill: React.FC<{ item: any }> = ({ item }) => {
       {!isPost && format && <FileText className="w-3 h-3 flex-shrink-0" />}
       <span className="truncate">{short}</span>
       {format && <span className="text-[9px] opacity-60 flex-shrink-0">{format}</span>}
+    </div>
+  );
+};
+
+const budgetStyle: Record<string, string> = {
+  low: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  mid: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  high: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+};
+
+const maturityStyle: Record<string, string> = {
+  none: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  beginner: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  intermediate: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  advanced: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+};
+
+function fitColor(score: number | null | undefined): string {
+  if (score == null) return 'text-zinc-500';
+  if (score >= 4) return 'text-emerald-400';
+  if (score >= 3) return 'text-amber-400';
+  return 'text-zinc-500';
+}
+
+function briefIsEmpty(b: MeetingBrief | null | undefined): boolean {
+  if (!b) return true;
+  const has = (v: any) => v != null && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== '');
+  return !(
+    has(b.pain) || has(b.stack) || has(b.decision_maker) || has(b.budget_signal) ||
+    has(b.timeline) || has(b.triggers) || has(b.objections) || has(b.fit_score) ||
+    has(b.proposal_hook) || has(b.next_step) || has(b.industry) ||
+    has(b.automation_maturity) || has(b.team_size)
+  );
+}
+
+const Chip: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+  <span className={`text-[10px] px-1.5 py-0.5 rounded border bg-zinc-800/60 text-zinc-400 border-zinc-700/40 ${className}`}>
+    {children}
+  </span>
+);
+
+const BriefSection: React.FC<{ brief: MeetingBrief }> = ({ brief }) => {
+  const pain = brief.pain?.filter(Boolean) || [];
+  const stack = brief.stack?.filter(Boolean) || [];
+  const triggers = brief.triggers?.filter(Boolean) || [];
+  const objections = brief.objections?.filter(Boolean) || [];
+  const meta: React.ReactNode[] = [];
+
+  if (brief.industry) meta.push(<Chip key="ind"><span className="text-zinc-500">Industry:</span> {brief.industry}</Chip>);
+  if (brief.team_size) meta.push(<Chip key="team"><span className="text-zinc-500">Team:</span> {brief.team_size}</Chip>);
+  if (brief.automation_maturity) meta.push(
+    <Chip key="mat" className={maturityStyle[brief.automation_maturity] || ''}>
+      <span className="opacity-60">Maturity:</span> {brief.automation_maturity}
+    </Chip>
+  );
+  if (brief.timeline) meta.push(<Chip key="tl"><span className="text-zinc-500">Timeline:</span> {brief.timeline}</Chip>);
+  if (brief.budget_signal) meta.push(
+    <Chip key="bdg" className={budgetStyle[brief.budget_signal] || ''}>
+      <span className="opacity-60">Budget:</span> {brief.budget_signal}
+    </Chip>
+  );
+
+  return (
+    <div className="px-4 py-3 border-t border-zinc-800/40 bg-zinc-900/30">
+      <div className="flex items-center justify-between mb-2.5">
+        <h4 className="text-[11px] font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-sage-400" /> Brief
+        </h4>
+        {brief.fit_score != null && (
+          <span className={`text-[11px] font-semibold flex items-center gap-1 ${fitColor(brief.fit_score)}`}>
+            <TrendingUp className="w-3 h-3" /> Fit {brief.fit_score}/5
+          </span>
+        )}
+      </div>
+
+      {meta.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2.5">{meta}</div>
+      )}
+
+      {brief.decision_maker && (
+        <div className="text-[12px] text-zinc-300 mb-2">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500 mr-1.5">DM</span>
+          {brief.decision_maker}
+        </div>
+      )}
+
+      {pain.length > 0 && (
+        <div className="mb-2.5">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Pain</div>
+          <ul className="space-y-0.5">
+            {pain.map((p, i) => (
+              <li key={i} className="text-[12px] text-zinc-300 flex gap-1.5">
+                <span className="text-rose-400 mt-0.5">•</span> {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {(stack.length > 0 || triggers.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-2.5">
+          {stack.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Stack</div>
+              <div className="flex flex-wrap gap-1">{stack.map((s, i) => <Chip key={i}>{s}</Chip>)}</div>
+            </div>
+          )}
+          {triggers.length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Triggers</div>
+              <div className="flex flex-wrap gap-1">{triggers.map((t, i) => <Chip key={i}>{t}</Chip>)}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {objections.length > 0 && (
+        <div className="mb-2.5">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-400" /> Objections
+          </div>
+          <ul className="space-y-0.5">
+            {objections.map((o, i) => (
+              <li key={i} className="text-[12px] text-zinc-300 flex gap-1.5">
+                <span className="text-amber-400 mt-0.5">•</span> {o}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {brief.proposal_hook && (
+        <div className="mb-2.5 bg-emerald-950/20 border border-emerald-800/30 rounded-md px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 mb-1">Proposal Hook</div>
+          <p className="text-[12px] text-emerald-200/90 italic leading-relaxed">"{brief.proposal_hook}"</p>
+        </div>
+      )}
+
+      {brief.next_step && (
+        <div className="text-[12px] text-zinc-300 flex items-start gap-1.5">
+          <Target className="w-3 h-3 text-sky-400 mt-1 flex-shrink-0" />
+          <div>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500 mr-1.5">Next</span>
+            {brief.next_step}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -204,6 +351,17 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string 
               <Monitor className="w-3 h-3" /> Screen
             </span>
           )}
+          {meeting.brief?.fit_score != null && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+              meeting.brief.fit_score >= 4
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : meeting.brief.fit_score >= 3
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
+            }`}>
+              <TrendingUp className="w-3 h-3" /> Fit {meeting.brief.fit_score}/5
+            </span>
+          )}
           {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
         </div>
       </div>
@@ -218,9 +376,12 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string 
       {/* Expanded content */}
       {expanded && (
         <div className="border-t border-zinc-800/60">
+          {/* Brief (structured, proposal-input-ready) */}
+          {!briefIsEmpty(meeting.brief) && meeting.brief && <BriefSection brief={meeting.brief} />}
+
           {/* Summary */}
           {meeting.summary && (
-            <div className="px-4 py-3">
+            <div className="px-4 py-3 border-t border-zinc-800/40">
               <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Summary</h4>
               <p className="text-[13px] text-zinc-300 leading-relaxed">{meeting.summary}</p>
             </div>

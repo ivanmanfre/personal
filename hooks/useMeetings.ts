@@ -22,6 +22,7 @@ function mapTranscript(row: any): MeetingTranscript {
     updatedAt: row.updated_at,
     meetingType: row.meeting_type,
     phaseCoverage: row.phase_coverage,
+    brief: row.brief,
   };
 }
 

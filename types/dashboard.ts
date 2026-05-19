@@ -638,6 +638,22 @@ export interface AutoResearchIteration {
 
 // ─── Meeting/Call Transcript Types ───
 
+export interface MeetingBrief {
+  pain?: string[] | null;
+  stack?: string[] | null;
+  decision_maker?: string | null;
+  budget_signal?: 'low' | 'mid' | 'high' | null;
+  timeline?: string | null;
+  triggers?: string[] | null;
+  objections?: string[] | null;
+  fit_score?: number | null;
+  proposal_hook?: string | null;
+  next_step?: string | null;
+  industry?: string | null;
+  automation_maturity?: 'none' | 'beginner' | 'intermediate' | 'advanced' | null;
+  team_size?: string | null;
+}
+
 export interface MeetingTranscript {
   id: string;
   firefliesId: string | null;
@@ -656,6 +672,7 @@ export interface MeetingTranscript {
   updatedAt: string;
   meetingType?: MeetingType | null;
   phaseCoverage?: Record<string, Record<string, boolean>> | null;
+  brief?: MeetingBrief | null;
 }
 
 export interface MeetingStats {
@@ -856,7 +873,7 @@ export interface StrategyMapData {
   activeClients: number;
 }
 
-export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'settings';
+export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'prompts' | 'settings';
 
 export interface PaidAssessmentRow {
   stripe_session_id: string;
