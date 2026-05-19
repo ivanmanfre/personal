@@ -273,6 +273,26 @@ const ConversationalIntakeInner: React.FC = () => {
     }
   }, [messages, state]);
 
+  // Cursor spotlight — sets CSS vars for the faint sage gradient that follows
+  // the pointer. Skipped on touch/coarse pointers where it's noise.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    let raf = 0;
+    const onMove = (e: MouseEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty('--intake-cursor-x', `${e.clientX}px`);
+        document.documentElement.style.setProperty('--intake-cursor-y', `${e.clientY}px`);
+      });
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // Auto-dismiss voice toast after 6s
   useEffect(() => {
     if (!voiceToast) return;
@@ -608,16 +628,50 @@ const ConversationalIntakeInner: React.FC = () => {
   const activeIdx = useMemo(() => activePillarIdx(answers, lastFocus, activePillars), [answers, lastFocus]);
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
-      <Masthead
-        activeIdx={activeIdx}
-        activePillars={activePillars}
-        voiceMode={voiceMode}
-        voiceStatus={voiceStatus}
-        onStartVoice={startVoiceMode}
-        onEndVoice={endVoiceMode}
+    <div className="min-h-screen bg-paper flex flex-col relative" style={PAPER_GRID_STYLE}>
+      {/* Cursor spotlight — desktop only, behind everything */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[1] hidden md:block"
+        style={{
+          background:
+            'radial-gradient(420px circle at var(--intake-cursor-x, 50%) var(--intake-cursor-y, 30%), rgba(76, 110, 61, 0.07), transparent 55%)',
+          transition: 'background 90ms linear',
+        }}
       />
-      <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} totalQuestions={activeQuestionOrder.length} />
+      {/* Subtle grain overlay — adds warmth, sits above the paper grid */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-[2] opacity-[0.035] mix-blend-multiply"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0 0.1 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+          backgroundSize: '180px 180px',
+        }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.05, ease: [0.32, 0.72, 0, 1] }}
+        className="relative z-10"
+      >
+        <Masthead
+          activeIdx={activeIdx}
+          activePillars={activePillars}
+          voiceMode={voiceMode}
+          voiceStatus={voiceStatus}
+          onStartVoice={startVoiceMode}
+          onEndVoice={endVoiceMode}
+        />
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.45, delay: 0.2, ease: [0.32, 0.72, 0, 1] }}
+        className="relative z-10"
+      >
+        <PillarBar answers={answers} activeIdx={activeIdx} onOpenList={() => setSidebarOpen(true)} activePillars={activePillars} totalQuestions={activeQuestionOrder.length} />
+      </motion.div>
 
       {/* Voice toast — fixed top, dismissable, auto-clears after 6s */}
       <AnimatePresence>
@@ -648,7 +702,7 @@ const ConversationalIntakeInner: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 flex relative">
+      <main className="flex-1 flex relative z-10">
         <AnimatePresence>
           {sidebarOpen && (
             <motion.aside
@@ -791,9 +845,14 @@ const ConversationalIntakeInner: React.FC = () => {
           )}
 
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'text' && (
-            <div className="border-t border-[color:var(--color-hairline)] bg-paper">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.95, ease: [0.32, 0.72, 0, 1] }}
+              className="border-t border-[color:var(--color-hairline)] bg-paper/90 backdrop-blur-sm"
+            >
               <div className="container mx-auto max-w-3xl px-6 md:px-10 py-5">
-                <div className="group relative flex items-end border border-[color:var(--color-hairline)] bg-paper-raise rounded-sm transition-colors focus-within:border-accent shadow-[0_1px_0_rgba(26,26,26,0.04)]">
+                <div className="group relative flex items-end border border-[color:var(--color-hairline)] bg-paper-raise rounded-sm transition-all duration-200 focus-within:border-accent focus-within:shadow-[0_0_0_4px_rgba(76,110,61,0.07)] shadow-[0_1px_2px_rgba(26,26,26,0.04)]">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -803,25 +862,25 @@ const ConversationalIntakeInner: React.FC = () => {
                       state === 'rate_limited' ? 'Hold tight, back in a minute.'
                       : state === 'sending' ? 'Thinking…'
                       : recording ? 'Listening — speak naturally.'
-                      : 'Reply here. Enter sends, Shift+Enter for a new line.'
+                      : 'Reply at your own pace. Enter sends.'
                     }
                     rows={1}
                     maxLength={2000}
                     disabled={state !== 'ready' && !recording}
-                    className="flex-1 resize-none bg-transparent px-5 py-4 text-[16px] md:text-[17px] leading-[1.55] focus:outline-none disabled:opacity-50 font-sans placeholder:text-ink-mute"
+                    className="flex-1 resize-none bg-transparent px-5 py-4 text-[16px] md:text-[17px] leading-[1.55] focus:outline-none disabled:opacity-50 font-sans placeholder:text-ink-mute placeholder:italic"
                   />
-                  <div className="flex items-stretch self-stretch">
+                  <div className="flex items-stretch self-stretch p-1">
                     {VOICE_SUPPORTED && (
                       <button
                         onClick={toggleRecording}
                         disabled={state !== 'ready' && !recording}
-                        className={`w-11 transition-all flex items-center justify-center ${
+                        className={`w-10 rounded-sm transition-all flex items-center justify-center ${
                           recording
-                            ? 'text-accent'
-                            : 'text-ink-mute hover:text-accent'
-                        } disabled:opacity-40 disabled:cursor-not-allowed`}
+                            ? 'text-accent bg-accent/10'
+                            : 'text-ink-mute hover:text-accent hover:bg-accent/5'
+                        } disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40`}
                         aria-label={recording ? 'Stop recording' : 'Dictate reply'}
-                        title={recording ? 'Stop' : 'Dictate'}
+                        title={recording ? 'Stop' : 'Dictate (voice note → text)'}
                       >
                         {recording
                           ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" /></span>
@@ -831,12 +890,12 @@ const ConversationalIntakeInner: React.FC = () => {
                     <button
                       onClick={send}
                       disabled={state !== 'ready' || !input.trim()}
-                      className="w-11 mr-1 my-1 rounded-sm bg-black text-white disabled:bg-transparent disabled:text-ink-mute disabled:cursor-not-allowed flex items-center justify-center transition-colors hover:bg-ink-soft"
+                      className="ml-1 w-10 h-10 rounded-sm bg-ink text-paper disabled:bg-transparent disabled:text-ink-mute disabled:cursor-not-allowed flex items-center justify-center transition-all duration-150 hover:bg-accent hover:shadow-[0_0_0_4px_rgba(76,110,61,0.14)] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
                       aria-label="Send"
                     >
                       {state === 'sending'
                         ? <Loader2 size={16} className="animate-spin" />
-                        : <ArrowUp size={16} strokeWidth={2.5} />}
+                        : <ArrowUp size={16} strokeWidth={2.25} />}
                     </button>
                   </div>
                 </div>
@@ -845,7 +904,7 @@ const ConversationalIntakeInner: React.FC = () => {
                     <AlertTriangle size={12} /> {voiceErr}
                   </div>
                 )}
-                <div className="flex items-center justify-between mt-2 text-[12px] text-ink-mute">
+                <div className="flex items-center justify-between mt-2.5 text-[12px] text-ink-mute">
                   <span className="flex items-center gap-2">
                     <span className="w-1 h-1 rounded-full bg-accent inline-block" aria-hidden="true" />
                     Autosaved
@@ -855,7 +914,7 @@ const ConversationalIntakeInner: React.FC = () => {
                   </a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </main>
@@ -923,9 +982,17 @@ const Masthead: React.FC<{
   return (
     <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline)]">
       <div className="container mx-auto max-w-3xl px-6 md:px-10 py-4 flex items-center justify-between gap-6">
-        <h1 className="text-lg md:text-xl tracking-tight whitespace-nowrap">
-          The <span className="font-drama italic">Agent-Ready</span> Blueprint
-        </h1>
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          <h1 className="text-lg md:text-xl tracking-tight whitespace-nowrap">
+            The <span className="font-drama italic">Agent-Ready</span> Blueprint
+          </h1>
+          <span
+            className="text-[11px] text-ink-mute italic hidden md:inline whitespace-nowrap"
+            aria-hidden="true"
+          >
+            — intake
+          </span>
+        </div>
         <ModalityToggle
           voiceMode={voiceMode}
           voiceStatus={voiceStatus}
@@ -1134,18 +1201,46 @@ const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
 
 const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }> = ({ content, index, isFirst }) => {
   void index;
+  // Drop-cap moment: ONE signature editorial flourish, only on the very first
+  // agent message. Extract the leading letter, render it as a large italic
+  // serif floated into the paragraph, rest of the text flows around it.
+  const dropCapMatch = isFirst ? /^([A-Za-z])([\s\S]+)$/.exec(content) : null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1], delay: isFirst ? 0.7 : 0 }}
       className="flex gap-4"
     >
       <div className="flex-shrink-0 w-9 pt-0.5">
-        {isFirst ? <AgentMark size={36} /> : <div className="w-9" aria-hidden="true" />}
+        {isFirst ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, rotate: -6 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, delay: 0.55, ease: [0.32, 0.72, 0, 1] }}
+          >
+            <AgentMark size={36} />
+          </motion.div>
+        ) : <div className="w-9" aria-hidden="true" />}
       </div>
       <div className="flex-1 min-w-0 max-w-[44rem] text-[17px] md:text-[18px] leading-[1.65] text-ink">
-        <InlineMd text={content} />
+        {dropCapMatch ? (
+          <>
+            <motion.span
+              initial={{ opacity: 0, scale: 0.85, x: -8 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              transition={{ duration: 0.65, delay: 0.85, ease: [0.32, 0.72, 0, 1] }}
+              className="font-drama italic float-left leading-[0.82] pr-3 pt-1 text-[4.2rem] md:text-[5rem] text-ink select-none"
+              aria-hidden="true"
+            >
+              {dropCapMatch[1]}
+            </motion.span>
+            <span className="sr-only">{dropCapMatch[1]}</span>
+            <InlineMd text={dropCapMatch[2]} />
+          </>
+        ) : (
+          <InlineMd text={content} />
+        )}
       </div>
     </motion.div>
   );
