@@ -426,9 +426,10 @@ const ConversationalIntakeInner: React.FC = () => {
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
       // First message: on a FRESH session, let the agent speak its default
-      // first_message (Hugo's intro, set at agent-config level — guaranteed to
-      // fire). On RESUME (buyer already typed text turns), override with a
-      // short bridge so Hugo doesn't re-introduce himself.
+      // first_message (the "Hi. I'm Ivan's intake…" greeting at agent level —
+      // guaranteed to fire). On RESUME (buyer already typed text turns), build
+      // a dynamic bridge that explicitly references what they just said, so
+      // they hear "Picking up from <topic>…" instead of a generic restart.
       const hasUserTurns = messages.some((m) => m.role === 'user');
       const sessionConfig: Parameters<typeof elevenConversation.startSession>[0] = {
         signedUrl: data.signed_url,
@@ -436,8 +437,23 @@ const ConversationalIntakeInner: React.FC = () => {
         customLlmExtraBody: { intake_token: data.intake_token },
       };
       if (hasUserTurns) {
+        const lastUserContent = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+        // Extract a short topic snippet: first sentence, ≤9 words. Trims
+        // quote/parens/punctuation noise so the TTS reads it cleanly.
+        const snippet = lastUserContent
+          .replace(/\s+/g, ' ')
+          .replace(/[`"'*_#<>{}\[\]()]/g, '')
+          .trim()
+          .split(/[.!?]/)[0]
+          .split(/\s+/)
+          .slice(0, 9)
+          .join(' ')
+          .trim();
+        const bridge = snippet
+          ? `Ok, picking up from your last note — "${snippet}". Take it from there when you're ready.`
+          : "Ok, picking up where we left off. Take it from there when you're ready.";
         sessionConfig.overrides = {
-          agent: { firstMessage: "Go on whenever you're ready." },
+          agent: { firstMessage: bridge },
         };
       }
       await elevenConversation.startSession(sessionConfig);
