@@ -607,9 +607,6 @@ const ConversationalIntakeInner: React.FC = () => {
   );
   const activeIdx = useMemo(() => activePillarIdx(answers, lastFocus, activePillars), [answers, lastFocus]);
 
-  const charCount = input.length;
-  const charCountColor = charCount > 1500 ? 'text-amber-700' : charCount > 1800 ? 'text-red-700' : 'text-ink-mute';
-
   return (
     <div className="min-h-screen bg-paper flex flex-col" style={PAPER_GRID_STYLE}>
       <Masthead
@@ -668,7 +665,7 @@ const ConversationalIntakeInner: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-h-0">
           <div ref={chatScrollRef} className="flex-1 overflow-y-auto">
-            <div className="container mx-auto max-w-3xl px-6 md:px-10 py-12 md:py-16 space-y-8 md:space-y-10">
+            <div className="container mx-auto max-w-3xl px-6 md:px-10 py-10 md:py-14 space-y-7 md:space-y-9">
               {state === 'loading' && (
                 <div className="flex items-center gap-3 text-ink-mute">
                   <Loader2 size={18} className="animate-spin" />
@@ -794,15 +791,9 @@ const ConversationalIntakeInner: React.FC = () => {
           )}
 
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'text' && (
-            <div className="border-t border-[color:var(--color-hairline-bold)] bg-paper">
-              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-6 md:py-7">
-                <div className="flex items-baseline justify-between mb-3">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
-                    Your reply
-                  </span>
-                  <span className={`font-mono text-[10px] tabular-nums ${charCountColor}`}>{charCount}<span className="text-ink-mute">/2000</span></span>
-                </div>
-                <div className="group relative flex items-end gap-2 border border-[color:var(--color-hairline-bold)] bg-paper-sunk transition-colors focus-within:border-accent">
+            <div className="border-t border-[color:var(--color-hairline)] bg-paper">
+              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-5">
+                <div className="group relative flex items-end border border-[color:var(--color-hairline)] bg-paper-raise rounded-sm transition-colors focus-within:border-accent shadow-[0_1px_0_rgba(26,26,26,0.04)]">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -811,59 +802,56 @@ const ConversationalIntakeInner: React.FC = () => {
                     placeholder={
                       state === 'rate_limited' ? 'Hold tight, back in a minute.'
                       : state === 'sending' ? 'Thinking…'
-                      : recording ? 'Listening, speak naturally.'
-                      : 'Type, or hit the mic. Enter sends.'
+                      : recording ? 'Listening — speak naturally.'
+                      : 'Reply here. Enter sends, Shift+Enter for a new line.'
                     }
                     rows={1}
                     maxLength={2000}
                     disabled={state !== 'ready' && !recording}
-                    className="flex-1 resize-none bg-transparent px-5 py-4 text-[17px] md:text-[18px] leading-[1.5] focus:outline-none disabled:opacity-50 font-sans placeholder:text-ink-mute placeholder:italic"
+                    className="flex-1 resize-none bg-transparent px-5 py-4 text-[16px] md:text-[17px] leading-[1.55] focus:outline-none disabled:opacity-50 font-sans placeholder:text-ink-mute"
                   />
-                  <div className="flex items-stretch self-stretch border-l border-[color:var(--color-hairline)]">
+                  <div className="flex items-stretch self-stretch">
                     {VOICE_SUPPORTED && (
                       <button
                         onClick={toggleRecording}
                         disabled={state !== 'ready' && !recording}
-                        className={`w-12 border-r border-[color:var(--color-hairline)] last:border-r-0 transition-all flex items-center justify-center ${
+                        className={`w-11 transition-all flex items-center justify-center ${
                           recording
-                            ? 'bg-black text-white'
-                            : 'text-ink-soft hover:bg-paper hover:text-accent'
+                            ? 'text-accent'
+                            : 'text-ink-mute hover:text-accent'
                         } disabled:opacity-40 disabled:cursor-not-allowed`}
-                        aria-label={recording ? 'Stop recording' : 'Start voice input'}
-                        title={recording ? 'Click to stop recording' : 'Dictate your reply'}
+                        aria-label={recording ? 'Stop recording' : 'Dictate reply'}
+                        title={recording ? 'Stop' : 'Dictate'}
                       >
                         {recording
-                          ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-accent animate-pulse" /></span>
+                          ? <span className="relative inline-flex items-center justify-center"><MicOff size={18} /><span className="absolute -right-1 -top-1 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" /></span>
                           : <Mic size={18} />}
                       </button>
                     )}
                     <button
                       onClick={send}
                       disabled={state !== 'ready' || !input.trim()}
-                      className="px-5 bg-black text-white disabled:bg-paper disabled:text-ink-mute disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors hover:bg-ink-soft group/send"
+                      className="w-11 mr-1 my-1 rounded-sm bg-black text-white disabled:bg-transparent disabled:text-ink-mute disabled:cursor-not-allowed flex items-center justify-center transition-colors hover:bg-ink-soft"
                       aria-label="Send"
                     >
                       {state === 'sending'
-                        ? <Loader2 size={18} className="animate-spin" />
-                        : <>
-                            <span className="font-mono text-[10px] uppercase tracking-[0.16em] hidden md:inline">Send</span>
-                            <ArrowUp size={18} strokeWidth={2.5} className="text-accent group-hover/send:translate-y-[-1px] transition-transform" />
-                          </>}
+                        ? <Loader2 size={16} className="animate-spin" />
+                        : <ArrowUp size={16} strokeWidth={2.5} />}
                     </button>
                   </div>
                 </div>
                 {voiceErr && (
-                  <div className="mt-3 text-[11px] text-red-700 flex items-center gap-1.5">
+                  <div className="mt-2 text-[12px] text-red-700 flex items-center gap-1.5">
                     <AlertTriangle size={12} /> {voiceErr}
                   </div>
                 )}
-                <div className="flex items-center justify-between mt-3 text-[10px] font-mono uppercase tracking-[0.14em]">
-                  <span className="text-ink-mute flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-accent inline-block" />
-                    Autosaving every reply
+                <div className="flex items-center justify-between mt-2 text-[12px] text-ink-mute">
+                  <span className="flex items-center gap-2">
+                    <span className="w-1 h-1 rounded-full bg-accent inline-block" aria-hidden="true" />
+                    Autosaved
                   </span>
-                  <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="text-ink-mute hover:text-black underline-offset-2 hover:underline transition-colors">
-                    Switch to form →
+                  <a href={LEGACY_FORM_URL + (sessionId ? `?session_id=${sessionId}` : '')} className="hover:text-accent transition-colors">
+                    Prefer a form? →
                   </a>
                 </div>
               </div>
@@ -888,35 +876,35 @@ const ModalityToggle: React.FC<{
 }> = ({ voiceMode, voiceStatus, voiceBusy, onStartVoice, onEndVoice }) => {
   const isVoice = voiceMode === 'voice';
   return (
-    <div className="flex items-center border border-[color:var(--color-hairline-bold)] bg-paper text-[11px] font-mono uppercase tracking-[0.14em]">
+    <div className="flex items-center border border-[color:var(--color-hairline)] bg-paper text-[12px]">
       <button
         onClick={isVoice && !voiceBusy ? onEndVoice : undefined}
         disabled={voiceBusy || !isVoice}
-        className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
-          !isVoice ? 'bg-black text-white' : 'text-ink-mute hover:text-black'
+        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors ${
+          !isVoice ? 'bg-ink text-paper' : 'text-ink-mute hover:text-ink'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-label={isVoice ? 'Switch to text mode' : 'Currently in text mode'}
         title={isVoice ? 'Switch back to text' : 'Type your replies'}
       >
-        <MessageSquare size={12} />
-        Text
+        <MessageSquare size={13} />
+        <span className="hidden sm:inline">Text</span>
       </button>
-      <span className="w-px h-4 bg-[color:var(--color-hairline-bold)]" aria-hidden="true" />
+      <span className="w-px h-4 bg-[color:var(--color-hairline)]" aria-hidden="true" />
       <button
         onClick={!isVoice && !voiceBusy ? onStartVoice : undefined}
         disabled={voiceBusy || isVoice}
-        className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${
-          isVoice ? 'bg-accent text-white' : 'text-ink-mute hover:text-black'
+        className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 transition-colors ${
+          isVoice ? 'bg-accent text-paper' : 'text-ink-mute hover:text-ink'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-label={isVoice ? 'Currently in voice mode' : 'Switch to voice mode'}
         title={isVoice ? 'Talk with the agent live' : 'Switch to a live voice conversation'}
       >
         {voiceStatus === 'connecting' || voiceStatus === 'ending'
-          ? <Loader2 size={12} className="animate-spin" />
+          ? <Loader2 size={13} className="animate-spin" />
           : voiceStatus === 'live'
-            ? <Radio size={12} className="animate-pulse" />
-            : <Mic size={12} />}
-        Voice
+            ? <Radio size={13} className="animate-pulse" />
+            : <Mic size={13} />}
+        <span className="hidden sm:inline">Voice</span>
       </button>
     </div>
   );
@@ -931,21 +919,13 @@ const Masthead: React.FC<{
   onEndVoice: () => void;
 }> = ({ activeIdx, activePillars, voiceMode, voiceStatus, onStartVoice, onEndVoice }) => {
   const voiceBusy = voiceStatus === 'connecting' || voiceStatus === 'ending';
-  // unused now that PillarBar owns the active-section label
   void activeIdx; void activePillars;
   return (
-    <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline-bold)]">
-      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-4 flex items-center justify-between gap-6">
-        <div className="flex items-baseline gap-3 min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute hidden sm:inline">
-            00 · Intake
-          </span>
-          <h1 className="text-base md:text-xl font-semibold tracking-tight whitespace-nowrap">
-            <span className="font-drama italic">The</span>{' '}
-            <span className="font-drama italic">Agent-Ready</span>{' '}
-            Blueprint
-          </h1>
-        </div>
+    <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline)]">
+      <div className="container mx-auto max-w-3xl px-6 md:px-10 py-4 flex items-center justify-between gap-6">
+        <h1 className="text-lg md:text-xl tracking-tight whitespace-nowrap">
+          The <span className="font-drama italic">Agent-Ready</span> Blueprint
+        </h1>
         <ModalityToggle
           voiceMode={voiceMode}
           voiceStatus={voiceStatus}
@@ -973,87 +953,51 @@ const PillarBar: React.FC<{
   );
 
   return (
-    <div className="sticky top-[64px] md:top-[72px] z-10 bg-paper border-b border-[color:var(--color-hairline-bold)]">
-      <div className="container mx-auto max-w-5xl px-6 md:px-10 py-6 md:py-7">
-        <div className="flex items-end justify-between gap-8">
-          {/* Big editorial numeral + section title — the focal point */}
-          <div className="flex items-end gap-5 min-w-0">
-            <motion.span
-              key={activePillar.numeral}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-              className="font-drama italic text-[4rem] md:text-[5.5rem] leading-[0.85] text-black flex-shrink-0 select-none"
-              aria-hidden="true"
-            >
-              {activePillar.numeral.toLowerCase()}
-              <span className="text-accent">.</span>
-            </motion.span>
-            <div className="min-w-0 pb-2">
-              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute mb-1.5">
-                Section · {activePillar.numeral} of {activePillars.length}
-              </div>
-              <motion.h2
-                key={activePillar.label}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.32 }}
-                className="text-2xl md:text-[1.875rem] font-semibold tracking-tight leading-tight text-ink"
+    <div className="sticky top-[57px] md:top-[65px] z-10 bg-paper/95 backdrop-blur border-b border-[color:var(--color-hairline)]">
+      <div className="container mx-auto max-w-3xl px-6 md:px-10 py-3.5">
+        <div className="flex items-center justify-between gap-6 mb-2">
+          <motion.div
+            key={activePillar.numeral}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-[15px] leading-snug min-w-0 truncate"
+          >
+            <span className="text-ink-mute">Section {activeIdx + 1} of {activePillars.length}</span>
+            <span className="mx-2.5 text-ink-mute/60">·</span>
+            <span className="text-ink">{activePillar.label}</span>
+          </motion.div>
+          <button
+            onClick={onOpenList}
+            className="flex-shrink-0 text-[13px] text-ink-mute hover:text-accent transition-colors flex items-baseline gap-1.5"
+            aria-label={`Open all ${totalQuestions} questions`}
+          >
+            <span className="tabular-nums text-ink">{answeredTotal}</span>
+            <span className="text-ink-mute">/{totalQuestions}</span>
+            <span className="ml-1 hidden sm:inline">all →</span>
+          </button>
+        </div>
+        {/* Segmented progress strip — one segment per section, fill proportional to answers */}
+        <div className="flex items-center gap-[3px]" aria-hidden="true">
+          {activePillars.map((p, i) => {
+            const { hit, total } = pillarProgress(p, answers);
+            const pct = total > 0 ? Math.round((hit / total) * 100) : 0;
+            const complete = hit === total && total > 0;
+            const active = i === activeIdx;
+            return (
+              <div
+                key={p.numeral}
+                className="relative flex-1 h-1 bg-[color:var(--color-hairline)] overflow-hidden"
               >
-                {activePillar.label.split(' + ').map((part, i, arr) => (
-                  <React.Fragment key={i}>
-                    {i === 1 ? <span className="font-drama italic">{part}</span> : part}
-                    {i < arr.length - 1 && <span className="text-ink-mute"> + </span>}
-                  </React.Fragment>
-                ))}
-              </motion.h2>
-              <div className="mt-2 flex items-center gap-3 font-mono text-[11px] tabular-nums">
-                <span className="text-ink-soft">
-                  <span className={activeHit === activeTotal ? 'text-accent' : ''}>{activeHit}</span>
-                  <span className="text-ink-mute">/{activeTotal}</span>
-                </span>
-                {activeHit === activeTotal && activeTotal > 0 && (
-                  <span className="text-[9px] uppercase tracking-[0.18em] text-accent">Complete</span>
-                )}
+                <div
+                  className={`absolute inset-y-0 left-0 transition-all duration-500 ease-out ${
+                    complete ? 'bg-accent' : active ? 'bg-ink' : 'bg-ink-mute'
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
-            </div>
-          </div>
-
-          {/* Right-rail: section dots + total progress + drawer link */}
-          <div className="flex flex-col items-end gap-2 pb-2">
-            <div className="flex items-center gap-1.5">
-              {activePillars.map((p, i) => {
-                const { hit, total } = pillarProgress(p, answers);
-                const complete = hit === total;
-                const active = i === activeIdx;
-                return (
-                  <span
-                    key={p.numeral}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      complete
-                        ? 'bg-accent'
-                        : active
-                          ? 'bg-black scale-150'
-                          : hit > 0
-                            ? 'bg-ink-mute'
-                            : 'bg-[color:var(--color-hairline-bold)]'
-                    }`}
-                    title={`${p.numeral} · ${p.label} — ${hit}/${total}`}
-                    aria-label={`Section ${p.numeral}, ${p.label}, ${hit} of ${total}`}
-                  />
-                );
-              })}
-            </div>
-            <button
-              onClick={onOpenList}
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-mute hover:text-black transition-colors group"
-              aria-label={`Open all ${totalQuestions} questions`}
-            >
-              <span className="tabular-nums text-ink">{answeredTotal}</span>
-              <span className="text-ink-mute">/{totalQuestions}</span>
-              <span className="ml-2 inline-block transition-transform group-hover:translate-x-0.5">All →</span>
-            </button>
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1189,29 +1133,19 @@ const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
 );
 
 const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }> = ({ content, index, isFirst }) => {
-  const turn = String(index + 1).padStart(2, '0');
+  void index;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.36, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
       className="flex gap-4"
     >
-      <div className="flex-shrink-0 w-9">
-        {isFirst ? <AgentMark size={36} /> : (
-          <div className="w-9 h-9 flex items-center justify-center" aria-hidden="true">
-            <span className="w-1 h-1 rounded-full bg-accent" />
-          </div>
-        )}
+      <div className="flex-shrink-0 w-9 pt-0.5">
+        {isFirst ? <AgentMark size={36} /> : <div className="w-9" aria-hidden="true" />}
       </div>
-      <div className="max-w-[88%] md:max-w-[78%] min-w-0">
-        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 flex items-center gap-2">
-          {isFirst && <><span>Ivan's Agent</span><span className="text-ink-mute/50">·</span></>}
-          <span>Turn {turn}</span>
-        </div>
-        <div className="text-[16px] md:text-[17px] leading-[1.6] text-ink">
-          <InlineMd text={content} />
-        </div>
+      <div className="flex-1 min-w-0 max-w-[44rem] text-[17px] md:text-[18px] leading-[1.65] text-ink">
+        <InlineMd text={content} />
       </div>
     </motion.div>
   );
@@ -1220,18 +1154,13 @@ const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }>
 const UserBubble: React.FC<{ content: string }> = ({ content }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
       className="flex justify-end"
     >
-      <div className="max-w-[88%] md:max-w-[78%] relative">
-        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 mr-4 text-right">
-          You
-        </div>
-        <div className="bg-paper-sunk border-r-[3px] border-r-black px-5 py-4 text-[16px] md:text-[17px] leading-[1.55] text-ink whitespace-pre-wrap">
-          {content}
-        </div>
+      <div className="max-w-[44rem] bg-paper-sunk border-l-2 border-l-accent px-5 py-3.5 text-[16px] md:text-[17px] leading-[1.55] text-ink whitespace-pre-wrap">
+        {content}
       </div>
     </motion.div>
   );
@@ -1244,14 +1173,12 @@ const TypingIndicator: React.FC = () => (
     className="flex gap-4"
     aria-live="polite"
   >
-    <div className="flex-shrink-0 w-9 h-9 flex items-center justify-center" aria-hidden="true">
-      <span className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+    <div className="flex-shrink-0 w-9 pt-1" aria-hidden="true">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
     </div>
     <div>
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-2 flex items-center gap-2">
-        <span>Ivan's Agent</span>
-        <span className="text-ink-mute/50">·</span>
-        <span>Thinking</span>
+      <div className="text-[14px] text-ink-mute italic">
+        thinking…
       </div>
       <div className="flex items-center gap-1.5 py-2">
         <span className="w-1.5 h-1.5 bg-accent animate-pulse" style={{ animationDelay: '0ms' }} />
