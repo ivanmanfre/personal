@@ -28,6 +28,7 @@ export interface WorkflowStat {
   lastErrorMessage: string | null;
   nodeCount: number;
   errorAcknowledged: boolean;
+  manuallyPaused: boolean;
   updatedAt: string;
 }
 

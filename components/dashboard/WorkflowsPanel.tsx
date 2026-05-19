@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Activity, CheckCircle2, XCircle, AlertTriangle, ExternalLink,
-  Clock, ChevronDown, ChevronRight, Wrench, Loader2, Shield,
+  Clock, ChevronDown, ChevronRight, Wrench, Loader2, Shield, Pause, Play,
 } from 'lucide-react';
 import { sendToEngineer } from '../../lib/sendToEngineer';
 import { useWorkflowStats } from '../../hooks/useWorkflowStats';
@@ -107,7 +107,8 @@ interface IvanError {
 /* ── Component ── */
 
 const WorkflowsPanel: React.FC = () => {
-  const { workflows, stats, loading, refresh, acknowledgeError } = useWorkflowStats();
+  const { workflows, stats, loading, refresh, acknowledgeError, togglePause } = useWorkflowStats();
+  const [toggling, setToggling] = useState<Record<string, boolean>>({});
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_workflow_stats'] });
 
   const [expandedWorkflows, setExpandedWorkflows] = useState<Set<string>>(new Set());
@@ -391,7 +392,10 @@ const WorkflowsPanel: React.FC = () => {
                           className="w-full px-3 py-1 flex items-center gap-2 hover:bg-zinc-800/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/70 focus-visible:outline-offset-[-2px] transition-colors text-left border-b border-zinc-800/15"
                         >
                           <StatusDot status={health} pulse={health === 'error'} />
-                          <span className="flex-1 min-w-0 text-[11px] text-zinc-300 truncate">{wf.workflowName}</span>
+                          <span className={`flex-1 min-w-0 text-[11px] truncate ${wf.manuallyPaused ? 'text-zinc-500 italic' : 'text-zinc-300'}`}>{wf.workflowName}</span>
+                          {wf.manuallyPaused && (
+                            <span className="text-[8px] uppercase tracking-wider text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0">paused</span>
+                          )}
                           <span
                             className="text-[9px] text-zinc-600 tabular-nums shrink-0 hidden xl:inline"
                             title={wf.lastExecutionAt ? `Last run: ${new Date(wf.lastExecutionAt).toLocaleString()}` : wf.triggerType === 'webhook' ? 'Triggered on demand by another workflow or external call' : 'No executions recorded'}
@@ -432,6 +436,33 @@ const WorkflowsPanel: React.FC = () => {
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium text-zinc-400 bg-zinc-800/60 border border-zinc-700/40 hover:text-white hover:bg-zinc-700/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/70 transition-colors">
                                 <ExternalLink className="w-2 h-2" aria-hidden="true" /> n8n
                               </a>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (toggling[wf.workflowId]) return;
+                                  setToggling((prev) => ({ ...prev, [wf.workflowId]: true }));
+                                  await togglePause(wf.workflowId, wf.manuallyPaused ? 'resume' : 'pause');
+                                  setToggling((prev) => { const n = { ...prev }; delete n[wf.workflowId]; return n; });
+                                }}
+                                disabled={!!toggling[wf.workflowId]}
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/70 transition-colors ${
+                                  toggling[wf.workflowId]
+                                    ? 'bg-zinc-800/60 text-zinc-500 border border-zinc-700/40 cursor-wait'
+                                    : wf.manuallyPaused
+                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                                    : 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                                }`}
+                                title={wf.manuallyPaused ? 'Resume workflow (activates in n8n)' : 'Pause workflow (deactivates in n8n)'}
+                              >
+                                {toggling[wf.workflowId] ? (
+                                  <Loader2 className="w-2 h-2 animate-spin" aria-hidden="true" />
+                                ) : wf.manuallyPaused ? (
+                                  <Play className="w-2 h-2" aria-hidden="true" />
+                                ) : (
+                                  <Pause className="w-2 h-2" aria-hidden="true" />
+                                )}
+                                {wf.manuallyPaused ? 'Resume' : 'Pause'}
+                              </button>
                               {wf.errorCount24h > 0 && !wf.errorAcknowledged && (
                                 <button onClick={(e) => { e.stopPropagation(); acknowledgeError(wf.id); }}
                                   className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500/70 transition-colors">

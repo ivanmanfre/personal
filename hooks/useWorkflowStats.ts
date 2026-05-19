@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { dashboardAction, toastError } from '../lib/dashboardActions';
+import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { WorkflowStat, SystemHealth } from '../types/dashboard';
 
 function mapWf(row: any): WorkflowStat {
@@ -20,9 +20,12 @@ function mapWf(row: any): WorkflowStat {
     lastErrorMessage: row.last_error_message,
     nodeCount: row.node_count || 0,
     errorAcknowledged: row.error_acknowledged ?? false,
+    manuallyPaused: row.manually_paused ?? false,
     updatedAt: row.updated_at,
   };
 }
+
+const DASHBOARD_HASH = import.meta.env.VITE_DASHBOARD_HASH || '';
 
 export function useWorkflowStats() {
   const [workflows, setWorkflows] = useState<WorkflowStat[]>([]);
@@ -33,10 +36,11 @@ export function useWorkflowStats() {
     // Only show loading skeleton on initial load, not on refreshes
     if (!hasFetched.current) setLoading(true);
     try {
+      // Show active workflows AND manually-paused ones (so user can resume from the dashboard).
       const { data } = await supabase
         .from('dashboard_workflow_stats')
         .select('*')
-        .eq('is_active', true)
+        .or('is_active.eq.true,manually_paused.eq.true')
         .order('workflow_name');
       setWorkflows((data || []).map(mapWf));
     } catch (err) {
@@ -78,5 +82,28 @@ export function useWorkflowStats() {
     }
   }, []);
 
-  return { workflows, loading, refresh: fetch, stats, byType, acknowledgeError };
+  const togglePause = useCallback(async (workflowId: string, action: 'pause' | 'resume') => {
+    // Optimistic update
+    setWorkflows((prev) => prev.map((w) =>
+      w.workflowId === workflowId
+        ? { ...w, isActive: action === 'resume', manuallyPaused: action === 'pause' }
+        : w
+    ));
+    try {
+      const { data, error } = await supabase.functions.invoke('n8n-toggle', {
+        body: { workflowId, action },
+        headers: { 'x-dashboard-auth': DASHBOARD_HASH },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toastSuccess(action === 'pause' ? 'Workflow paused' : 'Workflow resumed');
+      await fetch();
+    } catch (err) {
+      toastError(action === 'pause' ? 'pause workflow' : 'resume workflow', err);
+      // Revert optimistic update
+      await fetch();
+    }
+  }, [fetch]);
+
+  return { workflows, loading, refresh: fetch, stats, byType, acknowledgeError, togglePause };
 }
