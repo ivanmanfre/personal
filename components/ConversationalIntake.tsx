@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, MessageSquare, PhoneOff, Radio } from 'lucide-react';
+import { ArrowUp, Check, Loader2, AlertTriangle, Mic, MicOff, MessageSquare, PhoneOff, Radio } from 'lucide-react';
 import { ConversationProvider, useConversation } from '@elevenlabs/react';
 import { useMetadata } from '../hooks/useMetadata';
 
@@ -201,24 +201,15 @@ const ConversationalIntakeInner: React.FC = () => {
   const [recording, setRecording] = useState(false);
   const [voiceErr, setVoiceErr] = useState<string | null>(null);
 
-  // TTS playback (Path A v1 — voice agent response audio)
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [speakerOn, setSpeakerOn] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('intake_speaker_on') === 'true';
-  });
-  const [ttsPlaying, setTtsPlaying] = useState(false);
-  const lastSpokenIdxRef = useRef<number>(-1);
   // Track whether stopRecording was triggered by silence (auto-send) vs manual click
   const stoppedBySilenceRef = useRef<boolean>(false);
 
   const VOICE_SILENCE_TIMEOUT_MS = 3000;
   const VOICE_HARD_CAP_MS = 90000;
-  const TTS_ENDPOINT = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/intake-tts';
 
-  // Path B: full voice agent mode (ElevenAgents + custom-LLM webhook → Claude)
-  // 'text' = current REST flow (Path A). 'voice' = ElevenAgents conversation.
-  // State is shared via DB; switching modes triggers a re-init to pull latest answers.
+  // Two distinct modes: text (silent reading + optional STT dictation via mic icon)
+  // or voice (full ElevenAgents conversation). No browser-TTS speaking of agent
+  // replies in text mode — voice mode is the only place an agent voice is heard.
   const [voiceMode, setVoiceMode] = useState<'text' | 'voice'>('text');
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped'>('idle');
   const [voiceModeError, setVoiceModeError] = useState<string | null>(null);
@@ -380,13 +371,27 @@ const ConversationalIntakeInner: React.FC = () => {
     setVoiceStatus('connecting');
     setVoiceModeError(null);
     try {
-      // Stop any browser-STT recording + Path A TTS playback before ElevenAgents
-      // takes over. Lock lastSpokenIdx forward so newly-arriving voice transcript
-      // bubbles don't trigger Path A re-speaking them.
+      // Stop the textarea STT recorder if it's running — voice mode owns the mic now
       try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-      if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
-      setTtsPlaying(false);
-      lastSpokenIdxRef.current = messages.length - 1;
+
+      // Pre-request mic permission so the prompt fires before the SDK opens its
+      // WebSocket. If the user denies, we surface a clear toast instead of
+      // letting the agent connect with no audio (the user thinks it's broken).
+      let micStream: MediaStream | null = null;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (permErr) {
+        const m = permErr instanceof Error ? permErr.message : String(permErr);
+        const friendly = m.toLowerCase().includes('denied') || m.toLowerCase().includes('notallowed')
+          ? 'Microphone access blocked. Enable it in your browser settings and try again.'
+          : `Microphone unavailable: ${m.slice(0, 80)}`;
+        setVoiceModeError(friendly);
+        setVoiceStatus('error');
+        setVoiceToast({ kind: 'error', text: friendly });
+        return;
+      }
+      // Release the probe stream — the SDK opens its own.
+      try { micStream?.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
 
       const res = await fetch(VOICE_SIGNED_URL_ENDPOINT, {
         method: 'POST',
@@ -400,19 +405,17 @@ const ConversationalIntakeInner: React.FC = () => {
       const data = await res.json();
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
-      // Dynamic first message: a session is "resumed" only if the buyer has
-      // actually SAID something (user turn exists). The seeded greeting bubble
-      // alone doesn't count — bumping into Voice from a fresh page should give
-      // a proper opener, not a continuation note.
+      // Neutral first message — no "Picking up where we left off" framing.
+      // A modality switch isn't a resume. Fresh page gets a proper opener;
+      // mid-conversation gets a short bridge that doesn't announce the switch.
       const hasUserTurns = messages.some((m) => m.role === 'user');
       const firstMessage = hasUserTurns
-        ? "Picking up where we left off. Continue when you're ready."
-        : "Welcome. Tell me about your business when you're ready. Name, what you do, who's running it.";
+        ? "Go on whenever you're ready."
+        : "Hi. Tell me about your business when you're ready — name, what you do, who's running it.";
 
       await elevenConversation.startSession({
         signedUrl: data.signed_url,
         connectionType: 'websocket',
-        // Pass intake_token through to the custom-LLM webhook so it can load state
         customLlmExtraBody: { intake_token: data.intake_token },
         overrides: {
           agent: {
@@ -426,6 +429,7 @@ const ConversationalIntakeInner: React.FC = () => {
       console.warn('[voice-mode-start-failed]', msg);
       setVoiceModeError(msg);
       setVoiceStatus('error');
+      setVoiceToast({ kind: 'error', text: `Voice failed to start: ${msg.slice(0, 100)}` });
     }
   }, [sessionId, elevenConversation, messages]);
 
@@ -596,81 +600,6 @@ const ConversationalIntakeInner: React.FC = () => {
   }, [recording, input, stopRecording, resetSilenceTimer]);
 
   useEffect(() => () => { try { stopRecording(); } catch { /* ignore */ } }, [stopRecording]);
-
-  // TTS playback for agent responses
-  const playAudio = useCallback(async (text: string) => {
-    if (!sessionId || !text.trim()) return;
-    // Stop any in-flight playback
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch { /* ignore */ }
-      audioRef.current = null;
-    }
-    try {
-      setTtsPlaying(true);
-      const res = await fetch(TTS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, text }),
-      });
-      if (!res.ok) {
-        console.warn('[tts-fetch-failed]', res.status);
-        setTtsPlaying(false);
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setTtsPlaying(false); URL.revokeObjectURL(url); };
-      audio.onerror = () => { setTtsPlaying(false); URL.revokeObjectURL(url); };
-      await audio.play();
-    } catch (e) {
-      console.warn('[tts-play-error]', e instanceof Error ? e.message : String(e));
-      setTtsPlaying(false);
-    }
-  }, [sessionId]);
-
-  // Toggle speaker on/off — persists across reloads.
-  // When turning ON, mark existing messages as "already spoken" so we don't replay history.
-  // Only new agent messages from this point forward will auto-play.
-  const toggleSpeaker = useCallback(() => {
-    setSpeakerOn((on) => {
-      const next = !on;
-      try { window.localStorage.setItem('intake_speaker_on', String(next)); } catch { /* ignore */ }
-      if (next) {
-        // Mark all current messages as already-spoken so the next useEffect run doesn't replay them
-        lastSpokenIdxRef.current = messages.length - 1;
-      } else {
-        // Turning off — stop any in-flight playback
-        if (audioRef.current) { try { audioRef.current.pause(); } catch { /* ignore */ } audioRef.current = null; }
-        setTtsPlaying(false);
-      }
-      return next;
-    });
-  }, [messages.length]);
-
-  // Auto-play TTS when a NEW assistant message arrives (only if speakerOn AND
-  // we are in TEXT mode — voice mode has its own real-time TTS via ElevenAgents
-  // and double-firing causes the buyer to hear two voices saying the same line).
-  useEffect(() => {
-    if (!speakerOn) return;
-    if (voiceMode === 'voice') return;
-    if (messages.length === 0) return;
-    const lastIdx = messages.length - 1;
-    const last = messages[lastIdx];
-    if (last.role !== 'assistant') return;
-    if (lastIdx <= lastSpokenIdxRef.current) return;
-    lastSpokenIdxRef.current = lastIdx;
-    playAudio(last.content);
-  }, [messages, speakerOn, playAudio, voiceMode]);
-
-  // Stop audio on unmount
-  useEffect(() => () => {
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch { /* ignore */ }
-      audioRef.current = null;
-    }
-  }, []);
 
   const answeredCount = useMemo(
     () => activeQuestionOrder.filter((k) => answers[k] != null && answers[k] !== '').length,
@@ -908,20 +837,6 @@ const ConversationalIntakeInner: React.FC = () => {
                           : <Mic size={18} />}
                       </button>
                     )}
-                    <button
-                      onClick={toggleSpeaker}
-                      className={`w-12 border-r border-[color:var(--color-hairline)] last:border-r-0 transition-all flex items-center justify-center ${
-                        speakerOn
-                          ? 'bg-accent text-white'
-                          : 'text-ink-soft hover:bg-paper hover:text-accent'
-                      }`}
-                      aria-label={speakerOn ? 'Mute agent voice' : 'Enable agent voice'}
-                      title={speakerOn ? 'Agent voice ON — click to mute' : 'Hear replies aloud'}
-                    >
-                      {speakerOn
-                        ? <span className="relative inline-flex items-center justify-center"><Volume2 size={18} />{ttsPlaying && <span className="absolute -right-1 -top-1 w-1.5 h-1.5 bg-white animate-pulse" />}</span>
-                        : <VolumeX size={18} />}
-                    </button>
                     <button
                       onClick={send}
                       disabled={state !== 'ready' || !input.trim()}
