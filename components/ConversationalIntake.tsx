@@ -425,24 +425,22 @@ const ConversationalIntakeInner: React.FC = () => {
       const data = await res.json();
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
-      // Neutral first message — no "Picking up where we left off" framing.
-      // A modality switch isn't a resume. Fresh page gets a proper opener;
-      // mid-conversation gets a short bridge that doesn't announce the switch.
+      // First message: on a FRESH session, let the agent speak its default
+      // first_message (Hugo's intro, set at agent-config level — guaranteed to
+      // fire). On RESUME (buyer already typed text turns), override with a
+      // short bridge so Hugo doesn't re-introduce himself.
       const hasUserTurns = messages.some((m) => m.role === 'user');
-      const firstMessage = hasUserTurns
-        ? "Go on whenever you're ready."
-        : "Hi. Tell me about your business when you're ready — name, what you do, who's running it.";
-
-      await elevenConversation.startSession({
+      const sessionConfig: Parameters<typeof elevenConversation.startSession>[0] = {
         signedUrl: data.signed_url,
         connectionType: 'websocket',
         customLlmExtraBody: { intake_token: data.intake_token },
-        overrides: {
-          agent: {
-            firstMessage,
-          },
-        },
-      });
+      };
+      if (hasUserTurns) {
+        sessionConfig.overrides = {
+          agent: { firstMessage: "Go on whenever you're ready." },
+        };
+      }
+      await elevenConversation.startSession(sessionConfig);
       setVoiceMode('voice');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
