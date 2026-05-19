@@ -426,34 +426,20 @@ const ConversationalIntakeInner: React.FC = () => {
       if (!data.signed_url) throw new Error('no_signed_url_returned');
 
       // First message: on a FRESH session, let the agent speak its default
-      // first_message (the "Hi. I'm Ivan's intake…" greeting at agent level —
-      // guaranteed to fire). On RESUME (buyer already typed text turns), build
-      // a dynamic bridge that explicitly references what they just said, so
-      // they hear "Picking up from <topic>…" instead of a generic restart.
-      const hasUserTurns = messages.some((m) => m.role === 'user');
+      // first_message (set at agent-config level — guaranteed to fire). On
+      // RESUME, the server generates a paraphrased bridge sentence via Claude
+      // Haiku from the recent chat history and returns it as bridge_sentence;
+      // we pass that as the firstMessage override so the agent opens with a
+      // natural "yeah, you were on the team-size thing — go on" — never a
+      // verbatim echo of the buyer's words.
       const sessionConfig: Parameters<typeof elevenConversation.startSession>[0] = {
         signedUrl: data.signed_url,
         connectionType: 'websocket',
         customLlmExtraBody: { intake_token: data.intake_token },
       };
-      if (hasUserTurns) {
-        const lastUserContent = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
-        // Extract a short topic snippet: first sentence, ≤9 words. Trims
-        // quote/parens/punctuation noise so the TTS reads it cleanly.
-        const snippet = lastUserContent
-          .replace(/\s+/g, ' ')
-          .replace(/[`"'*_#<>{}\[\]()]/g, '')
-          .trim()
-          .split(/[.!?]/)[0]
-          .split(/\s+/)
-          .slice(0, 9)
-          .join(' ')
-          .trim();
-        const bridge = snippet
-          ? `Ok, picking up from your last note — "${snippet}". Take it from there when you're ready.`
-          : "Ok, picking up where we left off. Take it from there when you're ready.";
+      if (data.bridge_sentence) {
         sessionConfig.overrides = {
-          agent: { firstMessage: bridge },
+          agent: { firstMessage: data.bridge_sentence },
         };
       }
       await elevenConversation.startSession(sessionConfig);
