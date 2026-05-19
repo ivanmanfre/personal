@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const FEED_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-feed';
 const DECIDE_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-decide';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 type Candidate = {
   id: string;
