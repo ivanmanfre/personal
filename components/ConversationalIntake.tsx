@@ -214,6 +214,9 @@ const ConversationalIntakeInner: React.FC = () => {
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped'>('idle');
   const [voiceModeError, setVoiceModeError] = useState<string | null>(null);
   const [voiceToast, setVoiceToast] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
+  // Agent mode: 'speaking' when the agent's TTS is playing, 'listening' when
+  // it's waiting for the buyer. Drives the waveform animation in the panel.
+  const [agentMode, setAgentMode] = useState<'speaking' | 'listening'>('listening');
   // Tracks whether the most recent disconnect was user-initiated (End call) vs
   // a network drop, so onDisconnect can route accordingly.
   const intentionalEndRef = useRef(false);
@@ -223,6 +226,11 @@ const ConversationalIntakeInner: React.FC = () => {
       setVoiceStatus('live');
       setVoiceModeError(null);
       wasLiveRef.current = true;
+    },
+    onModeChange: (m: { mode: string }) => {
+      if (m?.mode === 'speaking' || m?.mode === 'listening') {
+        setAgentMode(m.mode);
+      }
     },
     onDisconnect: () => {
       if (intentionalEndRef.current) {
@@ -269,7 +277,12 @@ const ConversationalIntakeInner: React.FC = () => {
 
   useEffect(() => {
     if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      // Smooth scroll so the new bubble glides in instead of jumping. Give the
+      // bubble's own animation a tiny head-start so it doesn't get cut off.
+      const el = chatScrollRef.current;
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      });
     }
   }, [messages, state]);
 
@@ -808,30 +821,16 @@ const ConversationalIntakeInner: React.FC = () => {
               <div className="container mx-auto max-w-3xl px-6 md:px-10 py-7 md:py-9">
                 <div className="flex items-center justify-between gap-6">
                   <div className="flex items-center gap-5 min-w-0">
-                    {/* Pulsing voice indicator — editorial sage orb */}
-                    <div className="relative flex-shrink-0">
-                      <div
-                        className={`w-14 h-14 rounded-full bg-accent flex items-center justify-center text-white transition-transform ${
-                          voiceStatus === 'live' ? 'shadow-[0_0_0_8px_rgba(42,143,101,0.12)]' : ''
-                        }`}
-                      >
-                        {voiceStatus === 'connecting' || voiceStatus === 'ending'
-                          ? <Loader2 size={22} className="animate-spin" />
-                          : voiceStatus === 'error'
-                            ? <AlertTriangle size={22} />
-                            : <Radio size={22} className={voiceStatus === 'live' ? 'animate-pulse' : ''} />}
-                      </div>
-                      {voiceStatus === 'live' && (
-                        <span
-                          className="absolute inset-0 rounded-full border-2 border-accent animate-ping"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
+                    {/* Live waveform — bars animate while the agent is speaking,
+                        idle when listening. Replaces the static orb. */}
+                    <VoiceWaveform
+                      status={voiceStatus}
+                      speaking={agentMode === 'speaking' && voiceStatus === 'live'}
+                    />
                     <div className="leading-tight min-w-0">
                       <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute mb-1.5">
                         {voiceStatus === 'connecting' && 'Connecting'}
-                        {voiceStatus === 'live' && 'Voice mode · live'}
+                        {voiceStatus === 'live' && (agentMode === 'speaking' ? 'Speaking' : 'Listening')}
                         {voiceStatus === 'ending' && 'Wrapping up'}
                         {voiceStatus === 'error' && 'Voice error'}
                         {voiceStatus === 'idle' && 'Voice mode'}
@@ -840,7 +839,7 @@ const ConversationalIntakeInner: React.FC = () => {
                         {voiceStatus === 'live' && (
                           <>
                             <span className="font-drama italic">Just speak.</span>{' '}
-                            <span className="text-ink-soft">The agent waits for natural pauses.</span>
+                            <span className="text-ink-soft">It picks up natural pauses.</span>
                           </>
                         )}
                         {voiceStatus === 'connecting' && (
@@ -950,6 +949,44 @@ const ConversationalIntakeInner: React.FC = () => {
 // ─────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────
+
+// VoiceWaveform — 5 sage bars that animate while the agent is speaking.
+// CSS-only animation; no canvas, no audio analysis. Each bar uses a different
+// scale-Y keyframe phase so the column reads as a live waveform.
+const VoiceWaveform: React.FC<{
+  status: 'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped';
+  speaking: boolean;
+}> = ({ status, speaking }) => {
+  if (status === 'connecting' || status === 'ending') {
+    return (
+      <div className="w-14 h-14 flex items-center justify-center rounded-full bg-accent/15 flex-shrink-0">
+        <Loader2 size={20} className="animate-spin text-accent" />
+      </div>
+    );
+  }
+  if (status === 'error') {
+    return (
+      <div className="w-14 h-14 flex items-center justify-center rounded-full bg-red-100 text-red-700 flex-shrink-0">
+        <AlertTriangle size={20} />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="w-14 h-14 flex items-end justify-center gap-[3px] rounded-full bg-accent/10 px-3 py-2.5 flex-shrink-0"
+      role="img"
+      aria-label={speaking ? 'Agent speaking' : 'Agent listening'}
+    >
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className={speaking ? 'intake-wave-bar intake-wave-bar--active' : 'intake-wave-bar'}
+          style={{ animationDelay: `${i * 110}ms` }}
+        />
+      ))}
+    </div>
+  );
+};
 
 const ModalityToggle: React.FC<{
   voiceMode: 'text' | 'voice';

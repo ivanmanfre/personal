@@ -421,3 +421,23 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
     --shadow-card-sm-hover: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 }
+/* Voice intake — live waveform bars (agent panel) */
+.intake-wave-bar {
+  width: 3px;
+  height: 60%;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transform-origin: center bottom;
+  transform: scaleY(0.35);
+  opacity: 0.5;
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+.intake-wave-bar--active {
+  opacity: 1;
+  animation: intake-wave 0.85s ease-in-out infinite alternate;
+}
+@keyframes intake-wave {
+  0%   { transform: scaleY(0.3);  }
+  50%  { transform: scaleY(1.0);  }
+  100% { transform: scaleY(0.45); }
+}

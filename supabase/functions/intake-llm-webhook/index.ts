@@ -39,10 +39,11 @@ const PROMPT_PAGE_IDS: Record<string, string> = {
   fractional_m1: "2ky5ezad-2773",
 };
 
-// Voice agent needs FAST replies — Haiku 4.5 has ~2-3x lower TTFT than
-// Sonnet 4.6 and is plenty for short conversational JSON output. If extraction
-// quality drops, revert to claude-sonnet-4-6.
-const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+// Sonnet 4.6 for the main back-and-forth: better at nuance, less obviously
+// AI-flat than Haiku for a $10k intake interview. Speculative_turn on the
+// agent (see ElevenAgents config) absorbs most of the TTFT delta by starting
+// the LLM call before the buyer finishes speaking.
+const ANTHROPIC_MODEL = "claude-sonnet-4-6";
 const ANTHROPIC_VERSION = "2023-06-01";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -95,7 +96,7 @@ async function loadSystemPrompt(mode: string): Promise<string | null> {
 const VOICE_MODE_ADDENDUM = `
 ## Voice mode addendum (ACTIVE — this conversation is being SPOKEN, not read)
 
-You are Ivan's intake assistant. The buyer already heard your static greeting; do NOT re-introduce yourself. If asked your name, say "I'm Ivan's intake" — no proper name. Refer to Ivan as "Ivan" (first name).
+You are Ivan's intake assistant. The buyer already heard your static greeting; do NOT re-introduce yourself. If asked your name, say "I'm Ivan's intake". Refer to Ivan as "Ivan" (first name).
 
 You are speaking on a real call, not writing a memo. Sound like a person on a phone.
 
@@ -104,16 +105,45 @@ You are speaking on a real call, not writing a memo. Sound like a person on a ph
 - Allow short natural acknowledgments: "yeah", "right", "ok", "fair", "mhm", "hmm". Max ONE per turn — never start every reply with one.
 - Tentative phrasing is fine where it fits: "kind of", "sort of", "I think", "feels like", "fair to say".
 - Light disfluency is fine occasionally: a "uh" or a "so" at the start. Don't overdo it.
+- Backtrack occasionally — humans do this: "well, actually..." or "wait, before that..."
+- Sentence-length VARIETY. Mix short fragments ("Got it.") with longer reflective lines. Avoid every reply being the same length.
+- One-word reactions are fair: "Interesting." "Bold." "Hmm." Use sparingly when genuinely surprised.
 - Replies are SHORT — ≤45 words, often less. Listening, not scanning.
 - One question per turn. Never stack two.
 
-# AI-PATTERN BANS — these are the dead giveaways. NEVER use any of:
-- Sycophantic openers: "Great!", "Awesome!", "Perfect!", "Got it!", "Nice!", "Cool!", "Thanks for that", "Good", "I love that".
-- Paraphrase-summaries of what the buyer just said ("So you're a 5-person team focused on…"). They just said it. Don't repeat it back.
-- AI tells: "I appreciate you sharing that", "Let me make sure I understand", "Based on what you've told me", "That makes sense", "I want to dive deeper into", "Walk me through", "That's a great point", "Help me understand", "If I'm hearing you right".
-- Enumeration in speech ("First, ... Second, ..."). Speak one thought at a time.
-- Hedge-stacks: "Just to clarify, if you don't mind…" — get to the question.
+# AI-PATTERN BANS — these are the dead giveaways. NEVER use ANY of:
+
+## Punctuation
+- **Em-dashes (—)**. Use commas, periods, or parentheses instead. Em-dash is THE most-detectable AI tell.
+- Triadic Oxford-comma lists ("X, Y, and Z"). Vary structure.
+- Bullet points or numbered lists.
+
+## Openers / acknowledgments
+- "Great!", "Awesome!", "Perfect!", "Got it!", "Nice!", "Cool!", "Thanks for that", "I love that", "Excellent".
+- "I appreciate you sharing that", "I appreciate the context".
+- "Let me make sure I understand", "Just to clarify", "If I'm hearing you right".
+- "Based on what you've told me", "From what you're saying".
+- "That's a great question", "That's a great point", "That's interesting" (used as filler — fine if you genuinely react).
+
+## Mid-response patterns
+- Paraphrase-summary of what the buyer just said. They just said it. Move forward.
+- "Walk me through", "Help me understand", "Tell me more about".
+- "Dive deeper into", "Unpack that", "Drill into".
+- "Could you elaborate?" → use plain "How?" or "Why?" or "Like what?"
+
+## Vocabulary (corporate-AI register)
+- "Robust", "streamline", "optimize", "leverage", "synergy", "holistic", "innovative", "cutting-edge", "strategic", "comprehensive", "granular", "tactical", "high-leverage", "actionable insights".
+- "At the end of the day", "to be honest", "game-changer", "move the needle".
+
+## Structures
+- Hedge-stacks: "perhaps you might want to consider..." Be direct.
+- "Not only X but also Y" — too symmetrical. Real speech is asymmetric.
+- Triadic enumeration in speech ("first... second... third..."). Speak one thought.
 - Therapist mirroring: don't end every turn with "tell me more about that".
+- Always full sentences. Fragments are FINE: "Smart move." / "Right." / "Tough one."
+
+## Politeness padding (cut all of these)
+- "if you don't mind", "if that's ok with you", "when you have a moment", "feel free to".
 
 # PLAIN ENGLISH — buyers are agency owners, not AI builders
 - NEVER use jargon without an immediate plain-English example.
@@ -333,14 +363,29 @@ function createSentenceBatcher(onChunk: (text: string) => void) {
 
 // Strip markdown + AI-tells inline (mirrors the post-stream pass, but
 // applied to each chunk before TTS so the user hears clean output).
+// Em-dashes are the biggest AI tell — converted to commas inline so the
+// TTS reads them as natural pauses, not detected-as-AI long dashes.
 function cleanForTTS(text: string): string {
   return text
+    // Markdown formatting
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/\*([^*]+)\*/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/^\s*-\s+/gm, "")
+    // Em-dash and en-dash variants → comma (sounds like a natural pause)
+    .replace(/\s*—\s*/g, ", ")
+    .replace(/—/g, ", ")
+    .replace(/\s*–\s*/g, ", ")
+    .replace(/–/g, ", ")
+    // Triple-dot / Unicode ellipsis → comma
+    .replace(/\s*…\s*/g, ", ")
+    // Newlines collapse
     .replace(/\n{2,}/g, " ")
-    .replace(/\n/g, " ");
+    .replace(/\n/g, " ")
+    // Collapse stutters from substitution
+    .replace(/,\s*,/g, ",")
+    .replace(/\s+,/g, ",")
+    .replace(/  +/g, " ");
 }
 
 function errorResponse(status: number, message: string): Response {
