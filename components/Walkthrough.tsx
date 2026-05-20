@@ -10,9 +10,6 @@ import {
 // Tool logos — monochrome, brand-correct (ink color, no vendor color clash)
 // ────────────────────────────────────────────────────────────────────────
 
-// Slug → simple-icons path data. Two tools (Fireflies, Firecrawl) aren't in
-// simple-icons; render a small flame glyph for both since both are
-// "fire-themed" services. Editorially honest, brand-correct.
 const LOGO_PATHS: Record<string, string> = {
   'n8n': siN8n.path,
   'claude': siClaude.path,
@@ -26,8 +23,9 @@ const LOGO_PATHS: Record<string, string> = {
   'airtable': siAirtable.path,
   'whatsapp': siWhatsapp.path,
   'gemini': siGooglegemini.path,
-  // Hand-built minimal flame for the two services missing from simple-icons.
-  // Single path on a 24×24 viewBox.
+  // simple-icons doesn't carry LinkedIn anymore (trademark policy). Hand-built "in" mark.
+  'linkedin': 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z',
+  // Fireflies + Firecrawl aren't in simple-icons. A small flame works for both.
   'flame': 'M12 2c1.5 4 4 5.5 4 9a4 4 0 1 1-8 0c0-1.6.7-2.6 1.5-3.5C10.3 6.5 12 5 12 2zm0 14a3 3 0 0 0 3-3c0-1-.5-2-2-3 0 1.5-1 2-2 2.5-.7.4-1 1-1 2a2 2 0 0 0 2 1.5z',
 };
 
@@ -44,6 +42,7 @@ const TOOL_TO_SLUG: Record<string, string> = {
   'Airtable': 'airtable',
   'WhatsApp API': 'whatsapp',
   'Gemini OCR': 'gemini',
+  'LinkedIn API': 'linkedin',
   'Fireflies': 'flame',
   'Firecrawl': 'flame',
 };
@@ -72,15 +71,14 @@ const Logo: React.FC<{ tool: string; size?: number; className?: string }> = ({
 /**
  * /walkthrough — recording-only deck route.
  *
- * Full-bleed editorial slide deck for the 5-day Blueprint walkthrough video.
- * Reuses the site's brand tokens (paper, sage, Space Grotesk, DM Serif italic,
- * IBM Plex Mono) so the recorded video matches ivanmanfredi.com pixel-for-pixel.
+ * Editorial slide deck for the Agent-Ready Blueprint walkthrough video.
+ * Framework: Score · Map · Blueprint.
  *
  * Keyboard: → / Space advance · ← back · Home/End jump.
  * Excluded from public nav. Used for screen-capture only.
  */
 
-const TOTAL = 10;
+const TOTAL = 14;
 const editorial = [0.22, 0.36, 0, 1] as const;
 
 const fadeUp = {
@@ -117,11 +115,6 @@ const SageRule: React.FC<{ delay?: number; w?: string; align?: 'left' | 'center'
   />
 );
 
-const SageBullet: React.FC = () => (
-  <span className="inline-block w-2 h-2 bg-accent shrink-0 mt-2" />
-);
-
-// Wraps each slide in full-bleed paper with consistent padding + crossfade.
 const Slide: React.FC<{ children: React.ReactNode; bg?: string }> = ({
   children, bg = 'bg-paper',
 }) => (
@@ -135,13 +128,12 @@ const Slide: React.FC<{ children: React.ReactNode; bg?: string }> = ({
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 01 — walkthrough cover
+// Slide 01 — cover
 // ────────────────────────────────────────────────────────────────────────
 
 const Slide01: React.FC = () => (
   <Slide bg="bg-paper-sunk">
     <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center max-w-7xl mx-auto">
-      {/* Left — text column */}
       <div>
         <MonoLabel delay={0.15}>AGENT-READY OPS™ / WALKTHROUGH</MonoLabel>
 
@@ -166,9 +158,8 @@ const Slide01: React.FC = () => (
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.3, duration: 0.6, ease: editorial }}
         >
-          A one-week structured audit of your operation —
-          tools, workflows, data — and the 90-day plan
-          that comes out of it.
+          One week. Three things you walk out with —
+          the Score, the Map, and the 90-day Blueprint.
         </motion.p>
 
         <motion.div
@@ -187,7 +178,6 @@ const Slide01: React.FC = () => (
         </motion.div>
       </div>
 
-      {/* Right — Ivan portrait, paper-edged */}
       <motion.div
         className="hidden md:block relative"
         initial={{ opacity: 0, x: 20 }}
@@ -226,7 +216,7 @@ const Slide02: React.FC = () => (
         {[
           { label: 'PRICE', value: '$2,000', italic: false, delay: 0.4 },
           { label: 'DURATION', value: '1 week', italic: false, delay: 0.7 },
-          { label: 'OUTCOME', value: 'a 90-day plan', italic: true, delay: 1.0 },
+          { label: 'OUTCOME', value: 'the Blueprint', italic: true, delay: 1.0 },
         ].map((cell) => (
           <motion.div
             key={cell.label}
@@ -255,14 +245,85 @@ const Slide02: React.FC = () => (
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
       >
-        Or sometimes — a clear recommendation to wait.
+        Credits 100% back if we ship something together inside 60 days.
       </motion.p>
     </div>
   </Slide>
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 03 — the 4 preconditions
+// Slide 03 — the framework: Score · Map · Blueprint
+// ────────────────────────────────────────────────────────────────────────
+
+const framework = [
+  {
+    num: '01',
+    name: 'The Score',
+    blurb: 'Where your operation stands on the four conditions every AI build needs.',
+  },
+  {
+    num: '02',
+    name: 'The Map',
+    blurb: 'Which work stays with you, which gets handed off, which gets accelerated.',
+  },
+  {
+    num: '03',
+    name: 'The Blueprint',
+    blurb: 'The 90-day build plan with a dollar number on every gap.',
+  },
+];
+
+const Slide03: React.FC = () => (
+  <Slide>
+    <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
+      <MonoLabel>WHAT YOU WALK OUT WITH</MonoLabel>
+
+      <motion.h2
+        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-14 max-w-4xl"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: editorial }}
+      >
+        Three things, in <span className="font-drama-display">plain English.</span>
+      </motion.h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl">
+        {framework.map((item, i) => (
+          <motion.div
+            key={item.num}
+            className="border-t border-[color:var(--color-hairline-bold)] pt-6"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 + i * 0.22, duration: 0.6, ease: editorial }}
+          >
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-mute mb-4">
+              {item.num}
+            </div>
+            <div className="font-drama-display text-4xl md:text-5xl text-black tracking-tight leading-none mb-5">
+              {item.name}
+            </div>
+            <p className="text-base text-ink-soft leading-relaxed">{item.blurb}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div
+        className="mt-14 flex items-center gap-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5 }}
+      >
+        <span className="w-2 h-2 bg-accent" />
+        <span className="font-mono text-xs uppercase tracking-[0.18em] text-ink-soft">
+          SCORE · MAP · BLUEPRINT
+        </span>
+      </motion.div>
+    </div>
+  </Slide>
+);
+
+// ────────────────────────────────────────────────────────────────────────
+// Slide 04 — the Score: 4 preconditions
 // ────────────────────────────────────────────────────────────────────────
 
 const preconditions = [
@@ -272,10 +333,10 @@ const preconditions = [
   { num: '04', label: 'Repeatable enough to encode.', tag: 'the work runs often enough that automation compounds' },
 ];
 
-const Slide03: React.FC = () => (
+const Slide04: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
-      <MonoLabel>WHAT I'M LOOKING FOR</MonoLabel>
+      <MonoLabel>01 · THE SCORE</MonoLabel>
 
       <motion.h2
         className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-12 max-w-3xl"
@@ -283,7 +344,7 @@ const Slide03: React.FC = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6, ease: editorial }}
       >
-        Four things, every time.
+        Four things, <span className="font-drama-display">every time.</span>
       </motion.h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
@@ -310,12 +371,9 @@ const Slide03: React.FC = () => (
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 04 — Day 1-3 process
+// Slide 05 — the Score in action: stack audit
 // ────────────────────────────────────────────────────────────────────────
 
-// Each row is a category I inspect on day one. The "found" example is illustrative —
-// in a real Blueprint it gets replaced by whatever the client actually runs.
-// Score = 0..4 sage pips against the 4 preconditions (input/logic/scope/loop).
 const auditRows: Array<{ category: string; found: string; score: number }> = [
   { category: 'CRM / source of truth', found: 'HubSpot', score: 3 },
   { category: 'Database / ops data', found: 'Supabase', score: 4 },
@@ -326,10 +384,10 @@ const auditRows: Array<{ category: string; found: string; score: number }> = [
   { category: 'Payments / billing', found: 'Stripe', score: 4 },
 ];
 
-const Slide04: React.FC = () => (
+const Slide05: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
-      <MonoLabel>DAY ONE — STACK AUDIT</MonoLabel>
+      <MonoLabel>01 · THE SCORE — IN ACTION</MonoLabel>
 
       <motion.h2
         className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-3 max-w-4xl"
@@ -337,7 +395,7 @@ const Slide04: React.FC = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
       >
-        I review what runs your operation.{' '}
+        Day one, I walk your stack.{' '}
         <span className="font-drama-display">Then score it.</span>
       </motion.h2>
 
@@ -347,12 +405,10 @@ const Slide04: React.FC = () => (
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6, duration: 0.6 }}
       >
-        Seven layers, every audit. Each scored against the four preconditions.
+        Seven layers, every audit. Each scored against the four conditions.
       </motion.p>
 
-      {/* Audit table */}
       <div className="border-t border-[color:var(--color-hairline-bold)] max-w-5xl">
-        {/* Header row */}
         <motion.div
           className="grid grid-cols-[1fr_220px_140px] gap-6 py-3 border-b border-[color:var(--color-hairline)]"
           initial={{ opacity: 0 }}
@@ -408,7 +464,6 @@ const Slide04: React.FC = () => (
         ))}
       </div>
 
-      {/* Legend */}
       <motion.div
         className="mt-6 flex items-center gap-3 text-xs font-mono uppercase tracking-[0.1em] text-ink-mute"
         initial={{ opacity: 0 }}
@@ -416,211 +471,90 @@ const Slide04: React.FC = () => (
         transition={{ delay: 2.5 }}
       >
         <span className="w-2 h-2 bg-accent" />
-        <span>1 PIP PER PRECONDITION · INPUTS · DECISIONS · SCOPE · HUMAN-IN-LOOP</span>
+        <span>1 PIP PER CONDITION · INPUTS · DECISIONS · SCOPE · HUMAN-IN-LOOP</span>
       </motion.div>
     </div>
   </Slide>
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 05 — cost math
+// Slide 06 — the Map: Owner / Auto / Assist
 // ────────────────────────────────────────────────────────────────────────
 
-const Slide05: React.FC = () => (
-  <Slide>
-    <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
-      <MonoLabel>THE NUMBERS, FAST</MonoLabel>
-
-      {/* Equation that builds */}
-      <div className="mt-12 mb-8">
-        <motion.div
-          className="font-mono text-2xl md:text-3xl text-ink-soft tracking-tight"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          20 hrs / week
-        </motion.div>
-        <motion.div
-          className="font-mono text-2xl md:text-3xl text-ink-soft tracking-tight"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.9 }}
-        >
-          × $150 blended
-        </motion.div>
-        <motion.div
-          className="font-mono text-2xl md:text-3xl text-ink-soft tracking-tight"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4 }}
-        >
-          × 52 weeks
-        </motion.div>
-
-        <motion.div
-          className="mt-4 mb-4"
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 1.9, duration: 0.5 }}
-          style={{ transformOrigin: 'left' }}
-        >
-          <div className="h-px bg-ink w-64" />
-        </motion.div>
-
-        <motion.div
-          className="stat-numeral text-7xl md:text-9xl font-semibold tracking-tighter leading-[1]"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2.2, duration: 0.7, ease: editorial }}
-        >
-          <span className="font-drama-display">$156,000</span>
-          <span className="text-3xl md:text-4xl text-ink-mute ml-4 font-mono">/ year</span>
-        </motion.div>
-      </div>
-
-      <SageRule delay={3.0} w="w-24" />
-
-      <motion.p
-        className="mt-8 text-xl text-ink-soft max-w-3xl leading-relaxed"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 3.4 }}
-      >
-        The Blueprint is{' '}
-        <span className="font-mono font-semibold text-black">1.6%</span> of one role.
-      </motion.p>
-    </div>
-  </Slide>
-);
-
-// ────────────────────────────────────────────────────────────────────────
-// Slide 06 — proof carousel
-// ────────────────────────────────────────────────────────────────────────
-
-const cases = [
+const lanes = [
   {
-    tag: 'PROVALTECH · CLIENT OPS',
-    headlineA: '5%',
-    headlineB: '100%',
-    label: 'CHURN SIGNALS CAUGHT',
-    problem: 'Spot-checking 5% of client calls — by the time someone noticed an unhappy account, it was usually too late.',
-    blurb:
-      'Every client call now flows through Fireflies for transcription. Claude reads each transcript for churn signals — frustration, scope drift, dropping engagement — and routes flagged calls to the account lead via Gmail. Customer state syncs to HubSpot, signal tracking to Airtable. First retained account paid for the build.',
-    stack: ['Fireflies', 'Claude', 'n8n', 'HubSpot', 'Airtable', 'Gmail'],
-    image: '/cases/provaltech.png',
-    imageAlt: 'Provaltech call performance dashboard',
+    num: '01',
+    label: 'Owner work',
+    line: 'What only you can do.',
+    examples: ['Sales calls', 'Partnerships', 'Hiring'],
   },
   {
-    tag: 'MARKETING SHOP · GROWTH OPS',
-    headlineA: '3 days',
-    headlineB: '1 afternoon',
-    label: 'PER LEAD-MAGNET BUILD',
-    problem: 'Each new lead magnet was three full days of research, copywriting, design, and deployment — every single time.',
-    blurb:
-      'ClickUp briefs trigger the pipeline. Claude does the topic research and drafts the copy from a tested structure. n8n routes the draft through human review, then ships the resource page in Webflow with all assets in place. Same editorial quality, roughly five times the throughput.',
-    stack: ['Claude', 'ClickUp', 'Webflow', 'n8n'],
-    image: null,
-    imageAlt: '',
+    num: '02',
+    label: 'Auto work',
+    line: 'What the system handles end-to-end.',
+    examples: ['Routing', 'Data entry', 'Scheduled outreach'],
   },
   {
-    tag: 'DESTINO FARMS · INVENTORY OPS',
-    headlineA: '20 sources',
-    headlineB: '1 dashboard',
-    label: 'LIVE SUPPLIER INVENTORY',
-    problem: 'Twenty suppliers, five different channels — WhatsApp messages, supplier websites, shared Google Sheets. Hours of manual reconciliation every morning.',
-    blurb:
-      'WhatsApp API captures supplier messages. Gemini OCR reads stock photos and PDFs. Firecrawl scrapes supplier sites on a schedule. Claude normalizes everything into one inventory model, n8n orchestrates it, and a custom interface displays a single live dashboard — updated automatically through the day.',
-    stack: ['Claude', 'Gemini OCR', 'Firecrawl', 'WhatsApp API', 'n8n'],
-    image: null,
-    imageAlt: '',
+    num: '03',
+    label: 'Assist work',
+    line: 'What AI drafts and you approve.',
+    examples: ['Qualification', 'Scoring', 'Replies'],
   },
 ];
 
 const Slide06: React.FC = () => (
   <Slide>
-    <div className="h-full flex flex-col justify-center max-w-7xl mx-auto">
-      <MonoLabel>SOME RECENT ENGAGEMENTS</MonoLabel>
+    <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
+      <MonoLabel>02 · THE MAP</MonoLabel>
 
       <motion.h2
-        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-14"
+        className="mt-8 text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.0] mb-4 max-w-4xl"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: editorial }}
       >
-        <span className="font-drama-display">Receipts.</span>
+        Three lanes. <span className="font-drama-display">Every workflow lands in one.</span>
       </motion.h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {cases.map((c, i) => (
+      <motion.p
+        className="text-lg text-ink-soft mb-12 max-w-3xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        We walk every workflow in your operation and put it in one of these.
+      </motion.p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl">
+        {lanes.map((lane, i) => (
           <motion.div
-            key={c.tag}
-            className="border border-[color:var(--color-hairline-bold)] bg-paper-raise flex flex-col overflow-hidden"
-            initial={{ opacity: 0, y: 24 }}
+            key={lane.num}
+            className="border border-[color:var(--color-hairline-bold)] bg-paper-raise p-7 flex flex-col"
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 + i * 0.22, duration: 0.7, ease: editorial }}
+            transition={{ delay: 0.8 + i * 0.22, duration: 0.6, ease: editorial }}
           >
-            {/* Visual header — real screenshot if available, else typographic hero */}
-            {c.image ? (
-              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] overflow-hidden relative">
-                <img
-                  src={c.image}
-                  alt={c.imageAlt}
-                  className="w-full h-full object-cover object-top"
-                />
-                <div className="absolute inset-0 bg-paper opacity-[0.04] pointer-events-none" />
-              </div>
-            ) : (
-              <div className="aspect-[16/10] bg-paper-sunk border-b border-[color:var(--color-hairline)] flex flex-col items-center justify-center px-6 text-center gap-3">
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                  {c.label}
-                </span>
-                <span className="font-drama-display text-6xl text-black tracking-tight leading-none">
-                  {c.headlineB}
-                </span>
-              </div>
-            )}
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-mute mb-4">
+              {lane.num}
+            </div>
+            <div className="font-drama-display text-3xl md:text-4xl text-black tracking-tight leading-none mb-3">
+              {lane.label}
+            </div>
+            <p className="text-base text-ink-soft leading-relaxed mb-6">{lane.line}</p>
 
-            <div className="p-7 flex flex-col flex-1">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-4">
-                {c.tag}
+            <div className="border-t border-[color:var(--color-hairline)] pt-4 mt-auto">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+                EXAMPLES
               </div>
-
-              {/* Before → after metric (always shown in body) */}
-              <div className="flex items-baseline gap-3 mb-1">
-                <span className="font-mono text-xl text-ink-mute line-through tabular-nums">
-                  {c.headlineA}
-                </span>
-                <span className="font-mono text-ink-mute">→</span>
-                <span className="text-3xl font-semibold tracking-tight text-black leading-none">
-                  {c.headlineB}
-                </span>
-              </div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-4">
-                {c.label}
-              </div>
-
-              <p className="text-sm text-black font-medium leading-relaxed mb-3 italic">
-                {c.problem}
-              </p>
-              <p className="text-sm text-ink-soft leading-relaxed mb-6 flex-1">{c.blurb}</p>
-
-              {/* Stack — what the build ran on */}
-              <div className="border-t border-[color:var(--color-hairline)] pt-4">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
-                  STACK
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {c.stack.map((tool) => (
-                    <span
-                      key={tool}
-                      className="inline-flex items-center gap-1.5 px-2 py-1 border border-[color:var(--color-hairline-bold)] font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft"
-                    >
-                      <Logo tool={tool} size={10} className="text-accent-ink" />
-                      {tool}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5">
+                {lane.examples.map((ex) => (
+                  <span
+                    key={ex}
+                    className="inline-block px-2 py-1 border border-[color:var(--color-hairline-bold)] font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft"
+                  >
+                    {ex}
+                  </span>
+                ))}
               </div>
             </div>
           </motion.div>
@@ -631,22 +565,200 @@ const Slide06: React.FC = () => (
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 07 — deliverable showcase (the hero moment)
+// Slides 07–09 — named clients (Vikram, Kyle, Melissa)
 // ────────────────────────────────────────────────────────────────────────
 
-const Slide07: React.FC = () => (
+type ClientCase = {
+  tag: string;
+  name: string;
+  before: string;
+  after: string;
+  metricLabel: string;
+  moment: React.ReactNode;
+  blurb: string;
+  stack: string[];
+  image: string | null;
+  imageAlt: string;
+};
+
+const clients: ClientCase[] = [
+  {
+    tag: 'VIKRAM · PROVALTECH · CLIENT OPS',
+    name: 'Vikram',
+    before: '5%',
+    after: '100%',
+    metricLabel: 'CHURN SIGNALS CAUGHT',
+    moment: (
+      <>
+        Before, the first time Vikram knew a client was unhappy
+        was at the renewal call. <span className="font-drama-display">Now he knows in 4 hours.</span>
+      </>
+    ),
+    blurb:
+      'Every call flows through Fireflies. Claude reads each transcript for churn signals — frustration, scope drift, dropping engagement — and routes flagged calls to the account lead via Gmail with the excerpt and recording link attached. Customer state syncs to HubSpot, signals to Airtable. First retained account paid for the build.',
+    stack: ['Fireflies', 'Claude', 'n8n', 'HubSpot', 'Airtable', 'Gmail'],
+    image: '/cases/provaltech.png',
+    imageAlt: 'Provaltech call performance dashboard',
+  },
+  {
+    tag: 'KYLE HUNT · AGENCY OPERATORS · GROWTH OPS',
+    name: 'Kyle',
+    before: '3 hrs',
+    after: '10 min',
+    metricLabel: 'LEAD MAGNET BUILD TIME',
+    moment: (
+      <>
+        Before, every lead magnet was a Wednesday gone.{' '}
+        <span className="font-drama-display">Now he approves the draft over coffee</span> and the system ships the rest before lunch.
+      </>
+    ),
+    blurb:
+      'Kyle drops an idea into ClickUp. Claude drafts the copy grounded on his masterclass transcripts via RAG. He approves once. The system then builds the landing page, the resource page, the email sequence, the geo-routed smart link, and a scheduled LinkedIn post — every asset in parallel.',
+    stack: ['Claude', 'n8n', 'Webflow', 'ClickUp', 'LinkedIn API'],
+    image: null,
+    imageAlt: '',
+  },
+  {
+    tag: 'MELISSA · DESTINO FARMS · INVENTORY OPS',
+    name: 'Melissa',
+    before: '20 sources',
+    after: '1 dashboard',
+    metricLabel: 'SUPPLIERS UNIFIED',
+    moment: (
+      <>
+        Before, Melissa's team spent 15 hours a week stitching
+        WhatsApp messages, supplier sheets, and websites into a menu.{' '}
+        <span className="font-drama-display">Now it reconciles itself every 60 minutes.</span>
+      </>
+    ),
+    blurb:
+      'WhatsApp messages flow in automatically. Gemini reads stock photos and PDFs. Firecrawl scrapes supplier sites on a schedule. Claude normalizes everything — strain types, flower categories, THC percentages — into one model. Vendor identities stay protected from end clients via automatic coding and COA redaction.',
+    stack: ['Claude', 'Gemini OCR', 'Firecrawl', 'WhatsApp API', 'n8n'],
+    image: null,
+    imageAlt: '',
+  },
+];
+
+const ClientSlide: React.FC<{ c: ClientCase; idx: number }> = ({ c, idx }) => (
+  <Slide>
+    <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
+      <MonoLabel>{`0${idx + 1} OF 03 · RECENT BUILDS`}</MonoLabel>
+
+      <motion.div
+        className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-soft"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        {c.tag}
+      </motion.div>
+
+      {/* Big before → after */}
+      <motion.div
+        className="mt-10 flex items-baseline gap-8 flex-wrap"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.7, ease: editorial }}
+      >
+        <span className="stat-numeral text-5xl md:text-7xl text-ink-mute line-through tracking-tight">
+          {c.before}
+        </span>
+        <span className="font-mono text-3xl text-ink-mute">→</span>
+        <span className="stat-numeral text-6xl md:text-8xl font-semibold text-black tracking-tighter">
+          {c.after}
+        </span>
+      </motion.div>
+
+      <motion.div
+        className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-mute mt-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9 }}
+      >
+        {c.metricLabel}
+      </motion.div>
+
+      <div className="mt-10">
+        <SageRule delay={1.1} w="w-24" />
+      </div>
+
+      {/* The moment */}
+      <motion.p
+        className="mt-8 text-3xl md:text-4xl text-black leading-tight max-w-4xl font-medium"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4, duration: 0.7, ease: editorial }}
+      >
+        {c.moment}
+      </motion.p>
+
+      {/* Body grid: blurb + stack (and optional image) */}
+      <motion.div
+        className="mt-10 grid grid-cols-1 md:grid-cols-[1fr_280px] gap-10 items-start max-w-5xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.0 }}
+      >
+        <div>
+          <p className="text-base text-ink-soft leading-relaxed mb-6">{c.blurb}</p>
+
+          <div className="border-t border-[color:var(--color-hairline)] pt-4">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-mute mb-3">
+              STACK
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {c.stack.map((tool) => (
+                <span
+                  key={tool}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 border border-[color:var(--color-hairline-bold)] font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft"
+                >
+                  <Logo tool={tool} size={10} className="text-accent-ink" />
+                  {tool}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Screenshot (Vikram only) or sage typographic block (Kyle, Melissa) */}
+        {c.image ? (
+          <div className="border border-[color:var(--color-hairline-bold)] bg-paper-sunk overflow-hidden">
+            <img src={c.image} alt={c.imageAlt} className="w-full h-auto object-cover" />
+          </div>
+        ) : (
+          <div className="border border-[color:var(--color-hairline)] bg-paper-sunk px-6 py-10 flex flex-col items-center justify-center text-center gap-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
+              {c.metricLabel}
+            </span>
+            <span className="font-drama-display text-5xl text-black tracking-tight leading-none">
+              {c.after}
+            </span>
+          </div>
+        )}
+      </motion.div>
+    </div>
+  </Slide>
+);
+
+const Slide07: React.FC = () => <ClientSlide c={clients[0]} idx={0} />;
+const Slide08: React.FC = () => <ClientSlide c={clients[1]} idx={1} />;
+const Slide09: React.FC = () => <ClientSlide c={clients[2]} idx={2} />;
+
+// ────────────────────────────────────────────────────────────────────────
+// Slide 10 — the Blueprint document
+// ────────────────────────────────────────────────────────────────────────
+
+const Slide10: React.FC = () => (
   <Slide bg="bg-paper-sunk">
     <div className="h-full flex flex-col justify-center items-center max-w-6xl mx-auto">
-      <MonoLabel delay={0.1}>WHAT YOU LEAVE WITH</MonoLabel>
+      <MonoLabel delay={0.1}>03 · THE BLUEPRINT</MonoLabel>
 
-      {/* Document cover */}
       <motion.div
         className="mt-10 w-full max-w-3xl bg-paper border border-[color:var(--color-hairline-bold)] shadow-card-lift px-12 py-14 relative"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.8, ease: editorial }}
       >
-        {/* Top brand pill */}
         <motion.div
           className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute mb-12"
           initial={{ opacity: 0 }}
@@ -656,7 +768,6 @@ const Slide07: React.FC = () => (
           AGENT-READY OPS™
         </motion.div>
 
-        {/* Title */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -664,11 +775,10 @@ const Slide07: React.FC = () => (
           className="text-[42px] md:text-[56px] tracking-tighter leading-[0.95]"
         >
           <div className="font-semibold">Your</div>
-          <div className="font-semibold">90-Day AI</div>
-          <div className="font-drama-display">Rollout Plan.</div>
+          <div className="font-semibold">90-Day</div>
+          <div className="font-drama-display">Blueprint.</div>
         </motion.div>
 
-        {/* Sage hairline */}
         <motion.div
           className="h-px bg-accent w-2/3 mt-10 origin-left"
           initial={{ scaleX: 0 }}
@@ -676,18 +786,16 @@ const Slide07: React.FC = () => (
           transition={{ delay: 1.5, duration: 0.7, ease: editorial }}
         />
 
-        {/* Description */}
         <motion.p
           className="mt-8 text-base text-ink-soft leading-relaxed max-w-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.9 }}
         >
-          An evaluation of your operation against the 4 Agent-Ready
-          preconditions, with a sequenced build plan for the next 90 and 180 days.
+          The Score, the Map, and a sequenced build plan for
+          the next 90 and 180 days — with a dollar number on every gap.
         </motion.p>
 
-        {/* Colophon (replaces "Prepared by") */}
         <motion.div
           className="mt-16 flex items-end justify-between"
           initial={{ opacity: 0 }}
@@ -697,9 +805,8 @@ const Slide07: React.FC = () => (
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute leading-relaxed">
             MANFREDI / AGENT-READY OPS™
             <br />
-            2026.04
+            2026.05
           </div>
-          {/* Sage seal */}
           <motion.div
             className="flex items-center gap-2"
             initial={{ scale: 0 }}
@@ -714,7 +821,6 @@ const Slide07: React.FC = () => (
         </motion.div>
       </motion.div>
 
-      {/* TOC strip below cover */}
       <motion.div
         className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-3 max-w-3xl w-full"
         initial={{ opacity: 0 }}
@@ -746,10 +852,74 @@ const Slide07: React.FC = () => (
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 08 — credit math reveal
+// Slide 11 — objection: Claude Code
 // ────────────────────────────────────────────────────────────────────────
 
-const Slide08: React.FC = () => (
+const Slide11: React.FC = () => (
+  <Slide>
+    <div className="h-full flex flex-col justify-center max-w-5xl mx-auto">
+      <MonoLabel>A REAL 2026 QUESTION</MonoLabel>
+
+      <motion.h2
+        className="mt-8 text-5xl md:text-7xl font-semibold tracking-tighter leading-[1.0] mb-12 max-w-4xl"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: editorial }}
+      >
+        <span className="font-drama-display">"Can't I just use</span><br />
+        <span className="font-drama-display">Claude Code?"</span>
+      </motion.h2>
+
+      <div className="space-y-6 max-w-3xl">
+        <motion.p
+          className="text-xl text-ink-soft leading-relaxed"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6 }}
+        >
+          Sure — if your qualification criteria are documented, your CRM data is clean, your team agrees on what <span className="italic text-black">qualified</span> means. Hand it to Claude Code, you're done.
+        </motion.p>
+
+        <motion.p
+          className="text-xl text-ink-soft leading-relaxed"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4, duration: 0.6 }}
+        >
+          <span className="text-black font-semibold">That's maybe 1 in 20 ops shops I see.</span>
+        </motion.p>
+
+        <motion.p
+          className="text-xl text-ink-soft leading-relaxed"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.9, duration: 0.6 }}
+        >
+          For the other 19, the build hasn't shipped because nobody's done the decision-work upstream. Claude Code can build anything. It just needs you to tell it what <span className="italic text-black">good</span> looks like.
+        </motion.p>
+
+        <motion.div
+          className="pt-6 border-t border-[color:var(--color-hairline-bold)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.5 }}
+        >
+          <p className="text-2xl text-black leading-snug">
+            After the Blueprint, the build is fast.
+            <br />
+            <span className="font-drama-display">Before it, it's a confident wrong answer.</span>
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  </Slide>
+);
+
+// ────────────────────────────────────────────────────────────────────────
+// Slide 12 — credit math (price reveal)
+// ────────────────────────────────────────────────────────────────────────
+
+const Slide12: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center max-w-6xl mx-auto">
       <MonoLabel>ON THE PRICE</MonoLabel>
@@ -773,7 +943,6 @@ const Slide08: React.FC = () => (
         It credits 100% to anything we ship together within 60 days.
       </motion.p>
 
-      {/* Math ledger */}
       <motion.div
         className="bg-paper-sunk border border-[color:var(--color-hairline-bold)] p-10 max-w-2xl"
         initial={{ opacity: 0, y: 16 }}
@@ -838,10 +1007,10 @@ const Slide08: React.FC = () => (
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 09 — the honest exit
+// Slide 13 — the honest exit (guarantee)
 // ────────────────────────────────────────────────────────────────────────
 
-const Slide09: React.FC = () => (
+const Slide13: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center max-w-5xl mx-auto">
       <MonoLabel>ONE MORE THING</MonoLabel>
@@ -852,7 +1021,7 @@ const Slide09: React.FC = () => (
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.7, ease: editorial }}
       >
-        Sometimes I recommend you{' '}
+        Sometimes I tell you to{' '}
         <span className="font-drama-display">wait.</span>
       </motion.h2>
 
@@ -888,10 +1057,10 @@ const Slide09: React.FC = () => (
 );
 
 // ────────────────────────────────────────────────────────────────────────
-// Slide 10 — close
+// Slide 14 — close / CTA
 // ────────────────────────────────────────────────────────────────────────
 
-const Slide10: React.FC = () => (
+const Slide14: React.FC = () => (
   <Slide>
     <div className="h-full flex flex-col justify-center items-start max-w-5xl mx-auto">
       <MonoLabel>BOOK IT</MonoLabel>
@@ -904,9 +1073,9 @@ const Slide10: React.FC = () => (
       >
         Your
         <br />
-        90-Day AI
+        90-Day
         <br />
-        <span className="font-drama-display">Rollout Plan.</span>
+        <span className="font-drama-display">Blueprint.</span>
       </motion.h2>
 
       <motion.div
@@ -944,7 +1113,7 @@ const Walkthrough: React.FC = () => {
 
   useMetadata({
     title: 'Walkthrough · Manfredi',
-    description: 'Five-day Agent-Ready Blueprint walkthrough.',
+    description: 'Agent-Ready Blueprint walkthrough — Score, Map, Blueprint.',
     canonical: 'https://ivanmanfredi.com/walkthrough',
     noindex: true,
   });
@@ -972,7 +1141,6 @@ const Walkthrough: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [next, prev]);
 
-  // Suppress body scroll while the deck is open
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -993,6 +1161,10 @@ const Walkthrough: React.FC = () => {
       case 7: return <Slide08 key="08" />;
       case 8: return <Slide09 key="09" />;
       case 9: return <Slide10 key="10" />;
+      case 10: return <Slide11 key="11" />;
+      case 11: return <Slide12 key="12" />;
+      case 12: return <Slide13 key="13" />;
+      case 13: return <Slide14 key="14" />;
       default: return null;
     }
   }, [index]);

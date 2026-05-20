@@ -1,0 +1,37 @@
+# Audit artifacts — agent JSON outputs (voice rubrics, beat structures, etc.)
+.audit-*/
+
+# n8n workflow JSON exports — not source code
+n8n-workflows/
+
+# Markdown documentation — handled by separate prose extraction, not code AST
+docs/
+
+# JSON data blobs — not structural
+data/
+
+# Static assets and case-study artifacts
+public/
+
+# Graphify's own output dir (avoid self-indexing)
+graphify-out/
+
+# Supabase CLI temp files
+supabase/.temp/
+
+# SQL migrations — tree-sitter doesn't parse them as connected code
+migrations/
+supabase/migrations/
+
+# Build outputs and tooling
+.next/
+dist/
+node_modules/
+.git/
+
+# Top-level large image
+Main Pic.jpeg
+
+# Edited-but-not-yet-removed backup files
+*.tsx-e
+*.ts-e

@@ -767,7 +767,10 @@ const ConversationalIntakeInner: React.FC = () => {
                 if (m.role !== 'assistant') return <UserBubble key={i} content={m.content} />;
                 // First bubble OR first assistant after a user turn gets the agent mark
                 const prev = i > 0 ? messages[i - 1] : null;
-                const isFirst = !prev || prev.role !== 'assistant';
+                // Drop cap fires ONLY on the very first message in the chat,
+                // not on every agent reply after a user turn.
+                const isFirst = i === 0;
+                void prev;
                 return <BotBubble key={i} content={m.content} index={i} isFirst={isFirst} />;
               })}
 

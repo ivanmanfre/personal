@@ -33,3 +33,6 @@ n8n-workflows/*.json
 
 # Supabase CLI temp
 supabase/.temp/
+
+# Graphify code-graph artifacts — auto-rebuilt on commit via post-commit hook
+graphify-out/
