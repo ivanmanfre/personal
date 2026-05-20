@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail, Sparkles, Edit3, Search, ExternalLink } from 'lucide-react';
+import { Award, ChevronDown, ChevronUp, CreditCard, Calendar, FileText, TrendingUp, Mail, Sparkles, Edit3, Search, ExternalLink, MousePointerClick } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAgentReady, STAGE_LABELS } from '../../hooks/useAgentReady';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useScansList, type ScanListRow } from '../../hooks/useScansList';
+import { useOutreachClicks, type OutreachClickRow } from '../../hooks/useOutreachClicks';
 import { gradeColor } from '../../lib/scanApi';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -111,6 +112,7 @@ const AgentReadyPanel: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight">Agent-Ready</h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
+        <OutreachOpensSection />
         <FreeAuditsSection />
         <EmptyState
           title="No paid Blueprints yet"
@@ -131,6 +133,7 @@ const AgentReadyPanel: React.FC = () => {
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
+      <OutreachOpensSection />
       <FreeAuditsSection />
 
       <div className="pt-2">
@@ -455,6 +458,104 @@ const STATUS_BADGE: Record<string, string> = {
   processing: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
   complete: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
   error: 'bg-red-500/15 text-red-300 border-red-500/30',
+};
+
+const OutreachOpensSection: React.FC = () => {
+  const { rows, loading } = useOutreachClicks();
+
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const last24h = rows.filter((r) => Date.now() - new Date(r.last_clicked_at).getTime() < 86400000).length;
+    const totalClicks = rows.reduce((sum, r) => sum + Number(r.click_count || 0), 0);
+    const v1 = rows.filter((r) => (r.variants_seen || []).includes('v1')).length;
+    const v2 = rows.filter((r) => (r.variants_seen || []).includes('v2')).length;
+    return { total, last24h, totalClicks, v1, v2 };
+  }, [rows]);
+
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <MousePointerClick className="w-5 h-5 text-zinc-400" />
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Outreach Link Opens</h2>
+          <p className="text-xs text-zinc-500">Prospects who clicked the audit link from a LinkedIn DM. A/B split by variant.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard label="Last 24h" value={stats.last24h} icon={<TrendingUp className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Unique opens" value={stats.total} icon={<MousePointerClick className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="Total clicks" value={stats.totalClicks} icon={<MousePointerClick className="w-5 h-5" />} color="text-zinc-300" />
+        <StatCard label="V1 opens" value={stats.v1} icon={<Sparkles className="w-5 h-5" />} color="text-amber-400" />
+        <StatCard label="V2 opens" value={stats.v2} icon={<Sparkles className="w-5 h-5" />} color="text-blue-400" />
+      </div>
+
+      {loading && rows.length === 0 ? (
+        <p className="text-xs text-zinc-500 font-mono">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-zinc-500 font-mono">No outreach opens yet. Clicks land here as soon as DMs start being opened.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {rows.map((row) => <OutreachOpenRow key={row.token} row={row} />)}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VARIANT_BADGE: Record<string, string> = {
+  v1: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  v2: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+};
+
+const OutreachOpenRow: React.FC<{ row: OutreachClickRow }> = ({ row }) => {
+  const time = relativeTime(row.last_clicked_at);
+  const displayName = row.connection_name || row.company_name || '(unknown)';
+  const subline = [row.company_name, row.company_domain].filter(Boolean).join(' · ');
+  const variants = (row.variants_seen || []).filter(Boolean);
+  const clickCount = Number(row.click_count || 0);
+
+  return (
+    <div className="flex items-center gap-3 py-1.5 px-3 rounded border border-zinc-800/60 bg-zinc-950/40 hover:bg-zinc-900/40 transition-colors">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm text-zinc-200 truncate font-medium">{displayName}</span>
+          {row.linkedin_profile_url && (
+            <a
+              href={row.linkedin_profile_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-zinc-500 hover:text-zinc-200"
+              title="Open LinkedIn profile"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-zinc-500 mt-0.5">
+          {subline && <span className="font-mono truncate">{subline}</span>}
+          {subline && <span>·</span>}
+          <span>{time}</span>
+          {clickCount > 1 && (
+            <>
+              <span>·</span>
+              <span className="font-mono">{clickCount} clicks</span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="shrink-0 flex items-center gap-1">
+        {variants.map((v) => (
+          <span
+            key={v}
+            className={`inline-flex items-center px-2 py-0.5 rounded border text-[10px] uppercase tracking-wider font-mono ${VARIANT_BADGE[v] ?? 'bg-zinc-700/40 text-zinc-300 border-zinc-600/40'}`}
+          >
+            {v}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const FreeAuditsSection: React.FC = () => {
