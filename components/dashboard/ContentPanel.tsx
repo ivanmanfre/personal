@@ -119,22 +119,29 @@ function toLocalParts(iso: string, tz?: string): { date: string; time: string } 
   };
 }
 
-/** Combine date + time strings into an ISO string in the given timezone */
+/** Combine date + time strings into an ISO string representing the wall-clock instant in the given timezone */
 function toISOFromLocal(dateStr: string, timeStr: string, tz?: string): string {
-  // Build a date in the target timezone by creating a temporary date and adjusting
-  if (tz) {
-    // Create a date object from the date and time parts
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const [h, min] = timeStr.split(':').map(Number);
-    // Use a reference date to find the UTC offset for that timezone
-    const ref = new Date(y, m - 1, d, h, min);
-    const utcStr = ref.toLocaleString('en-US', { timeZone: 'UTC' });
-    const tzStr = ref.toLocaleString('en-US', { timeZone: tz });
-    const offsetMs = new Date(utcStr).getTime() - new Date(tzStr).getTime();
-    const adjusted = new Date(ref.getTime() + offsetMs);
-    return adjusted.toISOString();
-  }
-  return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+  if (!tz) return new Date(`${dateStr}T${timeStr}:00Z`).toISOString();
+
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [h, min] = timeStr.split(':').map(Number);
+
+  // Start by treating the input as if it were UTC (a guess)
+  const utcGuess = Date.UTC(y, m - 1, d, h, min);
+
+  // Format that UTC instant in the target timezone to see what wall-clock it produces
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(utcGuess));
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)!.value, 10);
+  const tzAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'));
+
+  // The drift between (UTC interpretation) and (TZ formatted as UTC) is the TZ offset.
+  // Subtract it to get the real UTC instant when wall-clock in tz reads y/m/d h:min.
+  const offsetMs = tzAsUtc - utcGuess;
+  return new Date(utcGuess - offsetMs).toISOString();
 }
 
 /** Draggable post pill for the calendar */
