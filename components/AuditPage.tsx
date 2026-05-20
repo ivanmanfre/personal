@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowRight, AlertCircle, ExternalLink } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { submitScan, lookupProspectToken } from '../lib/scanApi';
+import { supabase } from '../lib/supabase';
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 
@@ -38,7 +39,25 @@ const AuditPage: React.FC = () => {
 
   const [searchParams] = useSearchParams();
   const ref = searchParams.get('ref');
+  const variant = searchParams.get('v');
   const reduceMotion = useReducedMotion();
+
+  // Fire-and-forget click log for outreach attribution. Once per ?ref= per session.
+  // Guarded against StrictMode double-mount with sessionStorage.
+  useEffect(() => {
+    if (!ref) return;
+    const sessionKey = `outreach_click_logged:${ref}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, '1');
+    supabase
+      .rpc('log_outreach_click', {
+        p_token: ref,
+        p_variant: variant || null,
+        p_user_agent: navigator.userAgent.slice(0, 500),
+        p_referer: document.referrer ? document.referrer.slice(0, 500) : null,
+      })
+      .then(() => {});
+  }, [ref, variant]);
 
   const [stage, setStage] = useState<Stage>('form');
   const [urlInput, setUrlInput] = useState('');
