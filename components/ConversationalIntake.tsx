@@ -386,6 +386,25 @@ const ConversationalIntakeInner: React.FC = () => {
     }
   }, [sessionId]);
 
+  // Auto-start voice mode if URL has ?voice=1 — fires ONCE after the session
+  // becomes ready. Useful for direct-voice links shared in email / SMS.
+  const voiceAutoStartedRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (voiceAutoStartedRef.current) return;
+    if (state !== 'ready') return;
+    if (voiceMode !== 'text') return;
+    const params = new URLSearchParams(window.location.search);
+    const wantVoice = params.get('voice') === '1' || params.get('mode') === 'voice';
+    if (!wantVoice) return;
+    voiceAutoStartedRef.current = true;
+    // Tiny delay so the masthead + agent intro bubble render first, then
+    // voice mode takes over the input area.
+    const t = setTimeout(() => { startVoiceModeRef.current?.(); }, 400);
+    return () => clearTimeout(t);
+  }, [state, voiceMode]);
+  const startVoiceModeRef = useRef<(() => void) | null>(null);
+
   const startVoiceMode = useCallback(async () => {
     if (!sessionId) return;
     setVoiceStatus('connecting');
@@ -452,6 +471,9 @@ const ConversationalIntakeInner: React.FC = () => {
       setVoiceToast({ kind: 'error', text: `Voice failed to start: ${msg.slice(0, 100)}` });
     }
   }, [sessionId, elevenConversation, messages]);
+
+  // Keep the ref in sync so the auto-start effect can call the latest version
+  useEffect(() => { startVoiceModeRef.current = startVoiceMode; }, [startVoiceMode]);
 
   const endVoiceMode = useCallback(async () => {
     intentionalEndRef.current = true;
@@ -1180,22 +1202,20 @@ const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
     height={size}
     viewBox="0 0 36 36"
     role="img"
-    aria-label="Ivan's Agent"
+    aria-label="Ivan's intake agent"
     className="flex-shrink-0"
   >
-    <rect width="36" height="36" fill="#1A1A1A" />
-    <text
-      x="50%"
-      y="50%"
-      dominantBaseline="central"
-      textAnchor="middle"
-      fontFamily="'DM Serif Display', serif"
-      fontStyle="italic"
-      fontSize="22"
-      fill="var(--color-accent, #2A8F65)"
-    >
-      i.
-    </text>
+    {/* Soft sage paper-sunk square — quiet container */}
+    <rect width="36" height="36" rx="4" fill="var(--color-paper-sunk, #EFEBE3)" />
+    {/* Editorial waveform: 5 vertical bars, sage, varying heights — reads as
+        "listening agent" without resorting to a generic mic or robot icon */}
+    <g fill="var(--color-accent, #4C6E3D)">
+      <rect x="7"  y="15" width="2.4" height="6"  rx="1.2" />
+      <rect x="12" y="11" width="2.4" height="14" rx="1.2" />
+      <rect x="17" y="8"  width="2.4" height="20" rx="1.2" />
+      <rect x="22" y="12" width="2.4" height="12" rx="1.2" />
+      <rect x="27" y="15" width="2.4" height="6"  rx="1.2" />
+    </g>
   </svg>
 );
 
@@ -1230,7 +1250,7 @@ const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }>
               initial={{ opacity: 0, scale: 0.85, x: -8 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               transition={{ duration: 0.65, delay: 0.85, ease: [0.32, 0.72, 0, 1] }}
-              className="font-drama italic float-left leading-[0.82] pr-3 pt-1 text-[4.2rem] md:text-[5rem] text-ink select-none"
+              className="font-drama italic float-left leading-[0.85] pr-2.5 pt-0.5 text-[2.6rem] md:text-[3rem] text-ink select-none"
               aria-hidden="true"
             >
               {dropCapMatch[1]}
