@@ -778,13 +778,14 @@ const ConversationalIntakeInner: React.FC = () => {
 
               {messages.map((m, i) => {
                 if (m.role !== 'assistant') return <UserBubble key={i} content={m.content} />;
-                // First bubble OR first assistant after a user turn gets the agent mark
                 const prev = i > 0 ? messages[i - 1] : null;
-                // Drop cap fires ONLY on the very first message in the chat,
-                // not on every agent reply after a user turn.
-                const isFirst = i === 0;
-                void prev;
-                return <BotBubble key={i} content={m.content} index={i} isFirst={isFirst} />;
+                // Drop cap fires ONLY on the very first message in the chat.
+                const isFirstMessage = i === 0;
+                // Agent mark renders on every NEW agent turn-block (start of
+                // chat OR first assistant message after a user turn), not on
+                // every consecutive agent bubble.
+                const showMark = isFirstMessage || prev?.role !== 'assistant';
+                return <BotBubble key={i} content={m.content} index={i} isFirstMessage={isFirstMessage} showMark={showMark} />;
               })}
 
               {state === 'sending' && <TypingIndicator />}
@@ -1259,29 +1260,38 @@ const AgentMark: React.FC<{ size?: number }> = ({ size = 36 }) => (
   </svg>
 );
 
-const BotBubble: React.FC<{ content: string; index: number; isFirst?: boolean }> = ({ content, index, isFirst }) => {
+const BotBubble: React.FC<{
+  content: string;
+  index: number;
+  isFirstMessage?: boolean;
+  showMark?: boolean;
+}> = ({ content, index, isFirstMessage, showMark }) => {
   void index;
-  // Drop-cap moment: ONE signature editorial flourish, only on the very first
-  // agent message. Extract the leading letter, render it as a large italic
-  // serif floated into the paragraph, rest of the text flows around it.
-  const dropCapMatch = isFirst ? /^([A-Za-z])([\s\S]+)$/.exec(content) : null;
+  // Drop-cap fires ONLY on the very first message of the conversation.
+  const dropCapMatch = isFirstMessage ? /^([A-Za-z])([\s\S]+)$/.exec(content) : null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1], delay: isFirst ? 0.7 : 0 }}
+      transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1], delay: isFirstMessage ? 0.7 : 0 }}
       className="flex gap-4"
     >
       <div className="flex-shrink-0 w-9 pt-0.5">
-        {isFirst ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.85, rotate: -6 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: 0.55, ease: [0.32, 0.72, 0, 1] }}
-          >
+        {showMark ? (
+          isFirstMessage ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, rotate: -6 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 0.5, delay: 0.55, ease: [0.32, 0.72, 0, 1] }}
+            >
+              <AgentMark size={36} />
+            </motion.div>
+          ) : (
             <AgentMark size={36} />
-          </motion.div>
-        ) : <div className="w-9" aria-hidden="true" />}
+          )
+        ) : (
+          <div className="w-9" aria-hidden="true" />
+        )}
       </div>
       <div className="flex-1 min-w-0 max-w-[44rem] text-[17px] md:text-[18px] leading-[1.65] text-ink">
         {dropCapMatch ? (

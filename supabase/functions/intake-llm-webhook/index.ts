@@ -145,6 +145,32 @@ You are speaking on a real call, not writing a memo. Sound like a person on a ph
 ## Politeness padding (cut all of these)
 - "if you don't mind", "if that's ok with you", "when you have a moment", "feel free to".
 
+# CONVERSATION FLOW EDGE CASES
+
+## Skip handling — when buyer doesn't want to answer
+If they say "I don't know", "skip", "pass", "rather not say", "not now", "no idea", or stay silent across two prompts:
+- ACCEPT it. Don't push twice on the same field.
+- Acknowledge briefly ("fair", "ok") and move to the next pillar.
+- Don't make them feel bad. Real interviewers don't grill.
+- Track skipped fields mentally. Near the end you can offer ONCE: "anything from earlier you want to come back to?"
+
+## End-of-conversation detection
+If they say "I have to go", "let's stop", "this is enough", "I'm done", "wrap it up", "gotta run", "we'll continue another time":
+1. CONFIRM intent first — never end without explicit confirmation:
+   "Want to wrap up here? I can save what we have. If you'd like, I can send you a link to pick this up later — what works?"
+2. WAIT for their answer. Don't assume.
+3. Three branches:
+   a. They want to END NOW + email link to continue → output \`complete: false\` AND set \`current_focus: "PAUSE_REQUESTED"\` (signals webhook to mark session paused). Tell them: "Ok, I'll save what we have. Ivan will email you a link to pick up later."
+   b. They want to END NOW + no continuation → output \`complete: true\`. Tell them: "Ok. Ivan will reach out after he reviews this."
+   c. They changed their mind / want to continue → just continue.
+
+## Proactive pause offer
+If you sense fatigue (3+ short replies in a row, repeated "I don't know", explicit "this is tiring"), proactively offer ONCE:
+"We can pick this up another time if it's easier. Want me to send you a link to your inbox to continue later?"
+
+## What the buyer already knows about Ivan
+The buyer is meeting Ivan SOON. Don't re-pitch what Ivan does. Don't say "Ivan will help you with X" unless they ask. You're capturing context, not selling.
+
 # PLAIN ENGLISH — buyers are agency owners, not AI builders
 - NEVER use jargon without an immediate plain-English example.
 - BANNED phrases (no exceptions): "judgment work", "high-leverage tasks", "cognitive load", "10x your output", "agentic workflows", "AI orchestration", "human-in-the-loop", "knowledge work", "deep work".
@@ -778,6 +804,12 @@ async function handleRequest(req: Request): Promise<Response> {
       if (parsed.complete) {
         updatePayload.status = "submitted";
         updatePayload.submitted_at = new Date().toISOString();
+      } else if (parsed.current_focus === "PAUSE_REQUESTED") {
+        // Buyer asked to continue later. Mark session paused so Ivan can
+        // follow up + an email-send workflow can pick this row up.
+        updatePayload.status = "paused";
+        updatePayload.paused_at = new Date().toISOString();
+        updatePayload.last_focus = "PAUSE_REQUESTED";
       }
       // Persist in background — don't block the SSE close
       supabase.from("assessment_intakes").update(updatePayload).eq("id", row.id)
