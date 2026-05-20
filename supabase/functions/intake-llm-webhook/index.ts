@@ -407,9 +407,19 @@ async function handleRequest(req: Request): Promise<Response> {
   try { body = await req.json(); } catch { return errorResponse(400, "invalid_json"); }
 
   // 2. Extract intake_token from customLlmExtraBody (top-level), or from the
-  // OpenAI-style passthrough fields that ElevenAgents merges in.
+  // OpenAI-style passthrough fields that ElevenAgents merges in. ElevenAgents
+  // may put it under various keys depending on api_type — check broadly.
+  // ElevenAgents stashes our customLlmExtraBody under `elevenlabs_extra_body`
+  // (confirmed via webhook_debug_log capture). Check that path first.
   const intakeToken: string = String(
-    body.intake_token ?? body.extra_body?.intake_token ?? body.customLlmExtraBody?.intake_token ?? ""
+    body.elevenlabs_extra_body?.intake_token
+      ?? body.intake_token
+      ?? body.extra_body?.intake_token
+      ?? body.customLlmExtraBody?.intake_token
+      ?? body.custom_llm_extra_body?.intake_token
+      ?? body.metadata?.intake_token
+      ?? body.user
+      ?? ""
   ).trim();
   if (!intakeToken) {
     console.warn("[webhook-missing-token]", JSON.stringify(Object.keys(body)).slice(0, 200));
