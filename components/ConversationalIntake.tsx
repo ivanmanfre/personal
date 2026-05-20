@@ -753,6 +753,16 @@ const ConversationalIntakeInner: React.FC = () => {
         </AnimatePresence>
 
         <div className="flex-1 flex flex-col min-h-0">
+          {/* Voice mode replaces the chat scroll with a focused stage —
+              single current agent message, large waveform, no history. */}
+          {voiceMode === 'voice' && (voiceStatus === 'live' || voiceStatus === 'connecting' || voiceStatus === 'ending') ? (
+            <VoiceStage
+              messages={messages}
+              agentMode={agentMode}
+              voiceStatus={voiceStatus}
+              onEnd={endVoiceMode}
+            />
+          ) : (
           <div ref={chatScrollRef} className="flex-1 overflow-y-auto">
             <div className="container mx-auto max-w-3xl px-6 md:px-10 py-10 md:py-14 space-y-7 md:space-y-9">
               {state === 'loading' && (
@@ -816,57 +826,6 @@ const ConversationalIntakeInner: React.FC = () => {
               )}
             </div>
           </div>
-
-          {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'voice' && (
-            <div className="border-t-2 border-accent bg-paper-sunk">
-              <div className="container mx-auto max-w-3xl px-6 md:px-10 py-7 md:py-9">
-                <div className="flex items-center justify-between gap-6">
-                  <div className="flex items-center gap-5 min-w-0">
-                    {/* Live waveform — bars animate while the agent is speaking,
-                        idle when listening. Replaces the static orb. */}
-                    <VoiceWaveform
-                      status={voiceStatus}
-                      speaking={agentMode === 'speaking' && voiceStatus === 'live'}
-                    />
-                    <div className="leading-tight min-w-0">
-                      <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute mb-1.5">
-                        {voiceStatus === 'connecting' && 'Connecting'}
-                        {voiceStatus === 'live' && (agentMode === 'speaking' ? 'Speaking' : 'Listening')}
-                        {voiceStatus === 'ending' && 'Wrapping up'}
-                        {voiceStatus === 'error' && 'Voice error'}
-                        {voiceStatus === 'idle' && 'Voice mode'}
-                      </div>
-                      <p className="text-[17px] md:text-[18px] leading-snug text-ink">
-                        {voiceStatus === 'live' && (
-                          <>
-                            <span className="font-drama italic">Just speak.</span>{' '}
-                            <span className="text-ink-soft">It picks up natural pauses.</span>
-                          </>
-                        )}
-                        {voiceStatus === 'connecting' && (
-                          <span className="text-ink-soft">Establishing the connection…</span>
-                        )}
-                        {voiceStatus === 'ending' && (
-                          <span className="text-ink-soft">Saving your progress…</span>
-                        )}
-                        {voiceStatus === 'error' && (
-                          <span className="text-red-800">{voiceModeError ?? 'Connection failed. Switch to text or retry.'}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={endVoiceMode}
-                    disabled={voiceStatus === 'ending'}
-                    className="flex-shrink-0 flex items-center gap-2 px-5 py-3 bg-black text-white border border-black font-mono text-[11px] uppercase tracking-[0.16em] hover:bg-ink-soft transition-colors disabled:opacity-50"
-                    aria-label="End voice session and return to text"
-                  >
-                    {voiceStatus === 'ending' ? <Loader2 size={14} className="animate-spin" /> : <PhoneOff size={14} />}
-                    End call
-                  </button>
-                </div>
-              </div>
-            </div>
           )}
 
           {state !== 'submitted' && state !== 'locked' && state !== 'error' && voiceMode === 'text' && (
@@ -954,34 +913,126 @@ const ConversationalIntakeInner: React.FC = () => {
 // VoiceWaveform — 5 sage bars that animate while the agent is speaking.
 // CSS-only animation; no canvas, no audio analysis. Each bar uses a different
 // scale-Y keyframe phase so the column reads as a live waveform.
+// Dedicated voice-mode view — replaces the chat scroll when in voice mode.
+// One centered editorial message at a time + a large live waveform. No history,
+// no chrome competing with the conversation. Hands-free reading experience.
+const VoiceStage: React.FC<{
+  messages: Array<{ role: string; content: string }>;
+  agentMode: 'speaking' | 'listening';
+  voiceStatus: 'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped';
+  onEnd: () => void;
+}> = ({ messages, agentMode, voiceStatus, onEnd }) => {
+  const lastAgent = [...messages].reverse().find((m) => m.role === 'assistant');
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const showUserHint = agentMode === 'listening' && lastUser && messages.length > 0 && messages[messages.length - 1]?.role === 'user';
+  const statusLabel =
+    voiceStatus === 'connecting' ? 'Connecting'
+    : voiceStatus === 'ending' ? 'Wrapping up'
+    : voiceStatus === 'live' ? (agentMode === 'speaking' ? 'Speaking' : 'Listening · take your time')
+    : 'Voice';
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-6 py-10 relative">
+      {/* Status eyebrow */}
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="font-mono text-[10px] md:text-[11px] uppercase tracking-[0.28em] text-ink-mute mb-10"
+      >
+        {statusLabel}
+      </motion.div>
+
+      {/* Current agent message — single centered editorial line. Animates between turns. */}
+      <div className="w-full max-w-2xl flex-shrink-0 min-h-[140px] md:min-h-[180px] flex items-center justify-center">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.p
+            key={lastAgent?.content?.slice(0, 60) || 'empty'}
+            initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0)' }}
+            exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
+            transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+            className="text-center text-[22px] md:text-[28px] leading-[1.4] text-ink font-sans"
+          >
+            {lastAgent?.content ?? ' '}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+
+      {/* Live transcript hint when buyer just spoke and agent is processing */}
+      <div className="w-full max-w-2xl min-h-[28px] flex items-center justify-center mt-2">
+        <AnimatePresence>
+          {showUserHint && (
+            <motion.p
+              key={lastUser?.content?.slice(0, 60) || 'u'}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.55 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-center text-[14px] md:text-[15px] italic text-ink-mute font-sans"
+            >
+              you: {lastUser!.content.slice(0, 120)}{lastUser!.content.length > 120 ? '…' : ''}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Large waveform — focal visual */}
+      <div className="mt-12 mb-10">
+        <VoiceWaveform
+          status={voiceStatus}
+          speaking={agentMode === 'speaking' && voiceStatus === 'live'}
+          size="large"
+        />
+      </div>
+
+      {/* End call — bottom centered, calm */}
+      <button
+        onClick={onEnd}
+        disabled={voiceStatus === 'ending'}
+        className="flex items-center gap-2 px-6 py-3 border border-[color:var(--color-hairline-bold)] text-ink-mute hover:text-ink hover:border-ink transition-colors text-[13px] disabled:opacity-50 rounded-sm"
+        aria-label="End voice session and return to text"
+      >
+        {voiceStatus === 'ending' ? <Loader2 size={14} className="animate-spin" /> : <PhoneOff size={14} />}
+        End call
+      </button>
+    </div>
+  );
+};
+
 const VoiceWaveform: React.FC<{
   status: 'idle' | 'connecting' | 'live' | 'ending' | 'error' | 'dropped';
   speaking: boolean;
-}> = ({ status, speaking }) => {
+  size?: 'small' | 'large';
+}> = ({ status, speaking, size = 'small' }) => {
+  const large = size === 'large';
+  const containerCls = large
+    ? 'w-32 h-32 md:w-40 md:h-40 flex items-end justify-center gap-1.5 rounded-full bg-accent/10 px-6 py-7 flex-shrink-0 shadow-[0_0_60px_rgba(76,110,61,0.18)]'
+    : 'w-14 h-14 flex items-end justify-center gap-[3px] rounded-full bg-accent/10 px-3 py-2.5 flex-shrink-0';
+  const barCls = large ? 'intake-wave-bar intake-wave-bar--lg' : 'intake-wave-bar';
   if (status === 'connecting' || status === 'ending') {
     return (
-      <div className="w-14 h-14 flex items-center justify-center rounded-full bg-accent/15 flex-shrink-0">
-        <Loader2 size={20} className="animate-spin text-accent" />
+      <div className={`${large ? 'w-32 h-32 md:w-40 md:h-40' : 'w-14 h-14'} flex items-center justify-center rounded-full bg-accent/15 flex-shrink-0`}>
+        <Loader2 size={large ? 36 : 20} className="animate-spin text-accent" />
       </div>
     );
   }
   if (status === 'error') {
     return (
-      <div className="w-14 h-14 flex items-center justify-center rounded-full bg-red-100 text-red-700 flex-shrink-0">
-        <AlertTriangle size={20} />
+      <div className={`${large ? 'w-32 h-32 md:w-40 md:h-40' : 'w-14 h-14'} flex items-center justify-center rounded-full bg-red-100 text-red-700 flex-shrink-0`}>
+        <AlertTriangle size={large ? 36 : 20} />
       </div>
     );
   }
   return (
     <div
-      className="w-14 h-14 flex items-end justify-center gap-[3px] rounded-full bg-accent/10 px-3 py-2.5 flex-shrink-0"
+      className={containerCls}
       role="img"
       aria-label={speaking ? 'Agent speaking' : 'Agent listening'}
     >
       {[0, 1, 2, 3, 4].map((i) => (
         <span
           key={i}
-          className={speaking ? 'intake-wave-bar intake-wave-bar--active' : 'intake-wave-bar'}
+          className={speaking ? `${barCls} intake-wave-bar--active` : barCls}
           style={{ animationDelay: `${i * 110}ms` }}
         />
       ))}
