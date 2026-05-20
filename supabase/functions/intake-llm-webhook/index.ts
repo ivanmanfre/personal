@@ -602,20 +602,74 @@ async function handleRequest(req: Request): Promise<Response> {
 
   const row = intake as unknown as IntakeRow;
 
-  // 6. Refuse locked/submitted/cap-reached sessions
+  // 6. Refuse locked / already-wrapped / submitted / cap-reached sessions.
   if (row.locked_at) {
-    return openaiSSEResponse("This session is locked. Iván has been notified and will reach out shortly.");
+    return openaiSSEResponse("This session is locked. Ivan has been notified and will reach out shortly.");
   }
   if (row.status === "submitted") {
-    return openaiSSEResponse("This intake has already been submitted. Iván will be in touch within one business day.");
+    return openaiSSEResponse("This intake has already been submitted. Ivan will be in touch within one business day.");
   }
+  if (row.status === "paused") {
+    return openaiSSEResponse("We've already saved this session. Ivan will follow up by email. Talk soon.");
+  }
+  if (row.status === "wrapped") {
+    return openaiSSEResponse("Thanks, talk soon.");
+  }
+
+  // 6a. SILENCE LOOP GUARD — voice agents send "..." / empty user_message
+  // when the buyer stays quiet. If we see 4+ consecutive silences, the buyer
+  // has stepped away. Bypass Claude, auto-pause the session, return one
+  // graceful goodbye (and DON'T loop the same canned line forever).
+  const isSilent = (s: string) => {
+    const t = (s ?? "").trim();
+    return !t || t === "..." || t === "…" || t === "." || t.length < 3;
+  };
+  const recentUserTurns = row.chat_history.filter((m) => m.role === "user");
+  let priorSilences = 0;
+  for (let i = recentUserTurns.length - 1; i >= 0; i--) {
+    if (isSilent(recentUserTurns[i].content)) priorSilences++;
+    else break;
+  }
+  const currentIsSilent = isSilent(userMessage);
+  const effectiveSilences = priorSilences + (currentIsSilent ? 1 : 0);
+  if (effectiveSilences >= 4) {
+    const goodbye = "Looks like you stepped away. I've saved what we have, Ivan will email you a link to pick this up later. Talk soon.";
+    const newHistory = [
+      ...row.chat_history,
+      { role: "user" as const, content: userMessage || "(silence)", ts: new Date().toISOString(), modality: "voice" as const },
+      { role: "assistant" as const, content: goodbye, ts: new Date().toISOString(), modality: "voice" as const },
+    ];
+    supabase.from("assessment_intakes").update({
+      status: "paused",
+      paused_at: new Date().toISOString(),
+      last_focus: "AUTO_PAUSED_SILENCE",
+      chat_history: newHistory,
+      // intentionally don't bump turn_count — silences shouldn't burn the cap
+    }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[auto-pause-update-failed]", error.message); });
+    return openaiSSEResponse(goodbye);
+  }
+
+  // 6b. Cap reached — fire the wrap-up message ONCE, then flip status='wrapped'
+  // so subsequent calls return a short refusal instead of repeating this line.
   if (row.turn_count >= CONSTANTS.MAX_TURNS) {
-    return openaiSSEResponse("We've covered a lot. Let me wrap up. Please review what you've shared and submit when you're ready.");
+    const wrapUp = "We've covered a lot. Let me wrap up. Ivan will reach out after he reviews this.";
+    supabase.from("assessment_intakes").update({
+      status: "wrapped",
+      wrapped_at: new Date().toISOString(),
+      last_focus: "MAX_TURNS_REACHED",
+    }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[wrap-update-failed]", error.message); });
+    return openaiSSEResponse(wrapUp);
   }
   const tokenIn = row.token_usage?.input ?? 0;
   const tokenOut = row.token_usage?.output ?? 0;
   if (tokenIn > CONSTANTS.TOKEN_BUDGET_INPUT || tokenOut > CONSTANTS.TOKEN_BUDGET_OUTPUT) {
-    return openaiSSEResponse("We've covered a lot. Let me wrap up. Please review what you've shared and submit when you're ready.");
+    const wrapUp = "We've covered a lot. Let me wrap up. Ivan will reach out after he reviews this.";
+    supabase.from("assessment_intakes").update({
+      status: "wrapped",
+      wrapped_at: new Date().toISOString(),
+      last_focus: "TOKEN_BUDGET_REACHED",
+    }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[wrap-update-failed]", error.message); });
+    return openaiSSEResponse(wrapUp);
   }
 
   // 7. Injection regex pre-filter
@@ -803,7 +857,9 @@ async function handleRequest(req: Request): Promise<Response> {
       }
 
       // 13. Persist new state — voice turn appended to history
-      const newTurn = row.turn_count + 1;
+      // Silence turns don't burn the MAX_TURNS cap (otherwise a quiet buyer
+      // hits the wrap-up message in 30 seconds of pause).
+      const newTurn = currentIsSilent ? row.turn_count : row.turn_count + 1;
       const mergedAnswers = { ...row.answers, ...parsed.extracted_answers };
       const newHistory = [
         ...row.chat_history,
