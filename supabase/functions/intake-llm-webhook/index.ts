@@ -255,7 +255,8 @@ function extractStructured(raw: string): ParsedClaudeResponse {
 // OpenAI SSE response — single-chunk fallback for short canned messages.
 // (The main flow uses the streaming pipeline below, not this.)
 // ───────────────────────────────────────────
-function openaiSSEResponse(messageText: string, model = "claude-via-supabase"): Response {
+function openaiSSEResponse(messageText: string, opts: { endCall?: boolean; model?: string } = {}): Response {
+  const model = opts.model ?? "claude-via-supabase";
   const id = `chatcmpl-${crypto.randomUUID().slice(0, 24)}`;
   const created = Math.floor(Date.now() / 1000);
   const encoder = new TextEncoder();
@@ -266,14 +267,39 @@ function openaiSSEResponse(messageText: string, model = "claude-via-supabase"): 
         id, object: "chat.completion.chunk", created, model,
         choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }],
       })}\n\n`));
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-        id, object: "chat.completion.chunk", created, model,
-        choices: [{ index: 0, delta: { content: messageText }, finish_reason: null }],
-      })}\n\n`));
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-        id, object: "chat.completion.chunk", created, model,
-        choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
-      })}\n\n`));
+      if (messageText) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id, object: "chat.completion.chunk", created, model,
+          choices: [{ index: 0, delta: { content: messageText }, finish_reason: null }],
+        })}\n\n`));
+      }
+      // If endCall is set, emit a tool_call so ElevenAgents disconnects the
+      // WebSocket cleanly after speaking. finish_reason becomes 'tool_calls'.
+      if (opts.endCall) {
+        const callId = `call_${crypto.randomUUID().slice(0, 8)}`;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id, object: "chat.completion.chunk", created, model,
+          choices: [{
+            index: 0,
+            delta: {
+              tool_calls: [{
+                index: 0, id: callId, type: "function",
+                function: { name: "end_call", arguments: "{}" },
+              }],
+            },
+            finish_reason: null,
+          }],
+        })}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id, object: "chat.completion.chunk", created, model,
+          choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }],
+        })}\n\n`));
+      } else {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          id, object: "chat.completion.chunk", created, model,
+          choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+        })}\n\n`));
+      }
       controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
       controller.close();
     },
@@ -631,9 +657,20 @@ async function handleRequest(req: Request): Promise<Response> {
   // after the goodbye.
   if (row.status === "paused" && row.paused_at) {
     const pausedSecondsAgo = (Date.now() - new Date(row.paused_at).getTime()) / 1000;
-    const isVerySilent = (userMessage ?? "").trim().length < 8; // "..." / "ok" / "yes" / "thanks" etc.
+    const isVerySilent = (userMessage ?? "").trim().length < 8;
     if (pausedSecondsAgo < 180 && isVerySilent) {
-      return openaiSSEResponse("Talk soon.");
+      // Check if we already said the goodbye — if so, send an EMPTY response
+      // (just the end_call tool, no audio) on follow-up silences. Prevents the
+      // "Talk soon. Talk soon. Talk soon." stutter when ElevenAgents fires
+      // multiple webhook calls before processing the end_call tool.
+      const lastAgentTurn = [...row.chat_history].reverse().find((m) => m.role === "assistant");
+      const alreadySaidGoodbye = !!lastAgentTurn && (
+        /talk soon|email from ivan|talk to you next time/i.test(lastAgentTurn.content)
+      );
+      if (alreadySaidGoodbye) {
+        return openaiSSEResponse("", { endCall: true });
+      }
+      return openaiSSEResponse("Talk soon.", { endCall: true });
     }
   }
 
@@ -667,7 +704,7 @@ async function handleRequest(req: Request): Promise<Response> {
       chat_history: newHistory,
       // intentionally don't bump turn_count — silences shouldn't burn the cap
     }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[auto-pause-update-failed]", error.message); });
-    return openaiSSEResponse(goodbye);
+    return openaiSSEResponse(goodbye, { endCall: true });
   }
 
   // 6b. Cap reached — fire the wrap-up message ONCE, then flip status='wrapped'
@@ -679,7 +716,7 @@ async function handleRequest(req: Request): Promise<Response> {
       wrapped_at: new Date().toISOString(),
       last_focus: "MAX_TURNS_REACHED",
     }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[wrap-update-failed]", error.message); });
-    return openaiSSEResponse(wrapUp);
+    return openaiSSEResponse(wrapUp, { endCall: true });
   }
   const tokenIn = row.token_usage?.input ?? 0;
   const tokenOut = row.token_usage?.output ?? 0;
@@ -690,7 +727,7 @@ async function handleRequest(req: Request): Promise<Response> {
       wrapped_at: new Date().toISOString(),
       last_focus: "TOKEN_BUDGET_REACHED",
     }).eq("id", row.id).then(({ error }) => { if (error) console.warn("[wrap-update-failed]", error.message); });
-    return openaiSSEResponse(wrapUp);
+    return openaiSSEResponse(wrapUp, { endCall: true });
   }
 
   // 7. Injection regex pre-filter
