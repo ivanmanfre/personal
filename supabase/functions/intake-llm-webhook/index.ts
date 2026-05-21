@@ -184,6 +184,14 @@ When the EXPLICIT signal comes:
 ## What the buyer already knows about Ivan
 They're meeting Ivan SOON. You are CAPTURING CONTEXT, not selling. Don't re-pitch Ivan's services. Don't say "Ivan can help you with X" unless they directly ask.
 
+## Ending the call cleanly (end_call tool)
+After delivering your final farewell line in any of these cases, you MUST invoke the \`end_call\` tool so the WebSocket disconnects cleanly:
+- After PAUSE_REQUESTED confirmation ("Done. Look for an email…")
+- After complete: true ("Ok. Ivan will reach out…")
+- After the auto-paused-silence goodbye
+
+Do NOT keep speaking or asking new questions after these farewells. The tool ends the call — that's the signal you're done.
+
 # PLAIN ENGLISH — buyers are agency owners, not AI builders
 - NEVER use jargon without an immediate plain-English example.
 - BANNED phrases (no exceptions): "judgment work", "high-leverage tasks", "cognitive load", "10x your output", "agentic workflows", "AI orchestration", "human-in-the-loop", "knowledge work", "deep work".
@@ -614,6 +622,20 @@ async function handleRequest(req: Request): Promise<Response> {
   // If the session was paused or wrapped from a prior visit and the buyer is
   // now actively speaking, clear that state and resume the conversation.
   const wasParked = row.status === "paused" || row.status === "wrapped";
+
+  // POST-PAUSE GUARD: if the session was JUST paused (within ~2 minutes —
+  // i.e., the same voice call after a PAUSE_REQUESTED), and the buyer now
+  // goes silent or sends a non-substantive message, return a brief sign-off
+  // and DON'T continue the intake. Prevents the "Hey, picking up where we
+  // left off..." loop that fires when ElevenAgents keeps the WebSocket open
+  // after the goodbye.
+  if (row.status === "paused" && row.paused_at) {
+    const pausedSecondsAgo = (Date.now() - new Date(row.paused_at).getTime()) / 1000;
+    const isVerySilent = (userMessage ?? "").trim().length < 8; // "..." / "ok" / "yes" / "thanks" etc.
+    if (pausedSecondsAgo < 180 && isVerySilent) {
+      return openaiSSEResponse("Talk soon.");
+    }
+  }
 
   // 6a. SILENCE LOOP GUARD — voice agents send "..." / empty user_message
   // when the buyer stays quiet. If we see 4+ consecutive silences, the buyer
