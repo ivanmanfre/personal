@@ -602,19 +602,18 @@ async function handleRequest(req: Request): Promise<Response> {
 
   const row = intake as unknown as IntakeRow;
 
-  // 6. Refuse locked / already-wrapped / submitted / cap-reached sessions.
+  // 6. Refuse only TERMINAL session states. paused/wrapped are NOT terminal —
+  // if the buyer comes back and speaks again, we let them resume (and clear
+  // the status further down). Only locked + submitted are hard stops.
   if (row.locked_at) {
     return openaiSSEResponse("This session is locked. Ivan has been notified and will reach out shortly.");
   }
   if (row.status === "submitted") {
     return openaiSSEResponse("This intake has already been submitted. Ivan will be in touch within one business day.");
   }
-  if (row.status === "paused") {
-    return openaiSSEResponse("We've already saved this session. Ivan will follow up by email. Talk soon.");
-  }
-  if (row.status === "wrapped") {
-    return openaiSSEResponse("Thanks, talk soon.");
-  }
+  // If the session was paused or wrapped from a prior visit and the buyer is
+  // now actively speaking, clear that state and resume the conversation.
+  const wasParked = row.status === "paused" || row.status === "wrapped";
 
   // 6a. SILENCE LOOP GUARD — voice agents send "..." / empty user_message
   // when the buyer stays quiet. If we see 4+ consecutive silences, the buyer
@@ -888,6 +887,13 @@ async function handleRequest(req: Request): Promise<Response> {
         updatePayload.status = "paused";
         updatePayload.paused_at = new Date().toISOString();
         updatePayload.last_focus = "PAUSE_REQUESTED";
+      } else if (wasParked && !currentIsSilent) {
+        // Buyer returned to a previously paused/wrapped session and is now
+        // actively engaging. Clear the parked status so the conversation
+        // can continue normally.
+        updatePayload.status = "in_progress";
+        updatePayload.paused_at = null;
+        updatePayload.wrapped_at = null;
       }
       // Persist in background — don't block the SSE close
       supabase.from("assessment_intakes").update(updatePayload).eq("id", row.id)
