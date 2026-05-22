@@ -104,10 +104,10 @@
 </head>
 <body>
   <main class="wrap">
-    <p class="meta-top">Proposal · Effektify Marketing &amp; Sales</p>
+    <p class="meta-top">Effektify · Signup Flow</p>
     <h1>Platform signup → <em>HubSpot match</em> → Airtable</h1>
     <p class="subtitle">
-      Proposed architecture for the new platform signup integration. The n8n endpoint receives webhook events from your platform, classifies the user against existing HubSpot records, and writes the result into your Airtable workflow.
+      How the new platform signup integration would work end-to-end. The n8n endpoint receives webhook events from your platform, classifies the user against existing HubSpot records, and writes the result into your Airtable workflow.
     </p>
 
     <div class="card">
@@ -146,7 +146,7 @@ flowchart TB
     </div>
 
     <div class="notes">
-      <h2>What I need from you</h2>
+      <h2>Two open decisions</h2>
       <p><strong>Match behavior</strong> — Option 1 = just tag in Airtable. Option 2 = also update HubSpot. Option 3 = also create new HubSpot contact when no match exists.</p>
       <p><strong>Slack notification</strong> — separate decision. Same channel as the Leads flow, or a dedicated one. Let me know what (if anything) you want highlighted in the message.</p>
     </div>
