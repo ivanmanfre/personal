@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Effektify — Platform Signup Flow | Manfredi</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Proposed architecture for the Effektify platform signup integration: webhook → HubSpot match → Airtable." />
+  <meta name="robots" content="noindex,nofollow" />
+
+  <link rel="canonical" href="https://ivanmanfredi.com/effektify-flow-diagram" />
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: #F7F4EF; color: #1A1A1A;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 56px 24px 80px;
+    }
+    .meta-top {
+      font-family: 'Courier New', ui-monospace, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: #8A8A86;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-family: Georgia, 'DM Serif Display', serif;
+      font-size: 40px; font-weight: 400;
+      line-height: 1.1; margin: 0 0 12px;
+    }
+    h1 em { font-style: italic; }
+    .subtitle {
+      font-size: 16px; color: #4A4A48; margin: 0 0 40px;
+      max-width: 640px;
+    }
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E8E2D6;
+      border-radius: 4px;
+      padding: 32px 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .diagram {
+      display: flex; justify-content: center;
+      margin: 8px 0 24px;
+    }
+    .diagram .mermaid { max-width: 100%; }
+    .legend {
+      display: flex; flex-wrap: wrap; gap: 20px;
+      justify-content: center;
+      padding-top: 20px;
+      border-top: 1px solid #EFE9DD;
+      font-size: 13px; color: #4A4A48;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .swatch {
+      width: 12px; height: 12px;
+      border-radius: 2px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+    .swatch.core { background: #E8F0E2; border-color: #4C6E3D; }
+    .swatch.decision { background: #F4ECDC; border-color: #B89556; }
+    .swatch.optional { background: #FAF6EC; border-color: #B89556; border-style: dashed; }
+    .notes {
+      margin-top: 32px;
+      padding: 20px 24px;
+      background: #FFFFFF;
+      border-left: 3px solid #4C6E3D;
+      border-radius: 2px;
+    }
+    .notes h2 {
+      font-family: Georgia, serif;
+      font-style: italic;
+      font-size: 18px;
+      font-weight: 400;
+      margin: 0 0 12px;
+      color: #1A1A1A;
+    }
+    .notes p { margin: 0 0 10px; font-size: 14px; color: #4A4A48; }
+    .notes p:last-child { margin: 0; }
+    .notes strong { color: #1A1A1A; font-weight: 600; }
+    .footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #E8E2D6;
+      font-family: 'Courier New', ui-monospace, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: #8A8A86;
+      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer a { color: #4C6E3D; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      h1 { font-size: 30px; }
+      .card { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="meta-top">Proposal · Effektify Marketing &amp; Sales</p>
+    <h1>Platform signup → <em>HubSpot match</em> → Airtable</h1>
+    <p class="subtitle">
+      Proposed architecture for the new platform signup integration. The n8n endpoint receives webhook events from your platform, classifies the user against existing HubSpot records, and writes the result into your Airtable workflow.
+    </p>
+
+    <div class="card">
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TB
+    A["New user signs up<br/>on Effektify platform"]
+    A -->|"webhook POST"| B["n8n endpoint<br/>(URL provided to your devs)"]
+    B --> C["Search HubSpot<br/>Contact · Lead · Customer"]
+    C --> D{"Match found?"}
+    D -->|"Yes"| E["Classify status:<br/>customer / lead / contact"]
+    D -->|"No"| F["Tag as new signup"]
+    E --> G["Write to Airtable<br/>Signups tab<br/>+ matched HubSpot link"]
+    F --> G
+    G -.->|"Option 2"| H["Update existing<br/>HubSpot record<br/>'Signed up to platform'"]
+    G -.->|"Option 3"| I["Create new<br/>HubSpot contact<br/>(if no match)"]
+    G --> J["Slack notification<br/>(optional)"]
+    H --> J
+    I --> J
+
+    classDef core fill:#E8F0E2,stroke:#4C6E3D,stroke-width:1.5px,color:#1A1A1A
+    classDef optional fill:#FAF6EC,stroke:#B89556,stroke-width:1px,stroke-dasharray:4,color:#1A1A1A
+    classDef decision fill:#F4ECDC,stroke:#B89556,stroke-width:1.5px,color:#1A1A1A
+
+    class A,B,C,E,F,G core
+    class D decision
+    class H,I,J optional
+        </pre>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch core"></span>Core (always runs)</div>
+        <div class="legend-item"><span class="swatch decision"></span>Decision point</div>
+        <div class="legend-item"><span class="swatch optional"></span>Optional / your call</div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h2>What I need from you</h2>
+      <p><strong>Match behavior</strong> — Option 1 = just tag in Airtable. Option 2 = also update HubSpot. Option 3 = also create new HubSpot contact when no match exists.</p>
+      <p><strong>Slack notification</strong> — separate decision. Same channel as the Leads flow, or a dedicated one. Let me know what (if anything) you want highlighted in the message.</p>
+    </div>
+
+    <div class="footer">
+      <span>Iván Manfredi · Independent AI &amp; automation</span>
+      <a href="https://ivanmanfredi.com">ivanmanfredi.com</a>
+    </div>
+  </main>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        background: '#FFFFFF',
+        primaryColor: '#E8F0E2',
+        primaryBorderColor: '#4C6E3D',
+        primaryTextColor: '#1A1A1A',
+        lineColor: '#7A7A75',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+      },
+      flowchart: { curve: 'basis', padding: 24, useMaxWidth: true }
+    });
+  </script>
+</body>
+</html>
