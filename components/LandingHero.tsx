@@ -191,11 +191,7 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                I build AI systems for growing service businesses, so you scale without
-                scaling payroll.{' '}
-                <span style={{ fontStyle: 'italic', color: '#2A8F65' }}>
-                  Ninety-day payback, or I don't build it.
-                </span>
+                AI systems for growing service businesses.
               </motion.p>
 
               {/* CTAs */}
