@@ -4,9 +4,11 @@ import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
-// Motion: status strip drops → byline → words blur in one-by-one → italic
-// pivot lands last with rotateX entrance + sage sweep → body clips in → CTAs lift.
-// Portrait does entrance scale + scroll parallax. Page-level cursor spotlight in LandingPage.
+// v2 (2026-05-24): v20-magazine-cover transformation
+//   - Sage sweep redrawn to match v20 (mostly rectangular highlighter, subtle imperfect edges, centered on letterforms)
+//   - Portrait pulled out of flex flow → absolutely positioned, truly bleeds off section right edge
+//   - Lede restored with italic + sage emphasis on "scale without scaling payroll"
+//   - Scroll parallax preserved via wrapper
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
@@ -95,167 +97,188 @@ const LandingHero: React.FC = () => {
         }}
       />
 
-      {/* Main content */}
+      {/* Portrait — tight editorial head/shoulders crop, less aggressive bleed */}
+      <div
+        className="hidden lg:block absolute pointer-events-none"
+        style={{
+          right: '-50px',
+          top: '54%',
+          transform: 'translateY(-50%)',
+          width: 'clamp(380px, 36vw, 540px)',
+          zIndex: 5,
+        }}
+      >
+        <motion.div
+          style={{ scale: portraitScale, y: portraitY }}
+          initial={{ opacity: 0, scale: 1.06 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.9, ease }}
+        >
+          <picture>
+            <source
+              type="image/webp"
+              srcSet="/ivan-hero-duotone-800.webp 800w, /ivan-hero-duotone-1200.webp 1200w"
+              sizes="(min-width: 1280px) 540px, 432px"
+            />
+            <img
+              src="/ivan-hero-duotone.png"
+              alt="Iván Manfredi"
+              width="928"
+              height="1152"
+              loading="eager"
+              className="w-full aspect-[928/1152] object-cover object-top"
+              style={{ borderRadius: '0', display: 'block' }}
+            />
+          </picture>
+        </motion.div>
+      </div>
+
+      {/* Main content — copy column only now (portrait is absolute) */}
       <motion.div
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
         <div className="container mx-auto px-8 max-w-6xl">
-          <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-20">
+          <div className="max-w-[640px] xl:max-w-[720px] pt-8 lg:pt-0">
 
-            {/* Copy column */}
-            <div className="flex-1 min-w-0 pt-8 lg:pt-0">
-              {/* Byline */}
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="mb-10 flex items-center gap-3"
-                style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: '11px',
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(26,26,26,0.62)',
-                }}
-              >
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{ color: '#2A8F65', fontSize: '8px' }}
-                >
-                  ●
-                </motion.span>
-                <span>Iván Manfredi · Agent-Ready Ops™</span>
-              </motion.div>
-
-              {/* Headline — word-by-word blur reveal */}
-              <h1
-                className="mb-10"
-                style={{
-                  fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-                  fontWeight: 400,
-                  fontSize: 'clamp(3.2rem, 8.5vw, 7rem)',
-                  lineHeight: 0.96,
-                  letterSpacing: '-0.02em',
-                  color: '#1A1A1A',
-                }}
-              >
-                {word('Systems', 0.4)}{' '}{word('scale.', 0.52)}
-                <br />
-                {word('Headcount', 0.64)}{' '}
-                <motion.span
-                  initial={{ opacity: 0, y: 60, filter: 'blur(18px)', rotateX: 28 }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0 }}
-                  transition={{ delay: 0.85, duration: 0.9, ease }}
-                  style={{
-                    display: 'inline-block',
-                    fontStyle: 'italic',
-                    position: 'relative',
-                    transformStyle: 'preserve-3d',
-                    transformOrigin: 'bottom',
-                  }}
-                >
-                  doesn't.
-                  {/* Sage sweep highlight */}
-                  <motion.span
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 1.4, duration: 0.7, ease }}
-                    style={{
-                      position: 'absolute',
-                      left: '-2%',
-                      right: '-2%',
-                      bottom: '0.18em',
-                      height: '0.44em',
-                      backgroundColor: '#2A8F65',
-                      transformOrigin: 'left',
-                      opacity: 0.28,
-                      zIndex: -1,
-                    }}
-                  />
-                </motion.span>
-              </h1>
-
-              {/* Body — clip-mask reveal */}
-              <motion.p
-                initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-                animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-                transition={{ delay: 0.95, duration: 1.1, ease }}
-                className="max-w-xl mb-10"
-                style={{
-                  fontFamily: '"Source Serif 4", Georgia, serif',
-                  fontWeight: 400,
-                  fontSize: '19px',
-                  lineHeight: 1.62,
-                  color: '#3D3D3B',
-                }}
-              >
-                AI systems for growing service businesses.
-              </motion.p>
-
-              {/* CTAs */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.15, duration: 0.6, ease }}
-                className="flex flex-col sm:flex-row items-start gap-3"
-              >
-                <a
-                  href="/assessment"
-                  className="btn-magnetic inline-flex items-center gap-2.5 px-7 py-3.5 bg-accent text-white"
-                  style={{
-                    fontFamily: '"Source Serif 4", serif',
-                    fontWeight: 600,
-                    fontSize: '16px',
-                  }}
-                >
-                  Build your Blueprint <ArrowRight size={18} />
-                </a>
-                <a
-                  href="/scorecard"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
-                  style={{
-                    fontFamily: '"Source Serif 4", serif',
-                    fontWeight: 600,
-                    fontSize: '15px',
-                    fontStyle: 'italic',
-                    color: 'rgba(26,26,26,0.55)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
-                >
-                  Are you Agent-Ready? <ArrowRight size={14} />
-                </a>
-              </motion.div>
-            </div>
-
-            {/* Portrait — entrance scale + scroll parallax */}
+            {/* Byline */}
             <motion.div
-              style={{ scale: portraitScale, y: portraitY, position: 'relative' }}
-              initial={{ opacity: 0, scale: 1.06 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.9, ease }}
-              className="hidden lg:block shrink-0 pt-4"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="mb-10 flex items-center gap-3"
+              style={{
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '11px',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'rgba(26,26,26,0.62)',
+              }}
             >
-              <picture>
-                <source
-                  type="image/webp"
-                  srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w"
-                  sizes="(min-width: 1280px) 320px, 288px"
-                />
-                <img
-                  src="/ivan-hero.jpeg"
-                  alt="Iván Manfredi"
-                  width="1200"
-                  height="1600"
-                  loading="eager"
-                  className="w-72 xl:w-80 aspect-[3/4] object-cover object-top"
-                  style={{ borderRadius: '0', display: 'block' }}
-                />
-              </picture>
+              <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ color: '#2A8F65', fontSize: '8px' }}
+              >
+                ●
+              </motion.span>
+              <span>Iván Manfredi · Agent-Ready Ops™</span>
             </motion.div>
 
+            {/* Headline — DM Serif Display (brand spec) */}
+            <h1
+              className="mb-10"
+              style={{
+                fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+                fontWeight: 400,
+                fontSize: 'clamp(3.2rem, 8.5vw, 7rem)',
+                lineHeight: 0.96,
+                letterSpacing: '-0.02em',
+                color: '#1A1A1A',
+              }}
+            >
+              {word('Systems', 0.4)}{' '}{word('scale.', 0.52)}
+              <br />
+              {word('Headcount', 0.64)}{' '}
+              <motion.span
+                initial={{ opacity: 0, y: 60, filter: 'blur(18px)', rotateX: 28 }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)', rotateX: 0 }}
+                transition={{ delay: 0.85, duration: 0.9, ease }}
+                style={{
+                  display: 'inline-block',
+                  fontStyle: 'italic',
+                  position: 'relative',
+                  transformStyle: 'preserve-3d',
+                  transformOrigin: 'bottom',
+                }}
+              >
+                doesn't.
+                {/* Sage sweep — v20-style highlighter: mostly rectangular, subtle imperfect edges, centered on letterforms */}
+                <motion.svg
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
+                  transition={{ delay: 1.4, duration: 0.85, ease }}
+                  viewBox="0 0 400 100"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: '-5%',
+                    right: '-5%',
+                    top: '0.18em',
+                    width: '110%',
+                    height: '0.78em',
+                    transformOrigin: 'left',
+                    zIndex: -1,
+                    overflow: 'visible',
+                  }}
+                >
+                  {/* Highlighter band: top edge ~y=10-18, bottom edge ~y=82-92.
+                      Mostly flat with subtle bumps — reads as hand-painted marker stroke, not wavy ribbon. */}
+                  <path
+                    d="M 6 14 Q 70 10 140 14 Q 220 18 290 12 Q 350 15 394 16 L 394 86 Q 350 88 290 84 Q 220 92 140 86 Q 70 90 6 84 Z"
+                    fill="#2A8F65"
+                    opacity="0.85"
+                  />
+                </motion.svg>
+              </motion.span>
+            </h1>
+
+            {/* Body — restored italic emphasis on closer phrase */}
+            <motion.p
+              initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
+              animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
+              transition={{ delay: 0.95, duration: 1.1, ease }}
+              className="max-w-xl mb-10"
+              style={{
+                fontFamily: '"Source Serif 4", Georgia, serif',
+                fontWeight: 400,
+                fontSize: '21px',
+                lineHeight: 1.55,
+                color: '#3D3D3B',
+              }}
+            >
+              AI systems for growing service businesses. So you{' '}
+              <span style={{ fontStyle: 'italic', color: '#1A1A1A', fontWeight: 500 }}>
+                scale without scaling payroll.
+              </span>
+            </motion.p>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.15, duration: 0.6, ease }}
+              className="flex flex-col sm:flex-row items-start gap-3"
+            >
+              <a
+                href="/assessment"
+                className="btn-magnetic inline-flex items-center gap-3 px-9 py-4 bg-accent text-white"
+                style={{
+                  fontFamily: '"Source Serif 4", serif',
+                  fontWeight: 600,
+                  fontSize: '17px',
+                  letterSpacing: '0.005em',
+                }}
+              >
+                Build your Blueprint <ArrowRight size={19} />
+              </a>
+              <a
+                href="/scorecard"
+                className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
+                style={{
+                  fontFamily: '"Source Serif 4", serif',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  fontStyle: 'italic',
+                  color: 'rgba(26,26,26,0.55)',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
+              >
+                Are you Agent-Ready? <ArrowRight size={14} />
+              </a>
+            </motion.div>
           </div>
         </div>
       </motion.div>
