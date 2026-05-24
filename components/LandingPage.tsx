@@ -317,7 +317,10 @@ const BuildOutcomesSection: React.FC = () => (
         <Label>04 / Built. Shipped. Live.</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Recent builds,<br />
-          <span style={{ fontStyle: 'italic' }}>already in production.</span>
+          <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
+            already in production.
+            <SageSweep delay={0.6} opacity={0.72} />
+          </span>
         </RevealH2>
       </motion.div>
 
@@ -366,28 +369,69 @@ const BuildOutcomesSection: React.FC = () => (
 );
 
 // ─── Section 3: What Agent-Ready means ──────────────────────────────────────
+// titlePre + pivot + titlePost — pivot is the italic phrase with sage sweep behind it
+// (brand signature gesture from the hero, applied at the section level).
 const PRECONDITIONS = [
   {
     n: '01',
-    title: 'You decide with data, not vibes',
+    titlePre: 'You decide with ',
+    pivot: 'data, not vibes',
+    titlePost: '',
     sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should point to a row in a spreadsheet, not a feeling.',
   },
   {
     n: '02',
-    title: 'Your best operator decides by instinct',
+    titlePre: 'Your best operator decides ',
+    pivot: 'by instinct',
+    titlePost: '',
     sub: 'Their calls are fast and consistent, but the logic has never been written down. The first job is documenting the rules. Then we automate them.',
   },
   {
     n: '03',
-    title: 'Three people on your team name the same problem',
+    titlePre: 'Three people on your team name ',
+    pivot: 'the same problem',
+    titlePost: '',
     sub: 'Ask them: "what work do you wish would just go away?" If you get the same answer from three people, that workflow is the build target.',
   },
   {
     n: '04',
-    title: 'The same work repeats every week',
+    titlePre: 'The same work ',
+    pivot: 'repeats every week',
+    titlePost: '',
     sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever.',
   },
 ];
+
+// Reusable sage highlighter sweep — same hand-painted SVG path as the hero.
+// Sized to fit behind an italic word block via absolute positioning.
+const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5, opacity = 0.78 }) => (
+  <motion.svg
+    initial={{ scaleX: 0, opacity: 0 }}
+    whileInView={{ scaleX: 1, opacity: 1 }}
+    viewport={{ once: true, margin: '-40px' }}
+    transition={{ delay, duration: 0.85, ease }}
+    viewBox="0 0 400 100"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+    style={{
+      position: 'absolute',
+      left: '-4%',
+      right: '-4%',
+      top: '0.18em',
+      width: '108%',
+      height: '0.78em',
+      transformOrigin: 'left',
+      zIndex: -1,
+      overflow: 'visible',
+    }}
+  >
+    <path
+      d="M 6 14 Q 70 10 140 14 Q 220 18 290 12 Q 350 15 394 16 L 394 86 Q 350 88 290 84 Q 220 92 140 86 Q 70 90 6 84 Z"
+      fill="#2A8F65"
+      opacity={opacity}
+    />
+  </motion.svg>
+);
 
 // PreconditionItem — side-stage entrance (numeral from left, content from right) +
 // horizontal parallax on the ghost numeral. Each item tracks its own scroll progress.
@@ -458,7 +502,7 @@ const PreconditionItem: React.FC<{
           {p.n}.
         </motion.div>
 
-        {/* H3 — fades in from right with delay */}
+        {/* H3 — fades in from right with delay. Italic pivot with sage sweep mirrors the hero. */}
         <motion.h3
           initial={{ opacity: 0, x: 60 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -469,7 +513,7 @@ const PreconditionItem: React.FC<{
             fontStyle: 'normal',
             fontWeight: 600,
             fontSize: 'clamp(1.4rem, 2vw, 1.85rem)',
-            lineHeight: 1.25,
+            lineHeight: 1.35,
             letterSpacing: '-0.01em',
             color: '#F7F4EF',
             marginBottom: '14px',
@@ -478,7 +522,20 @@ const PreconditionItem: React.FC<{
             marginRight: 'auto',
           }}
         >
-          {p.title}
+          {p.titlePre}
+          <span
+            style={{
+              display: 'inline-block',
+              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              position: 'relative',
+            }}
+          >
+            {p.pivot}
+            <SageSweep delay={0.7 + index * 0.06} opacity={0.72} />
+          </span>
+          {p.titlePost}
         </motion.h3>
 
         {/* Body — fades in from right with more delay */}
@@ -673,7 +730,10 @@ const WorkSection: React.FC = () => {
           <Label>05 / How we work together</Label>
           <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
-            <span style={{ fontStyle: 'italic' }}>Build second.</span>
+            <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
+              Build second.
+              <SageSweep delay={0.6} opacity={0.72} />
+            </span>
           </RevealH2>
         </motion.div>
 
@@ -848,7 +908,25 @@ const OfferSection: React.FC = () => (
           >
             Agent-Ready<br />Blueprint
           </motion.div>
-          <div style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '22px', color: '#F7F4EF', letterSpacing: '-0.01em', marginBottom: '1.5rem' }}>$2,000</div>
+          {/* Price with sage marker sweep — brand-signature gesture at the money moment */}
+          <div
+            style={{
+              fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: '44px',
+              lineHeight: 1,
+              color: '#F7F4EF',
+              letterSpacing: '-0.02em',
+              marginBottom: '1.75rem',
+              display: 'inline-block',
+              position: 'relative',
+              isolation: 'isolate',
+            }}
+          >
+            <span style={{ position: 'relative', zIndex: 1 }}>$2,000</span>
+            <SageSweep delay={0.6} opacity={0.85} />
+          </div>
           <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
             A one-week diagnostic. I evaluate your operation against the 4 preconditions,
             map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
