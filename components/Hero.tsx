@@ -88,24 +88,34 @@ const Hero: React.FC = () => {
             >
               Systems scale.
               <br />
-              Headcount <span style={{ fontStyle: 'italic', position: 'relative' }}>
+              Headcount <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
                 doesn't.
-                <motion.span
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
+                {/* Sage highlighter sweep — hand-painted SVG (v20-style) */}
+                <motion.svg
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
                   transition={{ delay: 1.0, duration: 0.9, ease }}
+                  viewBox="0 0 400 70"
+                  preserveAspectRatio="none"
                   style={{
                     position: 'absolute',
-                    left: '-2%',
-                    right: '-2%',
-                    bottom: '0.18em',
-                    height: '0.42em',
-                    backgroundColor: 'var(--color-accent)',
+                    left: '-4%',
+                    right: '-4%',
+                    bottom: '0.06em',
+                    width: '108%',
+                    height: '0.6em',
                     transformOrigin: 'left',
-                    opacity: 0.25,
                     zIndex: -1,
+                    overflow: 'visible',
                   }}
-                />
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M 5 35 C 60 18, 140 50, 220 28 C 290 12, 340 48, 395 30 L 395 60 C 340 65, 290 38, 220 58 C 140 70, 60 42, 5 60 Z"
+                    fill="var(--color-accent)"
+                    opacity="0.82"
+                  />
+                </motion.svg>
               </span>
             </motion.h1>
 
@@ -167,30 +177,41 @@ const Hero: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Portrait — desktop */}
-          <motion.div
-            initial={{ opacity: 0, scale: 1.08, filter: 'blur(12px)' }}
-            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            transition={{ delay: 0.5, duration: 1.2, ease }}
-            className="hidden lg:block shrink-0 pt-2"
-          >
-            <picture>
-              <source type="image/webp" srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w" sizes="(min-width: 1280px) 320px, 288px" />
-              <img
-                src="/ivan-hero.jpeg"
-                alt="Iván Manfredi"
-                width="1200"
-                height="1600"
-                loading="eager"
-                fetchPriority="high"
-                className="w-72 xl:w-80 aspect-[3/4] object-cover object-top"
-                style={{ borderRadius: 0 }}
-              />
-            </picture>
-          </motion.div>
-
+          {/* Portrait — desktop: bleeds off right edge, duotone, v20 magazine-cover style */}
+          {/* Empty flex spacer so copy column still gets its allocated width on lg+ */}
+          <div className="hidden lg:block w-[280px] xl:w-[340px] shrink-0" aria-hidden="true" />
         </div>
       </div>
+
+      {/* Absolute-positioned duotone portrait — bleeds off right, behind copy on z-axis */}
+      <motion.div
+        initial={{ opacity: 0, scale: 1.06 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.4, duration: 1.2, ease }}
+        className="hidden lg:block absolute z-0 pointer-events-none"
+        style={{
+          right: '-40px',
+          top: '10vh',
+          width: 'min(34vw, 560px)',
+          aspectRatio: '928 / 1152',
+        }}
+      >
+        <picture>
+          <source
+            type="image/webp"
+            srcSet="/ivan-hero-duotone-800.webp 800w, /ivan-hero-duotone-1200.webp 1200w"
+            sizes="(min-width: 1280px) 560px, 34vw"
+          />
+          <img
+            src="/ivan-hero-duotone.png"
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            className="w-full h-full object-cover object-top"
+            style={{ borderRadius: 0 }}
+          />
+        </picture>
+      </motion.div>
 
       {/* Wordmark strip — built-with marquee */}
       <motion.div

@@ -157,23 +157,32 @@ const LandingHero: React.FC = () => {
                   }}
                 >
                   doesn't.
-                  {/* Sage sweep highlight */}
-                  <motion.span
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ delay: 1.4, duration: 0.7, ease }}
+                  {/* Sage sweep highlight — v20 style, hand-painted SVG edges */}
+                  <motion.svg
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    animate={{ scaleX: 1, opacity: 1 }}
+                    transition={{ delay: 1.4, duration: 0.85, ease }}
+                    viewBox="0 0 400 70"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
                     style={{
                       position: 'absolute',
-                      left: '-2%',
-                      right: '-2%',
-                      bottom: '0.18em',
-                      height: '0.44em',
-                      backgroundColor: '#2A8F65',
+                      left: '-4%',
+                      right: '-4%',
+                      bottom: '0.06em',
+                      width: '108%',
+                      height: '0.62em',
                       transformOrigin: 'left',
-                      opacity: 0.28,
                       zIndex: -1,
+                      overflow: 'visible',
                     }}
-                  />
+                  >
+                    <path
+                      d="M 5 35 C 60 18, 140 50, 220 28 C 290 12, 340 48, 395 30 L 395 60 C 340 65, 290 38, 220 58 C 140 70, 60 42, 5 60 Z"
+                      fill="#2A8F65"
+                      opacity="0.82"
+                    />
+                  </motion.svg>
                 </motion.span>
               </h1>
 
@@ -230,27 +239,27 @@ const LandingHero: React.FC = () => {
               </motion.div>
             </div>
 
-            {/* Portrait — entrance scale + scroll parallax */}
+            {/* Portrait — v20 style: larger warm-gray duotone, bleeds right edge, scroll parallax preserved */}
             <motion.div
               style={{ scale: portraitScale, y: portraitY, position: 'relative' }}
               initial={{ opacity: 0, scale: 1.06 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.9, ease }}
-              className="hidden lg:block shrink-0 pt-4"
+              className="hidden lg:block shrink-0 pt-4 mr-[-60px] xl:mr-[-120px]"
             >
               <picture>
                 <source
                   type="image/webp"
-                  srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w"
-                  sizes="(min-width: 1280px) 320px, 288px"
+                  srcSet="/ivan-hero-duotone-800.webp 800w, /ivan-hero-duotone-1200.webp 1200w"
+                  sizes="(min-width: 1280px) 480px, 384px"
                 />
                 <img
-                  src="/ivan-hero.jpeg"
+                  src="/ivan-hero-duotone.png"
                   alt="Iván Manfredi"
                   width="1200"
                   height="1600"
                   loading="eager"
-                  className="w-72 xl:w-80 aspect-[3/4] object-cover object-top"
+                  className="w-96 xl:w-[480px] aspect-[3/4] object-cover object-top"
                   style={{ borderRadius: '0', display: 'block' }}
                 />
               </picture>
