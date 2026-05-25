@@ -11,6 +11,10 @@ import {
   Play,
   ExternalLink,
   RotateCcw,
+  Calendar,
+  Instagram,
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { useCallClips } from '../../hooks/useCallClips';
 import { HARD_BLOCK_FLAGS, type CallClip, type ClipStatus } from '../../types/callClips';
@@ -275,6 +279,272 @@ const InboxClipCard: React.FC<InboxClipCardProps> = ({ clip, onApprove, onReject
 };
 
 // ---------------------------------------------------------------------------
+// ReadyClipCard
+// ---------------------------------------------------------------------------
+
+interface ReadyClipCardProps {
+  clip: CallClip;
+  onSchedule: (id: string, scheduledAt: string, postCopy: string, igCrossPost: boolean) => Promise<void>;
+}
+
+const ReadyClipCard: React.FC<ReadyClipCardProps> = ({ clip, onSchedule }) => {
+  const [postCopy, setPostCopy] = useState(clip.postCopyLinkedIn || clip.suggestedCaption);
+  const [scheduledAt, setScheduledAt] = useState(clip.scheduledAt || '');
+  const [igCross, setIgCross] = useState(clip.instagramCrossPost);
+  const [scheduling, setScheduling] = useState(false);
+
+  const isScheduled = clip.status === 'scheduled' || clip.status === 'posting';
+  const canSubmit = !!scheduledAt && !!postCopy.trim() && !isScheduled;
+
+  const handleSchedule = async () => {
+    setScheduling(true);
+    try { await onSchedule(clip.id, scheduledAt, postCopy, igCross); }
+    finally { setScheduling(false); }
+  };
+
+  return (
+    <article className={`group border rounded-xl overflow-hidden transition-colors ${
+      clip.status === 'publish_error'
+        ? 'bg-red-950/10 border-red-500/20'
+        : clip.status === 'posting'
+        ? 'bg-cyan-950/10 border-cyan-500/20'
+        : clip.status === 'scheduled'
+        ? 'bg-blue-950/10 border-blue-500/20'
+        : 'bg-zinc-900/60 border-zinc-800/60 hover:border-zinc-700/60'
+    }`}>
+
+      {/* Header row */}
+      <div className="flex items-start gap-3 px-4 py-3">
+        {/* Video preview / render-pending placeholder */}
+        <div className="flex-shrink-0 w-16 h-20 rounded-lg bg-zinc-800/60 border border-zinc-700/40 flex items-center justify-center overflow-hidden">
+          {clip.videoUrl ? (
+            <video
+              src={clip.videoUrl}
+              controls
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-1 text-zinc-600">
+              <Film className="w-5 h-5" />
+              <span className="text-[8px] text-center leading-tight px-0.5">render pending</span>
+            </div>
+          )}
+        </div>
+
+        {/* Meta + controls */}
+        <div className="flex-1 min-w-0">
+          {/* Hook line */}
+          <p
+            className="text-sm italic font-medium text-zinc-200 leading-snug mb-1.5 line-clamp-2"
+            style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
+          >
+            &ldquo;{clip.hookLine || 'No hook line extracted'}&rdquo;
+          </p>
+
+          {/* Meta chips */}
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <StatusBadge status={clip.status} />
+            <span className={`text-[10px] font-semibold ${scoreColor(clip.score)}`}>
+              Score {clip.score}
+            </span>
+            <span className="text-[10px] text-zinc-500 flex items-center gap-0.5">
+              <Clock className="w-3 h-3" />
+              {formatSeconds(clip.durationSeconds)}
+            </span>
+          </div>
+
+          {/* LinkedIn copy editor */}
+          <div className="mb-2">
+            <label className="block text-[10px] text-zinc-400 font-medium mb-1">
+              LinkedIn copy
+            </label>
+            <textarea
+              value={postCopy}
+              onChange={(e) => setPostCopy(e.target.value)}
+              disabled={isScheduled}
+              rows={5}
+              className="w-full text-[11px] bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-2.5 py-2 text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="LinkedIn post copy…"
+            />
+          </div>
+
+          {/* IG cross-post toggle */}
+          <label className="flex items-center gap-2 text-[11px] text-zinc-400 mb-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={igCross}
+              onChange={(e) => setIgCross(e.target.checked)}
+              disabled={isScheduled}
+              className="w-3 h-3 rounded accent-teal-500 disabled:cursor-not-allowed"
+            />
+            <Instagram className="w-3 h-3" />
+            Also post to Instagram
+          </label>
+
+          {/* Schedule datetime picker */}
+          <div className="mb-3">
+            <label className="block text-[10px] text-zinc-400 font-medium mb-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3" /> Schedule for
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              disabled={isScheduled}
+              className="text-[11px] bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-2.5 py-1.5 text-zinc-200 focus:outline-none focus:border-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Publish error banner */}
+      {clip.status === 'publish_error' && clip.publishError && (
+        <div className="mx-4 mb-3 flex items-start gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg border bg-red-950/20 border-red-500/25 text-red-300" role="alert">
+          <ShieldAlert className="w-3 h-3 mt-0.5 flex-shrink-0" />
+          <span>Publish failed: {clip.publishError}</span>
+        </div>
+      )}
+
+      {/* Action bar */}
+      <div className="px-4 py-2.5 border-t border-zinc-800/40 bg-zinc-900/40 flex items-center gap-2">
+        {clip.status === 'ready' && (
+          <button
+            onClick={handleSchedule}
+            disabled={!canSubmit || scheduling}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {scheduling
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : <Send className="w-3 h-3" />
+            }
+            Send to LinkedIn queue
+          </button>
+        )}
+
+        {clip.status === 'publish_error' && (
+          <button
+            onClick={handleSchedule}
+            disabled={!canSubmit || scheduling}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {scheduling
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : <RotateCcw className="w-3 h-3" />
+            }
+            Reschedule
+          </button>
+        )}
+
+        {clip.status === 'scheduled' && (
+          <span className="flex items-center gap-1.5 text-[11px] text-blue-400">
+            <CheckCircle2 className="w-3 h-3" /> Scheduled — waiting for publisher
+          </span>
+        )}
+
+        {clip.status === 'posting' && (
+          <span className="flex items-center gap-1.5 text-[11px] text-cyan-400">
+            <Loader2 className="w-3 h-3 animate-spin" /> Posting now…
+          </span>
+        )}
+
+        {clip.videoUrl && (
+          <a
+            href={clip.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" /> View clip
+          </a>
+        )}
+      </div>
+    </article>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// PostedClipCard
+// ---------------------------------------------------------------------------
+
+interface PostedClipCardProps {
+  clip: CallClip;
+}
+
+const PostedClipCard: React.FC<PostedClipCardProps> = ({ clip }) => (
+  <article className="group border rounded-xl overflow-hidden bg-zinc-900/60 border-zinc-800/60 hover:border-zinc-700/60 transition-colors">
+
+    {/* Header row */}
+    <div className="flex items-start gap-3 px-4 py-3">
+      {/* Video preview */}
+      <div className="flex-shrink-0 w-16 h-20 rounded-lg bg-zinc-800/60 border border-zinc-700/40 flex items-center justify-center overflow-hidden">
+        {clip.videoUrl ? (
+          <video
+            src={clip.videoUrl}
+            controls
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <Film className="w-6 h-6 text-zinc-700" />
+        )}
+      </div>
+
+      {/* Meta */}
+      <div className="flex-1 min-w-0">
+        {/* Hook line */}
+        <p
+          className="text-sm italic font-medium text-zinc-200 leading-snug mb-1.5 line-clamp-2"
+          style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
+        >
+          &ldquo;{clip.hookLine || 'No hook line'}&rdquo;
+        </p>
+
+        {/* Meta chips */}
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          <StatusBadge status={clip.status} />
+          <span className={`text-[10px] font-semibold ${scoreColor(clip.score)}`}>
+            Score {clip.score}
+          </span>
+          {clip.postedAt && (
+            <span className="text-[10px] text-zinc-500">
+              {new Date(clip.postedAt).toLocaleString(undefined, {
+                month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+              })}
+            </span>
+          )}
+        </div>
+
+        {/* Post link(s) */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {clip.linkedinPostUrl && (
+            <a
+              href={clip.linkedinPostUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" /> View on LinkedIn ↗
+            </a>
+          )}
+          {clip.instagramPostUrl && (
+            <a
+              href={clip.instagramPostUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-[11px] text-pink-400 hover:text-pink-300 transition-colors"
+            >
+              <Instagram className="w-3 h-3" /> View on Instagram ↗
+            </a>
+          )}
+        </div>
+        {/* Future: impressions/reactions/comments once Own Post Performance Tracker
+            is extended in Task 17 */}
+      </div>
+    </div>
+  </article>
+);
+
+// ---------------------------------------------------------------------------
 // View tab nav
 // ---------------------------------------------------------------------------
 
@@ -290,7 +560,7 @@ const VIEW_LABELS: Record<View, string> = {
 
 export const CallClipsPanel: React.FC = () => {
   const [view, setView] = useState<View>('inbox');
-  const { clips, loading, approve, reject } = useCallClips(VIEW_FILTERS[view]);
+  const { clips, loading, approve, reject, schedule } = useCallClips(VIEW_FILTERS[view]);
 
   if (loading) return <LoadingSkeleton cards={3} rows={4} />;
 
@@ -348,13 +618,25 @@ export const CallClipsPanel: React.FC = () => {
           scrollable
         >
           <div className="divide-y divide-zinc-800/40">
-            {clips.map((clip) => (
+            {view === 'inbox' && clips.map((clip) => (
               <div key={clip.id} className="px-1 py-1">
                 <InboxClipCard
                   clip={clip}
                   onApprove={() => approve(clip.id)}
                   onReject={() => reject(clip.id)}
                 />
+              </div>
+            ))}
+
+            {view === 'ready' && clips.map((clip) => (
+              <div key={clip.id} className="px-1 py-1">
+                <ReadyClipCard clip={clip} onSchedule={schedule} />
+              </div>
+            ))}
+
+            {view === 'posted' && clips.map((clip) => (
+              <div key={clip.id} className="px-1 py-1">
+                <PostedClipCard clip={clip} />
               </div>
             ))}
           </div>
