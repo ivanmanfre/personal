@@ -44,3 +44,18 @@ slack_notification_channels
 - Hooks: `use` + domain name (useLeads, useWorkflowStats)
 - Panels: `{Domain}Panel.tsx`
 - All Tailwind, no CSS files. Dark theme (zinc-900 bg, zinc-800 borders, emerald/blue/amber accents)
+
+## graphify
+
+Project has a code knowledge graph at `graphify-out/` (gitignored, auto-rebuilt by post-commit + post-checkout git hooks — no manual maintenance).
+
+**Use it before grepping for code-structure questions.** It returns a scoped subgraph, usually much smaller than reading raw files.
+
+- `graphify query "<question>"` — BFS traversal, 2000-token budget by default
+- `graphify path "A" "B"` — shortest path between two nodes/symbols
+- `graphify explain "<concept>"` — plain-language summary of a node and neighbors
+- `graphify-out/GRAPH_REPORT.md` — god nodes (load-bearing symbols) + community clusters. Read for broad architectural context only.
+
+Current top god nodes (change with care): `supabase` (53), `useAutoRefresh()` (44), `useMetadata()` (33), `useDashboard()` (32), `toastError()` (31).
+
+Exclusions in `.graphifyignore` (tracked): audit/data/docs/migrations/public — keep only real TS/TSX code in the graph.
