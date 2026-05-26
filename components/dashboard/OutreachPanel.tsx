@@ -16,6 +16,7 @@ import { timeAgo } from './shared/utils';
 import { OutreachFunnel } from './outreach/OutreachFunnel';
 import { ProspectDetailModal } from './outreach/ProspectDetailModal';
 import { CampaignManager } from './outreach/CampaignManager';
+import { AgencyVariantPerformance } from './AgencyVariantPerformance';
 import type { OutreachProspect } from '../../types/dashboard';
 
 const stageColors: Record<string, string> = {
@@ -445,6 +446,9 @@ const OutreachPanel: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Section 2d: Agency DM Variant Performance (A/B test live) */}
+      <AgencyVariantPerformance />
 
       {/* Section 3: Funnel */}
       <OutreachFunnel stats={stats} onStageClick={(s) => setStageFilter(s)} />
