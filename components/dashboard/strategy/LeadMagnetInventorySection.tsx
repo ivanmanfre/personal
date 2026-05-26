@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ExternalLink as ExtLink } from 'lucide-react';
+import { AlertTriangle, ExternalLink as ExtLink, Pencil } from 'lucide-react';
 import PanelCard from '../shared/PanelCard';
+import { supabase } from '../../../lib/supabase';
 import type { StrategyLeadMagnetRow } from '../../../types/dashboard';
 
 interface Props {
@@ -13,6 +14,34 @@ type SortKey = 'demand' | 'status' | 'title';
 export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campaignsWithoutLM }) => {
   const [sortKey, setSortKey] = useState<SortKey>('demand');
   const [showAll, setShowAll] = useState(false);
+  const [editToken, setEditToken] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Cache token in component state — engine also caches in sessionStorage,
+  // so subsequent edits in the same session don't re-hit the edge function.
+  async function openEditor(lm: StrategyLeadMagnetRow) {
+    if (!lm.resourcePageUrl) return;
+    setEditingId(lm.id);
+    setEditError(null);
+    try {
+      let token = editToken;
+      if (!token) {
+        const { data, error } = await supabase.functions.invoke('lm-edit-token-reveal', { body: {} });
+        if (error) throw error;
+        token = (data as { token?: string } | null)?.token || null;
+        if (!token) throw new Error('no token returned');
+        setEditToken(token);
+      }
+      const sep = lm.resourcePageUrl.includes('?') ? '&' : '?';
+      window.open(`${lm.resourcePageUrl}${sep}edit=${encodeURIComponent(token)}`, '_blank', 'noopener,noreferrer');
+    } catch (e: any) {
+      setEditError(e?.message || 'failed');
+      setTimeout(() => setEditError(null), 4000);
+    } finally {
+      setEditingId(null);
+    }
+  }
 
   const sorted = [...leadMagnets].sort((a, b) => {
     if (sortKey === 'demand') return b.demand - a.demand;
@@ -72,6 +101,7 @@ export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campa
                 <th className="text-right px-3 py-2">Demand</th>
                 <th className="text-right px-3 py-2">Updated</th>
                 <th className="text-center px-3 py-2 w-8"></th>
+                <th className="text-center px-3 py-2 w-8"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
@@ -93,9 +123,21 @@ export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campa
                   </td>
                   <td className="px-3 py-2 text-center">
                     {lm.resourcePageUrl && (
-                      <a href={lm.resourcePageUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-cyan-400 transition-colors inline-block">
+                      <a href={lm.resourcePageUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-cyan-400 transition-colors inline-block" title="Open LM page">
                         <ExtLink className="w-3 h-3" />
                       </a>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {lm.resourcePageUrl && (
+                      <button
+                        onClick={() => openEditor(lm)}
+                        disabled={editingId === lm.id}
+                        className="text-zinc-500 hover:text-emerald-400 transition-colors inline-block disabled:opacity-50 disabled:cursor-wait"
+                        title="Edit copy inline"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -108,6 +150,12 @@ export const LeadMagnetInventorySection: React.FC<Props> = ({ leadMagnets, campa
           <button onClick={() => setShowAll(true)} className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
             Show all {sorted.length} →
           </button>
+        )}
+
+        {editError && (
+          <div className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/25 rounded px-2 py-1">
+            Edit token reveal failed: {editError}
+          </div>
         )}
       </div>
     </PanelCard>
