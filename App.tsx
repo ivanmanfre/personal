@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import StorePage from './components/StorePage';
@@ -191,6 +191,7 @@ function App() {
 
       <main id="main" className="relative z-10 flex flex-col overflow-hidden">
         <Routes>
+          <Route path="/diagnostic" element={<Navigate to="/start" replace />} />
           <Route path="/assessment" element={<AssessmentPage />} />
           <Route path="/assessment/welcome" element={<AssessmentWelcomePage />} />
           <Route path="/assessment/intake" element={<ConversationalIntake />} />
