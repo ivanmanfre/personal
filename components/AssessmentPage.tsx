@@ -92,6 +92,25 @@ const AssessmentPage: React.FC = () => {
             </p>
           </motion.div>
 
+          {/* Cost anchor */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.27 }}
+            className="border-l-2 border-accent pl-6 mb-12 max-w-3xl"
+          >
+            <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-3">
+              Why $2,000 is a deliberate floor
+            </p>
+            <p className="text-ink-soft leading-relaxed mb-3">
+              The cheap version of this is 3–4 weeks of internal "where do we start" thrash, a senior consultant at $5–10k/week to sequence the work, and a first build at $25–60k that misses the actual bottleneck. Most operators run that loop twice before someone external draws the map.
+            </p>
+            <p className="text-ink-soft leading-relaxed">
+              The Blueprint is $2,000 so the answer is on paper before any of that gets committed — and if the recommendation is to wait, that recommendation is the deliverable.
+            </p>
+          </motion.div>
+
           {/* Price box */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

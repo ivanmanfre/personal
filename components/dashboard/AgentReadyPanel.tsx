@@ -116,7 +116,7 @@ const AgentReadyPanel: React.FC = () => {
         <FreeAuditsSection />
         <EmptyState
           title="No paid Blueprints yet"
-          description="When someone books the $2,500 Agent-Ready Blueprint on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
+          description="When someone books the $2,000 Agent-Ready Blueprint on ivanmanfredi.com, they'll show up here with intake progress, Day 2 scheduling, and conversion state."
           icon={<Award className="w-10 h-10" />}
         />
       </div>
@@ -128,7 +128,7 @@ const AgentReadyPanel: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Agent-Ready</h1>
-          <p className="text-sm text-zinc-500 mt-1">Free audit submissions feeding the $2,500 Blueprint pipeline.</p>
+          <p className="text-sm text-zinc-500 mt-1">Free audit submissions feeding the $2,000 Blueprint pipeline.</p>
         </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
