@@ -12,6 +12,7 @@ const tiers = [
     features: [
       '**90-Day Blueprint audit** delivered week 1 — yours regardless',
       '2-3 major systems built',
+      '**Custom Living Ops Panel** — your stack in one panel; grows a new module with every system shipped',
       'Weekly working sessions',
       'Slack support throughout',
     ],
