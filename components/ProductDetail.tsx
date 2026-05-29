@@ -355,9 +355,9 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
       </div>
 
       {/* ── HERO - asymmetric 7/5 grid ── */}
-      <section className="relative overflow-hidden pt-12 pb-20">
-        {/* ambient sage bloom — paper depth, mirrors the proposal cover */}
-        <div aria-hidden className="sage-bloom pointer-events-none absolute -top-32 -right-24 w-[560px] h-[560px] z-0" />
+      <section className="relative pt-12 pb-20">
+        {/* ambient sage bloom — paper depth, mirrors the proposal .cover::before */}
+        <div aria-hidden className="sage-bloom pointer-events-none absolute -top-16 -right-16 w-[560px] h-[560px] z-0" />
         <div className="container mx-auto px-6 max-w-6xl relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* LEFT: Headline block (7 cols) */}
@@ -397,7 +397,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
               transition={{ duration: 0.5, delay: 0.12, ease }}
               className="lg:col-span-5 lg:sticky lg:top-28"
             >
-              <div className="bg-paper-raise border border-[color:var(--color-hairline)] p-8 md:p-10" style={{ boxShadow: '0 10px 44px rgba(76,110,61,0.14), 0 1px 3px rgba(26,26,26,0.06)' }}>
+              <div className="bg-paper-raise border border-[color:var(--color-hairline)] p-8 md:p-10" style={{ boxShadow: '0 4px 20px rgba(42,143,101,0.16), 0 1px 3px rgba(26,26,26,0.05)' }}>
                 <div className="border-b border-zinc-200 pb-6 mb-6">
                   <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mb-3">
                     Investment
