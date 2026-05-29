@@ -337,6 +337,8 @@ export default ProductDetail;
 // Brand: warm paper + sage punctuation + Grotesk/DM Serif + asymmetric.
 // ─────────────────────────────────────────────────────────
 
+const ease = [0.22, 0.84, 0.36, 1] as const;
+
 const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => void }> = ({ product, onBuy }) => {
   const tier = product.tiers.find((t) => t.highlighted) || product.tiers[0];
 
@@ -353,42 +355,57 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
       </div>
 
       {/* ── HERO - asymmetric 7/5 grid ── */}
-      <section className="pt-12 pb-24">
+      <section className="pt-12 pb-20">
         <div className="container mx-auto px-6 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start"
-          >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
             {/* LEFT: Headline block (7 cols) */}
-            <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease }}
+              className="lg:col-span-7"
+            >
               <span className="inline-block bg-black text-white px-3 py-1.5 mb-8 font-mono text-xs font-bold uppercase tracking-widest">
                 Orientation Session · 01
               </span>
-              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tighter mb-10">
+              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tighter mb-8">
                 {renderPivot(product.headline)}
               </h1>
-              <div className="pr-4 border-r border-[color:var(--color-accent)] pl-0 pr-6 mb-10 ml-auto max-w-md text-right hidden lg:block">
-                <p className="font-drama italic text-xl text-ink-soft leading-snug">
-                  One call. A real plan. No fluff.
+              {/* Sage left-rule pull-quote (signature move) */}
+              <div className="border-l-2 border-[color:var(--color-accent)] pl-5 mb-8">
+                <p className="font-drama italic text-2xl md:text-3xl text-zinc-800 leading-snug">
+                  Ninety focused minutes, and a written plan you can act on.
                 </p>
               </div>
-              <p className="text-lg md:text-xl leading-relaxed text-ink-soft max-w-2xl mb-10 font-medium">
+              <p className="text-lg md:text-xl leading-relaxed text-ink-soft max-w-2xl mb-8 font-medium">
                 {product.description}
               </p>
-            </div>
+              {/* Format meta row */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs font-bold uppercase tracking-widest text-ink-mute">
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> 90-minute live call</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> Written plan after</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> Built on your real setup</span>
+              </div>
+            </motion.div>
 
             {/* RIGHT: Pricing card (5 cols) */}
-            <div className="lg:col-span-5 lg:sticky lg:top-28">
-              <div className="bg-paper rounded-2xl border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.12, ease }}
+              className="lg:col-span-5 lg:sticky lg:top-28"
+            >
+              <div className="bg-paper-raise border border-[color:var(--color-hairline)] shadow-card-subtle p-8 md:p-10">
                 <div className="border-b border-zinc-200 pb-6 mb-6">
                   <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mb-3">
                     Investment
                   </div>
                   <div className="flex items-baseline gap-3">
-                    <span className="font-drama italic text-7xl leading-none">${tier.price}</span>
+                    <span className="font-drama-display text-7xl leading-none">${tier.price}</span>
                     <span className="font-mono text-sm text-ink-mute uppercase tracking-widest">flat</span>
+                  </div>
+                  <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mt-3">
+                    90-min call + written plan
                   </div>
                 </div>
                 <p className="text-base leading-relaxed text-ink-soft mb-8 font-medium">
@@ -400,6 +417,9 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                 >
                   Book the Session <ArrowLeft size={18} strokeWidth={3} className="rotate-180" />
                 </button>
+                <p className="mt-3 text-center font-mono text-[11px] font-bold uppercase tracking-widest text-ink-mute">
+                  Secure checkout · pick your time right after
+                </p>
                 <div className="mt-6 pt-6 border-t border-zinc-200 space-y-3">
                   {product.includes.slice(0, 3).map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
@@ -409,6 +429,62 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                   ))}
                 </div>
               </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Thin divider */}
+      <div className="container mx-auto px-6 max-w-6xl">
+        <div className="border-t border-zinc-200"></div>
+      </div>
+
+      {/* ── WHO YOU WORK WITH - editorial portrait band ── */}
+      <section className="py-20 md:py-28">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center"
+          >
+            {/* Editorial portrait of Ivan (3:4, sharp corners) */}
+            <div className="lg:col-span-5">
+              <div className="bg-paper-raise border border-[color:var(--color-hairline)] shadow-card-subtle p-2 max-w-sm">
+                <picture>
+                  <source type="image/webp" srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w" sizes="(max-width: 1024px) 90vw, 420px" />
+                  <img
+                    src="/ivan-hero.jpeg"
+                    alt="Iván Manfredi"
+                    width="400"
+                    height="533"
+                    loading="lazy"
+                    className="portrait-editorial w-full aspect-[3/4] object-cover object-top"
+                    style={{ borderRadius: 0 }}
+                  />
+                </picture>
+              </div>
+              <div className="mt-4 flex items-center gap-3">
+                <span className="font-mono text-xs font-bold uppercase tracking-widest text-ink">Iván Manfredi</span>
+                <span className="inline-block bg-[color:var(--color-accent)] text-white px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest">AI ops operator</span>
+              </div>
+            </div>
+
+            {/* First-person note */}
+            <div className="lg:col-span-7">
+              <span className="inline-block bg-black text-white px-3 py-1.5 mb-6 font-mono text-xs font-bold uppercase tracking-widest">
+                Who you work with
+              </span>
+              <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold leading-[0.98] tracking-tighter mb-6">
+                You're booking 90 minutes with {renderPivot('{{italic:me}}')}.
+              </h2>
+              <p className="text-lg leading-relaxed text-ink-soft font-medium mb-5 max-w-2xl">
+                I run AI agents and automations in production every day: content engines, outreach systems, call pipelines. On the call I look at what you're already running, and we map the smallest build that moves your numbers.
+              </p>
+              <p className="text-lg leading-relaxed text-ink-soft font-medium max-w-2xl">
+                You leave with a written plan you can act on yourself or hand to a dev. It covers the tools, the setup order, and an honest call on what to build and what to leave alone.
+              </p>
             </div>
           </motion.div>
         </div>
@@ -448,10 +524,10 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
           </div>
           <div className="lg:pl-8 lg:border-l lg:border-[color:var(--color-accent)]">
             <p className="font-drama italic text-2xl md:text-3xl leading-snug text-zinc-800">
-              A written plan - not a generic tutorial.
+              A written plan you can act on the same week.
             </p>
             <p className="mt-6 text-base text-ink-soft leading-relaxed font-medium">
-              You leave with specifics: tools to set up, what to learn first, and the honest call on what to build vs. what to leave alone.
+              You leave with specifics: the tools to set up, what to learn first, and an honest call on what to build and what to leave alone.
             </p>
           </div>
         </div>
@@ -480,20 +556,23 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
           >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-end">
               <div className="lg:col-span-8">
-                <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest text-[color:var(--color-accent)] mb-6">
+                <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest text-[color:var(--color-accent-light)] mb-6">
                   Ready to start
                 </span>
                 <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-[0.95] tracking-tighter">
-                  Know where to {renderPivot('{{italic:start}}')} with AI in your business.
+                  Leave with a clear {renderPivot('{{italic:plan}}')} for AI in your business.
                 </h2>
               </div>
               <div className="lg:col-span-4 lg:text-right">
                 <button
                   onClick={() => onBuy(tier)}
-                  className="w-full lg:w-auto bg-[color:var(--color-accent)] text-black px-10 py-5 font-bold uppercase tracking-wide text-base shadow-card hover:shadow-card-hover hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3"
+                  className="w-full lg:w-auto bg-[color:var(--color-accent-light)] text-black px-10 py-5 font-bold uppercase tracking-wide text-base shadow-card hover:shadow-card-hover hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center justify-center gap-3"
                 >
                   Book · ${tier.price}
                 </button>
+                <p className="mt-3 font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400 lg:text-right">
+                  Secure checkout · pick your time after
+                </p>
               </div>
             </div>
           </motion.div>
