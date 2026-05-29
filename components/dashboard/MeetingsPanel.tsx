@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink, Tag, Sparkles, Target, AlertTriangle, TrendingUp } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Phone, Clock, ListChecks, Users, ChevronDown, ChevronUp, FileText, Send, Loader2, Copy, Check, MessageSquare, Mail, Monitor, BookOpen, Calendar, MapPin, ExternalLink, Tag, Sparkles, Target, AlertTriangle, TrendingUp, Video } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useMeetings } from '../../hooks/useMeetings';
 import { useUpcomingEvents } from '../../hooks/useUpcomingEvents';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -249,6 +250,62 @@ const BriefSection: React.FC<{ brief: MeetingBrief }> = ({ brief }) => {
   );
 };
 
+// Locates the call's A/V in the private call-recordings bucket via the
+// call-recording-url edge function (service-role signing) and plays it.
+// Renders nothing if no recording is found — transcripts predate recordings.
+const CallRecordingPlayer: React.FC<{ meetingDate: string }> = ({ meetingDate }) => {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'none'>('loading');
+  const [webcam, setWebcam] = useState<string | null>(null);
+  const [audio, setAudio] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('call-recording-url', {
+          body: { date: meetingDate },
+        });
+        if (cancelled) return;
+        if (error || !data?.ok || (!data.webcam && !data.audio)) { setStatus('none'); return; }
+        setWebcam(data.webcam ?? null);
+        setAudio(data.audio ?? null);
+        setStatus('ready');
+      } catch {
+        if (!cancelled) setStatus('none');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [meetingDate]);
+
+  if (status === 'loading') {
+    return (
+      <div className="px-4 py-3 border-b border-zinc-800/40 flex items-center gap-2 text-xs text-zinc-500">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Looking for recording…
+      </div>
+    );
+  }
+  if (status === 'none') return null;
+
+  return (
+    <div className="px-4 py-3 border-b border-zinc-800/40">
+      <h4 className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <Video className="w-3.5 h-3.5" /> Recording
+      </h4>
+      {webcam ? (
+        <video
+          src={webcam}
+          controls
+          playsInline
+          preload="metadata"
+          className="w-full max-h-[420px] rounded-lg bg-black border border-zinc-800/60"
+        />
+      ) : audio ? (
+        <audio src={audio} controls preload="metadata" className="w-full" />
+      ) : null}
+    </div>
+  );
+};
+
 const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string }> = ({ meeting, userTimezone }) => {
   const [expanded, setExpanded] = useState(false);
   const [creatingProposal, setCreatingProposal] = useState(false);
@@ -376,6 +433,9 @@ const MeetingCard: React.FC<{ meeting: MeetingTranscript; userTimezone?: string 
       {/* Expanded content */}
       {expanded && (
         <div className="border-t border-zinc-800/60">
+          {/* Call recording playback (webcam/audio from call-recordings bucket) */}
+          <CallRecordingPlayer meetingDate={meeting.date} />
+
           {/* Brief (structured, proposal-input-ready) */}
           {!briefIsEmpty(meeting.brief) && meeting.brief && <BriefSection brief={meeting.brief} />}
 
