@@ -13,7 +13,8 @@ export const products: Product[] = [
     icon: Compass,
     features: [
       'Where AI is actually worth pointing in your business',
-      'Setting up Claude Code around your real repo, tools, and context',
+      'Setting up Claude Code around your real repo and tools',
+      'Feeding agents the right context and memory so they perform on your work',
       'Where custom skills fit your workflow, and how to build the ones worth reusing',
       'Connecting Claude and your agents to your real tools through MCP',
       'Wiring it together in n8n so it runs on a schedule and triggers, hands-off',
