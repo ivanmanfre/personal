@@ -374,7 +374,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
               {/* Sage left-rule pull-quote (signature move) */}
               <div className="border-l-2 border-[color:var(--color-accent)] pl-5 mb-8">
                 <p className="font-drama italic text-2xl md:text-3xl text-zinc-800 leading-snug">
-                  Ninety focused minutes, and a written plan you can act on.
+                  A focused hour, and a written plan you can act on.
                 </p>
               </div>
               <p className="text-lg md:text-xl leading-relaxed text-ink-soft max-w-2xl mb-8 font-medium">
@@ -382,7 +382,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
               </p>
               {/* Format meta row */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs font-bold uppercase tracking-widest text-ink-mute">
-                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> 90-minute live call</span>
+                <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> 60-minute live call</span>
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> Written plan after</span>
                 <span className="flex items-center gap-2"><span className="w-2 h-2 bg-[color:var(--color-accent)]" /> Built on your real setup</span>
               </div>
@@ -405,7 +405,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                     <span className="font-mono text-sm text-ink-mute uppercase tracking-widest">flat</span>
                   </div>
                   <div className="font-mono text-xs font-bold uppercase tracking-widest text-ink-mute mt-3">
-                    90-min call + written plan
+                    60-min call + written plan
                   </div>
                 </div>
                 <p className="text-base leading-relaxed text-ink-soft mb-8 font-medium">
@@ -477,7 +477,7 @@ const ServiceDetail: React.FC<{ product: Product; onBuy: (tier: PricingTier) => 
                 Who you work with
               </span>
               <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold leading-[0.98] tracking-tighter mb-6">
-                You're booking 90 minutes with {renderPivot('{{italic:me}}')}.
+                You're booking an hour with {renderPivot('{{italic:me}}')}.
               </h2>
               <p className="text-lg leading-relaxed text-ink-soft font-medium mb-5 max-w-2xl">
                 I run AI agents and automations in production every day: content engines, outreach systems, call pipelines. On the call I look at what you're already running, and we map the smallest build that moves your numbers.

@@ -1,4 +1,4 @@
-// Stripe webhook handler for the $2,500 Agent-Ready Blueprint.
+// Stripe webhook handler for the $2,000 Agent-Ready Blueprint.
 // Receives checkout.session.completed events and upserts a row into
 // paid_assessments. Signature verification uses the Stripe scheme
 // (timestamp + payload HMAC-SHA256) against STRIPE_WEBHOOK_SECRET from vault.
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
 
   // ── Product routing ───────────────────────────────────────────────
   // This endpoint receives EVERY checkout.session.completed in the account.
-  // The $2,500 Agent-Ready Blueprint is the default funnel. The $500 AI
+  // The $2,000 Agent-Ready Blueprint is the default funnel. The $500 AI
   // Orientation Session shares this webhook but is a different product: it must
   // NOT enter the assessment pipeline (paid_assessments) or get the Blueprint
   // welcome email. Detect by metadata.product if set on the Payment Link,
@@ -296,7 +296,7 @@ How this unfolds:
   Day 2 - 60-min working session, walking the diagnostic together
   Day 3-5 - I deliver the Blueprint, the document you actually paid for
 
-The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation IS the deliverable.
+The $2,000 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation IS the deliverable.
 
 One thing to set expectation now: I pace to your absorption, not my delivery. Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1 - we ship only what your team can actually integrate, leaving runway for the previous wave to land.
 
@@ -322,7 +322,7 @@ ivanmanfredi.com`;
       <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 2</td><td style="padding:6px 0;color:#4A4A48">60-min working session, walking the diagnostic together</td></tr>
       <tr><td style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6B6861">Day 3-5</td><td style="padding:6px 0;color:#4A4A48">I deliver the Blueprint, the document you actually paid for</td></tr>
     </table>
-    <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,500 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
+    <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,000 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
     <p style="margin:0 0 16px;padding:12px 14px;background:#EAE3D5;border-left:2px solid #344B29;color:#4A4A48;font-size:14px">One thing to set expectation now: <strong>I pace to your absorption, not my delivery.</strong> Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1. We ship only what your team can actually integrate, leaving runway for the previous wave to land.</p>
     <p style="margin:24px 0 16px"><a href="${welcomeUrl}" style="color:#344B29;font-weight:600">Full welcome page -&gt;</a></p>
     <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#6B6861;font-size:13px">Reply to this email with any questions.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">Agent-Ready Ops&trade;</span></p>
@@ -354,7 +354,7 @@ ivanmanfredi.com`;
   }
 }
 
-// $500 AI Orientation Session. Different product from the $2,500 Blueprint:
+// $500 AI Orientation Session. Different product from the $2,000 Blueprint:
 // no paid_assessments row, no intake/Day-2 flow. Send the buyer a booking
 // link + prep checklist, and ping Ivan (there's no dashboard row for this one).
 async function handleOrientation(sb: any, session: any, email: string): Promise<void> {
@@ -371,10 +371,10 @@ async function handleOrientation(sb: any, session: any, email: string): Promise<
 
 Payment received. Thanks for booking the AI Orientation Session.
 
-First step: pick your time for the 90-minute call.
+First step: pick your time for the 60-minute call.
    ${calendlyUrl}
 
-To get the most out of the 90 minutes, come with:
+To get the most out of the hour, come with:
    1. Your main tools open, the ones running the business day to day
    2. Claude Code installed if you can manage it (we can set it up together if not)
    3. The one workflow eating the most of your week, written down
@@ -390,7 +390,7 @@ ivanmanfredi.com`;
     const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
     <p style="margin:0 0 16px">${firstLine}</p>
     <p style="margin:0 0 16px">Payment received. Thanks for booking the AI Orientation Session.</p>
-    <p style="margin:28px 0 12px"><a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F7F4EF;text-decoration:none;padding:12px 22px;font-weight:600;font-size:15px">Pick your time for the 90-minute call -&gt;</a></p>
+    <p style="margin:28px 0 12px"><a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F7F4EF;text-decoration:none;padding:12px 22px;font-weight:600;font-size:15px">Pick your time for the 60-minute call -&gt;</a></p>
     <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">Come to the call with</p>
     <ol style="padding-left:20px;margin:0 0 24px;color:#4A4A48">
       <li style="margin-bottom:10px">Your main tools open, the ones running the business day to day</li>

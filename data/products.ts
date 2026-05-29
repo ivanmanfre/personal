@@ -8,7 +8,7 @@ export const products: Product[] = [
     name: 'AI Orientation Session',
     headline: 'Find where to {{italic:start}} with AI in your business.',
     description:
-      'A direction-setting session for founders and operators who already run real systems and want to put AI to work without burning months on where to begin. One focused 90-minute call: we look at what you\'re already running, map where AI actually earns its keep, and give you a concrete path. How to set up Claude Code, which MCPs and skills matter for your use case, what to automate first, and what to leave alone. You walk away with a written plan you can act on the same week.',
+      'A direction-setting session for founders and operators who already run real systems and want to put AI to work without burning months on where to begin. One focused 60-minute call: we look at what you\'re already running, map where AI actually earns its keep, and give you a concrete path. How to set up Claude Code, which MCPs and skills matter for your use case, what to automate first, and what to leave alone. You walk away with a written plan you can act on the same week.',
     category: 'service',
     icon: Compass,
     features: [
@@ -21,7 +21,7 @@ export const products: Product[] = [
       'Where agents break in production, and how to avoid it',
     ],
     includes: [
-      '90-minute live direction-setting call',
+      '60-minute live direction-setting call',
       'Written plan delivered after, covering tools, setup order, and learning path',
       'Shortlist of MCPs, skills, and integrations worth your time',
       'Plain-English written follow-up',
@@ -37,7 +37,7 @@ export const products: Product[] = [
         name: 'Orientation Session + Written Plan',
         price: 500,
         label: '$500',
-        description: 'One focused 90-minute call, then a written plan. You leave knowing what to set up, what to learn first, and what to ignore.',
+        description: 'One focused 60-minute call, then a written plan. You leave knowing what to set up, what to learn first, and what to ignore.',
         checkoutUrl: 'https://buy.stripe.com/3cI3cncqL53rbxc2D9fEk0F',
         highlighted: true,
       },
