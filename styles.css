@@ -165,6 +165,45 @@ body.hide-site-footer .site-footer {
   letter-spacing: -0.01em;
 }
 
+/* Sage highlight-swipe behind a headline's italic pivot word. Mirrors the
+   proposal cover style at resources.ivanmanfredi.com — a bright-sage
+   highlighter block sweeps in behind the DM Serif italic pivot on load.
+   Scoped to .pivot-highlight so it never leaks to other product headlines. */
+.pivot-highlight em {
+  position: relative;
+  z-index: 0;
+  font-style: italic;
+}
+.pivot-highlight em::before {
+  content: "";
+  position: absolute;
+  left: -0.06em;
+  right: -0.06em;
+  bottom: 0.08em;
+  height: 0.5em;
+  background: #7FD0A6;
+  opacity: 0.5;
+  z-index: -1;
+  transform-origin: left center;
+  animation: pivot-sweep 0.7s cubic-bezier(0.22, 0.84, 0.36, 1) 0.45s both;
+}
+@keyframes pivot-sweep {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Ambient sage glow bloom — soft radial behind the hero for paper depth. */
+.sage-bloom {
+  background: radial-gradient(circle at center,
+    rgba(127, 208, 166, 0.30) 0%,
+    rgba(127, 208, 166, 0.10) 38%,
+    transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pivot-highlight em::before { animation: none; }
+}
+
 /* Branded range slider — replaces the OS-blue native control on the ROI
    calculator. Sage thumb, paper-tone track, hairline border. */
 input[type='range'].stat-slider {
