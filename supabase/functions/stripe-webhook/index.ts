@@ -167,6 +167,29 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ── Product routing ───────────────────────────────────────────────
+  // This endpoint receives EVERY checkout.session.completed in the account.
+  // The $2,500 Agent-Ready Blueprint is the default funnel. The $500 AI
+  // Orientation Session shares this webhook but is a different product: it must
+  // NOT enter the assessment pipeline (paid_assessments) or get the Blueprint
+  // welcome email. Detect by metadata.product if set on the Payment Link,
+  // otherwise by amount ($500 = 50000 cents = orientation).
+  const product =
+    (session.metadata?.product as string | undefined) ||
+    (session.amount_total === 50000 ? "orientation" : "assessment");
+
+  if (product === "orientation") {
+    try {
+      await handleOrientation(sb, session, email);
+    } catch (e) {
+      console.error("orientation handler failed:", String(e));
+    }
+    return new Response(
+      JSON.stringify({ ok: true, product: "orientation", session_id: session.id }),
+      { status: 200, headers: { ...CORS, "Content-Type": "application/json" } },
+    );
+  }
+
   // Wave 0 / P30-1: Pull source-attribution from Stripe.
   // Two channels supply attribution:
   //   1. session.metadata (set if Ivan adds metadata on the Payment Link)
@@ -329,6 +352,93 @@ ivanmanfredi.com`;
     const body = await res.text();
     throw new Error(`resend ${res.status}: ${body.slice(0, 200)}`);
   }
+}
+
+// $500 AI Orientation Session. Different product from the $2,500 Blueprint:
+// no paid_assessments row, no intake/Day-2 flow. Send the buyer a booking
+// link + prep checklist, and ping Ivan (there's no dashboard row for this one).
+async function handleOrientation(sb: any, session: any, email: string): Promise<void> {
+  const name: string | null = session.customer_details?.name ?? null;
+  const firstLine = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
+  const calendlyUrl = "https://calendly.com/im-ivanmanfredi/30min";
+
+  // 1. Booking + prep email to the buyer (orientation-specific)
+  try {
+    const apiKey = await getSecret(sb, "RESEND_API_KEY_ASSESSMENT");
+    const from = await getSecret(sb, "RESEND_FROM");
+
+    const text = `${firstLine}
+
+Payment received. Thanks for booking the AI Orientation Session.
+
+First step: pick your time for the 90-minute call.
+   ${calendlyUrl}
+
+To get the most out of the 90 minutes, come with:
+   1. Your main tools open, the ones running the business day to day
+   2. Claude Code installed if you can manage it (we can set it up together if not)
+   3. The one workflow eating the most of your week, written down
+
+How it works:
+   You share your screen and stay at the keyboard while I direct. We look at what you already run, map where AI is worth pointing, and decide what to set up first and what to leave alone. After the call I send a written plan you can act on the same week: tools, setup order, and a learning path.
+
+Reply to this email with anything you want to cover.
+
+- Ivan Manfredi
+ivanmanfredi.com`;
+
+    const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
+    <p style="margin:0 0 16px">${firstLine}</p>
+    <p style="margin:0 0 16px">Payment received. Thanks for booking the AI Orientation Session.</p>
+    <p style="margin:28px 0 12px"><a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F7F4EF;text-decoration:none;padding:12px 22px;font-weight:600;font-size:15px">Pick your time for the 90-minute call -&gt;</a></p>
+    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">Come to the call with</p>
+    <ol style="padding-left:20px;margin:0 0 24px;color:#4A4A48">
+      <li style="margin-bottom:10px">Your main tools open, the ones running the business day to day</li>
+      <li style="margin-bottom:10px">Claude Code installed if you can manage it (we can set it up together if not)</li>
+      <li style="margin-bottom:10px">The one workflow eating the most of your week, written down</li>
+    </ol>
+    <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">How it works</p>
+    <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">You share your screen and stay at the keyboard while I direct. We look at what you already run, map where AI is worth pointing, and decide what to set up first and what to leave alone.</p>
+    <p style="margin:0 0 16px;padding:12px 14px;background:#EAE3D5;border-left:2px solid #344B29;color:#4A4A48;font-size:14px">After the call I send a written plan you can act on the same week: the tools to set up, the setup order, and a learning path.</p>
+    <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#6B6861;font-size:13px">Reply to this email with anything you want to cover.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">ivanmanfredi.com</span></p>
+  </body></html>`;
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        reply_to: "im@ivanmanfredi.com",
+        subject: "Your AI Orientation Session is booked",
+        text,
+        html,
+        tags: [{ name: "type", value: "orientation_welcome" }],
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`resend ${res.status}: ${body.slice(0, 200)}`);
+    }
+  } catch (e) {
+    console.error("[orientation-email]", String(e));
+  }
+
+  // 2. Ping Ivan via WhatsApp (no dashboard row exists for this product)
+  const amount = ((session.amount_total ?? 50000) / 100).toFixed(0);
+  const buyerLabel = name ? `${name} <${email}>` : email;
+  const notify = `New AI Orientation Session purchase ($${amount})\n\n${buyerLabel}\n\nSent them the booking link (${calendlyUrl}) + prep checklist. Expect a Calendly booking. No dashboard row for this product.`;
+  try {
+    await fetch("http://24.199.118.135:8080/message/sendText/ivan-wa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: "evo_ivan_n8nclaw_2026" },
+      body: JSON.stringify({ number: "5491159385939", text: notify, options: { delay: 1000 } }),
+    });
+  } catch (e) {
+    console.error("[orientation-whatsapp]", String(e));
+  }
+
+  console.log("[orientation] processed:", email, session.id);
 }
 
 async function handleRefund(sb: any, paymentIntent: string, charge: any): Promise<void> {
