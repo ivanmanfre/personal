@@ -10,9 +10,9 @@ const tiers = [
     badge: 'Recommended starting point',
     fit: 'Best for new engagements with significant build scope.',
     features: [
-      '**90-Day Blueprint audit** delivered week 1 — yours regardless',
+      '**90-Day Blueprint audit** delivered week 1, yours regardless',
       '2-3 major systems built',
-      '**Custom Living Ops Panel** — your stack in one panel; grows a new module with every system shipped',
+      '**Custom Living Ops Panel**: your stack in one panel; grows a new module with every system shipped',
       'Weekly working sessions',
       'Slack support throughout',
     ],
@@ -51,7 +51,7 @@ const howItWorks = [
   {
     title: 'Discovery call',
     duration: '30-45 min · free',
-    description: 'We figure out scope, fit, and the right starting intensity. Not every business needs Heavy month — some start at Active build, some only want Slow Lane.',
+    description: 'We figure out scope, fit, and the right starting intensity. Not every business needs Heavy month. Some start at Active build, some only want Slow Lane.',
   },
   {
     title: 'Intake',
@@ -66,20 +66,20 @@ const howItWorks = [
   {
     title: 'Builds shipping',
     duration: 'Weeks 2-3',
-    description: 'Priority systems go live. Voice profile trained. Content engine drafting daily. You self-edit copy through the in-browser editor — no Ivan dependency for text changes.',
+    description: 'Priority systems go live. Voice profile trained. Content engine drafting daily. You self-edit copy through the in-browser editor, so there\'s no Ivan dependency for text changes.',
   },
   {
     title: '90-Day Plan Review',
     duration: 'Week 3-4 · pre-scheduled',
-    description: 'We look at the audit findings together, decide what\'s next, recalibrate intensity. Continue, step down, or graduate to Care Plan. No surprises — already on the calendar from day one.',
+    description: 'We look at the audit findings together, decide what\'s next, recalibrate intensity. Continue, step down, or graduate to Care Plan. No surprises, since it\'s already on the calendar from day one.',
   },
 ];
 
 const blueprintCovers = [
-  '**Business + system map** — where AI/automation can move the needle, where it can\'t, what\'s blocking what',
-  '**5-7 priority builds** — costed gaps, severity, sequencing',
-  '**90-day roadmap** — 3 phases, who does what, what ships when',
-  '**Quick wins** — first 2-3 things to build for fastest visible payoff',
+  '**Business + system map**: where AI/automation can move the needle, where it can\'t, what\'s blocking what',
+  '**5-7 priority builds**: costed gaps, severity, sequencing',
+  '**90-day roadmap**: 3 phases, who does what, what ships when',
+  '**Quick wins**: first 2-3 things to build for fastest visible payoff',
 ];
 
 const faqs = [
@@ -93,10 +93,10 @@ const faqs = [
   },
   {
     q: 'Can I switch tiers month-to-month?',
-    a: 'Yes. Tiers are intensity dials, not contracts. We recalibrate monthly based on what\'s actually needed. Step up if a big build is coming, step down when things settle.',
+    a: 'Yes. Think of the tiers as intensity dials you can turn up or down, with no contract locking you in. We recalibrate monthly based on what\'s actually needed. Step up if a big build is coming, step down when things settle.',
   },
   {
-    q: 'What if I just want one thing built — like a lead magnet system?',
+    q: 'What if I just want one thing built, like a lead magnet system?',
     a: 'That\'s a Single Project at $7,500 (see /lead-magnet-system). No engagement, no audit, you own the build. Single Project works best when you know exactly what you want and don\'t need strategic input.',
   },
   {
@@ -111,9 +111,9 @@ const faqs = [
 
 const notIncluded = [
   'Bespoke products outside the AI-systems scope (brand design, paid ads management, hiring)',
-  'On-site presence — this is remote-first, async-first',
-  '24/7 on-call response — real emergencies handled same-day, but I sleep',
-  'Unlimited implementation volume — each tier has a defined monthly scope',
+  'On-site presence. This is remote-first, async-first',
+  '24/7 on-call response. Real emergencies handled same-day, but I sleep',
+  'Unlimited implementation volume. Each tier has a defined monthly scope',
 ];
 
 // Renders **bold** markdown inline
@@ -130,7 +130,7 @@ function renderInline(text: string): React.ReactNode[] {
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Monthly engagement. A senior AI partner embedded in your business, shipping systems every month. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle.',
+    description: 'Monthly engagement. A senior AI partner embedded in your business, shipping systems every month. Pick an intensity that matches the work ahead: heavy month for big builds, lighter cadence as things settle.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
 
@@ -146,7 +146,7 @@ const FractionalPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Fractional AI Partner — Senior operator, ongoing
+              Fractional AI Partner · Senior operator, ongoing
             </span>
           </motion.div>
 
@@ -166,7 +166,7 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-4"
           >
-            Monthly engagement. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle.
+            Monthly engagement. Pick an intensity that matches the work ahead: heavy month for big builds, lighter cadence as things settle.
           </motion.p>
 
           <motion.p
@@ -336,7 +336,7 @@ const FractionalPage: React.FC = () => {
           {/* Care Plan footnote — visually subordinate */}
           <div className="mb-20 max-w-3xl mx-auto text-center">
             <p className="text-xs text-ink-mute italic">
-              After your active engagement winds down, optional <strong className="not-italic text-ink-soft font-semibold">Care Plan at $1k/mo</strong> available for ongoing maintenance — fixes, prompt updates, monitoring. No new builds.
+              After your active engagement winds down, optional <strong className="not-italic text-ink-soft font-semibold">Care Plan at $1k/mo</strong> available for ongoing maintenance: fixes, prompt updates, monitoring. No new builds.
             </p>
           </div>
 
@@ -381,7 +381,7 @@ const FractionalPage: React.FC = () => {
               ))}
             </div>
             <p className="text-sm text-ink-mute mt-6 italic max-w-2xl leading-relaxed">
-              Delivered via conversational AI intake → working session with me → published deliverable. Same engine that ships the standalone <a href="/assessment" className="underline hover:text-black not-italic">Agent-Ready Blueprint</a>, but scoped to your full system, not just one workflow.
+              Delivered via conversational AI intake → working session with me → published deliverable. Same engine that ships the standalone <a href="/assessment" className="underline hover:text-black not-italic">Agent-Ready Blueprint</a>, scoped to your full system instead of a single workflow.
             </p>
           </motion.div>
 
@@ -396,7 +396,7 @@ const FractionalPage: React.FC = () => {
               How we pace
             </p>
             <p className="text-xl md:text-2xl leading-relaxed text-ink-soft">
-              We pace to <span className="font-drama italic text-black">your absorption</span> — not our delivery. The bottleneck on AI in service businesses isn't building the systems; it's whether your team has the headspace to absorb them. Each month we ship only what you can actually integrate, leaving runway for the previous wave to land.
+              We pace to <span className="font-drama italic text-black">your absorption</span>. With AI in service businesses, the real constraint is usually your team's headspace to take on new systems, so each month we ship only what you can actually integrate, leaving runway for the previous wave to land.
             </p>
           </motion.div>
 
@@ -414,13 +414,13 @@ const FractionalPage: React.FC = () => {
               Full-time senior AI hire runs <span className="font-mono">$200k–$400k</span>/yr fully loaded.
             </p>
             <p className="text-base text-ink-soft leading-relaxed">
-              Heavy month is <span className="font-mono">$120k</span>/yr if maintained — but most clients step down to Active build or Slow Lane after the build-heavy months. Real-world average: <span className="font-mono">$80-100k</span>/yr for an active partnership.
+              Heavy month is <span className="font-mono">$120k</span>/yr if maintained, but most clients step down to Active build or Slow Lane after the build-heavy months. Real-world average: <span className="font-mono">$80-100k</span>/yr for an active partnership.
             </p>
             <p className="text-base text-ink-soft leading-relaxed">
               No recruiting risk. No ramp. No benefits. No severance. Switch intensities month-to-month. Walk anytime.
             </p>
             <p className="text-sm text-ink-mute pt-2">
-              Already know what you want built? <a href="/start?path=scope" className="underline hover:text-black">Skip the tier match — book a 30-min scope call</a>.
+              Already know what you want built? <a href="/start?path=scope" className="underline hover:text-black">Skip the tier match and book a 30-min scope call</a>.
             </p>
           </motion.div>
 
@@ -490,7 +490,7 @@ const FractionalPage: React.FC = () => {
               <ArrowRight aria-hidden="true" size={20} />
             </a>
             <p className="mt-6 text-sm text-ink-mute">
-              Cold to my work? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint ($2,000)</a> — credited toward any engagement.
+              Cold to my work? <a href="/assessment" className="underline text-zinc-300 hover:text-white">Start with the Agent-Ready Blueprint ($2,000)</a>, credited toward any engagement.
             </p>
           </motion.div>
         </div>
