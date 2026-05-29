@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target, Video, FlaskConical, Phone, Terminal, Film, Search, Award, Eye, Gauge, Map, Mail, Brain, FileText } from 'lucide-react';
+import { BarChart3, Users, Settings, LayoutDashboard, LogOut, Menu, X, Activity, Swords, Bot, Server, CheckSquare, Calendar, Briefcase, Heart, Target, Video, FlaskConical, Phone, Terminal, Film, Search, Award, Eye, Gauge, Map, Mail, Brain, FileText, Layers } from 'lucide-react';
 import { logout } from '../../lib/dashboardAuth';
 import StatusDot from './shared/StatusDot';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -32,6 +32,7 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
       { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
       { id: 'recordings', label: 'Recordings', icon: <Video className="w-[18px] h-[18px]" /> },
       { id: 'video', label: 'Video', icon: <Film className="w-[18px] h-[18px]" /> },
+      { id: 'studio', label: 'Studio', icon: <Layers className="w-[18px] h-[18px]" /> },
     ],
   },
   {
