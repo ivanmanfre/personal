@@ -371,10 +371,10 @@ async function handleOrientation(sb: any, session: any, email: string): Promise<
 
 Payment received. Thanks for booking the AI Orientation Session.
 
-First step: pick your time for the 60-minute call.
+First step: pick your time for the 90-minute call.
    ${calendlyUrl}
 
-To get the most out of the hour, come with:
+To get the most out of the 90 minutes, come with:
    1. Your main tools open, the ones running the business day to day
    2. Claude Code installed if you can manage it (we can set it up together if not)
    3. The one workflow eating the most of your week, written down
@@ -390,7 +390,7 @@ ivanmanfredi.com`;
     const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
     <p style="margin:0 0 16px">${firstLine}</p>
     <p style="margin:0 0 16px">Payment received. Thanks for booking the AI Orientation Session.</p>
-    <p style="margin:28px 0 12px"><a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F7F4EF;text-decoration:none;padding:12px 22px;font-weight:600;font-size:15px">Pick your time for the 60-minute call -&gt;</a></p>
+    <p style="margin:28px 0 12px"><a href="${calendlyUrl}" style="display:inline-block;background:#1A1A1A;color:#F7F4EF;text-decoration:none;padding:12px 22px;font-weight:600;font-size:15px">Pick your time for the 90-minute call -&gt;</a></p>
     <p style="margin:32px 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861;font-family:'IBM Plex Mono',monospace">Come to the call with</p>
     <ol style="padding-left:20px;margin:0 0 24px;color:#4A4A48">
       <li style="margin-bottom:10px">Your main tools open, the ones running the business day to day</li>
