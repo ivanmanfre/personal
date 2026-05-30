@@ -273,7 +273,7 @@ export default function LmIdeasPanel() {
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button disabled={busyId === c.id} onClick={(e) => { e.stopPropagation(); decide(c, 'approve'); }}
                     style={{ padding: '6px 12px', border: '1px solid #2A8F65', background: '#2A8F65', color: '#fff', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>
-                    {busyId === c.id ? '…' : '✓ Approve → ClickUp'}
+                    {busyId === c.id ? '…' : '✓ Approve'}
                   </button>
                   <button disabled={busyId === c.id} onClick={(e) => { e.stopPropagation(); decide(c, 'reject'); }}
                     style={{ padding: '6px 12px', border: '1px solid #c62828', background: 'transparent', color: '#c62828', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>
@@ -307,7 +307,7 @@ export default function LmIdeasPanel() {
               <span>↳ {c.raw_topic}</span>
               <span style={{ display: 'flex', gap: 8 }}>
                 {c.promoted_clickup_task_id && (
-                  <a href={`https://app.clickup.com/t/${c.promoted_clickup_task_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>view in ClickUp</a>
+                  <span style={{ fontSize: 12, opacity: 0.7 }}>promoted</span>
                 )}
                 <button onClick={() => decide(c, 'revert')} disabled={busyId === c.id}
                   style={{ fontSize: 11, padding: '2px 8px', border: '1px solid #c62828', background: 'transparent', color: '#c62828', borderRadius: 4, cursor: 'pointer' }}>

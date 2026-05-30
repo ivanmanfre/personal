@@ -7,17 +7,15 @@ import React, { useState, lazy, Suspense } from 'react';
  */
 const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 const CarouselStudioPanel = lazy(() => import('../../dashboard/CarouselStudioPanel'));
-const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 
-type GenKey = 'posts' | 'carousel' | 'leadmagnets';
+type GenKey = 'posts' | 'carousel';
 
 const LABELS: Record<GenKey, string> = {
   posts: 'Posts',
   carousel: 'Carousels',
-  leadmagnets: 'Lead Magnets',
 };
 
-const ORDER: GenKey[] = ['posts', 'carousel', 'leadmagnets'];
+const ORDER: GenKey[] = ['posts', 'carousel'];
 
 function getInitialGen(): GenKey {
   if (typeof window === 'undefined') return 'posts';
@@ -50,9 +48,8 @@ export function GenerateStudio() {
 
   const render = () => {
     switch (gen) {
-      case 'posts':       return <PostStudioPanel />;
-      case 'carousel':    return <CarouselStudioPanel />;
-      case 'leadmagnets': return <LeadMagnetStudioPanel />;
+      case 'posts':    return <PostStudioPanel />;
+      case 'carousel': return <CarouselStudioPanel />;
     }
   };
 

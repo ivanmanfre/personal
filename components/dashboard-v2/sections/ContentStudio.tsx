@@ -24,17 +24,17 @@ const StrategyPanel = lazy(() => import('../../dashboard/StrategyPanel'));
 const LetterPanel = lazy(() => import('../../dashboard/LetterPanel'));
 const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
-const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
-// "Generate" wraps Posts + Carousels + LMs as nested sub-tabs (single top-level entry).
+// Nested wrappers: Generate (Posts + Carousels) and Lead Magnets (Ideas + Drafts)
 const GenerateStudio = lazy(() => import('./GenerateStudio').then((m) => ({ default: m.GenerateStudio })));
+const LeadMagnets = lazy(() => import('./LeadMagnets').then((m) => ({ default: m.LeadMagnets })));
 
-type SubKey = 'generate' | 'pipeline' | 'ideas' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'clips';
+type SubKey = 'generate' | 'leadmagnets' | 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'clips';
 
 const SUB_LABELS: Record<SubKey, string> = {
   generate: 'Generate',
+  leadmagnets: 'Lead Magnets',
   pipeline: 'Pipeline',
-  ideas: 'LM Ideas',
   performance: 'Post Performance',
   audience: 'Site Audience',
   strategy: 'Strategy',
@@ -44,7 +44,7 @@ const SUB_LABELS: Record<SubKey, string> = {
   clips: 'Call Clips',
 };
 
-const SUB_ORDER: SubKey[] = ['generate', 'pipeline', 'ideas', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'clips'];
+const SUB_ORDER: SubKey[] = ['generate', 'leadmagnets', 'pipeline', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'clips'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'pipeline';
@@ -80,8 +80,8 @@ export function ContentStudio() {
   const renderSub = () => {
     switch (sub) {
       case 'generate':    return <GenerateStudio />;
+      case 'leadmagnets': return <LeadMagnets />;
       case 'pipeline':    return <ContentPanel />;
-      case 'ideas':       return <LmIdeasPanel />;
       case 'performance': return <PerformancePanel />;
       case 'audience':    return <AudiencePanel />;
       case 'strategy':    return <StrategyPanel />;
