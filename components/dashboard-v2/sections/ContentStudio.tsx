@@ -26,11 +26,15 @@ const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
+const CarouselStudioPanel = lazy(() => import('../../dashboard/CarouselStudioPanel'));
+const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 
-type SubKey = 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'ideas' | 'clips';
+type SubKey = 'pipeline' | 'carousel' | 'leadmagnets' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'ideas' | 'clips';
 
 const SUB_LABELS: Record<SubKey, string> = {
   pipeline: 'Pipeline',
+  carousel: 'Carousel Studio',
+  leadmagnets: 'LM Studio',
   performance: 'Performance',
   audience: 'Audience',
   strategy: 'Strategy',
@@ -41,7 +45,7 @@ const SUB_LABELS: Record<SubKey, string> = {
   clips: 'Call Clips',
 };
 
-const SUB_ORDER: SubKey[] = ['pipeline', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'ideas', 'clips'];
+const SUB_ORDER: SubKey[] = ['pipeline', 'carousel', 'leadmagnets', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'ideas', 'clips'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'pipeline';
@@ -77,6 +81,8 @@ export function ContentStudio() {
   const renderSub = () => {
     switch (sub) {
       case 'pipeline':    return <ContentPanel />;
+      case 'carousel':    return <CarouselStudioPanel />;
+      case 'leadmagnets': return <LeadMagnetStudioPanel />;
       case 'performance': return <PerformancePanel />;
       case 'audience':    return <AudiencePanel />;
       case 'strategy':    return <StrategyPanel />;
