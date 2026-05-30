@@ -1,0 +1,64 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { toastError } from '../lib/dashboardActions';
+
+export interface LeadMagnetDraft {
+  id: string;
+  topic: string | null;
+  format: string | null;
+  status: string;
+  postBody: string | null;
+  resourceHtml: string | null;
+  resourceUrl: string | null;
+  emailCopy: string | null;
+  coverUrl: string | null;
+  ogUrl: string | null;
+  slug: string | null;
+  spec: Record<string, unknown> | null;
+  qa: Record<string, unknown> | null;
+  updatedAt: string;
+}
+
+function mapDraft(row: any): LeadMagnetDraft {
+  return {
+    id: row.id,
+    topic: row.topic,
+    format: row.format,
+    status: row.status || 'idea',
+    postBody: row.post_body,
+    resourceHtml: row.resource_html,
+    resourceUrl: row.resource_url,
+    emailCopy: row.email_copy,
+    coverUrl: row.cover_url,
+    ogUrl: row.og_url,
+    slug: row.slug,
+    spec: row.spec,
+    qa: row.qa,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function useLeadMagnets() {
+  const [drafts, setDrafts] = useState<LeadMagnetDraft[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('lm_drafts_v2')
+        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, og_url, slug, spec, qa, updated_at')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      setDrafts((data || []).map(mapDraft));
+    } catch (err) {
+      toastError('load lead magnets', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return { drafts, loading, refresh };
+}
