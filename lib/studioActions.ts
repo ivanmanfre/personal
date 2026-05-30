@@ -77,3 +77,28 @@ export function generateLMContent(input: Omit<LMGenPayload, 'phase'>) {
 export function buildLMAssets(input: Omit<LMGenPayload, 'phase'>) {
   return fireLM({ ...input, phase: 'assets' });
 }
+
+// === Post Generation v2 (post-gen-v2 webhook on n8n; text + single-image posts) ====
+const POSTGEN_WEBHOOK = import.meta.env.VITE_POSTGEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/post-gen-v2';
+
+export interface PostGenPayload {
+  draft_id: string;
+  topic: string;
+  title?: string;
+  author?: string;
+  source?: string;
+  post_format: 'Text Post' | 'Single Image';
+  post_format_details?: string;
+  include_image: 'Yes' | 'No';
+  image_style?: string;
+}
+
+export async function generatePostContent(payload: PostGenPayload) {
+  const res = await fetch(POSTGEN_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`post-gen-v2 failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json();
+}

@@ -6,6 +6,7 @@ export interface CarouselDraft {
   id: string;
   title: string;
   topic: string | null;
+  type: string | null;
   status: string;
   imageUrls: string[];
   postBody: string | null;
@@ -21,6 +22,7 @@ function mapDraft(row: any): CarouselDraft {
     id: row.id,
     title: row.title || '(untitled)',
     topic: row.topic,
+    type: row.type,
     status: row.status || 'draft',
     imageUrls: row.image_urls || [],
     postBody: row.post_body,
@@ -41,7 +43,7 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select('id, title, topic, status, image_urls, post_body, ig_caption, qa, style_id, scheduled_at, updated_at')
+        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, style_id, scheduled_at, updated_at')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));

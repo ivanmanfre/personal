@@ -26,26 +26,25 @@ const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
-const CarouselStudioPanel = lazy(() => import('../../dashboard/CarouselStudioPanel'));
-const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
+// "Generate" wraps Posts + Carousels + LMs as nested sub-tabs (single top-level entry).
+const GenerateStudio = lazy(() => import('./GenerateStudio').then((m) => ({ default: m.GenerateStudio })));
 
-type SubKey = 'pipeline' | 'carousel' | 'leadmagnets' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'ideas' | 'clips';
+type SubKey = 'generate' | 'pipeline' | 'ideas' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'clips';
 
 const SUB_LABELS: Record<SubKey, string> = {
+  generate: 'Generate',
   pipeline: 'Pipeline',
-  carousel: 'Carousel Studio',
-  leadmagnets: 'LM Studio',
-  performance: 'Performance',
-  audience: 'Audience',
+  ideas: 'LM Ideas',
+  performance: 'Post Performance',
+  audience: 'Site Audience',
   strategy: 'Strategy',
   newsletter: 'Newsletter',
   recordings: 'Recordings · Calls',
   video: 'Video Pipeline',
-  ideas: 'Ideas',
   clips: 'Call Clips',
 };
 
-const SUB_ORDER: SubKey[] = ['pipeline', 'carousel', 'leadmagnets', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'ideas', 'clips'];
+const SUB_ORDER: SubKey[] = ['generate', 'pipeline', 'ideas', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'clips'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'pipeline';
@@ -80,16 +79,15 @@ export function ContentStudio() {
 
   const renderSub = () => {
     switch (sub) {
+      case 'generate':    return <GenerateStudio />;
       case 'pipeline':    return <ContentPanel />;
-      case 'carousel':    return <CarouselStudioPanel />;
-      case 'leadmagnets': return <LeadMagnetStudioPanel />;
+      case 'ideas':       return <LmIdeasPanel />;
       case 'performance': return <PerformancePanel />;
       case 'audience':    return <AudiencePanel />;
       case 'strategy':    return <StrategyPanel />;
       case 'newsletter':  return <LetterPanel />;
       case 'recordings':  return <RecordingsPanel />;
       case 'video':       return <VideoIdeasPanel />;
-      case 'ideas':       return <LmIdeasPanel />;
       case 'clips':       return <CallClipsPanel />;
     }
   };

@@ -16,7 +16,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const CarouselStudioPanel: React.FC = () => {
-  const { drafts, loading, refresh } = useContentLibrary();
+  const { drafts: allDrafts, loading, refresh } = useContentLibrary();
+  // Show only carousels here; text + single-image live in Post Studio
+  const drafts = allDrafts.filter((d) => d.type === 'carousel' || (!d.type && d.imageUrls.length > 1));
   const [topic, setTopic] = useState('');
   const [keyPoints, setKeyPoints] = useState('');
   const [building, setBuilding] = useState(false);
