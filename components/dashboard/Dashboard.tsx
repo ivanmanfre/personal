@@ -69,6 +69,7 @@ const LazyStrategyPanel = lazy(retryImport(() => import('./StrategyPanel')));
 const LazyBrainPanel = lazy(retryImport(() => import('./BrainPanel')));
 const LazyPromptsPanel = lazy(retryImport(() => import('./PromptsPanel')));
 const LazyCarouselStudioPanel = lazy(retryImport(() => import('./CarouselStudioPanel')));
+const LazyLeadMagnetStudioPanel = lazy(retryImport(() => import('./LeadMagnetStudioPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -96,6 +97,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   brain: LazyBrainPanel as unknown as React.ComponentType,
   prompts: LazyPromptsPanel as unknown as React.ComponentType,
   studio: LazyCarouselStudioPanel as unknown as React.ComponentType,
+  leadmagnets: LazyLeadMagnetStudioPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
 };
 
@@ -129,6 +131,7 @@ const lazyImports = [
   retryImport(() => import('./LetterPanel')),
   retryImport(() => import('./PromptsPanel')),
   retryImport(() => import('./CarouselStudioPanel')),
+  retryImport(() => import('./LeadMagnetStudioPanel')),
 ];
 
 function usePrefetchPanels() {

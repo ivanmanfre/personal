@@ -47,3 +47,33 @@ export function setStatus(id: string, status: string) {
 export function scheduleCarousel(draft_id: string, scheduled_at: string) {
   return post('/carousel/schedule', { draft_id, scheduled_at });
 }
+
+// === Lead Magnets v2 (LM-gen-v2 webhook on n8n) =====================
+const LM_WEBHOOK = import.meta.env.VITE_LM_GEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/lm-gen-v2';
+
+export interface LMGenPayload {
+  draft_id: string;
+  topic: string;
+  format: string;
+  phase: 'content' | 'assets';
+  editorial_notes?: string;
+  target_audience?: string;
+}
+
+async function fireLM(payload: LMGenPayload) {
+  const res = await fetch(LM_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`lm-gen-v2 ${payload.phase} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json();
+}
+
+export function generateLMContent(input: Omit<LMGenPayload, 'phase'>) {
+  return fireLM({ ...input, phase: 'content' });
+}
+
+export function buildLMAssets(input: Omit<LMGenPayload, 'phase'>) {
+  return fireLM({ ...input, phase: 'assets' });
+}
