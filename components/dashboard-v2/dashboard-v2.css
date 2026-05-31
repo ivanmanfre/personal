@@ -3,16 +3,18 @@
  * Scoped to `.dashboard-v2` root so it never leaks into the public site
  * (which uses the editorial paper+sage brand).
  *
- * Aesthetic: cool dark, Inter throughout, tabular numerals,
- * standard red/amber/green semantic colors. Internal tool, readability-first.
+ * Aesthetic: warm dark, Inter body + DM Serif Display H1s, tabular numerals,
+ * brand sage (#2A8F65) for "good". Operator tool — editorial accents +
+ * readability-first.
  */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
 
 /* Body-level overrides — applied via class added by DemoShell on mount.
  * Public site sets body { background: #F7F4EF; font-family: 'Source Serif 4' }
- * which leaks into v2 around panel gutters. Force ink + Inter when v2 active.
+ * which leaks into v2 around panel gutters. Force warm-dark + Inter when v2 active.
  */
 body.dashboard-v2-active {
-  background: #111114 !important;
+  background: #14110d !important;
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
   color: #e7e7ea;
 }
@@ -22,19 +24,19 @@ body.dashboard-v2-active * {
 }
 
 .dashboard-v2 {
-  --d-ink: #111114;
-  --d-ink-2: #18181c;
-  --d-ink-3: #1f1f24;
+  --d-ink: #14110d;
+  --d-ink-2: #1a1713;
+  --d-ink-3: #221d18;
   --d-paper: #e7e7ea;
   --d-paper-dim: #a3a3aa;
   --d-paper-dimmer: #6b6b73;
-  --d-good: #22c55e;
+  --d-good: #2A8F65;            /* brand sage */
   --d-warn: #f59e0b;
   --d-bad: #ef4444;
   --d-accent: #60a5fa;
   --d-rule: rgba(231, 231, 234, 0.07);
   --d-rule-strong: rgba(231, 231, 234, 0.15);
-  --d-good-bg: rgba(34, 197, 94, 0.08);
+  --d-good-bg: rgba(42, 143, 101, 0.10);
   --d-warn-bg: rgba(245, 158, 11, 0.08);
   --d-bad-bg: rgba(239, 68, 68, 0.08);
   --d-accent-bg: rgba(96, 165, 250, 0.08);
@@ -147,8 +149,8 @@ body.dashboard-v2-active * {
 
 /* HEAD ROW (per-section masthead) */
 .dv-head { border-bottom: 1px solid var(--d-rule-strong); padding-bottom: 1.4rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
-.dv-h1 { font-weight: 700; font-size: 32px; line-height: 1.1; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap; }
-.dv-h1 em { font-style: normal; font-weight: 700; color: var(--d-good); }
+.dv-h1 { font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 38px; line-height: 1.05; letter-spacing: -0.015em; display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap; }
+.dv-h1 em { font-style: italic; font-weight: 400; color: var(--d-good); }
 .dv-meta { text-align: right; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.7; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .dv-meta-live { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--d-good); }
 .dv-meta-live::before { content: ''; width: 6px; height: 6px; background: var(--d-good); border-radius: 50%; }
@@ -425,3 +427,106 @@ body.dashboard-v2-active * {
 .dv-cmdk-item { padding: 0.6rem 0.75rem; font-size: 13px; cursor: pointer; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; color: var(--d-paper); border: none; background: transparent; width: 100%; text-align: left; font: inherit; }
 .dv-cmdk-item:hover, .dv-cmdk-item[aria-selected="true"] { background: rgba(96,165,250,0.1); }
 .dv-cmdk-item-kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: var(--d-paper-dimmer); }
+
+/* ============== RESPONSIVE / MOBILE NAV ============== */
+/* Desktop: the mobile chrome is absent. The shell stays a 240px + 1fr grid. */
+.dv-topbar { display: none; }
+.dv-scrim { display: none; }
+.dv-sidebar-close { display: none; }
+
+/* Below 768px the 240px rail can't coexist with the content, so the sidebar
+ * becomes an off-canvas drawer opened from a hamburger in a sticky top bar. */
+@media (max-width: 768px) {
+  .dashboard-v2-shell {
+    grid-template-columns: 1fr;     /* single column — main takes the full width */
+    grid-template-rows: auto 1fr;   /* sticky top bar, then scrolling main */
+  }
+
+  .dv-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--d-ink-2);
+    border-bottom: 1px solid var(--d-rule-strong);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .dv-hamburger {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 38px;
+    height: 38px;
+    padding: 9px 8px;
+    background: transparent;
+    border: 1px solid var(--d-rule-strong);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .dv-hamburger span { display: block; height: 2px; width: 100%; background: var(--d-paper); border-radius: 2px; }
+  .dv-topbar-brand { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: var(--d-paper); }
+  .dv-topbar-brand em { font-style: normal; font-weight: 700; color: var(--d-good); }
+
+  /* Sidebar → fixed off-canvas drawer (removed from grid flow) */
+  .dv-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 264px;
+    max-width: 82vw;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.22, 0.84, 0.36, 1);
+    will-change: transform;
+  }
+  .dv-sidebar--open {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+  }
+
+  .dv-brand { position: relative; }
+  .dv-sidebar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: -0.25rem;
+    right: 1rem;
+    width: 32px;
+    height: 32px;
+    font-size: 24px;
+    line-height: 1;
+    background: transparent;
+    border: none;
+    color: var(--d-paper-dim);
+    cursor: pointer;
+  }
+
+  /* Scrim */
+  .dv-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+  }
+  .dv-scrim--show { opacity: 1; pointer-events: auto; }
+
+  /* Reclaim horizontal space inside the panel on small screens */
+  .dv-panel { padding: 1.25rem 1.05rem 2.5rem; }
+
+  /* Masthead: stop the space-between row from crushing the title + meta */
+  .dv-head { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+
+  /* Dense stat grids reflow from 3–4 columns to 2 (KPI/pulse) or 1 (actions) */
+  .dv-kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .dv-pulse { grid-template-columns: repeat(2, 1fr); }
+  .dv-action-grid { grid-template-columns: 1fr; }
+}

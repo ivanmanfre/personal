@@ -18,12 +18,27 @@ import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
-const inView = {
-  initial: { opacity: 0, y: 28 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' } as const,
-  transition: { duration: 0.85, ease },
-};
+// Honor OS-level reduced-motion. When set, every scroll-reveal below is skipped
+// so sections render at full opacity on first paint — content never depends on
+// the IntersectionObserver firing to become visible (closes the blank-section
+// risk for reduced-motion users, fast programmatic scroll, and non-interactive
+// full-page captures). Normal users are unaffected: prefersReduced === false
+// yields the exact original animation objects. Complements the page-level
+// <MotionConfig reducedMotion="user">, which only disables transform/layout
+// motion and still lets opacity fade — this also kills the opacity fade.
+const prefersReduced =
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const inView = prefersReduced
+  ? { initial: false as const, transition: { duration: 0 } }
+  : {
+      initial: { opacity: 0, y: 28 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, margin: '-80px' } as const,
+      transition: { duration: 0.85, ease },
+    };
 
 const T = {
   mono: {
@@ -63,7 +78,7 @@ const Label: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ childr
 // ─── RevealH2 — blur-in on scroll ────────────────────────────────────────────
 const RevealH2: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
   <motion.h2
-    initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+    initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
     whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
     viewport={{ once: true, margin: '-60px' }}
     transition={{ duration: 0.9, ease }}
@@ -75,12 +90,13 @@ const RevealH2: React.FC<{ children: React.ReactNode; style?: React.CSSPropertie
 
 // ─── Spring counter ───────────────────────────────────────────────────────────
 const Counter: React.FC<{ value: number; prefix?: string; style?: React.CSSProperties }> = ({ value, prefix = '', style }) => {
-  const [displayed, setDisplayed] = useState(0);
-  const displayedRef = useRef(0);
+  const [displayed, setDisplayed] = useState(prefersReduced ? value : 0);
+  const displayedRef = useRef(prefersReduced ? value : 0);
   const spanRef = useRef<HTMLSpanElement>(null);
   const isInView = useInView(spanRef, { once: true, margin: '-80px' });
 
   useEffect(() => {
+    if (prefersReduced) { displayedRef.current = value; setDisplayed(value); return; }
     if (!isInView) return;
     const controls = animate(displayedRef.current, value, {
       duration: 0.65,
@@ -329,7 +345,7 @@ const BuildOutcomesSection: React.FC = () => (
           <motion.a
             key={o.type}
             href={o.href}
-            initial={{ opacity: 0, y: 22 }}
+            initial={prefersReduced ? false : { opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
             whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
             viewport={{ once: true, margin: '-60px' }}
@@ -406,7 +422,7 @@ const PRECONDITIONS = [
 // Sized to fit behind an italic word block via absolute positioning.
 const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5, opacity = 0.78 }) => (
   <motion.svg
-    initial={{ scaleX: 0, opacity: 0 }}
+    initial={prefersReduced ? false : { scaleX: 0, opacity: 0 }}
     whileInView={{ scaleX: 1, opacity: 1 }}
     viewport={{ once: true, margin: '-40px' }}
     transition={{ delay, duration: 0.85, ease }}
@@ -484,7 +500,7 @@ const PreconditionItem: React.FC<{
       <div className="relative" style={{ zIndex: 1 }}>
         {/* Numeral — slides in from left on viewport entry, then static */}
         <motion.div
-          initial={{ opacity: 0, x: -80 }}
+          initial={prefersReduced ? false : { opacity: 0, x: -80 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.9, ease, delay: index * 0.06 }}
@@ -504,7 +520,7 @@ const PreconditionItem: React.FC<{
 
         {/* H3 — fades in from right with delay. Italic pivot with sage sweep mirrors the hero. */}
         <motion.h3
-          initial={{ opacity: 0, x: 60 }}
+          initial={prefersReduced ? false : { opacity: 0, x: 60 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.85, ease, delay: 0.25 + index * 0.06 }}
@@ -540,7 +556,7 @@ const PreconditionItem: React.FC<{
 
         {/* Body — fades in from right with more delay */}
         <motion.p
-          initial={{ opacity: 0, x: 80 }}
+          initial={prefersReduced ? false : { opacity: 0, x: 80 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.85, ease, delay: 0.4 + index * 0.06 }}
@@ -583,7 +599,7 @@ const AgentReadySection: React.FC = () => (
     <div className="container mx-auto px-8 max-w-3xl text-center">
 
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={prefersReduced ? false : { opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.9, ease }}
@@ -600,7 +616,7 @@ const AgentReadySection: React.FC = () => (
       </motion.div>
 
       <motion.h2
-        initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+        initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
         viewport={{ once: true, margin: '-60px' }}
         transition={{ duration: 0.9, ease }}
@@ -621,7 +637,7 @@ const AgentReadySection: React.FC = () => (
           <span style={{ position: 'relative', display: 'inline-block' }}>
             Agent-Ready?
             <motion.span
-              initial={{ scaleX: 0 }}
+              initial={prefersReduced ? false : { scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ delay: 0.7, duration: 0.85, ease }}
@@ -741,7 +757,7 @@ const WorkSection: React.FC = () => {
           {steps.map((step, i) => (
             <React.Fragment key={step.id}>
               <motion.div
-                initial={{ opacity: 0, x: -16 }}
+                initial={prefersReduced ? false : { opacity: 0, x: -16 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 whileHover={{ y: -3, backgroundColor: 'rgba(42,143,101,0.022)' }}
                 viewport={{ once: true, margin: '-60px' }}
@@ -829,7 +845,7 @@ const PaybackSection: React.FC = () => {
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
 
-          <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="border p-10" style={DIVIDER}>
+          <motion.div initial={prefersReduced ? false : { opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="border p-10" style={DIVIDER}>
             <div className="space-y-10">
               {[
                 { label: 'Hours lost per week', value: hours, setValue: setHours, min: 5, max: 100, step: 5, fmt: (v: number) => `${v} hrs`, range: ['5 hrs', '100 hrs'] },
@@ -852,7 +868,7 @@ const PaybackSection: React.FC = () => {
             </p>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="flex flex-col gap-5">
+          <motion.div initial={prefersReduced ? false : { opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="flex flex-col gap-5">
 
             <div className="border p-8" style={DIVIDER}>
               <div style={{ ...T.mono, marginBottom: '10px' }}>Annual cost of this bottleneck</div>
@@ -900,7 +916,7 @@ const OfferSection: React.FC = () => (
         <motion.div {...inView} className="pr-20">
           <Label dark>08 / The offer</Label>
           <motion.div
-            initial={{ opacity: 0, y: 22, filter: 'blur(8px)' }}
+            initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
             whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.9, ease }}
@@ -1186,7 +1202,7 @@ const AboutStrip: React.FC = () => (
     <div className="container mx-auto px-8 max-w-5xl">
       <div className="grid md:grid-cols-[220px_1fr] gap-8 md:gap-14 items-start md:items-center">
         <motion.div
-          initial={{ opacity: 0, scale: 1.05 }}
+          initial={prefersReduced ? false : { opacity: 0, scale: 1.05 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.9, ease }}
