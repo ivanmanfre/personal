@@ -27,11 +27,12 @@ export function useSignalClusters() {
   const fetchClusters = useCallback(async () => {
     if (!hasFetched.current) setLoading(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('signal_clusters')
         .select('*')
         .order('run_date', { ascending: false })
         .order('frequency', { ascending: false });
+      if (error) throw error;
       setClusters((data || []).map(mapCluster));
     } catch (err) {
       toastError('load signal clusters', err);
@@ -49,8 +50,8 @@ export function useSignalClusters() {
   );
 
   useEffect(() => {
-    if (!selectedRunDate && runDates.length > 0) setSelectedRunDate(runDates[0]);
-  }, [runDates, selectedRunDate]);
+    if (runDates.length > 0) setSelectedRunDate((prev) => prev ?? runDates[0]);
+  }, [runDates]);
 
   const visible = useMemo(
     () => clusters.filter((c) => !selectedRunDate || c.runDate === selectedRunDate),
