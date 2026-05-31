@@ -85,14 +85,54 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
 
   const palette = useCommandPaletteV2(paletteAll);
 
-  const handleSelect = useCallback((id: SectionId) => setActive(id), []);
+  // Mobile off-canvas nav drawer. The 240px rail has no room on a phone, so
+  // below 768px the sidebar slides in over the content via a hamburger.
+  const [navOpen, setNavOpen] = useState(false);
+
+  const handleSelect = useCallback((id: SectionId) => {
+    setActive(id);
+    setNavOpen(false); // choosing a section dismisses the drawer
+  }, []);
+
+  // Close the drawer on Escape, and whenever we grow back to desktop width
+  // (so a resize/rotate never leaves it stuck open over the desktop layout).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNavOpen(false); };
+    const onResize = () => { if (window.innerWidth > 768) setNavOpen(false); };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onResize); };
+  }, []);
 
   const renderer = sectionRenderers[active];
 
   return (
     <div className="dashboard-v2">
       <div className="dashboard-v2-shell">
-        <Sidebar items={navItems} active={active} onSelect={handleSelect} />
+        {/* Mobile-only top bar — hidden ≥769px. Hosts the hamburger that opens
+            the off-canvas nav drawer. */}
+        <header className="dv-topbar">
+          <button
+            type="button"
+            className="dv-hamburger"
+            aria-label="Open navigation"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(true)}
+          >
+            <span /><span /><span />
+          </button>
+          <div className="dv-topbar-brand">Ivan <em>System</em></div>
+        </header>
+
+        {/* Scrim behind the open drawer (mobile only) */}
+        <div
+          className={`dv-scrim ${navOpen ? 'dv-scrim--show' : ''}`}
+          onClick={() => setNavOpen(false)}
+          aria-hidden="true"
+        />
+
+        <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} />
         <main className="dv-main">
           <div className="dv-panel" key={active}>
             {renderer ? renderer() : (

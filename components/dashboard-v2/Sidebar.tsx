@@ -5,9 +5,11 @@ interface SidebarProps {
   items: NavItem[];
   active: SectionId;
   onSelect: (id: SectionId) => void;
+  open?: boolean;        // mobile drawer open state (no effect on desktop)
+  onClose?: () => void;  // dismiss the mobile drawer
 }
 
-export function Sidebar({ items, active, onSelect }: SidebarProps) {
+export function Sidebar({ items, active, onSelect, open, onClose }: SidebarProps) {
   // Group items for divider headings
   const briefing = items.filter(i => i.group === 'briefing');
   const operate = items.filter(i => i.group === 'operate');
@@ -39,10 +41,13 @@ export function Sidebar({ items, active, onSelect }: SidebarProps) {
   );
 
   return (
-    <aside className="dv-sidebar">
+    <aside className={`dv-sidebar ${open ? 'dv-sidebar--open' : ''}`}>
       <div className="dv-brand">
         <div className="dv-brand-mark">Ivan <em>System</em></div>
         <div className="dv-brand-sub">Console · v2</div>
+        {onClose && (
+          <button type="button" className="dv-sidebar-close" aria-label="Close navigation" onClick={onClose}>×</button>
+        )}
       </div>
 
       <nav className="dv-nav">
