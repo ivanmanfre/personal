@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -16,6 +16,16 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [igCaption, setIgCaption] = useState(draft.igCaption || '');
   const [when, setWhen] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const [imageryOpen, setImageryOpen] = useState(false);
+  const tax = (draft.taxonomy || {}) as Record<string, any>;
+  const pillar = tax.pillar as string | undefined;
+  const hookType = tax.hook_type as string | undefined;
+  const valueTier = tax.value_tier as string | undefined;
+  const source = tax.source as string | undefined;
+  const imageStyle = tax.image_style as string | undefined;
+  const imageDesc = tax.image_description as string | undefined;
+  const visualLink = tax.visual_content_link as string | undefined;
+  const hasImagery = imageStyle || imageDesc || visualLink;
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
@@ -42,6 +52,30 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       )}
 
+      {/* Taxonomy row */}
+      {(pillar || hookType || valueTier || source) && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {pillar && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/40 border border-emerald-900/40 px-2.5 py-0.5 text-emerald-300">
+              <span className="text-emerald-500/60 text-[10px] uppercase">Pillar</span> {pillar}
+            </span>
+          )}
+          {hookType && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-900/40 px-2.5 py-0.5 text-sky-300">
+              <span className="text-sky-500/60 text-[10px] uppercase">Hook</span> {hookType}
+            </span>
+          )}
+          {valueTier && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/40 border border-amber-900/40 px-2.5 py-0.5 text-amber-300">
+              <span className="text-amber-500/60 text-[10px] uppercase">Tier</span> {valueTier}
+            </span>
+          )}
+          {source && (
+            <span className="text-zinc-500">via {source}</span>
+          )}
+        </div>
+      )}
+
       {/* Flickable slide preview */}
       <div className="flex gap-3 overflow-x-auto pb-2">
         {draft.imageUrls.length === 0 && <div className="text-sm text-zinc-500">No slides rendered.</div>}
@@ -64,6 +98,34 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             className="mt-1 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100" />
         </label>
       </div>
+
+      {/* Imagery accordion */}
+      {hasImagery && (
+        <div className="rounded-md border border-zinc-800">
+          <button
+            onClick={() => setImageryOpen((v) => !v)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+          >
+            Imagery brief
+            <span className="ml-auto text-zinc-500">{imageryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+          </button>
+          {imageryOpen && (
+            <div className="border-t border-zinc-800 px-3 py-3 space-y-2 text-xs">
+              {imageStyle && (
+                <div><span className="text-zinc-500 mr-2">Style</span><span className="text-zinc-200">{imageStyle}</span></div>
+              )}
+              {imageDesc && (
+                <div><span className="text-zinc-500 block mb-1">Description</span><div className="text-zinc-200 whitespace-pre-wrap">{imageDesc}</div></div>
+              )}
+              {visualLink && (
+                <a href={visualLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300">
+                  <ExternalLink className="w-3.5 h-3.5" /> Visual reference
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">

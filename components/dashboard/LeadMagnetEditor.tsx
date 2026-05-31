@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
-import { generateLMContent, buildLMAssets, regenLMCover } from '../../lib/studioActions';
+import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 
 interface Props {
@@ -13,6 +13,13 @@ interface Props {
 
 const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [busy, setBusy] = useState<string | null>(null);
+  const [postBody, setPostBody] = useState(draft.postBody || '');
+  const [emailCopy, setEmailCopy] = useState(draft.emailCopy || '');
+  const [resourceHtml, setResourceHtml] = useState(draft.resourceHtml || '');
+  const spec = (draft.spec || {}) as Record<string, any>;
+  const [dmA, setDmA] = useState((spec.dm_template_a as string) || '');
+  const [dmB, setDmB] = useState((spec.dm_template_b as string) || '');
+  const [resourceOpen, setResourceOpen] = useState(false);
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
@@ -23,6 +30,21 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   const isReview = draft.status === 'lm_review';
   const isReady = draft.status === 'ready';
+  const dirty = postBody !== (draft.postBody || '')
+    || emailCopy !== (draft.emailCopy || '')
+    || resourceHtml !== (draft.resourceHtml || '')
+    || dmA !== ((spec.dm_template_a as string) || '')
+    || dmB !== ((spec.dm_template_b as string) || '');
+
+  async function saveAll() {
+    await saveLMDraft({
+      id: draft.id,
+      post_body: postBody,
+      email_copy: emailCopy,
+      resource_html: resourceHtml,
+      spec_patch: { dm_template_a: dmA, dm_template_b: dmB },
+    });
+  }
 
   return (
     <div className="space-y-5">
@@ -34,45 +56,87 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         <span className="ml-auto text-xs text-zinc-500">{draft.format || 'no format'} · {draft.status}</span>
       </div>
 
-      {/* Cover preview + regen */}
-      {draft.coverUrl ? (
-        <div className="flex items-start gap-3">
-          <img src={draft.coverUrl} alt="cover" className="max-w-[280px] rounded-md border border-zinc-800" />
-          <button
-            onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
-            disabled={!!busy}
-            className="inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200 self-start"
-            title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
-            {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
-          </button>
+      {/* Target audience (read-only context) */}
+      {spec.target_audience && (
+        <div className="rounded-md border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-300/80">
+          <span className="uppercase tracking-wider text-emerald-400/60 mr-2">Audience</span>
+          {spec.target_audience}
         </div>
-      ) : (
-        draft.status !== 'idea' && draft.status !== 'generating' && (
-          <button
-            onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}
-            disabled={!!busy}
-            className="inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200">
-            {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
-          </button>
-        )
       )}
 
-      {/* LinkedIn post */}
-      <div>
-        <div className="mb-1 text-xs uppercase tracking-wide text-zinc-500">LinkedIn post</div>
-        <pre className="whitespace-pre-wrap text-sm text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-md p-3">{draft.postBody || '(empty)'}</pre>
+      {/* Covers row: main cover + promo image */}
+      <div className="flex flex-wrap items-start gap-4">
+        {draft.coverUrl ? (
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500">Cover</div>
+            <img src={draft.coverUrl} alt="cover" className="max-w-[240px] rounded-md border border-zinc-800" />
+            <button
+              onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
+              disabled={!!busy}
+              className="mt-1 inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200"
+              title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
+              {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
+            </button>
+          </div>
+        ) : (
+          draft.status !== 'idea' && draft.status !== 'generating' && (
+            <button
+              onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}
+              disabled={!!busy}
+              className="inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200">
+              {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
+            </button>
+          )
+        )}
+        {spec.promo_image_url && (
+          <div className="flex flex-col gap-1">
+            <div className="text-[10px] uppercase tracking-wider text-zinc-500">Promo image</div>
+            <img src={spec.promo_image_url as string} alt="promo" className="max-w-[160px] rounded-md border border-zinc-800" />
+          </div>
+        )}
       </div>
 
-      {/* Email copy */}
-      <div>
-        <div className="mb-1 text-xs uppercase tracking-wide text-zinc-500">Email copy</div>
-        <pre className="whitespace-pre-wrap text-sm text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-md p-3 max-h-64 overflow-y-auto">{draft.emailCopy || '(empty)'}</pre>
+      {/* LinkedIn post — EDITABLE */}
+      <label className="block text-sm text-zinc-400">LinkedIn post
+        <textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={8}
+          className="mt-1 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 font-mono" />
+      </label>
+
+      {/* Email copy — EDITABLE */}
+      <label className="block text-sm text-zinc-400">Email copy (24h follow-up)
+        <textarea value={emailCopy} onChange={(e) => setEmailCopy(e.target.value)} rows={8}
+          className="mt-1 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 font-mono" />
+      </label>
+
+      {/* DM Templates */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label className="block text-sm text-zinc-400">DM Template A
+          <textarea value={dmA} onChange={(e) => setDmA(e.target.value)} rows={4}
+            placeholder="Hey {{firstName}}, here's the …"
+            className="mt-1 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100" />
+        </label>
+        <label className="block text-sm text-zinc-400">DM Template B
+          <textarea value={dmB} onChange={(e) => setDmB(e.target.value)} rows={4}
+            placeholder="Hey {{firstName}}, the … is yours: …"
+            className="mt-1 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100" />
+        </label>
       </div>
 
-      {/* Resource body (preview head only) */}
-      <div>
-        <div className="mb-1 text-xs uppercase tracking-wide text-zinc-500">Resource content (head)</div>
-        <pre className="whitespace-pre-wrap text-sm text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-md p-3 max-h-64 overflow-y-auto">{(draft.resourceHtml || '(empty)').slice(0, 2000)}</pre>
+      {/* Resource content — collapsed accordion, EDITABLE when open */}
+      <div className="rounded-md border border-zinc-800">
+        <button
+          onClick={() => setResourceOpen((v) => !v)}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+        >
+          Resource content {resourceHtml && <span className="text-zinc-600 text-xs">({resourceHtml.length.toLocaleString()} chars)</span>}
+          <span className="ml-auto text-zinc-500">{resourceOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+        </button>
+        {resourceOpen && (
+          <div className="border-t border-zinc-800 p-2">
+            <textarea value={resourceHtml} onChange={(e) => setResourceHtml(e.target.value)} rows={16}
+              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 font-mono" />
+          </div>
+        )}
       </div>
 
       {/* Resource URL if built */}
@@ -84,6 +148,12 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => run('save', saveAll, 'Saved')}
+          disabled={!!busy || !dirty}
+          className="inline-flex items-center gap-2 rounded-md bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 px-3 py-2 text-sm text-zinc-100">
+          {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save changes
+        </button>
         {(draft.status === 'idea' || draft.status === 'generating' || draft.status === 'error') && (
           <button
             onClick={() => run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)')}
@@ -101,7 +171,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </button>
         )}
       </div>
-      <p className="text-[11px] text-zinc-600">Pre-cutover: GitHub deploy is isolated (no live publish), scheduled_posts row gets <code>queued_v2</code> status (live publisher ignores it).</p>
+      <p className="text-[11px] text-zinc-600">Saves write directly to Supabase. DM Templates and other extras live in <code>spec</code> JSON.</p>
     </div>
   );
 };

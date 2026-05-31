@@ -83,6 +83,26 @@ export function buildLMAssets(input: Omit<LMGenPayload, 'phase'>) {
 // + PATCHes lm_drafts_v2.cover_url. Does NOT touch any other LM fields.
 const LM_REGEN_COVER_WEBHOOK = import.meta.env.VITE_LM_REGEN_COVER_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/lm-regen-cover-v2';
 
+export async function saveLMDraft(input: {
+  id: string;
+  post_body?: string | null;
+  email_copy?: string | null;
+  resource_html?: string | null;
+  spec_patch?: Record<string, unknown>;
+}): Promise<void> {
+  const { supabase } = await import('./supabase');
+  const update: Record<string, unknown> = {};
+  if (input.post_body !== undefined) update.post_body = input.post_body;
+  if (input.email_copy !== undefined) update.email_copy = input.email_copy;
+  if (input.resource_html !== undefined) update.resource_html = input.resource_html;
+  if (input.spec_patch && Object.keys(input.spec_patch).length) {
+    const { data: row } = await supabase.from('lm_drafts_v2').select('spec').eq('id', input.id).single();
+    update.spec = { ...((row?.spec as Record<string, unknown>) || {}), ...input.spec_patch };
+  }
+  const { error } = await supabase.from('lm_drafts_v2').update(update).eq('id', input.id);
+  if (error) throw error;
+}
+
 export async function regenLMCover(input: { draft_id: string }): Promise<{ ok: boolean; url?: string; duration_ms?: number }> {
   const res = await fetch(LM_REGEN_COVER_WEBHOOK, {
     method: 'POST',
