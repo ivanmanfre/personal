@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
-import { generateLMContent, buildLMAssets } from '../../lib/studioActions';
+import { generateLMContent, buildLMAssets, regenLMCover } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 
 interface Props {
@@ -34,11 +34,27 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         <span className="ml-auto text-xs text-zinc-500">{draft.format || 'no format'} · {draft.status}</span>
       </div>
 
-      {/* Cover preview */}
-      {draft.coverUrl && (
-        <div className="flex justify-start">
+      {/* Cover preview + regen */}
+      {draft.coverUrl ? (
+        <div className="flex items-start gap-3">
           <img src={draft.coverUrl} alt="cover" className="max-w-[280px] rounded-md border border-zinc-800" />
+          <button
+            onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
+            disabled={!!busy}
+            className="inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200 self-start"
+            title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
+            {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
+          </button>
         </div>
+      ) : (
+        draft.status !== 'idea' && draft.status !== 'generating' && (
+          <button
+            onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}
+            disabled={!!busy}
+            className="inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200">
+            {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
+          </button>
+        )
       )}
 
       {/* LinkedIn post */}

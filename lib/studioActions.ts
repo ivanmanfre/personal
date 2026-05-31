@@ -78,6 +78,21 @@ export function buildLMAssets(input: Omit<LMGenPayload, 'phase'>) {
   return fireLM({ ...input, phase: 'assets' });
 }
 
+// Regenerate just the LM cover image (Gemini Nano Banana Pro, ~2-3 min, ~$0.24).
+// Fires a standalone n8n workflow that generates fresh cover copy + re-renders
+// + PATCHes lm_drafts_v2.cover_url. Does NOT touch any other LM fields.
+const LM_REGEN_COVER_WEBHOOK = import.meta.env.VITE_LM_REGEN_COVER_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/lm-regen-cover-v2';
+
+export async function regenLMCover(input: { draft_id: string }): Promise<{ ok: boolean; url?: string; duration_ms?: number }> {
+  const res = await fetch(LM_REGEN_COVER_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`lm-regen-cover-v2 failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json();
+}
+
 // === Post Generation v2 (post-gen-v2 webhook on n8n; text + single-image posts) ====
 const POSTGEN_WEBHOOK = import.meta.env.VITE_POSTGEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/post-gen-v2';
 
