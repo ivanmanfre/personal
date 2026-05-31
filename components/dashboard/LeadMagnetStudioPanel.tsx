@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, Magnet } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -23,6 +23,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_ORDER = ['idea', 'generating', 'generating_assets', 'lm_review', 'approved', 'scheduled', 'ready', 'disqualified', 'error', 'draft'];
+const PINNED_STATUSES = new Set(['generating', 'generating_assets', 'lm_review', 'error']);
 
 const LeadMagnetStudioPanel: React.FC = () => {
   const { drafts, loading, refresh } = useLeadMagnets();
@@ -33,6 +34,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [openId, setOpenId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [formatFilter, setFormatFilter] = useState<string>('all');
+  const [formOpen, setFormOpen] = useState(false);
 
   const statusCounts = React.useMemo(() => {
     const c: Record<string, number> = { all: drafts.length };
@@ -92,40 +94,51 @@ const LeadMagnetStudioPanel: React.FC = () => {
         </button>
       </div>
 
-      {/* New LM */}
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
-        <div className="text-sm font-medium text-zinc-300">New lead magnet</div>
-        <input
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="Topic — e.g. The 12 ops checks that catch 80% of revenue leaks"
-          className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
-        />
-        <div className="flex items-center gap-3">
-          <label className="text-xs text-zinc-400">Format</label>
-          <select
-            value={format}
-            onChange={(e) => setFormat(e.target.value)}
-            className="rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100"
-          >
-            {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
-          </select>
-        </div>
-        <textarea
-          value={editorialNotes}
-          onChange={(e) => setEditorialNotes(e.target.value)}
-          placeholder="Editorial notes (optional)"
-          rows={2}
-          className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
-        />
+      {/* New LM — collapsed by default */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50">
         <button
-          onClick={handleCreate}
-          disabled={creating}
-          className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white"
+          onClick={() => setFormOpen((v) => !v)}
+          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-900"
         >
-          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          {creating ? 'Firing…' : 'Generate content (~10 min)'}
+          <Plus className="w-4 h-4 text-emerald-400" />
+          New lead magnet
+          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
         </button>
+        {formOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60 pt-3">
+            <input
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Topic — e.g. The 12 ops checks that catch 80% of revenue leaks"
+              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+            />
+            <div className="flex items-center gap-3">
+              <label className="text-xs text-zinc-400">Format</label>
+              <select
+                value={format}
+                onChange={(e) => setFormat(e.target.value)}
+                className="rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100"
+              >
+                {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <textarea
+              value={editorialNotes}
+              onChange={(e) => setEditorialNotes(e.target.value)}
+              placeholder="Editorial notes (optional)"
+              rows={2}
+              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+            />
+            <button
+              onClick={() => { handleCreate(); setFormOpen(false); }}
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              {creating ? 'Firing…' : 'Generate content (~10 min)'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
