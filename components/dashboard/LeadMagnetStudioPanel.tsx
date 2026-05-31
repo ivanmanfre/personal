@@ -202,7 +202,12 @@ const LeadMagnetStudioPanel: React.FC = () => {
               <div className="aspect-[16/9] bg-zinc-950 overflow-hidden relative">
                 {d.coverUrl
                   ? <img src={d.coverUrl} alt="" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-zinc-700 text-xs font-serif italic">{d.format || '—'}</div>}
+                  : (
+                    <div className="w-full h-full flex flex-col justify-center px-3 py-2 bg-gradient-to-br from-[#1c241f] via-[#161914] to-[#14110d]">
+                      <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 mb-1">{d.format || 'Lead magnet'}</div>
+                      <div className="text-[12px] leading-tight text-zinc-300/90 font-serif italic line-clamp-3">{d.topic || '(untitled)'}</div>
+                    </div>
+                  )}
                 <span className={`absolute top-2 right-2 inline-block w-2 h-2 rounded-full ${STATUS_DOT[d.status] || STATUS_DOT.idea} shadow-[0_0_0_2px_rgba(0,0,0,0.4)]`} />
               </div>
               <div className="p-3 space-y-2">
