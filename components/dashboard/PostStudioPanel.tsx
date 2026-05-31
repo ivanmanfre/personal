@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3 } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { generatePostContent, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -59,6 +59,8 @@ const PostStudioPanel: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'auto' | 'updated' | 'scheduled'>('auto');
   const [formOpen, setFormOpen] = useState(false);
+  const [view, setView] = useState<'grid' | 'board'>(() => (typeof window !== 'undefined' && localStorage.getItem('post-studio-view') === 'board' ? 'board' : 'grid'));
+  React.useEffect(() => { try { localStorage.setItem('post-studio-view', view); } catch {} }, [view]);
 
   // Filter + sort
   const statusCounts = React.useMemo(() => {
@@ -160,9 +162,23 @@ const PostStudioPanel: React.FC = () => {
         <FileText className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold text-zinc-100">Posts</h2>
         <span className="text-xs text-zinc-500">— text, single-image, carousel</span>
-        <button onClick={refresh} className="ml-auto p-2 text-zinc-400 hover:text-zinc-200" title="Refresh">
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+            <button
+              onClick={() => setView('grid')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'grid' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Grid view"
+            ><LayoutGrid className="w-3.5 h-3.5" /> Grid</button>
+            <button
+              onClick={() => setView('board')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Board view (kanban by status)"
+            ><Columns3 className="w-3.5 h-3.5" /> Board</button>
+          </div>
+          <button onClick={refresh} className="p-2 text-zinc-400 hover:text-zinc-200" title="Refresh">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* New post — collapsed by default */}
@@ -284,6 +300,45 @@ const PostStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No posts yet — create one above.</div>
       ) : visible.length === 0 ? (
         <div className="text-sm text-zinc-500">No posts match the current filter.</div>
+      ) : view === 'board' ? (
+        <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
+          {visibleStatuses.map((status) => {
+            const col = visible.filter((d) => d.status === status);
+            const meta = STATUS_META[status] || STATUS_META.draft;
+            return (
+              <div key={status} className="flex-none w-[260px] snap-start rounded-md border border-zinc-800 bg-zinc-950/40 flex flex-col max-h-[75vh]">
+                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur">
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                  <span className={`text-xs font-medium ${meta.label}`}>{status}</span>
+                  <span className="ml-auto text-[11px] text-zinc-500">{col.length}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {col.length === 0 ? (
+                    <div className="text-[11px] text-zinc-600 italic py-2 text-center">empty</div>
+                  ) : col.map((d: CarouselDraft) => {
+                    const pillar = (d.taxonomy as any)?.pillar;
+                    const sched = formatScheduled(d.scheduledAt);
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => setOpenId(d.id)}
+                        className="w-full text-left rounded border border-zinc-800 bg-zinc-900/70 hover:border-zinc-600 transition p-2 space-y-1"
+                      >
+                        <div className="text-[12px] text-zinc-200 line-clamp-2 leading-snug">{d.title}</div>
+                        {sched && (
+                          <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+                            <Calendar className="w-2.5 h-2.5" /> {sched}
+                          </div>
+                        )}
+                        {pillar && <span className="inline-block text-[10px] text-zinc-500 px-1 py-0.5 rounded bg-zinc-800/60">{pillar}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {visible.map((d: CarouselDraft) => {
