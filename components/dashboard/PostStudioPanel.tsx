@@ -25,6 +25,8 @@ const STATUS_STYLE: Record<string, string> = {
   failed: 'bg-red-900/50 text-red-300',
 };
 
+const STATUS_ORDER = ['idea', 'generating', 'qa_review', 'approved', 'scheduled', 'published', 'disqualified', 'error'];
+
 const PostStudioPanel: React.FC = () => {
   const { drafts, loading, refresh } = useContentLibrary();
   const [type, setType] = useState<PostType>('text');
@@ -33,6 +35,39 @@ const PostStudioPanel: React.FC = () => {
   const [keyPoints, setKeyPoints] = useState('');
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'updated' | 'scheduled'>('updated');
+
+  // Filter + sort
+  const statusCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { all: drafts.length };
+    for (const d of drafts) counts[d.status] = (counts[d.status] || 0) + 1;
+    return counts;
+  }, [drafts]);
+  const typeCounts = React.useMemo(() => {
+    const counts: Record<string, number> = { all: drafts.length };
+    for (const d of drafts) {
+      const k = d.type || 'unknown';
+      counts[k] = (counts[k] || 0) + 1;
+    }
+    return counts;
+  }, [drafts]);
+  const visible = React.useMemo(() => {
+    const filtered = drafts.filter((d) => {
+      if (statusFilter !== 'all' && d.status !== statusFilter) return false;
+      if (typeFilter !== 'all' && (d.type || 'unknown') !== typeFilter) return false;
+      return true;
+    });
+    return filtered.sort((a, b) => {
+      if (sortBy === 'scheduled') {
+        const av = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
+        const bv = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
+        return bv - av;
+      }
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }, [drafts, statusFilter, typeFilter, sortBy]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -147,14 +182,54 @@ const PostStudioPanel: React.FC = () => {
         </button>
       </div>
 
-      {/* Library — all post types */}
+      {/* Filters / sort */}
+      {drafts.length > 0 && (
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-zinc-500 mr-1">Status</span>
+            {(['all', ...STATUS_ORDER.filter((s) => statusCounts[s])] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`rounded-full px-2.5 py-1 transition ${statusFilter === s ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+              >
+                {s === 'all' ? 'All' : s} <span className="opacity-60">{statusCounts[s] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-zinc-500 mr-1">Type</span>
+            {(['all', 'text', 'single_image', 'carousel'] as const).filter((t) => t === 'all' || typeCounts[t]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`rounded-full px-2.5 py-1 transition ${typeFilter === t ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+              >
+                {t === 'all' ? 'All' : t === 'single_image' ? 'single image' : t} <span className="opacity-60">{typeCounts[t] || 0}</span>
+              </button>
+            ))}
+            <span className="ml-auto text-zinc-500">
+              Sort:
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'updated' | 'scheduled')}
+                className="ml-1 rounded bg-zinc-950 border border-zinc-800 px-2 py-0.5 text-zinc-200">
+                <option value="updated">Last updated</option>
+                <option value="scheduled">Scheduled date</option>
+              </select>
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Library — filtered */}
       {loading && drafts.length === 0 ? (
         <div className="text-sm text-zinc-500">Loading…</div>
       ) : drafts.length === 0 ? (
         <div className="text-sm text-zinc-500">No posts yet — create one above.</div>
+      ) : visible.length === 0 ? (
+        <div className="text-sm text-zinc-500">No posts match the current filter.</div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {drafts.map((d: CarouselDraft) => (
+          {visible.map((d: CarouselDraft) => (
             <button
               key={d.id}
               onClick={() => setOpenId(d.id)}
