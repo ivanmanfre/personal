@@ -289,7 +289,7 @@ const PostDetail: React.FC<{
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-zinc-900 border border-zinc-700/60 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+        className="relative bg-zinc-900 border border-zinc-700/60 rounded-lg shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -506,7 +506,7 @@ const ContentPanel: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Content</h1>
+          <h1 className="dv-h1 text-zinc-100">Pipeline <em>Queue</em></h1>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
         <EmptyState title="No scheduled posts" description="Posts scheduled via the content pipeline will appear here." icon={<Calendar className="w-10 h-10" />} />
@@ -534,7 +534,7 @@ const ContentPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Content</h1>
+        <h1 className="dv-h1 text-zinc-100">Pipeline <em>Queue</em></h1>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
@@ -548,7 +548,7 @@ const ContentPanel: React.FC = () => {
 
       {/* Publishing Queue */}
       {upcomingQueue.length > 0 && (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-lg shadow-sm shadow-black/10 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Clock className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Publishing Queue</span>
@@ -586,7 +586,7 @@ const ContentPanel: React.FC = () => {
       )}
 
       {/* Calendar */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-lg overflow-hidden shadow-sm shadow-black/10">
         <div className="px-4 py-3.5 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Calendar className="w-3.5 h-3.5 text-zinc-500" />
