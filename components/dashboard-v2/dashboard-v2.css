@@ -164,12 +164,14 @@ body.dashboard-v2-active * {
 .dv-chip--bad  { color: var(--d-bad);  background: var(--d-bad-bg); }
 
 /* SUB-TABS */
-.dv-subtabs { display: flex; gap: 0; border-bottom: 1px solid var(--d-rule); margin-bottom: 2rem; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
-.dv-subtabs::-webkit-scrollbar { display: none; }
-/* Edge-fade hint so user knows tabs scroll horizontally on narrow viewports */
-@media (max-width: 1023px) {
-  .dv-subtabs { mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%); }
+.dv-subtabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--d-rule); margin-bottom: 2rem;
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  /* Always-on edge fade so the user notices overflow at every viewport that has it */
+  mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
 }
+.dv-subtabs::-webkit-scrollbar { display: none; }
 .dv-subtab { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper-dim); padding: 0.75rem 1rem; cursor: pointer; border: none; background: transparent; transform: translateY(1px); user-select: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 0.15s, border-color 0.15s; border-bottom: 2px solid transparent; }
 .dv-subtab:hover:not([aria-selected="true"]) { color: var(--d-paper); border-bottom-color: var(--d-rule-strong); }
 .dv-subtab[aria-selected="true"] { color: var(--d-paper); border-bottom-color: var(--d-accent); }
@@ -438,6 +440,34 @@ body.dashboard-v2-active * {
 .dv-topbar { display: none; }
 .dv-scrim { display: none; }
 .dv-sidebar-close { display: none; }
+
+/* Mid-width (tablet / small laptop): collapse the sidebar to a 64px icon-rail
+ * so the main content keeps real estate. Names + dividers + footer hide;
+ * the number chip remains as a compact label. Hovering an item reveals the
+ * full name via title attribute (browser-native tooltip — no JS). */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .dashboard-v2-shell { grid-template-columns: 64px 1fr; }
+  .dv-sidebar { padding: 1rem 0 0.5rem; align-items: stretch; }
+  .dv-brand { padding: 0 0 0.75rem; text-align: center; border-bottom: 1px solid var(--d-rule); margin-bottom: 0.5rem; }
+  .dv-brand-mark { font-size: 13px; }
+  .dv-brand-mark em { display: block; }
+  .dv-brand-sub { display: none; }
+  .dv-nav { padding: 0 0.25rem; }
+  .dv-nav-divider { display: none; }
+  .dv-nav-item { padding: 0.55rem 0.3rem; justify-content: center; flex-direction: column; gap: 0.15rem; }
+  .dv-nav-item[aria-current="page"]::before { left: 0; top: 15%; bottom: 15%; }
+  .dv-nav-num { width: auto; font-size: 13px; color: var(--d-paper); }
+  .dv-nav-name {
+    font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--d-paper-dim); text-align: center; line-height: 1.2;
+    overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1;
+  }
+  .dv-nav-name em { color: var(--d-good); }
+  .dv-nav-badge { font-size: 8px; padding: 0.05rem 0.25rem; margin-top: 0.1rem; }
+  .dv-sidebar-foot { display: none; }
+  /* Pull panel padding in a touch since sidebar shrunk */
+  .dv-panel { padding: 2rem 1.75rem 2.5rem; }
+}
 
 /* Below 768px the 240px rail can't coexist with the content, so the sidebar
  * becomes an off-canvas drawer opened from a hamburger in a sticky top bar. */
