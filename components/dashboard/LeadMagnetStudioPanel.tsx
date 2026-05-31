@@ -22,6 +22,8 @@ const STATUS_STYLE: Record<string, string> = {
   error: 'bg-red-900/50 text-red-300',
 };
 
+const STATUS_ORDER = ['idea', 'generating', 'generating_assets', 'lm_review', 'approved', 'scheduled', 'ready', 'disqualified', 'error', 'draft'];
+
 const LeadMagnetStudioPanel: React.FC = () => {
   const { drafts, loading, refresh } = useLeadMagnets();
   const [topic, setTopic] = useState('');
@@ -29,6 +31,26 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [editorialNotes, setEditorialNotes] = useState('');
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [formatFilter, setFormatFilter] = useState<string>('all');
+
+  const statusCounts = React.useMemo(() => {
+    const c: Record<string, number> = { all: drafts.length };
+    for (const d of drafts) c[d.status] = (c[d.status] || 0) + 1;
+    return c;
+  }, [drafts]);
+  const formatCounts = React.useMemo(() => {
+    const c: Record<string, number> = { all: drafts.length };
+    for (const d of drafts) {
+      const k = d.format || 'unknown';
+      c[k] = (c[k] || 0) + 1;
+    }
+    return c;
+  }, [drafts]);
+  const visible = React.useMemo(() => drafts
+    .filter((d) => (statusFilter === 'all' || d.status === statusFilter) && (formatFilter === 'all' || (d.format || 'unknown') === formatFilter))
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+    [drafts, statusFilter, formatFilter]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -106,14 +128,46 @@ const LeadMagnetStudioPanel: React.FC = () => {
         </button>
       </div>
 
-      {/* Library */}
+      {/* Filters */}
+      {drafts.length > 0 && (
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-zinc-500 mr-1">Status</span>
+            {(['all', ...STATUS_ORDER.filter((s) => statusCounts[s])] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`rounded-full px-2.5 py-1 transition ${statusFilter === s ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+              >
+                {s === 'all' ? 'All' : s} <span className="opacity-60">{statusCounts[s] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-zinc-500 mr-1">Format</span>
+            {(['all', ...Object.keys(formatCounts).filter((k) => k !== 'all' && formatCounts[k])] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFormatFilter(f)}
+                className={`rounded-full px-2.5 py-1 transition ${formatFilter === f ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+              >
+                {f === 'all' ? 'All' : f} <span className="opacity-60">{formatCounts[f] || 0}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Library — filtered */}
       {loading && drafts.length === 0 ? (
         <div className="text-sm text-zinc-500">Loading…</div>
       ) : drafts.length === 0 ? (
         <div className="text-sm text-zinc-500">No lead magnets yet — create one above.</div>
+      ) : visible.length === 0 ? (
+        <div className="text-sm text-zinc-500">No lead magnets match the current filter.</div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {drafts.map((d: LeadMagnetDraft) => (
+          {visible.map((d: LeadMagnetDraft) => (
             <button
               key={d.id}
               onClick={() => setOpenId(d.id)}
