@@ -297,7 +297,7 @@ export default function LmIdeasPanel() {
         </div>
       )}
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '24px 0 8px' }}>This week's auto-promoted ({promotedCount})</h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '24px 0 8px' }}>This week's approved ({promotedCount}) <span style={{ fontWeight: 400, opacity: 0.6 }}>— ideas you (or the curator's auto-rules) moved into the LM drafts queue</span></h3>
       {promotedCount === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--d-paper-dim)' }}>None this week.</div>
       ) : (
