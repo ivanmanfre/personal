@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { captureUtmFromUrl } from './utmCapture';
+import { isAuthenticated } from './dashboardAuth';
 
 const SESSION_KEY = '__pv_sid';
 const EXCLUDE_KEY = '__pv_exclude';
@@ -73,6 +74,16 @@ function isAutomatedAgent(ua: string): boolean {
   return /headless|puppeteer|playwright|selenium|phantom|\bbot\b|crawl|spider|slurp|monitor|uptime|lighthouse|prerender|python-requests|node-fetch/i.test(ua);
 }
 
+/**
+ * Owner detection — no `?me=1` ritual required. Any browser that has logged
+ * into the dashboard (localStorage `dashboard_auth`) is Ivan, so flag its
+ * views as is_test. Same-origin localStorage means this covers the public
+ * marketing pages too, on every machine he signs in from.
+ */
+function isOwner(): boolean {
+  try { return isAuthenticated(); } catch { return false; }
+}
+
 function clamp(s: string | null | undefined, max: number): string | null {
   if (!s) return null;
   return s.length > max ? s.slice(0, max) : s;
@@ -131,9 +142,10 @@ export async function trackPageview(path: string): Promise<void> {
       language: clamp(navigator.language, 35),
       screen_w: window.screen?.width ?? null,
       screen_h: window.screen?.height ?? null,
-      // Flag automation (smoke-test sweep, Playwright, crawlers) so the
-      // is_test-filtered rollup views never count it as real traffic.
-      is_test: isAutomatedAgent(navigator.userAgent),
+      // Flag automation (smoke-test sweep, Playwright, crawlers) and the owner
+      // (any dashboard-authed browser) so the is_test-filtered rollup views
+      // never count them as real traffic.
+      is_test: isAutomatedAgent(navigator.userAgent) || isOwner(),
     };
     await supabase.from('pageviews').insert(row);
   } catch {
