@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Sparkles, MessageSquareDashed, CheckCircle2, AlertTriangle, FileText, ImageIcon, Send } from 'lucide-react';
+import { toast } from 'sonner';
+import { ChevronDown, ChevronUp, Sparkles, MessageSquareDashed, CheckCircle2, AlertTriangle, FileText, ImageIcon, Send, User, Loader2 } from 'lucide-react';
 import type { AgentLogEntry } from '../../hooks/useContentLibrary';
+import { supabase } from '../../lib/supabase';
+import { toastError } from '../../lib/dashboardActions';
 
 /**
  * Chronological agent commentary feed — mirrors the comment stream that used to
@@ -11,6 +14,7 @@ import type { AgentLogEntry } from '../../hooks/useContentLibrary';
  * verdict bars, "━━━" separators) keep their shape exactly like ClickUp showed.
  */
 const AGENT_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  'Ivan':                  User,
   'Editorial Agent':       Sparkles,
   'LM Editorial Agent':    Sparkles,
   'Hook Agent':            MessageSquareDashed,
@@ -30,6 +34,7 @@ const AGENT_ICON: Record<string, React.ComponentType<{ className?: string }>> = 
 };
 
 const AGENT_TINT: Record<string, string> = {
+  'Ivan':                  'text-emerald-200 bg-emerald-500/15 border-emerald-500/30 font-semibold',
   'Editorial Agent':       'text-violet-300 bg-violet-500/10 border-violet-500/20',
   'LM Editorial Agent':    'text-violet-300 bg-violet-500/10 border-violet-500/20',
   'Hook Agent':            'text-sky-300 bg-sky-500/10 border-sky-500/20',
@@ -68,20 +73,76 @@ interface Props {
   entries: AgentLogEntry[];
   /** Default open vs closed. Default: closed if >5 entries, open otherwise. */
   defaultOpen?: boolean;
+  /** Supplying both enables the "add note" composer (Ivan types → append via append_agent_log RPC). */
+  table?: 'carousel_drafts' | 'lm_drafts_v2';
+  rowId?: string;
+  /** Called after a successful note write so the parent can refresh. */
+  onNoteAdded?: () => void;
 }
 
-const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen }) => {
+const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onNoteAdded }) => {
   const sorted = React.useMemo(
     () => [...entries].sort((a, b) => (b.ts || '').localeCompare(a.ts || '')),
     [entries],
   );
   const [open, setOpen] = useState(defaultOpen ?? sorted.length <= 5);
   const [bodyOpen, setBodyOpen] = useState<Record<number, boolean>>({});
+  const [noteText, setNoteText] = useState('');
+  const [posting, setPosting] = useState(false);
+  const canCompose = !!(table && rowId);
+
+  async function postNote() {
+    const body = noteText.trim();
+    if (!body || !canCompose) return;
+    setPosting(true);
+    try {
+      const { error } = await supabase.rpc('append_agent_log', {
+        p_table: table,
+        p_id: rowId,
+        p_agent: 'Ivan',
+        p_body: body,
+      });
+      if (error) throw error;
+      setNoteText('');
+      toast.success('Note added');
+      onNoteAdded?.();
+    } catch (err) {
+      toastError('post note', err);
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  const composer = canCompose && (
+    <div className="border-t border-zinc-800/60 px-3 py-2 bg-zinc-900/40">
+      <div className="flex items-start gap-2">
+        <textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) postNote(); }}
+          placeholder="Add a note for future-you (⌘+Enter to post)…"
+          rows={2}
+          className="flex-1 rounded-md bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 text-[12px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-emerald-700/60 resize-none"
+        />
+        <button
+          onClick={postNote}
+          disabled={posting || !noteText.trim()}
+          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed px-2.5 py-1.5 text-xs font-medium text-white"
+        >
+          {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+          Post
+        </button>
+      </div>
+    </div>
+  );
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 px-3 py-2 text-xs text-zinc-500 italic">
-        No agent activity yet — entries will appear here as the generation chain runs.
+      <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+        <div className="px-3 py-2 text-xs text-zinc-500 italic">
+          No agent activity yet — entries will appear here as the generation chain runs.
+        </div>
+        {composer}
       </div>
     );
   }
@@ -136,6 +197,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen }) => {
           })}
         </div>
       )}
+      {open && composer}
     </div>
   );
 };

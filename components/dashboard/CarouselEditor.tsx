@@ -170,7 +170,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       )}
 
       {/* Agent activity — full chronological log from the gen chain (Editorial → Hook → Content → QA → Image → IG Caption → Schedule → Publish) */}
-      <AgentLogFeed entries={draft.agentLog} />
+      <AgentLogFeed
+        entries={draft.agentLog}
+        table="carousel_drafts"
+        rowId={draft.id}
+        onNoteAdded={onChanged}
+      />
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">

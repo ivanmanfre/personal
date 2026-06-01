@@ -172,7 +172,12 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       )}
 
       {/* Agent activity — chronological log from the LM gen chain (Editorial → Cover Copy → QA → Build → Schedule → Publish) */}
-      <AgentLogFeed entries={draft.agentLog} />
+      <AgentLogFeed
+        entries={draft.agentLog}
+        table="lm_drafts_v2"
+        rowId={draft.id}
+        onNoteAdded={onChanged}
+      />
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">
