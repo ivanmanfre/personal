@@ -196,6 +196,18 @@ const PostStudioPanel: React.FC = () => {
   // Pinned + present statuses, ordered.
   const visibleStatuses = STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s));
 
+  // Stuck posts: status='scheduled', scheduled_at in the past, and NO LinkedIn URN
+  // (sourcePostId empty). These either failed to post or the publisher never picked
+  // them up. They're invisible problems unless we surface them — the publisher
+  // workflow has been silently flaking for weeks.
+  const stuckScheduled = React.useMemo(() => drafts.filter((d) => {
+    if (d.status !== 'scheduled') return false;
+    if (!d.scheduledAt) return false;
+    if (new Date(d.scheduledAt).getTime() >= Date.now()) return false;
+    return !d.sourcePostId;
+  }), [drafts]);
+  const [showStuckList, setShowStuckList] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -225,6 +237,57 @@ const PostStudioPanel: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Stuck-scheduled triage banner — only shows when there are past-due
+          scheduled posts WITHOUT a LinkedIn URN. These are publisher misfires
+          and need manual action (re-publish or disqualify). */}
+      {stuckScheduled.length > 0 && (
+        <div className="rounded-lg border border-amber-900/60 bg-amber-950/30 px-3 py-2">
+          <button
+            onClick={() => setShowStuckList((v) => !v)}
+            className="w-full flex items-center gap-2 text-left text-[12.5px] text-amber-200"
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="font-medium">{stuckScheduled.length} scheduled posts past due with no LinkedIn URN</span>
+            <span className="text-amber-400/70">— publisher likely failed, please triage</span>
+            <span className="ml-auto text-amber-300/70">{showStuckList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
+          </button>
+          {showStuckList && (
+            <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto">
+              {stuckScheduled.slice(0, 50).map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => setOpenId(d.id)}
+                  className="w-full flex items-center gap-2 text-left text-[11.5px] text-amber-100 hover:text-white hover:bg-amber-950/30 rounded px-1 py-0.5"
+                >
+                  <span className="text-amber-400/70 tabular-nums text-[10.5px] shrink-0">
+                    {new Date(d.scheduledAt!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
+                  <span className="truncate">{d.title || d.topic || '(untitled)'}</span>
+                </button>
+              ))}
+              <div className="pt-1 flex items-center gap-3 text-[11px] text-amber-300/80">
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Mark all ${stuckScheduled.length} stuck posts as disqualified? They didn't publish to LinkedIn.`)) return;
+                    try {
+                      const { error } = await supabase
+                        .from('carousel_drafts')
+                        .update({ status: 'disqualified' })
+                        .in('id', stuckScheduled.map((d) => d.id));
+                      if (error) throw error;
+                      toast.success(`Disqualified ${stuckScheduled.length} stuck posts`);
+                      await refresh();
+                    } catch (err) { toastError('bulk disqualify stuck', err); }
+                  }}
+                  className="rounded px-2 py-0.5 bg-amber-900/40 hover:bg-amber-900/60"
+                >Disqualify all</button>
+                <span className="text-amber-300/50">Or open each to re-publish manually.</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* New post — collapsed by default */}
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50">
@@ -394,6 +457,7 @@ const PostStudioPanel: React.FC = () => {
           loading={loading && drafts.length === 0}
           groupByStatus="post-studio"
           statusOrder={STATUS_ORDER}
+          pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {

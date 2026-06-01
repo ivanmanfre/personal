@@ -10,10 +10,15 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 
+// Canonical LM formats — sourced from the curator + content pipeline.
+// Anything outside this set in lm_drafts_v2 is data pollution (newsletter
+// signups, qualified-leads, deprecated Template) and is filtered out of the
+// LM panel. Shown only behind a "+N misclassified" footer toggle.
 const FORMATS = [
   'Checklist', 'Calculator', 'Interactive Assessment', 'Guide', 'AI Kit',
   'N8N Workflow', 'Stack Picker', 'Annotated Architecture', 'Live AI Walkthrough', 'Skill Pack',
 ];
+const FORMATS_SET = new Set(FORMATS);
 
 const STATUS_STYLE: Record<string, string> = {
   idea: 'bg-zinc-700/60 text-zinc-300',
@@ -75,6 +80,9 @@ const LeadMagnetStudioPanel: React.FC = () => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('lm-studio-show-disqualified') === '1';
   });
+  // Show rows with non-canonical formats (newsletter signups, leads, deprecated Template).
+  // Hidden by default — they're data pollution that shouldn't surface in LM workflow.
+  const [showMisclassified, setShowMisclassified] = useState<boolean>(false);
   React.useEffect(() => {
     try { localStorage.setItem('lm-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
@@ -87,23 +95,40 @@ const LeadMagnetStudioPanel: React.FC = () => {
   });
   React.useEffect(() => { try { localStorage.setItem('lm-studio-view', view); } catch {} }, [view]);
 
+  // Counts exclude misclassified rows (newsletter/leads/Template) unless toggled on,
+  // so the chip counts match the visible rows exactly.
+  const countedDrafts = React.useMemo(
+    () => showMisclassified ? drafts : drafts.filter((d) => FORMATS_SET.has(d.format || '')),
+    [drafts, showMisclassified],
+  );
   const statusCounts = React.useMemo(() => {
-    const c: Record<string, number> = { all: drafts.length };
-    for (const d of drafts) c[d.status] = (c[d.status] || 0) + 1;
+    const c: Record<string, number> = { all: countedDrafts.length };
+    for (const d of countedDrafts) c[d.status] = (c[d.status] || 0) + 1;
     return c;
-  }, [drafts]);
+  }, [countedDrafts]);
   const formatCounts = React.useMemo(() => {
-    const c: Record<string, number> = { all: drafts.length };
-    for (const d of drafts) {
+    const c: Record<string, number> = { all: countedDrafts.length };
+    for (const d of countedDrafts) {
       const k = d.format || 'unknown';
       c[k] = (c[k] || 0) + 1;
     }
     return c;
-  }, [drafts]);
+  }, [countedDrafts]);
+  // Count of rows whose format is not in the canonical FORMATS set —
+  // newsletter signups, leads, deprecated Template. Used for the
+  // "+N misclassified" footer toggle.
+  const misclassifiedCount = React.useMemo(
+    () => drafts.filter((d) => !FORMATS_SET.has(d.format || '')).length,
+    [drafts],
+  );
+
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return drafts
       .filter((d) => {
+        // Exclude rows whose format isn't a real LM format unless user opted in.
+        const fmt = d.format || '';
+        if (!FORMATS_SET.has(fmt) && !showMisclassified) return false;
         if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
         if (statusFilter !== 'all' && d.status !== statusFilter) return false;
         if (formatFilter !== 'all' && (d.format || 'unknown') !== formatFilter) return false;
@@ -114,7 +139,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified]);
+  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified, showMisclassified]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -267,7 +292,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
               );
             })}
             <span className="text-zinc-700 mx-1">·</span>
-            {(['all', ...Object.keys(formatCounts).filter((k) => k !== 'all' && formatCounts[k])] as const).slice(0, 8).map((f) => (
+            {(['all', ...FORMATS.filter((f) => formatCounts[f])] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFormatFilter(f)}
@@ -279,17 +304,30 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 {(formatCounts[f] || 0) > 0 && f !== 'all' && <span className="opacity-60 tabular-nums">{formatCounts[f] || 0}</span>}
               </button>
             ))}
-            {(statusCounts.disqualified || 0) > 0 && (
-              <button
-                onClick={() => setShowDisqualified((v) => !v)}
-                className={`ml-auto rounded px-1.5 py-0.5 transition ${
-                  showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
-                }`}
-                title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
-              >
-                {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
-              </button>
-            )}
+            <span className="ml-auto inline-flex items-center gap-1.5">
+              {misclassifiedCount > 0 && (
+                <button
+                  onClick={() => setShowMisclassified((v) => !v)}
+                  className={`rounded px-1.5 py-0.5 transition ${
+                    showMisclassified ? 'text-amber-300 bg-amber-950/30' : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  title={showMisclassified ? 'Hide misclassified (newsletter, leads, deprecated Template)' : `Show ${misclassifiedCount} row(s) with non-LM format`}
+                >
+                  {showMisclassified ? 'Hide misclassified' : `+${misclassifiedCount} misclassified`}
+                </button>
+              )}
+              {(statusCounts.disqualified || 0) > 0 && (
+                <button
+                  onClick={() => setShowDisqualified((v) => !v)}
+                  className={`rounded px-1.5 py-0.5 transition ${
+                    showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
+                >
+                  {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
+                </button>
+              )}
+            </span>
           </div>
         </div>
       )}
@@ -322,6 +360,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
           groupByStatus="lm-studio"
           statusOrder={STATUS_ORDER}
+          pinnedStatuses={['idea', 'generating', 'review', 'approved', 'scheduled', 'ready', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {

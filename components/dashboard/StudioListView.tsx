@@ -75,6 +75,10 @@ export function StudioListView({
   /** Order of status groups when groupByStatus is on. Status not in this list
    *  goes into a final "Other" group. */
   statusOrder = [],
+  /** Statuses that always render their group header even when empty (0 rows).
+   *  Gives the user the same pipeline-overview shape every time — "0 in review"
+   *  at the same scan position as "12 in review". */
+  pinnedStatuses = [],
   /** Inline status editor: list of statuses the user can pick from. When provided
    *  along with onStatusChange, clicking the status cell pops a small menu. */
   statusChoices,
@@ -91,19 +95,22 @@ export function StudioListView({
   onBulkAction?: (action: 'disqualify' | 'delete', ids: string[]) => Promise<void> | void;
   groupByStatus?: string;
   statusOrder?: string[];
+  pinnedStatuses?: string[];
   statusChoices?: string[];
   onStatusChange?: (id: string, status: string) => Promise<void> | void;
   onDateChange?: (id: string, isoDate: string | null) => Promise<void> | void;
 }) {
   // Per-status collapse state (only used when groupByStatus is on).
-  // Default: published + disqualified collapsed; everything else open.
+  // Default: ALL groups collapsed — gives the pipeline-overview-at-a-glance
+  // ClickUp-style scan. User clicks the group they want to drill into.
+  // Persisted to localStorage so user's expansion choices survive reloads.
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    if (!groupByStatus || typeof window === 'undefined') return new Set(['published', 'disqualified']);
+    if (!groupByStatus || typeof window === 'undefined') return new Set(statusOrder);
     try {
       const raw = localStorage.getItem(`studio-collapse-${groupByStatus}`);
       if (raw) return new Set(JSON.parse(raw) as string[]);
     } catch {}
-    return new Set(['published', 'disqualified']);
+    return new Set(statusOrder);
   });
   React.useEffect(() => {
     if (!groupByStatus || typeof window === 'undefined') return;
@@ -236,29 +243,42 @@ export function StudioListView({
               list.push(r);
               byStatus.set(r.status, list);
             }
-            const ordered = [
-              ...statusOrder.filter((s) => byStatus.has(s)),
-              ...Array.from(byStatus.keys()).filter((s) => !statusOrder.includes(s)),
-            ];
+            // Always render statusOrder entries (gives pipeline shape), plus
+            // any pinned statuses, plus any statuses present in rows but not
+            // in either list ("Other"). Empty groups still render their header.
+            const seen = new Set<string>();
+            const ordered: string[] = [];
+            for (const s of statusOrder) { if (!seen.has(s)) { ordered.push(s); seen.add(s); } }
+            for (const s of pinnedStatuses) { if (!seen.has(s)) { ordered.push(s); seen.add(s); } }
+            for (const s of byStatus.keys()) { if (!seen.has(s)) { ordered.push(s); seen.add(s); } }
             return ordered.map((status) => {
-              const groupRows = byStatus.get(status)!;
+              const groupRows = byStatus.get(status) || [];
+              const isPinned = pinnedStatuses.includes(status) || statusOrder.includes(status);
+              // Hide entirely if not in statusOrder/pinned AND has no rows (no point showing a phantom group)
+              if (groupRows.length === 0 && !isPinned) return null;
               const meta = statusMeta[status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
               const isCollapsed = collapsed.has(status);
+              const isEmpty = groupRows.length === 0;
               return (
                 <div key={status} className="border-b border-zinc-800/60 last:border-b-0">
                   <button
-                    onClick={() => toggleGroup(status)}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors text-left"
+                    onClick={() => !isEmpty && toggleGroup(status)}
+                    disabled={isEmpty}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 transition-colors text-left ${
+                      isEmpty ? 'bg-zinc-900/20 cursor-default' : 'bg-zinc-900/40 hover:bg-zinc-900/70'
+                    }`}
                   >
-                    {isCollapsed
+                    {isEmpty ? (
+                      <span className="w-3 h-3" />
+                    ) : isCollapsed
                       ? <ChevronRight className="w-3 h-3 text-zinc-500" />
                       : <ChevronDown className="w-3 h-3 text-zinc-400" />}
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                    <span className={`text-[11px] font-medium ${meta.label} capitalize`}>{status}</span>
-                    <span className="text-[11px] text-zinc-500 tabular-nums">{groupRows.length}</span>
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${isEmpty ? 'opacity-30' : ''} ${meta.dot}`} />
+                    <span className={`text-[11px] font-medium capitalize ${isEmpty ? 'text-zinc-600' : meta.label}`}>{status}</span>
+                    <span className={`text-[11px] tabular-nums ${isEmpty ? 'text-zinc-700' : 'text-zinc-500'}`}>{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
-                    {!isCollapsed && (
+                    {!isCollapsed && !isEmpty && (
                       <motion.div
                         key="body"
                         initial={{ height: 0, opacity: 0 }}
