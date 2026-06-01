@@ -335,10 +335,8 @@ const OutreachPanel: React.FC = () => {
           </div>
           <span className="text-[10px] text-zinc-500">Daily limits enforced by LinkedIn safety layer</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {([
-            { key: 'profile_view', label: 'Profile Views', defaultLimit: 50, icon: '👁', queueKey: null as 'connection_request' | 'dm' | null },
-            { key: 'like', label: 'Likes & Reacts', defaultLimit: 20, icon: '❤️', queueKey: null as 'connection_request' | 'dm' | null },
             { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝', queueKey: 'connection_request' as const },
             { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬', queueKey: 'dm' as const },
           ]).map(({ key, label, defaultLimit, icon, queueKey }) => {
