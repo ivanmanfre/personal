@@ -74,6 +74,26 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           {source && (
             <span className="text-zinc-500">via {source}</span>
           )}
+          {draft.topicStrength && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
+              <span className="text-zinc-500 text-[10px] uppercase">Strength</span> {draft.topicStrength}
+            </span>
+          )}
+          {draft.renderEngine && (
+            <span className="text-[11px] text-zinc-500">render: {draft.renderEngine}</span>
+          )}
+          {draft.sourcePostId && (
+            <a
+              href={draft.sourcePostId.startsWith('urn:li:activity:')
+                ? `https://www.linkedin.com/feed/update/${draft.sourcePostId}/`
+                : `https://www.linkedin.com/in/ivanmanfredi/`}
+              target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-mono"
+              title={draft.sourcePostId}
+            >
+              <ExternalLink className="w-3 h-3" /> view on LinkedIn
+            </a>
+          )}
         </div>
       )}
 

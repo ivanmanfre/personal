@@ -57,11 +57,35 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         <span className="ml-auto text-xs text-zinc-500">{draft.format || 'no format'} · {draft.status}</span>
       </div>
 
-      {/* Target audience (read-only context) */}
-      {spec.target_audience && (
-        <div className="rounded-md border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-300/80">
-          <span className="uppercase tracking-wider text-emerald-400/60 mr-2">Audience</span>
-          {spec.target_audience}
+      {/* Taxonomy row — topic strength / source / target audience */}
+      {(spec.target_audience || draft.topicStrength || draft.source) && (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {draft.topicStrength && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
+                <span className="text-zinc-500 text-[10px] uppercase">Strength</span> {draft.topicStrength}
+              </span>
+            )}
+            {draft.source && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
+                <span className="text-zinc-500 text-[10px] uppercase">Source</span> {draft.source}
+              </span>
+            )}
+          </div>
+          {spec.target_audience && (
+            <div className="rounded-md border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-300/80">
+              <span className="uppercase tracking-wider text-emerald-400/60 mr-2">Audience</span>
+              {spec.target_audience}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Notes — authoring scratchpad (preserved from ClickUp Notes field) */}
+      {draft.notes && (
+        <div className="rounded-md border border-zinc-800/60 bg-zinc-900/40 px-3 py-2">
+          <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Notes</div>
+          <pre className="whitespace-pre-wrap text-xs text-zinc-300 font-sans leading-snug">{draft.notes}</pre>
         </div>
       )}
 

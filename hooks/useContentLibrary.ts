@@ -25,6 +25,9 @@ export interface CarouselDraft {
   scheduledAt: string | null;
   updatedAt: string;
   agentLog: AgentLogEntry[];
+  topicStrength: string | null;
+  renderEngine: string | null;
+  sourcePostId: string | null;     // urn:li:activity:... from Unipile
 }
 
 function mapDraft(row: any): CarouselDraft {
@@ -43,6 +46,9 @@ function mapDraft(row: any): CarouselDraft {
     scheduledAt: row.scheduled_at,
     updatedAt: row.updated_at,
     agentLog: Array.isArray(row.agent_log) ? row.agent_log : [],
+    topicStrength: row.topic_strength,
+    renderEngine: row.render_engine,
+    sourcePostId: row.source_post_id,
   };
 }
 
@@ -55,7 +61,7 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log')
+        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));

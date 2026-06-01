@@ -8,7 +8,7 @@ import CarouselEditor from './CarouselEditor';
 
 const STATUS_STYLE: Record<string, string> = {
   draft: 'bg-zinc-700/60 text-zinc-300',
-  qa_review: 'bg-amber-900/50 text-amber-300',
+  review: 'bg-amber-900/50 text-amber-300',
   ready: 'bg-emerald-900/50 text-emerald-300',
   scheduled: 'bg-sky-900/50 text-sky-300',
   published: 'bg-zinc-800 text-zinc-400',
