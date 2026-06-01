@@ -279,23 +279,22 @@ const LeadMagnetStudioPanel: React.FC = () => {
             const col = visible.filter((d) => d.status === status);
             const dotClass = STATUS_DOT[status] || STATUS_DOT.idea;
             return (
-              <div key={status} className="flex-none w-[260px] snap-start rounded-md border border-zinc-800 bg-zinc-950/40 flex flex-col max-h-[75vh]">
-                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur">
+              <div key={status} className="flex-none w-[160px] snap-start rounded-md border border-zinc-800 bg-zinc-950/40 flex flex-col max-h-[75vh]">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
-                  <span className="text-xs font-medium text-zinc-300">{status}</span>
-                  <span className="ml-auto text-[11px] text-zinc-500">{col.length}</span>
+                  <span className="text-[10.5px] font-medium uppercase tracking-wider text-zinc-300 truncate">{status}</span>
+                  <span className="ml-auto text-[10px] text-zinc-500 font-mono">{col.length}</span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
                   {col.length === 0 ? (
-                    <div className="text-[11px] text-zinc-600 italic py-2 text-center">empty</div>
+                    <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
                   ) : col.map((d) => (
                     <button
                       key={d.id}
                       onClick={() => setOpenId(d.id)}
-                      className="w-full text-left rounded border border-zinc-800 bg-zinc-900/70 hover:border-zinc-600 transition p-2 space-y-1"
+                      className="w-full text-left rounded border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition px-1.5 py-1.5"
                     >
-                      <div className="text-[12px] text-zinc-200 line-clamp-2 leading-snug">{d.topic || '(untitled)'}</div>
-                      {d.format && <span className="inline-block text-[10px] text-zinc-500 px-1 py-0.5 rounded bg-zinc-800/60">{d.format}</span>}
+                      <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.topic || '(untitled)'}</div>
                     </button>
                   ))}
                 </div>
