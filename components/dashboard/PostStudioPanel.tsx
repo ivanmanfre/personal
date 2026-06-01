@@ -352,6 +352,7 @@ const PostStudioPanel: React.FC = () => {
           })}
           statusMeta={STATUS_META}
           onOpen={setOpenId}
+          loading={loading && drafts.length === 0}
         />
       ) : view === 'board' ? (
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">

@@ -148,3 +148,26 @@ export const EmptyState: React.FC<{
 export const Divider: React.FC<{ className?: string }> = ({ className }) => (
   <div className={cn('h-px bg-zinc-800/70', className)} />
 );
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+/** Pulsing rounded bar for loading states. Use width via className. */
+export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...rest }) => (
+  <div
+    className={cn('animate-pulse rounded bg-zinc-800/60', className)}
+    {...rest}
+  />
+);
+
+/** Studio list skeleton row — placeholder with thumb + title bar + meta bars matching list layout. */
+export const ListRowSkeleton: React.FC = () => (
+  <div className="flex items-center gap-3 px-3 py-2 border-b border-zinc-800/40">
+    <Skeleton className="w-7 h-7 shrink-0" />
+    <div className="flex-1 min-w-0 space-y-1.5">
+      <Skeleton className="h-3 w-3/5" />
+      <Skeleton className="h-2.5 w-2/5 opacity-60" />
+    </div>
+    <Skeleton className="h-3 w-12 hidden md:block" />
+    <Skeleton className="h-3 w-14 hidden lg:block" />
+    <Skeleton className="h-3 w-16" />
+  </div>
+);

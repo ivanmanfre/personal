@@ -273,6 +273,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           }))}
           statusMeta={STATUS_META}
           onOpen={setOpenId}
+          loading={loading && drafts.length === 0}
           // LM doesn't have pillar/hook/tier in the same way carousels do; hide those columns
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
         />

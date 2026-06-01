@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, ArrowUpDown } from 'lucide-react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { ListRowSkeleton } from '../ui/primitives';
 
 /**
  * Real columned list view — direct ClickUp-list equivalent.
@@ -65,11 +67,13 @@ export function StudioListView({
   onOpen,
   /** Hide certain columns by key (e.g. LM doesn't have hookType). */
   hiddenCols = new Set<SortKey>(),
+  loading = false,
 }: {
   rows: StudioRow[];
   statusMeta: Record<string, StatusMeta>;
   onOpen: (id: string) => void;
   hiddenCols?: Set<SortKey>;
+  loading?: boolean;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -133,16 +137,26 @@ export function StudioListView({
       </div>
 
       {/* Rows */}
-      {sorted.length === 0 ? (
+      {loading ? (
+        // Skeleton rows — better than blank-then-pop on first load
+        <div>{[...Array(8)].map((_, i) => <ListRowSkeleton key={i} />)}</div>
+      ) : sorted.length === 0 ? (
         <div className="px-3 py-8 text-center text-sm text-zinc-600 italic">No rows match the current filter.</div>
       ) : (
-        sorted.map((r, i) => {
+        <LayoutGroup>
+        <AnimatePresence initial={false}>
+        {sorted.map((r, i) => {
           const meta = statusMeta[r.status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
           return (
-            <button
+            <motion.button
               key={r.id}
+              layout
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.14, ease: 'easeOut' }}
               onClick={() => onOpen(r.id)}
-              className={`group w-full grid items-center gap-3 px-3 py-2 text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition ${i % 2 === 1 ? 'bg-zinc-900/20' : ''}`}
+              className={`group w-full grid items-center gap-3 px-3 py-2 text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors ${i % 2 === 1 ? 'bg-zinc-900/20' : ''}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
               {cols.map((c) => {
@@ -191,9 +205,11 @@ export function StudioListView({
                 if (c.key === 'date')      return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || ''}</span></div>;
                 return null;
               })}
-            </button>
+            </motion.button>
           );
-        })
+        })}
+        </AnimatePresence>
+        </LayoutGroup>
       )}
     </div>
   );
