@@ -27,7 +27,7 @@ const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
 // Two top-level content-creation sections: Posts (unified text/single-image/carousel)
 // and Lead Magnets (Ideas + Drafts nested).
-const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
+const Posts = lazy(() => import('./Posts').then((m) => ({ default: m.Posts })));
 const LeadMagnets = lazy(() => import('./LeadMagnets').then((m) => ({ default: m.LeadMagnets })));
 
 type SubKey = 'posts' | 'leadmagnets' | 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'clips';
@@ -80,7 +80,7 @@ export function ContentStudio() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'posts':       return <PostStudioPanel />;
+      case 'posts':       return <Posts />;
       case 'leadmagnets': return <LeadMagnets />;
       case 'pipeline':    return <ContentPanel />;
       case 'performance': return <PerformancePanel />;
