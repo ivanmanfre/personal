@@ -8,6 +8,7 @@ import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
+import PostPreview from '../ui/PostPreview';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -27,6 +28,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [dmA, setDmA] = useState((spec.dm_template_a as string) || '');
   const [dmB, setDmB] = useState((spec.dm_template_b as string) || '');
   const [resourceOpen, setResourceOpen] = useState(false);
+  const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
@@ -90,8 +92,27 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         {/* LEFT COLUMN — editing surfaces */}
         <div className="space-y-4 min-w-0">
           <div>
-            <FieldLabel>LinkedIn post</FieldLabel>
-            <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={10} className="text-[13.5px] leading-relaxed font-sans" />
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">LinkedIn post</FieldLabel>
+              <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                <button
+                  onClick={() => setPostMode('edit')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Edit</button>
+                <button
+                  onClick={() => setPostMode('preview')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Preview</button>
+              </div>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}</span>
+            </div>
+            {postMode === 'edit' ? (
+              <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={10} className="text-[13.5px] leading-relaxed font-sans" />
+            ) : (
+              <div className="min-h-[240px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
+                <PostPreview text={postBody} />
+              </div>
+            )}
           </div>
 
           <div>
@@ -125,7 +146,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   value={resourceHtml}
                   onChange={(e) => setResourceHtml(e.target.value)}
                   rows={16}
-                  className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 font-mono focus:outline-none focus:border-zinc-600"
+                  className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 leading-relaxed focus:outline-none focus:border-zinc-600"
                 />
               </div>
             )}

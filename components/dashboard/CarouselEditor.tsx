@@ -9,6 +9,7 @@ import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
+import PostPreview from '../ui/PostPreview';
 
 interface Props {
   draft: CarouselDraft;
@@ -22,6 +23,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [when, setWhen] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [imageryOpen, setImageryOpen] = useState(false);
+  const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
+  const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
   const tax = (draft.taxonomy || {}) as Record<string, any>;
   const upstream = useUpstreamSource(tax);
   const pillar = tax.pillar as string | undefined;
@@ -164,23 +167,61 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           )}
 
           <div>
-            <FieldLabel>LinkedIn caption</FieldLabel>
-            <Textarea
-              value={postBody}
-              onChange={(e) => setPostBody(e.target.value)}
-              rows={10}
-              className="text-[13.5px] leading-relaxed"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">LinkedIn caption</FieldLabel>
+              <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                <button
+                  onClick={() => setPostMode('edit')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Edit</button>
+                <button
+                  onClick={() => setPostMode('preview')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Preview</button>
+              </div>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}</span>
+            </div>
+            {postMode === 'edit' ? (
+              <Textarea
+                value={postBody}
+                onChange={(e) => setPostBody(e.target.value)}
+                rows={10}
+                className="text-[13.5px] leading-relaxed"
+              />
+            ) : (
+              <div className="min-h-[240px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
+                <PostPreview text={postBody} />
+              </div>
+            )}
           </div>
 
           <div>
-            <FieldLabel>Instagram caption</FieldLabel>
-            <Textarea
-              value={igCaption}
-              onChange={(e) => setIgCaption(e.target.value)}
-              rows={4}
-              className="text-[13px] leading-relaxed"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">Instagram caption</FieldLabel>
+              <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                <button
+                  onClick={() => setIgMode('edit')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${igMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Edit</button>
+                <button
+                  onClick={() => setIgMode('preview')}
+                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${igMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >Preview</button>
+              </div>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{igCaption.length}</span>
+            </div>
+            {igMode === 'edit' ? (
+              <Textarea
+                value={igCaption}
+                onChange={(e) => setIgCaption(e.target.value)}
+                rows={4}
+                className="text-[13px] leading-relaxed"
+              />
+            ) : (
+              <div className="min-h-[100px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
+                <PostPreview text={igCaption} showFold={false} />
+              </div>
+            )}
           </div>
 
           <SourceBriefing description={draft.description} upstream={upstream} />
