@@ -26,6 +26,11 @@ const statusBadgeColors: Record<string, string> = {
   failed: 'bg-red-500/20 text-red-300 border-red-500/30',
 };
 
+// Triage-first pill order: failures and queue states pinned even at zero,
+// so a glance at the dashboard signals "nothing broken" vs "something needs me".
+const STATUS_PILL_ORDER = ['failed', 'pending', 'posting', 'posted', 'cancelled'];
+const PINNED_STATUSES = new Set(['failed', 'pending', 'posting']);
+
 const LM_PATTERN = /\bcomment\s+[""]?(\w+)[""]?\b/i;
 
 function isLeadMagnet(post: ScheduledPost): boolean {
@@ -543,7 +548,19 @@ const ContentPanel: React.FC = () => {
         <StatCard label="Total Posts" value={posts.length} icon={<FileText className="w-5 h-5" />} color="text-zinc-300" />
         <StatCard label="Pending" value={pendingCount} icon={<Clock className="w-5 h-5" />} color={pendingCount > 5 ? 'text-amber-400' : 'text-zinc-300'} />
         <StatCard label="Posted" value={postedCount} icon={<Send className="w-5 h-5" />} color="text-emerald-400" />
-        <StatCard label="Failed" value={failedCount} icon={<AlertTriangle className="w-5 h-5" />} color="text-red-400" />
+        {/* Failed: red ring + click-to-filter when > 0 — Ivan opens the dashboard to find these */}
+        <button
+          type="button"
+          onClick={() => failedCount > 0 && setFilter(filter === 'failed' ? 'all' : 'failed')}
+          disabled={failedCount === 0}
+          className={`text-left rounded-xl transition-all ${
+            failedCount > 0
+              ? 'ring-2 ring-red-500/60 ring-offset-2 ring-offset-zinc-950 cursor-pointer hover:ring-red-500/90'
+              : 'cursor-default'
+          }`}
+        >
+          <StatCard label="Failed" value={failedCount} icon={<AlertTriangle className="w-5 h-5" />} color="text-red-400" />
+        </button>
       </div>
 
       {/* Publishing Queue */}
@@ -651,7 +668,7 @@ const ContentPanel: React.FC = () => {
         </DndContext>
       </div>
 
-      {/* Status filters */}
+      {/* Status filters — pinned triage order; `failed` always visible (red ring when >0) */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={() => setFilter('all')}
@@ -661,18 +678,28 @@ const ContentPanel: React.FC = () => {
         >
           All ({posts.length})
         </button>
-        {Object.entries(statusCounts).map(([status, count]) => (
-          <button
-            key={status}
-            onClick={() => setFilter(filter === status ? 'all' : status)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filter === status ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-            }`}
-          >
-            <div className={`w-2 h-2 rounded-sm ${statusColors[status]?.split(' ')[0] || 'bg-zinc-600'}`} />
-            {status} ({count})
-          </button>
-        ))}
+        {STATUS_PILL_ORDER.map((status) => {
+          const count = statusCounts[status] || 0;
+          const isPinned = PINNED_STATUSES.has(status);
+          if (count === 0 && !isPinned) return null;
+          const isFailed = status === 'failed' && count > 0;
+          const isActive = filter === status;
+          return (
+            <button
+              key={status}
+              onClick={() => setFilter(isActive ? 'all' : status)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                isActive ? 'bg-zinc-700 text-white' :
+                isFailed ? 'bg-red-500/10 text-red-300 ring-1 ring-red-500/40 hover:bg-red-500/15' :
+                count === 0 ? 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/40' :
+                'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+              }`}
+            >
+              <div className={`w-2 h-2 rounded-sm ${statusColors[status]?.split(' ')[0] || 'bg-zinc-600'}`} />
+              {status} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {/* Posts list */}
