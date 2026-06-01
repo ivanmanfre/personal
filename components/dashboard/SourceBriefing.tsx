@@ -96,11 +96,28 @@ interface Props {
   description: string | null;
   /** Default: closed if > 240 chars, open otherwise */
   defaultOpen?: boolean;
+  /** Optional upstream-source object resolved from taxonomy (call / web / competitor / curator). */
+  upstream?: {
+    kind: string;
+    title?: string;
+    body?: string;
+    url?: string;
+    meta?: Record<string, string | number>;
+  } | null;
 }
 
-const SourceBriefing: React.FC<Props> = ({ description, defaultOpen }) => {
+const SourceBriefing: React.FC<Props> = ({ description, defaultOpen, upstream }) => {
   const [open, setOpen] = useState(defaultOpen ?? (description ?? '').length <= 240);
-  if (!description) return null;
+  if (!description && !upstream) return null;
+  const upstreamTint: Record<string, string> = {
+    call: 'text-sky-300 border-sky-500/30',
+    web_research: 'text-violet-300 border-violet-500/30',
+    competitor: 'text-amber-300 border-amber-500/30',
+    curator: 'text-emerald-300 border-emerald-500/30',
+    manual: 'text-zinc-300 border-zinc-700/30',
+    unknown: 'text-zinc-400 border-zinc-700/30',
+  };
+
   return (
     <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
       <button
@@ -109,12 +126,31 @@ const SourceBriefing: React.FC<Props> = ({ description, defaultOpen }) => {
       >
         <FileText className="w-3.5 h-3.5 text-emerald-400/70" />
         Source briefing
-        <span className="text-[11px] text-zinc-500">· {description.length.toLocaleString()} chars</span>
+        {description && (
+          <span className="text-[11px] text-zinc-500">· {description.length.toLocaleString()} chars</span>
+        )}
+        {upstream && (
+          <span className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0 text-[10px] uppercase tracking-wider ${upstreamTint[upstream.kind] || upstreamTint.unknown}`}>
+            from {upstream.kind.replace('_', ' ')}
+          </span>
+        )}
         <span className="ml-auto text-zinc-500">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
       </button>
       {open && (
-        <div className="border-t border-zinc-800/60 px-3 py-2 max-h-[50vh] overflow-y-auto">
-          {renderMarkdown(description)}
+        <div className="border-t border-zinc-800/60 px-3 py-2 max-h-[50vh] overflow-y-auto space-y-3">
+          {upstream && (
+            <div className="rounded border border-zinc-800/60 bg-zinc-950/50 px-2.5 py-2">
+              <div className={`text-[10px] uppercase tracking-wider font-medium mb-1 ${upstreamTint[upstream.kind]?.split(' ')[0] || 'text-zinc-400'}`}>
+                Upstream · {upstream.kind.replace('_', ' ')}
+              </div>
+              {upstream.title && <div className="text-[12.5px] text-zinc-200 font-medium mb-1">{upstream.title}</div>}
+              {upstream.body && <div className="text-[12px] text-zinc-300 whitespace-pre-wrap leading-snug">{upstream.body}</div>}
+              {upstream.url && (
+                <a href={upstream.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-emerald-400 hover:text-emerald-300">↗ open source</a>
+              )}
+            </div>
+          )}
+          {description && renderMarkdown(description)}
         </div>
       )}
     </div>

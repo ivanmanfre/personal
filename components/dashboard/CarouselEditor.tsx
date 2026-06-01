@@ -7,6 +7,7 @@ import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
+import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 
 interface Props {
   draft: CarouselDraft;
@@ -21,6 +22,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [imageryOpen, setImageryOpen] = useState(false);
   const tax = (draft.taxonomy || {}) as Record<string, any>;
+  const upstream = useUpstreamSource(tax);
   const pillar = tax.pillar as string | undefined;
   const hookType = tax.hook_type as string | undefined;
   const valueTier = tax.value_tier as string | undefined;
@@ -180,7 +182,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             />
           </label>
 
-          <SourceBriefing description={draft.description} />
+          <SourceBriefing description={draft.description} upstream={upstream} />
 
           <AgentLogFeed
             entries={draft.agentLog}

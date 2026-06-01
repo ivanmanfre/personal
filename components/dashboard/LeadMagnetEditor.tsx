@@ -6,6 +6,7 @@ import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
+import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -19,6 +20,9 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [emailCopy, setEmailCopy] = useState(draft.emailCopy || '');
   const [resourceHtml, setResourceHtml] = useState(draft.resourceHtml || '');
   const spec = (draft.spec || {}) as Record<string, any>;
+  // LM upstream-source resolver — uses spec.source_candidate_id when present,
+  // OR falls back to draft.source (Client Calls / Web Research / Competitor / Manual).
+  const upstream = useUpstreamSource({ source_candidate_id: spec.source_candidate_id, source: draft.source });
   const [dmA, setDmA] = useState((spec.dm_template_a as string) || '');
   const [dmB, setDmB] = useState((spec.dm_template_b as string) || '');
   const [resourceOpen, setResourceOpen] = useState(false);
@@ -148,7 +152,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             )}
           </div>
 
-          <SourceBriefing description={draft.description} />
+          <SourceBriefing description={draft.description} upstream={upstream} />
 
           {draft.notes && (
             <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 px-3 py-2">
