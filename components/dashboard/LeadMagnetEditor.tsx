@@ -29,7 +29,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     finally { setBusy(null); }
   }
 
-  const isReview = draft.status === 'lm_review';
+  const isReview = draft.status === 'review';
   const isReady = draft.status === 'ready';
   const dirty = postBody !== (draft.postBody || '')
     || emailCopy !== (draft.emailCopy || '')

@@ -47,8 +47,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         <span className="ml-auto text-xs text-zinc-500">{draft.status}</span>
       </div>
 
-      {qa && qa.verdict && qa.verdict !== 'PASS' && (
-        <div className="rounded-md border border-amber-900/60 bg-amber-950/30 px-3 py-2 text-xs text-amber-300">
+      {qa && qa.verdict && (
+        <div className={`rounded-md border px-3 py-2 text-xs ${
+          qa.verdict === 'PASS'
+            ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-300'
+            : 'border-amber-900/60 bg-amber-950/30 text-amber-300'
+        }`}>
           QA: {qa.verdict}{qa.failing_slides?.length ? ` — slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
         </div>
       )}
@@ -97,15 +101,32 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       )}
 
-      {/* Flickable slide preview */}
+      {/* Flickable slide preview — image_urls first; fall back to slide structures for older carousels */}
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {draft.imageUrls.length === 0 && <div className="text-sm text-zinc-500">No slides rendered.</div>}
-        {draft.imageUrls.map((url, i) => (
-          <div key={i} className="flex-none w-[240px]">
-            <img src={url} alt={`Slide ${i + 1}`} className="w-full rounded-md border border-zinc-800" />
-            <div className="mt-1 text-center text-[11px] text-zinc-500">Slide {i + 1}</div>
-          </div>
-        ))}
+        {draft.imageUrls.length > 0 ? (
+          draft.imageUrls.map((url, i) => (
+            <div key={i} className="flex-none w-[240px]">
+              <img src={url} alt={`Slide ${i + 1}`} className="w-full rounded-md border border-zinc-800" />
+              <div className="mt-1 text-center text-[11px] text-zinc-500">Slide {i + 1}</div>
+            </div>
+          ))
+        ) : draft.slides.length > 0 ? (
+          draft.slides.map((s, i) => {
+            // Slide structures come in different shapes across carousel styles —
+            // render whichever text fields are present (title / hook / body / image_prompt).
+            const title = s?.title || s?.headline || s?.hook || `Slide ${i + 1}`;
+            const body  = s?.body || s?.content || s?.subtext || s?.image_prompt || '';
+            return (
+              <div key={i} className="flex-none w-[260px] rounded-md border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col">
+                <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 mb-1">Slide {i + 1}</div>
+                <div className="text-[13px] font-medium text-zinc-200 leading-snug line-clamp-3">{title}</div>
+                {body && <div className="mt-2 text-[11px] text-zinc-400 leading-snug line-clamp-6">{body}</div>}
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-sm text-zinc-500 italic">No slides rendered yet — build will populate image_urls.</div>
+        )}
       </div>
 
       {/* Copy editing */}

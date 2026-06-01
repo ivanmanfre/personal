@@ -28,6 +28,7 @@ export interface CarouselDraft {
   topicStrength: string | null;
   renderEngine: string | null;
   sourcePostId: string | null;     // urn:li:activity:... from Unipile
+  slides: any[];                   // historical slide structures when image_urls is empty
 }
 
 function mapDraft(row: any): CarouselDraft {
@@ -49,6 +50,7 @@ function mapDraft(row: any): CarouselDraft {
     topicStrength: row.topic_strength,
     renderEngine: row.render_engine,
     sourcePostId: row.source_post_id,
+    slides: Array.isArray(row.slides) ? row.slides : [],
   };
 }
 
@@ -61,7 +63,7 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id')
+        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));
