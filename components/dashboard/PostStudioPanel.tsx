@@ -196,6 +196,18 @@ const PostStudioPanel: React.FC = () => {
   // Pinned + present statuses, ordered.
   const visibleStatuses = STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s));
 
+  // Stuck posts: status='scheduled', scheduled_at in the past, and NO LinkedIn URN
+  // (sourcePostId empty). These either failed to post or the publisher never picked
+  // them up. They're invisible problems unless we surface them — the publisher
+  // workflow has been silently flaking for weeks.
+  const stuckScheduled = React.useMemo(() => drafts.filter((d) => {
+    if (d.status !== 'scheduled') return false;
+    if (!d.scheduledAt) return false;
+    if (new Date(d.scheduledAt).getTime() >= Date.now()) return false;
+    return !d.sourcePostId;
+  }), [drafts]);
+  const [showStuckList, setShowStuckList] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
@@ -394,6 +406,7 @@ const PostStudioPanel: React.FC = () => {
           loading={loading && drafts.length === 0}
           groupByStatus="post-studio"
           statusOrder={STATUS_ORDER}
+          pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {
