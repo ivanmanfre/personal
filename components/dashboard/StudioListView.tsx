@@ -52,9 +52,9 @@ const ALL_COLS: { key: SortKey; label: string; width: string; visible?: 'always'
 
 const STRENGTH_RANK: Record<string, number> = { High: 1, Medium: 2, Low: 3 };
 const STRENGTH_TINT: Record<string, string> = {
-  High:   'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
-  Medium: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
-  Low:    'text-zinc-400 bg-zinc-700/30 border-zinc-700/40',
+  High:   'text-emerald-300 bg-emerald-500/[0.08] ring-1 ring-inset ring-emerald-500/25',
+  Medium: 'text-amber-300 bg-amber-500/[0.08] ring-1 ring-inset ring-amber-500/25',
+  Low:    'text-zinc-400 bg-zinc-700/30 ring-1 ring-inset ring-zinc-700/40',
 };
 
 const TIER_RANK: Record<string, number> = {
@@ -226,7 +226,7 @@ export function StudioListView({
   };
 
   return (
-    <div className="rounded-lg border border-zinc-800/80 overflow-hidden bg-zinc-950/30">
+    <div className="rounded-xl border border-zinc-800/60 overflow-hidden bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 shadow-2xl shadow-black/20">
       {/* Bulk action bar — shown when any rows are selected */}
       {onBulkAction && selected.size > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/40 text-[12px] text-emerald-200">
@@ -248,7 +248,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-[12px] text-zinc-500 font-medium"
+        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800/60 text-[11.5px] text-zinc-500 font-medium tracking-tight sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -330,22 +330,22 @@ export function StudioListView({
               const isCollapsed = collapsed.has(status);
               const isEmpty = groupRows.length === 0;
               return (
-                <div key={status} className="border-b border-zinc-800/60 last:border-b-0">
+                <div key={status} className="border-b border-zinc-800/40 last:border-b-0">
                   <button
                     onClick={() => !isEmpty && toggleGroup(status)}
                     disabled={isEmpty}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 transition-colors text-left ${
-                      isEmpty ? 'bg-zinc-900/20 cursor-default' : 'bg-zinc-900/40 hover:bg-zinc-900/70'
+                    className={`w-full flex items-center gap-2 px-4 py-2 transition-all text-left ${
+                      isEmpty ? 'bg-transparent cursor-default' : 'bg-zinc-900/30 hover:bg-zinc-900/60'
                     }`}
                   >
                     {isEmpty ? (
-                      <span className="w-3 h-3" />
+                      <span className="w-3.5 h-3.5" />
                     ) : isCollapsed
-                      ? <ChevronRight className="w-3 h-3 text-zinc-500" />
-                      : <ChevronDown className="w-3 h-3 text-zinc-400" />}
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${isEmpty ? 'opacity-30' : ''} ${meta.dot}`} />
-                    <span className={`text-[11px] font-medium ${isEmpty ? 'text-zinc-600' : meta.label}`}>{statusLabel(status)}</span>
-                    <span className={`text-[11px] tabular-nums ${isEmpty ? 'text-zinc-700' : 'text-zinc-500'}`}>{groupRows.length}</span>
+                      ? <ChevronRight className="w-3.5 h-3.5 text-zinc-500 transition-transform" />
+                      : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform" />}
+                    <span className={`inline-block w-2 h-2 rounded-full ring-2 ${isEmpty ? 'opacity-30 ring-transparent' : 'ring-current/10'} ${meta.dot}`} />
+                    <span className={`text-[12px] font-semibold tracking-tight ${isEmpty ? 'text-zinc-600' : meta.label}`}>{statusLabel(status)}</span>
+                    <span className={`text-[11px] tabular-nums ${isEmpty ? 'text-zinc-700' : 'text-zinc-500'} ml-0.5`}>{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
                     {!isCollapsed && !isEmpty && (
@@ -393,7 +393,7 @@ export function StudioListView({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-2 py-1' : 'px-3 py-2'} text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors cursor-pointer ${i % 2 === 1 ? 'bg-zinc-900/20' : ''} ${selected.has(r.id) ? 'bg-emerald-950/20' : ''}`}
+        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer ${selected.has(r.id) ? 'bg-emerald-950/20 ring-1 ring-inset ring-emerald-500/20' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -414,19 +414,19 @@ export function StudioListView({
             return (
               <div key={c.key} className={cls + ' gap-2.5 basis-full md:basis-auto'}>
                 {!dense && (
-                  <div className="w-7 h-7 rounded overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 ring-1 ring-zinc-800/80 flex items-center justify-center shrink-0 shadow-inner shadow-black/40">
                     {r.thumbUrl ? (
                       <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                     ) : (
-                      <span className="text-[7.5px] uppercase tracking-wider text-emerald-500/55 font-mono leading-none">
+                      <span className="text-[8px] uppercase tracking-wider text-emerald-400/60 font-mono leading-none font-semibold">
                         {(r.kicker || 'T').slice(0, 3)}
                       </span>
                     )}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className={`${dense ? 'text-[11.5px]' : 'text-[12.5px]'} text-zinc-100 truncate group-hover:text-white`}>{r.title || '(untitled)'}</div>
-                  {r.excerpt && !dense && <div className="text-[11px] text-zinc-500 truncate">{r.excerpt}</div>}
+                  <div className={`${dense ? 'text-[11.5px]' : 'text-[13px]'} text-zinc-100 truncate group-hover:text-white font-medium tracking-tight`}>{r.title || '(untitled)'}</div>
+                  {r.excerpt && !dense && <div className="text-[11.5px] text-zinc-500 truncate mt-0.5">{r.excerpt}</div>}
                 </div>
               </div>
             );

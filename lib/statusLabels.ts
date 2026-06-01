@@ -4,12 +4,14 @@
 // 'Complete' / 'Generating content'. New `ready_to_post` status added as an
 // intermediate state between approved and scheduled (mirrors ClickUp's Posts
 // board).
+// Post workflow: suggestion (idea) → click Generate → generating content
+// → review → click Approve → scheduled → published.
+// No ready_to_post: Approve schedules directly. No intermediate state needed.
 export const POST_STATUSES = [
   'idea',
   'generating',
   'review',
   'approved',
-  'ready_to_post',
   'scheduled',
   'published',
   'disqualified',
@@ -40,7 +42,6 @@ const RAW_LABEL_MAP: Record<string, string> = {
   generating: 'Generating content',
   review: 'Review',
   approved: 'Approved',
-  ready_to_post: 'Ready to post',
   scheduled: 'Scheduled',
   published: 'Published',
   disqualified: 'Disqualified',

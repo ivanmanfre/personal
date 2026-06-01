@@ -26,8 +26,6 @@ const STATUS_META: Record<string, { dot: string; label: string }> = {
   generating:    { dot: 'bg-sky-400',    label: 'text-sky-300' },
   review:        { dot: 'bg-amber-400',  label: 'text-amber-300' },
   approved:      { dot: 'bg-emerald-400',label: 'text-emerald-300' },
-  ready_to_post: { dot: 'bg-teal-400',   label: 'text-teal-300' },
-  ready:         { dot: 'bg-emerald-400',label: 'text-emerald-300' },
   scheduled:     { dot: 'bg-sky-400',    label: 'text-sky-300' },
   published:     { dot: 'bg-zinc-500',   label: 'text-zinc-400' },
   disqualified:  { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
@@ -213,30 +211,34 @@ const PostStudioPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <FileText className="w-5 h-5 text-emerald-400" />
-        <h2 className="text-lg font-semibold text-zinc-100">Posts</h2>
-        <span className="text-xs text-zinc-500">— text, single-image, carousel</span>
-        <div className="ml-auto flex items-center gap-1">
-          <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 ring-1 ring-emerald-500/20 flex items-center justify-center">
+          <FileText className="w-4 h-4 text-emerald-400" />
+        </div>
+        <div>
+          <h2 className="text-[18px] font-semibold text-zinc-100 tracking-tight leading-tight">Posts</h2>
+          <span className="text-[11.5px] text-zinc-500">text · single-image · carousel</span>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          <div className="inline-flex rounded-lg bg-zinc-900/60 ring-1 ring-zinc-800/80 p-0.5">
             <button
               onClick={() => setView('list')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'list' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="List view (grouped by status)"
             ><ListIcon className="w-3.5 h-3.5" /> List</button>
             <button
               onClick={() => setView('grid')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'grid' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'grid' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Grid view"
             ><LayoutGrid className="w-3.5 h-3.5" /> Grid</button>
             <button
               onClick={() => setView('board')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Board view (kanban by status)"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
             <button
               onClick={() => setView('table')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'table' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'table' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Table view (dense spreadsheet, no grouping)"
             ><Table2 className="w-3.5 h-3.5" /> Table</button>
           </div>
