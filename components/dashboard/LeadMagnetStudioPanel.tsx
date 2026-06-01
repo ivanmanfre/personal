@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, Columns3 } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, Columns3, List as ListIcon } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import LeadMagnetEditor from './LeadMagnetEditor';
+import { StudioListView } from './StudioListView';
 
 const FORMATS = [
   'Checklist', 'Calculator', 'Interactive Assessment', 'Guide', 'AI Kit',
@@ -38,6 +39,25 @@ const STATUS_DOT: Record<string, string> = {
 const STATUS_ORDER = ['idea', 'generating', 'generating_assets', 'lm_review', 'approved', 'scheduled', 'ready', 'disqualified', 'error', 'draft'];
 const PINNED_STATUSES = new Set(['generating', 'generating_assets', 'lm_review', 'error']);
 
+// dot + label pairing for the shared list view (dot is the scan anchor).
+const STATUS_META: Record<string, { dot: string; label: string }> = {
+  idea:              { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
+  generating:        { dot: 'bg-sky-400',    label: 'text-sky-300' },
+  generating_assets: { dot: 'bg-sky-400',    label: 'text-sky-300' },
+  lm_review:         { dot: 'bg-amber-400',  label: 'text-amber-300' },
+  approved:          { dot: 'bg-emerald-400',label: 'text-emerald-300' },
+  scheduled:         { dot: 'bg-emerald-400',label: 'text-emerald-300' },
+  ready:             { dot: 'bg-emerald-500',label: 'text-emerald-300' },
+  disqualified:      { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
+  error:             { dot: 'bg-red-500',    label: 'text-red-400' },
+  draft:             { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
+};
+
+function lmDate(iso: string | null | undefined): string | undefined {
+  if (!iso) return undefined;
+  try { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch { return undefined; }
+}
+
 const LeadMagnetStudioPanel: React.FC = () => {
   const { drafts, loading, refresh } = useLeadMagnets();
   const [topic, setTopic] = useState('');
@@ -48,7 +68,13 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [formatFilter, setFormatFilter] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
-  const [view, setView] = useState<'grid' | 'board'>(() => (typeof window !== 'undefined' && localStorage.getItem('lm-studio-view') === 'board' ? 'board' : 'grid'));
+  const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem('lm-studio-view');
+      if (v === 'board' || v === 'grid' || v === 'list') return v;
+    }
+    return 'list';
+  });
   React.useEffect(() => { try { localStorage.setItem('lm-studio-view', view); } catch {} }, [view]);
 
   const statusCounts = React.useMemo(() => {
@@ -106,6 +132,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
         <h2 className="text-lg font-semibold text-zinc-100">Lead Magnet Studio</h2>
         <div className="ml-auto flex items-center gap-1">
           <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+            <button
+              onClick={() => setView('list')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'list' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="List view (grouped by status)"
+            ><ListIcon className="w-3.5 h-3.5" /> List</button>
             <button
               onClick={() => setView('grid')}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'grid' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -207,6 +238,23 @@ const LeadMagnetStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No lead magnets yet — create one above.</div>
       ) : visible.length === 0 ? (
         <div className="text-sm text-zinc-500">No lead magnets match the current filter.</div>
+      ) : view === 'list' ? (
+        <StudioListView
+          rows={visible.map((d) => ({
+            id: d.id,
+            title: d.topic || '(untitled)',
+            excerpt: (d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined,
+            status: d.status,
+            thumbUrl: d.coverUrl || null,
+            kicker: 'LM',
+            date: lmDate(d.updatedAt),
+            chips: [d.format].filter(Boolean) as string[],
+          }))}
+          statusOrder={STATUS_ORDER}
+          statusMeta={STATUS_META}
+          pinned={PINNED_STATUSES}
+          onOpen={setOpenId}
+        />
       ) : view === 'board' ? (
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
           {STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s)).map((status) => {

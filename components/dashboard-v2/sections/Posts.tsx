@@ -1,41 +1,39 @@
 import React, { useState, lazy, Suspense } from 'react';
 
 /**
- * Merged Lead Magnets section.
+ * Posts section — mirrors the Lead Magnets section structure for view parity.
  *
- * "Ideas" = the upstream curator feed (LmIdeasPanel — curator-decided ideas,
- * approve flows through Editorial v2 → lm_drafts_v2).
- * "Drafts" = lm_drafts_v2 (LeadMagnetStudioPanel — generate content + assets,
- * approve & publish).
+ * "Ideas" = the curator feed filtered to content_type='post' (shared IdeasPanel).
+ * "Drafts" = carousel_drafts (PostStudioPanel — text/single-image/carousel).
  *
- * Living together so the LM lifecycle is in one place: idea → approval → draft
- * → content → assets → live.
+ * Same two-tab shape as LeadMagnets (Ideas → Drafts) so both content surfaces
+ * behave identically.
  */
 const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
-const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
+const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 
-type LmKey = 'ideas' | 'drafts';
+type PKey = 'ideas' | 'drafts';
 
-const LABELS: Record<LmKey, string> = {
+const LABELS: Record<PKey, string> = {
   ideas: 'Ideas',
   drafts: 'Drafts',
 };
 
-const ORDER: LmKey[] = ['ideas', 'drafts'];
+const ORDER: PKey[] = ['ideas', 'drafts'];
 
-function getInitialLm(): LmKey {
-  if (typeof window === 'undefined') return 'ideas';
+function getInitial(): PKey {
+  if (typeof window === 'undefined') return 'drafts';
   const params = new URLSearchParams(window.location.search);
-  const k = params.get('lm') as LmKey | null;
+  const k = params.get('p') as PKey | null;
   if (k && ORDER.includes(k)) return k;
-  return 'ideas';
+  return 'drafts';
 }
 
-function syncLmToUrl(k: LmKey) {
+function syncToUrl(k: PKey) {
   if (typeof window === 'undefined') return;
   const url = new URL(window.location.href);
-  if (url.searchParams.get('lm') !== k) {
-    url.searchParams.set('lm', k);
+  if (url.searchParams.get('p') !== k) {
+    url.searchParams.set('p', k);
     window.history.replaceState(null, '', url.toString());
   }
 }
@@ -44,25 +42,25 @@ const Loading = () => (
   <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading…</div>
 );
 
-export function LeadMagnets() {
-  const [k, setK] = useState<LmKey>(getInitialLm);
+export function Posts() {
+  const [k, setK] = useState<PKey>(getInitial);
 
   const handle = (v: string) => {
-    setK(v as LmKey);
-    syncLmToUrl(v as LmKey);
+    setK(v as PKey);
+    syncToUrl(v as PKey);
   };
 
   const render = () => {
     switch (k) {
-      case 'ideas':  return <LmIdeasPanel contentType="lead_magnet" />;
-      case 'drafts': return <LeadMagnetStudioPanel />;
+      case 'ideas':  return <LmIdeasPanel contentType="post" />;
+      case 'drafts': return <PostStudioPanel />;
     }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs uppercase tracking-wider text-zinc-500 mr-1">Lead Magnets</span>
+        <span className="text-xs uppercase tracking-wider text-zinc-500 mr-1">Posts</span>
         {ORDER.map((key) => (
           <button
             key={key}

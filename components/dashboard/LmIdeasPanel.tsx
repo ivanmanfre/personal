@@ -6,7 +6,8 @@ const ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 type Candidate = {
   id: string;
-  source: 'calls' | 'search_demand' | 'reddit_se';
+  source: string;
+  content_type?: string | null;
   raw_topic: string;
   evidence: any;
   composite_score: number | null;
@@ -39,7 +40,14 @@ type Feed = {
 function evidenceSummary(c: Candidate): string {
   if (!Array.isArray(c.evidence)) return '';
   if (c.source === 'calls') {
-    return `${c.evidence.length} call${c.evidence.length === 1 ? '' : 's'} (brain)`;
+    return `${c.evidence.length} call${c.evidence.length === 1 ? '' : 's'} (transcripts)`;
+  }
+  if (c.source === 'slack') {
+    return 'Slack discussion';
+  }
+  if (c.source === 'hacker_news') {
+    const top = c.evidence[0] || {};
+    return `Hacker News${top.points ? ` (${top.points} pts)` : ''}`;
   }
   if (c.source === 'reddit_se') {
     const top = c.evidence[0] || {};
@@ -54,11 +62,27 @@ function evidenceSummary(c: Candidate): string {
 
 const SOURCE_LABEL: Record<string, string> = {
   calls: 'Calls',
+  slack: 'Slack',
+  hacker_news: 'Hacker News',
   search_demand: 'Search demand',
   reddit_se: 'Reddit/SE',
 };
 
-export default function LmIdeasPanel() {
+// Decide which content_type bucket a candidate belongs to.
+// Posts view = content_type 'post'. Lead-magnet view = everything else
+// (explicit 'lead_magnet' OR legacy/null candidates that predate the split).
+function matchesContentType(c: Candidate, ct?: 'post' | 'lead_magnet'): boolean {
+  if (!ct) return true;
+  if (ct === 'post') return c.content_type === 'post';
+  return c.content_type !== 'post';
+}
+
+/**
+ * Shared curator ideas panel. Used by both the Posts section (contentType="post")
+ * and the Lead Magnets section (contentType="lead_magnet"), so both surfaces have
+ * an identical Ideas review queue — split only by the candidate's content_type.
+ */
+export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | 'lead_magnet' } = {}) {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +92,13 @@ export default function LmIdeasPanel() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [filterSource, setFilterSource] = useState<'all' | 'calls' | 'search_demand' | 'reddit_se'>('all');
+  const [filterSource, setFilterSource] = useState<'all' | string>('all');
   const [minScore, setMinScore] = useState(0);
   const [filterFormat, setFilterFormat] = useState<'all' | string>('all');
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const noun = contentType === 'post' ? 'post' : contentType === 'lead_magnet' ? 'lead magnet' : 'idea';
 
   const reload = useCallback(async () => {
     setLoading(true); setError(null);
@@ -93,12 +119,24 @@ export default function LmIdeasPanel() {
   const filtered = useMemo(() => {
     if (!feed) return [] as Candidate[];
     return feed.pending.filter(c => {
+      if (!matchesContentType(c, contentType)) return false;
       if (filterSource !== 'all' && c.source !== filterSource) return false;
       if (typeof c.composite_score === 'number' && c.composite_score < minScore) return false;
       if (filterFormat !== 'all' && c.format_recommendation !== filterFormat) return false;
       return true;
     });
-  }, [feed, filterSource, minScore, filterFormat]);
+  }, [feed, contentType, filterSource, minScore, filterFormat]);
+
+  // Promoted/archived carry content_type only when the feed selects it; filter
+  // defensively (an undefined content_type passes, so nothing silently vanishes).
+  const promotedList = useMemo(
+    () => (feed?.recent_promoted || []).filter(c => c.content_type === undefined || matchesContentType(c, contentType)),
+    [feed, contentType],
+  );
+  const archivedList = useMemo(
+    () => (feed?.recent_archived || []).filter(c => c.content_type === undefined || matchesContentType(c, contentType)),
+    [feed, contentType],
+  );
 
   const decide = useCallback(async (
     c: Candidate,
@@ -131,15 +169,11 @@ export default function LmIdeasPanel() {
   // within the panel or no other interactive element captures the key).
   useEffect(() => {
     function onKey(ev: KeyboardEvent) {
-      // Only act if the panel is mounted and visible.
       if (!containerRef.current) return;
-      // Skip if user is typing in an input/textarea/select anywhere.
       const tag = (ev.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      // Skip if focused element is contentEditable.
       const target = ev.target as HTMLElement | null;
       if (target?.isContentEditable) return;
-      // Skip if event was already handled or modifier keys are pressed.
       if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
 
       if (showHelp && ev.key === '?') { setShowHelp(false); return; }
@@ -166,17 +200,23 @@ export default function LmIdeasPanel() {
 
   const formats = useMemo(() => {
     const s = new Set<string>();
-    (feed?.pending || []).forEach(c => { if (c.format_recommendation) s.add(c.format_recommendation); });
+    (feed?.pending || []).forEach(c => { if (matchesContentType(c, contentType) && c.format_recommendation) s.add(c.format_recommendation); });
     return Array.from(s).sort();
-  }, [feed]);
+  }, [feed, contentType]);
+
+  const sources = useMemo(() => {
+    const s = new Set<string>();
+    (feed?.pending || []).forEach(c => { if (matchesContentType(c, contentType) && c.source) s.add(c.source); });
+    return Array.from(s).sort();
+  }, [feed, contentType]);
 
   if (loading && !feed) return <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)' }}>Loading ideas…</div>;
   if (error && !feed) return <div style={{ padding: '2rem 0', color: '#c62828' }}>Error: {error} <button onClick={reload} style={{ marginLeft: 8 }}>Retry</button></div>;
   if (!feed) return null;
 
-  const promotedCount = feed.recent_promoted.length;
-  const reviewingCount = feed.pending.length;
-  const archivedCount = feed.recent_archived.length;
+  const promotedCount = promotedList.length;
+  const reviewingCount = filtered.length;
+  const archivedCount = archivedList.length;
 
   return (
     <div ref={containerRef} style={{ padding: '8px 0 24px', color: 'var(--d-paper)' }}>
@@ -191,11 +231,9 @@ export default function LmIdeasPanel() {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <label style={{ fontSize: 12 }}>Source
-          <select value={filterSource} onChange={e => setFilterSource(e.target.value as any)} style={{ marginLeft: 6 }}>
+          <select value={filterSource} onChange={e => setFilterSource(e.target.value)} style={{ marginLeft: 6 }}>
             <option value="all">All sources</option>
-            <option value="calls">Calls</option>
-            <option value="search_demand">Search demand</option>
-            <option value="reddit_se">Reddit/SE</option>
+            {sources.map(s => <option key={s} value={s}>{SOURCE_LABEL[s] || s}</option>)}
           </select>
         </label>
         <label style={{ fontSize: 12 }}>Min score
@@ -215,7 +253,7 @@ export default function LmIdeasPanel() {
       <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '12px 0 8px' }}>Review queue ({filtered.length})</h3>
       {filtered.length === 0 ? (
         <div style={{ padding: 18, border: '1px dashed #333', borderRadius: 8, fontSize: 13, color: 'var(--d-paper-dim)' }}>
-          No ideas to review right now. Curator next runs Friday 9am Europe/London. Last feed refresh: {new Date(feed.metrics.last_refresh).toLocaleString()}.
+          No {noun} ideas to review right now. The curator scans sources daily. Last feed refresh: {new Date(feed.metrics.last_refresh).toLocaleString()}.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -241,7 +279,7 @@ export default function LmIdeasPanel() {
                       </span>
                     )}
                   </span>
-                  <span style={{ fontSize: 10, color: 'var(--d-paper-dim)' }}>{SOURCE_LABEL[c.source]} · {new Date(c.ingested_at).toLocaleDateString()}</span>
+                  <span style={{ fontSize: 10, color: 'var(--d-paper-dim)' }}>{SOURCE_LABEL[c.source] || c.source} · {new Date(c.ingested_at).toLocaleDateString()}</span>
                 </div>
 
                 <input
@@ -297,12 +335,12 @@ export default function LmIdeasPanel() {
         </div>
       )}
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '24px 0 8px' }}>This week's approved ({promotedCount}) <span style={{ fontWeight: 400, opacity: 0.6 }}>— ideas you (or the curator's auto-rules) moved into the LM drafts queue</span></h3>
+      <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '24px 0 8px' }}>This week's approved ({promotedCount}) <span style={{ fontWeight: 400, opacity: 0.6 }}>— ideas you (or the curator's auto-rules) moved into the drafts queue</span></h3>
       {promotedCount === 0 ? (
         <div style={{ fontSize: 13, color: 'var(--d-paper-dim)' }}>None this week.</div>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {feed.recent_promoted.map(c => (
+          {promotedList.map(c => (
             <li key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '6px 10px', border: '1px solid #2A8F65', borderRadius: 6 }}>
               <span>↳ {c.raw_topic}</span>
               <span style={{ display: 'flex', gap: 8 }}>
@@ -327,10 +365,10 @@ export default function LmIdeasPanel() {
       </h3>
       {showArchived && (
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {feed.recent_archived.map(c => (
+          {archivedList.map(c => (
             <li key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, padding: '4px 10px', borderBottom: '1px solid #222' }}>
               <span>
-                <span style={{ opacity: 0.6 }}>[{SOURCE_LABEL[c.source]}]</span> {c.raw_topic}{' '}
+                <span style={{ opacity: 0.6 }}>[{SOURCE_LABEL[c.source] || c.source}]</span> {c.raw_topic}{' '}
                 <span style={{ opacity: 0.5 }}>— {c.archived_reason || 'no_reason'}</span>
               </span>
               <button onClick={() => decide(c, 'rescue')} disabled={busyId === c.id}
