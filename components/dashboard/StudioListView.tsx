@@ -137,13 +137,53 @@ export function StudioListView({
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
+  // Persisted column order — drag a column header to reorder. Keyed by
+  // groupByStatus prop so post + LM lists keep separate orders. Falls back
+  // to the default ALL_COLS order when no saved order exists or schema drifted.
+  const orderKey = `studio-cols-${groupByStatus || 'flat'}`;
+  const [customOrder, setCustomOrder] = useState<SortKey[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = localStorage.getItem(orderKey);
+      if (raw) return JSON.parse(raw) as SortKey[];
+    } catch {}
+    return [];
+  });
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { localStorage.setItem(orderKey, JSON.stringify(customOrder)); } catch {}
+  }, [customOrder, orderKey]);
+  const [draggingCol, setDraggingCol] = useState<SortKey | null>(null);
+
   const cols = useMemo(() => {
-    // When grouped by status, hide the redundant status column — UNLESS inline
-    // status editing is on, in which case we keep it so users still have a
-    // single-click way to move a row between groups.
     const skipStatus = !!groupByStatus && !onStatusChange;
-    return ALL_COLS.filter((c) => !hiddenCols.has(c.key) && !(skipStatus && c.key === 'status'));
-  }, [hiddenCols, groupByStatus, onStatusChange]);
+    const allKeys = ALL_COLS.map((c) => c.key);
+    // Apply custom order first, then any keys not in custom order keep default position
+    const ordered = customOrder.length
+      ? [...customOrder.filter((k) => allKeys.includes(k)), ...allKeys.filter((k) => !customOrder.includes(k))]
+      : allKeys;
+    return ordered
+      .map((k) => ALL_COLS.find((c) => c.key === k)!)
+      .filter((c) => !hiddenCols.has(c.key) && !(skipStatus && c.key === 'status'));
+  }, [hiddenCols, groupByStatus, onStatusChange, customOrder]);
+
+  function reorderCols(dragged: SortKey, dropTarget: SortKey) {
+    if (dragged === dropTarget) return;
+    const allKeys = ALL_COLS.map((c) => c.key);
+    const base = customOrder.length ? [...customOrder] : [...allKeys];
+    const from = base.indexOf(dragged);
+    if (from === -1) base.push(dragged);
+    base.splice(base.indexOf(dragged), 1);
+    const to = base.indexOf(dropTarget);
+    if (to === -1) {
+      base.push(dragged);
+    } else {
+      base.splice(to, 0, dragged);
+    }
+    // Make sure every key is represented so future renders are stable
+    for (const k of allKeys) if (!base.includes(k)) base.push(k);
+    setCustomOrder(base);
+  }
   const gridTemplate = useMemo(() => {
     const base = cols.map((c) => c.width).join(' ');
     return onBulkAction ? `32px ${base}` : base;
@@ -223,11 +263,32 @@ export function StudioListView({
         )}
         {cols.map((c) => {
           const active = sortKey === c.key;
+          const isDragging = draggingCol === c.key;
           return (
             <button
               key={c.key}
               onClick={() => toggleSort(c.key)}
-              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-zinc-200' : 'hover:text-zinc-300'} text-left transition-colors`}
+              draggable
+              onDragStart={(e) => {
+                setDraggingCol(c.key);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/x-col', c.key);
+              }}
+              onDragEnd={() => setDraggingCol(null)}
+              onDragOver={(e) => {
+                if (draggingCol && draggingCol !== c.key) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const dragged = (e.dataTransfer.getData('text/x-col') || draggingCol || '') as SortKey;
+                if (dragged) reorderCols(dragged, c.key);
+                setDraggingCol(null);
+              }}
+              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-zinc-200' : 'hover:text-zinc-300'} text-left transition-colors cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${draggingCol && draggingCol !== c.key ? 'hover:bg-emerald-500/10 hover:ring-1 hover:ring-emerald-500/40 rounded' : ''}`}
+              title="Drag to reorder · click to sort"
             >
               {c.label}
               {active ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}

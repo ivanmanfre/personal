@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Sparkles, MessageSquareDashed, CheckCircle2, Al
 import type { AgentLogEntry } from '../../hooks/useContentLibrary';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
+import { renderLightMarkdown } from '../../lib/lightMarkdown';
 
 /**
  * Chronological agent commentary feed — mirrors the comment stream that used to
@@ -78,9 +79,13 @@ interface Props {
   rowId?: string;
   /** Called after a successful note write so the parent can refresh. */
   onNoteAdded?: () => void;
+  /** Render entry bodies as markdown (paragraphs, lists, bold, code, label-prefixes)
+   *  instead of the raw <pre> block. The QA / Editorial agents emit markdown-ish
+   *  bodies that look much better rendered. */
+  renderMarkdown?: boolean;
 }
 
-const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onNoteAdded }) => {
+const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onNoteAdded, renderMarkdown = false }) => {
   const sorted = React.useMemo(
     () => [...entries].sort((a, b) => (b.ts || '').localeCompare(a.ts || '')),
     [entries],
@@ -187,7 +192,9 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
                 </div>
                 <div className="mt-1.5">
                   {expanded || !truncated ? (
-                    <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans">{e.body || '(empty)'}</pre>
+                    renderMarkdown
+                      ? <div className="text-[12px] text-zinc-300 leading-snug">{renderLightMarkdown(e.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
+                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans">{e.body || '(empty)'}</pre>
                   ) : (
                     <p className="text-[12px] text-zinc-400 line-clamp-2">{preview}{truncated ? '…' : ''}</p>
                   )}

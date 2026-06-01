@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent } from '../../lib/studioActions';
+import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
@@ -157,14 +158,14 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
       {/* 2-column body: left = editing surface, right = preview + actions */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
-        {/* LEFT COLUMN — copy editing + context */}
+        {/* LEFT COLUMN — context first (source + agent activity), then copy editing */}
         <div className="space-y-4 min-w-0">
-          {/* QA verdict timeline — pulls all QA-agent passes from agent_log, shows
-              score trend across iterations. Falls back to nothing if no QA entries
-              exist (e.g. a draft that hasn't been QA'd yet). */}
+          {/* Source briefing on top — the raw material that fed generation. */}
+          <SourceBriefing description={draft.description} upstream={upstream} defaultOpen />
+
+          {/* QA verdict timeline */}
           <QAVerdictPanel entries={draft.agentLog} />
-          {/* Final fallback: if QAVerdictPanel had no entries but qa column does carry a verdict
-              (older drafts whose agent_log wasn't backfilled), still show the legacy banner. */}
+          {/* Final fallback for older drafts whose agent_log wasn't backfilled */}
           {qa && qa.verdict && !draft.agentLog.some((e) => /QA|HALT/i.test(e.agent)) && (
             <div className={`rounded-md border px-3 py-2 text-xs ${
               qa.verdict === 'PASS'
@@ -174,6 +175,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               QA: {qa.verdict}{qa.failing_slides?.length ? ` — slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
             </div>
           )}
+
+          {/* Agent activity — moved up so the conversation history is visible
+              without scrolling. Default-open with markdown-rendered bodies. */}
+          <AgentLogFeed
+            entries={draft.agentLog}
+            table="carousel_drafts"
+            rowId={draft.id}
+            onNoteAdded={onChanged}
+            defaultOpen
+            renderMarkdown
+          />
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -233,16 +245,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             )}
           </div>
 
-          <SourceBriefing description={draft.description} upstream={upstream} />
-
           <FieldGrid draft={draft} />
-
-          <AgentLogFeed
-            entries={draft.agentLog}
-            table="carousel_drafts"
-            rowId={draft.id}
-            onNoteAdded={onChanged}
-          />
         </div>
 
         {/* RIGHT COLUMN — visual preview + scheduling + actions */}
@@ -277,36 +280,77 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             </Card>
           )}
 
-          <Card>
-            <CardLabel>Schedule</CardLabel>
-            <Input
-              type="datetime-local"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-              title="Leave empty to auto-pick the next free 9am slot"
-              className="mb-2 py-1.5"
-            />
-            <Button
-              variant="primary"
-              block
-              disabled={!!busy}
-              onClick={async () => {
-                let iso: string;
-                if (when) {
-                  iso = new Date(when).toISOString();
-                } else {
-                  const slot = await findNextSlot();
-                  iso = slot.toISOString();
-                  setWhen(toDatetimeLocalString(slot));
-                  toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
-                }
-                run('schedule', () => scheduleCarousel(draft.id, iso), 'Scheduled');
-              }}
-            >
-              {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
-              {when ? 'Approve & schedule' : 'Approve · auto-slot'}
-            </Button>
-          </Card>
+          {/* Suggestion-status posts have no content yet — show Generate, not Approve.
+              Once review/approved, swap to Schedule card. */}
+          {draft.status === 'idea' || draft.status === 'suggestion' ? (
+            <Card>
+              <CardLabel>Generate</CardLabel>
+              <p className="text-[11.5px] text-zinc-500 mb-2 leading-snug">
+                This post is a suggestion. Fire generation to draft the LinkedIn copy{draft.type === 'carousel' ? ' + carousel slides' : ''} (~{draft.type === 'carousel' ? '2 min' : '8 min'}).
+              </p>
+              <Button
+                variant="primary"
+                block
+                disabled={!!busy}
+                onClick={() => {
+                  if (draft.type === 'carousel') {
+                    const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
+                    run('generate', () => buildCarousel({
+                      carousel_id: carouselId,
+                      topic: draft.topic || draft.title || '',
+                      key_points: [],
+                    }), 'Generation fired');
+                  } else {
+                    run('generate', () => generatePostContent({
+                      draft_id: draft.id,
+                      topic: draft.topic || draft.title || '',
+                      title: draft.title || draft.topic || '',
+                      author: 'Ivan',
+                      source: (tax.source as string) || 'Studio',
+                      post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
+                      post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
+                      include_image: draft.type === 'single_image' ? 'Yes' : 'No',
+                      image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
+                    }), 'Generation fired (~8 min)');
+                  }
+                }}
+              >
+                {busy === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {busy === 'generate' ? 'Firing…' : 'Generate content'}
+              </Button>
+            </Card>
+          ) : (
+            <Card>
+              <CardLabel>Schedule</CardLabel>
+              <Input
+                type="datetime-local"
+                value={when}
+                onChange={(e) => setWhen(e.target.value)}
+                title="Leave empty to auto-pick the next free 9am slot"
+                className="mb-2 py-1.5"
+              />
+              <Button
+                variant="primary"
+                block
+                disabled={!!busy}
+                onClick={async () => {
+                  let iso: string;
+                  if (when) {
+                    iso = new Date(when).toISOString();
+                  } else {
+                    const slot = await findNextSlot();
+                    iso = slot.toISOString();
+                    setWhen(toDatetimeLocalString(slot));
+                    toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+                  }
+                  run('schedule', () => scheduleCarousel(draft.id, iso), 'Scheduled');
+                }}
+              >
+                {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
+                {when ? 'Approve & schedule' : 'Approve · auto-slot'}
+              </Button>
+            </Card>
+          )}
 
           <div className="space-y-2">
             <Button
