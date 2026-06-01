@@ -312,25 +312,27 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
         </div>
       )}
 
-      {/* New post — collapsed by default */}
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/50">
+      {/* New post — collapsed by default. Polished container with subtle gradient. */}
+      <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/50 to-zinc-950/30 overflow-hidden shadow-lg shadow-black/10">
         <button
           onClick={() => setFormOpen((v) => !v)}
-          className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-zinc-300 hover:bg-zinc-900"
+          className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] font-medium text-zinc-200 hover:bg-zinc-900/40 transition-colors group"
         >
-          <Plus className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="w-6 h-6 rounded-md bg-emerald-500/15 ring-1 ring-emerald-500/30 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
+            <Plus className="w-3.5 h-3.5 text-emerald-300" />
+          </span>
           New post
-          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
+          <span className="ml-auto text-zinc-500 transition-transform">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
         </button>
         {formOpen && (
           <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60">
-            <div className="flex items-center gap-2 text-xs pt-3">
-              <span className="text-zinc-400">Type</span>
+            <div className="flex items-center gap-1.5 text-xs pt-3">
+              <span className="text-zinc-500 mr-1 font-medium tracking-tight">Type</span>
               {(['text','single_image','carousel'] as PostType[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`rounded px-3 py-1 ${type === t ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                  className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' : 'bg-zinc-900/40 text-zinc-400 ring-1 ring-inset ring-zinc-800/80 hover:text-zinc-200 hover:ring-zinc-700'}`}
                 >{TYPE_LABELS[t]}</button>
               ))}
             </div>
@@ -338,7 +340,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder={type === 'carousel' ? 'Topic — e.g. Why hiring more people made your firm slower' : "Topic — e.g. Stop hiring to fix a process you haven't automated yet"}
-              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+              className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
             />
             {type === 'carousel' ? (
               <textarea
@@ -346,7 +348,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onChange={(e) => setKeyPoints(e.target.value)}
                 placeholder="Key points (one per line, optional)"
                 rows={3}
-                className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
               />
             ) : (
               <textarea
@@ -354,13 +356,13 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onChange={(e) => setDetails(e.target.value)}
                 placeholder="Post format details (optional)"
                 rows={2}
-                className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
+                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
               />
             )}
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400/30 transition-all"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {buttonLabel}
@@ -394,37 +396,38 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
-                    isActive ? 'bg-emerald-600/90 text-white' :
-                    isCritical ? 'text-red-300 hover:bg-red-950/40' :
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                    isActive ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' :
+                    isCritical ? 'text-red-300 hover:bg-red-500/10 hover:ring-1 hover:ring-inset hover:ring-red-500/30' :
                     isPinned && count === 0 ? 'text-zinc-600 hover:text-zinc-400' :
-                    'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                    'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 hover:ring-1 hover:ring-inset hover:ring-zinc-700/60'
                   }`}
                 >
-                  {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />}
-                  {s === 'all' ? 'All' : statusLabel(s)}
-                  {count > 0 && <span className="opacity-60 tabular-nums">{count}</span>}
+                  {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-300' : dot}`} />}
+                  <span className="leading-none">{s === 'all' ? 'All' : statusLabel(s)}</span>
+                  {count > 0 && <span className={`tabular-nums text-[10.5px] leading-none ${isActive ? 'opacity-80' : 'opacity-60'}`}>{count}</span>}
                 </button>
               );
             })}
-            <span className="text-zinc-700 mx-1">·</span>
+            <span className="text-zinc-700 mx-1.5 h-4 w-px bg-zinc-800/80" />
             {(['all', 'text', 'single_image', 'carousel'] as const).filter((t) => t === 'all' || typeCounts[t]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
-                  typeFilter === t ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                  typeFilter === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10'
+                                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 hover:ring-1 hover:ring-inset hover:ring-zinc-700/60'
                 }`}
               >
-                {t === 'all' ? 'All' : t === 'single_image' ? 'single image' : t}
-                {(typeCounts[t] || 0) > 0 && t !== 'all' && <span className="opacity-60 tabular-nums">{typeCounts[t] || 0}</span>}
+                <span className="leading-none">{t === 'all' ? 'All' : t === 'single_image' ? 'Single image' : t === 'carousel' ? 'Carousel' : 'Text'}</span>
+                {(typeCounts[t] || 0) > 0 && t !== 'all' && <span className={`tabular-nums text-[10.5px] leading-none ${typeFilter === t ? 'opacity-80' : 'opacity-60'}`}>{typeCounts[t] || 0}</span>}
               </button>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5 text-zinc-500">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="rounded bg-transparent border border-zinc-800 px-1.5 py-0.5 text-zinc-300 hover:border-zinc-700"
+                className="rounded-md bg-zinc-900/40 ring-1 ring-inset ring-zinc-800/80 px-2 py-1 text-zinc-300 hover:ring-zinc-700 cursor-pointer transition-colors text-[11px]"
               >
                 <option value="auto">Sort: smart</option>
                 <option value="updated">Sort: updated</option>
@@ -433,8 +436,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
-                  className={`rounded px-1.5 py-0.5 transition ${
-                    showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
+                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[11px] ${
+                    showDisqualified ? 'text-zinc-200 bg-zinc-800/80 ring-1 ring-inset ring-zinc-700' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/40'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >

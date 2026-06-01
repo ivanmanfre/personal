@@ -19,8 +19,8 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { padded?: bo
 }) => (
   <div
     className={cn(
-      'rounded-lg border border-zinc-800/70 bg-zinc-900/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]',
-      padded && 'p-3',
+      'rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/40 to-zinc-950/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_12px_rgba(0,0,0,0.2)]',
+      padded && 'p-3.5',
       className,
     )}
     {...rest}
@@ -56,10 +56,10 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
     md: 'px-3 py-2 text-sm',
   };
   const variants: Record<BtnVariant, string> = {
-    primary:   'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm',
-    secondary: 'bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-900 text-zinc-200 border border-zinc-700/40',
+    primary:   'bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:from-emerald-600 active:to-emerald-700 text-white shadow-md shadow-emerald-900/30 ring-1 ring-emerald-400/30',
+    secondary: 'bg-zinc-800/70 hover:bg-zinc-700/80 active:bg-zinc-800 text-zinc-200 ring-1 ring-zinc-700/60 shadow-sm',
     ghost:     'bg-transparent hover:bg-zinc-800/60 text-zinc-300',
-    danger:    'bg-red-600 hover:bg-red-500 text-white shadow-sm',
+    danger:    'bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-md shadow-red-900/30 ring-1 ring-red-400/30',
   };
   return (
     <button
@@ -102,7 +102,7 @@ export const Badge: React.FC<React.HTMLAttributes<HTMLSpanElement> & {
 };
 
 // ─── Input + Textarea ────────────────────────────────────────────────────────
-const fieldBase = 'w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-emerald-500/30';
+const fieldBase = 'w-full rounded-lg bg-zinc-950/60 ring-1 ring-inset ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:outline-none focus:ring-emerald-500/40 focus:bg-zinc-950';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...rest }, ref) => <input ref={ref} className={cn(fieldBase, className)} {...rest} />
@@ -151,23 +151,29 @@ export const Divider: React.FC<{ className?: string }> = ({ className }) => (
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 /** Pulsing rounded bar for loading states. Use width via className. */
+// Modern skeleton with shimmer sweep
 export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...rest }) => (
   <div
-    className={cn('animate-pulse rounded bg-zinc-800/60', className)}
+    className={cn(
+      'relative overflow-hidden rounded-md bg-zinc-800/50',
+      'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.6s_infinite]',
+      'before:bg-gradient-to-r before:from-transparent before:via-zinc-700/40 before:to-transparent',
+      className,
+    )}
     {...rest}
   />
 );
 
 /** Studio list skeleton row — placeholder with thumb + title bar + meta bars matching list layout. */
 export const ListRowSkeleton: React.FC = () => (
-  <div className="flex items-center gap-3 px-3 py-2 border-b border-zinc-800/40">
-    <Skeleton className="w-7 h-7 shrink-0" />
+  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-zinc-800/30">
+    <Skeleton className="w-8 h-8 shrink-0 rounded-lg" />
     <div className="flex-1 min-w-0 space-y-1.5">
       <Skeleton className="h-3 w-3/5" />
       <Skeleton className="h-2.5 w-2/5 opacity-60" />
     </div>
-    <Skeleton className="h-3 w-12 hidden md:block" />
-    <Skeleton className="h-3 w-14 hidden lg:block" />
-    <Skeleton className="h-3 w-16" />
+    <Skeleton className="h-4 w-16 hidden md:block rounded" />
+    <Skeleton className="h-4 w-14 hidden lg:block rounded" />
+    <Skeleton className="h-3 w-16 rounded" />
   </div>
 );

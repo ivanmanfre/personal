@@ -51,6 +51,29 @@ const ALL_COLS: { key: SortKey; label: string; width: string; visible?: 'always'
 ];
 
 const STRENGTH_RANK: Record<string, number> = { High: 1, Medium: 2, Low: 3 };
+
+// Smart date format — relative for near dates, absolute for far. Returns a
+// {primary, tint} pair so we can color past-due rows red, near-future amber.
+function formatSmartDate(ms: number | undefined, hasRow = true): { text: string; tint: string } {
+  if (!ms || !hasRow) return { text: '', tint: '' };
+  const now = Date.now();
+  const diffMs = ms - now;
+  const absHr = Math.abs(diffMs) / 3600_000;
+  const absD = Math.abs(diffMs) / 86_400_000;
+  if (diffMs > 0) {
+    // future
+    if (absHr < 24) return { text: `in ${Math.round(absHr)}h`, tint: 'text-amber-300' };
+    if (absD < 7) return { text: `in ${Math.round(absD)}d`, tint: 'text-emerald-300' };
+    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-zinc-400' };
+  } else {
+    // past
+    if (absHr < 1) return { text: 'just now', tint: 'text-zinc-400' };
+    if (absHr < 24) return { text: `${Math.round(absHr)}h ago`, tint: 'text-zinc-400' };
+    if (absD < 7) return { text: `${Math.round(absD)}d ago`, tint: 'text-zinc-500' };
+    if (absD < 365) return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-zinc-500' };
+    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), tint: 'text-zinc-600' };
+  }
+}
 const STRENGTH_TINT: Record<string, string> = {
   High:   'text-emerald-300 bg-emerald-500/[0.08] ring-1 ring-inset ring-emerald-500/25',
   Medium: 'text-amber-300 bg-amber-500/[0.08] ring-1 ring-inset ring-amber-500/25',
@@ -314,7 +337,13 @@ export function StudioListView({
       {loading ? (
         <div>{[...Array(8)].map((_, i) => <ListRowSkeleton key={i} />)}</div>
       ) : sorted.length === 0 ? (
-        <div className="px-3 py-8 text-center text-sm text-zinc-600 italic">No rows match the current filter.</div>
+        <div className="px-6 py-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">
+            <ChevronDown className="w-5 h-5 text-zinc-600 rotate-[-45deg]" />
+          </div>
+          <div className="text-[13px] text-zinc-400 font-medium">No matching rows</div>
+          <div className="text-[11.5px] text-zinc-600 mt-0.5">Try clearing the filters above.</div>
+        </div>
       ) : groupByStatus ? (
         // Grouped — render a header per status, then its rows. Statuses that don't
         // appear in `sorted` are skipped entirely (no empty groups).
@@ -557,14 +586,19 @@ export function StudioListView({
                 </div>
               );
             }
+            const smart = formatSmartDate(r.dateSort, !!r.date);
             return (
               <div
                 key={c.key}
-                className={cls + (canEdit ? ' hover:bg-zinc-800/40 rounded px-1 -mx-1 cursor-pointer' : '')}
+                className={cls + (canEdit ? ' hover:bg-zinc-800/40 rounded-md px-1.5 -mx-1.5 py-0.5 -my-0.5 cursor-pointer transition-colors' : '')}
                 onClick={canEdit ? (e) => { e.stopPropagation(); setEditingDateId(r.id); } : undefined}
-                title={canEdit ? 'Click to reschedule' : undefined}
+                title={canEdit ? `Click to reschedule — ${r.date || ''}` : (r.date || undefined)}
               >
-                <span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || (canEdit ? <span className="text-zinc-600 italic">set date</span> : '')}</span>
+                {smart.text ? (
+                  <span className={`text-[11.5px] tabular-nums whitespace-nowrap font-medium ${smart.tint}`}>{smart.text}</span>
+                ) : canEdit ? (
+                  <span className="text-zinc-600 italic text-[11px]">set date</span>
+                ) : null}
               </div>
             );
           }
