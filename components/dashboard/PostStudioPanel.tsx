@@ -328,19 +328,28 @@ const PostStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No posts match the current filter.</div>
       ) : view === 'list' ? (
         <StudioListView
-          rows={visible.map((d) => ({
-            id: d.id,
-            title: d.title || d.topic || '(untitled)',
-            excerpt: d.postBody ? postExcerpt(d) : undefined,
-            status: d.status,
-            thumbUrl: (d.imageUrls && d.imageUrls[0]) || null,
-            kicker: d.type === 'carousel' ? 'CAROUSEL' : d.type === 'single_image' ? 'IMAGE' : 'TEXT',
-            date: formatScheduled(d.scheduledAt) || undefined,
-            chips: [(d.taxonomy as any)?.pillar, (d.taxonomy as any)?.hook_type].filter(Boolean) as string[],
-          }))}
-          statusOrder={STATUS_ORDER}
+          rows={visible.map((d) => {
+            const tax = (d.taxonomy as any) || {};
+            const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
+            // Drive PDFs aren't directly img-renderable; skip thumb for those
+            const isPdfThumb = imageThumb && /drive\.google\.com\/file\//.test(imageThumb);
+            return {
+              id: d.id,
+              title: d.title || d.topic || '(untitled)',
+              excerpt: d.postBody ? postExcerpt(d) : undefined,
+              status: d.status,
+              thumbUrl: isPdfThumb ? null : imageThumb,
+              kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : 'TXT',
+              date: formatScheduled(d.scheduledAt) || undefined,
+              dateSort: d.scheduledAt ? new Date(d.scheduledAt).getTime() : new Date(d.updatedAt).getTime(),
+              pillar: tax.pillar,
+              hookType: tax.hook_type,
+              valueTier: tax.value_tier,
+              source: tax.source,
+              formatLabel: d.type || undefined,
+            };
+          })}
           statusMeta={STATUS_META}
-          pinned={PINNED_STATUSES}
           onOpen={setOpenId}
         />
       ) : view === 'board' ? (

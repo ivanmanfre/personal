@@ -266,12 +266,15 @@ const LeadMagnetStudioPanel: React.FC = () => {
             thumbUrl: d.coverUrl || null,
             kicker: 'LM',
             date: lmDate(d.updatedAt),
-            chips: [d.format].filter(Boolean) as string[],
+            dateSort: d.updatedAt ? new Date(d.updatedAt).getTime() : 0,
+            formatLabel: d.format || undefined,
+            source: d.source || undefined,
+            valueTier: (d as any).topicStrength || undefined,
           }))}
-          statusOrder={STATUS_ORDER}
           statusMeta={STATUS_META}
-          pinned={PINNED_STATUSES}
           onOpen={setOpenId}
+          // LM doesn't have pillar/hook/tier in the same way carousels do; hide those columns
+          hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
         />
       ) : view === 'board' ? (
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
