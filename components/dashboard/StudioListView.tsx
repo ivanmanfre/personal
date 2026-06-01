@@ -27,23 +27,32 @@ export type StudioRow = {
   valueTier?: string;
   source?: string;
   formatLabel?: string;
+  topicStrength?: string;
 };
 
 export type StatusMeta = { dot: string; label: string };
 
-type SortKey = 'title' | 'status' | 'pillar' | 'hookType' | 'valueTier' | 'date' | 'source' | 'format';
+type SortKey = 'title' | 'status' | 'pillar' | 'hookType' | 'valueTier' | 'strength' | 'date' | 'source' | 'format';
 type SortDir = 'asc' | 'desc';
 
 const ALL_COLS: { key: SortKey; label: string; width: string; visible?: 'always' | 'gte-md' | 'gte-lg' }[] = [
-  { key: 'title',     label: 'Title',  width: 'minmax(0,1fr)' },
-  { key: 'status',    label: 'Status', width: '110px' },
-  { key: 'pillar',    label: 'Pillar', width: '120px', visible: 'gte-lg' },
-  { key: 'hookType',  label: 'Hook',   width: '120px', visible: 'gte-lg' },
-  { key: 'valueTier', label: 'Tier',   width: '110px', visible: 'gte-lg' },
-  { key: 'format',    label: 'Format', width: '100px', visible: 'gte-md' },
-  { key: 'source',    label: 'Source', width: '110px', visible: 'gte-md' },
-  { key: 'date',      label: 'Date',   width: '120px' },
+  { key: 'title',     label: 'Title',    width: 'minmax(0,1fr)' },
+  { key: 'status',    label: 'Status',   width: '108px' },
+  { key: 'pillar',    label: 'Pillar',   width: '118px', visible: 'gte-lg' },
+  { key: 'hookType',  label: 'Hook',     width: '118px', visible: 'gte-lg' },
+  { key: 'valueTier', label: 'Tier',     width: '108px', visible: 'gte-lg' },
+  { key: 'strength',  label: 'Strength', width: '90px',  visible: 'gte-md' },
+  { key: 'format',    label: 'Format',   width: '92px',  visible: 'gte-md' },
+  { key: 'source',    label: 'Source',   width: '108px', visible: 'gte-md' },
+  { key: 'date',      label: 'Date',     width: '116px' },
 ];
+
+const STRENGTH_RANK: Record<string, number> = { High: 1, Medium: 2, Low: 3 };
+const STRENGTH_TINT: Record<string, string> = {
+  High:   'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+  Medium: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+  Low:    'text-zinc-400 bg-zinc-700/30 border-zinc-700/40',
+};
 
 const TIER_RANK: Record<string, number> = {
   'T1 (Receipt+Insight)': 1, 'T2 (Pattern+Specifics)': 2, 'T3 (Sharp Opinion)': 3, 'T4 (Light/Bonding)': 4,
@@ -79,6 +88,7 @@ export function StudioListView({
         case 'pillar': av = a.pillar || ''; bv = b.pillar || ''; break;
         case 'hookType': av = a.hookType || ''; bv = b.hookType || ''; break;
         case 'valueTier': av = TIER_RANK[a.valueTier || ''] || 99; bv = TIER_RANK[b.valueTier || ''] || 99; break;
+        case 'strength': av = STRENGTH_RANK[a.topicStrength || ''] || 99; bv = STRENGTH_RANK[b.topicStrength || ''] || 99; break;
         case 'format': av = a.formatLabel || ''; bv = b.formatLabel || ''; break;
         case 'source': av = a.source || ''; bv = b.source || ''; break;
         case 'date':   av = a.dateSort || 0; bv = b.dateSort || 0; break;
@@ -166,6 +176,16 @@ export function StudioListView({
                 if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.pillar || '—'}</span></div>;
                 if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.hookType || '—'}</span></div>;
                 if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.valueTier || '—'}</span></div>;
+                if (c.key === 'strength') {
+                  const t = r.topicStrength || '';
+                  return (
+                    <div key={c.key} className={cls}>
+                      {t ? (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium uppercase tracking-wider ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
+                      ) : <span className="text-[11px] text-zinc-600">—</span>}
+                    </div>
+                  );
+                }
                 if (c.key === 'format')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.formatLabel || '—'}</span></div>;
                 if (c.key === 'source')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.source || '—'}</span></div>;
                 if (c.key === 'date')      return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || '—'}</span></div>;

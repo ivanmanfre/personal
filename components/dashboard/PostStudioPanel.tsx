@@ -347,6 +347,7 @@ const PostStudioPanel: React.FC = () => {
               valueTier: tax.value_tier,
               source: tax.source,
               formatLabel: d.type || undefined,
+              topicStrength: d.topicStrength || undefined,
             };
           })}
           statusMeta={STATUS_META}

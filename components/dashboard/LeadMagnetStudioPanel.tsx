@@ -269,7 +269,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
             dateSort: d.updatedAt ? new Date(d.updatedAt).getTime() : 0,
             formatLabel: d.format || undefined,
             source: d.source || undefined,
-            valueTier: (d as any).topicStrength || undefined,
+            topicStrength: d.topicStrength || undefined,
           }))}
           statusMeta={STATUS_META}
           onOpen={setOpenId}

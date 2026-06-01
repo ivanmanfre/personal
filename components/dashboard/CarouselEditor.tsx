@@ -8,6 +8,7 @@ import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
+import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 
 interface Props {
   draft: CarouselDraft;
@@ -162,25 +163,25 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             </div>
           )}
 
-          <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-            LinkedIn caption
-            <textarea
+          <div>
+            <FieldLabel>LinkedIn caption</FieldLabel>
+            <Textarea
               value={postBody}
               onChange={(e) => setPostBody(e.target.value)}
               rows={10}
-              className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13.5px] text-zinc-100 leading-relaxed focus:outline-none focus:border-zinc-600"
+              className="text-[13.5px] leading-relaxed"
             />
-          </label>
+          </div>
 
-          <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Instagram caption
-            <textarea
+          <div>
+            <FieldLabel>Instagram caption</FieldLabel>
+            <Textarea
               value={igCaption}
               onChange={(e) => setIgCaption(e.target.value)}
               rows={4}
-              className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13px] text-zinc-100 leading-relaxed focus:outline-none focus:border-zinc-600"
+              className="text-[13px] leading-relaxed"
             />
-          </label>
+          </div>
 
           <SourceBriefing description={draft.description} upstream={upstream} />
 
@@ -193,17 +194,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
 
         {/* RIGHT COLUMN — visual preview + scheduling + actions */}
-        <div className="space-y-4 min-w-0">
-          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Preview</div>
+        <div className="space-y-3 min-w-0">
+          <Card>
+            <CardLabel>Preview</CardLabel>
             {renderMedia()}
-          </div>
+          </Card>
 
           {hasImagery && (
-            <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+            <Card padded={false}>
               <button
                 onClick={() => setImageryOpen((v) => !v)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 font-medium hover:bg-zinc-900"
+                className="w-full flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500 font-semibold hover:bg-zinc-800/40 transition-colors"
               >
                 Imagery brief
                 <span className="ml-auto text-zinc-500">{imageryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
@@ -219,20 +220,22 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           )}
 
-          {/* Scheduling block — own card, prominent */}
-          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Schedule</div>
-            <input
+          <Card>
+            <CardLabel>Schedule</CardLabel>
+            <Input
               type="datetime-local"
               value={when}
               onChange={(e) => setWhen(e.target.value)}
-              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-zinc-600"
               title="Leave empty to auto-pick the next free 9am slot"
+              className="mb-2 py-1.5"
             />
-            <button
+            <Button
+              variant="primary"
+              block
+              disabled={!!busy}
               onClick={async () => {
                 let iso: string;
                 if (when) {
@@ -245,28 +248,29 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 }
                 run('schedule', () => scheduleCarousel(draft.id, iso), 'Scheduled');
               }}
-              disabled={!!busy}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-3 py-2 text-sm font-medium text-white"
             >
               {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
               {when ? 'Approve & schedule' : 'Approve · auto-slot'}
-            </button>
-          </div>
+            </Button>
+          </Card>
 
-          {/* Secondary actions */}
           <div className="space-y-2">
-            <button
+            <Button
+              variant="secondary"
+              block
+              disabled={!!busy}
               onClick={() => run('save draft', () => saveDraft({ id: draft.id, post_body: postBody, ig_caption: igCaption }), 'Saved')}
-              disabled={!!busy}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-3 py-2 text-sm text-zinc-200 border border-zinc-700/40">
+            >
               {busy === 'save draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save copy
-            </button>
-            <button
-              onClick={() => run('re-author', () => buildCarousel({ carousel_id: draft.id, topic: draft.topic || draft.title, draft_id: draft.id }), 'Re-authored')}
+            </Button>
+            <Button
+              variant="secondary"
+              block
               disabled={!!busy}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-3 py-2 text-sm text-zinc-200 border border-zinc-700/40">
+              onClick={() => run('re-author', () => buildCarousel({ carousel_id: draft.id, topic: draft.topic || draft.title, draft_id: draft.id }), 'Re-authored')}
+            >
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author <span className="text-[10px] text-zinc-500">~2 min</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

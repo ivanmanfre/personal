@@ -1,0 +1,150 @@
+import React from 'react';
+
+/**
+ * Studio UI primitives — Shadcn-style components, hand-rolled to match the
+ * dashboard's warm-dark + sage palette without pulling in the full Shadcn
+ * generator (Radix + tailwindcss-animate + clsx + class-variance-authority).
+ *
+ * Goal: a tiny set of building blocks that the dashboard panels + editors can
+ * standardize on, so chrome stops looking like a different person built each
+ * page. One Card, one Button, one Badge, one Input — consistent focus rings,
+ * consistent hover, consistent radii and padding.
+ */
+
+const cn = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
+
+// ─── Card ────────────────────────────────────────────────────────────────────
+export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { padded?: boolean }> = ({
+  className, padded = true, children, ...rest
+}) => (
+  <div
+    className={cn(
+      'rounded-lg border border-zinc-800/70 bg-zinc-900/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]',
+      padded && 'p-3',
+      className,
+    )}
+    {...rest}
+  >
+    {children}
+  </div>
+);
+
+export const CardLabel: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...rest }) => (
+  <div
+    className={cn(
+      'text-[10px] uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-2',
+      className,
+    )}
+    {...rest}
+  >
+    {children}
+  </div>
+);
+
+// ─── Button ──────────────────────────────────────────────────────────────────
+type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type BtnSize = 'sm' | 'md';
+
+export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: BtnVariant;
+  size?: BtnSize;
+  block?: boolean;
+}>(({ className, variant = 'secondary', size = 'md', block, children, ...rest }, ref) => {
+  const base = 'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:opacity-40 disabled:cursor-not-allowed';
+  const sizes: Record<BtnSize, string> = {
+    sm: 'px-2.5 py-1 text-xs',
+    md: 'px-3 py-2 text-sm',
+  };
+  const variants: Record<BtnVariant, string> = {
+    primary:   'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-sm',
+    secondary: 'bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-900 text-zinc-200 border border-zinc-700/40',
+    ghost:     'bg-transparent hover:bg-zinc-800/60 text-zinc-300',
+    danger:    'bg-red-600 hover:bg-red-500 text-white shadow-sm',
+  };
+  return (
+    <button
+      ref={ref}
+      className={cn(base, sizes[size], variants[variant], block && 'w-full', className)}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+});
+Button.displayName = 'Button';
+
+// ─── Badge ───────────────────────────────────────────────────────────────────
+type BadgeTone = 'neutral' | 'sage' | 'sky' | 'amber' | 'red' | 'violet';
+
+export const Badge: React.FC<React.HTMLAttributes<HTMLSpanElement> & {
+  tone?: BadgeTone;
+  size?: 'sm' | 'md';
+}> = ({ tone = 'neutral', size = 'sm', className, children, ...rest }) => {
+  const tones: Record<BadgeTone, string> = {
+    neutral: 'bg-zinc-800/70 text-zinc-300 border-zinc-700/50',
+    sage:    'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+    sky:     'bg-sky-500/10 text-sky-300 border-sky-500/30',
+    amber:   'bg-amber-500/10 text-amber-300 border-amber-500/30',
+    red:     'bg-red-500/10 text-red-300 border-red-500/30',
+    violet:  'bg-violet-500/10 text-violet-300 border-violet-500/30',
+  };
+  const sizes = size === 'sm'
+    ? 'px-1.5 py-0.5 text-[10.5px] uppercase tracking-wider font-medium'
+    : 'px-2 py-0.5 text-xs font-medium';
+  return (
+    <span
+      className={cn('inline-flex items-center gap-1 rounded border', sizes, tones[tone], className)}
+      {...rest}
+    >
+      {children}
+    </span>
+  );
+};
+
+// ─── Input + Textarea ────────────────────────────────────────────────────────
+const fieldBase = 'w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-colors focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-emerald-500/30';
+
+export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  ({ className, ...rest }, ref) => <input ref={ref} className={cn(fieldBase, className)} {...rest} />
+);
+Input.displayName = 'Input';
+
+export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  ({ className, ...rest }, ref) => <textarea ref={ref} className={cn(fieldBase, 'resize-y', className)} {...rest} />
+);
+Textarea.displayName = 'Textarea';
+
+// ─── FieldLabel ──────────────────────────────────────────────────────────────
+export const FieldLabel: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({
+  className, children, ...rest
+}) => (
+  <label
+    className={cn(
+      'block text-[10.5px] uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-1.5',
+      className,
+    )}
+    {...rest}
+  >
+    {children}
+  </label>
+);
+
+// ─── EmptyState ──────────────────────────────────────────────────────────────
+export const EmptyState: React.FC<{
+  icon?: React.ReactNode;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+}> = ({ icon, title, description, action }) => (
+  <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-8 text-center">
+    {icon && <div className="flex justify-center mb-2 text-zinc-600">{icon}</div>}
+    {title && <div className="text-sm text-zinc-300 font-medium">{title}</div>}
+    {description && <div className="mt-1 text-xs text-zinc-500 max-w-xs mx-auto leading-snug">{description}</div>}
+    {action && <div className="mt-3">{action}</div>}
+  </div>
+);
+
+// ─── Divider ─────────────────────────────────────────────────────────────────
+export const Divider: React.FC<{ className?: string }> = ({ className }) => (
+  <div className={cn('h-px bg-zinc-800/70', className)} />
+);
