@@ -5,6 +5,7 @@ import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
+import QAVerdictPanel from './QAVerdictPanel';
 import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
@@ -160,6 +161,8 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <pre className="whitespace-pre-wrap text-xs text-zinc-300 font-sans leading-snug">{draft.notes}</pre>
             </div>
           )}
+
+          <QAVerdictPanel entries={draft.agentLog} />
 
           <AgentLogFeed
             entries={draft.agentLog}

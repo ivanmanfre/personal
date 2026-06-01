@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import LeadMagnetEditor from './LeadMagnetEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
+import { driveThumbUrl } from '../../lib/driveThumb';
 
 const FORMATS = [
   'Checklist', 'Calculator', 'Interactive Assessment', 'Guide', 'AI Kit',
@@ -70,6 +71,13 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [formatFilter, setFormatFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [formOpen, setFormOpen] = useState(false);
+  const [showDisqualified, setShowDisqualified] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('lm-studio-show-disqualified') === '1';
+  });
+  React.useEffect(() => {
+    try { localStorage.setItem('lm-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
+  }, [showDisqualified]);
   const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('lm-studio-view');
@@ -96,6 +104,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
     const q = searchQuery.trim().toLowerCase();
     return drafts
       .filter((d) => {
+        if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
         if (statusFilter !== 'all' && d.status !== statusFilter) return false;
         if (formatFilter !== 'all' && (d.format || 'unknown') !== formatFilter) return false;
         if (q) {
@@ -105,7 +114,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, formatFilter, searchQuery]);
+  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -185,11 +194,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50">
         <button
           onClick={() => setFormOpen((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-900"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-zinc-300 hover:bg-zinc-900"
         >
-          <Plus className="w-4 h-4 text-emerald-400" />
+          <Plus className="w-3.5 h-3.5 text-emerald-400" />
           New lead magnet
-          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
         </button>
         {formOpen && (
           <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60 pt-3">
@@ -228,39 +237,59 @@ const LeadMagnetStudioPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Filters */}
+      {/* Filters — compact, muted, single line */}
       {drafts.length > 0 && (
-        <div className="space-y-2 text-xs">
+        <div className="space-y-1.5 text-[11.5px]">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by topic or body…"
-            className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
+            className="w-full rounded bg-zinc-950 border border-zinc-800 px-2.5 py-1 text-[12.5px] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
           />
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-zinc-500 mr-1">Status</span>
-            {(['all', ...STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s))] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`rounded-full px-2.5 py-1 transition ${statusFilter === s ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
-              >
-                {s === 'all' ? 'All' : s} <span className="opacity-60">{statusCounts[s] || 0}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-zinc-500 mr-1">Format</span>
-            {(['all', ...Object.keys(formatCounts).filter((k) => k !== 'all' && formatCounts[k])] as const).map((f) => (
+          <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-zinc-400">
+            {(['all', ...STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s))] as const).filter((s) => s !== 'disqualified').map((s) => {
+              const count = statusCounts[s] || 0;
+              const isActive = statusFilter === s;
+              const dot = s === 'all' ? null : STATUS_DOT[s];
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
+                    isActive ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                  }`}
+                >
+                  {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />}
+                  {s === 'all' ? 'All' : s}
+                  {count > 0 && <span className="opacity-60 tabular-nums">{count}</span>}
+                </button>
+              );
+            })}
+            <span className="text-zinc-700 mx-1">·</span>
+            {(['all', ...Object.keys(formatCounts).filter((k) => k !== 'all' && formatCounts[k])] as const).slice(0, 8).map((f) => (
               <button
                 key={f}
                 onClick={() => setFormatFilter(f)}
-                className={`rounded-full px-2.5 py-1 transition ${formatFilter === f ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
+                  formatFilter === f ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                }`}
               >
-                {f === 'all' ? 'All' : f} <span className="opacity-60">{formatCounts[f] || 0}</span>
+                {f === 'all' ? 'All' : f}
+                {(formatCounts[f] || 0) > 0 && f !== 'all' && <span className="opacity-60 tabular-nums">{formatCounts[f] || 0}</span>}
               </button>
             ))}
+            {(statusCounts.disqualified || 0) > 0 && (
+              <button
+                onClick={() => setShowDisqualified((v) => !v)}
+                className={`ml-auto rounded px-1.5 py-0.5 transition ${
+                  showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
+                }`}
+                title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
+              >
+                {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -279,7 +308,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
             title: d.topic || '(untitled)',
             excerpt: (d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined,
             status: d.status,
-            thumbUrl: d.coverUrl || null,
+            thumbUrl: driveThumbUrl(d.coverUrl, 96),
             kicker: 'LM',
             date: lmDate(d.updatedAt),
             dateSort: d.updatedAt ? new Date(d.updatedAt).getTime() : 0,
@@ -291,6 +320,17 @@ const LeadMagnetStudioPanel: React.FC = () => {
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
+          groupByStatus="lm-studio"
+          statusOrder={STATUS_ORDER}
+          statusChoices={STATUS_ORDER}
+          onStatusChange={async (id, next) => {
+            try {
+              const { error } = await supabase.from('lm_drafts_v2').update({ status: next }).eq('id', id);
+              if (error) throw error;
+              toast.success(`Status → ${next}`);
+              await refresh();
+            } catch (err) { toastError('update status', err); }
+          }}
           onBulkAction={async (action, ids) => {
             try {
               if (action === 'disqualify') {
@@ -345,7 +385,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
             >
               <div className="aspect-[16/9] bg-zinc-950 overflow-hidden relative">
                 {d.coverUrl
-                  ? <img src={d.coverUrl} alt="" className="w-full h-full object-cover" />
+                  ? <img src={driveThumbUrl(d.coverUrl, 400) || d.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                   : (
                     <div className="w-full h-full flex flex-col justify-center px-3 py-2 bg-gradient-to-br from-[#1c241f] via-[#161914] to-[#14110d]">
                       <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 mb-1">{d.format || 'Lead magnet'}</div>

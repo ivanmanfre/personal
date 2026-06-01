@@ -5,6 +5,7 @@ import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
+import QAVerdictPanel from './QAVerdictPanel';
 import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
@@ -156,7 +157,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
         {/* LEFT COLUMN — copy editing + context */}
         <div className="space-y-4 min-w-0">
-          {qa && qa.verdict && (
+          {/* QA verdict timeline — pulls all QA-agent passes from agent_log, shows
+              score trend across iterations. Falls back to nothing if no QA entries
+              exist (e.g. a draft that hasn't been QA'd yet). */}
+          <QAVerdictPanel entries={draft.agentLog} />
+          {/* Final fallback: if QAVerdictPanel had no entries but qa column does carry a verdict
+              (older drafts whose agent_log wasn't backfilled), still show the legacy banner. */}
+          {qa && qa.verdict && !draft.agentLog.some((e) => /QA|HALT/i.test(e.agent)) && (
             <div className={`rounded-md border px-3 py-2 text-xs ${
               qa.verdict === 'PASS'
                 ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-300'

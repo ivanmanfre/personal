@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
+import { driveThumbUrl } from '../../lib/driveThumb';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -62,6 +63,15 @@ const PostStudioPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'auto' | 'updated' | 'scheduled'>('auto');
   const [formOpen, setFormOpen] = useState(false);
+  // Disqualified rows hidden by default — Ivan never wants to scroll past 33 dead drafts.
+  // Toggle exposed as a small footer button. Persists across sessions.
+  const [showDisqualified, setShowDisqualified] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('post-studio-show-disqualified') === '1';
+  });
+  React.useEffect(() => {
+    try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
+  }, [showDisqualified]);
   const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('post-studio-view');
@@ -92,6 +102,8 @@ const PostStudioPanel: React.FC = () => {
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const filtered = drafts.filter((d) => {
+      // Hide disqualified unless explicitly toggled OR user is drilled into that status
+      if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
       if (statusFilter !== 'all' && d.status !== statusFilter) return false;
       if (typeFilter !== 'all' && (d.type || 'unknown') !== typeFilter) return false;
       if (q) {
@@ -104,13 +116,12 @@ const PostStudioPanel: React.FC = () => {
       if (effectiveSort === 'scheduled') {
         const av = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
         const bv = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0;
-        // For scheduled view: soonest-upcoming first (ascending), past at bottom
         if (statusFilter === 'scheduled') return av - bv;
         return bv - av;
       }
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [drafts, statusFilter, typeFilter, searchQuery, effectiveSort]);
+  }, [drafts, statusFilter, typeFilter, searchQuery, effectiveSort, showDisqualified]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -219,11 +230,11 @@ const PostStudioPanel: React.FC = () => {
       <div className="rounded-lg border border-zinc-800 bg-zinc-900/50">
         <button
           onClick={() => setFormOpen((v) => !v)}
-          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-900"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium text-zinc-300 hover:bg-zinc-900"
         >
-          <Plus className="w-4 h-4 text-emerald-400" />
+          <Plus className="w-3.5 h-3.5 text-emerald-400" />
           New post
-          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+          <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
         </button>
         {formOpen && (
           <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60">
@@ -272,20 +283,22 @@ const PostStudioPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Filters / sort */}
+      {/* Filters / sort — single muted line. Status + type pills are visually
+          quiet (no high-contrast fill on non-active), keep more room for content. */}
       {drafts.length > 0 && (
-        <div className="space-y-2 text-xs">
-          {/* Topic search — substring match on title / topic / post body */}
+        <div className="space-y-1.5 text-[11.5px]">
+          {/* Topic search — slimmer than before */}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by topic or body…"
-            className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
+            className="w-full rounded bg-zinc-950 border border-zinc-800 px-2.5 py-1 text-[12.5px] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
           />
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-zinc-500 mr-1">Status</span>
-            {(['all', ...visibleStatuses] as const).map((s) => {
+          {/* Status + Type + Sort all on one line. Inactive pills are bare text with a
+              dot; active pill gets the emerald fill. Disqualified moved to a footer toggle. */}
+          <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-zinc-400">
+            {(['all', ...visibleStatuses] as const).filter((s) => s !== 'disqualified').map((s) => {
               const count = statusCounts[s] || 0;
               const isPinned = s !== 'all' && PINNED_STATUSES.has(s);
               const isCritical = s === 'error' && count > 0;
@@ -295,41 +308,53 @@ const PostStudioPanel: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition ${
-                    isActive ? 'bg-emerald-600 text-white' :
-                    isCritical ? 'bg-red-900/40 text-red-300 hover:bg-red-900/60' :
-                    isPinned && count === 0 ? 'bg-zinc-900 text-zinc-500 hover:bg-zinc-800' :
-                    'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
+                    isActive ? 'bg-emerald-600/90 text-white' :
+                    isCritical ? 'text-red-300 hover:bg-red-950/40' :
+                    isPinned && count === 0 ? 'text-zinc-600 hover:text-zinc-400' :
+                    'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
                   }`}
                 >
                   {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />}
-                  {s === 'all' ? 'All' : s} <span className="opacity-60">{count}</span>
+                  {s === 'all' ? 'All' : s}
+                  {count > 0 && <span className="opacity-60 tabular-nums">{count}</span>}
                 </button>
               );
             })}
-          </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-zinc-500 mr-1">Type</span>
+            <span className="text-zinc-700 mx-1">·</span>
             {(['all', 'text', 'single_image', 'carousel'] as const).filter((t) => t === 'all' || typeCounts[t]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`rounded-full px-2.5 py-1 transition ${typeFilter === t ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
+                  typeFilter === t ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
+                }`}
               >
-                {t === 'all' ? 'All' : t === 'single_image' ? 'single image' : t} <span className="opacity-60">{typeCounts[t] || 0}</span>
+                {t === 'all' ? 'All' : t === 'single_image' ? 'single image' : t}
+                {(typeCounts[t] || 0) > 0 && t !== 'all' && <span className="opacity-60 tabular-nums">{typeCounts[t] || 0}</span>}
               </button>
             ))}
-            <span className="ml-auto text-zinc-500">
-              Sort:
+            <span className="ml-auto inline-flex items-center gap-1.5 text-zinc-500">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="ml-1 rounded bg-zinc-950 border border-zinc-800 px-2 py-0.5 text-zinc-200"
+                className="rounded bg-transparent border border-zinc-800 px-1.5 py-0.5 text-zinc-300 hover:border-zinc-700"
               >
-                <option value="auto">Smart ({effectiveSort === 'scheduled' ? 'scheduled' : 'last updated'})</option>
-                <option value="updated">Last updated</option>
-                <option value="scheduled">Scheduled date</option>
+                <option value="auto">Sort: smart</option>
+                <option value="updated">Sort: updated</option>
+                <option value="scheduled">Sort: scheduled</option>
               </select>
+              {(statusCounts.disqualified || 0) > 0 && (
+                <button
+                  onClick={() => setShowDisqualified((v) => !v)}
+                  className={`rounded px-1.5 py-0.5 transition ${
+                    showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
+                  }`}
+                  title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
+                >
+                  {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
+                </button>
+              )}
             </span>
           </div>
         </div>
@@ -347,14 +372,12 @@ const PostStudioPanel: React.FC = () => {
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
-            // Drive PDFs aren't directly img-renderable; skip thumb for those
-            const isPdfThumb = imageThumb && /drive\.google\.com\/file\//.test(imageThumb);
             return {
               id: d.id,
               title: d.title || d.topic || '(untitled)',
               excerpt: d.postBody ? postExcerpt(d) : undefined,
               status: d.status,
-              thumbUrl: isPdfThumb ? null : imageThumb,
+              thumbUrl: driveThumbUrl(imageThumb, 96),
               kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : 'TXT',
               date: formatScheduled(d.scheduledAt) || undefined,
               dateSort: d.scheduledAt ? new Date(d.scheduledAt).getTime() : new Date(d.updatedAt).getTime(),
@@ -369,6 +392,35 @@ const PostStudioPanel: React.FC = () => {
           statusMeta={STATUS_META}
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
+          groupByStatus="post-studio"
+          statusOrder={STATUS_ORDER}
+          statusChoices={STATUS_ORDER}
+          onStatusChange={async (id, next) => {
+            try {
+              const { error } = await supabase.from('carousel_drafts').update({ status: next }).eq('id', id);
+              if (error) throw error;
+              toast.success(`Status → ${next}`);
+              await refresh();
+            } catch (err) { toastError('update status', err); }
+          }}
+          onDateChange={async (id, iso) => {
+            try {
+              // Preserve existing time-of-day if present, else default to 09:00 local.
+              const cur = drafts.find((d) => d.id === id)?.scheduledAt;
+              let nextISO: string | null = null;
+              if (iso) {
+                const [y, m, d] = iso.split('-').map(Number);
+                const base = cur ? new Date(cur) : new Date();
+                base.setFullYear(y, m - 1, d);
+                if (!cur) base.setHours(9, 0, 0, 0);
+                nextISO = base.toISOString();
+              }
+              const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', id);
+              if (error) throw error;
+              toast.success(nextISO ? 'Rescheduled' : 'Date cleared');
+              await refresh();
+            } catch (err) { toastError('reschedule', err); }
+          }}
           onBulkAction={async (action, ids) => {
             try {
               if (action === 'disqualify') {
@@ -439,7 +491,7 @@ const PostStudioPanel: React.FC = () => {
                 {/* Hero: image if present, else stylized excerpt (no more gray TEXT placeholder) */}
                 {hasImage ? (
                   <div className="aspect-[4/5] bg-zinc-950 overflow-hidden">
-                    <img src={d.imageUrls[0]} alt="" className="w-full h-full object-cover" />
+                    <img src={driveThumbUrl(d.imageUrls[0], 400) || d.imageUrls[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                 ) : (
                   <div className="aspect-[4/5] bg-emerald-950/30 border-b border-emerald-900/30 overflow-hidden p-4 flex flex-col justify-between">

@@ -1,5 +1,6 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { HeadRow, SubTabs, SubTab } from '../primitives';
+import { InternalTabs } from '../../dashboard/InternalTabs';
 
 /**
  * Phase 2 — Content Studio.
@@ -25,36 +26,42 @@ const LetterPanel = lazy(() => import('../../dashboard/LetterPanel'));
 const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
-// Two top-level content-creation sections: Posts (unified text/single-image/carousel)
-// and Lead Magnets (Ideas + Drafts nested).
-// Single flat panels — no Ideas/Drafts sub-tab split. The curator pre-promotion
-// queue surfaces as a banner inside each Studio panel when there's something to review.
 const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 
-type SubKey = 'posts' | 'leadmagnets' | 'pipeline' | 'performance' | 'audience' | 'strategy' | 'newsletter' | 'recordings' | 'video' | 'clips';
+// IA reorg 2026-06-01: collapse 10 sub-tabs → 6. Pipeline (kanban) removed —
+// Posts panel already has a Board view that does the same job. Performance now
+// houses both Post Performance + Site Audience via internal tabs. Video now
+// houses Recordings/Video Pipeline/Call Clips via internal tabs. Old `sub` values
+// are remapped to the new tabs on URL load so existing deeplinks keep working.
+type SubKey = 'posts' | 'leadmagnets' | 'performance' | 'video' | 'newsletter' | 'strategy';
 
 const SUB_LABELS: Record<SubKey, string> = {
   posts: 'Posts',
   leadmagnets: 'Lead Magnets',
-  pipeline: 'Pipeline',
-  performance: 'Post Performance',
-  audience: 'Site Audience',
-  strategy: 'Strategy',
+  performance: 'Performance',
+  video: 'Video & Clips',
   newsletter: 'Newsletter',
-  recordings: 'Recordings · Calls',
-  video: 'Video Pipeline',
-  clips: 'Call Clips',
+  strategy: 'Strategy',
 };
 
-const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'pipeline', 'performance', 'audience', 'strategy', 'newsletter', 'recordings', 'video', 'clips'];
+const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'performance', 'video', 'newsletter', 'strategy'];
+
+// Map legacy ?sub= values to the new tab they live under.
+const LEGACY_SUB_REMAP: Record<string, SubKey> = {
+  pipeline: 'posts',         // kanban now lives inside Posts (Board view)
+  audience: 'performance',   // folded into Performance internal tabs
+  recordings: 'video',
+  clips: 'video',
+};
 
 function getInitialSub(): SubKey {
-  if (typeof window === 'undefined') return 'pipeline';
+  if (typeof window === 'undefined') return 'posts';
   const params = new URLSearchParams(window.location.search);
-  const s = params.get('sub') as SubKey | null;
-  if (s && SUB_ORDER.includes(s)) return s;
-  return 'pipeline';
+  const raw = params.get('sub');
+  if (raw && SUB_ORDER.includes(raw as SubKey)) return raw as SubKey;
+  if (raw && LEGACY_SUB_REMAP[raw]) return LEGACY_SUB_REMAP[raw];
+  return 'posts';
 }
 
 function syncSubToUrl(sub: SubKey) {
@@ -84,14 +91,30 @@ export function ContentStudio() {
     switch (sub) {
       case 'posts':       return <PostStudioPanel />;
       case 'leadmagnets': return <LeadMagnetStudioPanel />;
-      case 'pipeline':    return <ContentPanel />;
-      case 'performance': return <PerformancePanel />;
-      case 'audience':    return <AudiencePanel />;
-      case 'strategy':    return <StrategyPanel />;
+      case 'performance':
+        return (
+          <InternalTabs
+            storageKey="content-studio-performance-tab"
+            tabs={[
+              { key: 'posts', label: 'Post Performance', render: () => <PerformancePanel /> },
+              { key: 'audience', label: 'Site Audience', render: () => <AudiencePanel /> },
+              { key: 'pipeline', label: 'Pipeline Kanban', render: () => <ContentPanel /> },
+            ]}
+          />
+        );
+      case 'video':
+        return (
+          <InternalTabs
+            storageKey="content-studio-video-tab"
+            tabs={[
+              { key: 'recordings', label: 'Recordings · Calls', render: () => <RecordingsPanel /> },
+              { key: 'video', label: 'Video Pipeline', render: () => <VideoIdeasPanel /> },
+              { key: 'clips', label: 'Call Clips', render: () => <CallClipsPanel /> },
+            ]}
+          />
+        );
       case 'newsletter':  return <LetterPanel />;
-      case 'recordings':  return <RecordingsPanel />;
-      case 'video':       return <VideoIdeasPanel />;
-      case 'clips':       return <CallClipsPanel />;
+      case 'strategy':    return <StrategyPanel />;
     }
   };
 
@@ -99,7 +122,7 @@ export function ContentStudio() {
     <>
       <HeadRow
         title={<>Content <em>Studio</em></>}
-        meta={<>Pipeline · Performance · Audience · Strategy<br />Newsletter · Recordings · Video · Ideas · Clips</>}
+        meta={<>Posts · Lead Magnets · Performance<br />Video & Clips · Newsletter · Strategy</>}
       />
       <SubTabs>
         {SUB_ORDER.map(key => (
