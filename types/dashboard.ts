@@ -602,6 +602,29 @@ export interface RecordingStats {
   totalSizeBytes: number;
 }
 
+// ─── Signal Clusters Types ───
+
+export type SignalBucket = 'content' | 'sales';
+
+export interface SignalQuote {
+  text: string;
+  source: 'call' | 'dm' | 'email';
+  date: string;
+}
+
+export interface SignalCluster {
+  id: string;
+  runDate: string;
+  bucket: SignalBucket;
+  theme: string;
+  summary: string | null;
+  frequency: number;
+  quotes: SignalQuote[];
+  sourceMix: { calls?: number; dms?: number; email?: number };
+  suggestedAction: string | null;
+  createdAt: string;
+}
+
 // ─── Auto Research Types ───
 
 export interface AutoResearchSession {
@@ -878,7 +901,7 @@ export interface StrategyMapData {
   activeClients: number;
 }
 
-export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'prompts' | 'studio' | 'leadmagnets' | 'settings';
+export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'prompts' | 'studio' | 'leadmagnets' | 'signal-clusters' | 'settings';
 
 export interface PaidAssessmentRow {
   stripe_session_id: string;
