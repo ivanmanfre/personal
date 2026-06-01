@@ -22,6 +22,7 @@ export interface LeadMagnetDraft {
   topicStrength: string | null;
   notes: string | null;
   source: string | null;
+  description: string | null;
 }
 
 function mapDraft(row: any): LeadMagnetDraft {
@@ -44,6 +45,7 @@ function mapDraft(row: any): LeadMagnetDraft {
     topicStrength: row.topic_strength,
     notes: row.notes,
     source: row.source,
+    description: row.description,
   };
 }
 
@@ -56,7 +58,7 @@ export function useLeadMagnets() {
     try {
       const { data, error } = await supabase
         .from('lm_drafts_v2')
-        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source')
+        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));

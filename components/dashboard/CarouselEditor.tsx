@@ -5,6 +5,7 @@ import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
+import SourceBriefing from './SourceBriefing';
 
 interface Props {
   draft: CarouselDraft;
@@ -100,6 +101,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           )}
         </div>
       )}
+
+      {/* Source briefing — raw context from the ClickUp task description (Description / Suggested Angle / Quotes / etc.) */}
+      <SourceBriefing description={draft.description} />
 
       {/* Flickable slide preview — image_urls first; fall back to slide structures for older carousels */}
       <div className="flex gap-3 overflow-x-auto pb-2">

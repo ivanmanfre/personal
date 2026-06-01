@@ -5,6 +5,7 @@ import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
+import SourceBriefing from './SourceBriefing';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -88,6 +89,9 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <pre className="whitespace-pre-wrap text-xs text-zinc-300 font-sans leading-snug">{draft.notes}</pre>
         </div>
       )}
+
+      {/* Source briefing — raw context from the ClickUp task description (markdown). Always available, collapsible. */}
+      <SourceBriefing description={draft.description} />
 
       {/* Covers row: main cover + promo image */}
       <div className="flex flex-wrap items-start gap-4">
