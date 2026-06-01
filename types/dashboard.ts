@@ -154,6 +154,10 @@ export interface ScheduledPost {
   errorMessage: string | null;
   createdAt: string;
   postedAt: string | null;
+  // IG side-channel (LM funnel auto-DM mechanics)
+  igCaption: string | null;
+  igDmKeyword: string | null;
+  igDmReply: string | null;
 }
 
 export interface PipelineTask {

@@ -233,6 +233,9 @@ const PostDetail: React.FC<{
   const [postFormat, setPostFormat] = useState(post.postFormat || '');
   const [mediaUrls, setMediaUrls] = useState<string[]>([...post.mediaUrls]);
   const [newUrl, setNewUrl] = useState('');
+  const [igCaption, setIgCaption] = useState(post.igCaption || '');
+  const [igDmKeyword, setIgDmKeyword] = useState(post.igDmKeyword || '');
+  const [igDmReply, setIgDmReply] = useState(post.igDmReply || '');
 
   // Reset local state when the post prop changes (e.g., after refresh)
   useEffect(() => {
@@ -242,6 +245,9 @@ const PostDetail: React.FC<{
     setPostText(post.postText);
     setPostFormat(post.postFormat || '');
     setMediaUrls([...post.mediaUrls]);
+    setIgCaption(post.igCaption || '');
+    setIgDmKeyword(post.igDmKeyword || '');
+    setIgDmReply(post.igDmReply || '');
   }, [post, userTimezone]);
 
   const save = useCallback(async (field: string, value: string) => {
@@ -266,12 +272,6 @@ const PostDetail: React.FC<{
       save('post_text', postText);
     }
   }, [postText, post.postText, save]);
-
-  const handleFormatBlur = useCallback(() => {
-    if (postFormat !== (post.postFormat || '')) {
-      save('post_format', postFormat);
-    }
-  }, [postFormat, post.postFormat, save]);
 
   const removeMedia = useCallback((index: number) => {
     const updated = mediaUrls.filter((_, i) => i !== index);
@@ -329,14 +329,22 @@ const PostDetail: React.FC<{
               </span>
             )}
             {isEditable ? (
-              <input
-                type="text"
+              <select
                 value={postFormat}
-                onChange={(e) => setPostFormat(e.target.value)}
-                onBlur={handleFormatBlur}
-                placeholder="format"
-                className="bg-zinc-800 border border-zinc-700/60 rounded-lg px-2 py-1 text-[11px] text-zinc-400 w-24 focus:outline-none focus:border-emerald-500/60"
-              />
+                onChange={(e) => { setPostFormat(e.target.value); save('post_format', e.target.value); }}
+                className="bg-zinc-800 border border-zinc-700/60 rounded-lg px-2 py-1 text-[11px] text-zinc-300 focus:outline-none focus:border-emerald-500/60"
+              >
+                <option value="">format…</option>
+                <option value="text">text</option>
+                <option value="single-image">single-image</option>
+                <option value="carousel">carousel</option>
+                <option value="video">video</option>
+                <option value="document">document</option>
+                {/* Keep current value selectable even if it's a legacy free-text label */}
+                {postFormat && !['text','single-image','carousel','video','document'].includes(postFormat) && (
+                  <option value={postFormat}>{postFormat}</option>
+                )}
+              </select>
             ) : (
               post.postFormat && (
                 <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{post.postFormat}</span>
@@ -457,6 +465,63 @@ const PostDetail: React.FC<{
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <span className="text-sm text-red-300">{post.errorMessage}</span>
+            </div>
+          )}
+
+          {/* IG side-channel — caption + LM auto-DM mechanics.
+              Shown when any IG field is set OR when the post is editable
+              (so Ivan can promote any pending post to LM by setting a keyword). */}
+          {(isEditable || post.igCaption || post.igDmKeyword || post.igDmReply) && (
+            <div className="space-y-3 pt-2 border-t border-zinc-800/60">
+              <div className="text-[10px] uppercase tracking-wider text-purple-400/70 font-medium">Instagram</div>
+              {isEditable ? (
+                <>
+                  <label className="block text-xs text-zinc-500">Caption
+                    <textarea
+                      value={igCaption}
+                      onChange={(e) => setIgCaption(e.target.value)}
+                      onBlur={() => igCaption !== (post.igCaption || '') && save('ig_caption', igCaption)}
+                      rows={3}
+                      placeholder="IG caption (shorter / less technical than LinkedIn body)"
+                      className="mt-1 w-full bg-zinc-800/60 border border-zinc-700/60 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-purple-500/60 placeholder-zinc-600"
+                    />
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
+                    <label className="block text-xs text-zinc-500">DM keyword (LM trigger)
+                      <input
+                        type="text"
+                        value={igDmKeyword}
+                        onChange={(e) => setIgDmKeyword(e.target.value)}
+                        onBlur={() => igDmKeyword !== (post.igDmKeyword || '') && save('ig_dm_keyword', igDmKeyword)}
+                        placeholder="e.g. AUDIT"
+                        className="mt-1 w-full bg-zinc-800/60 border border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 uppercase tracking-wider focus:outline-none focus:border-purple-500/60 placeholder-zinc-600"
+                      />
+                    </label>
+                    <label className="block text-xs text-zinc-500">DM auto-reply body
+                      <textarea
+                        value={igDmReply}
+                        onChange={(e) => setIgDmReply(e.target.value)}
+                        onBlur={() => igDmReply !== (post.igDmReply || '') && save('ig_dm_reply', igDmReply)}
+                        rows={2}
+                        placeholder="Hey {{firstName}}, here's the … : {link}"
+                        className="mt-1 w-full bg-zinc-800/60 border border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-purple-500/60 placeholder-zinc-600"
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 text-xs">
+                  {post.igCaption && (
+                    <div><span className="text-zinc-500 block mb-1">Caption</span><div className="text-zinc-300 whitespace-pre-wrap">{post.igCaption}</div></div>
+                  )}
+                  {post.igDmKeyword && (
+                    <div><span className="text-zinc-500 mr-2">DM keyword</span><span className="text-purple-300 uppercase tracking-wider font-mono">{post.igDmKeyword}</span></div>
+                  )}
+                  {post.igDmReply && (
+                    <div><span className="text-zinc-500 block mb-1">DM reply</span><div className="text-zinc-300 whitespace-pre-wrap">{post.igDmReply}</div></div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

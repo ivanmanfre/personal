@@ -15,6 +15,9 @@ function mapPost(row: any): ScheduledPost {
     errorMessage: row.error_message,
     createdAt: row.created_at,
     postedAt: row.posted_at,
+    igCaption: row.ig_caption,
+    igDmKeyword: row.ig_dm_keyword,
+    igDmReply: row.ig_dm_reply,
   };
 }
 
