@@ -465,6 +465,56 @@ const PostDetail: React.FC<{
   );
 };
 
+const DayDrill: React.FC<{
+  dateKey: string;
+  posts: ScheduledPost[];
+  userTimezone?: string;
+  onClose: () => void;
+  onPick: (p: ScheduledPost) => void;
+}> = ({ dateKey, posts, userTimezone, onClose, onPick }) => {
+  // dateKey is YYYY-MM-DD; build a Date at noon to avoid TZ-edge day-shift on display
+  const display = new Date(dateKey + 'T12:00:00');
+  const headerLabel = display.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const sorted = [...posts].sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative bg-zinc-900 border border-zinc-700/60 rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800/60">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-sm font-semibold text-zinc-200">{headerLabel}</span>
+            <span className="text-[11px] text-zinc-500">· {posts.length} post{posts.length === 1 ? '' : 's'}</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700/60">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-zinc-800/40">
+          {sorted.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onPick(p)}
+              className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/40 transition-colors"
+            >
+              <div className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${isLeadMagnet(p) ? 'bg-purple-500' : (statusColors[p.status]?.split(' ')[0] || 'bg-zinc-600')}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-zinc-200 line-clamp-2">{p.postText}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className="text-[11px] text-zinc-500">{formatTime(p.scheduledAt, userTimezone)}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusBadgeColors[p.status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'}`}>{p.status}</span>
+                  {p.postFormat && <span className="text-[10px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{p.postFormat}</span>}
+                  {isLeadMagnet(p) && <span className="text-[10px] text-purple-300 bg-purple-500/15 border border-purple-500/30 px-1.5 py-0.5 rounded">LM</span>}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ContentPanel: React.FC = () => {
   const { userTimezone } = useDashboard();
   const { posts, statusCounts, postsByDate, loading, refresh, updatePost, deletePost } = useContentPipeline(userTimezone);
@@ -473,6 +523,7 @@ const ContentPanel: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const [draggedPost, setDraggedPost] = useState<ScheduledPost | null>(null);
+  const [dayDrillKey, setDayDrillKey] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -639,7 +690,12 @@ const ContentPanel: React.FC = () => {
                         <DraggablePost key={p.id} post={p} onClick={() => setSelectedPost(p)} />
                       ))}
                       {dayPosts.length > 3 && (
-                        <div className="text-[10px] text-zinc-500 px-1">+{dayPosts.length - 3} more</div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDayDrillKey(dateKey); }}
+                          className="text-[10px] text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/40 px-1 py-0.5 rounded w-full text-left transition-colors"
+                        >
+                          +{dayPosts.length - 3} more
+                        </button>
                       )}
                     </div>
                     {/* Mobile: dot indicators */}
@@ -743,6 +799,16 @@ const ContentPanel: React.FC = () => {
           )}
         </div>
       </PanelCard>
+
+      {dayDrillKey && (
+        <DayDrill
+          dateKey={dayDrillKey}
+          posts={postsByDate[dayDrillKey] || []}
+          userTimezone={userTimezone}
+          onClose={() => setDayDrillKey(null)}
+          onPick={(p) => { setDayDrillKey(null); setSelectedPost(p); }}
+        />
+      )}
 
       {selectedPost && (
         <PostDetail
