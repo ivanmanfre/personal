@@ -7,6 +7,7 @@ import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
+import Sheet from '../ui/Sheet';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -158,9 +159,24 @@ const PostStudioPanel: React.FC = () => {
     }
   }
 
-  if (open) {
-    return <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />;
-  }
+  // URL ↔ openId sync: clicking a card → ?open=<id>; pasting that URL deep-links to the editor.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const cur = params.get('open');
+    if (openId !== cur) {
+      if (openId) params.set('open', openId); else params.delete('open');
+      const url = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+      window.history.replaceState(null, '', url);
+    }
+  }, [openId]);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const initial = params.get('open');
+    if (initial && drafts.some((d) => d.id === initial)) setOpenId(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts.length]);
 
   const buttonLabel = creating
     ? (type === 'carousel' ? 'Building carousel…' : 'Firing…')
@@ -439,6 +455,16 @@ const PostStudioPanel: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Editor opens in a right-anchored side-sheet — list stays visible behind */}
+      <Sheet
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        size="xl"
+        title={open ? <span className="truncate">{open.title}</span> : ''}
+      >
+        {open && <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      </Sheet>
     </div>
   );
 };

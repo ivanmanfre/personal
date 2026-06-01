@@ -7,6 +7,7 @@ import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import LeadMagnetEditor from './LeadMagnetEditor';
 import { StudioListView } from './StudioListView';
+import Sheet from '../ui/Sheet';
 
 const FORMATS = [
   'Checklist', 'Calculator', 'Interactive Assessment', 'Guide', 'AI Kit',
@@ -132,9 +133,24 @@ const LeadMagnetStudioPanel: React.FC = () => {
     }
   }
 
-  if (open) {
-    return <LeadMagnetEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />;
-  }
+  // URL ↔ openId sync — same as PostStudioPanel
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const cur = params.get('open');
+    if (openId !== cur) {
+      if (openId) params.set('open', openId); else params.delete('open');
+      const url = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+      window.history.replaceState(null, '', url);
+    }
+  }, [openId]);
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const initial = params.get('open');
+    if (initial && drafts.some((d) => d.id === initial)) setOpenId(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts.length]);
 
   return (
     <div className="space-y-6">
@@ -338,6 +354,16 @@ const LeadMagnetStudioPanel: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Editor side-sheet — list stays visible behind */}
+      <Sheet
+        open={!!open}
+        onClose={() => setOpenId(null)}
+        size="xl"
+        title={open ? <span className="truncate">{open.topic || '(untitled)'}</span> : ''}
+      >
+        {open && <LeadMagnetEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      </Sheet>
     </div>
   );
 };
