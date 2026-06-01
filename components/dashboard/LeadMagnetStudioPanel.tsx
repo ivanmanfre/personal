@@ -290,8 +290,21 @@ const LeadMagnetStudioPanel: React.FC = () => {
           statusMeta={STATUS_META}
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
-          // LM doesn't have pillar/hook/tier in the same way carousels do; hide those columns
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
+          onBulkAction={async (action, ids) => {
+            try {
+              if (action === 'disqualify') {
+                const { error } = await supabase.from('lm_drafts_v2').update({ status: 'disqualified' }).in('id', ids);
+                if (error) throw error;
+                toast.success(`Disqualified ${ids.length} LM${ids.length === 1 ? '' : 's'}`);
+              } else if (action === 'delete') {
+                const { error } = await supabase.from('lm_drafts_v2').delete().in('id', ids);
+                if (error) throw error;
+                toast.success(`Deleted ${ids.length} LM${ids.length === 1 ? '' : 's'}`);
+              }
+              await refresh();
+            } catch (err) { toastError(`bulk ${action}`, err); }
+          }}
         />
       ) : view === 'board' ? (
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">

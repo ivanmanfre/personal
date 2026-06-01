@@ -68,18 +68,29 @@ export function StudioListView({
   /** Hide certain columns by key (e.g. LM doesn't have hookType). */
   hiddenCols = new Set<SortKey>(),
   loading = false,
+  onBulkAction,
 }: {
   rows: StudioRow[];
   statusMeta: Record<string, StatusMeta>;
   onOpen: (id: string) => void;
   hiddenCols?: Set<SortKey>;
   loading?: boolean;
+  /** When provided, a checkbox column appears and bulk action buttons activate. */
+  onBulkAction?: (action: 'disqualify' | 'delete', ids: string[]) => Promise<void> | void;
 }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleOne = (id: string) =>
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const clearSelection = () => setSelected(new Set());
+  const selectAll = (ids: string[]) => setSelected(new Set(ids));
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   const cols = useMemo(() => ALL_COLS.filter((c) => !hiddenCols.has(c.key)), [hiddenCols]);
-  const gridTemplate = useMemo(() => cols.map((c) => c.width).join(' '), [cols]);
+  const gridTemplate = useMemo(() => {
+    const base = cols.map((c) => c.width).join(' ');
+    return onBulkAction ? `32px ${base}` : base;
+  }, [cols, onBulkAction]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];
@@ -115,12 +126,40 @@ export function StudioListView({
 
   return (
     <div className="rounded-lg border border-zinc-800/80 overflow-hidden bg-zinc-950/30">
+      {/* Bulk action bar — shown when any rows are selected */}
+      {onBulkAction && selected.size > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/40 text-[12px] text-emerald-200">
+          <span className="font-medium">{selected.size} selected</span>
+          <button onClick={clearSelection} className="text-zinc-400 hover:text-zinc-200">Clear</button>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={() => { onBulkAction('disqualify', Array.from(selected)); clearSelection(); }}
+              className="px-2.5 py-1 rounded border border-zinc-700/40 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-200 transition-colors"
+            >Disqualify</button>
+            <button
+              onClick={() => { if (confirm(`Delete ${selected.size} row(s)? This can't be undone.`)) { onBulkAction('delete', Array.from(selected)); clearSelection(); } }}
+              className="px-2.5 py-1 rounded border border-red-900/40 bg-red-950/40 hover:bg-red-950/60 text-red-300 transition-colors"
+            >Delete</button>
+          </div>
+        </div>
+      )}
+
       {/* Column header — sentence case, no uppercase. Lowercase header is the single
           biggest "polished SaaS vs internal tool" signal. */}
       <div
         className="grid items-center gap-3 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-[12px] text-zinc-500 font-medium"
         style={{ gridTemplateColumns: gridTemplate }}
       >
+        {onBulkAction && (
+          <input
+            type="checkbox"
+            checked={selected.size > 0 && selected.size === rows.length}
+            ref={(el) => { if (el) el.indeterminate = selected.size > 0 && selected.size < rows.length; }}
+            onChange={(e) => { e.target.checked ? selectAll(rows.map((r) => r.id)) : clearSelection(); }}
+            className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
         {cols.map((c) => {
           const active = sortKey === c.key;
           return (
@@ -148,7 +187,7 @@ export function StudioListView({
         {sorted.map((r, i) => {
           const meta = statusMeta[r.status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
           return (
-            <motion.button
+            <motion.div
               key={r.id}
               layout
               initial={{ opacity: 0, y: 4 }}
@@ -156,9 +195,21 @@ export function StudioListView({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.14, ease: 'easeOut' }}
               onClick={() => onOpen(r.id)}
-              className={`group w-full grid items-center gap-3 px-3 py-2 text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors ${i % 2 === 1 ? 'bg-zinc-900/20' : ''}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
+              className={`group w-full grid items-center gap-3 px-3 py-2 text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors cursor-pointer ${i % 2 === 1 ? 'bg-zinc-900/20' : ''} ${selected.has(r.id) ? 'bg-emerald-950/20' : ''}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
+              {onBulkAction && (
+                <input
+                  type="checkbox"
+                  checked={selected.has(r.id)}
+                  onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+                />
+              )}
               {cols.map((c) => {
                 const cls = `${colClass(c.visible)} items-center min-w-0`;
                 if (c.key === 'title') {
@@ -205,7 +256,7 @@ export function StudioListView({
                 if (c.key === 'date')      return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || ''}</span></div>;
                 return null;
               })}
-            </motion.button>
+            </motion.div>
           );
         })}
         </AnimatePresence>
