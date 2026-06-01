@@ -6,6 +6,7 @@ import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActi
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
+import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 
 interface Props {
   draft: CarouselDraft;
@@ -236,16 +237,30 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </button>
 
         <div className="flex items-center gap-2 ml-auto">
-          <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-            className="rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100" />
+          <input
+            type="datetime-local"
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+            className="rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100"
+            title="Leave empty to auto-pick the next free 9am slot"
+          />
           <button
-            onClick={() => {
-              if (!when) { toast.error('Pick a date/time'); return; }
-              run('schedule', () => scheduleCarousel(draft.id, new Date(when).toISOString()), 'Scheduled');
+            onClick={async () => {
+              let iso: string;
+              if (when) {
+                iso = new Date(when).toISOString();
+              } else {
+                // Empty datetime → auto-pick the next free 9am-BA slot
+                const slot = await findNextSlot();
+                iso = slot.toISOString();
+                setWhen(toDatetimeLocalString(slot));
+                toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+              }
+              run('schedule', () => scheduleCarousel(draft.id, iso), 'Scheduled');
             }}
             disabled={!!busy}
             className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-3 py-2 text-sm font-medium text-white">
-            {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />} Approve & schedule
+            {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />} {when ? 'Approve & schedule' : 'Approve · auto-slot'}
           </button>
         </div>
       </div>
