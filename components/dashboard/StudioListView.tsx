@@ -111,9 +111,10 @@ export function StudioListView({
 
   return (
     <div className="rounded-lg border border-zinc-800/80 overflow-hidden bg-zinc-950/30">
-      {/* Column header */}
+      {/* Column header — sentence case, no uppercase. Lowercase header is the single
+          biggest "polished SaaS vs internal tool" signal. */}
       <div
-        className="grid items-center gap-3 px-3 py-2 bg-zinc-900/80 border-b border-zinc-800 text-[10.5px] uppercase tracking-wider text-zinc-500 font-semibold"
+        className="grid items-center gap-3 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-[12px] text-zinc-500 font-medium"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {cols.map((c) => {
@@ -173,22 +174,21 @@ export function StudioListView({
                     </div>
                   );
                 }
-                if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.pillar || '—'}</span></div>;
-                if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.hookType || '—'}</span></div>;
-                if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.valueTier || '—'}</span></div>;
+                if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.pillar || ''}</span></div>;
+                if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.hookType || ''}</span></div>;
+                if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.valueTier || ''}</span></div>;
                 if (c.key === 'strength') {
                   const t = r.topicStrength || '';
+                  if (!t) return <div key={c.key} className={cls} />;
                   return (
                     <div key={c.key} className={cls}>
-                      {t ? (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium uppercase tracking-wider ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
-                      ) : <span className="text-[11px] text-zinc-600">—</span>}
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
                     </div>
                   );
                 }
-                if (c.key === 'format')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.formatLabel || '—'}</span></div>;
-                if (c.key === 'source')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.source || '—'}</span></div>;
-                if (c.key === 'date')      return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || '—'}</span></div>;
+                if (c.key === 'format')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.formatLabel || ''}</span></div>;
+                if (c.key === 'source')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.source || ''}</span></div>;
+                if (c.key === 'date')      return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 tabular-nums whitespace-nowrap">{r.date || ''}</span></div>;
                 return null;
               })}
             </button>

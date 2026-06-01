@@ -107,7 +107,7 @@ body.dashboard-v2-active * {
 .dv-brand { padding: 0 1.5rem 1.25rem; border-bottom: 1px solid var(--d-rule); margin-bottom: 1rem; }
 .dv-brand-mark { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: var(--d-paper); line-height: 1; }
 .dv-brand-mark em { font-style: normal; font-weight: 700; color: var(--d-good); }
-.dv-brand-sub { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--d-paper-dim); margin-top: 0.45rem; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-brand-sub { font-size: 11.5px; color: var(--d-paper-dim); margin-top: 0.45rem; font-weight: 500; }
 .dv-nav { flex: 1; padding: 0 0.5rem; }
 .dv-nav-item {
   display: flex; align-items: center; gap: 0.7rem;
@@ -119,17 +119,18 @@ body.dashboard-v2-active * {
   color: var(--d-paper); font: inherit;
 }
 .dv-nav-item:hover { background: rgba(231, 231, 234, 0.03); }
-.dv-nav-item[aria-current="page"] { background: var(--d-accent-bg); }
+/* Sidebar uses sage accent (matches brand). Sub-tabs keep the blue underline. */
+.dv-nav-item[aria-current="page"] { background: var(--d-good-bg); }
 .dv-nav-item[aria-current="page"]::before {
   content: ''; position: absolute; left: -0.4rem; top: 25%; bottom: 25%;
-  width: 3px; background: var(--d-accent); border-radius: 0 2px 2px 0;
+  width: 3px; background: var(--d-good); border-radius: 0 2px 2px 0;
 }
 .dv-nav-item.dv-briefing[aria-current="page"] { background: rgba(34, 197, 94, 0.06); }
 .dv-nav-item.dv-briefing[aria-current="page"]::before { background: var(--d-good); }
 .dv-nav-name { flex: 1; font-size: 13.5px; font-weight: 500; }
 .dv-nav-name em { font-style: normal; font-weight: 700; color: var(--d-good); }
 .dv-nav-num { font-size: 11px; font-weight: 700; color: var(--d-paper-dimmer); width: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
-.dv-nav-divider { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--d-paper-dimmer); padding: 1rem 1.4rem 0.5rem; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-nav-divider { font-size: 10.5px; letter-spacing: 0.04em; color: var(--d-paper-dimmer); padding: 1rem 1.4rem 0.4rem; font-weight: 600; }
 .dv-nav-badge {
   font-size: 10px; font-weight: 700; padding: 0.1rem 0.4rem;
   background: var(--d-bad); color: var(--d-ink); letter-spacing: 0.04em;
@@ -151,7 +152,7 @@ body.dashboard-v2-active * {
 .dv-head { border-bottom: 1px solid var(--d-rule-strong); padding-bottom: 1.4rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
 .dv-h1 { font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 38px; line-height: 1.05; letter-spacing: -0.015em; display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap; }
 .dv-h1 em { font-style: italic; font-weight: 400; color: var(--d-good); }
-.dv-meta { text-align: right; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.7; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-meta { text-align: right; font-size: 12px; letter-spacing: 0; line-height: 1.7; color: var(--d-paper-dim); }
 .dv-meta-live { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--d-good); }
 .dv-meta-live::before { content: ''; width: 6px; height: 6px; background: var(--d-good); border-radius: 50%; }
 /* No pulse — the dot's presence is enough signal; constant motion is noise. */
@@ -172,13 +173,13 @@ body.dashboard-v2-active * {
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
 }
 .dv-subtabs::-webkit-scrollbar { display: none; }
-.dv-subtab { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper-dim); padding: 0.75rem 1rem; cursor: pointer; border: none; background: transparent; transform: translateY(1px); user-select: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 0.15s, border-color 0.15s; border-bottom: 2px solid transparent; }
+.dv-subtab { font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--d-paper-dim); padding: 0.7rem 0.9rem; cursor: pointer; border: none; background: transparent; transform: translateY(1px); user-select: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.45rem; transition: color 0.15s, border-color 0.15s; border-bottom: 2px solid transparent; }
 .dv-subtab:hover:not([aria-selected="true"]) { color: var(--d-paper); border-bottom-color: var(--d-rule-strong); }
 .dv-subtab[aria-selected="true"] { color: var(--d-paper); border-bottom-color: var(--d-accent); }
 .dv-subtab .dv-nav-badge { font-size: 9px; padding: 0.1rem 0.35rem; }
 
 /* SECTION LABEL */
-.dv-section-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--d-paper-dimmer); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.7rem; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-section-label { font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--d-paper-dim); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.7rem; }
 .dv-section-label .dv-rule { flex: 1; height: 1px; background: var(--d-rule); }
 .dv-section-label--alert { color: var(--d-bad); }
 .dv-section-label--alert .dv-rule { background: var(--d-bad); opacity: 0.4; }
@@ -216,14 +217,38 @@ body.dashboard-v2-active * {
 .dv-action-card-body { font-size: 13px; color: var(--d-paper-dim); line-height: 1.5; }
 
 /* BTN GHOST — primary inline action */
-.dv-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper); background: transparent; border: 1px solid var(--d-paper); padding: 0.4rem 0.75rem; cursor: pointer; border-radius: 4px; transition: background 0.15s, color 0.15s, border-color 0.15s; display: inline-block; text-decoration: none; }
-.dv-btn:hover { background: var(--d-paper); color: var(--d-ink); }
-.dv-btn--dim { color: var(--d-paper-dim); border-color: var(--d-paper-dim); }
-.dv-btn--dim:hover { background: var(--d-paper-dim); color: var(--d-ink); }
-.dv-btn--good { color: var(--d-good); border-color: var(--d-good); }
-.dv-btn--good:hover { background: var(--d-good); color: var(--d-ink); }
-.dv-btn--bad { color: var(--d-bad); border-color: var(--d-bad); }
-.dv-btn--bad:hover { background: var(--d-bad); color: var(--d-ink); }
+/* .dv-btn — legacy mono-uppercase button. Now visually matches the <Button> primitive
+   (sentence case, Inter, rounded, soft fill, hover lifts background) so the
+   six legacy consumers in Briefing / PwaInstall / ActionCard / BtnGhost stop
+   looking like terminal chrome glued onto polished surfaces. */
+.dv-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--d-paper);
+  background: var(--d-ink-3);
+  border: 1px solid var(--d-rule-strong);
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.05s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  user-select: none;
+}
+.dv-btn:hover { background: rgba(231, 231, 234, 0.06); border-color: var(--d-paper-dimmer); }
+.dv-btn:active { transform: translateY(1px); }
+.dv-btn:focus-visible { outline: 2px solid var(--d-good); outline-offset: 2px; }
+.dv-btn--dim { color: var(--d-paper-dim); }
+.dv-btn--dim:hover { color: var(--d-paper); }
+.dv-btn--good { color: #ffffff; background: var(--d-good); border-color: var(--d-good); }
+.dv-btn--good:hover { background: #2fa275; border-color: #2fa275; }
+.dv-btn--bad { color: #ffffff; background: var(--d-bad); border-color: var(--d-bad); }
+.dv-btn--bad:hover { background: #f15a5a; border-color: #f15a5a; }
 
 /* TOGGLE SWITCH */
 .dv-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.7rem 1rem; background: var(--d-ink-2); border: 1px solid var(--d-rule); border-radius: 4px; }
@@ -243,7 +268,7 @@ body.dashboard-v2-active * {
 .dv-pulse-cell-dot--good { color: var(--d-good); background: var(--d-good); }
 .dv-pulse-cell-dot--warn { color: var(--d-warn); background: var(--d-warn); }
 .dv-pulse-cell-dot--bad { color: var(--d-bad); background: var(--d-bad); }
-.dv-pulse-cell-name { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--d-paper); }
+.dv-pulse-cell-name { font-size: 13px; font-weight: 600; color: var(--d-paper); }
 .dv-pulse-cell-meta { margin-left: auto; font-size: 11px; color: var(--d-paper-dim); letter-spacing: 0.02em; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
 /* ROW LIST */
