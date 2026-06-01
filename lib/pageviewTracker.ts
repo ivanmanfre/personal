@@ -58,6 +58,21 @@ function detectDeviceType(ua: string): 'desktop' | 'mobile' | 'tablet' {
   return 'desktop';
 }
 
+/**
+ * Detect headless/automation traffic so it gets flagged is_test=true instead
+ * of polluting real-visitor counts. Catches:
+ *   - Playwright/Puppeteer/Selenium (all set navigator.webdriver = true)
+ *   - The 8h smoke-test sweep that hits /, /audit, /scorecard/, /start/
+ *   - Common crawler / monitor / preview-fetch user agents
+ * Any JS-executing bot that reaches this code clears at least one of these.
+ */
+function isAutomatedAgent(ua: string): boolean {
+  try {
+    if (navigator.webdriver === true) return true;
+  } catch { /* navigator.webdriver unavailable — fall through to UA check */ }
+  return /headless|puppeteer|playwright|selenium|phantom|\bbot\b|crawl|spider|slurp|monitor|uptime|lighthouse|prerender|python-requests|node-fetch/i.test(ua);
+}
+
 function clamp(s: string | null | undefined, max: number): string | null {
   if (!s) return null;
   return s.length > max ? s.slice(0, max) : s;
@@ -116,6 +131,9 @@ export async function trackPageview(path: string): Promise<void> {
       language: clamp(navigator.language, 35),
       screen_w: window.screen?.width ?? null,
       screen_h: window.screen?.height ?? null,
+      // Flag automation (smoke-test sweep, Playwright, crawlers) so the
+      // is_test-filtered rollup views never count it as real traffic.
+      is_test: isAutomatedAgent(navigator.userAgent),
     };
     await supabase.from('pageviews').insert(row);
   } catch {
