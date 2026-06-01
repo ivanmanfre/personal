@@ -362,6 +362,22 @@ async function handleOrientation(sb: any, session: any, email: string): Promise<
   const firstLine = name ? `Hi ${name.split(" ")[0]},` : "Hi there,";
   const calendlyUrl = "https://calendly.com/im-ivanmanfredi/30min";
 
+  // 0. Record the order so it's tracked (this product gets NO paid_assessments row).
+  try {
+    await sb.from("orientation_orders").insert({
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent ?? null,
+      email,
+      name,
+      amount_cents: session.amount_total ?? 0,
+      currency: (session.currency ?? "usd").toLowerCase(),
+      paid_at: new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000).toISOString(),
+      status: "paid",
+    });
+  } catch (e) {
+    console.error("[orientation-insert]", String(e));
+  }
+
   // 1. Booking + prep email to the buyer (orientation-specific)
   try {
     const apiKey = await getSecret(sb, "RESEND_API_KEY_ASSESSMENT");
@@ -427,7 +443,7 @@ ivanmanfredi.com`;
   // 2. Ping Ivan via WhatsApp (no dashboard row exists for this product)
   const amount = ((session.amount_total ?? 50000) / 100).toFixed(0);
   const buyerLabel = name ? `${name} <${email}>` : email;
-  const notify = `New AI Orientation Session purchase ($${amount})\n\n${buyerLabel}\n\nSent them the booking link (${calendlyUrl}) + prep checklist. Expect a Calendly booking. No dashboard row for this product.`;
+  const notify = `New AI Orientation Session purchase ($${amount})\n\n${buyerLabel}\n\nSent them the booking link (${calendlyUrl}) + prep checklist. Logged to orientation_orders. Expect a Calendly booking.`;
   try {
     await fetch("http://24.199.118.135:8080/message/sendText/ivan-wa", {
       method: "POST",
