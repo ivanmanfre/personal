@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
 
+export interface AgentLogEntry {
+  ts: string | null;
+  agent: string;
+  body: string;
+  source?: string;        // 'n8n' (live) | 'clickup_backfill' (historical)
+  comment_id?: string;    // present for backfilled entries
+}
+
 export interface CarouselDraft {
   id: string;
   title: string;
@@ -16,6 +24,7 @@ export interface CarouselDraft {
   styleId: string | null;
   scheduledAt: string | null;
   updatedAt: string;
+  agentLog: AgentLogEntry[];
 }
 
 function mapDraft(row: any): CarouselDraft {
@@ -33,6 +42,7 @@ function mapDraft(row: any): CarouselDraft {
     styleId: row.style_id,
     scheduledAt: row.scheduled_at,
     updatedAt: row.updated_at,
+    agentLog: Array.isArray(row.agent_log) ? row.agent_log : [],
   };
 }
 
@@ -45,7 +55,7 @@ export function useContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at')
+        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));

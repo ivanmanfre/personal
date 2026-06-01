@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as Imag
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
+import AgentLogFeed from './AgentLogFeed';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -145,6 +146,9 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <ExternalLink className="w-4 h-4" /> {draft.resourceUrl}
         </a>
       )}
+
+      {/* Agent activity — chronological log from the LM gen chain (Editorial → Cover Copy → QA → Build → Schedule → Publish) */}
+      <AgentLogFeed entries={draft.agentLog} />
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">

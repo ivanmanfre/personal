@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
+import type { AgentLogEntry } from './useContentLibrary';
 
 export interface LeadMagnetDraft {
   id: string;
@@ -17,6 +18,7 @@ export interface LeadMagnetDraft {
   spec: Record<string, unknown> | null;
   qa: Record<string, unknown> | null;
   updatedAt: string;
+  agentLog: AgentLogEntry[];
 }
 
 function mapDraft(row: any): LeadMagnetDraft {
@@ -35,6 +37,7 @@ function mapDraft(row: any): LeadMagnetDraft {
     spec: row.spec,
     qa: row.qa,
     updatedAt: row.updated_at,
+    agentLog: Array.isArray(row.agent_log) ? row.agent_log : [],
   };
 }
 
@@ -47,7 +50,7 @@ export function useLeadMagnets() {
     try {
       const { data, error } = await supabase
         .from('lm_drafts_v2')
-        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, og_url, slug, spec, qa, updated_at')
+        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, og_url, slug, spec, qa, updated_at, agent_log')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       setDrafts((data || []).map(mapDraft));

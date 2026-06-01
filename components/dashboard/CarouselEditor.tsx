@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, Chevro
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
+import AgentLogFeed from './AgentLogFeed';
 
 interface Props {
   draft: CarouselDraft;
@@ -126,6 +127,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           )}
         </div>
       )}
+
+      {/* Agent activity — full chronological log from the gen chain (Editorial → Hook → Content → QA → Image → IG Caption → Schedule → Publish) */}
+      <AgentLogFeed entries={draft.agentLog} />
 
       {/* Actions */}
       <div className="flex flex-wrap items-center gap-3">
