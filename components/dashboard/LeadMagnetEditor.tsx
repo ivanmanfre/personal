@@ -7,6 +7,7 @@ import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
+import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -88,47 +89,25 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
         {/* LEFT COLUMN — editing surfaces */}
         <div className="space-y-4 min-w-0">
-          <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-            LinkedIn post
-            <textarea
-              value={postBody}
-              onChange={(e) => setPostBody(e.target.value)}
-              rows={10}
-              className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13.5px] text-zinc-100 leading-relaxed font-sans focus:outline-none focus:border-zinc-600"
-            />
-          </label>
+          <div>
+            <FieldLabel>LinkedIn post</FieldLabel>
+            <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={10} className="text-[13.5px] leading-relaxed font-sans" />
+          </div>
 
-          <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Email copy <span className="text-zinc-600 normal-case font-normal">(24h follow-up)</span>
-            <textarea
-              value={emailCopy}
-              onChange={(e) => setEmailCopy(e.target.value)}
-              rows={8}
-              className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13.5px] text-zinc-100 leading-relaxed font-sans focus:outline-none focus:border-zinc-600"
-            />
-          </label>
+          <div>
+            <FieldLabel>Email copy <span className="text-zinc-600 normal-case font-normal">· 24h follow-up</span></FieldLabel>
+            <Textarea value={emailCopy} onChange={(e) => setEmailCopy(e.target.value)} rows={8} className="text-[13.5px] leading-relaxed font-sans" />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-              DM Template A
-              <textarea
-                value={dmA}
-                onChange={(e) => setDmA(e.target.value)}
-                rows={4}
-                placeholder="Hey {{firstName}}, here's the …"
-                className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13px] text-zinc-100 focus:outline-none focus:border-zinc-600"
-              />
-            </label>
-            <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-              DM Template B
-              <textarea
-                value={dmB}
-                onChange={(e) => setDmB(e.target.value)}
-                rows={4}
-                placeholder="Hey {{firstName}}, the … is yours: …"
-                className="mt-1.5 w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-[13px] text-zinc-100 focus:outline-none focus:border-zinc-600"
-              />
-            </label>
+            <div>
+              <FieldLabel>DM Template A</FieldLabel>
+              <Textarea value={dmA} onChange={(e) => setDmA(e.target.value)} rows={4} placeholder="Hey {{firstName}}, here's the …" className="text-[13px]" />
+            </div>
+            <div>
+              <FieldLabel>DM Template B</FieldLabel>
+              <Textarea value={dmB} onChange={(e) => setDmB(e.target.value)} rows={4} placeholder="Hey {{firstName}}, the … is yours: …" className="text-[13px]" />
+            </div>
           </div>
 
           <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
@@ -170,82 +149,78 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
 
         {/* RIGHT COLUMN — preview + actions */}
-        <div className="space-y-4 min-w-0">
-          {/* Cover preview */}
-          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Cover</div>
+        <div className="space-y-3 min-w-0">
+          <Card>
+            <CardLabel>Cover</CardLabel>
             {draft.coverUrl ? (
               <>
-                <img src={draft.coverUrl} alt="cover" className="w-full rounded-md border border-zinc-800" />
-                <button
-                  onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
+                <img src={draft.coverUrl} alt="cover" className="w-full rounded-md border border-zinc-800 mb-2" />
+                <Button
+                  variant="secondary" size="sm" block
                   disabled={!!busy}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200 border border-zinc-700/40"
+                  onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
                   title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
                   {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
-                </button>
+                </Button>
               </>
             ) : (
-              <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-xs text-zinc-500 italic">
-                No cover yet
-                {draft.status !== 'idea' && draft.status !== 'generating' && (
-                  <button
-                    onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}
+              <EmptyState
+                title="No cover yet"
+                action={draft.status !== 'idea' && draft.status !== 'generating' ? (
+                  <Button
+                    variant="secondary" size="sm"
                     disabled={!!busy}
-                    className="mt-3 mx-auto inline-flex items-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-2.5 py-1.5 text-xs text-zinc-200">
+                    onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}>
                     {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
-                  </button>
-                )}
-              </div>
+                  </Button>
+                ) : undefined}
+              />
             )}
-          </div>
+          </Card>
 
-          {/* Promo image (if exists) */}
           {spec.promo_image_url && (
-            <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 p-3 space-y-2">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Promo image</div>
+            <Card>
+              <CardLabel>Promo image</CardLabel>
               <img src={spec.promo_image_url as string} alt="promo" className="w-full rounded-md border border-zinc-800" />
-            </div>
+            </Card>
           )}
 
-          {/* Resource URL (if built) */}
           {isReady && draft.resourceUrl && (
             <a
               href={draft.resourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="block rounded-md border border-emerald-900/40 bg-emerald-950/20 px-3 py-2.5 text-sm text-emerald-300 hover:bg-emerald-950/30"
+              className="block rounded-lg border border-emerald-900/40 bg-emerald-950/20 px-3 py-2.5 text-sm text-emerald-300 hover:bg-emerald-950/30 transition-colors"
             >
-              <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 font-medium mb-1">Live URL</div>
+              <CardLabel className="!text-emerald-500/70 !mb-1">Live URL</CardLabel>
               <div className="inline-flex items-center gap-1.5 truncate">
                 <ExternalLink className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{draft.resourceUrl}</span>
               </div>
             </a>
           )}
 
-          {/* Actions stack */}
           <div className="space-y-2">
-            <button
-              onClick={() => run('save', saveAll, 'Saved')}
+            <Button
+              variant="secondary" block
               disabled={!!busy || !dirty}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 px-3 py-2 text-sm text-zinc-200 border border-zinc-700/40">
+              onClick={() => run('save', saveAll, 'Saved')}>
               {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save changes
-            </button>
+            </Button>
             {(draft.status === 'idea' || draft.status === 'generating' || draft.status === 'error') && (
-              <button
-                onClick={() => run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)')}
+              <Button
+                variant="secondary" block
                 disabled={!!busy || !draft.topic || !draft.format}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 px-3 py-2 text-sm text-zinc-200 border border-zinc-700/40">
+                onClick={() => run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)')}>
                 {busy === 'regen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Generate content <span className="text-[10px] text-zinc-500">~10 min</span>
-              </button>
+              </Button>
             )}
             {isReview && (
-              <button
-                onClick={() => run('assets', () => buildLMAssets({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Approved — building assets (~5 min)')}
+              <Button
+                variant="primary" block
                 disabled={!!busy}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-3 py-2 text-sm font-medium text-white">
+                onClick={() => run('assets', () => buildLMAssets({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Approved — building assets (~5 min)')}>
                 {busy === 'assets' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Approve &amp; build assets
-              </button>
+              </Button>
             )}
           </div>
         </div>
