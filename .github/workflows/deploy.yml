@@ -29,12 +29,37 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      # 2026-06-01: build:prerender has been failing in CI at +4s on every push
-      # (5 prior commits) while passing cleanly locally; logs not visible
-      # without admin. Prerender is SEO-only for marketing routes; the
-      # dashboard is not affected. Run plain vite build for now to unblock the
-      # deploy. Revert once root cause is diagnosed.
-      - run: npm run build
+      # 2026-06-01: build:prerender has been failing in CI on every push since
+      # f6f33fd while passing cleanly locally. Logs aren't visible without
+      # admin. Plain `npm run build` ALSO failing in the same window. Forcing
+      # the build to run with verbose output + capturing the tail so the next
+      # diagnostic shows up in the step output. Continue-on-error: false now —
+      # if Ivan pastes the error we can revert quickly.
+      - name: Build with verbose output
+        run: |
+          set -e
+          # Verbose npm + vite. Also dump env-var presence (NOT values).
+          echo "::group::env presence check"
+          for v in VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY VITE_DASHBOARD_HASH VITE_CLAUDE_CODE_URL; do
+            if [ -n "${!v}" ]; then echo "$v: set (len=${#}${v} bytes)"; else echo "$v: MISSING"; fi
+          done
+          echo "::endgroup::"
+          echo "::group::node + npm version"
+          node --version
+          npm --version
+          echo "::endgroup::"
+          echo "::group::vite build"
+          npm run build 2>&1 | tee /tmp/build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          echo "vite exit: $BUILD_EXIT"
+          echo "::endgroup::"
+          if [ "$BUILD_EXIT" != "0" ]; then
+            echo "::error::Build failed with exit $BUILD_EXIT"
+            echo "::group::last 100 lines of build log"
+            tail -100 /tmp/build.log
+            echo "::endgroup::"
+            exit "$BUILD_EXIT"
+          fi
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
