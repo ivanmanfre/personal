@@ -51,7 +51,18 @@ function postExcerpt(d: CarouselDraft): string {
   return src.slice(0, 140);
 }
 
-const PostStudioPanel: React.FC = () => {
+interface PostStudioPanelProps {
+  /** Restrict the panel to a subset of post types. Used to split Carousels
+   *  into its own sub-tab — Posts shows ['text','single_image'], Carousels
+   *  shows ['carousel']. When undefined, all types render. */
+  restrictTypes?: ('text' | 'single_image' | 'carousel')[];
+  /** Override the panel title (default: 'Posts'). */
+  title?: string;
+  /** Override the title subline. */
+  subtitle?: string;
+}
+
+const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts', subtitle = 'text · single-image · carousel' }) => {
   const { drafts, loading, refresh } = useContentLibrary();
   const [type, setType] = useState<PostType>('text');
   const [topic, setTopic] = useState('');
@@ -103,6 +114,8 @@ const PostStudioPanel: React.FC = () => {
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const filtered = drafts.filter((d) => {
+      // Sub-tab restriction: Carousels tab only shows carousels, Posts excludes them.
+      if (restrictTypes && !restrictTypes.includes((d.type || 'text') as any)) return false;
       // Hide disqualified unless explicitly toggled OR user is drilled into that status
       if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
       if (statusFilter !== 'all' && d.status !== statusFilter) return false;
@@ -122,7 +135,7 @@ const PostStudioPanel: React.FC = () => {
       }
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
-  }, [drafts, statusFilter, typeFilter, searchQuery, effectiveSort, showDisqualified]);
+  }, [drafts, statusFilter, typeFilter, searchQuery, effectiveSort, showDisqualified, restrictTypes]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -216,8 +229,8 @@ const PostStudioPanel: React.FC = () => {
           <FileText className="w-4 h-4 text-emerald-400" />
         </div>
         <div>
-          <h2 className="text-[18px] font-semibold text-zinc-100 tracking-tight leading-tight">Posts</h2>
-          <span className="text-[11.5px] text-zinc-500">text · single-image · carousel</span>
+          <h2 className="text-[18px] font-semibold text-zinc-100 tracking-tight leading-tight">{title}</h2>
+          <span className="text-[11.5px] text-zinc-500">{subtitle}</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <div className="inline-flex rounded-lg bg-zinc-900/60 ring-1 ring-zinc-800/80 p-0.5">
@@ -252,7 +265,7 @@ const PostStudioPanel: React.FC = () => {
           scheduled posts WITHOUT a LinkedIn URN. These are publisher misfires
           and need manual action (re-publish or disqualify). */}
       {stuckScheduled.length > 0 && (
-        <div className="rounded-lg border border-amber-900/60 bg-amber-950/30 px-3 py-2">
+        <div className="rounded-xl ring-1 ring-amber-500/30 bg-gradient-to-r from-amber-950/40 to-amber-950/20 px-4 py-2.5 shadow-lg shadow-amber-950/10">
           <button
             onClick={() => setShowStuckList((v) => !v)}
             className="w-full flex items-center gap-2 text-left text-[12.5px] text-amber-200"

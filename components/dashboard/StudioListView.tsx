@@ -57,6 +57,19 @@ const STRENGTH_TINT: Record<string, string> = {
   Low:    'text-zinc-400 bg-zinc-700/30 ring-1 ring-inset ring-zinc-700/40',
 };
 
+// Post-type chip — full label + color. Replaces the cryptic TXT/IMG/CAR
+// kicker in the thumbnail and the raw "single_image" string in the format cell.
+const TYPE_LABEL: Record<string, string> = {
+  text: 'Text',
+  single_image: 'Single image',
+  carousel: 'Carousel',
+};
+const TYPE_TINT: Record<string, string> = {
+  text:         'text-zinc-300 bg-zinc-500/10 ring-1 ring-inset ring-zinc-500/25',
+  single_image: 'text-sky-300 bg-sky-500/10 ring-1 ring-inset ring-sky-500/25',
+  carousel:     'text-violet-300 bg-violet-500/10 ring-1 ring-inset ring-violet-500/25',
+};
+
 const TIER_RANK: Record<string, number> = {
   'T1 (Receipt+Insight)': 1, 'T2 (Pattern+Specifics)': 2, 'T3 (Sharp Opinion)': 3, 'T4 (Light/Bonding)': 4,
   T1: 1, T2: 2, T3: 3, T4: 4,
@@ -248,7 +261,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800/60 text-[11.5px] text-zinc-500 font-medium tracking-tight sticky top-0 z-10"
+        className="hidden md:grid items-center gap-3 px-4 py-2 bg-zinc-900/60 backdrop-blur-md border-b border-zinc-800/60 text-[10.5px] text-zinc-500 font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -417,10 +430,21 @@ export function StudioListView({
                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 ring-1 ring-zinc-800/80 flex items-center justify-center shrink-0 shadow-inner shadow-black/40">
                     {r.thumbUrl ? (
                       <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : r.formatLabel === 'carousel' ? (
+                      // Modern carousel glyph instead of letters
+                      <div className="flex gap-[1.5px]">
+                        <span className="w-[3px] h-3.5 bg-violet-400/70 rounded-sm" />
+                        <span className="w-[3px] h-3.5 bg-violet-400/50 rounded-sm" />
+                        <span className="w-[3px] h-3.5 bg-violet-400/30 rounded-sm" />
+                      </div>
+                    ) : r.formatLabel === 'single_image' ? (
+                      <div className="w-3.5 h-3.5 rounded-sm bg-sky-400/30 ring-1 ring-inset ring-sky-400/50" />
                     ) : (
-                      <span className="text-[8px] uppercase tracking-wider text-emerald-400/60 font-mono leading-none font-semibold">
-                        {(r.kicker || 'T').slice(0, 3)}
-                      </span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="w-3 h-[2px] bg-zinc-500 rounded-sm" />
+                        <span className="w-2.5 h-[2px] bg-zinc-500/70 rounded-sm" />
+                        <span className="w-2 h-[2px] bg-zinc-500/40 rounded-sm" />
+                      </div>
                     )}
                   </div>
                 )}
@@ -478,8 +502,35 @@ export function StudioListView({
               </div>
             );
           }
-          if (c.key === 'format')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.formatLabel || ''}</span></div>;
-          if (c.key === 'source')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-400 truncate">{r.source || ''}</span></div>;
+          if (c.key === 'format') {
+            const fmt = r.formatLabel || '';
+            const tint = TYPE_TINT[fmt];
+            return (
+              <div key={c.key} className={cls}>
+                {fmt && tint ? (
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tint}`}>
+                    {TYPE_LABEL[fmt] || fmt}
+                  </span>
+                ) : fmt ? (
+                  <span className="text-[11px] text-zinc-400 truncate">{fmt}</span>
+                ) : null}
+              </div>
+            );
+          }
+          if (c.key === 'source') {
+            const src = r.source || '';
+            if (!src) return <div key={c.key} className={cls} />;
+            const srcTint = /call|client/i.test(src) ? 'text-sky-300 bg-sky-500/10 ring-sky-500/25'
+              : /web|research/i.test(src) ? 'text-violet-300 bg-violet-500/10 ring-violet-500/25'
+              : /competitor/i.test(src) ? 'text-amber-300 bg-amber-500/10 ring-amber-500/25'
+              : /curator|lm_/i.test(src) ? 'text-emerald-300 bg-emerald-500/10 ring-emerald-500/25'
+              : 'text-zinc-400 bg-zinc-700/30 ring-zinc-700/40';
+            return (
+              <div key={c.key} className={cls}>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-medium ring-1 ring-inset truncate ${srcTint}`}>{src}</span>
+              </div>
+            );
+          }
           if (c.key === 'date') {
             const canEdit = !!onDateChange;
             const isEditing = canEdit && editingDateId === r.id;
