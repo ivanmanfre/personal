@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3 } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { generatePostContent, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
+import { StudioListView } from './StudioListView';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -59,7 +60,13 @@ const PostStudioPanel: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'auto' | 'updated' | 'scheduled'>('auto');
   const [formOpen, setFormOpen] = useState(false);
-  const [view, setView] = useState<'grid' | 'board'>(() => (typeof window !== 'undefined' && localStorage.getItem('post-studio-view') === 'board' ? 'board' : 'grid'));
+  const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
+    if (typeof window !== 'undefined') {
+      const v = localStorage.getItem('post-studio-view');
+      if (v === 'board' || v === 'grid' || v === 'list') return v;
+    }
+    return 'list';
+  });
   React.useEffect(() => { try { localStorage.setItem('post-studio-view', view); } catch {} }, [view]);
 
   // Filter + sort
@@ -164,6 +171,11 @@ const PostStudioPanel: React.FC = () => {
         <span className="text-xs text-zinc-500">— text, single-image, carousel</span>
         <div className="ml-auto flex items-center gap-1">
           <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+            <button
+              onClick={() => setView('list')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'list' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="List view (grouped by status)"
+            ><ListIcon className="w-3.5 h-3.5" /> List</button>
             <button
               onClick={() => setView('grid')}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'grid' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -300,6 +312,23 @@ const PostStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No posts yet — create one above.</div>
       ) : visible.length === 0 ? (
         <div className="text-sm text-zinc-500">No posts match the current filter.</div>
+      ) : view === 'list' ? (
+        <StudioListView
+          rows={visible.map((d) => ({
+            id: d.id,
+            title: d.title || d.topic || '(untitled)',
+            excerpt: d.postBody ? postExcerpt(d) : undefined,
+            status: d.status,
+            thumbUrl: (d.imageUrls && d.imageUrls[0]) || null,
+            kicker: d.type === 'carousel' ? 'CAROUSEL' : d.type === 'single_image' ? 'IMAGE' : 'TEXT',
+            date: formatScheduled(d.scheduledAt) || undefined,
+            chips: [(d.taxonomy as any)?.pillar, (d.taxonomy as any)?.hook_type].filter(Boolean) as string[],
+          }))}
+          statusOrder={STATUS_ORDER}
+          statusMeta={STATUS_META}
+          pinned={PINNED_STATUSES}
+          onOpen={setOpenId}
+        />
       ) : view === 'board' ? (
         <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
           {visibleStatuses.map((status) => {
