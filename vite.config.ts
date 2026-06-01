@@ -28,8 +28,8 @@ export default defineConfig({
         background_color: '#111114',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/dashboard-v2',
-        start_url: '/dashboard-v2',
+        scope: '/dashboard',
+        start_url: '/dashboard',
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' },

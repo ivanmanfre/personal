@@ -55,10 +55,12 @@ const ROUTES = [
   '/content-system',
   '/work',
   '/case-studies/own-content-engine',
-  // /dashboard-v2 prerendered as a stub so the URL returns 200 instead of
-  // GitHub Pages' SPA-fallback 404. The page bootstraps and runs auth
-  // client-side; the prerendered HTML is just enough to give bots/monitors
-  // a real 200 response.
+  // Both /dashboard and /dashboard-v2 prerendered as stubs so the URLs return
+  // 200 instead of GitHub Pages' SPA-fallback 404. Real first-time visitors
+  // deep-linked to /dashboard?section=... were hitting a 404 redirect dance.
+  // The page bootstraps and runs auth client-side; the prerendered HTML is
+  // just enough to give bots/monitors a real 200 response.
+  '/dashboard',
   '/dashboard-v2',
 ];
 

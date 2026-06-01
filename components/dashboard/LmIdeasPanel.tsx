@@ -157,6 +157,28 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'decide ' + res.status);
       }
+      // Per-decision feedback: on Approve, surface a deep-link to the draft
+      // that the Promoter just created (and fired gen on). Closes the
+      // "where did my idea go?" gap flagged by the workflow audit.
+      if (decision === 'approve') {
+        const payload = await res.json().catch(() => ({} as any));
+        const draftId = (payload?.draft_id || payload?.promoted_draft_id) as string | undefined;
+        const draftTable = payload?.draft_table as string | undefined;
+        if (draftId) {
+          const isLM = draftTable === 'lm_drafts_v2';
+          const subTab = isLM ? 'leadmagnets' : 'posts';
+          const href = `${window.location.pathname}?section=content&sub=${subTab}&open=${draftId}`;
+          // sonner toast is loaded at the app shell — use dynamic import to avoid coupling
+          try {
+            const { toast } = await import('sonner');
+            toast.success('Approved — generating now', {
+              description: 'Status will move from Idea → Generating → Review.',
+              action: { label: 'View draft', onClick: () => { window.location.href = href; } },
+              duration: 6000,
+            });
+          } catch { /* sonner not loaded; silent */ }
+        }
+      }
       await reload();
     } catch (e: any) {
       setError(e?.message || 'decide_failed');
