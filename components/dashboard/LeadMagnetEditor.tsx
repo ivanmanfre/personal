@@ -117,19 +117,26 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </div>
 
           <div>
-            <FieldLabel>Email copy <span className="text-zinc-600 normal-case font-normal">· 24h follow-up</span></FieldLabel>
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">Email copy <span className="text-zinc-600 normal-case font-normal">· 24h follow-up</span></FieldLabel>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{emailCopy.length}</span>
+            </div>
             <Textarea value={emailCopy} onChange={(e) => setEmailCopy(e.target.value)} rows={8} className="text-[13.5px] leading-relaxed font-sans" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>DM Template A</FieldLabel>
-              <Textarea value={dmA} onChange={(e) => setDmA(e.target.value)} rows={4} placeholder="Hey {{firstName}}, here's the …" className="text-[13px]" />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">DM Template A</FieldLabel>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{dmA.length}</span>
             </div>
-            <div>
-              <FieldLabel>DM Template B</FieldLabel>
-              <Textarea value={dmB} onChange={(e) => setDmB(e.target.value)} rows={4} placeholder="Hey {{firstName}}, the … is yours: …" className="text-[13px]" />
+            <Textarea value={dmA} onChange={(e) => setDmA(e.target.value)} rows={5} placeholder="Hey {{firstName}}, here's the …" className="text-[13px]" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <FieldLabel className="!mb-0">DM Template B</FieldLabel>
+              <span className="text-[10.5px] text-zinc-600 tabular-nums">{dmB.length}</span>
             </div>
+            <Textarea value={dmB} onChange={(e) => setDmB(e.target.value)} rows={5} placeholder="Hey {{firstName}}, the … is yours: …" className="text-[13px]" />
           </div>
 
           <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">

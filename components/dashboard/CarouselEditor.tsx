@@ -6,6 +6,8 @@ import { saveDraft, scheduleCarousel, buildCarousel } from '../../lib/studioActi
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
+import FieldGrid from './FieldGrid';
+import PostMetricsPanel from './PostMetricsPanel';
 import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
@@ -233,6 +235,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
           <SourceBriefing description={draft.description} upstream={upstream} />
 
+          <FieldGrid draft={draft} />
+
           <AgentLogFeed
             entries={draft.agentLog}
             table="carousel_drafts"
@@ -247,6 +251,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <CardLabel>Preview</CardLabel>
             {renderMedia()}
           </Card>
+
+          <PostMetricsPanel draft={draft} />
 
           {hasImagery && (
             <Card padded={false}>

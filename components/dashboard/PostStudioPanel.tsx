@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon, Table2 } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { generatePostContent, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -9,6 +9,7 @@ import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
+import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -20,19 +21,21 @@ const TYPE_LABELS: Record<PostType, string> = {
 
 // Status -> { dot color, text class } — colored dot in front of label is the scan anchor
 const STATUS_META: Record<string, { dot: string; label: string }> = {
-  draft:        { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
-  idea:         { dot: 'bg-zinc-400',   label: 'text-zinc-300' },
-  generating:   { dot: 'bg-sky-400',    label: 'text-sky-300' },
-  review:       { dot: 'bg-amber-400',  label: 'text-amber-300' },
-  approved:     { dot: 'bg-emerald-400',label: 'text-emerald-300' },
-  ready:        { dot: 'bg-emerald-400',label: 'text-emerald-300' },
-  scheduled:    { dot: 'bg-sky-400',    label: 'text-sky-300' },
-  published:    { dot: 'bg-zinc-500',   label: 'text-zinc-400' },
-  disqualified: { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
-  error:        { dot: 'bg-red-500',    label: 'text-red-400' },
+  draft:         { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
+  idea:          { dot: 'bg-zinc-400',   label: 'text-zinc-300' },
+  generating:    { dot: 'bg-sky-400',    label: 'text-sky-300' },
+  review:        { dot: 'bg-amber-400',  label: 'text-amber-300' },
+  approved:      { dot: 'bg-emerald-400',label: 'text-emerald-300' },
+  ready_to_post: { dot: 'bg-teal-400',   label: 'text-teal-300' },
+  ready:         { dot: 'bg-emerald-400',label: 'text-emerald-300' },
+  scheduled:     { dot: 'bg-sky-400',    label: 'text-sky-300' },
+  published:     { dot: 'bg-zinc-500',   label: 'text-zinc-400' },
+  disqualified:  { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
+  error:         { dot: 'bg-red-500',    label: 'text-red-400' },
 };
 
-const STATUS_ORDER = ['idea', 'generating', 'review', 'approved', 'scheduled', 'published', 'disqualified', 'error'];
+// STATUS_ORDER comes from lib/statusLabels.ts so it stays in sync with labels.
+const STATUS_ORDER = POST_STATUSES;
 // Always-pinned triage states — show even at 0 so Ivan gets the "nothing broken" signal at a glance.
 const PINNED_STATUSES = new Set(['generating', 'review', 'error']);
 
@@ -72,10 +75,10 @@ const PostStudioPanel: React.FC = () => {
   React.useEffect(() => {
     try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
+  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('post-studio-view');
-      if (v === 'board' || v === 'grid' || v === 'list') return v;
+      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table') return v;
     }
     return 'list';
   });
@@ -231,6 +234,11 @@ const PostStudioPanel: React.FC = () => {
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Board view (kanban by status)"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
+            <button
+              onClick={() => setView('table')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'table' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Table view (dense spreadsheet, no grouping)"
+            ><Table2 className="w-3.5 h-3.5" /> Table</button>
           </div>
           <button onClick={refresh} className="p-2 text-zinc-400 hover:text-zinc-200" title="Refresh">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -379,7 +387,7 @@ const PostStudioPanel: React.FC = () => {
                   }`}
                 >
                   {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />}
-                  {s === 'all' ? 'All' : s}
+                  {s === 'all' ? 'All' : statusLabel(s)}
                   {count > 0 && <span className="opacity-60 tabular-nums">{count}</span>}
                 </button>
               );
@@ -430,8 +438,9 @@ const PostStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No posts yet — create one above.</div>
       ) : visible.length === 0 ? (
         <div className="text-sm text-zinc-500">No posts match the current filter.</div>
-      ) : view === 'list' ? (
+      ) : view === 'list' || view === 'table' ? (
         <StudioListView
+          dense={view === 'table'}
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
@@ -455,9 +464,10 @@ const PostStudioPanel: React.FC = () => {
           statusMeta={STATUS_META}
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
-          groupByStatus="post-studio"
+          // Dense table doesn't group by status — it's a flat sortable spreadsheet.
+          groupByStatus={view === 'table' ? undefined : 'post-studio'}
           statusOrder={STATUS_ORDER}
-          pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
+          pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {

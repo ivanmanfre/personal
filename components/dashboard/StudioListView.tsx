@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
+import { statusLabel } from '../../lib/statusLabels';
 
 /**
  * Real columned list view — direct ClickUp-list equivalent.
@@ -79,6 +80,7 @@ export function StudioListView({
    *  Gives the user the same pipeline-overview shape every time — "0 in review"
    *  at the same scan position as "12 in review". */
   pinnedStatuses = [],
+  dense = false,
   /** Inline status editor: list of statuses the user can pick from. When provided
    *  along with onStatusChange, clicking the status cell pops a small menu. */
   statusChoices,
@@ -99,6 +101,9 @@ export function StudioListView({
   statusChoices?: string[];
   onStatusChange?: (id: string, status: string) => Promise<void> | void;
   onDateChange?: (id: string, isoDate: string | null) => Promise<void> | void;
+  /** Dense mode for Table view: no thumbnails, no groups, tighter rows, all
+   *  columns visible regardless of viewport (horizontal scroll if needed). */
+  dense?: boolean;
 }) {
   // Per-status collapse state (only used when groupByStatus is on).
   // Default: ALL groups collapsed — gives the pipeline-overview-at-a-glance
@@ -172,9 +177,13 @@ export function StudioListView({
     else { setSortKey(k); setSortDir(k === 'date' ? 'desc' : 'asc'); }
   }
 
-  const colClass = (visible?: string) =>
-    visible === 'gte-md' ? 'hidden md:flex' :
-    visible === 'gte-lg' ? 'hidden lg:flex' : 'flex';
+  const colClass = (visible?: string) => {
+    // In dense (Table) mode, force all columns visible regardless of viewport —
+    // intent is a spreadsheet, even if it horizontally scrolls.
+    if (dense) return 'flex';
+    return visible === 'gte-md' ? 'hidden md:flex' :
+      visible === 'gte-lg' ? 'hidden lg:flex' : 'flex';
+  };
 
   return (
     <div className="rounded-lg border border-zinc-800/80 overflow-hidden bg-zinc-950/30">
@@ -196,10 +205,10 @@ export function StudioListView({
         </div>
       )}
 
-      {/* Column header — sentence case, no uppercase. Lowercase header is the single
-          biggest "polished SaaS vs internal tool" signal. */}
+      {/* Column header — sentence case, no uppercase. Hidden under md (768px)
+          because the row collapses to a stacked card layout there. */}
       <div
-        className="grid items-center gap-3 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-[12px] text-zinc-500 font-medium"
+        className="hidden md:grid items-center gap-3 px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-[12px] text-zinc-500 font-medium"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -274,7 +283,7 @@ export function StudioListView({
                       ? <ChevronRight className="w-3 h-3 text-zinc-500" />
                       : <ChevronDown className="w-3 h-3 text-zinc-400" />}
                     <span className={`inline-block w-1.5 h-1.5 rounded-full ${isEmpty ? 'opacity-30' : ''} ${meta.dot}`} />
-                    <span className={`text-[11px] font-medium capitalize ${isEmpty ? 'text-zinc-600' : meta.label}`}>{status}</span>
+                    <span className={`text-[11px] font-medium ${isEmpty ? 'text-zinc-600' : meta.label}`}>{statusLabel(status)}</span>
                     <span className={`text-[11px] tabular-nums ${isEmpty ? 'text-zinc-700' : 'text-zinc-500'}`}>{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
@@ -308,6 +317,9 @@ export function StudioListView({
 
   function renderRow(r: StudioRow, i: number) {
     const meta = statusMeta[r.status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
+    // Mobile (<md): flex column, cells wrap as chips underneath the title.
+    // Desktop (>=md): grid with column-aligned cells. Style is conditional —
+    // grid template only applied at md+.
     return (
       <motion.div
         key={r.id}
@@ -320,7 +332,9 @@ export function StudioListView({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group w-full grid items-center gap-3 px-3 py-2 text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors cursor-pointer ${i % 2 === 1 ? 'bg-zinc-900/20' : ''} ${selected.has(r.id) ? 'bg-emerald-950/20' : ''}`}
+        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-2 py-1' : 'px-3 py-2'} text-left border-b border-zinc-800/40 last:border-b-0 hover:bg-zinc-900/60 transition-colors cursor-pointer ${i % 2 === 1 ? 'bg-zinc-900/20' : ''} ${selected.has(r.id) ? 'bg-emerald-950/20' : ''}`}
+        // gridTemplateColumns only takes effect when display:grid is active (md+);
+        // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -335,20 +349,23 @@ export function StudioListView({
         {cols.map((c) => {
           const cls = `${colClass(c.visible)} items-center min-w-0`;
           if (c.key === 'title') {
+            // On mobile, title takes full row width; on desktop, intrinsic grid cell.
             return (
-              <div key={c.key} className={cls + ' gap-2.5'}>
-                <div className="w-7 h-7 rounded overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
-                  {r.thumbUrl ? (
-                    <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  ) : (
-                    <span className="text-[7.5px] uppercase tracking-wider text-emerald-500/55 font-mono leading-none">
-                      {(r.kicker || 'T').slice(0, 3)}
-                    </span>
-                  )}
-                </div>
+              <div key={c.key} className={cls + ' gap-2.5 basis-full md:basis-auto'}>
+                {!dense && (
+                  <div className="w-7 h-7 rounded overflow-hidden bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
+                    {r.thumbUrl ? (
+                      <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <span className="text-[7.5px] uppercase tracking-wider text-emerald-500/55 font-mono leading-none">
+                        {(r.kicker || 'T').slice(0, 3)}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
-                  <div className="text-[12.5px] text-zinc-100 truncate group-hover:text-white">{r.title || '(untitled)'}</div>
-                  {r.excerpt && <div className="text-[11px] text-zinc-500 truncate">{r.excerpt}</div>}
+                  <div className={`${dense ? 'text-[11.5px]' : 'text-[12.5px]'} text-zinc-100 truncate group-hover:text-white`}>{r.title || '(untitled)'}</div>
+                  {r.excerpt && !dense && <div className="text-[11px] text-zinc-500 truncate">{r.excerpt}</div>}
                 </div>
               </div>
             );
@@ -371,7 +388,7 @@ export function StudioListView({
                     onBlur={() => setEditingStatusId(null)}
                     className="text-[11px] rounded bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 text-zinc-100 outline-none focus:border-emerald-500"
                   >
-                    {statusChoices!.map((s) => <option key={s} value={s}>{s}</option>)}
+                    {statusChoices!.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
                   </select>
                 </div>
               );
@@ -384,7 +401,7 @@ export function StudioListView({
                 title={canEdit ? 'Click to change status' : undefined}
               >
                 <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                <span className={`text-[11px] ${meta.label} truncate`}>{r.status}</span>
+                <span className={`text-[11px] ${meta.label} truncate`}>{statusLabel(r.status)}</span>
               </div>
             );
           }

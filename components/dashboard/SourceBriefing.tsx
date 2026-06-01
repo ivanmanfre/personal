@@ -85,7 +85,19 @@ function renderMarkdown(md: string): React.ReactNode {
       out.push(<div key={key++} className="h-1.5" />);
     } else {
       flushList();
-      out.push(<p key={key++} className="text-[13px] text-zinc-300 leading-snug">{renderInline(line)}</p>);
+      // Detect ClickUp-style metadata lines like "Source: Call transcript - ..."
+      // and render the label as a colored bold prefix.
+      const meta = line.match(/^(Source|Confidence|Agent|Category|Pillar|Hook|Tier|Topic|Style|Format|Briefing|Angle|Audience)\s*[:|—-]\s*(.*)$/);
+      if (meta) {
+        out.push(
+          <p key={key++} className="text-[13px] text-zinc-300 leading-snug">
+            <span className="font-semibold text-emerald-300 mr-1">{meta[1]}:</span>
+            {renderInline(meta[2])}
+          </p>
+        );
+      } else {
+        out.push(<p key={key++} className="text-[13px] text-zinc-300 leading-snug">{renderInline(line)}</p>);
+      }
     }
   }
   flushList();

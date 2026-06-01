@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, Columns3, List as ListIcon } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, Columns3, List as ListIcon, Table2 } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -9,6 +9,7 @@ import LeadMagnetEditor from './LeadMagnetEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
+import { statusLabel } from '../../lib/statusLabels';
 
 // Canonical LM formats — sourced from the curator + content pipeline.
 // Anything outside this set in lm_drafts_v2 is data pollution (newsletter
@@ -86,10 +87,10 @@ const LeadMagnetStudioPanel: React.FC = () => {
   React.useEffect(() => {
     try { localStorage.setItem('lm-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'grid' | 'board' | 'list'>(() => {
+  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('lm-studio-view');
-      if (v === 'board' || v === 'grid' || v === 'list') return v;
+      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table') return v;
     }
     return 'list';
   });
@@ -208,6 +209,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Board view (kanban by status)"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
+            <button
+              onClick={() => setView('table')}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'table' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Table view (dense spreadsheet, no grouping)"
+            ><Table2 className="w-3.5 h-3.5" /> Table</button>
           </div>
           <button onClick={refresh} className="p-2 text-zinc-400 hover:text-zinc-200" title="Refresh">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -286,7 +292,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
                   }`}
                 >
                   {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : dot}`} />}
-                  {s === 'all' ? 'All' : s}
+                  {s === 'all' ? 'All' : statusLabel(s)}
                   {count > 0 && <span className="opacity-60 tabular-nums">{count}</span>}
                 </button>
               );
@@ -339,8 +345,9 @@ const LeadMagnetStudioPanel: React.FC = () => {
         <div className="text-sm text-zinc-500">No lead magnets yet — create one above.</div>
       ) : visible.length === 0 ? (
         <div className="text-sm text-zinc-500">No lead magnets match the current filter.</div>
-      ) : view === 'list' ? (
+      ) : view === 'list' || view === 'table' ? (
         <StudioListView
+          dense={view === 'table'}
           rows={visible.map((d) => ({
             id: d.id,
             title: d.topic || '(untitled)',
@@ -358,9 +365,9 @@ const LeadMagnetStudioPanel: React.FC = () => {
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
-          groupByStatus="lm-studio"
+          groupByStatus={view === 'table' ? undefined : 'lm-studio'}
           statusOrder={STATUS_ORDER}
-          pinnedStatuses={['idea', 'generating', 'review', 'approved', 'scheduled', 'ready', 'error']}
+          pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'review', 'approved', 'scheduled', 'ready', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {
