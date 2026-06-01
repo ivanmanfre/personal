@@ -105,33 +105,71 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       {/* Source briefing — raw context from the ClickUp task description (Description / Suggested Angle / Quotes / etc.) */}
       <SourceBriefing description={draft.description} />
 
-      {/* Flickable slide preview — image_urls first; fall back to slide structures for older carousels */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {draft.imageUrls.length > 0 ? (
-          draft.imageUrls.map((url, i) => (
-            <div key={i} className="flex-none w-[240px]">
-              <img src={url} alt={`Slide ${i + 1}`} className="w-full rounded-md border border-zinc-800" />
-              <div className="mt-1 text-center text-[11px] text-zinc-500">Slide {i + 1}</div>
-            </div>
-          ))
-        ) : draft.slides.length > 0 ? (
-          draft.slides.map((s, i) => {
-            // Slide structures come in different shapes across carousel styles —
-            // render whichever text fields are present (title / hook / body / image_prompt).
-            const title = s?.title || s?.headline || s?.hook || `Slide ${i + 1}`;
-            const body  = s?.body || s?.content || s?.subtext || s?.image_prompt || '';
-            return (
-              <div key={i} className="flex-none w-[260px] rounded-md border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 mb-1">Slide {i + 1}</div>
-                <div className="text-[13px] font-medium text-zinc-200 leading-snug line-clamp-3">{title}</div>
-                {body && <div className="mt-2 text-[11px] text-zinc-400 leading-snug line-clamp-6">{body}</div>}
+      {/* Media preview.
+          Three render paths:
+          1. image_urls has Drive PDF link → embed PDF (multi-page carousel published as a single PDF)
+          2. image_urls has direct image URLs → render as <img> thumbs
+          3. image_urls empty + slides[] populated → text-card structure for older rows
+       */}
+      {(() => {
+        const urls = draft.imageUrls || [];
+        const firstUrl = urls[0] || '';
+        const isPdf = /\.pdf($|\?)|drive\.google\.com\/file\//i.test(firstUrl);
+        if (isPdf) {
+          // Convert Drive view URL → preview embed URL
+          const driveMatch = firstUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+          const embedSrc = driveMatch
+            ? `https://drive.google.com/file/d/${driveMatch[1]}/preview`
+            : firstUrl;
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+                <span className="uppercase tracking-wider text-emerald-500/70">Carousel PDF</span>
+                <a href={firstUrl} target="_blank" rel="noreferrer" className="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1">
+                  <ExternalLink className="w-3 h-3" /> open in Drive
+                </a>
               </div>
-            );
-          })
-        ) : (
+              <iframe
+                src={embedSrc}
+                className="w-full h-[520px] rounded-md border border-zinc-800 bg-zinc-950"
+                title="Carousel PDF preview"
+              />
+            </div>
+          );
+        }
+        if (urls.length > 0) {
+          return (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {urls.map((url, i) => (
+                <div key={i} className="flex-none w-[240px]">
+                  <img src={url} alt={`Slide ${i + 1}`} className="w-full rounded-md border border-zinc-800" />
+                  <div className="mt-1 text-center text-[11px] text-zinc-500">Slide {i + 1}</div>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        if (draft.slides.length > 0) {
+          return (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {draft.slides.map((s, i) => {
+                const title = s?.title || s?.headline || s?.hook || `Slide ${i + 1}`;
+                const body  = s?.body || s?.content || s?.subtext || s?.image_prompt || '';
+                return (
+                  <div key={i} className="flex-none w-[260px] rounded-md border border-zinc-800 bg-zinc-900/50 p-3 flex flex-col">
+                    <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 mb-1">Slide {i + 1}</div>
+                    <div className="text-[13px] font-medium text-zinc-200 leading-snug line-clamp-3">{title}</div>
+                    {body && <div className="mt-2 text-[11px] text-zinc-400 leading-snug line-clamp-6">{body}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+        return (
           <div className="text-sm text-zinc-500 italic">No slides rendered yet — build will populate image_urls.</div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* Copy editing */}
       <div className="space-y-3">
