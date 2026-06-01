@@ -29,7 +29,12 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: npm run build:prerender
+      # 2026-06-01: build:prerender has been failing in CI at +4s on every push
+      # (5 prior commits) while passing cleanly locally; logs not visible
+      # without admin. Prerender is SEO-only for marketing routes; the
+      # dashboard is not affected. Run plain vite build for now to unblock the
+      # deploy. Revert once root cause is diagnosed.
+      - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
