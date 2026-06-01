@@ -45,12 +45,31 @@ jobs:
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
 
       - name: Vite build
-        run: npm run build
+        id: vite_build
+        continue-on-error: true
+        run: npm run build 2>&1 | tee build.log
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
+
+      # Upload the full build log as a workflow artifact so I can pull it
+      # via the public API even without admin log access.
+      - name: Upload build log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
+
+      # If the build failed, fail the workflow here (after the log is uploaded).
+      - name: Fail if build failed
+        if: steps.vite_build.outcome != 'success'
+        run: |
+          echo "::error::Vite build failed — see build-log artifact"
+          exit 1
 
       - uses: actions/upload-pages-artifact@v3
         with:
