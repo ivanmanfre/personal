@@ -168,9 +168,14 @@ const LeadMagnetStudioPanel: React.FC = () => {
     }
   }
 
-  // URL ↔ openId sync — same as PostStudioPanel
+  // URL ↔ openId sync — same race-fix as PostStudioPanel.
+  const initialOpenRef = React.useRef<string | null>(
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open'),
+  );
+  const initialRestoredRef = React.useRef(false);
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!initialRestoredRef.current && initialOpenRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const cur = params.get('open');
     if (openId !== cur) {
@@ -181,11 +186,17 @@ const LeadMagnetStudioPanel: React.FC = () => {
   }, [openId]);
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const initial = params.get('open');
-    if (initial && drafts.some((d) => d.id === initial)) setOpenId(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drafts.length]);
+    const target = initialOpenRef.current;
+    if (!target) { initialRestoredRef.current = true; return; }
+    if (drafts.some((d) => d.id === target)) {
+      setOpenId(target);
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    } else if (drafts.length > 0) {
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    }
+  }, [drafts]);
 
   return (
     <div className="space-y-6">
@@ -338,13 +349,27 @@ const LeadMagnetStudioPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Library — filtered */}
+      {/* Library — filtered. Polished empty states matching the list chrome. */}
       {loading && drafts.length === 0 ? (
-        <div className="text-sm text-zinc-500">Loading…</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="text-[13px] text-zinc-400 font-medium">Loading lead magnets…</div>
+        </div>
       ) : drafts.length === 0 ? (
-        <div className="text-sm text-zinc-500">No lead magnets yet — create one above.</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 ring-1 ring-emerald-500/30 flex items-center justify-center mb-3">
+            <Magnet className="w-5 h-5 text-emerald-300" />
+          </div>
+          <div className="text-[13px] text-zinc-300 font-medium">No lead magnets yet</div>
+          <div className="text-[11.5px] text-zinc-500 mt-0.5">Click <span className="text-emerald-300">New lead magnet</span> above to draft one.</div>
+        </div>
       ) : visible.length === 0 ? (
-        <div className="text-sm text-zinc-500">No lead magnets match the current filter.</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">
+            <RefreshCw className="w-5 h-5 text-zinc-500" />
+          </div>
+          <div className="text-[13px] text-zinc-300 font-medium">No lead magnets match the current filter</div>
+          <div className="text-[11.5px] text-zinc-500 mt-0.5">Try clearing the filters above.</div>
+        </div>
       ) : view === 'list' || view === 'table' ? (
         <StudioListView
           dense={view === 'table'}

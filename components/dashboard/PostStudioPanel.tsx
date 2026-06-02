@@ -184,9 +184,17 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     }
   }
 
-  // URL ↔ openId sync: clicking a card → ?open=<id>; pasting that URL deep-links to the editor.
+  // URL ↔ openId sync. Subtle: the initial `?open=<id>` from a deeplink
+  // arrives BEFORE drafts have loaded. So we stash it in a ref and apply
+  // it once drafts populate. The URL-write effect skips writes until the
+  // first restore has had a chance to run, otherwise it'd strip the param.
+  const initialOpenRef = React.useRef<string | null>(
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open'),
+  );
+  const initialRestoredRef = React.useRef(false);
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!initialRestoredRef.current && initialOpenRef.current) return; // wait for restore
     const params = new URLSearchParams(window.location.search);
     const cur = params.get('open');
     if (openId !== cur) {
@@ -197,11 +205,18 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   }, [openId]);
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const initial = params.get('open');
-    if (initial && drafts.some((d) => d.id === initial)) setOpenId(initial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drafts.length]);
+    const target = initialOpenRef.current;
+    if (!target) { initialRestoredRef.current = true; return; }
+    if (drafts.some((d) => d.id === target)) {
+      setOpenId(target);
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    } else if (drafts.length > 0) {
+      // Drafts loaded but the deeplink doesn't match — give up.
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    }
+  }, [drafts]);
 
   const buttonLabel = creating
     ? (type === 'carousel' ? 'Building carousel…' : 'Firing…')
@@ -449,13 +464,28 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
         </div>
       )}
 
-      {/* Library — filtered */}
+      {/* Library — filtered. Empty states use a polished card layout that
+          matches the list container instead of bare text. */}
       {loading && drafts.length === 0 ? (
-        <div className="text-sm text-zinc-500">Loading…</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="text-[13px] text-zinc-400 font-medium">Loading posts…</div>
+        </div>
       ) : drafts.length === 0 ? (
-        <div className="text-sm text-zinc-500">No posts yet — create one above.</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 ring-1 ring-emerald-500/30 flex items-center justify-center mb-3">
+            <Plus className="w-5 h-5 text-emerald-300" />
+          </div>
+          <div className="text-[13px] text-zinc-300 font-medium">No posts yet</div>
+          <div className="text-[11.5px] text-zinc-500 mt-0.5">Click <span className="text-emerald-300">New post</span> above to draft one.</div>
+        </div>
       ) : visible.length === 0 ? (
-        <div className="text-sm text-zinc-500">No posts match the current filter.</div>
+        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">
+            <RefreshCw className="w-5 h-5 text-zinc-500" />
+          </div>
+          <div className="text-[13px] text-zinc-300 font-medium">No posts match the current filter</div>
+          <div className="text-[11.5px] text-zinc-500 mt-0.5">Try clearing the filters above.</div>
+        </div>
       ) : view === 'list' || view === 'table' ? (
         <StudioListView
           dense={view === 'table'}
