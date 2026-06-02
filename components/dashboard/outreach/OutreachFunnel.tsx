@@ -9,7 +9,6 @@ interface Props {
 
 const stages = [
   { key: 'enriched', label: 'Enriched', color: 'from-blue-500 to-blue-600', text: 'text-blue-300' },
-  { key: 'warming', label: 'Warming', color: 'from-amber-500 to-amber-600', text: 'text-amber-300' },
   { key: 'engaged', label: 'Engaged', color: 'from-purple-500 to-purple-600', text: 'text-purple-300' },
   { key: 'connectionSent', label: 'Conn. Sent', color: 'from-cyan-500 to-cyan-600', text: 'text-cyan-300' },
   { key: 'connected', label: 'Connected', color: 'from-emerald-500 to-emerald-600', text: 'text-emerald-300' },
@@ -20,7 +19,6 @@ const stages = [
 
 const stageFilterMap: Record<string, string> = {
   enriched: 'enriched',
-  warming: 'warming',
   engaged: 'engaged',
   connectionSent: 'connection_sent',
   connected: 'connected',
