@@ -412,8 +412,8 @@ export function StudioListView({
                       ? <ChevronRight className="w-3.5 h-3.5 text-zinc-500 transition-transform" />
                       : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform" />}
                     <span className={`inline-block w-2 h-2 rounded-full ring-2 ${isEmpty ? 'opacity-30 ring-transparent' : 'ring-current/10'} ${meta.dot}`} />
-                    <span className={`text-[12px] font-semibold tracking-tight ${isEmpty ? 'text-zinc-600' : meta.label}`}>{statusLabel(status)}</span>
-                    <span className={`text-[11px] tabular-nums ${isEmpty ? 'text-zinc-700' : 'text-zinc-500'} ml-0.5`}>{groupRows.length}</span>
+                    <span className={`dv-section-h ${isEmpty ? 'opacity-50' : ''}`} style={{ fontSize: 'var(--t-base)' }}>{statusLabel(status)}</span>
+                    <span className={`dv-editorial-num text-[length:var(--t-sm)] ml-0.5 ${isEmpty ? 'opacity-50' : ''}`}>{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
                     {!isCollapsed && !isEmpty && (

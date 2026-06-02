@@ -250,8 +250,11 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <FileText className="w-4 h-4 text-emerald-400" />
         </div>
         <div>
-          <h2 className="text-[18px] font-semibold text-zinc-100 tracking-tight leading-tight">{title}</h2>
-          <span className="text-[11.5px] text-zinc-500">{subtitle}</span>
+          <h2 className="dv-section-h">
+            {title}
+            <span className="dv-editorial-num text-[18px]">{drafts.length}</span>
+          </h2>
+          <span className="text-[length:var(--t-sm)] text-zinc-500">{subtitle}</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <div className="inline-flex rounded-lg bg-zinc-900/60 ring-1 ring-zinc-800/80 p-0.5">

@@ -41,8 +41,21 @@ body.dashboard-v2-active * {
   --d-bad-bg: rgba(239, 68, 68, 0.08);
   --d-accent-bg: rgba(96, 165, 250, 0.08);
 
+  /* Type scale tokens — replace scattered arbitrary text-[Npx] sizes across
+   * PostStudioPanel / StudioListView / CarouselEditor with a 7-step ramp.
+   * clamp() makes mid sizes fluid; display anchors stay fixed. Sweep arbitrary
+   * values via text-[length:var(--t-*)] over time — the tokens come first so
+   * other findings can reference them. */
+  --t-xs:      11px;
+  --t-sm:      11.5px;
+  --t-base:    clamp(12.5px, 1.2vw, 13.5px);
+  --t-md:      clamp(13px,   1.3vw, 14px);
+  --t-lg:      clamp(15px,   1.6vw, 17px);
+  --t-xl:      24px;
+  --t-display: 38px;
+
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 15px;
+  font-size: var(--t-md);
   line-height: 1.5;
   color: var(--d-paper);
   background: var(--d-ink);
@@ -162,8 +175,20 @@ body.dashboard-v2-active * {
 
 /* HEAD ROW (per-section masthead) */
 .dv-head { border-bottom: 1px solid var(--d-rule-strong); padding-bottom: 1.4rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
-.dv-h1 { font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: 38px; line-height: 1.05; letter-spacing: -0.015em; display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap; }
+.dv-h1 { font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-weight: 400; font-size: var(--t-display); line-height: 1.05; letter-spacing: -0.015em; display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap; }
 .dv-h1 em { font-style: italic; font-weight: 400; color: var(--d-good); }
+
+/* Section header — editorial register propagated below the masthead.
+ * DM Serif Display italic + sage. Used on PostStudioPanel section heads,
+ * StudioListView group headers, panel sub-titles. Recovers brand voice
+ * on the operator surface; font already loaded for .dv-h1, zero perf cost. */
+.dv-section-h { font-family: 'DM Serif Display', Georgia, serif; font-style: italic; font-weight: 400; font-size: var(--t-lg); line-height: 1.15; letter-spacing: -0.01em; color: var(--d-paper); display: inline-flex; align-items: baseline; gap: 0.5rem; }
+.dv-section-h em { font-style: italic; font-weight: 400; color: var(--d-good); }
+
+/* Editorial numeral — italic serif with lining + tabular figures, sage tint.
+ * Use for inline counts ("Posts {{12}}"), KPI deltas, scheduling chips.
+ * Tabular numerals keep digit widths equal so counts don't jitter on update. */
+.dv-editorial-num { font-family: 'DM Serif Display', Georgia, serif; font-style: italic; font-weight: 400; font-variant-numeric: lining-nums tabular-nums; color: var(--d-good); }
 .dv-meta { text-align: right; font-size: 12px; letter-spacing: 0; line-height: 1.7; color: var(--d-paper-dim); }
 .dv-meta-live { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--d-good); }
 .dv-meta-live::before { content: ''; width: 6px; height: 6px; background: var(--d-good); border-radius: 50%; }
