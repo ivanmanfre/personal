@@ -1,48 +1,30 @@
-import React, { lazy, Suspense } from 'react';
-import { HeadRow } from '../primitives';
+import React, { lazy, Suspense, useState } from 'react';
+import { HeadRow, SubTabs, SubTab } from '../primitives';
 
 /**
  * Phase 6 — Knowledge.
- * Wraps BrainPanel (claude_memory).
- *
- * Note: PromptsPanel exists on Ivan's working tree as untracked work
- * but isn't in the repo yet. When committed, add a sub-tab back here
- * (see comment block below).
+ * Sub-tabs:
+ *   - Brain: claude_memory (cross-conversation memory graph)
+ *   - Prompts: ClickUp Prompts Library editor (writes back to ClickUp pages
+ *     via the clickup-pages edge function; n8n prompt-sync workflow then
+ *     pushes ClickUp → Supabase.content_prompts for the agents to consume).
  */
 
 const BrainPanel = lazy(() => import('../../dashboard/BrainPanel'));
-// const PromptsPanel = lazy(() => import('../../dashboard/PromptsPanel'));
+const PromptsPanel = lazy(() => import('../../dashboard/PromptsPanel'));
 
 const Loading = () => <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading…</div>;
 
-export function Knowledge() {
-  return (
-    <>
-      <HeadRow title="Knowledge" meta={<>Brain · claude_memory</>} />
-      <Suspense fallback={<Loading />}>
-        <BrainPanel />
-      </Suspense>
-    </>
-  );
-}
-
-/* TO RE-ADD PROMPTS SUB-TAB once PromptsPanel + usePromptPages are committed:
-
-import { useState } from 'react';
-import { SubTabs, SubTab } from '../primitives';
-
-const PromptsPanel = lazy(() => import('../../dashboard/PromptsPanel'));
-
 type SubKey = 'brain' | 'prompts';
-const SUB_LABELS: Record<SubKey, string> = { brain: 'Brain', prompts: 'Prompt Pages' };
-const SUB_ORDER: SubKey[] = ['brain', 'prompts'];
+const SUB_LABELS: Record<SubKey, string> = { brain: 'Brain', prompts: 'Prompts' };
+const SUB_ORDER: SubKey[] = ['prompts', 'brain'];
 
 function getInitialSub(): SubKey {
-  if (typeof window === 'undefined') return 'brain';
+  if (typeof window === 'undefined') return 'prompts';
   const params = new URLSearchParams(window.location.search);
   const s = params.get('sub') as SubKey | null;
   if (s && SUB_ORDER.includes(s)) return s;
-  return 'brain';
+  return 'prompts';
 }
 
 function syncSubToUrl(sub: SubKey) {
@@ -59,7 +41,7 @@ export function Knowledge() {
   const handleSub = (s: string) => { setSub(s as SubKey); syncSubToUrl(s as SubKey); };
   return (
     <>
-      <HeadRow title="Knowledge" meta={<>Brain · Prompt Pages</>} />
+      <HeadRow title="Knowledge" meta={<>Prompts · Brain</>} />
       <SubTabs>
         {SUB_ORDER.map(key => (
           <SubTab key={key} id={key} active={sub} onChange={handleSub}>
@@ -73,4 +55,3 @@ export function Knowledge() {
     </>
   );
 }
-*/
