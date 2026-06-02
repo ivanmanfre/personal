@@ -18,7 +18,6 @@ import { InternalTabs } from '../../dashboard/InternalTabs';
  * (Lead Magnets surface as a Briefing pulse cell rather than dedicated tab).
  */
 
-const ContentPanel = lazy(() => import('../../dashboard/ContentPanel'));
 const PerformancePanel = lazy(() => import('../../dashboard/PerformancePanel'));
 const AudiencePanel = lazy(() => import('../../dashboard/AudiencePanel'));
 const StrategyPanel = lazy(() => import('../../dashboard/StrategyPanel'));
@@ -98,7 +97,6 @@ export function ContentStudio() {
             tabs={[
               { key: 'posts', label: 'Post Performance', render: () => <PerformancePanel /> },
               { key: 'audience', label: 'Site Audience', render: () => <AudiencePanel /> },
-              { key: 'pipeline', label: 'Pipeline Kanban', render: () => <ContentPanel /> },
             ]}
           />
         );

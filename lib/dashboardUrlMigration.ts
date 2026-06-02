@@ -7,7 +7,7 @@ const TAB_TO_SECTION: Record<string, { section: string; sub?: string }> = {
   // Briefing absorbs Overview + Needs attention
   overview: { section: 'briefing' },
 
-  // Content Studio absorbs 7 tabs
+  // Content Studio absorbs 7 tabs (+ legacy studio → posts, kanban → posts)
   content: { section: 'content', sub: 'pipeline' },
   performance: { section: 'content', sub: 'performance' },
   audience: { section: 'content', sub: 'audience' },
@@ -15,6 +15,7 @@ const TAB_TO_SECTION: Record<string, { section: string; sub?: string }> = {
   letter: { section: 'content', sub: 'newsletter' },
   recordings: { section: 'content', sub: 'recordings' },
   video: { section: 'content', sub: 'video' },
+  studio: { section: 'content', sub: 'posts' },
 
   // Reach & Pipeline absorbs 6 tabs
   outreach: { section: 'reach', sub: 'outreach' },

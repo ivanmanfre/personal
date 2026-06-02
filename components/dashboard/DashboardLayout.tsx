@@ -32,7 +32,6 @@ const tabGroups: { label: string | null; tabs: { id: Tab; label: string; icon: R
       { id: 'competitors', label: 'Competitors', icon: <Swords className="w-[18px] h-[18px]" /> },
       { id: 'recordings', label: 'Recordings', icon: <Video className="w-[18px] h-[18px]" /> },
       { id: 'video', label: 'Video', icon: <Film className="w-[18px] h-[18px]" /> },
-      { id: 'studio', label: 'Studio', icon: <Layers className="w-[18px] h-[18px]" /> },
       { id: 'leadmagnets', label: 'LM Studio', icon: <Magnet className="w-[18px] h-[18px]" /> },
     ],
   },
