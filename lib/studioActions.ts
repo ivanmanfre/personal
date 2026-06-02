@@ -1,20 +1,7 @@
-// Studio actions → the scroll-recorder service (compute + service-key DB writes).
-// Reads go directly through Supabase (useContentLibrary); these are the write/compute calls.
-const SVC = import.meta.env.VITE_PROCESSOR_URL || 'https://ivan-recorder-production.up.railway.app';
-const TOKEN = import.meta.env.VITE_PROCESSOR_TOKEN || '';
-
-function headers() {
-  return {
-    'Content-Type': 'application/json',
-    ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
-  };
-}
-
-async function post(path: string, body: unknown) {
-  const res = await fetch(`${SVC}${path}`, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`${path} failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
-  return res.json();
-}
+// Studio actions — the Railway "scroll-recorder" service that used to host
+// these endpoints returns 404 for all /carousel/* routes. Every mutation now
+// either writes directly to Supabase or fires the appropriate n8n webhook.
+// Reads still go through useContentLibrary as before.
 
 export interface BuildResult {
   ok: boolean;
@@ -25,27 +12,69 @@ export interface BuildResult {
   slides: { slide_number: number; url: string }[];
 }
 
-// Build a carousel from a topic. carousel_id = storage folder (any stable string).
-export function buildCarousel(input: {
+const POSTGEN_URL = 'https://n8n.ivanmanfredi.com/webhook/post-gen-v2';
+
+// Build a carousel: fires Post Gen v2 with post_format='Carousel'. The workflow's
+// internal "Is Carousel?" branch routes to the Carousel Generation sub-workflow.
+export async function buildCarousel(input: {
   carousel_id: string;
   topic: string;
   key_points?: string[];
   asset_needs?: { logos?: string[]; screenshots?: string[] } | null;
   draft_id?: string;
 }): Promise<BuildResult> {
-  return post('/carousel/build', input) as Promise<BuildResult>;
+  const draftId = input.draft_id || input.carousel_id;
+  const res = await fetch(POSTGEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      draft_id: draftId,
+      topic: input.topic,
+      title: input.topic,
+      author: 'Ivan',
+      source: 'Studio',
+      post_format: 'Carousel',
+      post_format_details: (input.key_points || []).join('\n'),
+      include_image: 'No',
+    }),
+  });
+  if (!res.ok) throw new Error(`build carousel failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  // Webhook is "onReceived" — returns {message:"Workflow was started"} immediately.
+  // We return a BuildResult shape with placeholders so callers' optional chaining works.
+  return { ok: true, draft_id: draftId, verdict: 'PENDING', attempts: 0, qa: { failing_slides: [], feedback: '' }, slides: [] };
 }
 
-export function saveDraft(input: { id: string; title?: string; topic?: string; post_body?: string; ig_caption?: string; status?: string }) {
-  return post('/carousel/draft', input);
+export async function saveDraft(input: { id: string; title?: string; topic?: string; post_body?: string; ig_caption?: string; status?: string }) {
+  const { supabase } = await import('./supabase');
+  const patch: Record<string, unknown> = {};
+  if (input.title !== undefined) patch.title = input.title;
+  if (input.topic !== undefined) patch.topic = input.topic;
+  if (input.post_body !== undefined) patch.post_body = input.post_body;
+  if (input.ig_caption !== undefined) patch.ig_caption = input.ig_caption;
+  if (input.status !== undefined) patch.status = input.status;
+  if (Object.keys(patch).length === 0) return { ok: true };
+  const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', input.id);
+  if (error) throw new Error(`saveDraft failed: ${error.message}`);
+  return { ok: true };
 }
 
-export function setStatus(id: string, status: string) {
-  return post('/carousel/status', { id, status });
+export async function setStatus(id: string, status: string) {
+  const { supabase } = await import('./supabase');
+  const { error } = await supabase.from('carousel_drafts').update({ status }).eq('id', id);
+  if (error) throw new Error(`setStatus failed: ${error.message}`);
+  return { ok: true };
 }
 
-export function scheduleCarousel(draft_id: string, scheduled_at: string) {
-  return post('/carousel/schedule', { draft_id, scheduled_at });
+// Schedule a post directly against Supabase. Bridge workflow yzXqLDIpuNzuhUQq
+// picks up status='scheduled' rows and INSERTs the publisher queue row.
+export async function scheduleCarousel(draft_id: string, scheduled_at: string) {
+  const { supabase } = await import('./supabase');
+  const { error } = await supabase.from('carousel_drafts').update({
+    status: 'scheduled',
+    scheduled_at,
+  }).eq('id', draft_id);
+  if (error) throw new Error(`schedule failed: ${error.message}`);
+  return { ok: true, draft_id, scheduled_at };
 }
 
 // === Lead Magnets v2 (LM-gen-v2 webhook on n8n) =====================

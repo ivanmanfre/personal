@@ -48,8 +48,50 @@ function renderInline(s: string): React.ReactNode[] {
 
 const META_LABEL_RE = /^(Status|Verdict|Score|Confidence|Source|Agent|Category|Pillar|Hook|Tier|Topic|Style|Format|Briefing|Angle|Audience|Reasoning|Issues|Suggestions|Rewrite|Notes|Reactions|Comments|Shares|Saves|Impressions)\s*[:|—-]\s*(.*)$/i;
 
+/** When an agent body is raw JSON (or starts with one), render it as a
+ *  structured key-value list rather than dumping the JSON string. */
+function tryRenderJson(s: string): React.ReactNode | null {
+  const trimmed = s.trim();
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return null;
+  let parsed: any;
+  try { parsed = JSON.parse(trimmed); } catch { return null; }
+  // For arrays, render as bullet list of items
+  if (Array.isArray(parsed)) {
+    return (
+      <ul className="list-disc list-outside pl-5 my-1 space-y-0.5 text-[12px] text-zinc-300 leading-snug">
+        {parsed.slice(0, 50).map((it, i) => (
+          <li key={i}>{typeof it === 'object' ? <pre className="inline whitespace-pre-wrap text-[11.5px]">{JSON.stringify(it)}</pre> : String(it)}</li>
+        ))}
+      </ul>
+    );
+  }
+  // For objects, render as a 2-col label/value list
+  return (
+    <div className="space-y-0.5 text-[12px] leading-snug">
+      {Object.entries(parsed).map(([k, v]) => (
+        <div key={k} className="flex gap-2">
+          <span className="text-emerald-300 font-semibold tabular-nums whitespace-nowrap">{k}:</span>
+          <span className="text-zinc-300 min-w-0">
+            {v == null ? <span className="text-zinc-600 italic">null</span>
+              : typeof v === 'object'
+                ? <pre className="whitespace-pre-wrap text-[11.5px] font-mono bg-zinc-900/60 rounded px-1.5 py-0.5 inline-block">{JSON.stringify(v, null, 2).slice(0, 1500)}</pre>
+                : typeof v === 'boolean'
+                  ? <span className={v ? 'text-emerald-300' : 'text-red-300'}>{String(v)}</span>
+                  : typeof v === 'number'
+                    ? <span className="tabular-nums text-zinc-200">{v}</span>
+                    : String(v)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function renderLightMarkdown(md: string, opts?: { textClass?: string }): React.ReactNode {
   if (!md) return null;
+  // Try JSON first — many agent bodies are structured payloads
+  const json = tryRenderJson(md);
+  if (json) return json;
   const textClass = opts?.textClass || 'text-[12.5px] text-zinc-300 leading-snug';
   const lines = md.split('\n');
   const out: React.ReactNode[] = [];
