@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon, Table2 } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon, Table2, CalendarDays } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { generatePostContent, buildCarousel } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
+import PostCalendarView from './PostCalendarView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
@@ -84,10 +85,10 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   React.useEffect(() => {
     try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table'>(() => {
+  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table' | 'calendar'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('post-studio-view');
-      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table') return v;
+      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table' || v === 'calendar') return v;
     }
     return 'list';
   });
@@ -274,6 +275,11 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'table' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Table view (dense spreadsheet, no grouping)"
             ><Table2 className="w-3.5 h-3.5" /> Table</button>
+            <button
+              onClick={() => setView('calendar')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'calendar' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Calendar view (month grid, drag to reschedule)"
+            ><CalendarDays className="w-3.5 h-3.5" /> Calendar</button>
           </div>
           <button onClick={refresh} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -589,6 +595,32 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               }
             } catch (err) {
               toastError(`bulk ${action}`, err);
+              refresh();
+            }
+          }}
+        />
+      ) : view === 'calendar' ? (
+        <PostCalendarView
+          drafts={visible}
+          onOpenDraft={setOpenId}
+          onReschedule={async (id, iso) => {
+            // Same time-preservation logic as the list view's onDateChange.
+            const cur = drafts.find((d) => d.id === id)?.scheduledAt;
+            let nextISO: string | null = null;
+            if (iso) {
+              const [y, m, day] = iso.split('-').map(Number);
+              const base = cur ? new Date(cur) : new Date();
+              base.setFullYear(y, m - 1, day);
+              if (!cur) base.setHours(9, 0, 0, 0);
+              nextISO = base.toISOString();
+            }
+            applyOptimistic(id, { scheduledAt: nextISO });
+            try {
+              const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', id);
+              if (error) throw error;
+              toast.success(nextISO ? 'Rescheduled' : 'Date cleared');
+            } catch (err) {
+              toastError('reschedule', err);
               refresh();
             }
           }}
