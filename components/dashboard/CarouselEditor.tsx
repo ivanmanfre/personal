@@ -57,13 +57,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     finally { setBusy(null); }
   }
 
-  // While THIS draft is generating, poll for updates every 15s so the editor
-  // reflects status transitions (review/published/error) without a manual refresh.
-  React.useEffect(() => {
-    if (draft.status !== 'generating') return;
-    const iv = setInterval(() => { onChanged(); }, 15_000);
-    return () => clearInterval(iv);
-  }, [draft.status, onChanged]);
+  // Polling removed — useContentLibrary subscribes to a Supabase realtime
+  // channel on carousel_drafts. Status flips propagate to this draft prop
+  // automatically; no setInterval needed.
 
   // Detect status transitions on THIS draft. Only toast when the flip was
   // SYSTEM-initiated (polled change while user wasn't acting) — the run()

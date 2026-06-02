@@ -63,7 +63,7 @@ interface PostStudioPanelProps {
 }
 
 const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts', subtitle = 'text · single-image · carousel' }) => {
-  const { drafts, loading, refresh } = useContentLibrary();
+  const { drafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
   const [type, setType] = useState<PostType>('text');
   const [topic, setTopic] = useState('');
   const [details, setDetails] = useState('');
@@ -237,18 +237,10 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   }), [drafts]);
   const [showStuckList, setShowStuckList] = useState(false);
 
-  // Auto-refresh while any post is generating — gives the user visible status
-  // progress without a full page reload. Polls every 20s. Auto-stops when no
-  // rows are in 'generating'.
-  const generatingCount = React.useMemo(
-    () => drafts.filter((d) => d.status === 'generating').length,
-    [drafts],
-  );
-  React.useEffect(() => {
-    if (generatingCount === 0) return;
-    const iv = setInterval(() => { refresh(); }, 20_000);
-    return () => clearInterval(iv);
-  }, [generatingCount, refresh]);
+  // Polling removed — useContentLibrary now subscribes to a Supabase realtime
+  // channel on carousel_drafts. Status flips (idea → generating → review →
+  // scheduled → published) propagate immediately. refresh() is still callable
+  // for cases that need a deliberate full reconcile.
 
   return (
     <div className="space-y-6">
@@ -549,44 +541,56 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
+            // Optimistic: flip the pill immediately. Realtime confirms; refresh()
+            // on error reverts. Eliminates the 400-700ms full-table-refetch lag.
+            applyOptimistic(id, { status: next });
             try {
               const { error } = await supabase.from('carousel_drafts').update({ status: next }).eq('id', id);
               if (error) throw error;
               toast.success(`Status → ${next}`);
-              await refresh();
-            } catch (err) { toastError('update status', err); }
+            } catch (err) {
+              toastError('update status', err);
+              refresh();
+            }
           }}
           onDateChange={async (id, iso) => {
+            // Preserve existing time-of-day if present, else default to 09:00 local.
+            const cur = drafts.find((d) => d.id === id)?.scheduledAt;
+            let nextISO: string | null = null;
+            if (iso) {
+              const [y, m, d] = iso.split('-').map(Number);
+              const base = cur ? new Date(cur) : new Date();
+              base.setFullYear(y, m - 1, d);
+              if (!cur) base.setHours(9, 0, 0, 0);
+              nextISO = base.toISOString();
+            }
+            applyOptimistic(id, { scheduledAt: nextISO });
             try {
-              // Preserve existing time-of-day if present, else default to 09:00 local.
-              const cur = drafts.find((d) => d.id === id)?.scheduledAt;
-              let nextISO: string | null = null;
-              if (iso) {
-                const [y, m, d] = iso.split('-').map(Number);
-                const base = cur ? new Date(cur) : new Date();
-                base.setFullYear(y, m - 1, d);
-                if (!cur) base.setHours(9, 0, 0, 0);
-                nextISO = base.toISOString();
-              }
               const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', id);
               if (error) throw error;
               toast.success(nextISO ? 'Rescheduled' : 'Date cleared');
-              await refresh();
-            } catch (err) { toastError('reschedule', err); }
+            } catch (err) {
+              toastError('reschedule', err);
+              refresh();
+            }
           }}
           onBulkAction={async (action, ids) => {
             try {
               if (action === 'disqualify') {
+                applyOptimisticMany(ids, { status: 'disqualified' });
                 const { error } = await supabase.from('carousel_drafts').update({ status: 'disqualified' }).in('id', ids);
                 if (error) throw error;
                 toast.success(`Disqualified ${ids.length} draft${ids.length === 1 ? '' : 's'}`);
               } else if (action === 'delete') {
+                applyOptimisticDelete(ids);
                 const { error } = await supabase.from('carousel_drafts').delete().in('id', ids);
                 if (error) throw error;
                 toast.success(`Deleted ${ids.length} draft${ids.length === 1 ? '' : 's'}`);
               }
-              await refresh();
-            } catch (err) { toastError(`bulk ${action}`, err); }
+            } catch (err) {
+              toastError(`bulk ${action}`, err);
+              refresh();
+            }
           }}
         />
       ) : view === 'board' ? (

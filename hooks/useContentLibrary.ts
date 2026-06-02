@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
 
@@ -32,6 +32,8 @@ export interface CarouselDraft {
   description: string | null;      // markdown source briefing (Description + Suggested Angle + Quotes) from ClickUp task
 }
 
+const SELECT_COLS = 'id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description';
+
 function mapDraft(row: any): CarouselDraft {
   return {
     id: row.id,
@@ -56,18 +58,25 @@ function mapDraft(row: any): CarouselDraft {
   };
 }
 
+export type DraftPatch = Partial<Pick<CarouselDraft, 'status' | 'scheduledAt' | 'postBody' | 'igCaption' | 'taxonomy' | 'imageUrls' | 'qa' | 'slides'>>;
+
 export function useContentLibrary() {
   const [drafts, setDrafts] = useState<CarouselDraft[]>([]);
   const [loading, setLoading] = useState(true);
+  // Tombstone set — id → reaper timestamp. Optimistically-deleted ids are
+  // suppressed from the visible list until the realtime DELETE confirms or
+  // the timeout reverts on next refresh.
+  const tombstonesRef = useRef<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('carousel_drafts')
-        .select('id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description')
+        .select(SELECT_COLS)
         .order('updated_at', { ascending: false });
       if (error) throw error;
+      tombstonesRef.current.clear();
       setDrafts((data || []).map(mapDraft));
     } catch (err) {
       toastError('load carousel drafts', err);
@@ -76,7 +85,63 @@ export function useContentLibrary() {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  // applyOptimistic — merge a patch into a single draft immediately, ahead
+  // of the server confirming the write. The realtime channel (below) will
+  // overwrite this with the authoritative value when it arrives. On mutation
+  // error the caller is expected to call refresh() to reconcile.
+  const applyOptimistic = useCallback((id: string, patch: DraftPatch) => {
+    setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+  }, []);
 
-  return { drafts, loading, refresh };
+  // applyOptimisticMany — same shape applied to a set of ids (bulk actions).
+  const applyOptimisticMany = useCallback((ids: string[], patch: DraftPatch) => {
+    const idSet = new Set(ids);
+    setDrafts((prev) => prev.map((d) => (idSet.has(d.id) ? { ...d, ...patch } : d)));
+  }, []);
+
+  // applyOptimisticDelete — hide rows from the list until realtime confirms
+  // the DELETE. Tombstones cleared on refresh.
+  const applyOptimisticDelete = useCallback((ids: string[]) => {
+    ids.forEach((id) => tombstonesRef.current.add(id));
+    setDrafts((prev) => prev.filter((d) => !tombstonesRef.current.has(d.id)));
+  }, []);
+
+  // Initial load + realtime subscription. Replaces the 15s + 20s polling
+  // pair the editor and panel were running. Pattern proven in useScan.
+  useEffect(() => {
+    refresh();
+
+    const channel = supabase
+      .channel('carousel_drafts-content-library')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'carousel_drafts' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const id = (payload.old as any)?.id as string | undefined;
+            if (!id) return;
+            tombstonesRef.current.delete(id);
+            setDrafts((prev) => prev.filter((d) => d.id !== id));
+            return;
+          }
+          const row = payload.new as any;
+          if (!row?.id) return;
+          // Drop any stale tombstone for the same id (server resurrected it)
+          tombstonesRef.current.delete(row.id);
+          const next = mapDraft(row);
+          setDrafts((prev) => {
+            const i = prev.findIndex((d) => d.id === next.id);
+            if (i === -1) return [next, ...prev];
+            const copy = prev.slice();
+            copy[i] = next;
+            return copy;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [refresh]);
+
+  return { drafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete };
 }
