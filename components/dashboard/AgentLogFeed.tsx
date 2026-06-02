@@ -92,6 +92,24 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
   );
   const [open, setOpen] = useState(defaultOpen ?? sorted.length <= 5);
   const [bodyOpen, setBodyOpen] = useState<Record<number, boolean>>({});
+
+  // Track which entries are NEW since the panel mounted/refreshed, so we can
+  // highlight them with a violet pulse on appearance. Compare by ts+agent.
+  const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
+  const seenKeysRef = React.useRef<Set<string>>(new Set(sorted.map((e) => `${e.ts}|${e.agent}`)));
+  React.useEffect(() => {
+    const newly: string[] = [];
+    for (const e of sorted) {
+      const k = `${e.ts}|${e.agent}`;
+      if (!seenKeysRef.current.has(k)) { newly.push(k); seenKeysRef.current.add(k); }
+    }
+    if (newly.length === 0) return;
+    setNewKeys((s) => { const n = new Set(s); newly.forEach((k) => n.add(k)); return n; });
+    const t = setTimeout(() => {
+      setNewKeys((s) => { const n = new Set(s); newly.forEach((k) => n.delete(k)); return n; });
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [sorted]);
   const [noteText, setNoteText] = useState('');
   const [posting, setPosting] = useState(false);
   const canCompose = !!(table && rowId);
@@ -172,7 +190,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
             const preview = (e.body || '').replace(/\s+/g, ' ').slice(0, 140);
             const truncated = (e.body || '').length > 140;
             return (
-              <div key={i} className="px-3 py-1.5 hover:bg-zinc-800/20 transition-colors">
+              <div key={i} className={`px-3 py-1.5 hover:bg-zinc-800/20 transition-colors ${newKeys.has(`${e.ts}|${e.agent}`) ? 'animate-log-pulse' : ''}`}>
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
                   <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${tint}`}>
                     <Icon className="w-3 h-3" /> {e.agent}

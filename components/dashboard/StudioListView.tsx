@@ -165,6 +165,26 @@ export function StudioListView({
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
 
+  // Track each row's last-seen status. When it changes, mark the row for a brief
+  // emerald flash so external transitions (workflow flips, auto-refresh) are
+  // visible to the user — not just silent re-renders.
+  const prevStatusRef = React.useRef<Map<string, string>>(new Map());
+  const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
+  React.useEffect(() => {
+    const newly: string[] = [];
+    for (const r of rows) {
+      const prev = prevStatusRef.current.get(r.id);
+      if (prev && prev !== r.status) newly.push(r.id);
+      prevStatusRef.current.set(r.id, r.status);
+    }
+    if (newly.length === 0) return;
+    setFlashIds((s) => { const n = new Set(s); newly.forEach((i) => n.add(i)); return n; });
+    const t = setTimeout(() => {
+      setFlashIds((s) => { const n = new Set(s); newly.forEach((i) => n.delete(i)); return n; });
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [rows]);
+
   // Media lightbox — click a row thumbnail to view media at full size
   // without opening the editor. Stores the row currently being previewed.
   const [previewRow, setPreviewRow] = useState<StudioRow | null>(null);
@@ -442,7 +462,7 @@ export function StudioListView({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer ${selected.has(r.id) ? 'bg-emerald-950/20 ring-1 ring-inset ring-emerald-500/20' : ''}`}
+        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer ${selected.has(r.id) ? 'bg-emerald-950/20 ring-1 ring-inset ring-emerald-500/20' : ''} ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -527,8 +547,25 @@ export function StudioListView({
                 onClick={canEdit ? (e) => { e.stopPropagation(); setEditingStatusId(r.id); } : undefined}
                 title={canEdit ? 'Click to change status' : undefined}
               >
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                <span className={`text-[11px] ${meta.label} truncate`}>{statusLabel(r.status)}</span>
+                {/* Status pill morphs when status changes — AnimatePresence keyed by status
+                    + a 600ms emerald flash via a separate motion.div overlay */}
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={r.status}
+                    initial={{ opacity: 0, scale: 0.85, y: -3 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.85, y: 3 }}
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    className="flex items-center gap-1.5"
+                  >
+                    <motion.span
+                      className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`}
+                      animate={{ scale: [1, 1.6, 1], opacity: [1, 0.85, 1] }}
+                      transition={{ duration: 0.7, times: [0, 0.4, 1] }}
+                    />
+                    <span className={`text-[11px] ${meta.label} truncate font-medium`}>{statusLabel(r.status)}</span>
+                  </motion.div>
+                </AnimatePresence>
               </div>
             );
           }

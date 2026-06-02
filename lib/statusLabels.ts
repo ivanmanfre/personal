@@ -38,7 +38,7 @@ export type LmStatus = typeof LM_STATUSES[number];
 // here, fall back to humanizing the value (snake_case → Title Case).
 const RAW_LABEL_MAP: Record<string, string> = {
   // Posts
-  idea: 'Suggestion',
+  idea: 'Idea',
   generating: 'Generating content',
   review: 'Review',
   approved: 'Approved',

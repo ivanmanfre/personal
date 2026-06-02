@@ -283,8 +283,11 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               title="Table view (dense spreadsheet, no grouping)"
             ><Table2 className="w-3.5 h-3.5" /> Table</button>
           </div>
-          <button onClick={refresh} className="p-2 text-zinc-400 hover:text-zinc-200" title="Refresh">
+          <button onClick={refresh} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {generatingCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-refresh-pulse" />
+            )}
           </button>
         </div>
       </div>

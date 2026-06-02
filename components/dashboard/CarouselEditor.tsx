@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
@@ -56,6 +57,29 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     const iv = setInterval(() => { onChanged(); }, 15_000);
     return () => clearInterval(iv);
   }, [draft.status, onChanged]);
+
+  // Detect status transitions on THIS draft + fire a toast so the user notices
+  // even when not looking at the right-card. Skip the initial mount.
+  const prevStatusRef = React.useRef<string>(draft.status);
+  React.useEffect(() => {
+    if (prevStatusRef.current === draft.status) return;
+    const from = prevStatusRef.current;
+    const to = draft.status;
+    prevStatusRef.current = to;
+    // Friendly transition messages
+    const msgs: Record<string, string> = {
+      'idea>generating': 'Generation fired — agents drafting now',
+      'generating>review': '✓ Generation complete — ready for review',
+      'generating>error':  '⚠ Generation failed — see Agent activity for details',
+      'review>scheduled':  '📅 Approved and scheduled',
+      'review>approved':   '✓ Approved',
+      'scheduled>published': '🚀 Published live on LinkedIn',
+      'approved>scheduled': '📅 Scheduled',
+    };
+    const key = `${from}>${to}`;
+    const message = msgs[key] || `Status: ${from} → ${to}`;
+    toast.success(message, { duration: 5000 });
+  }, [draft.status]);
 
   const qa = draft.qa;
 
@@ -309,7 +333,18 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 published         → Already published (read-only)
                 disqualified      → Restart (back to idea)
                 error             → Retry generation
-              Approve never shows during generation / before content exists. */}
+              Approve never shows during generation / before content exists.
+              Wrapped in AnimatePresence so the card slides + fades when status
+              changes — gives visible feedback for the workflow flipping under
+              your feet. */}
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={draft.status}
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+          >
           {(() => {
             const s = draft.status;
             const fireGenerate = async () => {
@@ -493,6 +528,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               </Card>
             );
           })()}
+          </motion.div>
+          </AnimatePresence>
 
           <div className="space-y-2">
             <Button
