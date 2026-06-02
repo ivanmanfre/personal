@@ -83,14 +83,19 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   const qa = draft.qa;
 
-  // Media-preview render (used inside the right column of the 2-col layout below).
+  // Media-preview render.
+  // The previous regex treated EVERY Drive /file/ link as a PDF — but single_image
+  // posts also store their image URLs as Drive links. We now route by draft.type:
+  // carousel → Drive PDF iframe, single_image → render the image via thumbnail
+  // converter (Drive doesn't allow direct <img src> on /file/d/X/view).
   const renderMedia = () => {
     const urls = draft.imageUrls || [];
     const firstUrl = urls[0] || '';
-    const isPdf = /\.pdf($|\?)|drive\.google\.com\/file\//i.test(firstUrl);
-    if (isPdf) {
-      const driveMatch = firstUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-      const embedSrc = driveMatch ? `https://drive.google.com/file/d/${driveMatch[1]}/preview` : firstUrl;
+    const driveMatch = firstUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    const driveId = driveMatch?.[1];
+    const isCarouselPdf = draft.type === 'carousel' && (/\.pdf($|\?)/i.test(firstUrl) || !!driveMatch);
+    if (isCarouselPdf && driveId) {
+      const embedSrc = `https://drive.google.com/file/d/${driveId}/preview`;
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[11px] text-zinc-500">
@@ -104,12 +109,18 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       );
     }
     if (urls.length > 0) {
+      // Single-image (or generic): render images. Convert Drive /file/d/X/view URLs
+      // to the /thumbnail?id= form which IS img-renderable.
+      const toImgSrc = (u: string) => {
+        const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+        return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : u;
+      };
       return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}>
           {urls.map((url, i) => (
             <div key={i} className="rounded-md border border-zinc-800 bg-zinc-950 overflow-hidden">
-              <img src={url} alt={`Slide ${i + 1}`} className="w-full h-auto" />
-              <div className="px-1 py-0.5 text-center text-[10px] text-zinc-500">{i + 1}</div>
+              <img src={toImgSrc(url)} alt={urls.length === 1 ? 'Post image' : `Slide ${i + 1}`} className="w-full h-auto" loading="lazy" />
+              {urls.length > 1 && <div className="px-1 py-0.5 text-center text-[10px] text-zinc-500">{i + 1}</div>}
             </div>
           ))}
         </div>
