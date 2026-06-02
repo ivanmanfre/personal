@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 
 const PROSPECTS_PER_PAGE = 30;
-import { Target, Users, Zap, MessageSquare, TrendingUp, Activity, AlertTriangle, Clock, Search, Send, Eye, BookOpen, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { Target, Users, MessageSquare, TrendingUp, Activity, AlertTriangle, Send } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
 import { supabase } from '../../lib/supabase';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -17,7 +17,25 @@ import { OutreachFunnel } from './outreach/OutreachFunnel';
 import { ProspectDetailModal } from './outreach/ProspectDetailModal';
 import { CampaignManager } from './outreach/CampaignManager';
 import { AgencyVariantPerformance } from './AgencyVariantPerformance';
+import { SubTabs, SubTab } from '../dashboard-v2/primitives';
+import PanelErrorBoundary from './shared/PanelErrorBoundary';
+import { ActivityFeed } from './outreach/ActivityFeed';
+import { PendingInviteGauge } from './outreach/PendingInviteGauge';
+import { CampaignPerformance } from './outreach/CampaignPerformance';
+import { AuditClicks } from './outreach/AuditClicks';
 import type { OutreachProspect } from '../../types/dashboard';
+
+// Phase 1 constant; Phase 2 makes this integration_config-driven.
+const PENDING_CEILING = 200;
+
+type OutreachTab = 'pipeline' | 'review' | 'inbox' | 'health';
+const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox', 'health'];
+const TAB_LABELS: Record<OutreachTab, string> = { pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', health: 'Health' };
+function readTab(): OutreachTab {
+  if (typeof window === 'undefined') return 'pipeline';
+  const t = new URLSearchParams(window.location.search).get('tab') as OutreachTab | null;
+  return t && TAB_ORDER.includes(t) ? t : 'pipeline';
+}
 
 const stageColors: Record<string, string> = {
   identified: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
@@ -48,14 +66,6 @@ function icpDot(score: number | null): string {
   return 'bg-red-400';
 }
 
-const actionTypeIcons: Record<string, string> = {
-  profile_view: 'Viewed profile',
-  like: 'Liked post',
-  react: 'Reacted to post',
-  connection_request: 'Connection sent',
-  dm: 'DM sent',
-};
-
 type SortKey = 'icp_score' | 'activity_score' | 'updated_at' | 'created_at';
 
 const OutreachPanel: React.FC = () => {
@@ -76,6 +86,14 @@ const OutreachPanel: React.FC = () => {
   } = pipeline;
   const [bulkUrls, setBulkUrls] = useState('');
   const [showCohort, setShowCohort] = useState(false);
+  const [tab, setTab] = useState<OutreachTab>(readTab);
+  const changeTab = (t: OutreachTab) => {
+    setTab(t);
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', t);
+    window.history.replaceState(null, '', url.toString());
+  };
 
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['outreach_prospects', 'outreach_messages', 'outreach_engagement_log'] });
 
@@ -89,9 +107,6 @@ const OutreachPanel: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCampaigns, setShowCampaigns] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showActivity, setShowActivity] = useState(false);
-  const [showDocs, setShowDocs] = useState(false);
-  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   // Filtered + sorted prospects
@@ -171,143 +186,16 @@ const OutreachPanel: React.FC = () => {
     setSelectedIds(new Set());
   };
 
+  const reviewCount = pendingDrafts.length + proposedTargets.length + commentDrafts.length;
+
   if (loading) return <LoadingSkeleton cards={6} rows={8} />;
 
-  return (
+  const pipelineTab = (
     <div className="space-y-4">
-      {/* Section 1: Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">ICP Outreach</h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => toggleFeatureFlag('outreach_enabled')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              featureFlags.outreach_enabled
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
-                : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
-            }`}
-          >
-            System: {featureFlags.outreach_enabled ? 'ON' : 'OFF'}
-          </button>
-          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
-        </div>
-      </div>
-
-      {!featureFlags.outreach_enabled && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2.5 text-xs text-amber-400">
-          Outreach automation paused. Manual actions still work.
-        </div>
-      )}
-
-      {/* Workflow error banner — only shown when something errored AND not acknowledged */}
-      {(() => {
-        const errored = Object.entries(workflowHealth).filter(([, h]) =>
-          h.lastStatus === 'error' && !h.errorAcknowledged
-        );
-        if (errored.length === 0) return null;
-        const wfNames: Record<string, string> = {
-          '35HJE7eOpvEdxRwq': 'Import + Enrich', 'kr2lSH1eRGZcDWmO': 'Warm-up', 'wBBL75oqWcTf78yp': 'Trigger Research',
-          '5ZXtArhobWrDDpfJ': 'Connect', 'joU7VaM5OiRAwLwP': 'DM Sequence', 'KWxb6JFdpvb3y8w5': 'Monitor',
-          'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Auto Comments — Post Fetch',
-          '9q4bhlIBQCiCxQpq': 'Auto Comments — Drafter', '2AVRUQLoxCIXCzT0': 'Auto Comments — Sender',
-        };
-        const friendlyError = (wfId: string, err: string): { label: string; detail?: string } | null => {
-          if (wfId === 'VaP0RnmFlhkfKE4V' && /403|usage hard limit|platform-feature-disabled/i.test(err)) {
-            return { label: 'Auto comments suspended — Apify credits depleted', detail: 'Resumes when monthly Apify quota resets (or top up Apify plan).' };
-          }
-          if (/403/i.test(err)) {
-            return { label: 'API access denied (403)', detail: 'Likely UniPile/Apify credential rotation. Check the workflow node credentials.' };
-          }
-          return null;
-        };
-        const acknowledge = async (rowId: string | null) => {
-          if (!rowId) return;
-          try {
-            const { dashboardAction } = await import('../../lib/dashboardActions');
-            await dashboardAction('dashboard_workflow_stats', rowId, 'error_acknowledged', 'true');
-            refresh();
-          } catch (e) { /* swallow */ }
-        };
-        return (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
-              <span className="text-sm font-medium text-red-300">{errored.length} workflow{errored.length > 1 ? 's' : ''} erroring</span>
-            </div>
-            <div className="space-y-2">
-              {errored.map(([wfId, h]) => {
-                const friendly = h.lastError ? friendlyError(wfId, h.lastError) : null;
-                return (
-                  <div key={wfId} className="text-xs flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-red-300 font-medium">{friendly ? friendly.label : (wfNames[wfId] || wfId)}</span>
-                      <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
-                      {friendly?.detail ? (
-                        <p className="text-[10px] text-zinc-400 mt-0.5 ml-1">{friendly.detail}</p>
-                      ) : (
-                        h.lastError && (
-                          <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1 break-all">{h.lastError.slice(0, 200)}</p>
-                        )
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                      <a
-                        href={`https://n8n.ivanmanfredi.com/workflow/${wfId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] uppercase tracking-wider text-red-300 hover:text-red-200 underline underline-offset-2"
-                      >
-                        Open in n8n
-                      </a>
-                      <button
-                        onClick={() => acknowledge(h.statsRowId)}
-                        className="text-[10px] uppercase tracking-wider text-zinc-400 hover:text-zinc-200 px-1.5 py-0.5 border border-zinc-700/60 rounded"
-                        title="Hide this error until it next fires"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Auto-Send First Contact - top-level visibility */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
-        <div className="flex items-center gap-2 mr-2">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Auto-Send 1st Touch</span>
-        </div>
-        {([
-          { key: 'outreach_auto_send_linkedin', label: 'LinkedIn DMs' },
-          { key: 'outreach_auto_send_email', label: 'Cold Emails' },
-        ]).map((row) => {
-          const on = featureFlags[row.key] ?? false;
-          return (
-            <label key={row.key} className="flex items-center gap-2 cursor-pointer select-none">
-              <button
-                onClick={() => toggleFeatureFlag(row.key)}
-                className={`relative w-10 h-5 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
-                title={on ? 'Auto-send ON - drafts skip approval' : 'Manual approval required'}
-              >
-                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                  on ? 'translate-x-[22px]' : 'translate-x-0.5'
-                }`} />
-              </button>
-              <span className={`text-xs font-medium ${on ? 'text-amber-400' : 'text-zinc-400'}`}>{row.label}</span>
-            </label>
-          );
-        })}
-        <span className="text-[10px] text-zinc-500 ml-auto">When ON, first-contact drafts ship without approval. Follow-ups still need approval.</span>
-      </div>
-
       {/* Section 2: Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <StatCard label="Prospects" value={stats.totalProspects} icon={<Users className="w-5 h-5" />} color="text-zinc-300" />
         <StatCard label="Campaigns" value={stats.activeCampaigns} icon={<Target className="w-5 h-5" />} color="text-zinc-300" />
-        <StatCard label="Warming" value={stats.warming + stats.engaged} icon={<Zap className="w-5 h-5" />} color="text-zinc-300" />
         <StatCard label="Pending" value={stats.connectionSent} icon={<MessageSquare className="w-5 h-5" />} color="text-zinc-300" />
         {(() => {
           // Reply rate at small N is meaningless (1/1 = 100%). Show the fraction as
@@ -326,127 +214,14 @@ const OutreachPanel: React.FC = () => {
         })()}
       </div>
 
-      {/* Section 2b: Daily Activity Limits */}
-      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-zinc-200">Today&apos;s Activity</span>
-          </div>
-          <span className="text-[10px] text-zinc-500">Daily limits enforced by LinkedIn safety layer</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {([
-            { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝', queueKey: 'connection_request' as const },
-            { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬', queueKey: 'dm' as const },
-          ]).map(({ key, label, defaultLimit, icon, queueKey }) => {
-            const rl = rateLimits[key];
-            const count = rl?.count || 0;
-            const limit = rl?.daily_limit || defaultLimit;
-            const pct = Math.min((count / limit) * 100, 100);
-            const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
-            const textColor = pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-zinc-300';
-            const queued = queueKey ? cappedQueue[queueKey] : 0;
-
-            // Compute time until UTC midnight reset
-            let resetIn = '';
-            if (count >= limit) {
-              const now = new Date();
-              const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
-              const ms = utcMidnight.getTime() - now.getTime();
-              const h = Math.floor(ms / 3600000);
-              const m = Math.floor((ms % 3600000) / 60000);
-              resetIn = h > 0 ? `${h}h ${m}m` : `${m}m`;
-            }
-
-            return (
-              <div key={key} className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] text-zinc-400">{icon} {label}</span>
-                  <span className={`text-sm font-mono font-semibold ${textColor}`}>{count}<span className="text-zinc-600">/{limit}</span></span>
-                </div>
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
-                </div>
-                {count >= limit && (
-                  <p className="text-[9px] text-red-400 mt-1 leading-tight">
-                    Cap reached
-                    {queued > 0 && <> · <span className="text-amber-300">{queued} queued</span></>}
-                    <br />
-                    Resets in {resetIn}
-                  </p>
-                )}
-                {count < limit && queueKey && queued > 0 && (
-                  <p className="text-[9px] text-zinc-500 mt-1">{queued} approved waiting</p>
-                )}
-              </div>
-            );
-          })}
-          {/* Emails - uncapped, just informational */}
-          <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-zinc-400">✉️ Emails Sent</span>
-              <span className="text-sm font-mono font-semibold text-zinc-300">{stats.emailsSentToday}</span>
-            </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full rounded-full bg-green-500 transition-all" style={{ width: stats.emailsSentToday > 0 ? '100%' : '2%' }} />
-            </div>
-            <p className="text-[9px] text-zinc-500 mt-1">First-touch + follow-ups, no daily cap</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 2c: Recent Activity (lifted from bottom for visibility) */}
-      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-zinc-200">Recent Activity</span>
-            <span className="text-[10px] text-zinc-500">({recentActivity.length})</span>
-          </div>
-          <button
-            onClick={() => setShowActivity(!showActivity)}
-            className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            {showActivity ? 'collapse' : 'expand all'}
-          </button>
-        </div>
-        {recentActivity.length === 0 ? (
-          <p className="text-xs text-zinc-600 text-center py-4">No activity yet</p>
-        ) : (
-          <div className={`space-y-1.5 overflow-y-auto ${showActivity ? 'max-h-96' : 'max-h-48'}`}>
-            {(showActivity ? recentActivity : recentActivity.slice(0, 8)).map((e) => {
-              const prospect = prospects.find((p) => p.id === e.prospectId);
-              const profileUrl = prospect?.linkedinUrl;
-              const actionUrl = e.targetUrl || profileUrl;
-              return (
-                <div key={e.id} className="flex items-start gap-2 text-xs">
-                  <span className="text-zinc-600 whitespace-nowrap w-12 shrink-0">
-                    {new Date(e.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <span className={e.success ? 'text-zinc-400' : 'text-red-400'}>
-                    {actionUrl ? (
-                      <a href={actionUrl} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-blue-300 transition-colors">
-                        {actionTypeIcons[e.actionType] || e.actionType}
-                      </a>
-                    ) : (actionTypeIcons[e.actionType] || e.actionType)}
-                    {prospect && (
-                      profileUrl ? (
-                        <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-blue-300 hover:underline transition-colors"> {prospect.name}</a>
-                      ) : <span className="text-zinc-300"> {prospect.name}</span>
-                    )}
-                    {prospect?.campaignName && <span className="text-zinc-600"> ({prospect.campaignName})</span>}
-                    {!e.success && e.errorMessage && <span className="text-red-500/70"> · {e.errorMessage.slice(0, 60)}</span>}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {/* Section 2d: Agency DM Variant Performance (A/B test live) */}
       <AgencyVariantPerformance />
+
+      {/* Per-campaign performance */}
+      <CampaignPerformance prospects={prospects} />
+
+      {/* Audit-link clicks (previously buried in Agency-Ready only) */}
+      <AuditClicks />
 
       {/* Section 3: Funnel */}
       <OutreachFunnel stats={stats} onStageClick={(s) => setStageFilter(s)} />
@@ -543,319 +318,6 @@ const OutreachPanel: React.FC = () => {
             {allStages.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>
           <button onClick={() => setSelectedIds(new Set())} className="text-[11px] text-zinc-500 hover:text-zinc-300 ml-auto">Clear</button>
-        </div>
-      )}
-
-      {/* Outreach Review Queue */}
-      {pendingDrafts.length > 0 && (
-        <div className="bg-zinc-900/90 border border-amber-500/20 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageSquare className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-semibold text-amber-400">{pendingDrafts.length} Draft{pendingDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
-            <span className="text-[9px] text-zinc-500">
-              ({pendingDrafts.filter(d => d.messageType === 'connection_note').length} connection notes, {pendingDrafts.filter(d => d.messageType === 'email').length} emails, {pendingDrafts.filter(d => d.messageType === 'dm').length} DMs)
-            </span>
-          </div>
-          <div className="space-y-3">
-            {pendingDrafts.map((draft) => (
-              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { const p = prospects.find(x => x.id === draft.prospectId); if (p) setSelectedProspect(p); }} className="text-xs font-medium text-zinc-200 hover:text-cyan-400 transition-colors underline decoration-zinc-700 hover:decoration-cyan-400 cursor-pointer">{draft.prospectName}</button>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{
-                      draft.messageType === 'connection_note' ? 'Connection Note'
-                      : draft.messageType === 'email' ? `Email ${draft.emailStep ?? 1}/3`
-                      : `DM Step ${draft.sequenceStep}`
-                    }</span>
-                    {draft.channel && (
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${draft.channel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
-                        {draft.channel === 'email' ? 'Email' : 'LinkedIn'}
-                      </span>
-                    )}
-                    {draft.matchedContentType && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">{draft.matchedContentType}</span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-zinc-500">{timeAgo(draft.createdAt)}</span>
-                </div>
-                {/* Research context for this prospect */}
-                {(() => {
-                  const p = prospects.find(x => x.id === draft.prospectId);
-                  if (!p?.triggerType || p.triggerType === 'none') return null;
-                  return (
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{p.triggerType?.replace('_', ' ')} ({p.triggerConfidence}/5)</span>
-                      {p.microPersona && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
-                          ({ scaling_pain: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-                             process_pain: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-                             cost_pain: 'bg-red-500/10 text-red-400 border-red-500/20',
-                             compliance_pain: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-                             transition_pain: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-                             competitive_pain: 'bg-pink-500/10 text-pink-400 border-pink-500/20'
-                          } as Record<string, string>)[p.microPersona] || 'bg-zinc-700/30 text-zinc-400 border-zinc-600/30'
-                        }`}>{p.microPersona.replace('_', ' ')}</span>
-                      )}
-                      {p.messagingPattern && (
-                        <span className="text-[9px] text-zinc-500">{p.messagingPattern.replace('_', ' ')}</span>
-                      )}
-                      {p.triggerDetail && (
-                        <span className="text-[10px] text-zinc-500 italic truncate max-w-[300px]" title={p.triggerDetail}>{p.triggerDetail}</span>
-                      )}
-                    </div>
-                  );
-                })()}
-                <textarea
-                  defaultValue={draft.messageText}
-                  id={`draft-${draft.id}`}
-                  rows={Math.min(8, Math.max(3, draft.messageText.split('\n').length))}
-                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={async (e) => {
-                      const btn = e.currentTarget;
-                      btn.disabled = true;
-                      const textarea = document.getElementById(`draft-${draft.id}`) as HTMLTextAreaElement;
-                      const editedText = textarea?.value || draft.messageText;
-                      try {
-                        // Save edit if changed
-                        if (editedText !== draft.messageText) {
-                          await supabase.from('outreach_messages').update({ message_text: editedText }).eq('id', draft.id);
-                        }
-                        await approveDraft(draft.prospectId, draft.id, editedText, draft.channel || undefined);
-                        await fetchPendingDrafts();
-                      } catch {
-                        btn.disabled = false;
-                      }
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-3 h-3" /> {draft.messageType === 'connection_note' ? 'Send Connection' : draft.channel === 'email' ? 'Send Email' : 'Send DM'}
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      const btn = e.currentTarget;
-                      btn.disabled = true;
-                      await rejectDraft(draft.prospectId, draft.id);
-                      await fetchPendingDrafts();
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Commenting Cohort — bulk add + active list */}
-      <div className="bg-zinc-900/90 border border-cyan-500/20 rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-400">Commenting Cohort</span>
-            <span className="text-[11px] text-zinc-500">{activeCohort.length} active · target 30-50 for daily depth</span>
-          </div>
-          <button
-            onClick={() => setShowCohort((v) => !v)}
-            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            {showCohort ? '▼ Hide active list' : '▶ Show active list'}
-          </button>
-        </div>
-
-        <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-xl p-3">
-          <p className="text-[11px] text-zinc-500 mb-2">Bulk-add LinkedIn URLs (one per line). Each will be enriched via UniPile and added as <span className="text-emerald-400 font-medium">active</span>.</p>
-          <textarea
-            value={bulkUrls}
-            onChange={(e) => setBulkUrls(e.target.value)}
-            rows={4}
-            placeholder={'https://linkedin.com/in/jane-founder\nhttps://linkedin.com/in/john-partner\n...'}
-            className="w-full text-xs text-zinc-300 bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 font-mono resize-y focus:outline-none focus:border-cyan-500/40"
-          />
-          <div className="flex items-center justify-between gap-2 mt-2">
-            <span className="text-[10px] text-zinc-500">{bulkUrls.split('\n').filter((u) => u.trim()).length} URL(s) ready</span>
-            <button
-              onClick={async () => {
-                const urls = bulkUrls.split('\n').map((u) => u.trim()).filter(Boolean);
-                await addCommentingTargets(urls);
-                setBulkUrls('');
-              }}
-              disabled={!bulkUrls.trim()}
-              className="px-3 py-1 rounded-lg text-[11px] font-medium bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 hover:bg-cyan-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Add to cohort →
-            </button>
-          </div>
-        </div>
-
-        {showCohort && (
-          activeCohort.length === 0 ? (
-            <div className="text-xs text-zinc-500 text-center py-3">No active targets yet — paste URLs above to start.</div>
-          ) : (
-            <div className="overflow-x-auto -mx-3">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-[10px] text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
-                    <th className="text-left px-3 py-2">Name</th>
-                    <th className="text-left px-3 py-2">Vertical</th>
-                    <th className="text-left px-3 py-2">Title @ Company</th>
-                    <th className="text-left px-3 py-2">Source</th>
-                    <th className="text-center px-3 py-2 w-28">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/40">
-                  {activeCohort.map((t) => (
-                    <tr key={t.id}>
-                      <td className="px-3 py-2 text-zinc-200">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate max-w-[160px]" title={t.name}>{t.name}</span>
-                          {t.linkedinUrl && (
-                            <a href={t.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400/60 hover:text-blue-400" title="LinkedIn">
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2"><span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{t.vertical || '—'}</span></td>
-                      <td className="px-3 py-2 text-zinc-400 truncate max-w-[260px]" title={[t.title, t.company].filter(Boolean).join(' @ ')}>
-                        {[t.title, t.company].filter(Boolean).join(' @ ') || '—'}
-                      </td>
-                      <td className="px-3 py-2 text-[10px] text-zinc-500 font-mono">{t.source || '—'}</td>
-                      <td className="px-3 py-2 text-center">
-                        <button onClick={() => pauseCommentingTarget(t.id)} className="text-[10px] text-amber-400/80 hover:text-amber-400 mr-2">pause</button>
-                        <button onClick={() => dropActiveCommentingTarget(t.id)} className="text-[10px] text-red-400/80 hover:text-red-400">drop</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
-      </div>
-
-      {/* Proposed Commenting Targets — review queue */}
-      {proposedTargets.length > 0 && (
-        <div className="bg-zinc-900/90 border border-cyan-500/20 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm font-semibold text-cyan-400">{proposedTargets.length} Commenting Target{proposedTargets.length > 1 ? 's' : ''} Proposed</span>
-            <span className="text-[9px] text-zinc-500">approve to start drafting comments on their posts</span>
-          </div>
-          <div className="space-y-2">
-            {proposedTargets.map((t) => (
-              <div key={t.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-zinc-200 truncate">{t.name}</span>
-                      {t.vertical && <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{t.vertical}</span>}
-                      {t.priority != null && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${t.priority <= 2 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : t.priority <= 3 ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25'}`}>p{t.priority}</span>
-                      )}
-                      {t.linkedinUrl && (
-                        <a href={t.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400/60 hover:text-blue-400 shrink-0" title="LinkedIn">
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                        </a>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-zinc-500 mt-0.5">{[t.title, t.company].filter(Boolean).join(' @ ') || ''}</div>
-                    {t.notes && <div className="text-[11px] text-zinc-400 mt-1 italic">{t.notes}</div>}
-                  </div>
-                  <div className="flex flex-col gap-1 shrink-0">
-                    <button
-                      onClick={async () => { await approveCommentingTarget(t.id); }}
-                      className="px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={async () => { await rejectCommentingTarget(t.id); }}
-                      className="px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
-                    >
-                      Drop
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Comment Draft Review Queue */}
-      {commentDrafts.length > 0 && (
-        <div className="bg-zinc-900/90 border border-purple-500/20 rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageSquare className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-semibold text-purple-400">{commentDrafts.length} Comment Draft{commentDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
-            <span className="text-[9px] text-zinc-500">seed commenting_targets to generate drafts automatically</span>
-          </div>
-          <div className="space-y-3">
-            {commentDrafts.map((draft) => (
-              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-zinc-200">{draft.targetName || 'Unknown target'}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">LinkedIn Comment</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500">{draft.draftedAt ? timeAgo(draft.draftedAt) : ''}</span>
-                </div>
-                {draft.postExcerpt && (
-                  <p className="text-[10px] text-zinc-500 italic mb-2 truncate" title={draft.postExcerpt}>
-                    Post: {draft.postExcerpt.slice(0, 120)}{draft.postExcerpt.length > 120 ? '...' : ''}
-                  </p>
-                )}
-                <textarea
-                  defaultValue={draft.commentText}
-                  id={`comment-draft-${draft.id}`}
-                  rows={Math.min(5, Math.max(2, draft.commentText.split('\n').length + 1))}
-                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={async (e) => {
-                      const btn = e.currentTarget;
-                      btn.disabled = true;
-                      const textarea = document.getElementById(`comment-draft-${draft.id}`) as HTMLTextAreaElement;
-                      const editedText = textarea?.value || draft.commentText;
-                      try {
-                        await approveCommentDraft(draft.id, editedText);
-                      } catch {
-                        btn.disabled = false;
-                      }
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-3 h-3" /> Approve
-                  </button>
-                  <button
-                    onClick={async (e) => {
-                      const btn = e.currentTarget;
-                      btn.disabled = true;
-                      try {
-                        await rejectCommentDraft(draft.id);
-                      } catch {
-                        btn.disabled = false;
-                      }
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    Skip
-                  </button>
-                  {draft.postUrl && (
-                    <a href={draft.postUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-300 ml-auto transition-colors">
-                      View post ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
@@ -1176,6 +638,554 @@ const OutreachPanel: React.FC = () => {
           />
         )}
       </div>
+    </div>
+  );
+
+  const reviewTab = (
+    <div className="space-y-4">
+      {reviewCount === 0 && activeCohort.length === 0 ? (
+        <EmptyState
+          title="Nothing to review"
+          description="Drafts, comment drafts, and proposed commenting targets will appear here when the workflows generate them."
+          icon={<MessageSquare className="w-10 h-10" />}
+        />
+      ) : null}
+
+      {/* Outreach Review Queue */}
+      {pendingDrafts.length > 0 && (
+        <div className="bg-zinc-900/90 border border-amber-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-semibold text-amber-400">{pendingDrafts.length} Draft{pendingDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
+            <span className="text-[9px] text-zinc-500">
+              ({pendingDrafts.filter(d => d.messageType === 'connection_note').length} connection notes, {pendingDrafts.filter(d => d.messageType === 'email').length} emails, {pendingDrafts.filter(d => d.messageType === 'dm').length} DMs)
+            </span>
+          </div>
+          <div className="space-y-3">
+            {pendingDrafts.map((draft) => (
+              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { const p = prospects.find(x => x.id === draft.prospectId); if (p) setSelectedProspect(p); }} className="text-xs font-medium text-zinc-200 hover:text-cyan-400 transition-colors underline decoration-zinc-700 hover:decoration-cyan-400 cursor-pointer">{draft.prospectName}</button>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">{
+                      draft.messageType === 'connection_note' ? 'Connection Note'
+                      : draft.messageType === 'email' ? `Email ${draft.emailStep ?? 1}/3`
+                      : `DM Step ${draft.sequenceStep}`
+                    }</span>
+                    {draft.channel && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${draft.channel === 'email' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                        {draft.channel === 'email' ? 'Email' : 'LinkedIn'}
+                      </span>
+                    )}
+                    {draft.matchedContentType && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">{draft.matchedContentType}</span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-zinc-500">{timeAgo(draft.createdAt)}</span>
+                </div>
+                {/* Research context for this prospect */}
+                {(() => {
+                  const p = prospects.find(x => x.id === draft.prospectId);
+                  if (!p?.triggerType || p.triggerType === 'none') return null;
+                  return (
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{p.triggerType?.replace('_', ' ')} ({p.triggerConfidence}/5)</span>
+                      {p.microPersona && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                          ({ scaling_pain: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                             process_pain: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                             cost_pain: 'bg-red-500/10 text-red-400 border-red-500/20',
+                             compliance_pain: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+                             transition_pain: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                             competitive_pain: 'bg-pink-500/10 text-pink-400 border-pink-500/20'
+                          } as Record<string, string>)[p.microPersona] || 'bg-zinc-700/30 text-zinc-400 border-zinc-600/30'
+                        }`}>{p.microPersona.replace('_', ' ')}</span>
+                      )}
+                      {p.messagingPattern && (
+                        <span className="text-[9px] text-zinc-500">{p.messagingPattern.replace('_', ' ')}</span>
+                      )}
+                      {p.triggerDetail && (
+                        <span className="text-[10px] text-zinc-500 italic truncate max-w-[300px]" title={p.triggerDetail}>{p.triggerDetail}</span>
+                      )}
+                    </div>
+                  );
+                })()}
+                <textarea
+                  defaultValue={draft.messageText}
+                  id={`draft-${draft.id}`}
+                  rows={Math.min(8, Math.max(3, draft.messageText.split('\n').length))}
+                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      const textarea = document.getElementById(`draft-${draft.id}`) as HTMLTextAreaElement;
+                      const editedText = textarea?.value || draft.messageText;
+                      try {
+                        // Save edit if changed
+                        if (editedText !== draft.messageText) {
+                          await supabase.from('outreach_messages').update({ message_text: editedText }).eq('id', draft.id);
+                        }
+                        await approveDraft(draft.prospectId, draft.id, editedText, draft.channel || undefined);
+                        await fetchPendingDrafts();
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-3 h-3" /> {draft.messageType === 'connection_note' ? 'Send Connection' : draft.channel === 'email' ? 'Send Email' : 'Send DM'}
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      await rejectDraft(draft.prospectId, draft.id);
+                      await fetchPendingDrafts();
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Commenting Cohort — bulk add + active list */}
+      <div className="bg-zinc-900/90 border border-cyan-500/20 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-semibold text-cyan-400">Commenting Cohort</span>
+            <span className="text-[11px] text-zinc-500">{activeCohort.length} active · target 30-50 for daily depth</span>
+          </div>
+          <button
+            onClick={() => setShowCohort((v) => !v)}
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            {showCohort ? '▼ Hide active list' : '▶ Show active list'}
+          </button>
+        </div>
+
+        <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-xl p-3">
+          <p className="text-[11px] text-zinc-500 mb-2">Bulk-add LinkedIn URLs (one per line). Each will be enriched via UniPile and added as <span className="text-emerald-400 font-medium">active</span>.</p>
+          <textarea
+            value={bulkUrls}
+            onChange={(e) => setBulkUrls(e.target.value)}
+            rows={4}
+            placeholder={'https://linkedin.com/in/jane-founder\nhttps://linkedin.com/in/john-partner\n...'}
+            className="w-full text-xs text-zinc-300 bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 font-mono resize-y focus:outline-none focus:border-cyan-500/40"
+          />
+          <div className="flex items-center justify-between gap-2 mt-2">
+            <span className="text-[10px] text-zinc-500">{bulkUrls.split('\n').filter((u) => u.trim()).length} URL(s) ready</span>
+            <button
+              onClick={async () => {
+                const urls = bulkUrls.split('\n').map((u) => u.trim()).filter(Boolean);
+                await addCommentingTargets(urls);
+                setBulkUrls('');
+              }}
+              disabled={!bulkUrls.trim()}
+              className="px-3 py-1 rounded-lg text-[11px] font-medium bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 hover:bg-cyan-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Add to cohort →
+            </button>
+          </div>
+        </div>
+
+        {showCohort && (
+          activeCohort.length === 0 ? (
+            <div className="text-xs text-zinc-500 text-center py-3">No active targets yet — paste URLs above to start.</div>
+          ) : (
+            <div className="overflow-x-auto -mx-3">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-[10px] text-zinc-500 uppercase tracking-wider border-b border-zinc-800">
+                    <th className="text-left px-3 py-2">Name</th>
+                    <th className="text-left px-3 py-2">Vertical</th>
+                    <th className="text-left px-3 py-2">Title @ Company</th>
+                    <th className="text-left px-3 py-2">Source</th>
+                    <th className="text-center px-3 py-2 w-28">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/40">
+                  {activeCohort.map((t) => (
+                    <tr key={t.id}>
+                      <td className="px-3 py-2 text-zinc-200">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate max-w-[160px]" title={t.name}>{t.name}</span>
+                          {t.linkedinUrl && (
+                            <a href={t.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400/60 hover:text-blue-400" title="LinkedIn">
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2"><span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{t.vertical || '—'}</span></td>
+                      <td className="px-3 py-2 text-zinc-400 truncate max-w-[260px]" title={[t.title, t.company].filter(Boolean).join(' @ ')}>
+                        {[t.title, t.company].filter(Boolean).join(' @ ') || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[10px] text-zinc-500 font-mono">{t.source || '—'}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button onClick={() => pauseCommentingTarget(t.id)} className="text-[10px] text-amber-400/80 hover:text-amber-400 mr-2">pause</button>
+                        <button onClick={() => dropActiveCommentingTarget(t.id)} className="text-[10px] text-red-400/80 hover:text-red-400">drop</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Proposed Commenting Targets — review queue */}
+      {proposedTargets.length > 0 && (
+        <div className="bg-zinc-900/90 border border-cyan-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm font-semibold text-cyan-400">{proposedTargets.length} Commenting Target{proposedTargets.length > 1 ? 's' : ''} Proposed</span>
+            <span className="text-[9px] text-zinc-500">approve to start drafting comments on their posts</span>
+          </div>
+          <div className="space-y-2">
+            {proposedTargets.map((t) => (
+              <div key={t.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-zinc-200 truncate">{t.name}</span>
+                      {t.vertical && <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">{t.vertical}</span>}
+                      {t.priority != null && (
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${t.priority <= 2 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : t.priority <= 3 ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' : 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25'}`}>p{t.priority}</span>
+                      )}
+                      {t.linkedinUrl && (
+                        <a href={t.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400/60 hover:text-blue-400 shrink-0" title="LinkedIn">
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        </a>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-zinc-500 mt-0.5">{[t.title, t.company].filter(Boolean).join(' @ ') || ''}</div>
+                    {t.notes && <div className="text-[11px] text-zinc-400 mt-1 italic">{t.notes}</div>}
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={async () => { await approveCommentingTarget(t.id); }}
+                      className="px-3 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={async () => { await rejectCommentingTarget(t.id); }}
+                      className="px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                    >
+                      Drop
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Comment Draft Review Queue */}
+      {commentDrafts.length > 0 && (
+        <div className="bg-zinc-900/90 border border-purple-500/20 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-purple-400" />
+            <span className="text-sm font-semibold text-purple-400">{commentDrafts.length} Comment Draft{commentDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
+            <span className="text-[9px] text-zinc-500">seed commenting_targets to generate drafts automatically</span>
+          </div>
+          <div className="space-y-3">
+            {commentDrafts.map((draft) => (
+              <div key={draft.id} className="bg-zinc-800/50 border border-zinc-700/30 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-zinc-200">{draft.targetName || 'Unknown target'}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">LinkedIn Comment</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-500">{draft.draftedAt ? timeAgo(draft.draftedAt) : ''}</span>
+                </div>
+                {draft.postExcerpt && (
+                  <p className="text-[10px] text-zinc-500 italic mb-2 truncate" title={draft.postExcerpt}>
+                    Post: {draft.postExcerpt.slice(0, 120)}{draft.postExcerpt.length > 120 ? '...' : ''}
+                  </p>
+                )}
+                <textarea
+                  defaultValue={draft.commentText}
+                  id={`comment-draft-${draft.id}`}
+                  rows={Math.min(5, Math.max(2, draft.commentText.split('\n').length + 1))}
+                  className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      const textarea = document.getElementById(`comment-draft-${draft.id}`) as HTMLTextAreaElement;
+                      const editedText = textarea?.value || draft.commentText;
+                      try {
+                        await approveCommentDraft(draft.id, editedText);
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-3 h-3" /> Approve
+                  </button>
+                  <button
+                    onClick={async (e) => {
+                      const btn = e.currentTarget;
+                      btn.disabled = true;
+                      try {
+                        await rejectCommentDraft(draft.id);
+                      } catch {
+                        btn.disabled = false;
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Skip
+                  </button>
+                  {draft.postUrl && (
+                    <a href={draft.postUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-300 ml-auto transition-colors">
+                      View post ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const inboxTab = (
+    <div className="space-y-4">
+      <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl px-4 py-2.5 text-xs text-blue-300/80">
+        Full threaded inbox with in-dashboard reply lands in Phase 3. For now, this is your reply-needed queue.
+      </div>
+      {actionNeeded.length === 0 ? (
+        <EmptyState
+          title="Inbox clear"
+          description="No prospects are waiting on a reply right now."
+          icon={<MessageSquare className="w-10 h-10" />}
+        />
+      ) : (
+        <div className="space-y-2">
+          {actionNeeded.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedProspect(p)}
+              className="w-full text-left bg-zinc-900/90 border border-emerald-500/20 rounded-xl p-3 hover:border-emerald-500/40 transition-colors flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-zinc-200 text-sm truncate">{p.name}</p>
+                <p className="text-[11px] text-zinc-500 truncate">{[p.title || p.headline, p.company].filter(Boolean).join(' @ ') || ''}</p>
+              </div>
+              <span className="text-[10px] text-emerald-400 shrink-0">
+                {p.lastReplyAt ? `replied ${timeAgo(p.lastReplyAt)}` : 'needs reply'}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const healthTab = (
+    <div className="space-y-4">
+      {!featureFlags.outreach_enabled && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-2.5 text-xs text-amber-400">
+          Outreach automation paused. Manual actions still work.
+        </div>
+      )}
+
+      {/* Workflow error banner — only shown when something errored AND not acknowledged */}
+      {(() => {
+        const errored = Object.entries(workflowHealth).filter(([, h]) =>
+          h.lastStatus === 'error' && !h.errorAcknowledged
+        );
+        if (errored.length === 0) return null;
+        const wfNames: Record<string, string> = {
+          '35HJE7eOpvEdxRwq': 'Import + Enrich', 'kr2lSH1eRGZcDWmO': 'Warm-up', 'wBBL75oqWcTf78yp': 'Trigger Research',
+          '5ZXtArhobWrDDpfJ': 'Connect', 'joU7VaM5OiRAwLwP': 'DM Sequence', 'KWxb6JFdpvb3y8w5': 'Monitor',
+          'kFYlfnWd98YaiErH': 'Send Messages', 'VaP0RnmFlhkfKE4V': 'Auto Comments — Post Fetch',
+          '9q4bhlIBQCiCxQpq': 'Auto Comments — Drafter', '2AVRUQLoxCIXCzT0': 'Auto Comments — Sender',
+        };
+        const friendlyError = (wfId: string, err: string): { label: string; detail?: string } | null => {
+          if (wfId === 'VaP0RnmFlhkfKE4V' && /403|usage hard limit|platform-feature-disabled/i.test(err)) {
+            return { label: 'Auto comments suspended — Apify credits depleted', detail: 'Resumes when monthly Apify quota resets (or top up Apify plan).' };
+          }
+          if (/403/i.test(err)) {
+            return { label: 'API access denied (403)', detail: 'Likely UniPile/Apify credential rotation. Check the workflow node credentials.' };
+          }
+          return null;
+        };
+        const acknowledge = async (rowId: string | null) => {
+          if (!rowId) return;
+          try {
+            const { dashboardAction } = await import('../../lib/dashboardActions');
+            await dashboardAction('dashboard_workflow_stats', rowId, 'error_acknowledged', 'true');
+            refresh();
+          } catch (e) { /* swallow */ }
+        };
+        return (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-red-400" />
+              <span className="text-sm font-medium text-red-300">{errored.length} workflow{errored.length > 1 ? 's' : ''} erroring</span>
+            </div>
+            <div className="space-y-2">
+              {errored.map(([wfId, h]) => {
+                const friendly = h.lastError ? friendlyError(wfId, h.lastError) : null;
+                return (
+                  <div key={wfId} className="text-xs flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-red-300 font-medium">{friendly ? friendly.label : (wfNames[wfId] || wfId)}</span>
+                      <span className="text-zinc-500"> · {h.lastExecutionAt ? timeAgo(h.lastExecutionAt) : 'no runs'}</span>
+                      {friendly?.detail ? (
+                        <p className="text-[10px] text-zinc-400 mt-0.5 ml-1">{friendly.detail}</p>
+                      ) : (
+                        h.lastError && (
+                          <p className="text-[10px] text-red-400/80 font-mono mt-0.5 ml-1 break-all">{h.lastError.slice(0, 200)}</p>
+                        )
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                      <a
+                        href={`https://n8n.ivanmanfredi.com/workflow/${wfId}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] uppercase tracking-wider text-red-300 hover:text-red-200 underline underline-offset-2"
+                      >
+                        Open in n8n
+                      </a>
+                      <button
+                        onClick={() => acknowledge(h.statsRowId)}
+                        className="text-[10px] uppercase tracking-wider text-zinc-400 hover:text-zinc-200 px-1.5 py-0.5 border border-zinc-700/60 rounded"
+                        title="Hide this error until it next fires"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Auto-Send First Contact - top-level visibility */}
+      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex items-center gap-2 mr-2">
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Auto-Send 1st Touch</span>
+        </div>
+        {([
+          { key: 'outreach_auto_send_linkedin', label: 'LinkedIn DMs' },
+          { key: 'outreach_auto_send_email', label: 'Cold Emails' },
+        ]).map((row) => {
+          const on = featureFlags[row.key] ?? false;
+          return (
+            <label key={row.key} className="flex items-center gap-2 cursor-pointer select-none">
+              <button
+                onClick={() => toggleFeatureFlag(row.key)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${on ? 'bg-amber-500' : 'bg-zinc-700'}`}
+                title={on ? 'Auto-send ON - drafts skip approval' : 'Manual approval required'}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                  on ? 'translate-x-[22px]' : 'translate-x-0.5'
+                }`} />
+              </button>
+              <span className={`text-xs font-medium ${on ? 'text-amber-400' : 'text-zinc-400'}`}>{row.label}</span>
+            </label>
+          );
+        })}
+        <span className="text-[10px] text-zinc-500 ml-auto">When ON, first-contact drafts ship without approval. Follow-ups still need approval.</span>
+      </div>
+
+      {/* Pending-invite ceiling gauge */}
+      <PendingInviteGauge pending={stats.connectionSent} ceiling={PENDING_CEILING} />
+
+      {/* Section 2b: Daily Activity Limits */}
+      <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-medium text-zinc-200">Today&apos;s Activity</span>
+          </div>
+          <span className="text-[10px] text-zinc-500">Daily limits enforced by LinkedIn safety layer</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            { key: 'connection_request', label: 'Connections', defaultLimit: 20, icon: '🤝', queueKey: 'connection_request' as const },
+            { key: 'dm', label: 'DMs', defaultLimit: 30, icon: '💬', queueKey: 'dm' as const },
+          ]).map(({ key, label, defaultLimit, icon, queueKey }) => {
+            const rl = rateLimits[key];
+            const count = rl?.count || 0;
+            const limit = rl?.daily_limit || defaultLimit;
+            const pct = Math.min((count / limit) * 100, 100);
+            const barColor = pct < 50 ? 'bg-emerald-500' : pct < 80 ? 'bg-amber-500' : 'bg-red-500';
+            const textColor = pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-zinc-300';
+            const queued = queueKey ? cappedQueue[queueKey] : 0;
+
+            // Compute time until UTC midnight reset
+            let resetIn = '';
+            if (count >= limit) {
+              const now = new Date();
+              const utcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+              const ms = utcMidnight.getTime() - now.getTime();
+              const h = Math.floor(ms / 3600000);
+              const m = Math.floor((ms % 3600000) / 60000);
+              resetIn = h > 0 ? `${h}h ${m}m` : `${m}m`;
+            }
+
+            return (
+              <div key={key} className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] text-zinc-400">{icon} {label}</span>
+                  <span className={`text-sm font-mono font-semibold ${textColor}`}>{count}<span className="text-zinc-600">/{limit}</span></span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                </div>
+                {count >= limit && (
+                  <p className="text-[9px] text-red-400 mt-1 leading-tight">
+                    Cap reached
+                    {queued > 0 && <> · <span className="text-amber-300">{queued} queued</span></>}
+                    <br />
+                    Resets in {resetIn}
+                  </p>
+                )}
+                {count < limit && queueKey && queued > 0 && (
+                  <p className="text-[9px] text-zinc-500 mt-1">{queued} approved waiting</p>
+                )}
+              </div>
+            );
+          })}
+          {/* Emails - uncapped, just informational */}
+          <div className="bg-zinc-800/40 border border-zinc-700/30 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-zinc-400">✉️ Emails Sent</span>
+              <span className="text-sm font-mono font-semibold text-zinc-300">{stats.emailsSentToday}</span>
+            </div>
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full rounded-full bg-green-500 transition-all" style={{ width: stats.emailsSentToday > 0 ? '100%' : '2%' }} />
+            </div>
+            <p className="text-[9px] text-zinc-500 mt-1">First-touch + follow-ups, no daily cap</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity — system events filtered by default */}
+      <ActivityFeed events={recentActivity} prospects={prospects} />
 
       {/* Section 9: Automation Controls */}
       <div>
@@ -1346,271 +1356,54 @@ const OutreachPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Section 10: Activity Log moved to top (see Section 2c near header) */}
 
-      {/* Section 11: How It Works */}
-      <div>
-        <button
-          onClick={() => setShowDocs(!showDocs)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2 flex items-center gap-1"
-        >
-          {showDocs ? '▼' : '▶'} How It Works
-        </button>
-        {showDocs && (
-          <div className="space-y-3">
-            {/* What to Expect */}
-            <PanelCard title="What to Expect" accent="emerald">
-              <div className="space-y-3">
-                <p className="text-xs text-zinc-300 font-medium">Timeline after enabling all workflows:</p>
-                <div className="space-y-2">
-                  {[
-                    { time: 'Hours 0-4', desc: 'Warm-up starts: profile views, post likes on enriched prospects. You\'ll see prospects move to "warming" stage.' },
-                    { time: 'Days 3-10', desc: 'Prospects accumulate engagement (3+ touches). First ones graduate to "engaged" - highest ICP scores first.' },
-                    { time: 'On graduation', desc: 'WF6 fires immediately to research the prospect (LinkedIn posts, website, jobs). Generates trigger hook + draft.' },
-                    { time: 'Days 5-14', desc: 'Connection requests go out to researched "engaged" prospects (~18-20/day, 100/week cap). You\'ll see "connection_sent" stages appear.' },
-                    { time: 'Days 7-21', desc: 'Accepted connections get a 3-DM sequence: warm follow-up → owned-opinion value → soft offer. Replies trigger WhatsApp + Slack alerts.' },
-                    { time: 'Email path', desc: 'Email-channel prospects get 3-email sequence: Day 0 trigger-based opener → Day 3 new angle → Day 10 polite break-up.' },
-                    { time: 'Ongoing', desc: 'Pipeline runs continuously. Auto-imports more prospects when enriched/warming pool drops below 80.' },
-                  ].map((t, i) => (
-                    <div key={i} className="flex gap-3">
-                      <span className="text-[11px] text-emerald-400 font-medium shrink-0 w-[100px]">{t.time}</span>
-                      <span className="text-xs text-zinc-400">{t.desc}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="bg-zinc-800/40 rounded-lg p-2.5 mt-2">
-                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Typical throughput:</strong> ~18-20 connection requests/day, capped at 100/week (LinkedIn free-tier ceiling). At 15% target accept rate, expect ~15 new connections/week → ~3 active conversations/week.</p>
-                </div>
-              </div>
-            </PanelCard>
+    </div>
+  );
 
-            {/* Pipeline Flow */}
-            <PanelCard title="Pipeline Stages" accent="purple">
-              <div className="space-y-3">
-                <p className="text-xs text-zinc-500 mb-2">Each stage transition is automatic. Only "converted" requires your manual action.</p>
-                {[
-                  { from: 'enriched', to: 'warming', trigger: 'WF2 first touch - profile view or post like', auto: true },
-                  { from: 'warming', to: 'engaged', trigger: '3+ touches (views + likes) over 10+ days, with 2+ likes/reacts', auto: true },
-                  { from: 'engaged', to: 'engaged (researched)', trigger: 'WF6 fires on graduation - researches LinkedIn posts, website, jobs; generates trigger hook + draft', auto: true },
-                  { from: 'engaged', to: 'connection_sent', trigger: 'WF3 sends connection note (peer voice, no questions, ~18-20/day)', auto: true },
-                  { from: 'connection_sent', to: 'connected', trigger: 'WF5 detects accepted connection via UniPile', auto: true },
-                  { from: 'connected', to: 'dm_sent', trigger: 'WF4 sends DM Step 1 (2h after connect, warm question)', auto: true },
-                  { from: 'dm_sent', to: 'dm_sent', trigger: 'DM Step 2 (3-5d, owned opinion) → DM Step 3 (3-5d, soft offer)', auto: true },
-                  { from: 'dm_sent', to: 'replied', trigger: 'WF5 detects inbound reply (now monitors engaged + connected stages)', auto: true },
-                  { from: 'replied', to: 'converted', trigger: 'You mark it after the conversation converts', auto: false },
-                  { from: 'dm_sent', to: 'archived', trigger: 'Auto-archive after Step 3 with no reply', auto: true },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
-                      <span className={`text-[11px] px-2 py-0.5 rounded border font-medium ${stageColors[s.from] || 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30'}`}>
-                        {s.from}
-                      </span>
-                      <span className="text-zinc-600">&rarr;</span>
-                      <span className={`text-[11px] px-2 py-0.5 rounded border font-medium ${stageColors[s.to] || 'bg-zinc-600/20 text-zinc-400 border-zinc-600/30'}`}>
-                        {s.to}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-zinc-400 leading-relaxed">{s.trigger}</span>
-                      {!s.auto && <span className="ml-1.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">manual</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </PanelCard>
+  const activeTab = tab === 'pipeline' ? pipelineTab
+    : tab === 'review' ? reviewTab
+    : tab === 'inbox' ? inboxTab
+    : healthTab;
 
-            {/* The 7 Workflows */}
-            <PanelCard title="The 7 Workflows" accent="emerald">
-              <div className="space-y-4">
-                {[
-                  {
-                    name: '1. Import + Enrichment (WF1)',
-                    schedule: 'Manual - click Import on a campaign',
-                    bullets: [
-                      'Searches Apollo API using campaign filters (industry, titles, seniority)',
-                      'Calls Apollo /organizations/enrich for industry + employee_count (Apollo dropped these from search responses)',
-                      'Deduplicates by LinkedIn URL - won\'t re-import existing prospects',
-                      'UniPile enrichment: gets LinkedIn provider_id, recent posts, activity data',
-                      'Claude Sonnet scores ICP fit (1-10) - threshold ≥ 7. Below = auto-archived',
-                      'Stores: name, title, company, seniority, employee count, revenue, industry, location, email',
-                    ],
-                  },
-                  {
-                    name: '2. Natural Warm-up (WF2)',
-                    schedule: 'Every 2h - 30% random skip',
-                    bullets: [
-                      'Picks 5-8 enriched/warming prospects with ICP ≥ 7',
-                      'Random action: 70% like/react, 15% profile view, 15% natural skip',
-                      'Reaction types: LIKE, PRAISE, APPRECIATION, EMPATHY (weighted toward LIKE)',
-                      'Sets next touch 2-5 days out - max 1 touch every few days per person',
-                      'Graduates to "engaged" after: 3+ total touches, 10+ days elapsed, 2+ likes',
-                      'On graduation: triggers WF6 immediately to research the prospect',
-                      'Anti-detection: random delays (1-16 min), varied action types, random skip rate',
-                    ],
-                  },
-                  {
-                    name: '3. Trigger Research Engine (WF6)',
-                    schedule: 'Every 12h scan + on-graduation event trigger',
-                    bullets: [
-                      'Researches each engaged prospect: LinkedIn posts (UniPile), website (HTTP scrape), job postings, company intel (Claude)',
-                      'Synthesizes a trigger: type, micro_persona, messaging_pattern, hook, ask, confidence (1-5)',
-                      'Generates connection note draft using ClickUp prompt (peer voice, no questions, no "Hi")',
-                      'For email-channel prospects: generates Email 1 with lowercase subject + 3-paragraph body',
-                      'Routes channel: linkedin if active OR no email; email if no LinkedIn activity but has email',
-                    ],
-                  },
-                  {
-                    name: '4. Connection Requests (WF3)',
-                    schedule: 'Every 4h - 40% random skip',
-                    bullets: [
-                      'Picks 3 "engaged" prospects (with trigger data), sorted by highest trigger_confidence',
-                      'Voice: peer-to-peer, starts with first name (no "Hi"), NO questions, NO service mentions',
-                      'A/B variants: A (AI note 50%), B (no note 33%), C (short factual 17%), T (trigger-based)',
-                      'Daily cap: 20 connections. Weekly cap: 100 (LinkedIn free-tier ceiling)',
-                      'Random delay 60-960 seconds before first request',
-                    ],
-                  },
-                  {
-                    name: '5. DM Sequence (WF4)',
-                    schedule: 'Every 30 min - drafts only, manual approval to send',
-                    bullets: [
-                      'Checks for accepted connections via UniPile relations API',
-                      '3-DM sequence: Step 1 (warm question, 24h after accept) → Step 2 (owned opinion, 3-5d) → Step 3 (soft offer, 3-5d)',
-                      'DM Step 2 uses "I think" / "Honestly" / "Hot take" formula - owned opinions, never fake authority',
-                      'DMs written by Claude with full research context (micro_persona, trigger_hook, social_proof_story)',
-                      'If no reply after Step 3 → auto-archived',
-                    ],
-                  },
-                  {
-                    name: '6. Conversation Monitor (WF5)',
-                    schedule: 'Every 15 min - always on (no feature flag)',
-                    bullets: [
-                      'Polls UniPile for new inbound messages from known prospects',
-                      'Monitors stages: engaged, connected, dm_sent, replied (engaged was added so pre-connection replies are caught)',
-                      'When reply detected: marks "needs_manual_reply", moves to "replied" stage, increments reply_count',
-                      'Sends WhatsApp + Slack notification so you can respond personally',
-                      'From this point, YOU take over the conversation - no more automation',
-                    ],
-                  },
-                  {
-                    name: '7. Send Messages (WF7)',
-                    schedule: 'Every 2 min poll + every 6h email follow-up generator',
-                    bullets: [
-                      'Polls Supabase for approved (approved_at IS NOT NULL) messages',
-                      'For LinkedIn: sends connection request or DM via UniPile, marks sent_at',
-                      'For Email: sends via Gmail with null-recipient guard (failed → channel=email_failed)',
-                      'Email follow-up generator: Day 3 → Email 2 (new angle), Day 10 → Email 3 (polite break-up)',
-                      'Stops sequence on reply, bounce, or completion of Email 3',
-                    ],
-                  },
-                ].map((wf) => (
-                  <div key={wf.name}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <p className="text-xs text-zinc-200 font-medium">{wf.name}</p>
-                      <span className="text-[10px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">{wf.schedule}</span>
-                    </div>
-                    <ul className="space-y-1 ml-3">
-                      {wf.bullets.map((b, i) => (
-                        <li key={i} className="text-xs text-zinc-400 leading-relaxed flex items-start gap-2">
-                          <span className="text-zinc-600 mt-1.5 shrink-0">&#8226;</span>
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </PanelCard>
-
-            {/* Data Sources */}
-            <PanelCard title="Where Data Comes From" accent="blue">
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="bg-zinc-800/40 rounded-lg p-3">
-                    <p className="text-xs text-blue-400 font-medium mb-1.5">Apollo (Lead Source)</p>
-                    <ul className="space-y-0.5 text-[11px] text-zinc-400">
-                      <li>Name, title, headline</li>
-                      <li>Company, industry, employee count, revenue</li>
-                      <li>Location (city, state, country)</li>
-                      <li>LinkedIn URL, seniority level</li>
-                      <li>Email (when verified), company domain</li>
-                    </ul>
-                  </div>
-                  <div className="bg-zinc-800/40 rounded-lg p-3">
-                    <p className="text-xs text-purple-400 font-medium mb-1.5">UniPile (LinkedIn Bridge)</p>
-                    <ul className="space-y-0.5 text-[11px] text-zinc-400">
-                      <li>LinkedIn provider_id (required for actions)</li>
-                      <li>Recent post content (for AI personalization)</li>
-                      <li>Activity scoring (post frequency)</li>
-                      <li>Sends connections, DMs, likes/reacts</li>
-                      <li>Detects replies and accepted connections</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="bg-zinc-800/40 rounded-lg p-2.5">
-                  <p className="text-[11px] text-zinc-500"><strong className="text-zinc-400">Note:</strong> UniPile can only see posts from people you&apos;re connected to or who post publicly. Most enriched prospects will show activity_score 3 and no post data until you connect with them.</p>
-                </div>
-              </div>
-            </PanelCard>
-
-            {/* Controls Guide */}
-            <PanelCard title="Controls & Safety" accent="amber">
-              <div className="space-y-3">
-                <p className="text-xs text-zinc-400">Each workflow has two independent controls. Both must be ON for automation to run.</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-zinc-800/60 rounded-lg p-3">
-                    <p className="text-xs text-emerald-400 font-medium mb-1">n8n Toggle</p>
-                    <p className="text-xs text-zinc-400">Controls whether the cron fires at all. OFF = completely stopped.</p>
-                  </div>
-                  <div className="bg-zinc-800/60 rounded-lg p-3">
-                    <p className="text-xs text-amber-400 font-medium mb-1">Feature Flag</p>
-                    <p className="text-xs text-zinc-400">Controls whether code logic executes. OFF = cron fires but exits immediately. Quick pause/resume.</p>
-                  </div>
-                </div>
-                <div className="space-y-2 mt-2">
-                  <p className="text-xs text-zinc-300 font-medium">Anti-Detection Features</p>
-                  <ul className="space-y-1 ml-3">
-                    {[
-                      'Random delays before each action (1-16 minutes)',
-                      '30-40% chance of skipping entire execution (looks human)',
-                      'Varied action types (likes, reacts, profile views, skips)',
-                      '2-5 day gap between touches on same person',
-                      'Random connection note omission (20%)',
-                      'Server-side daily rate limits enforced per action type',
-                    ].map((b, i) => (
-                      <li key={i} className="text-xs text-zinc-400 flex items-start gap-2">
-                        <span className="text-zinc-600 mt-1.5 shrink-0">&#8226;</span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="space-y-2 mt-2">
-                  <p className="text-xs text-zinc-300 font-medium">Rate Limits</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { action: 'Profile Views', limit: '50/day' },
-                      { action: 'Likes & Reacts', limit: '20/day' },
-                      { action: 'Connections', limit: '20/day' },
-                      { action: 'Connections', limit: '100/week', highlight: true },
-                      { action: 'DMs', limit: '30/day' },
-                      { action: 'Emails', limit: '20/day' },
-                    ].map((r, i) => (
-                      <div key={`${r.action}-${i}`} className={`rounded px-2.5 py-1.5 text-center ${r.highlight ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-zinc-800/40'}`}>
-                        <p className={`text-xs font-medium ${r.highlight ? 'text-amber-400' : 'text-zinc-300'}`}>{r.limit}</p>
-                        <p className="text-[10px] text-zinc-500">{r.action}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-zinc-500">When a limit is hit, actions are skipped (not queued). The 100/week LinkedIn cap is the real ceiling on free accounts - exceeding triggers warnings then 1-week restrictions.</p>
-                </div>
-              </div>
-            </PanelCard>
-          </div>
-        )}
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-2xl font-bold tracking-tight">ICP Outreach</h1>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => toggleFeatureFlag('outreach_enabled')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              featureFlags.outreach_enabled
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
+                : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
+            }`}
+          >
+            System: {featureFlags.outreach_enabled ? 'ON' : 'OFF'}
+          </button>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
 
-      {/* Detail Modal */}
+      <SubTabs>
+        {TAB_ORDER.map((t) => (
+          <SubTab
+            key={t}
+            id={t}
+            active={tab}
+            onChange={(id) => changeTab(id as OutreachTab)}
+            badge={t === 'review' && reviewCount > 0 ? { count: reviewCount, severity: 'warn' } : undefined}
+          >
+            {TAB_LABELS[t]}
+          </SubTab>
+        ))}
+      </SubTabs>
+
+      <PanelErrorBoundary label={tab}>
+        {activeTab}
+      </PanelErrorBoundary>
+
+      {/* Detail Modal — cross-tab */}
       {selectedProspect && (
         <ProspectDetailModal
           prospect={selectedProspect}
