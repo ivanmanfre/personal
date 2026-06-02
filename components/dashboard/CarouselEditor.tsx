@@ -30,6 +30,33 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [igCaption, setIgCaption] = useState(draft.igCaption || '');
   const [when, setWhen] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  // Editable copies — initialized from draft, mutated by inline editors.
+  // Saved via saveDraft({ taxonomy, slides }) when the user clicks "Save fields"
+  // or "Save slides". `*Dirty` flips on any change to expose the unsaved-edit
+  // affordance instead of a separate "isDirty" computation per render.
+  const [localTax, setLocalTax] = useState<Record<string, any>>(() => ({ ...(draft.taxonomy || {}) }));
+  const [taxDirty, setTaxDirty] = useState(false);
+  const [localSlides, setLocalSlides] = useState<any[]>(() => Array.isArray(draft.slides) ? draft.slides.map((s) => ({ ...s })) : []);
+  const [slidesDirty, setSlidesDirty] = useState(false);
+  const updateTax = (key: string, value: string) => {
+    setLocalTax((prev) => ({ ...prev, [key]: value || undefined }));
+    setTaxDirty(true);
+  };
+  const updateSlide = (i: number, key: string, value: string) => {
+    setLocalSlides((prev) => {
+      const next = prev.slice();
+      next[i] = { ...next[i], [key]: value };
+      return next;
+    });
+    setSlidesDirty(true);
+  };
+  // When the draft prop swaps (different row selected), reset local mirrors.
+  React.useEffect(() => {
+    setLocalTax({ ...(draft.taxonomy || {}) });
+    setTaxDirty(false);
+    setLocalSlides(Array.isArray(draft.slides) ? draft.slides.map((s) => ({ ...s })) : []);
+    setSlidesDirty(false);
+  }, [draft.id]);
   // userInitiatedRef flips true the moment run() fires. The status-transition
   // effect then suppresses its toast for that flip (the run wrapper already
   // toasted on success). Without this we double-toast on every Approve/Save
@@ -38,7 +65,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [imageryOpen, setImageryOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
-  const tax = (draft.taxonomy || {}) as Record<string, any>;
+  // tax always tracks the LOCAL edited taxonomy so chips + editor stay in sync.
+  // saveDraft() reconciles to the server when the user clicks "Save fields".
+  const tax = localTax;
   const upstream = useUpstreamSource(tax);
   const pillar = tax.pillar as string | undefined;
   const hookType = tax.hook_type as string | undefined;
@@ -137,16 +166,29 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       );
     }
     if (draft.slides.length > 0) {
+      // Inline-editable slide text. Inline changes feed localSlides; user clicks
+      // "Save slides" in the footer to commit. Avoids a per-slide save button row.
       return (
         <div className="space-y-2 max-h-[520px] overflow-y-auto pr-1">
-          {draft.slides.map((s, i) => {
-            const title = s?.title || s?.headline || s?.hook || `Slide ${i + 1}`;
-            const body  = s?.body || s?.content || s?.subtext || s?.image_prompt || '';
+          {localSlides.map((s, i) => {
+            const titleKey = s?.title !== undefined ? 'title' : s?.headline !== undefined ? 'headline' : 'title';
+            const bodyKey  = s?.body !== undefined ? 'body' : s?.content !== undefined ? 'content' : s?.subtext !== undefined ? 'subtext' : 'body';
             return (
-              <div key={i} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-2.5">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 mb-1">Slide {i + 1}</div>
-                <div className="text-[12.5px] font-medium text-zinc-200 leading-snug line-clamp-2">{title}</div>
-                {body && <div className="mt-1 text-[11px] text-zinc-400 leading-snug line-clamp-4">{body}</div>}
+              <div key={i} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-2.5 space-y-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-emerald-500/70">Slide {i + 1}</div>
+                <Input
+                  value={String(s?.[titleKey] || s?.hook || '')}
+                  onChange={(e) => updateSlide(i, titleKey, e.target.value)}
+                  placeholder={`Slide ${i + 1} title`}
+                  className="text-[12.5px] font-medium py-1"
+                />
+                <Textarea
+                  value={String(s?.[bodyKey] || s?.image_prompt || '')}
+                  onChange={(e) => updateSlide(i, bodyKey, e.target.value)}
+                  rows={2}
+                  placeholder="Slide body"
+                  className="text-[11.5px] leading-snug"
+                />
               </div>
             );
           })}
@@ -293,6 +335,56 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               </div>
             )}
           </div>
+
+          {/* Editable taxonomy + imagery — closes the read-only gap with ClickUp.
+              Pillar/Hook/Tier/ImageStyle/ImageDesc/VisualLink were forcing a
+              ClickUp roundtrip on the most common review-state edit. */}
+          <Card>
+            <CardLabel>Edit fields</CardLabel>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              <div>
+                <FieldLabel>Pillar</FieldLabel>
+                <Input value={pillar || ''} onChange={(e) => updateTax('pillar', e.target.value)} placeholder="e.g. Personal POV" />
+              </div>
+              <div>
+                <FieldLabel>Hook type</FieldLabel>
+                <Input value={hookType || ''} onChange={(e) => updateTax('hook_type', e.target.value)} placeholder="e.g. counter-instruction" />
+              </div>
+              <div>
+                <FieldLabel>Value tier</FieldLabel>
+                <Input value={valueTier || ''} onChange={(e) => updateTax('value_tier', e.target.value)} placeholder="T1 / T2 / T3 / T4" />
+              </div>
+              <div>
+                <FieldLabel>Source</FieldLabel>
+                <Input value={source || ''} onChange={(e) => updateTax('source', e.target.value)} placeholder="curator / call / manual" />
+              </div>
+              <div className="col-span-2">
+                <FieldLabel>Image style</FieldLabel>
+                <Input value={imageStyle || ''} onChange={(e) => updateTax('image_style', e.target.value)} placeholder="Concept Visual / Photoreal / …" />
+              </div>
+              <div className="col-span-2">
+                <FieldLabel>Image description</FieldLabel>
+                <Textarea value={imageDesc || ''} onChange={(e) => updateTax('image_description', e.target.value)} rows={2} placeholder="What the image should depict" />
+              </div>
+              <div className="col-span-2">
+                <FieldLabel>Visual reference link</FieldLabel>
+                <Input value={visualLink || ''} onChange={(e) => updateTax('visual_content_link', e.target.value)} placeholder="Drive / Figma URL" />
+              </div>
+            </div>
+            <Button
+              variant={taxDirty ? 'primary' : 'secondary'}
+              block
+              className="mt-3"
+              disabled={!!busy || !taxDirty}
+              onClick={() => run('save fields', async () => {
+                await saveDraft({ id: draft.id, taxonomy: localTax });
+                setTaxDirty(false);
+              }, 'Fields saved')}
+            >
+              {busy === 'save fields' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {taxDirty ? 'Save fields' : 'Saved'}
+            </Button>
+          </Card>
 
           <FieldGrid draft={draft} />
         </div>
@@ -546,6 +638,19 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             >
               {busy === 'save draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save copy
             </Button>
+            {slidesDirty && (
+              <Button
+                variant="primary"
+                block
+                disabled={!!busy}
+                onClick={() => run('save slides', async () => {
+                  await saveDraft({ id: draft.id, slides: localSlides });
+                  setSlidesDirty(false);
+                }, 'Slides saved')}
+              >
+                {busy === 'save slides' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save slides
+              </Button>
+            )}
             <Button
               variant="secondary"
               block
@@ -572,7 +677,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-600">Per-slide image regen is coming next; for now "Re-author" rebuilds all slides. Scheduling writes to the isolated v2 queue (won't publish until cutover).</p>
+      <p className="text-[11px] text-zinc-600">Edit slide text inline and click "Save slides". Per-slide image regen still needs a Re-author. Scheduling writes to the isolated v2 queue.</p>
     </div>
   );
 };

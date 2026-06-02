@@ -44,7 +44,19 @@ export async function buildCarousel(input: {
   return { ok: true, draft_id: draftId, verdict: 'PENDING', attempts: 0, qa: { failing_slides: [], feedback: '' }, slides: [] };
 }
 
-export async function saveDraft(input: { id: string; title?: string; topic?: string; post_body?: string; ig_caption?: string; status?: string }) {
+export async function saveDraft(input: {
+  id: string;
+  title?: string;
+  topic?: string;
+  post_body?: string;
+  ig_caption?: string;
+  status?: string;
+  // Taxonomy is a JSONB column; pass partial keys and we merge with existing.
+  // The merge happens in this function so callers don't need to fetch first.
+  taxonomy?: Record<string, unknown>;
+  // Slides is also JSONB. Pass the FULL next array (we don't deep-merge slides).
+  slides?: any[];
+}) {
   const { supabase } = await import('./supabase');
   const patch: Record<string, unknown> = {};
   if (input.title !== undefined) patch.title = input.title;
@@ -52,6 +64,14 @@ export async function saveDraft(input: { id: string; title?: string; topic?: str
   if (input.post_body !== undefined) patch.post_body = input.post_body;
   if (input.ig_caption !== undefined) patch.ig_caption = input.ig_caption;
   if (input.status !== undefined) patch.status = input.status;
+  if (input.slides !== undefined) patch.slides = input.slides;
+  // Taxonomy: read-modify-write merge so partial updates don't blow away keys.
+  if (input.taxonomy !== undefined) {
+    const { data: row, error: readErr } = await supabase
+      .from('carousel_drafts').select('taxonomy').eq('id', input.id).maybeSingle();
+    if (readErr) throw new Error(`saveDraft taxonomy read failed: ${readErr.message}`);
+    patch.taxonomy = { ...(row?.taxonomy || {}), ...input.taxonomy };
+  }
   if (Object.keys(patch).length === 0) return { ok: true };
   const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', input.id);
   if (error) throw new Error(`saveDraft failed: ${error.message}`);

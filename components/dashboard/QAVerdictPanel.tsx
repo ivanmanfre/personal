@@ -13,6 +13,7 @@ type QAIteration = {
   score?: number;         // 1-10
   issuesCount?: number;
   isHalt: boolean;
+  rewrite?: string;       // extracted REWRITE: block — what auto-publish shipped
 };
 
 const QA_AGENTS = new Set([
@@ -32,6 +33,11 @@ function parseIteration(e: AgentLogEntry): QAIteration {
   if (issuesMatch) {
     issuesCount = (issuesMatch[1].match(/^\s*\d+[.)]/gm) || []).length;
   }
+  // Extract REWRITE: block — when present + verdict is REWRITE_OK this is what
+  // the auto-publish pipeline actually shipped. Surfacing it closes the voice-
+  // drift blind spot where rewrites land silently with no pre/post comparison.
+  const rewriteMatch = body.match(/REWRITE:\s*([\s\S]*?)(?:\n\s*\n[A-Z]{3,}:|END[\s_]*REWRITE|VOICE|$)/i);
+  const rewrite = rewriteMatch?.[1]?.trim() || undefined;
   return {
     ts: e.ts,
     agent: e.agent,
@@ -41,6 +47,7 @@ function parseIteration(e: AgentLogEntry): QAIteration {
     score,
     issuesCount,
     isHalt: /HALT/i.test(e.agent),
+    rewrite: rewrite && rewrite.length > 30 ? rewrite : undefined,
   };
 }
 
@@ -157,11 +164,22 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
                     {typeof it.issuesCount === 'number' && it.issuesCount > 0 && (
                       <span className="text-zinc-500">{it.issuesCount}↯</span>
                     )}
+                    {it.rewrite && (
+                      <span className="text-emerald-400/80 text-[10.5px]" title="A rewrite was applied">rewrite</span>
+                    )}
                     <span className="text-zinc-700 ml-auto font-mono tabular-nums text-[10.5px]">{relTime(it.ts)}</span>
                     {isExpanded ? <ChevronUp className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
                   </button>
                   {isExpanded && (
-                    <div className="mt-1 ml-5 pl-2 border-l-2 border-zinc-800/60 text-[12px] text-zinc-300 leading-snug max-h-[360px] overflow-y-auto">
+                    <div className="mt-1 ml-5 pl-2 border-l-2 border-zinc-800/60 text-[12px] text-zinc-300 leading-snug max-h-[360px] overflow-y-auto space-y-2">
+                      {it.rewrite && (
+                        <div className="rounded border-l-[3px] border-emerald-500/60 bg-emerald-950/20 pl-2 pr-2 py-1.5 -ml-2">
+                          <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 mb-1">
+                            Applied rewrite (what auto-publish shipped)
+                          </div>
+                          <div className="whitespace-pre-wrap text-zinc-200 text-[12px] leading-snug">{it.rewrite}</div>
+                        </div>
+                      )}
                       {renderLightMarkdown(it.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}
                     </div>
                   )}
