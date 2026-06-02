@@ -25,7 +25,7 @@ const ALLOWED_ORIGINS = new Set([
 const CORS = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://ivanmanfredi.com",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey",
+  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, prefer",
   "Access-Control-Max-Age": "86400",
 });
 
