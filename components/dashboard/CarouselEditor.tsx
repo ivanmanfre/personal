@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
@@ -62,6 +62,20 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // toasted on success). Without this we double-toast on every Approve/Save
   // and emit phantom toasts every 20s poll. Reset after the effect consumes it.
   const userInitiatedRef = React.useRef(false);
+  // Hidden file picker triggered by the "Replace image" / "Upload image" button.
+  // We accept PNG/JPG/WebP/GIF and cap at 10 MB (bucket-enforced) — the studio
+  // helper validates again before the upload call.
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow picking the same file again later
+    if (!file) return;
+    await run(
+      'upload image',
+      () => uploadPostImage({ draft_id: draft.id, file, current_type: draft.type }),
+      'Image uploaded',
+    );
+  };
   const [imageryOpen, setImageryOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
@@ -195,9 +209,16 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       );
     }
+    // Type-aware empty state. Carousel awaits the build webhook; single_image
+    // expects an upload; text posts are content-only by design.
+    const empty = draft.type === 'carousel'
+      ? 'No slides rendered yet — build will populate.'
+      : draft.type === 'single_image'
+      ? 'No image yet — click "Upload image" above to attach one.'
+      : 'Text-only post. Click "Upload image" above to attach a visual.';
     return (
       <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-sm text-zinc-500 italic">
-        No slides rendered yet — build will populate.
+        {empty}
       </div>
     );
   };
@@ -392,7 +413,36 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         {/* RIGHT COLUMN — visual preview + scheduling + actions */}
         <div className="space-y-3 min-w-0">
           <Card>
-            <CardLabel>Preview</CardLabel>
+            <div className="flex items-center justify-between mb-2">
+              <CardLabel className="!mb-0">Preview</CardLabel>
+              {/* Image upload — only for non-carousel posts. Text posts get
+                  "Add image" (and are auto-promoted to single_image on success);
+                  single_image posts get "Replace image". Carousels are PDFs and
+                  go through the Re-author pipeline instead. */}
+              {draft.type !== 'carousel' && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={onFilePicked}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!!busy}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                    title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
+                  >
+                    {busy === 'upload image'
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <ImagePlus className="w-3 h-3" />}
+                    {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload image'}
+                  </button>
+                </>
+              )}
+            </div>
             {renderMedia()}
           </Card>
 

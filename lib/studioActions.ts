@@ -78,6 +78,45 @@ export async function saveDraft(input: {
   return { ok: true };
 }
 
+// Upload a user-picked image for a single_image or text post.
+// Writes to the `post-stills` public bucket; returns the public URL.
+// On success, patches carousel_drafts:
+//   - image_urls = [publicUrl]  (replaces any existing image)
+//   - type = 'single_image'      (when the post was previously 'text')
+// The same URL form the rest of the pipeline already understands; renders via
+// CarouselEditor's existing image branch (toImgSrc handles non-Drive URLs verbatim).
+export async function uploadPostImage(input: { draft_id: string; file: File; current_type?: string | null }) {
+  const { supabase } = await import('./supabase');
+  const file = input.file;
+  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
+    throw new Error(`Unsupported file type: ${file.type || 'unknown'} (use PNG / JPG / WebP / GIF)`);
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB (max 10 MB)`);
+  }
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Path is draft-scoped so re-uploads naturally overwrite via upsert; cache-busting
+  // via a short numeric suffix derived from updated_at avoids serving the old image.
+  const cacheBust = String(file.lastModified || file.size).slice(-6);
+  const path = `${input.draft_id}/${cacheBust}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from('post-stills')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) throw new Error(`upload failed: ${upErr.message}`);
+  const { data: pub } = supabase.storage.from('post-stills').getPublicUrl(path);
+  const publicUrl = pub.publicUrl;
+  if (!publicUrl) throw new Error('upload succeeded but no public URL returned');
+
+  const patch: Record<string, unknown> = { image_urls: [publicUrl] };
+  // Promote a plain-text post to single_image once it has an attached image.
+  if (input.current_type === 'text' || input.current_type === null || input.current_type === undefined) {
+    patch.type = 'single_image';
+  }
+  const { error: dbErr } = await supabase.from('carousel_drafts').update(patch).eq('id', input.draft_id);
+  if (dbErr) throw new Error(`db update failed: ${dbErr.message}`);
+  return { ok: true, url: publicUrl };
+}
+
 export async function setStatus(id: string, status: string) {
   const { supabase } = await import('./supabase');
   const { error } = await supabase.from('carousel_drafts').update({ status }).eq('id', id);
