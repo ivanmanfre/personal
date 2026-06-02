@@ -242,6 +242,11 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   // channel on carousel_drafts. Status flips (idea → generating → review →
   // scheduled → published) propagate immediately. refresh() is still callable
   // for cases that need a deliberate full reconcile.
+  // generatingCount still drives the refresh-button label + pulse indicator.
+  const generatingCount = React.useMemo(
+    () => drafts.filter((d) => d.status === 'generating').length,
+    [drafts],
+  );
 
   return (
     <div className="space-y-6">
