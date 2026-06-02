@@ -27,12 +27,16 @@ const SUB_LABELS: Record<SubKey, string> = {
 
 const SUB_ORDER: SubKey[] = ['outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready'];
 
+export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolean } {
+  if (raw && (SUB_ORDER as string[]).includes(raw)) return { sub: raw as SubKey, corrected: false };
+  return { sub: 'outreach', corrected: raw != null }; // corrected=true means URL had a bad value
+}
+
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'outreach';
-  const params = new URLSearchParams(window.location.search);
-  const s = params.get('sub') as SubKey | null;
-  if (s && SUB_ORDER.includes(s)) return s;
-  return 'outreach';
+  const { sub, corrected } = resolveSub(new URLSearchParams(window.location.search).get('sub'));
+  if (corrected) syncSubToUrl(sub); // rewrite stale ?sub=posts to ?sub=outreach
+  return sub;
 }
 
 function syncSubToUrl(sub: SubKey) {
@@ -65,10 +69,7 @@ export function ReachPipeline() {
 
   return (
     <>
-      <HeadRow
-        title={<>Reach <em>&amp; Pipeline</em></>}
-        meta={<>Outreach · Leads · Competitors<br />Upwork · Meetings · Agent-Ready</>}
-      />
+      <HeadRow title={<>Reach <em>&amp; Pipeline</em></>} />
       <SubTabs>
         {SUB_ORDER.map(key => (
           <SubTab key={key} id={key} active={sub} onChange={handleSub}>
