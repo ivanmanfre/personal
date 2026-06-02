@@ -237,6 +237,19 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   }), [drafts]);
   const [showStuckList, setShowStuckList] = useState(false);
 
+  // Auto-refresh while any post is generating — gives the user visible status
+  // progress without a full page reload. Polls every 20s. Auto-stops when no
+  // rows are in 'generating'.
+  const generatingCount = React.useMemo(
+    () => drafts.filter((d) => d.status === 'generating').length,
+    [drafts],
+  );
+  React.useEffect(() => {
+    if (generatingCount === 0) return;
+    const iv = setInterval(() => { refresh(); }, 20_000);
+    return () => clearInterval(iv);
+  }, [generatingCount, refresh]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -492,10 +505,20 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
+            // Progress hint for generating-status rows
+            const genStart = tax.generating_started_at as string | undefined;
+            const genHint = d.status === 'generating' && genStart
+              ? (() => {
+                  const elapsed = Math.round((Date.now() - new Date(genStart).getTime()) / 60_000);
+                  return elapsed >= 15
+                    ? `⚠ stuck — started ${elapsed}m ago`
+                    : `generating · started ${elapsed}m ago`;
+                })()
+              : d.status === 'generating' ? 'generating…' : undefined;
             return {
               id: d.id,
               title: d.title || d.topic || '(untitled)',
-              excerpt: d.postBody ? postExcerpt(d) : undefined,
+              excerpt: genHint || (d.postBody ? postExcerpt(d) : undefined),
               status: d.status,
               thumbUrl: driveThumbUrl(imageThumb, 96),
               kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : 'TXT',

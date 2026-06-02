@@ -123,6 +123,17 @@ const LeadMagnetStudioPanel: React.FC = () => {
     [drafts],
   );
 
+  // Auto-refresh while LM generation/asset-build is in flight.
+  const generatingCount = React.useMemo(
+    () => drafts.filter((d) => d.status === 'generating' || d.status === 'generating_assets').length,
+    [drafts],
+  );
+  React.useEffect(() => {
+    if (generatingCount === 0) return;
+    const iv = setInterval(() => { refresh(); }, 20_000);
+    return () => clearInterval(iv);
+  }, [generatingCount, refresh]);
+
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return drafts

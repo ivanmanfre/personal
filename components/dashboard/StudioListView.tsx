@@ -165,6 +165,10 @@ export function StudioListView({
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
 
+  // Media lightbox — click a row thumbnail to view media at full size
+  // without opening the editor. Stores the row currently being previewed.
+  const [previewRow, setPreviewRow] = useState<StudioRow | null>(null);
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggleOne = (id: string) =>
     setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -415,6 +419,9 @@ export function StudioListView({
           </AnimatePresence>
         </LayoutGroup>
       )}
+      {previewRow && previewRow.thumbUrl && (
+        <MediaLightbox row={previewRow} onClose={() => setPreviewRow(null)} />
+      )}
     </div>
   );
 
@@ -456,7 +463,13 @@ export function StudioListView({
             return (
               <div key={c.key} className={cls + ' gap-2.5 basis-full md:basis-auto'}>
                 {!dense && (
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 ring-1 ring-zinc-800/80 flex items-center justify-center shrink-0 shadow-inner shadow-black/40">
+                  <button
+                    type="button"
+                    onClick={r.thumbUrl ? (e) => { e.stopPropagation(); setPreviewRow(r); } : undefined}
+                    disabled={!r.thumbUrl}
+                    title={r.thumbUrl ? 'Click to preview media' : undefined}
+                    className={`w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 ring-1 ring-zinc-800/80 flex items-center justify-center shrink-0 shadow-inner shadow-black/40 ${r.thumbUrl ? 'hover:ring-emerald-500/40 hover:scale-105 transition-all cursor-zoom-in' : ''}`}
+                  >
                     {r.thumbUrl ? (
                       <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                     ) : r.formatLabel === 'carousel' ? (
@@ -475,7 +488,7 @@ export function StudioListView({
                         <span className="w-2 h-[2px] bg-zinc-500/40 rounded-sm" />
                       </div>
                     )}
-                  </div>
+                  </button>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className={`${dense ? 'text-[11.5px]' : 'text-[13px]'} text-zinc-100 truncate group-hover:text-white font-medium tracking-tight`}>{r.title || '(untitled)'}</div>
@@ -608,5 +621,53 @@ export function StudioListView({
     );
   }
 }
+
+/** Lightbox modal — used for quick media preview when clicking a row's thumbnail.
+ *  Plays nice with Drive PDF URLs (rendered as Drive's /preview iframe) AND
+ *  direct image URLs. Backdrop click or Escape closes. */
+const MediaLightbox: React.FC<{ row: StudioRow; onClose: () => void }> = ({ row, onClose }) => {
+  React.useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k);
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', k); document.body.style.overflow = ''; };
+  }, [onClose]);
+  const url = row.thumbUrl || '';
+  // Detect Drive thumbnail → swap for the higher-res preview
+  const driveMatch = url.match(/drive\.google\.com\/thumbnail\?id=([^&]+)/) || url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  const isDrive = !!driveMatch;
+  const driveId = driveMatch?.[1];
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden ring-1 ring-zinc-700/60 bg-zinc-950 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800/60 bg-zinc-900/40">
+          <span className="text-[11.5px] text-zinc-300 truncate flex-1 font-medium">{row.title}</span>
+          <button
+            onClick={onClose}
+            className="text-zinc-500 hover:text-zinc-200 text-[18px] leading-none px-2 py-0.5 rounded hover:bg-zinc-800/60 transition-colors"
+            title="Close (Esc)"
+          >×</button>
+        </div>
+        <div className="bg-zinc-950 flex items-center justify-center" style={{ minHeight: 400 }}>
+          {isDrive && driveId ? (
+            <iframe
+              src={`https://drive.google.com/file/d/${driveId}/preview`}
+              className="w-full h-[75vh] border-0"
+              title="Media preview"
+            />
+          ) : (
+            <img src={url} alt={row.title} className="max-w-full max-h-[75vh] object-contain" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default StudioListView;

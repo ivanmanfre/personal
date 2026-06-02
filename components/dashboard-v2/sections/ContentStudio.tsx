@@ -34,11 +34,10 @@ const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudi
 // houses both Post Performance + Site Audience via internal tabs. Video now
 // houses Recordings/Video Pipeline/Call Clips via internal tabs. Old `sub` values
 // are remapped to the new tabs on URL load so existing deeplinks keep working.
-type SubKey = 'posts' | 'carousels' | 'leadmagnets' | 'performance' | 'video' | 'newsletter' | 'strategy';
+type SubKey = 'posts' | 'leadmagnets' | 'performance' | 'video' | 'newsletter' | 'strategy';
 
 const SUB_LABELS: Record<SubKey, string> = {
   posts: 'Posts',
-  carousels: 'Carousels',
   leadmagnets: 'Lead Magnets',
   performance: 'Performance',
   video: 'Video & Clips',
@@ -46,7 +45,7 @@ const SUB_LABELS: Record<SubKey, string> = {
   strategy: 'Strategy',
 };
 
-const SUB_ORDER: SubKey[] = ['posts', 'carousels', 'leadmagnets', 'performance', 'video', 'newsletter', 'strategy'];
+const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'performance', 'video', 'newsletter', 'strategy'];
 
 // Map legacy ?sub= values to the new tab they live under.
 const LEGACY_SUB_REMAP: Record<string, SubKey> = {
@@ -90,8 +89,7 @@ export function ContentStudio() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'posts':       return <PostStudioPanel restrictTypes={['text', 'single_image']} subtitle="text · single-image" />;
-      case 'carousels':   return <PostStudioPanel restrictTypes={['carousel']} title="Carousels" subtitle="multi-slide LinkedIn PDFs" />;
+      case 'posts':       return <PostStudioPanel />;
       case 'leadmagnets': return <LeadMagnetStudioPanel />;
       case 'performance':
         return (
@@ -124,7 +122,7 @@ export function ContentStudio() {
     <>
       <HeadRow
         title={<>Content <em>Studio</em></>}
-        meta={<>Posts · Carousels · Lead Magnets<br />Performance · Video & Clips · Newsletter · Strategy</>}
+        meta={<>Posts · Lead Magnets · Performance<br />Video & Clips · Newsletter · Strategy</>}
       />
       <SubTabs>
         {SUB_ORDER.map(key => (

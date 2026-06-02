@@ -108,7 +108,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <span className="text-[10.5px] text-zinc-600 tabular-nums">{postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}</span>
             </div>
             {postMode === 'edit' ? (
-              <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={10} className="text-[13.5px] leading-relaxed font-sans" />
+              <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={6} className="text-[13.5px] leading-relaxed font-sans" />
             ) : (
               <div className="min-h-[240px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
                 <PostPreview text={postBody} />
@@ -121,7 +121,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <FieldLabel className="!mb-0">Email copy <span className="text-zinc-600 normal-case font-normal">· 24h follow-up</span></FieldLabel>
               <span className="text-[10.5px] text-zinc-600 tabular-nums">{emailCopy.length}</span>
             </div>
-            <Textarea value={emailCopy} onChange={(e) => setEmailCopy(e.target.value)} rows={8} className="text-[13.5px] leading-relaxed font-sans" />
+            <Textarea value={emailCopy} onChange={(e) => setEmailCopy(e.target.value)} rows={5} className="text-[13.5px] leading-relaxed font-sans" />
           </div>
 
           <div>
@@ -176,6 +176,8 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             table="lm_drafts_v2"
             rowId={draft.id}
             onNoteAdded={onChanged}
+            defaultOpen
+            renderMarkdown
           />
         </div>
 

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent } from '../../lib/studioActions';
+import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
@@ -206,7 +207,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <Textarea
                 value={postBody}
                 onChange={(e) => setPostBody(e.target.value)}
-                rows={10}
+                rows={6}
                 className="text-[13.5px] leading-relaxed"
               />
             ) : (
@@ -235,7 +236,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <Textarea
                 value={igCaption}
                 onChange={(e) => setIgCaption(e.target.value)}
-                rows={4}
+                rows={3}
                 className="text-[13px] leading-relaxed"
               />
             ) : (
@@ -293,25 +294,43 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 block
                 disabled={!!busy}
                 onClick={() => {
+                  // Flip status to 'generating' immediately so the row moves out of
+                  // Suggestion and into the Generating-content group BEFORE the
+                  // webhook returns. The n8n workflow won't update it for ~8 min
+                  // otherwise. We also stamp generating_started_at into taxonomy so
+                  // the list-view can show "started Xm ago" while it runs.
+                  const startedAt = new Date().toISOString();
                   if (draft.type === 'carousel') {
                     const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
-                    run('generate', () => buildCarousel({
-                      carousel_id: carouselId,
-                      topic: draft.topic || draft.title || '',
-                      key_points: [],
-                    }), 'Generation fired');
+                    run('generate', async () => {
+                      await supabase.from('carousel_drafts').update({
+                        status: 'generating',
+                        taxonomy: { ...(draft.taxonomy as any || {}), generating_started_at: startedAt },
+                      }).eq('id', draft.id);
+                      return buildCarousel({
+                        carousel_id: carouselId,
+                        topic: draft.topic || draft.title || '',
+                        key_points: [],
+                      });
+                    }, 'Generation fired — building carousel (~2 min)');
                   } else {
-                    run('generate', () => generatePostContent({
-                      draft_id: draft.id,
-                      topic: draft.topic || draft.title || '',
-                      title: draft.title || draft.topic || '',
-                      author: 'Ivan',
-                      source: (tax.source as string) || 'Studio',
-                      post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
-                      post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
-                      include_image: draft.type === 'single_image' ? 'Yes' : 'No',
-                      image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
-                    }), 'Generation fired (~8 min)');
+                    run('generate', async () => {
+                      await supabase.from('carousel_drafts').update({
+                        status: 'generating',
+                        taxonomy: { ...(draft.taxonomy as any || {}), generating_started_at: startedAt },
+                      }).eq('id', draft.id);
+                      return generatePostContent({
+                        draft_id: draft.id,
+                        topic: draft.topic || draft.title || '',
+                        title: draft.title || draft.topic || '',
+                        author: 'Ivan',
+                        source: (tax.source as string) || 'Studio',
+                        post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
+                        post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
+                        include_image: draft.type === 'single_image' ? 'Yes' : 'No',
+                        image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
+                      });
+                    }, 'Generation fired — drafting content (~8 min)');
                   }
                 }}
               >
