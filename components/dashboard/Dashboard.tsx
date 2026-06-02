@@ -6,7 +6,6 @@ import DashboardAuth from './DashboardAuth';
 import DashboardLayout from './DashboardLayout';
 import OverviewPanel from './OverviewPanel';
 import WorkflowsPanel from './WorkflowsPanel';
-import ContentPanel from './ContentPanel';
 import LeadsPanel from './LeadsPanel';
 import TasksPanel from './TasksPanel';
 import SettingsPanel from './SettingsPanel';
@@ -76,7 +75,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
   strategy: LazyStrategyPanel as unknown as React.ComponentType,
   performance: LazyPerformancePanel as unknown as React.ComponentType,
-  content: ContentPanel,
+  content: LazyPostStudioPanel as unknown as React.ComponentType,
   workflows: WorkflowsPanel,
   competitors: LazyCompetitorIntelPanel as unknown as React.ComponentType,
   leads: LeadsPanel,
