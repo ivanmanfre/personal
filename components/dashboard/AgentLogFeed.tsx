@@ -164,39 +164,39 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
         <span className="ml-auto text-zinc-500">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
       </button>
       {open && (
-        <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/40 max-h-[60vh] overflow-y-auto">
+        <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/30 max-h-[60vh] overflow-y-auto">
           {sorted.map((e, i) => {
             const Icon = AGENT_ICON[e.agent] || MessageSquareDashed;
             const tint = AGENT_TINT[e.agent] || 'text-zinc-300 bg-zinc-800/40 border-zinc-700/30';
             const expanded = bodyOpen[i] ?? false;
-            const preview = (e.body || '').replace(/\s+/g, ' ').slice(0, 180);
-            const truncated = (e.body || '').length > 180;
+            const preview = (e.body || '').replace(/\s+/g, ' ').slice(0, 140);
+            const truncated = (e.body || '').length > 140;
             return (
-              <div key={i} className="px-3 py-2.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] border ${tint}`}>
+              <div key={i} className="px-3 py-1.5 hover:bg-zinc-800/20 transition-colors">
+                <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                  <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${tint}`}>
                     <Icon className="w-3 h-3" /> {e.agent}
                   </span>
-                  <span className="text-[11px] text-zinc-500 font-mono">{relTime(e.ts)}</span>
+                  <span className="text-zinc-500 font-mono tabular-nums text-[10.5px]">{relTime(e.ts)}</span>
                   {e.source === 'clickup_backfill' && (
-                    <span className="text-[10px] text-zinc-600 uppercase tracking-wider">backfilled</span>
+                    <span className="text-[9.5px] text-zinc-700 uppercase tracking-wider">backfill</span>
                   )}
                   {truncated && (
                     <button
                       onClick={() => setBodyOpen((s) => ({ ...s, [i]: !s[i] }))}
-                      className="ml-auto text-[11px] text-zinc-500 hover:text-zinc-300"
+                      className="ml-auto text-[10.5px] text-zinc-500 hover:text-zinc-300 px-1.5 py-0.5 rounded hover:bg-zinc-800/60 transition-colors"
                     >
                       {expanded ? 'collapse' : 'expand'}
                     </button>
                   )}
                 </div>
-                <div className="mt-1.5">
+                <div className="mt-1">
                   {expanded || !truncated ? (
                     renderMarkdown
-                      ? <div className="text-[12px] text-zinc-300 leading-snug">{renderLightMarkdown(e.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
-                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans">{e.body || '(empty)'}</pre>
+                      ? <div className="text-[12px] text-zinc-300 leading-snug pl-1 border-l-2 border-zinc-800/60 ml-0.5 pl-2">{renderLightMarkdown(e.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
+                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans pl-2 border-l-2 border-zinc-800/60">{e.body || '(empty)'}</pre>
                   ) : (
-                    <p className="text-[12px] text-zinc-400 line-clamp-2">{preview}{truncated ? '…' : ''}</p>
+                    <p className="text-[11.5px] text-zinc-500 line-clamp-1 pl-1">{preview}{truncated ? '…' : ''}</p>
                   )}
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { AgentLogEntry } from '../../hooks/useContentLibrary';
+import { renderLightMarkdown } from '../../lib/lightMarkdown';
 
 // Parsed shape of one QA iteration extracted from agent_log.
 type QAIteration = {
@@ -134,35 +135,35 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
               })}
             </div>
           )}
-          {/* Per-iteration rows */}
-          <div className="divide-y divide-zinc-800/40">
+          {/* Per-iteration rows — compact one-liners with expandable body */}
+          <div className="divide-y divide-zinc-800/30">
             {iterations.map((it, i) => {
               const t = verdictTone(it);
               const Icon = t.Icon;
               const isExpanded = expandedIdx === i;
               return (
-                <div key={i} className="px-3 py-2">
+                <div key={i} className="px-3 py-1 hover:bg-zinc-800/20 transition-colors">
                   <button
                     onClick={() => setExpandedIdx(isExpanded ? null : i)}
-                    className="w-full flex items-center gap-2 text-left"
+                    className="w-full flex items-center gap-1.5 text-left text-[11px]"
                   >
-                    <span className="text-[11px] text-zinc-500 font-mono w-5 tabular-nums">#{i + 1}</span>
-                    <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] border ${t.tone}`}>
-                      <Icon className="w-3 h-3" /> {t.label}
+                    <span className="text-zinc-600 font-mono w-4 tabular-nums text-[10.5px]">#{i + 1}</span>
+                    <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${t.tone}`}>
+                      <Icon className="w-2.5 h-2.5" /> {t.label}
                     </span>
                     {typeof it.score === 'number' && (
-                      <span className="text-[11px] text-zinc-300 tabular-nums">{it.score}/10</span>
+                      <span className="text-zinc-300 tabular-nums font-medium">{it.score}/10</span>
                     )}
                     {typeof it.issuesCount === 'number' && it.issuesCount > 0 && (
-                      <span className="text-[11px] text-zinc-500">· {it.issuesCount} issue{it.issuesCount === 1 ? '' : 's'}</span>
+                      <span className="text-zinc-500">{it.issuesCount}↯</span>
                     )}
-                    <span className="text-[11px] text-zinc-600 ml-auto font-mono">{relTime(it.ts)}</span>
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronDown className="w-3.5 h-3.5 text-zinc-500" />}
+                    <span className="text-zinc-700 ml-auto font-mono tabular-nums text-[10.5px]">{relTime(it.ts)}</span>
+                    {isExpanded ? <ChevronUp className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
                   </button>
                   {isExpanded && (
-                    <pre className="mt-2 whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans bg-zinc-950/60 border border-zinc-800/60 rounded p-2 max-h-[420px] overflow-y-auto">
-                      {it.body || '(empty)'}
-                    </pre>
+                    <div className="mt-1 ml-5 pl-2 border-l-2 border-zinc-800/60 text-[12px] text-zinc-300 leading-snug max-h-[360px] overflow-y-auto">
+                      {renderLightMarkdown(it.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}
+                    </div>
                   )}
                 </div>
               );

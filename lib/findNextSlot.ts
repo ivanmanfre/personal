@@ -50,19 +50,25 @@ export async function findNextSlot(): Promise<Date> {
 
   const now = new Date();
   const todayLocal = ymdInTz(now, TZ);
+  const nowMs = now.getTime();
   for (let offset = 1; offset <= 30; offset++) {
-    const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 0, 0, 0));
+    // Anchor at 12:00 UTC (not midnight) so when we convert to BA we land on
+    // the intended local day. Midnight UTC = 21:00 BA the PREVIOUS day, which
+    // was making us pick today's already-past 9am slot.
+    const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
     const cl = ymdInTz(candidate, TZ);
     const slot = buildSlot(cl.y, cl.m, cl.d, SLOT_HOUR_LOCAL, TZ);
     const slotMs = slot.getTime();
+    // Hard guard: never pick a slot in the past.
+    if (slotMs <= nowMs) continue;
     // Skip weekends (Saturday=6, Sunday=0 in Date.getUTCDay)
     const dow = new Date(Date.UTC(cl.y, cl.m - 1, cl.d)).getUTCDay();
     if (dow === 0 || dow === 6) continue;
     const collides = taken.some((t) => Math.abs(t - slotMs) < COLLISION_WINDOW_HOURS * 3600_000);
     if (!collides) return slot;
   }
-  // Fallback: just return tomorrow 9am even if it collides
-  const t = ymdInTz(new Date(Date.now() + 24 * 3600_000), TZ);
+  // Fallback: 36h from now in BA, guaranteed future
+  const t = ymdInTz(new Date(Date.now() + 36 * 3600_000), TZ);
   return buildSlot(t.y, t.m, t.d, SLOT_HOUR_LOCAL, TZ);
 }
 

@@ -10,6 +10,7 @@ import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
+import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -110,8 +111,8 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             {postMode === 'edit' ? (
               <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={6} className="text-[13.5px] leading-relaxed font-sans" />
             ) : (
-              <div className="min-h-[240px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
-                <PostPreview text={postBody} />
+              <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
+                <LinkedInPostPreview text={postBody} mediaUrl={draft.coverUrl || null} />
               </div>
             )}
           </div>

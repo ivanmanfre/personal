@@ -15,6 +15,7 @@ import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
+import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 
 interface Props {
   draft: CarouselDraft;
@@ -219,8 +220,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 className="text-[13.5px] leading-relaxed"
               />
             ) : (
-              <div className="min-h-[240px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
-                <PostPreview text={postBody} />
+              <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
+                <LinkedInPostPreview
+                  text={postBody}
+                  mediaUrl={(() => {
+                    const u = (draft.imageUrls && draft.imageUrls[0]) || null;
+                    if (!u) return null;
+                    // Drive URLs → thumbnail render
+                    const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                    return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
+                  })()}
+                />
               </div>
             )}
           </div>
