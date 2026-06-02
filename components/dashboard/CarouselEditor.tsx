@@ -269,9 +269,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       )}
 
-      {/* 3-column ClickUp-style: left = editing surface, center = preview + actions,
-          right = sticky agent activity rail (full height of the sheet). */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_360px] gap-5">
+      {/* Adaptive grid:
+          - <md (375 / mobile): single column stack
+          - md (≥768, iPad portrait): 2 cols — left edit + middle actions side-by-side,
+            agent rail spans both cols on row 2 (audit rank 10, the :nth-child(3) trick).
+            Stops Approve from being 2 viewports below the fold on iPad.
+          - lg (≥1024): 3-column ClickUp layout with sticky rail. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_360px] gap-5 md:[&>*:nth-child(3)]:col-span-2 lg:[&>*:nth-child(3)]:col-span-1">
         {/* LEFT COLUMN — context first (source), then copy editing */}
         <div className="space-y-4 min-w-0">
           {/* Source briefing on top — the raw material that fed generation. */}
@@ -484,7 +488,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               Approve never shows during generation / before content exists.
               Wrapped in AnimatePresence so the card slides + fades when status
               changes — gives visible feedback for the workflow flipping under
-              your feet. */}
+              your feet.
+              lg:sticky pins it as the left column scrolls at desktop — Approve
+              stays in view when the user is reading SourceBriefing / QA history. */}
+          <div className="lg:sticky lg:top-2">
           <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={draft.status}
@@ -710,6 +717,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author <span className="text-[10px] text-zinc-500">~2 min</span>
             </Button>
           </div>
+          </div>{/* /lg:sticky action wrapper */}
         </div>
 
         {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed) */}
