@@ -14,12 +14,18 @@ interface SheetProps {
   open: boolean;
   onClose: () => void;
   title?: React.ReactNode;
-  /** sm = 480px, md = 720px, lg = 960px, xl = 1100px. Default 'lg'. */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** sm/md/lg/xl/full. 'full' is ClickUp-style — takes 95% of the viewport. */
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   children?: React.ReactNode;
 }
 
-const WIDTHS = { sm: 'max-w-[480px]', md: 'max-w-[720px]', lg: 'max-w-[960px]', xl: 'max-w-[1100px]' };
+const WIDTHS = {
+  sm: 'max-w-[480px]',
+  md: 'max-w-[720px]',
+  lg: 'max-w-[960px]',
+  xl: 'max-w-[1100px]',
+  full: 'max-w-[min(1600px,95vw)]',
+};
 
 export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, size = 'lg', children }) => {
   useEffect(() => {

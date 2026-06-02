@@ -190,9 +190,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       )}
 
-      {/* 2-column body: left = editing surface, right = preview + actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
-        {/* LEFT COLUMN — context first (source + agent activity), then copy editing */}
+      {/* 3-column ClickUp-style: left = editing surface, center = preview + actions,
+          right = sticky agent activity rail (full height of the sheet). */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_360px] gap-5">
+        {/* LEFT COLUMN — context first (source), then copy editing */}
         <div className="space-y-4 min-w-0">
           {/* Source briefing on top — the raw material that fed generation. */}
           <SourceBriefing description={draft.description} upstream={upstream} defaultOpen />
@@ -209,17 +210,6 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               QA: {qa.verdict}{qa.failing_slides?.length ? ` — slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
             </div>
           )}
-
-          {/* Agent activity — moved up so the conversation history is visible
-              without scrolling. Default-open with markdown-rendered bodies. */}
-          <AgentLogFeed
-            entries={draft.agentLog}
-            table="carousel_drafts"
-            rowId={draft.id}
-            onNoteAdded={onChanged}
-            defaultOpen
-            renderMarkdown
-          />
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -548,6 +538,20 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             >
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author <span className="text-[10px] text-zinc-500">~2 min</span>
             </Button>
+          </div>
+        </div>
+
+        {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed) */}
+        <div className="min-w-0">
+          <div className="lg:sticky lg:top-2">
+            <AgentLogFeed
+              entries={draft.agentLog}
+              table="carousel_drafts"
+              rowId={draft.id}
+              onNoteAdded={onChanged}
+              defaultOpen
+              renderMarkdown
+            />
           </div>
         </div>
       </div>

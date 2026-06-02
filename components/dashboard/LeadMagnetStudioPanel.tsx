@@ -494,7 +494,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
       <Sheet
         open={!!open}
         onClose={() => setOpenId(null)}
-        size="xl"
+        size="full"
         title={open ? <span className="truncate">{open.topic || '(untitled)'}</span> : ''}
       >
         {open && <LeadMagnetEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}

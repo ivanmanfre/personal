@@ -674,7 +674,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       <Sheet
         open={!!open}
         onClose={() => setOpenId(null)}
-        size="xl"
+        size="full"
         title={open ? <span className="truncate">{open.title}</span> : ''}
       >
         {open && <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
