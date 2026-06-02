@@ -1,0 +1,800 @@
+{
+  "summary": "In-depth multi-agent UI/UX/tech audit of v2 Post Gen interface with adversarial verification",
+  "agentCount": 42,
+  "logs": [
+    "Starting Post Gen UI audit — 7 lenses, adversarial verification, brand-aware",
+    "parallel[4] failed: agent({schema}): subagent completed without calling StructuredOutput (after 2 in-conversation nudges)",
+    "6/7 lenses returned findings",
+    "Verifying 26 RED + 8 top YELLOW (4 unverified)",
+    "Verified: 24 CONFIRMED, 9 DOWNGRADED, 1 REFUTED. 4 YELLOWs unverified."
+  ],
+  "result": {
+    "synthesis": {
+      "consolidation_plan": {
+        "target_view_count": 2,
+        "moves": [
+          {
+            "action": "DELETE",
+            "files": [
+              "components/dashboard-v2/sections/Posts.tsx"
+            ],
+            "reason": "Orphan — zero importers across the codebase. Pure dead weight from the 2026-06-01 IA reorg."
+          },
+          {
+            "action": "DELETE",
+            "files": [
+              "components/dashboard/CarouselStudioPanel.tsx"
+            ],
+            "reason": "95% overlap with PostStudioPanel filtered to type='carousel'. PostStudioPanel already exposes restrictTypes={['carousel']} (line 54-63). Remove lazy+panelComponents+prefetch in Dashboard.tsx:71/101/136 + Studio nav in DashboardLayout.tsx:35, and add studio→{section:'content',sub:'posts'} to dashboardUrlMigration.ts TAB_TO_SECTION."
+          },
+          {
+            "action": "MERGE",
+            "files": [
+              "components/dashboard/ContentPanel.tsx",
+              "components/dashboard/PostStudioPanel.tsx"
+            ],
+            "reason": "Port ContentPanel's month-grid calendar + drag-to-reschedule into PostStudioPanel as a 5th view='calendar'. Rewrite DnD onDrop to call PostStudioPanel's existing onDateChange against carousel_drafts.scheduled_at (NOT scheduled_posts) so the two-table drift is eliminated, not preserved. Migrate Briefing.tsx + OverviewPanel.tsx useContentPipeline consumers to carousel_drafts statusCounts before deleting useContentPipeline.ts. Then remove ContentStudio.tsx:21 import and :101 'Pipeline Kanban' InternalTab (matches Ivan's own L32-34 comment)."
+          },
+          {
+            "action": "MERGE",
+            "files": [
+              "components/dashboard/PostStudioPanel.tsx"
+            ],
+            "reason": "Collapse view union from grid|board|list|table → list|board|calendar. Delete inline Grid block (PostStudioPanel.tsx:624-671) and the Table branch (Table = List + dense + no groupByStatus, a setting not a view). Make density a small toggle inside list header. localStorage migration: old 'grid'/'table' fall back to 'list' via existing guard."
+          },
+          {
+            "action": "MERGE",
+            "files": [
+              "components/dashboard/StudioListView.tsx"
+            ],
+            "reason": "Extract row body to StudioRowItem (React.memo) so list, board card, and future calendar cell share one renderer. Reduces drift between layouts and unlocks per-row memo wins."
+          }
+        ]
+      },
+      "critical_issues": [
+        {
+          "rank": 1,
+          "title": "Contrast fails AA on 60+ chrome instances (text-zinc-500/600 + /60-/70 accent variants)",
+          "fix": "dashboard-v2.css:31 raise --d-paper-dimmer #6b6b73 → #8a8a92 (5.1:1 on #1a1713, passes AA). Add scoped overrides for .text-emerald-500/60, /70, .text-sky-500/60, .text-amber-500/60 mapping them to var(--d-good)/--d-accent/--d-warn at full opacity so taxonomy chip tint is preserved as semantic coding, not noise. Sweep text-zinc-700 italic empty-state → text-zinc-500 italic.",
+          "effort": "S",
+          "evidence": "dashboard-v2.css:31 + override at 397-399. StudioListView.tsx:515,650; PostStudioPanel.tsx:261,503; CarouselEditor.tsx:102,169,173,179.",
+          "file": "components/dashboard-v2/dashboard-v2.css"
+        },
+        {
+          "rank": 2,
+          "title": "prefers-reduced-motion ignored by Framer Motion (CSS-only block at css:79 cannot reach JS-driven animate props)",
+          "fix": "Import useReducedMotion in StudioListView + CarouselEditor; gate the dot scale ([1,1.6,1]) and card-swap motion.div animate props on shouldReduceMotion. Also add a global @media (prefers-reduced-motion) rule that kills .animate-status-flash, .animate-log-pulse, .animate-refresh-pulse (CSS, so safe). ~10 lines per file, zero regression.",
+          "effort": "S",
+          "evidence": "dashboard-v2.css:79-86 only neutralizes CSS animations; grep for useReducedMotion in components/dashboard returns zero. StudioListView.tsx:561-565; CarouselEditor.tsx:341-348; polling at PostStudioPanel.tsx:247-251 triggers repeats.",
+          "file": "components/dashboard/StudioListView.tsx"
+        },
+        {
+          "rank": 3,
+          "title": "Sheet + CarouselEditor render the title and close-button twice, 60px apart",
+          "fix": "Delete CarouselEditor.tsx:155-162 entirely. Sheet.tsx:62-70 already shows title + X. If a colored status pill is wanted at the top, relocate it (just the STATUS_META dot+label) into the taxonomy chip row at :164 — no h2 dup.",
+          "effort": "S",
+          "evidence": "Sheet.tsx:62-70 renders title+X; CarouselEditor.tsx:153-162 re-renders ArrowLeft+h2+status. Both onClose call setOpenId(null).",
+          "file": "components/dashboard/CarouselEditor.tsx"
+        },
+        {
+          "rank": 4,
+          "title": "Status transitions not announced to assistive tech — zero aria-live / role=status / aria-atomic on the 8-state pipeline",
+          "fix": "(1) StudioListView.tsx:543-568 wrap pill in role='status' aria-live='polite' aria-label={`Status: ${statusLabel(r.status)}`} guarded by prevStatus diff (so 20s polling × N rows doesn't spam). (2) PostStudioPanel.tsx:298 stuck-banner → role='alert' aria-live='assertive'. (3) CarouselEditor sr-only live region mirroring prevStatusRef effect for screen-reader narration without visual duplication.",
+          "effort": "S",
+          "evidence": "Grep returns zero aria-live / role=status across components/dashboard*, components/ui. WCAG 4.1.3 AA fail on operator-staring-all-day surface.",
+          "file": "components/dashboard/StudioListView.tsx"
+        },
+        {
+          "rank": 5,
+          "title": "Redundant transition feedback — same status change fires toast + card swap + row flash + pill morph + dot scale + log pulse simultaneously",
+          "fix": "Thread origin: 'user'|'system' through prevStatusRef effect. USER-initiated: pill morph + card swap, NO toast (the run() wrapper already toasted), NO row flash (we're inside the editor sheet). SYSTEM-initiated (poll detected change): toast + row flash + pill morph, NO card swap. Drop the redundant motion.span dot-scale at StudioListView.tsx:561-565 — parent pill scale already conveys it. Eliminates the 'screen refresh' disease Ivan already rejected for .dv-fade-in.",
+          "effort": "S",
+          "evidence": "CarouselEditor.tsx:64-82 toasts on every prevStatus delta with no origin discrimination → double-toast on Approve + phantom toasts every 20s poll while generating. StudioListView.tsx:173-186 flashes for poll-driven changes too. dashboard-v2.css:153-154 comment confirms Ivan rejected the same pattern before.",
+          "file": "components/dashboard/CarouselEditor.tsx"
+        },
+        {
+          "rank": 6,
+          "title": "GoTrueClient instantiated 3× in the same tab — auth/realtime can desync silently",
+          "fix": "Consolidate to lib/supabase.ts singleton. Replace createClient calls in contexts/DashboardContext.tsx:54, hooks/useUserTimezone.ts:41,70, components/VideoViewer.tsx:6 with `import { supabase } from '@/lib/supabase'`. All four only use .from() — no auth/realtime config — so import-swap is sufficient. Verify warning count = 0 after deploy.",
+          "effort": "S",
+          "evidence": "6× 'Multiple GoTrueClient instances detected' in /tmp/pw-audit-postgen/report.json on storage key sb-bjbvqvzbzczjbatgmccb-auth-token. Four createClient call sites confirmed via grep.",
+          "file": "lib/supabase.ts"
+        },
+        {
+          "rank": 7,
+          "title": "Pillar / Hook / Value Tier / Image Style read-only — forces ClickUp roundtrip on the most common review-state edit",
+          "fix": "Extend lib/studioActions.ts:47 saveDraft to accept taxonomy?: Record<string,unknown> (merge then write, JSON column overwrites). Add TaxonomyEditor row above FieldGrid (CarouselEditor.tsx:292) with three <select>s bound to tax.pillar / tax.hook_type / tax.value_tier + Textarea for image_description + url Input for visual_content_link. Default imageryOpen=true when type==='single_image'. Wire useOptimistic so chips flip instantly.",
+          "effort": "M",
+          "evidence": "CarouselEditor.tsx:167-181 + FieldGrid.tsx:46-48 render taxonomy as static spans. FieldGrid.tsx:13 comment explicitly admits the gap. studioActions.ts:47-58 saveDraft patch type does not include taxonomy. taxonomy-cleanup-2026-05-27.md confirms Ivan flips pillar mid-review (Personal POV sub-mode).",
+          "file": "lib/studioActions.ts"
+        },
+        {
+          "rank": 8,
+          "title": "Per-slide text edit missing — typo on slide 5 = nuclear 2-min full Re-author + QA-rewrite risk",
+          "fix": "Extend saveDraft to accept slides?: any[]. Swap CarouselEditor.tsx:129-145 static div blocks for inline <Textarea> per slide bound to localSlides + 'Save slide text' button per slide. Add separate 'Re-render images only' button distinct from 'Re-author' (text fixes don't need full agent rebuild; image fixes don't need text regen). Footer at L570 already admits this gap exists.",
+          "effort": "M",
+          "evidence": "CarouselEditor.tsx:129-145 slides are static divs with line-clamp; only mutation is Re-author (L548-551) calling buildCarousel. Footer L570: 'Per-slide image regen is coming next'. incident-carousel-type-field-strip-2026-05-26.md confirms regenerate-to-fix-one-slide has caused real bugs.",
+          "file": "components/dashboard/CarouselEditor.tsx"
+        },
+        {
+          "rank": 9,
+          "title": "4 read-views collapse to 2 — Grid + Table are not real views (Table = List + dense flag; Board is List rotated 90°)",
+          "fix": "PostStudioPanel.tsx:87 narrow view union to 'list' | 'board' | 'calendar' (after calendar port). Migrate localStorage: grid/table → list. Replace 4-button toggle (lines 264-285) with 2 icon buttons + a small dense toggle inside the list header. Delete inline Grid block (624-671, ~47 LOC) and Table cosmetic flags (507, 542, 544). ~80 LOC net delete in PostStudioPanel + relocates Pipeline Kanban duplicate.",
+          "effort": "M",
+          "evidence": "PostStudioPanel.tsx:87 stores 4 views with default 'list'. Lines 505-544 prove Table = StudioListView with dense=true and groupByStatus=undefined. ContentStudio.tsx:32-34 comment explicitly states Pipeline was removed — but :101 still mounts it under Performance.",
+          "file": "components/dashboard/PostStudioPanel.tsx"
+        },
+        {
+          "rank": 10,
+          "title": "Editor at 768px stacks to 3000px single column — Approve buried 2 viewports below the fold during Ivan's iPad workflow",
+          "fix": "CarouselEditor.tsx:206 → grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_360px], with md:[&>*:nth-child(3)]:col-span-2 so the right rail spans full width on the second row at md. Wrap the action card (341-533) in lg:sticky lg:top-4. Below md add sticky bottom-0 action bar with Approve + Re-author (bg-[var(--d-bg)] border-t border-[var(--d-rule)]).",
+          "effort": "M",
+          "evidence": "CarouselEditor.tsx:206 uses lg: (1024px) breakpoint only. At 768 single-column stack = ~3000px; Approve + AgentLogFeed both below fold per /tmp/pw-audit-postgen/08-tablet-editor.png. Rail's lg:sticky lg:top-2 (L557) only fires ≥1024.",
+          "file": "components/dashboard/CarouselEditor.tsx"
+        },
+        {
+          "rank": 11,
+          "title": "Type scale is 15+ ad-hoc font-sizes with no token system",
+          "fix": "Add a 7-step @theme scale scoped to .dashboard-v2 in dashboard-v2.css (--t-xs/sm/base/md/lg/xl/display, mix of clamp() and fixed). Sweep text-[10.5px]/[11.5px]/[12.5px]/[13.5px]/[13px] arbitrary values → text-[length:var(--t-*)]. Eliminates 14 of 15 hand-tuned sizes; preserves the 32/38px KPI+display anchors. NOTE: many other findings reference these tokens — define them FIRST.",
+          "effort": "M",
+          "evidence": "Grep across dashboard files enumerates 15 distinct arbitrary text-[Npx] sizes (7,8,9,9.5,10,10.5,11,11.5,12,12.5,13,13.5,14,18,28). PostStudioPanel.tsx:261,408,415,419,439,454,466,471,495,502; StudioListView.tsx:514,515,566,580,590,609,648; dashboard-v2.css:45 sets 15px base.",
+          "file": "components/dashboard-v2/dashboard-v2.css"
+        },
+        {
+          "rank": 12,
+          "title": "Editor 1440 has no F-pattern — taxonomy chip row steals the entry point from the caption editor",
+          "fix": "(1) Demote taxonomy bar (CarouselEditor.tsx:165-202) from full-row jewel pills to a single muted dv-tax-chip line: 'Pillar · Hook · Tier · Strength' in --d-paper-dimmer. (2) Re-anchor caption block (225-261) inside a <Card> with 3px sage left rule (.dv-marginalia at dashboard-v2.css:337) and an h3 'LinkedIn caption' at --t-lg (not the 10.5px uppercase FieldLabel — primary edit surface should LOOK primary). (3) Collapse Preview+Imagery+Metrics into one Card with <InternalTabs label='Reference'>. (4) Schedule + Save + Re-author become sticky action bar at bottom of sheet, not column 2.",
+          "effort": "L",
+          "evidence": "CarouselEditor.tsx:165-202 (6 jewel-tone chips), :206 (3-col grid), :225-261 (caption with small FieldLabel), :296-553 (mislabeled-RIGHT middle column with 4 stacked cards), :555-567 (rail). Screenshot /tmp/pw-out/2026-06-02T18-01-57-622Z/1440.png confirms taxonomy bar is brightest object.",
+          "file": "components/dashboard/CarouselEditor.tsx"
+        },
+        {
+          "rank": 13,
+          "title": "Brand collapses below the masthead — DM Serif Display italic + sage editorial numerals never reach panel chrome",
+          "fix": "Add .dv-section-h (DM Serif Display italic, --t-lg, --d-paper) + .dv-editorial-num (DM Serif italic with lnum+tnum, --d-good) to dashboard-v2.css. Replace PostStudioPanel.tsx:260 h2 → <h2 className='dv-section-h'>Posts <span className='dv-editorial-num'>{drafts.length}</span></h2>. Same in StudioListView.tsx:413 group headers + PostStudioPanel.tsx:439 filter counts. Recovers editorial register with one class per surface; font already loaded for .dv-h1.",
+          "effort": "M",
+          "evidence": "dashboard-v2.css:158-159 (only DM Serif touchpoint). Grep for 'DM Serif' / 'font-display' across PostStudioPanel.tsx, CarouselEditor.tsx, StudioListView.tsx returns zero. 4 radius scales in PostStudioPanel alone (rounded/-md/-lg/-xl/-full).",
+          "file": "components/dashboard-v2/dashboard-v2.css"
+        },
+        {
+          "rank": 14,
+          "title": "Setbusy + manual refresh on every mutation — pill flips AFTER full-table refetch (300+ rows, 30 cols incl. agent_log JSONB)",
+          "fix": "Hoist drafts to useOptimistic in PostStudioPanel and wrap onStatusChange/onDateChange/onBulkAction in startTransition. Replace useContentLibrary 15s+20s polling pair (CarouselEditor.tsx:55-59 + PostStudioPanel.tsx:247-251) with a Supabase realtime channel on carousel_drafts (mirror hooks/useScan.ts:60-90 pattern already proven in-codebase). Status pills flip instantly, rollback on error via authoritative refresh after mutation.",
+          "effort": "M",
+          "evidence": "CarouselEditor.tsx:31 (setBusy), :46-51 (run wrapper), :55-59 (15s poll); PostStudioPanel.tsx:247-251 (20s poll), :546-585 (4 await-refresh-after-mutate handlers); useContentLibrary.ts:63-77 (full-table refetch, no .limit/.select); React 19.2 in package.json; zero useOptimistic/useTransition/useDeferredValue in components/ or hooks/.",
+          "file": "components/dashboard/PostStudioPanel.tsx"
+        },
+        {
+          "rank": 15,
+          "title": "QA REWRITE_OK auto-publishes silently with zero pre/post diff — voice-drift audit blind spot",
+          "fix": "QAVerdictPanel.tsx:23-44 add rewrite: string|undefined extraction via /REWRITE:\\s*([\\s\\S]*?)(?:\\n\\s*\\n|VOICE|END|$)/i. In expanded body (163-167) render side-by-side diff (10kb `diff` pkg) — sage-on-paper added / muted strikethrough removed. Baseline for iteration #1 = Writer agent body in agent_log. Pattern already shipped in UpworkKanban.tsx:335-350 — port it.",
+          "effort": "M",
+          "evidence": "QAVerdictPanel.tsx:23-44 uses REWRITE: only as delimiter for ISSUES regex; expanded body renders raw markdown only. post-gen-auto-publish-rewrite.md confirms silent auto-publish path live. UpworkKanban.tsx:335-350 already has the missing 'Show original (pre-QA)' toggle.",
+          "file": "components/dashboard/QAVerdictPanel.tsx"
+        }
+      ],
+      "css_modernization": [
+        {
+          "technique": "Tailwind v4 @theme tokens scoped to .dashboard-v2",
+          "where": "dashboard-v2.css — add --t-xs/sm/base/md/lg/xl/display + raise --d-paper-dimmer to #8a8a92. Sweep arbitrary text-[Npx] → text-[length:var(--t-*)]. Define tokens BEFORE other findings consume them.",
+          "benefit": "Kills 14 of 15 hand-tuned sizes overnight + fixes AA contrast in one CSS line + unlocks fluid clamp() resize"
+        },
+        {
+          "technique": "Container queries on the list inside the editor sheet",
+          "where": "StudioListView.tsx:283-286 — replace `hidden md:flex/lg:flex` with `@container` + `@md:flex` so column visibility tracks the LIST's width (~400px behind the open sheet), not the viewport.",
+          "benefit": "Editor-open with desktop viewport no longer renders 9 columns into a 400px-wide list behind the scrim"
+        },
+        {
+          "technique": ":has() for selection + hover trail",
+          "where": "StudioListView.tsx:465 — replace manual className concat with `.dv-row:has([data-selected=true])` selector + parent group `:has(:hover)`.",
+          "benefit": "Removes ~15 LOC of imperative className branching per row, gains CSS-only hover trails"
+        },
+        {
+          "technique": "View Transitions API (document.startViewTransition) for layout swaps only",
+          "where": "PostStudioPanel.tsx view toggle (list↔board↔calendar). NOT for status-pill morphs (AnimatePresence stays — VT-name collision across N rows would break). Already enabled at App.tsx:80 useRouteViewTransition.",
+          "benefit": "Free crossfade on view-mode swap with zero JS deps"
+        },
+        {
+          "technique": "@media (prefers-reduced-motion: reduce) override block",
+          "where": "dashboard-v2.css — neutralize .animate-status-flash, .animate-log-pulse, .animate-refresh-pulse globally; pair with useReducedMotion() in StudioListView + CarouselEditor for Framer Motion JS-driven animations.",
+          "benefit": "Closes WCAG 2.3.3 hole, kills polling-driven phantom flashes for vestibular-sensitive users"
+        },
+        {
+          "technique": "Editorial type classes (.dv-section-h, .dv-editorial-num) in DM Serif Display italic + sage",
+          "where": "dashboard-v2.css — used by PostStudioPanel.tsx:260, StudioListView.tsx:413 group headers, PostStudioPanel.tsx:439 filter counts.",
+          "benefit": "Recovers brand voice on operator surface; font already loaded for .dv-h1 so zero perf cost"
+        },
+        {
+          "technique": "Single .dv-tax-chip primitive replacing 6 chip skins",
+          "where": "CarouselEditor.tsx:166-202 — flex flex-wrap gap-x-5 gap-y-1.5 of span.dv-tax-chip with mono uppercase prefix label + --d-paper value, sage RESERVED for LinkedIn link CTA only.",
+          "benefit": "Restores positional reading; sage regains signal value; matches paper+sage editorial register"
+        }
+      ],
+      "executive_summary": "Post Gen has 5 nominal views collapsing to 2 real surfaces (PostStudioPanel + CarouselEditor side-sheet); Grid + Table are not views (Table is List+dense, Grid is low-signal at current carousel volume), Board duplicates a Pipeline Kanban that Ivan's own comment says was removed, sections/Posts.tsx is orphan dead code, and CarouselStudioPanel is a v1-only duplicate now that PostStudioPanel supports restrictTypes={['carousel']}. Below the masthead the dashboard reads as generic shadcn-dark, not Ivan's paper+sage editorial — DM Serif Display italic and editorial numerals never reach panel chrome despite the .dv-h1 promise one row above. The highest impact-per-effort wins are all S-tier CSS/a11y: AA contrast on text-zinc-500/600 + /60-/70 accents, prefers-reduced-motion for Framer Motion, dedup Sheet+CarouselEditor title (saves 60px of vertical), and aria-live on the 8-state pipeline. React 19 wins (useOptimistic + useTransition for status/date/bulk + Supabase realtime channel replacing the dual 15s/20s polling) are M-tier but architecturally compounding — every operator click stops waiting on a 300-row full-table refetch. Target end-state: 2 read-views (List grouped + Board kanban) plus a 3rd ported calendar from ContentPanel, one CarouselEditor with editable taxonomy + per-slide text + diffable QA rewrites, all rendered against carousel_drafts only.",
+      "react19_recommendations": [
+        {
+          "pattern": "useOptimistic + useTransition for status/date/bulk mutations",
+          "file": "components/dashboard/PostStudioPanel.tsx",
+          "current": "onStatusChange awaits supabase.update then awaits refresh() (full-table refetch) BEFORE pill morphs — visible ~400-700ms lag on every click",
+          "proposed": "const [optimisticDrafts, applyOptimistic] = useOptimistic(drafts, (s, p) => s.map(d => d.id===p.id ? {...d, ...p} : d)); const [isPending, startTransition] = useTransition(); onStatusChange = (id, next) => startTransition(async () => { applyOptimistic({id, status: next}); const {error} = await supabase.from('carousel_drafts').update({status:next}).eq('id',id); if(error){ toastError(); return; } await refresh(); }); — pass optimisticDrafts to StudioListView. Repeat for onDateChange + onBulkAction."
+        },
+        {
+          "pattern": "Supabase realtime channel replaces dual polling (15s + 20s)",
+          "file": "hooks/useContentLibrary.ts",
+          "current": "useContentLibrary refresh() is called from CarouselEditor 15s poll + PostStudioPanel 20s poll + every save/status-flip/schedule/restart — each call re-fetches the full carousel_drafts table including agent_log JSONB",
+          "proposed": "useEffect(() => { refresh(); const ch = supabase.channel('carousel_drafts').on('postgres_changes',{event:'*',schema:'public',table:'carousel_drafts'},(p) => setDrafts(prev => { if(p.eventType==='DELETE') return prev.filter(r => r.id !== (p.old as any).id); const row = mapDraft(p.new); const i = prev.findIndex(r => r.id===row.id); if(i===-1) return [row, ...prev]; const next = [...prev]; next[i] = row; return next; })).subscribe(); return () => supabase.removeChannel(ch); }, []); — then DELETE polling at CarouselEditor.tsx:55-59 AND PostStudioPanel.tsx:247-251. Pattern already proven in hooks/useScan.ts:60-90."
+        },
+        {
+          "pattern": "useDeferredValue on search input",
+          "file": "components/dashboard/PostStudioPanel.tsx",
+          "current": "search input at line 411-413 updates state every keystroke; useMemo at 114-138 re-runs filter+sort over all drafts including substring on title+topic+postBody every keystroke",
+          "proposed": "const [searchQuery, setSearchQuery] = useState(''); const deferredQuery = useDeferredValue(searchQuery); — change useMemo dep array searchQuery → deferredQuery. Keystroke stays snappy; expensive filter runs at idle priority. Zero behavior change otherwise."
+        },
+        {
+          "pattern": "useTransition wrapping CarouselEditor.run() helper",
+          "file": "components/dashboard/CarouselEditor.tsx",
+          "current": "run(label, fn, msg) sets busy state synchronously, awaits fn, then toasts — entire 3-column editor re-renders on every setBusy",
+          "proposed": "const [isPending, startTransition] = useTransition(); async function run(label, fn, msg){ startTransition(async () => { setBusy(label); try{ await fn(); toast.success(msg); onChanged(); } catch(e){ toastError(label, e); } finally { setBusy(null); } }); } — buttons read isPending. Won't block input thread."
+        },
+        {
+          "pattern": "Uncontrolled Textarea + ref for caption (preserve counter via local length state)",
+          "file": "components/dashboard/CarouselEditor.tsx",
+          "current": "Lines 28-29 + 241-246: fully controlled Textarea re-renders entire 575-line CarouselEditor tree per keystroke (QAVerdictPanel, FieldGrid, PostMetricsPanel, AgentLogFeed all re-render despite stable draft prop)",
+          "proposed": "const postRef = useRef<HTMLTextAreaElement>(null); const [postLen, setPostLen] = useState(draft.postBody?.length ?? 0); <Textarea defaultValue={draft.postBody||''} ref={postRef} onChange={(e)=>setPostLen(e.target.value.length)} /> — counter reads postLen; Save reads postRef.current!.value. For preview mode use useDeferredValue on a separate previewText state."
+        },
+        {
+          "pattern": "React.memo on extracted StudioRowItem",
+          "file": "components/dashboard/StudioListView.tsx",
+          "current": "renderRow defined inside parent function body at line 448 → recreated every parent render (14 useStates trigger), runs over all rows on each sort/filter/flash",
+          "proposed": "Extract to const StudioRowItem = React.memo<StudioRowItemProps>(function StudioRowItem({row, cols, meta, selected, flash, onOpen, ...}) { return <motion.div .../> }, (a,b) => a.row===b.row && a.selected===b.selected && a.flash===b.flash && a.cols===b.cols); — replace sorted.map((r,i)=>renderRow(r,i)) with <StudioRowItem key={r.id} row={r} ... />."
+        }
+      ],
+      "refuted_findings": [
+        {
+          "claim": "Density is below Linear baseline — 15px base + 0.85rem row padding wastes 18% vertical real estate; force dense everywhere",
+          "refutation": "Refuted by the CSS itself — nearly every chrome class declares its own font-size (10-15.5px), so 15px base only affects raw inherited text (narrow surface). Forcing dense as default would also strip the thumbnail button AND the excerpt subline (StudioListView.tsx:485, 515) — regressing scannability. Dense already user-toggleable as the Table view; users who want Linear-density can opt in. Working as designed."
+        },
+        {
+          "claim": "AnimatePresence wraps single-child transitions that View Transitions API could replace (74 instances → cut to use CSS)",
+          "refutation": "Originally YELLOW, downgraded GREEN. Proposed `view-transition-name: status-pill` would be applied to EVERY row's pill, but VT names must be UNIQUE per element — with N visible rows the browser collapses or errors. AnimatePresence mode='wait' with keyed child is the canonical Framer pattern for state-machine crossfades; exit animation (opacity 0, scale 0.85) cannot be replicated in pure CSS because no old DOM element exists when React swaps the key. Cosmetic over-engineering with no measurable bundle savings (Framer stays loaded for Sheet + 70 other usages). Not actionable without redesigning the VT-name strategy AND accepting loss of exit animations."
+        },
+        {
+          "claim": "5 overlapping views of the same draft (PostStudioPanel + CarouselStudioPanel + ContentPanel + sections/Posts + Briefing pulse)",
+          "refutation": "Real overlap is 1 active duplicate (CarouselStudioPanel) + 1 internal cleanup (inline Board/Grid blocks in PostStudioPanel deserve extraction). sections/Posts.tsx is orphan, not 'another layer'. Briefing.tsx uses useContentPipeline HOOK (correct composition), not the ContentPanel component. ContentPanel reads scheduled_posts (the publishing queue) not carousel_drafts — deleting it without porting drag-reschedule would BREAK the only UI for rescheduling already-scheduled posts. Real count is 2-3, not 5."
+        },
+        {
+          "claim": "Type scale is 17+ font-sizes — clamp() everything",
+          "refutation": "Headline 17+ slightly overcounts (real arbitrary text-[Npx] count is 15 + 6 from utility classes = 21 if you include 15/15.5/16/17/32/38px utility class values). Magnitude claim stands but precise count is inflated. The clamp() recommendation is correct in spirit but should NOT clamp 32/38px display sizes — those are intentional anchors. Token recommendation accepted with this nuance."
+        }
+      ],
+      "scores": {
+        "brand_fidelity": 4,
+        "component_arch": 5,
+        "css_modernity": 5,
+        "editor_depth": 4,
+        "golden_path_flow": 5,
+        "readability": 5,
+        "status_visibility": 6
+      },
+      "view_inventory": [
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard/PostStudioPanel.tsx",
+          "purpose": "Canonical Posts list/grid/board/table master surface against carousel_drafts. Owns filters, sort, view toggle, stuck-scheduled triage banner, bulk actions, create-post form.",
+          "verdict": "KEEP",
+          "overlap_with": [
+            "components/dashboard/CarouselStudioPanel.tsx",
+            "components/dashboard/ContentPanel.tsx",
+            "components/dashboard-v2/sections/Posts.tsx"
+          ],
+          "reason": "Single survivor of the read-surface collapse. Already supports restrictTypes={['carousel']} (line 54-63). Will absorb a 'calendar' view ported from ContentPanel."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard/CarouselEditor.tsx",
+          "purpose": "Side-sheet editor: source briefing, QA verdict timeline, LinkedIn + IG captions, taxonomy chips, preview, imagery, schedule, save, re-author, agent log rail.",
+          "verdict": "KEEP",
+          "overlap_with": [],
+          "reason": "The only true editor. Different job from any list view. Needs depth fixes (per-slide edit, taxonomy editable, image-style editable, QA diff) but the surface is irreplaceable."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard/StudioListView.tsx",
+          "purpose": "Row renderer shared by List and Table modes; owns column drag-reorder, inline status/date edit, group collapse, flash, selection.",
+          "verdict": "KEEP",
+          "overlap_with": [],
+          "reason": "Subcomponent, not navigable. Should be refactored to extract a memo'd StudioRowItem so list + board card + future calendar cell share one renderer."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard/CarouselStudioPanel.tsx",
+          "purpose": "Carousel-only list with inline mini-form. Reachable only via legacy v1 /dashboard?tab=studio.",
+          "verdict": "DELETE",
+          "overlap_with": [
+            "components/dashboard/PostStudioPanel.tsx"
+          ],
+          "reason": "95% duplicate. PostStudioPanel.tsx:54-63 already supports restrictTypes={['carousel']}+title prop. Remap studio→{section:'content',sub:'posts'} in dashboardUrlMigration.ts TAB_TO_SECTION; delete the Studio nav item in DashboardLayout.tsx:35 + lazy/panelComponents/prefetch in Dashboard.tsx:71/101/136."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard-v2/sections/Posts.tsx",
+          "purpose": "Two-tab Ideas/Drafts wrapper around LmIdeasPanel + PostStudioPanel — built but never wired into DemoShell sectionRenderers.",
+          "verdict": "DELETE",
+          "overlap_with": [
+            "components/dashboard-v2/sections/ContentStudio.tsx"
+          ],
+          "reason": "Pure orphan. Zero importers across the codebase. DemoShell.tsx:48 maps 'content' → ContentStudio, never to Posts. types.ts SectionId union has no 'posts' member. Confuses inventory; delete outright."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard/ContentPanel.tsx",
+          "purpose": "DnD month-grid calendar + drag-to-reschedule + status pill row + post detail modal against scheduled_posts table.",
+          "verdict": "MERGE",
+          "overlap_with": [
+            "components/dashboard/PostStudioPanel.tsx"
+          ],
+          "reason": "Different table (scheduled_posts) so naive delete would break drag-reschedule. Port the calendar layout (getMonthDays + DraggablePost pattern) into PostStudioPanel as a 5th view='calendar' reading carousel_drafts.scheduled_at. Migrate Briefing.tsx + OverviewPanel.tsx useContentPipeline KPI consumers FIRST. Then delete ContentPanel + useContentPipeline + remove ContentStudio.tsx:21 import + :101 'Pipeline Kanban' InternalTab (matches Ivan's own L32-34 comment)."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/ui/LinkedInPostPreview.tsx",
+          "purpose": "LinkedIn-styled caption preview with hashtag/mention/URL tokenization.",
+          "verdict": "KEEP",
+          "overlap_with": [],
+          "reason": "Preview-only, mounted inside CarouselEditor + LeadMagnetEditor. Memoize paragraphs (useMemo on visibleText) — no other change."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/ui/Sheet.tsx",
+          "purpose": "Side-sheet/drawer primitive used by all editor surfaces.",
+          "verdict": "KEEP",
+          "overlap_with": [],
+          "reason": "Shared primitive. Multi-child AnimatePresence is its sweet spot. Only edit: remove the duplicate title+close that CarouselEditor.tsx:155-162 re-renders 60px below this header."
+        },
+        {
+          "file": "/Users/ivanmanfredi/Desktop/personal-site/components/dashboard-v2/sections/ContentStudio.tsx",
+          "purpose": "v2 router for the Content section — mounts Posts/Performance/Video subtabs.",
+          "verdict": "MERGE",
+          "overlap_with": [],
+          "reason": "Keep but trim: delete line 21 ContentPanel import + :101 'Pipeline Kanban' InternalTab entry once the calendar port lands. Performance sub-tab then shows only Post Performance + Site Audience (matches Ivan's own removal intent at L32-34)."
+        }
+      ],
+      "wins_to_preserve": [
+        "QAVerdictPanel iteration timeline + score-over-iterations sparkline + tone-coded HALT/PASS/REVISION (QAVerdictPanel.tsx:71-176) — only place the dashboard genuinely surpasses ClickUp. Preserve as-is; only addition is pre/post rewrite diff per Rank 15.",
+        "Sage emerald color override mapping zinc-emerald → --d-good (dashboard-v2.css:402-419) — correct brand instinct, just needs typography to match.",
+        "DM Serif Display italic .dv-h1 masthead (dashboard-v2.css:158-159) — the editorial anchor is right; the gap is that it's not propagated below.",
+        "Stuck-scheduled triage banner (PostStudioPanel.tsx:298-344) — operator-grade pattern that surfaces publisher failures inline. Needs role='alert' aria-live='assertive' but the concept stays.",
+        "URL ↔ openId sync with deeplink restore (PostStudioPanel.tsx:191-219) — race-fix is correct; the duplication into LeadMagnetStudioPanel:182-210 is the real issue (factor into useStudioOpenId(kind) hook).",
+        "STATUS_META centralized status palette (PostStudioPanel.tsx:23-33) — single source of truth for dot color, label class, ring style across all 8 states.",
+        "Sheet's max-w-[min(1600px,95vw)] 'full' variant — correct affordance for editor at 1440 with rail visible.",
+        "useRouteViewTransition already wired at App.tsx:80 — palette navigations get free crossfade once palette items are added for Post-Gen states.",
+        "Realtime channel pattern proven elsewhere (hooks/useScan.ts:60-90, useStackStatus, useOutreachClicks) — direct template for replacing the polling pair in useContentLibrary.",
+        "ContentPanel's getMonthDays + DraggablePost are clean enough to port into StudioListView as a 5th layout — calendar logic is salvageable."
+      ]
+    },
+    "stats": {
+      "lenses_run": 6,
+      "findings_total": 42,
+      "reds_raised": 26,
+      "yellows_raised": 12,
+      "confirmed": 24,
+      "downgraded": 9,
+      "refuted": 1,
+      "unverified_yellows": 4
+    },
+    "raw_findings": [
+      {
+        "id": "INV-1",
+        "severity": "GREEN",
+        "title": "Inventory: every view that renders Post-Gen data",
+        "evidence": "VIEW A — PostStudioPanel (LIVE) — components/dashboard/PostStudioPanel.tsx:65 (return at :253). URL: /dashboard?section=content&sub=posts (DemoShell:50 → ContentStudio.tsx:92 lazy-imports it). Data: useContentLibrary → supabase.from('carousel_drafts') (hooks/useContentLibrary.ts:67) — columns id, title, topic, status, type, post_body, ig_caption, scheduled_at, taxonomy, image_urls, source_post_id, updated_at. Renders FOUR sub-layouts driven by a single `view` state (PostStudioPanel.tsx:87–94): list/table (StudioListView.tsx:1) at :505, board (kanban-by-status, inline) at :587, grid (cards) at :624. Editor opens in components/ui/Sheet.tsx via CarouselEditor.tsx:1 mounted at :674.\n\nVIEW B — CarouselEditor side-sheet — components/dashboard/CarouselEditor.tsx:29 (return ~:90+, mounted inside Sheet at PostStudioPanel.tsx:680). URL: /dashboard?section=content&sub=posts&open=<draft-id> (open-id wiring at PostStudioPanel.tsx:191–219). Data: same carousel_drafts row + studioActions (lib/studioActions.ts) + sub-components AgentLogFeed.tsx:88, QAVerdictPanel, FieldGrid, PostMetricsPanel, SourceBriefing, LinkedInPostPreview (components/ui/LinkedInPostPreview.tsx:75). This is the only true 'editor'.\n\nVIEW C — CarouselStudioPanel (DEAD in v2) — components/dashboard/CarouselStudioPanel.tsx:18. Filters useContentLibrary to drafts where d.type==='carousel'. Renders an inline mini-form + flat list, no view switcher. Only reachable via legacy v1 /dashboard?tab=studio AND v2 flag OFF; NOT in lib/dashboardUrlMigration.ts TAB_TO_SECTION map (so a v2 user with a deeplink lands on default briefing). Imports CarouselEditor at line 7.\n\nVIEW D — ContentPanel (kanban/calendar) — components/dashboard/ContentPanel.tsx:1, mounted at ContentStudio.tsx:101 inside the Performance sub-tab via InternalTabs as 'Pipeline Kanban'. URL: /dashboard?section=content&sub=performance (then click 'Pipeline Kanban'). Data: useContentPipeline → supabase.from('scheduled_posts') (hooks/useContentPipeline.ts:33) — DIFFERENT TABLE from carousel_drafts. Renders DnD calendar (DndContext at :2) + status pills. No editor — opens a small inline modal.\n\nVIEW E — sections/Posts.tsx (ORPHAN) — components/dashboard-v2/sections/Posts.tsx:45. Two-tab Ideas/Drafts wrapper around LmIdeasPanel + PostStudioPanel. NOT imported anywhere (grep: only self-references). Comment at line 9 says 'mirrors LeadMagnets section structure' — built but never wired into DemoShell.tsx:48 sectionRenderers.\n\nVIEW F — StudioListView (RENDERER, not a view) — components/dashboard/StudioListView.tsx:1. Used by PostStudioPanel.tsx:506 AND LeadMagnetStudioPanel (same renderer). Not a navigable surface; treated separately below for honesty.\n\nVIEW G — LinkedInPostPreview — components/ui/LinkedInPostPreview.tsx:75. Mounted ONLY inside CarouselEditor (:249) and LeadMagnetEditor (:115). Not navigable; preview-only.",
+        "impact": "Confirms the hypothesis: 4 user-reachable Post-Gen views exist (PostStudioPanel, CarouselEditor side-sheet, CarouselStudioPanel, ContentPanel/Pipeline-Kanban). The PostStudioPanel's internal list/grid/board/table toggle is ONE view with four layouts, not four views — a real distinction for the collapse argument.",
+        "fix": "n/a — inventory finding",
+        "effort": "S",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "INV-2",
+        "severity": "GREEN",
+        "title": "Redundancy matrix — pairwise overlap scores",
+        "evidence": "Scoring rubric: 0 = disjoint, 100 = same data + same affordances + same workflow.\n\nA=PostStudioPanel  B=CarouselEditor  C=CarouselStudioPanel  D=ContentPanel  E=sections/Posts  F=StudioListView (subcomponent)\n\nA↔B  20% — different jobs (list vs edit). A *invokes* B; not redundant. They MUST remain split.\nA↔C  95% — both list carousel_drafts. C is a strict subset (type='carousel' only) with no view toggle, no filters, no triage banner, no stuck-publisher detector. C duplicates A's create-carousel button (CarouselStudioPanel.tsx:30 calls the same buildCarousel from studioActions; PostStudioPanel.tsx:148 does the same).\nA↔D  45% — different Supabase tables (carousel_drafts vs scheduled_posts). However: PostStudioPanel.tsx:587 board view ALREADY groups by status and supports onDateChange (:554) — i.e. it does the kanban+drag-reschedule job D was built for, just against the upstream draft table instead of the downstream publish table. Functionally overlapping for the only user (Ivan triaging what's queued). The 'pipeline' is a synthetic view that could come from a JOIN.\nA↔E  98% — sections/Posts.tsx renders <PostStudioPanel /> verbatim with two outer tab buttons (Ideas/Drafts). Adds zero unique behavior; the Ideas tab is just LmIdeasPanel which already lives elsewhere.\nA↔F  n/a — F is a renderer inside A.\nB↔C  60% — C also opens CarouselEditor (CarouselStudioPanel.tsx:51 returns <CarouselEditor ... /> instead of using a Sheet). Same editor, worse chrome (replaces list page vs. side-sheet over list).\nB↔D  10% — D opens a tiny inline modal, not the real editor. Functionally disjoint editors over different tables.\nB↔E  20% — same as A↔B; E inherits A's behavior.\nC↔D  25% — both 'pipeline-ish' for carousels-vs-queue, different tables. Low overlap.\nC↔E  93% — both wrap PostStudioPanel-or-its-carousel-half. Pure dead weight together.\nD↔E  40% — both attempt 'pipeline' framing for posts but on different layers.\n\nHigh-overlap pairs (≥90%): A↔C, A↔E, C↔E. These are pure duplication — kill them.\nMedium-overlap pair (40–60%): A↔D, B↔C. Functional split (table vs table) is real but the user workflow is identical, so D collapses INTO A's board view once we backfill scheduled_at on carousel_drafts (already happening: PostStudioPanel.tsx:566 writes scheduled_at).",
+        "impact": "The redundancy is concentrated in three views (C, D, E). PostStudioPanel + CarouselEditor are already the canonical pair Ivan asked about. Pipeline-Kanban (D) is the only borderline case and resolves by data unification, not UI work.",
+        "fix": "n/a — analysis finding",
+        "effort": "S",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "INV-3",
+        "severity": "RED",
+        "title": "PROOF: 4 views can be collapsed to 2 (list + editor) — delete 3 surfaces, no functional loss",
+        "evidence": "Hypothesis = TRUE with one caveat. The two survivors are:\n  1. PostStudioPanel (PostStudioPanel.tsx) — the list/grid/board/table master surface, fed by carousel_drafts.\n  2. CarouselEditor (CarouselEditor.tsx) — the side-sheet editor mounted inside (1) via Sheet.\n\nProof by feature coverage:\n  - Create text/single-image/carousel post: PostStudioPanel.tsx:142 (handleCreate) calls both generatePostContent AND buildCarousel — every entry point CarouselStudioPanel.tsx:30 has.\n  - Carousel-only filter: typeFilter (PostStudioPanel.tsx:74, :444) reproduces CarouselStudioPanel.tsx:21 filtering.\n  - Kanban view: PostStudioPanel.tsx:587–623 already renders a status-grouped Board.\n  - Drag-reschedule: StudioListView.tsx onDateChange (PostStudioPanel.tsx:554) writes scheduled_at on carousel_drafts; ContentPanel.tsx adds DnD on scheduled_posts. Caveat → the only thing D does that A does NOT is drag a post AFTER it has been promoted from draft to scheduled_posts row. Today's pipeline writes scheduled_at on BOTH tables (publisher copies it), so A's board+date-edit covers the same Ivan-workflow when targeted at the draft.\n  - Calendar month grid: ContentPanel.tsx has a 6-week month grid (:75 getMonthDays). Today's PostStudioPanel does NOT. THIS is the single feature lost. Add a 'calendar' view to PostStudioPanel's view-switcher (PostStudioPanel.tsx:87) and the loss is zero. ~80 LOC.\n\nFile changes to execute the collapse:\n  DELETE  components/dashboard/CarouselStudioPanel.tsx (120 LOC)\n  DELETE  components/dashboard-v2/sections/Posts.tsx (80 LOC, never imported)\n  REMOVE  components/dashboard/Dashboard.tsx:71 LazyCarouselStudioPanel, :101 panelComponents['studio'], :136 prefetch entry, :15 'studio' from types/dashboard Tab union\n  REMOVE  components/dashboard/DashboardLayout.tsx:35 Studio nav item\n  REMOVE  components/dashboard-v2/sections/ContentStudio.tsx:21 ContentPanel import + :101 'Pipeline Kanban' InternalTab entry (Performance sub-tab now shows only Post Performance + Site Audience — Pipeline is collapsed into Posts→Board view).\n  ADD     a 'calendar' case to PostStudioPanel.tsx:87 view union and a month-grid layout that re-uses getMonthDays + DraggablePost patterns from ContentPanel.tsx (or move that calendar inside StudioListView as a 5th layout). Reads from carousel_drafts.scheduled_at — same data the board view already paints.\n  ARCHIVE components/dashboard/ContentPanel.tsx (kept for reference; once calendar parity is shipped, delete + remove useContentPipeline hook).\n\nNet: 4 reachable views → 2 (PostStudioPanel + CarouselEditor), ~1200 LOC deleted, zero workflow loss.",
+        "impact": "Eliminates the 'which view do I open?' decision Ivan makes every day. Single editor; single list with internal layout toggle; the existing CarouselEditor is unchanged. URL deeplinks (?open=<id>) keep working because they target PostStudioPanel — which is now the only door.",
+        "fix": "Delete CarouselStudioPanel.tsx + sections/Posts.tsx + ContentPanel.tsx (after calendar-view port). Remove their three lazy() and panelComponents entries in Dashboard.tsx + the 'Pipeline Kanban' tab in ContentStudio.tsx. Port a calendar layout into StudioListView (or as a 5th `view` case) reading carousel_drafts.scheduled_at. One PR, ~6 files changed, ~80 LOC added, ~1200 deleted.",
+        "effort": "M",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "DEAD-1",
+        "severity": "YELLOW",
+        "title": "Dead-code path: components/dashboard-v2/sections/Posts.tsx is imported nowhere",
+        "evidence": "grep -rn 'sections/Posts\\|<Posts/\\|from.*Posts\\\"' across /Users/ivanmanfredi/Desktop/personal-site/components and App.tsx returns ZERO non-self references. DemoShell.tsx:48 sectionRenderers maps 'content' → ContentStudio, never to Posts. The file at components/dashboard-v2/sections/Posts.tsx:45 exports `function Posts()` which would render an Ideas/Drafts tab pair, but no SectionId routes to it (types.ts defines 'content', not 'posts'). Verified by reading DemoShell.tsx lines 7–14 and 48–57: imports Briefing/ContentStudio/Reach/Ops/Clients/Knowledge/Agent/Personal, never Posts.",
+        "impact": "Dead file. Confuses the inventory (looks like a 5th surface). Header comment promises 'mirrors LeadMagnets section structure for view parity', so the author likely intended a top-level Posts section sibling to LeadMagnets but never wired it. Either DemoShell needs a 'posts' section + nav item, OR the file must be deleted. Today it's the worst of both: live in the tree, dead in the runtime.",
+        "fix": "rm /Users/ivanmanfredi/Desktop/personal-site/components/dashboard-v2/sections/Posts.tsx — confirmed orphan. If a top-level Posts section is wanted later, regenerate from PostStudioPanel directly (it has its own filter affordances; the Ideas/Drafts split was a LeadMagnets-specific shape).",
+        "effort": "S",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "DEAD-2",
+        "severity": "YELLOW",
+        "title": "Dead-code path: CarouselStudioPanel reachable only via legacy v1 ?tab=studio with v2 flag OFF — and v1 nav still advertises it",
+        "evidence": "components/dashboard/Dashboard.tsx:71 lazy-loads CarouselStudioPanel; :101 maps it to Tab key 'studio'. components/dashboard/DashboardLayout.tsx:35 still adds 'Studio' to the v1 sidebar. BUT lib/dashboardUrlMigration.ts maps every other v1 tab to a v2 section — `studio` is missing from TAB_TO_SECTION (lines 11–43). Result: a saved /dashboard?tab=studio bookmark, with the v2 flag on (the default per App.tsx:66), lands the user in Briefing with no warning. Also: useDashboardV2Flag drives v2-by-default, so the entire v1 panel is only reachable via ?v=1 escape hatch.",
+        "impact": "Live nav button in v1 layout that points to a duplicate (95% overlap with PostStudioPanel filtered to carousels). Cognitive cost for the rare ?v=1 user and a maintenance burden — every change to carousel creation has to be applied in two places (studioActions is shared, so divergence is bounded, but UI/filters drift).",
+        "fix": "Two-step. (a) Immediate: delete the v1 Studio nav item in DashboardLayout.tsx:35 (purely cosmetic, panel still mounts for old deeplinks). (b) Follow-up: delete CarouselStudioPanel.tsx, its lazy() + panelComponents['studio'] entry in Dashboard.tsx (lines 71, 101, 136), and remove 'studio' from the Tab union in types/dashboard.ts. Add `studio: { section: 'content', sub: 'posts' }` to TAB_TO_SECTION so old bookmarks deeplink into the survivor.",
+        "effort": "S",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "DEAD-3",
+        "severity": "YELLOW",
+        "title": "Dead-code path: 'Pipeline Kanban' InternalTab inside Performance is a 3rd Post-Gen surface buried under a non-obvious nav",
+        "evidence": "components/dashboard-v2/sections/ContentStudio.tsx:101 mounts ContentPanel as { key: 'pipeline', label: 'Pipeline Kanban' } under the Performance sub-tab. Header comment at ContentStudio.tsx:32–36 explicitly admits: 'Pipeline (kanban) removed — Posts panel already has a Board view that does the same job'. Yet the InternalTab still renders ContentPanel at :101. Two contradictions: the comment says pipeline was removed; the code still mounts it. And the location is wrong — a kanban over scheduled_posts living under Performance is invisible to anyone looking for posting state under sub=posts.\n\nAlso: ContentPanel reads scheduled_posts (useContentPipeline.ts:33) while PostStudioPanel reads carousel_drafts (useContentLibrary.ts:67). Same Ivan workflow, two tables, two pieces of code that drift independently.",
+        "impact": "Burns 897 LOC of ContentPanel + ~120 LOC of useContentPipeline + DnD wiring. Hides scheduled-state drag-rescheduling under the wrong navigation parent. Bug: if a post fails to publish, Ivan sees it in TWO places — PostStudioPanel.tsx:298 'stuck-scheduled triage banner' AND ContentPanel's calendar — with different status taxonomies (pending/posting/posted/failed vs idea/generating/review/approved/scheduled/published/error).",
+        "fix": "Port the month-grid calendar layout from ContentPanel.tsx (getMonthDays at :75, DraggablePost at :153) into PostStudioPanel as a 5th `view` value 'calendar', reading scheduled_at from carousel_drafts. Then remove ContentStudio.tsx:21 import + :101 InternalTab entry. Delete ContentPanel.tsx and hooks/useContentPipeline.ts. Net result: kanban + calendar + list + grid + table all live behind one view-switcher in one component over one table.",
+        "effort": "M",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "PAT-1",
+        "severity": "RED",
+        "title": "Map against Linear/Vercel single-pane: replace top-tab nav inside ContentStudio with the existing ⌘K palette + a single command-driven view router",
+        "evidence": "The v2 shell already implements a cmd-K palette (components/dashboard-v2/CommandPalette.tsx:15, registered in Shell.tsx:86 via useCommandPaletteV2). Section jump items are auto-added from navItems (Shell.tsx:75–83). But INSIDE ContentStudio there's a SECOND nav layer (SubTabs at ContentStudio.tsx:127) and INSIDE the Performance sub-tab there's a THIRD layer (InternalTabs at :96). The Posts sub-tab itself has a FOURTH layer (the list/grid/board/table view toggle at PostStudioPanel.tsx:263). That's four nested nav layers to reach the layout the user actually wants. Linear/Vercel collapse this with a single ⌘K + a single density toggle.\n\nBrand-fit recommendation (paper + sage, DM Serif Display italic): the palette already exists; needs only (a) richer palette items for Post-Gen states ('Show stuck scheduled', 'Open last draft', 'Switch to board view', 'Filter to errors') wired via PaletteItem.onSelect, (b) collapse SubTabs into the palette (still keep a quiet inline section label in DM Serif italic — see HeadRow.tsx pattern, no nav buttons), (c) keep PostStudioPanel's view-switcher (it's a layout density toggle, the legitimate non-redundant layer).",
+        "impact": "Today Ivan navigates: Section→Sub-tab→Internal-tab→View-toggle. Four clicks to reach 'Posts in board layout'. Palette + density toggle = one keystroke + one click. The ContentStudio.tsx SubTab nav (lines 127–133) becomes ~0 LOC; LEGACY_SUB_REMAP (lines 51–56) goes away once palette has stable IDs. The brand value (editorial calm, paper aesthetic) is *enhanced* by removing tab chrome — fewer visible buttons, more whitespace, palette is the single command surface.",
+        "fix": "Phase 1: Add Post-Gen-specific PaletteItems to DemoShell.tsx's Shell({ paletteItems }) prop — e.g. { id:'post:board', label:'Posts — Board view', group:'Content', onSelect: ()=>navigate('content','posts','board') }. Wire view-mode into the URL (PostStudioPanel.tsx:87–94 already stores in localStorage; add ?view= param parsing). Phase 2: Hide ContentStudio.tsx SubTabs by default (only show with ⌘⇧T toggle); replace top-of-panel with HeadRow.tsx editorial title 'Content / Posts' (DM Serif italic, sage rule). Phase 3: Same for Performance's InternalTabs — palette items 'Post Performance' / 'Site Audience' / 'Pipeline Kanban' (the latter dies anyway per DEAD-3). React 19 view transitions on section change are already on (App.tsx:80 useRouteViewTransition) — palette navigations get free crossfade. Net: one nav surface (⌘K) + one density toggle inside the single PostStudioPanel survivor.",
+        "effort": "L",
+        "lens": "View inventory & redundancy — Post-Gen surface in personal-site dashboard"
+      },
+      {
+        "id": "RED-1",
+        "severity": "RED",
+        "title": "Type scale is 17+ ad-hoc font-sizes, no modular system",
+        "evidence": "Live DOM probe at 1440 shows 17 distinct font-sizes in active use: 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 15, 15.5, 16, 17, 18, 32, 38px. Origins: `text-[11.5px]` (PostStudioPanel.tsx:261, 408, 415, 419, 439, 454, 466, 471, 495, 502; StudioListView.tsx:514, 515, 566, 580, 590, 609, 648), `text-[10.5px]` (PostStudioPanel.tsx:319, 439, 454, 528; StudioListView.tsx:311, 590, 609), `text-[13.5px]` (CarouselEditor.tsx:245), `text-[12.5px]` (PostStudioPanel.tsx:303, StudioListView.tsx:413). Zero shared tokens. The dashboard-v2.css base is 15px (line 45) but the editor body floats between 10.5 and 13px because every author hand-tuned. Three of these sizes (9.5px, 10px, 10.5px) are below WCAG-comfortable minimums and used for navigation chrome, kickers, and metric counts that Ivan reads daily.",
+        "impact": "Cognitive load every time you read the editor — nothing lines up vertically because line-heights jitter (5 distinct lh values), and the brain wastes effort sub-categorizing fonts that have no semantic difference. Also blocks any future fluid-resize: there is no `clamp()` because there is no token.",
+        "fix": "Introduce a 7-step type scale as `@theme` tokens in dashboard-v2.css. Then sweep `text-\\[*\\]` arbitrary values → token classes via a single grep-and-replace. Tokens:\n\n```css\n.dashboard-v2 {\n  --t-xs:    clamp(10.5px, 0.65rem + 0.05vw, 11px);   /* metadata, dot-chips */\n  --t-sm:    clamp(11.5px, 0.7rem + 0.1vw, 12.5px);   /* secondary body, filter pills */\n  --t-base:  clamp(13px,   0.8rem + 0.1vw, 14px);     /* row text, captions */\n  --t-md:    clamp(15px,   0.9rem + 0.15vw, 16px);    /* card body */\n  --t-lg:    18px;                                    /* card titles */\n  --t-xl:    clamp(22px,   1.2rem + 0.5vw, 26px);     /* section h2 */\n  --t-display: clamp(30px, 1.8rem + 1vw, 42px);       /* dv-h1 */\n}\n```\n\nReplace `text-[10.5px]`→`text-[length:var(--t-xs)]`, `text-[11.5px]`/`text-[12.5px]`→`text-[length:var(--t-sm)]`, `text-[13.5px]`/`text-[13px]`→`text-[length:var(--t-base)]`. Eliminates 14 of the 17 sizes overnight; the remaining 3 (32px KPI, 17px brand mark, 38px dv-h1) are already token-worthy.",
+        "effort": "M",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "RED-2",
+        "severity": "RED",
+        "title": "Contrast fails AA on critical chrome: 60+ instances of text-zinc-500/-600 and /60-/70 accent variants",
+        "evidence": "dashboard-v2.css:31 maps `--d-paper-dimmer: #6b6b73` (the var behind .text-zinc-500/600 inside v2 via the override at lines 398–399). On `--d-ink-2 #1a1713` that is 3.05:1 — fails 4.5:1 AA for normal text. Used by: StudioListView.tsx:515 (`text-zinc-500` row excerpt — primary content!), :601 (`text-zinc-700 italic` empty placeholder ~1.8:1), :650 ('set date' ~1.8:1); PostStudioPanel.tsx:261 (subtitle 'text · single-image · carousel' as text-zinc-500), :503 (filter empty state); CarouselEditor.tsx:102 ('Carousel PDF' label as text-zinc-500), :161 (status text-xs text-zinc-500). The decorative `/60` and `/70` overlays are worse: `text-emerald-500/70` (CarouselEditor.tsx:102), `text-sky-500/60` (:173), `text-amber-500/60` taxonomy chip labels (:169, :173, :179) sit at ~2.4–2.8:1 on dark cards — they are kicker labels Ivan must read. APCA Lc for these is roughly 38–45 (need 60+ for body, 75+ for ≤14px).",
+        "impact": "Ivan reads dim text wrong, misses status, or fatigues quickly. WCAG-fail in a dashboard he stares at all day is a productivity tax, not just an a11y bullet.",
+        "fix": "Two changes:\n\n1) In dashboard-v2.css line 31, raise `--d-paper-dimmer` from `#6b6b73` to `#8a8a92` (4.6:1 on #1a1713, passes AA). Line 32 `--d-paper-dim` raise from `#a3a3aa` to `#b8b8c0` for AAA-grade chrome.\n\n2) Add an opacity floor — kill all `/60` and `/70` accent variants when used as text. Add to dashboard-v2.css:\n\n```css\n.dashboard-v2 .text-emerald-500\\/60,\n.dashboard-v2 .text-emerald-500\\/70,\n.dashboard-v2 .text-sky-500\\/60,\n.dashboard-v2 .text-sky-500\\/70,\n.dashboard-v2 .text-amber-500\\/60,\n.dashboard-v2 .text-amber-500\\/70,\n.dashboard-v2 .text-zinc-700 { /* near-invisible empty placeholders */\n  opacity: 1 !important;\n  color: var(--d-paper-dim) !important;\n}\n```\n\nThen sweep `text-zinc-700 italic` (StudioListView.tsx:601, :650) → `text-zinc-500 italic` for empty-state text.",
+        "effort": "S",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "RED-3",
+        "severity": "RED",
+        "title": "Editor 1440 has 5 competing top-level surfaces — no F/Z eye-path, attention lands on the taxonomy pill row instead of the caption",
+        "evidence": "CarouselEditor.tsx:153–568 stacks: (1) header w/ back/title/status :156, (2) taxonomy pill bar of 4–6 colored chips :166–201, (3) 3-column body grid `grid-cols-[1.4fr_1fr_360px]` :206, (4) left column = SourceBriefing + QAVerdictPanel + LinkedIn caption + IG caption + FieldGrid (5 stacked cards), (5) middle column = Preview + Metrics + Imagery + Schedule + Save/Re-author (4 cards + 2 buttons), (6) right column = sticky AgentLogFeed. Live screenshot at 1440 (/tmp/pw-out/2026-06-02T18-01-57-622Z/1440.png) confirms: the brightest objects on screen are the 6 jewel-toned pills (emerald, sky, amber, zinc, emerald, zinc) at the top — they are vector-equivalent in weight to the H2 title and 3x brighter than the 'LinkedIn caption' label below them. The user's primary task — edit the caption — sits in row 3 with the dimmest section header. There is no F-pattern because columns 1 and 2 both demand left-edge attention and the right rail is a third anchor.",
+        "impact": "Ivan opens an editor and the eye lands on metadata he can't act on (pillar/hook/tier are read-only chips), not on the caption editor that is the entire reason he opened the panel. Every editor open is a forced 600ms scan reset.",
+        "fix": "Three concrete changes in CarouselEditor.tsx:\n\n1) Demote the taxonomy bar (:165–202) from full-row chips to a single muted line. Replace the rounded-full pill markup with `text-[length:var(--t-xs)] text-[var(--d-paper-dimmer)]` and dot separators: `Pillar · Hook · Tier · Strength`. Removes 4 of the 6 high-saturation chips.\n\n2) Re-anchor the eye on the caption. Wrap the LinkedIn caption block (:225–261) in `<Card>` with a `--d-good` 3px left rule (matches `.dv-marginalia` in dashboard-v2.css:337) and an `<h3>` title `LinkedIn caption` at `text-[length:var(--t-lg)]` not `<FieldLabel>` at 10.5px uppercase. This is the primary surface — it should look it.\n\n3) Collapse the middle column. The Preview card + Imagery brief + Metrics are reference-only. Move them into a tabbed Card (`<InternalTabs>`) titled `Reference` so column 2 has one heading, not four. Schedule + Save + Re-author become a sticky action bar at the bottom of the sheet (not a column).\n\nResult: editor reads as Title → Caption (primary) | Reference (secondary) | Activity (rail) — a real F-path.",
+        "effort": "L",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "RED-4",
+        "severity": "RED",
+        "title": "Brand fidelity collapses below the masthead — v2 chrome reads as generic shadcn-dark, not Ivan's editorial",
+        "evidence": "dashboard-v2.css:158 establishes the brand with `dv-h1` = DM Serif Display 38px italic sage `em`. Then every panel below is wrapped V1 (PostStudioPanel.tsx, CarouselEditor.tsx, StudioListView.tsx) — none use DM Serif Display, none use italic numerals, none use the paper+sage register. The only nod to brand is the sage emerald color override (dashboard-v2.css:402–419) which maps zinc-emerald → sage — but that does not change typography or composition. Specific tells of generic shadcn:\n- `rounded-xl bg-gradient-to-b from-zinc-900/50 to-zinc-950/30` on the New Post card (PostStudioPanel.tsx:347)\n- `bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 ring-1 ring-emerald-500/20` on the FileText icon badge (:256)\n- `rounded-2xl` modals, `rounded-lg` inputs, `rounded-md` chips, `rounded` rows — 4 radius scales\n- All numerals are tabular Inter (`.dv-tnum`) not the editorial italic numerals Ivan uses on the public site (Source Serif 4 lining figures w/ italic-numerals feature).\nNo `font-family: var(--font-display)` appears anywhere in PostStudioPanel.tsx or CarouselEditor.tsx — DM Serif Display is allocated but unused inside the operator surface.",
+        "impact": "Operator dashboard reads as a different product from ivanmanfredi.com. Spreads the brand thinner. Also a missed lever — italic serif numerals on KPI counts (`50 approved · 22 carousel · 16 ideas`) would be a 30-second hit of brand personality with zero ergonomic cost.",
+        "fix": "Three brand re-injections in dashboard-v2.css:\n\n```css\n/* Italic serif kicker — for counts and section-anchor numerals */\n.dashboard-v2 .dv-editorial-num {\n  font-family: 'DM Serif Display', Georgia, serif;\n  font-style: italic;\n  font-weight: 400;\n  font-feature-settings: 'lnum', 'tnum';\n  color: var(--d-good);\n}\n\n/* Section heading — replaces the all-caps mono dv-card-lbl style */\n.dashboard-v2 .dv-section-h {\n  font-family: 'DM Serif Display', Georgia, serif;\n  font-style: italic;\n  font-weight: 400;\n  font-size: var(--t-lg);\n  color: var(--d-paper);\n  letter-spacing: -0.01em;\n  margin-bottom: 0.5rem;\n}\n```\n\nThen in PostStudioPanel.tsx:260 replace `<h2 className=\"text-[18px] font-semibold ...\">{title}</h2>` with `<h2 className=\"dv-section-h\">Posts <span className=\"dv-editorial-num\">{drafts.length}</span></h2>`. In StudioListView.tsx:413 swap `text-[12px] font-semibold tracking-tight` group-header → `dv-section-h text-[length:var(--t-base)]`. The counts in the status filter row (PostStudioPanel.tsx:439) become `<span className=\"dv-editorial-num text-[length:var(--t-xs)] ml-1.5\">{count}</span>` — recovers brand voice with one class.",
+        "effort": "M",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "RED-5",
+        "severity": "RED",
+        "title": "4-views collapse — List, Grid, Board, Table are 4 implementations, only List is used, total ~520 LOC of duplicated UI",
+        "evidence": "PostStudioPanel.tsx:87 stores `view: 'grid' | 'board' | 'list' | 'table'` in localStorage with default `'list'`. Implementations:\n- List + Table → same `<StudioListView>` differentiated by `dense` prop (PostStudioPanel.tsx:505–586) → ~210 LOC in StudioListView.tsx:448–660\n- Board → bespoke kanban (PostStudioPanel.tsx:587–623) → ~36 LOC\n- Grid → bespoke card grid (:624–671) → ~50 LOC\nFour view-switcher buttons sit in the top-right corner (:263–285) and are the loudest control on the page after the dv-h1 masthead — but Board and Grid are operator-hostile (Board ignores all filter chips, Grid loses the column data Ivan filters by). Table is just List + dense — it is the same component with a flag, NOT a separate view.\n\nSpec-level evidence of overlap: PostStudioPanel.tsx:541 — `groupByStatus={view === 'table' ? undefined : 'post-studio'}` and :544 `pinnedStatuses={view === 'table' ? [] : [...]}` — meaning Table is List-with-grouping-off, a setting, not a view.",
+        "impact": "Four-button switcher above the fold competes with the actual scan target (the rows). Maintenance: any column added to List must be added to Grid + Board cards manually (Grid's card already drifts — pillar + hookType are chips, but no tier/strength/source). Cognitive load: Ivan must choose-a-view every session, and the per-view state (collapse, column-order, sort) does not transfer.",
+        "fix": "Collapse to 2 views: `List` (grouped) and `Dense` (flat). Concrete steps:\n\n1) PostStudioPanel.tsx:87 — change union to `'list' | 'dense'`; migrate localStorage on read: `if (v === 'grid' || v === 'board') return 'list'; if (v === 'table') return 'dense';`\n\n2) Replace the 4-button switcher (:263–285) with a single icon toggle:\n```tsx\n<button onClick={() => setView(view === 'list' ? 'dense' : 'list')}\n        className=\"dv-btn dv-btn--dim text-[length:var(--t-xs)]\"\n        title={view === 'list' ? 'Switch to dense (spreadsheet)' : 'Switch to grouped'}>\n  {view === 'list' ? <Table2 className=\"w-3.5 h-3.5\"/> : <ListIcon className=\"w-3.5 h-3.5\"/>}\n  {view === 'list' ? 'Dense' : 'Grouped'}\n</button>\n```\n\n3) Delete the Grid block (PostStudioPanel.tsx:624–671) and Board block (:587–623). Saves ~86 LOC + 2 image-thumb pipelines + the bespoke kanban CSS.\n\n4) If Ivan misses Board specifically (kanban-for-pipeline-vision), restore it as a separate sub-tab inside `Performance` next to Pipeline Kanban — that is where pipeline visualization belongs per ContentStudio.tsx:101.",
+        "effort": "M",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "YELLOW-1",
+        "severity": "YELLOW",
+        "title": "Density is below Linear baseline — 15px base + 0.85rem row padding wastes 18% vertical real estate",
+        "evidence": "dashboard-v2.css:45 sets base 15px / line-height 1.5 → 22.5px line-box. StudioListView.tsx:465 uses `px-4 py-2.5` (16px / 10px) for rows. At 1440 the rendered list shows 7 status group headers + 16 idea rows in 540px of viewport height — Linear at 13px / py-1.5 fits ~26 rows in the same span. Live frequency probe: 88 elements at 15px (the base) but 63 at 11.5px and 19 at 11px — meaning the visual fact is that most chrome is already small, but the base inflates whitespace between dense data. Mixed message: airy padding around dense type.",
+        "impact": "Two screens of scrolling for what should be one. Ivan's morning triage runs across 157 drafts — every saved screen-height is real time. Also: the airy padding inflates the perception that v2 is 'unfinished/spacious', when actually the rows are dense, just over-padded.",
+        "fix": "Two changes:\n1) dashboard-v2.css:45 lower base to 14px (Linear ships 13–14; 14 is the editorial-friendly minimum):\n```css\n.dashboard-v2 { font-size: 14px; line-height: 1.45; }\n```\nThe token scale from RED-1 already clamps to 13px row text, so this only affects the cards/H2/headers — they shrink by ~7%.\n\n2) StudioListView.tsx:465 tighten row padding `px-4 py-2.5` → `px-4 py-1.5` (matches the dense mode currently behind the Table view at :465 — make it the default). Recovers ~12px per row × 16 visible rows = ~192px of viewport.",
+        "effort": "S",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "YELLOW-2",
+        "severity": "YELLOW",
+        "title": "Hierarchy noise — 6 different chip styles compete on the same row",
+        "evidence": "CarouselEditor.tsx:166–202 renders the taxonomy pill bar with SIX different chip skins on one line:\n- `rounded-full bg-emerald-950/40 border border-emerald-900/40` (pillar)\n- `rounded-full bg-sky-950/40 border border-sky-900/40` (hook)\n- `rounded-full bg-amber-950/40 border border-amber-900/40` (tier)\n- `rounded-full bg-zinc-800/60 border border-zinc-700/50` (strength)\n- bare `text-[11px] text-zinc-500` (source)\n- bare `text-[11px] text-emerald-400` linkified (LinkedIn URN)\nThree pill colors + two un-pilled labels + one accent link = no visual rhythm. Compare to StudioListView.tsx:78–93 which has its own 3-color scheme for Strength + 3-color scheme for post-type chips. The two files disagree on what chip colors mean.",
+        "impact": "Color carries no information here — Ivan can't say 'sky means hook'. He learns by position. Every editor open burns a 200ms re-mapping.",
+        "fix": "One chip primitive. Add to dashboard-v2.css:\n```css\n.dv-tax-chip {\n  display: inline-flex; align-items: baseline; gap: 0.4rem;\n  font-size: var(--t-xs);\n  color: var(--d-paper-dim);\n  border-bottom: 1px solid var(--d-rule);\n  padding: 0 0.1rem 0.05rem;\n}\n.dv-tax-chip > span:first-child {\n  font-family: 'JetBrains Mono', monospace;\n  font-size: 9.5px; letter-spacing: 0.08em;\n  text-transform: uppercase;\n  color: var(--d-paper-dimmer);\n}\n```\nThen CarouselEditor.tsx:166–202 becomes a single `<div className=\"flex flex-wrap gap-x-5 gap-y-1.5\">` of `<span className=\"dv-tax-chip\"><span>Pillar</span>{pillar}</span>` repeats. One color, one weight, one shape — facts read as data, not decoration. Sage accent only used for the one CTA chip (LinkedIn link), restoring its signal value.",
+        "effort": "M",
+        "lens": "Visual design — typography, density, contrast, hierarchy, brand fidelity (Post Gen / Content Studio dashboard-v2)"
+      },
+      {
+        "id": "R1",
+        "severity": "RED",
+        "title": "React 19 architectural miss: replace `setBusy` + manual refresh with `useTransition` + `useOptimistic` — status pill should flip BEFORE the network round-trip, not after",
+        "evidence": "components/dashboard/CarouselEditor.tsx:31 `const [busy, setBusy] = useState<string | null>(null)` is a hand-rolled pending state. The `run()` wrapper at :46-51 awaits `fn()`, then fires `toast.success`, then calls `onChanged()` which triggers a parent `refresh()` that re-queries Supabase before the pill updates. Same pattern at PostStudioPanel.tsx:142 (`setCreating(true)`), :546-553 (status change), :554-571 (date change), :572-585 (bulk action). The status pill in StudioListView.tsx:552-568 is keyed off `r.status` which only changes after Supabase round-trip + refresh — so every approve click has ~400ms of dead UI before the AnimatePresence morph fires. Meanwhile `lib/studioActions.ts:61-66 setStatus` and :70-78 scheduleCarousel return `{ok:true}` and are pure Supabase mutations — perfect useOptimistic candidates.",
+        "impact": "Every state transition feels laggy. The whole motion budget (status-flash 1.5s, dot scale 700ms, pill exit/enter 220ms) is spent AFTER the data already settled — the user sees stale UI, then animation, then truth. With useOptimistic the pill should flip the instant the click fires and roll back only on error. Also blocks React 19 form actions, error boundaries, and concurrent-mode batching.",
+        "fix": "Hoist mutations to a typed reducer + useOptimistic in the list. Pseudocode for StudioListView.tsx onStatusChange path:\n\n```tsx\n// In PostStudioPanel.tsx (parent owns the optimistic layer):\nconst [optimisticDrafts, applyOptimistic] = useOptimistic(\n  drafts,\n  (state, patch: {id: string; status?: string; scheduledAt?: string}) =>\n    state.map(d => d.id === patch.id ? {...d, ...patch} : d)\n);\nconst [isPending, startTransition] = useTransition();\n\nconst onStatusChange = (id: string, next: string) => {\n  startTransition(async () => {\n    applyOptimistic({id, status: next});           // pill flips NOW\n    const {error} = await supabase.from('carousel_drafts')\n      .update({status: next}).eq('id', id);\n    if (error) { toastError('update status', error); return; } // useOptimistic auto-reverts on throw inside transition\n    await refresh();\n  });\n};\n\n// In CarouselEditor.tsx — replace setBusy entirely:\nconst [isPending, startTransition] = useTransition();\nasync function run(fn, successMsg) {\n  startTransition(async () => {\n    try { await fn(); toast.success(successMsg); onChanged(); }\n    catch (err) { toastError('action', err); }\n  });\n}\n// Buttons read isPending instead of busy === 'schedule'. Note: useTransition\n// auto-batches and won't block the input thread — currently every setBusy\n// triggers a synchronous re-render of the entire 3-column editor.\n```\n\nThis also kills the `setEditingStatusId(null)` race in StudioListView.tsx:531-533 — the select closes before the server confirms, but the row would briefly snap back to the old status if the mutation failed. With useOptimistic the rollback is automatic.",
+        "effort": "M",
+        "lens": "Status visibility + state transitions + motion design for the 8-state Post Gen pipeline (idea → generating → review → approved → scheduled → published → disqualified → error)."
+      },
+      {
+        "id": "R2",
+        "severity": "RED",
+        "title": "Redundant transition feedback — same status change announced 4 ways simultaneously; users register it as visual noise, not signal",
+        "evidence": "When `draft.status` flips from `review` → `scheduled` the system fires: (1) toast at CarouselEditor.tsx:64-82 (`📅 Approved and scheduled`, 5s duration), (2) AnimatePresence card swap at :341-348 (opacity+y+scale, 220ms easeOut), (3) inside the new card a `<CardLabel>` text change, (4) in the list behind the sheet, StudioListView.tsx:181-185 sets `flashIds` which adds `animate-status-flash` class for 1500ms (emerald-tinted row background, dashboard-v2.css:193-198), (5) the pill at StudioListView.tsx:552-568 morphs (AnimatePresence mode=wait, dot scales 1→1.6→1 over 700ms), AND (6) the count badge in the group header increments. Plus the right-rail AgentLogFeed gets a new entry which itself does `animate-log-pulse` for 1200ms (dashboard-v2.css:201-206). Cognitive cost = 4-6 animations running in overlap windows of 200-1500ms.",
+        "impact": "Violates the inverse of Nielsen #1: status is over-announced. Worse, the toast and the card swap convey the SAME information at the same time but in two different visual regions, forcing the eye to choose. Ivan said in prior sessions he doesn't want 'screen refresh' (dashboard-v2.css:153-154 comment). This is the same disease. Also: status-flash and dot-scale fire on EVERY render where `r.status` changed since last commit — including silent backfills from the 20s auto-refresh polling at PostStudioPanel.tsx:247-251, so the list 'flashes' for transitions the user didn't do.",
+        "fix": "Pick one canonical surface per transition class.\n- USER-INITIATED (Ivan clicked Approve): toast OFF, pill morph ON (the click target IS the focus), card swap ON. Skip row-flash since the user is in the editor sheet.\n- SYSTEM-INITIATED (generation finished, status changed via polling): toast ON (because Ivan is probably in another tab), row-flash ON, pill morph ON. Skip card swap (the editor may not even be open).\n\nThread an `origin: 'user' | 'system'` flag through the status-change effects:\n```tsx\n// In CarouselEditor.tsx prevStatusRef effect (line 63-82):\nconst originRef = React.useRef<'user'|'system'>('system');\n// run() sets originRef.current='user' before mutation, resets in finally.\n// Effect at :64 reads originRef and skips toast when origin==='user'\n//   (the toast inside run() already said 'Scheduled').\n```\nThen drop the dot-scale animation (StudioListView.tsx:561-564 — already redundant with the pill exit/enter); the dot scaling 1.6× plus the pill scaling 0.85→1 fights itself.",
+        "effort": "S",
+        "lens": "Status visibility + state transitions + motion design for the 8-state Post Gen pipeline (idea → generating → review → approved → scheduled → published → disqualified → error)."
+      },
+      {
+        "id": "R3",
+        "severity": "RED",
+        "title": "`prefers-reduced-motion` is completely ignored by Framer Motion components — only legacy v2 CSS respects it",
+        "evidence": "Only one match for `prefers-reduced-motion` in the entire content stack: dashboard-v2.css:79-86. That block targets `.dashboard-v2 *` and reduces `animation-duration` / `transition-duration` to 0.01ms. But Framer Motion's `<motion.div>` runs animations through JS (rAF), NOT CSS transitions — the `@media (prefers-reduced-motion)` rule does nothing for the 7 `motion.div` components in CarouselEditor.tsx + StudioListView.tsx. No `useReducedMotion()` import anywhere in components/dashboard or components/dashboard-v2 (grep returned zero matches). The dot scale at StudioListView.tsx:561-564 (`animate={{ scale: [1, 1.6, 1] }}`) and the card swap at CarouselEditor.tsx:341-348 will fire at full intensity for users with vestibular sensitivity.",
+        "impact": "Accessibility regression. Also: on the same render where Ivan is reviewing 20 generating posts, the polling auto-refresh (PostStudioPanel.tsx:247-251) re-fetches every 20s; any row that changed status triggers a 700ms dot pulse + 1500ms row flash + 220ms pill morph — for a user who explicitly opted out of motion in OS settings.",
+        "fix": "Add a single hook at the top of motion-using components:\n```tsx\nimport { useReducedMotion } from 'framer-motion';\n// In StudioListView.tsx renderRow():\nconst shouldReduceMotion = useReducedMotion();\n<motion.span\n  className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`}\n  animate={shouldReduceMotion ? undefined : { scale: [1, 1.6, 1], opacity: [1, 0.85, 1] }}\n  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.7, times: [0, 0.4, 1] }}\n/>\n```\nAnd guard the row flash with a CSS media query (status-flash IS pure CSS, so this DOES work):\n```css\n@media (prefers-reduced-motion: reduce) {\n  .animate-status-flash { animation: none; background: rgba(34,197,94,0.10); transition: background 0.3s; }\n  .animate-log-pulse    { animation: none; }\n  .animate-refresh-pulse{ animation: none; opacity: 0.7; }\n}\n```\nThe v2 CSS block at line 79 should be promoted out of `.dashboard-v2 *` scope or duplicated globally — currently it only applies inside `.dashboard-v2` shell, but Studio panels render inside that shell via ContentStudio.tsx:21-30 so it should fire — but it doesn't help the JS-driven motion components.",
+        "effort": "S",
+        "lens": "Status visibility + state transitions + motion design for the 8-state Post Gen pipeline (idea → generating → review → approved → scheduled → published → disqualified → error)."
+      },
+      {
+        "id": "R4",
+        "severity": "RED",
+        "title": "Status transitions are not announced to assistive tech — no `aria-live`, no `role=\"status\"`, no `aria-current` on the pill",
+        "evidence": "Zero matches for `aria-live`, `role=\"status\"`, or `aria-atomic` across components/dashboard, components/dashboard-v2, components/ui (grep). The status pill at StudioListView.tsx:561-568 is a plain `<motion.div>` and `<span>` — a screen reader on a list of 40 drafts gets no signal when 6 of them silently flip from `generating` → `review` via the 20s polling. The toast in CarouselEditor.tsx:81 IS visually loud (Sonner) but Sonner toasts default to `role=\"status\" aria-live=\"polite\"` only on the toast itself — they don't announce 'this row in the list behind the sheet changed status'. The 'stuck-scheduled' triage banner at PostStudioPanel.tsx:298-344 has no live-region either, so when a row newly becomes stuck (publisher fails) the banner appears with no a11y announcement.",
+        "impact": "Dashboard fails WCAG 4.1.3 (Status Messages, AA). Also blocks Ivan's keyboard-only workflow when he's reviewing on iPad with VoiceOver — silent transitions are invisible. Recall: feedback-visual-work-test-yourself.md says don't ship aesthetic work without self-testing — apply the same to a11y.",
+        "fix": "Three small additions:\n```tsx\n// 1. Pill wrapper (StudioListView.tsx:543-569):\n<div\n  className={cls + ' gap-1.5'}\n  role=\"status\"\n  aria-live=\"polite\"\n  aria-label={`Status: ${statusLabel(r.status)}`}\n>\n  {/* existing AnimatePresence */}\n</div>\n\n// 2. Stuck banner (PostStudioPanel.tsx:298):\n<div role=\"alert\" aria-live=\"assertive\" className=\"rounded-xl ring-1 ring-amber-500/30 ...\">\n\n// 3. Generating-card label (CarouselEditor.tsx:404):\n<CardLabel aria-live=\"polite\">{stuck ? 'Generation stuck' : 'Generating'}</CardLabel>\n```\nFor screen-reader-only transition narration that doesn't visually duplicate the toast, add an off-screen live region inside CarouselEditor that mirrors the prevStatusRef effect:\n```tsx\n<div className=\"sr-only\" aria-live=\"polite\">{`Status changed to ${statusLabel(draft.status)}`}</div>\n```",
+        "effort": "S",
+        "lens": "Status visibility + state transitions + motion design for the 8-state Post Gen pipeline (idea → generating → review → approved → scheduled → published → disqualified → error)."
+      },
+      {
+        "id": "R5",
+        "severity": "RED",
+        "title": "4-views hypothesis confirmed — List(grouped), Grid, Board, Table render the same `visible` array with ≥70% overlap; Board and List-grouped are near-duplicates",
+        "evidence": "PostStudioPanel.tsx:87-94 toggles `view: 'grid' | 'board' | 'list' | 'table'`. Each branch maps `visible` (PostStudioPanel.tsx:114-138). Overlap matrix:\n- LIST (groupByStatus='post-studio'): vertical stack, status-grouped collapsible, all 9 columns, pinned-empty groups, drag-reorder cols, bulk select, inline status/date edit (StudioListView.tsx:371-434).\n- TABLE (`dense=true, groupByStatus=undefined`): same StudioListView component, no groups, no thumbs, tighter rows, all cols (StudioListView.tsx:282-285).\n- BOARD: horizontal kanban, status columns, 160px cards with just title + scheduled date — NO pillar, NO hook, NO tier, NO source, NO format, NO bulk action, NO inline edit (PostStudioPanel.tsx:587-623).\n- GRID: 1-4 col card grid, hero image OR italic excerpt, status pill, pillar/hookType chips, no bulk action, no inline edit, no sort (PostStudioPanel.tsx:624-671).\n\nList-grouped and Board encode the same 'status as primary axis' mental model — Board just rotates 90°. Grid uses image-as-anchor (visual scan). Table uses density-as-anchor (spreadsheet scan).",
+        "impact": "Maintenance × 4 (status colors, sched formatting, type labels, click→openId all duplicated across 4 branches). Ivan's mental model is split — when he scans for 'what's in review' he uses List, but the Board tab tempts him to repeat the scan kanban-style with LESS information. Grid is the only one that shows imagery — but only the first image; useless for carousels. Onboarding (future hire) sees 4 view-toggle buttons and has to learn each.",
+        "fix": "Collapse to 2 views with one explicit reason each:\n- **List** (default) — group-by-status ON, grouping toggle in header (off = current 'Table' behavior). All 9 columns, drag-reorder, bulk select, inline edit. This is the canonical workspace.\n- **Gallery** — image-anchored visual scan, only meaningful when a status filter is active (e.g. 'review' to eyeball carousel covers before approving). Hide entirely when `statusFilter === 'all'`.\n\nKill Board AND Grid AND Table as separate toggles. Specifically:\n```tsx\n// PostStudioPanel.tsx:87 — replace 4 views with 2:\nconst [view, setView] = useState<'list' | 'gallery'>('list');\nconst [grouped, setGrouped] = useState(true);  // List sub-mode\n```\nBoard becomes `view='list'` + horizontal CSS (`flex-direction: row` on `.group-by-status` wrapper) — gated behind a small icon in the List header, not a top-level view. Grid → 'gallery', shown only when `statusFilter !== 'all'` (focused review mode). Saves ~80 lines in PostStudioPanel.tsx and removes 3 of the 4 toggle buttons at :264-285.\n\nBONUS: When you collapse views, use View Transitions API for the view swap instead of remounting the giant draft list:\n```tsx\nconst toggleView = (next: 'list'|'gallery') => {\n  if (document.startViewTransition) {\n    document.startViewTransition(() => setView(next));\n  } else { setView(next); }\n};\n// + CSS: ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.25s; }\n```\nThis is the right place for startViewTransition — cross-route-style layout swap is exactly the use case. The status-pill morph is NOT (it's an in-place data change, AnimatePresence is correct there).",
+        "effort": "M",
+        "lens": "Status visibility + state transitions + motion design for the 8-state Post Gen pipeline (idea → generating → review → approved → scheduled → published → disqualified → error)."
+      },
+      {
+        "id": "F1-state-fragmentation",
+        "severity": "RED",
+        "title": "State for the same concepts (selection / filters / sort / view / open-id) is duplicated across 5+ components with no shared store",
+        "evidence": "PostStudioPanel.tsx:67-94 owns: type, topic, details, keyPoints, creating, openId, statusFilter, typeFilter, searchQuery, sortBy, formOpen, showDisqualified, view, showStuckList, plus 2 refs (initialOpenRef, initialRestoredRef) — 16 useState/useRef. LeadMagnetStudioPanel.tsx:70-97 owns the IDENTICAL shape: topic, format, editorialNotes, creating, openId, statusFilter, formatFilter, searchQuery, formOpen, showDisqualified, showMisclassified, view, initialOpenRef, initialRestoredRef. CarouselStudioPanel.tsx:18-25 owns yet another openId+building+topic+keyPoints triplet on top of useContentLibrary(). StudioListView.tsx:148-216 owns its own collapsed-set, editingStatusId, editingDateId, prevStatusRef, flashIds, previewRow, selected, sortKey, sortDir, customOrder, draggingCol — and re-implements localStorage persistence for sort/columns/collapsed groups in TWO places (one keyed by groupByStatus, one by orderKey). ContentPanel.tsx:587-591 holds a SECOND openId-equivalent (selectedPost) + filter + currentDate + dayDrillKey + draggedPost. Zero shared context — no DashboardStudioContext, no Zustand store, no TanStack Query cache. The same openId concept is sync'd to ?open= URL param in PostStudioPanel.tsx:191-219 AND LeadMagnetStudioPanel.tsx:183-210 with the EXACT same 28-line race-fix duplicated (both files even have the same comment 'same race-fix as PostStudioPanel').",
+        "impact": "Every new feature (e.g. add a saved-filter, persist view to user pref, multi-select) must be re-implemented N times. The URL-restore race-fix has already been copy-pasted once — drift is inevitable. Selection state is local to StudioListView so the parent can't show 'N selected' anywhere outside the list's own bulk-action bar, and clicking a row in the parent's stuck-scheduled banner (line 312) doesn't sync the list's selection state.",
+        "fix": "Create `lib/stores/studioStore.ts` with a single Zustand store (already deps-free since Sonner is in): \n```ts\nimport { create } from 'zustand'; import { persist } from 'zustand/middleware';\ntype StudioKind = 'post' | 'lm';\ntype StudioState = {\n  view: Record<StudioKind, 'list'|'grid'|'board'|'table'>;\n  statusFilter: Record<StudioKind, string>;\n  typeFilter: Record<StudioKind, string>;\n  searchQuery: Record<StudioKind, string>;\n  showDisqualified: Record<StudioKind, boolean>;\n  selection: Record<StudioKind, Set<string>>;\n  openId: Record<StudioKind, string|null>;\n  setView: (k: StudioKind, v: 'list'|'grid'|'board'|'table') => void; /* ...etc */\n};\nexport const useStudio = create<StudioState>()(persist((set) => ({ /* ... */ }), { name: 'studio-state' }));\n```\nReplace ALL local useState in PostStudioPanel/LeadMagnetStudioPanel/StudioListView selection branch with `const view = useStudio((s) => s.view.post)`. Kills the 4-place localStorage dance and the URL-restore race duplication (move into a single `useStudioOpenId(kind)` hook). Also lets the stuck-scheduled banner and the row click both feed the same selection set.",
+        "effort": "M",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F2-duplicate-fetches-and-polls",
+        "severity": "RED",
+        "title": "carousel_drafts is fetched-and-replaced (no cache, no realtime, no normalization) and TWO overlapping intervals poll the same row while generating",
+        "evidence": "useContentLibrary.ts:63-77 re-fetches the ENTIRE carousel_drafts table (~hundreds of rows incl. agent_log JSONB, slides, taxonomy) on every refresh() call. refresh() is wired as the `onChanged` prop in PostStudioPanel.tsx:680 — every CarouselEditor save/status-flip/schedule/restart fires it. CarouselEditor.tsx:55-59 ALSO sets up a 15s setInterval calling onChanged() while draft.status==='generating'. PostStudioPanel.tsx:247-251 sets up ANOTHER 20s setInterval calling refresh() while generatingCount > 0. Both fire when a draft is generating with the editor open — two full-table refetches every 35s on overlapping schedules. CarouselStudioPanel.tsx:19 mounts useContentLibrary() AGAIN if that panel renders → third concurrent fetch of the same data. Briefing.tsx (line 28) + OverviewPanel.tsx (line 26) + ContentPanel.tsx (line 585) all mount useContentPipeline (scheduled_posts) independently — N panels = N fetches on dashboard load. No Supabase realtime subscription anywhere on carousel_drafts (grep confirms: only scheduled_posts has realtimeTables in ContentPanel via useAutoRefresh).",
+        "impact": "Editor save → full table refetch (300+ rows × ~30 cols including JSON agent_log). User typing in caption Textarea doesn't trigger it, but every Save Copy click does. Two polls overlap → bandwidth doubled while generating. Mounting any two of the panels at once (e.g. v1 + v2 routes during transition) triples it. No optimistic UI: status flips animate AFTER the round-trip lands.",
+        "fix": "Two-line surgical option (no new dep): replace the polling with a Supabase realtime channel: \n```ts\n// useContentLibrary.ts\nuseEffect(() => { refresh(); const ch = supabase.channel('carousel_drafts').on('postgres_changes',{event:'*',schema:'public',table:'carousel_drafts'},(p)=>setDrafts((rows)=>{ const i=rows.findIndex(r=>r.id===(p.new as any).id); if(i===-1) return [mapDraft(p.new),...rows]; const n=[...rows]; n[i]=mapDraft(p.new); return n; })).subscribe(); return ()=>{ supabase.removeChannel(ch); }; }, [refresh]);\n```\nThen delete BOTH polling intervals (CarouselEditor.tsx:55-59, PostStudioPanel.tsx:247-251) and the refresh-after-update pattern in onStatusChange/onDateChange/onBulkAction (lines 549-585). Bigger fix: add TanStack Query (`@tanstack/react-query`) — replace useContentLibrary with `useQuery({queryKey:['carousel_drafts'], queryFn})` and wrap mutations with `useMutation` + `setQueryData` for optimistic updates. Kills the 'save → full refetch' pattern entirely. Also: CarouselStudioPanel is dead — delete it (see F8).",
+        "effort": "M",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F3-react19-features-unused",
+        "severity": "RED",
+        "title": "React 19.2 in package.json but zero useTransition/useOptimistic/useActionState anywhere — at least 6 high-value sites",
+        "evidence": "Grep across /components and /hooks for useTransition|useOptimistic|useActionState|useDeferredValue|startTransition returns ZERO results. Concrete sites that should use them:\n(1) PostStudioPanel.tsx:546-552 onStatusChange — round-trips to Supabase then refresh() before pill flips. Visible lag. (2) PostStudioPanel.tsx:554-571 onDateChange — same pattern. (3) PostStudioPanel.tsx:572-585 onBulkAction (disqualify/delete) — N rows lag-flip. (4) StudioListView.tsx:530-538 inline status <select> — onChange awaits onStatusChange. (5) CarouselEditor.tsx:540 Save copy — full editor freezes during save. (6) PostStudioPanel.tsx:413 search input — every keystroke runs useMemo over all drafts (line 114).",
+        "impact": "Every status pill, date cell, search keystroke and bulk action visibly lags the round-trip. Optimistic flip is exactly the React 19 useOptimistic use case.",
+        "fix": "Diff #1 — status pill (PostStudioPanel.tsx:546):\n```ts\n// before\nonStatusChange={async (id, next) => { await supabase.from('carousel_drafts').update({status:next}).eq('id',id); await refresh(); }}\n// after\nconst [optimisticDrafts, setOptimisticStatus] = useOptimistic(drafts, (state, {id,next}: {id:string;next:string}) => state.map(d=>d.id===id?{...d,status:next}:d));\nonStatusChange={async (id, next) => { startTransition(()=>setOptimisticStatus({id,next})); const {error}=await supabase.from('carousel_drafts').update({status:next}).eq('id',id); if(error) toastError('status',error); /* realtime will reconcile */ }}\n```\nThen pass `optimisticDrafts` to the visible list instead of `drafts`. Repeat the pattern for date change + bulk action. Diff #2 — search (PostStudioPanel.tsx:411):\n```ts\nconst [searchQuery, setSearchQuery] = useState('');\nconst deferredQuery = useDeferredValue(searchQuery);\nconst visible = useMemo(() => { /* use deferredQuery instead of searchQuery */ }, [drafts, deferredQuery, ...]);\n```\nKeystroke stays snappy; expensive filter runs on idle. Diff #3 — Save Copy (CarouselEditor.tsx:46-51):\n```ts\nconst [isPending, startTransition] = useTransition();\nasync function run(label, fn, msg){ startTransition(()=>{ setBusy(label); fn().then(()=>{toast.success(msg); onChanged();}).catch(e=>toastError(label,e)).finally(()=>setBusy(null)); }); }\n```",
+        "effort": "S",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F4-zero-memoization-on-heavy-renderers",
+        "severity": "YELLOW",
+        "title": "StudioListView renders 50+ rows with no React.memo on the row body; LinkedInPostPreview re-tokenizes the entire caption on every keystroke",
+        "evidence": "grep for `React.memo|memo(` in /components returns only 3 hits — all in system-map (AnimatedDataEdge, PipelineGroupNode, WorkflowNode). Zero on Post Gen surfaces. StudioListView.tsx:448-659 defines `renderRow` as a closure INSIDE the parent component (line 448, inside StudioListView function body). Every parent re-render (sort change, filter change, ANY of the 14 useStates fires) recreates renderRow and re-runs it for all sorted rows. Combined with motion.div layout+initial+animate+exit on every row (lines 454-460) and the per-row AnimatePresence mode='wait' for the status pill (552-568), a single status flash on one row triggers re-layout calculation across all visible rows. LinkedInPostPreview.tsx:24-57 — tokenize() runs three regex passes (URL+hashtag+mention) over EVERY LINE of the caption on every keystroke when CarouselEditor's postMode is 'preview'. Not memoized. At 1500 chars × ~50 lines that's 150 regex executions per keystroke.",
+        "impact": "Sort change re-runs renderRow × N rows. Status flash effect (StudioListView.tsx:173-186) re-runs for the FULL `rows` array every time props.rows updates (which is every refresh), and the setTimeout fires another setState after 1500ms forcing a SECOND re-render of all rows. Type-in-preview-mode would lag past ~1000 chars. React Compiler (RC, stable in 19) would auto-memo most of this — but it's not enabled in vite.config either (no babel-plugin-react-compiler).",
+        "fix": "Step 1 — extract renderRow to a memo'd child (StudioListView.tsx:448):\n```tsx\ntype StudioRowItemProps = { row: StudioRow; cols: Col[]; meta: StatusMeta; selected: boolean; flash: boolean; onOpen:(id:string)=>void; /* ... */ };\nconst StudioRowItem = React.memo<StudioRowItemProps>(function StudioRowItem({row, cols, meta, selected, flash, onOpen, ...rest}) {\n  return <motion.div /* existing row JSX */ />;\n}, (a,b) => a.row===b.row && a.selected===b.selected && a.flash===b.flash && a.cols===b.cols);\n```\nReplace `sorted.map((r,i) => renderRow(r,i))` with `<StudioRowItem key={r.id} row={r} ... />`. Step 2 — memoize tokenized paragraphs in LinkedInPostPreview.tsx:84:\n```ts\nconst paragraphs = useMemo(() => visibleText.replace(/\\r\\n/g,'\\n').split(/\\n\\s*\\n/).map(p => p.split('\\n').map(tokenize)), [visibleText]);\n```\nStep 3 (optional) — enable React Compiler in vite.config.ts:\n```ts\nimport reactCompiler from 'babel-plugin-react-compiler';\nplugins: [react({ babel: { plugins: [reactCompiler] } })]\n```\nThen `pnpm add -D babel-plugin-react-compiler`. With Compiler on, you can delete the useMemo/useCallback in StudioListView.tsx:218,247,252 too.",
+        "effort": "M",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F5-animatepresence-overuse",
+        "severity": "YELLOW",
+        "title": "AnimatePresence wraps single-child or simple state transitions that CSS could handle — 74 instances codebase-wide, 8 on Post Gen alone",
+        "evidence": "Sheet.tsx:43-77 — AnimatePresence wraps backdrop + drawer (two children) for a simple slide-in. View Transitions API + CSS could replace. StudioListView.tsx:552-568 — AnimatePresence mode='wait' around a single motion.div for the status pill. ONE pill morph. Plus a nested motion.span (line 561) doing scale/opacity ping-pong on EVERY status render — not just on flash. Combined with the per-row AnimatePresence at 416-429 (status group collapse), 437-439 (flat list), the row layout transition at 454-460, and the row-level animate-status-flash CSS class at 465, a single status-change event triggers 4 overlapping animation systems. CarouselEditor.tsx:341-533 wraps the entire right-column action card in AnimatePresence mode='wait' for what is fundamentally a state-machine — fine, but the inner motion.div does a transform+opacity transition that CSS @keyframes would do in 1 rule.",
+        "impact": "Each AnimatePresence subscribes to its children's exit cycles and forces Framer's reconciliation — even for single children that don't unmount. View Transitions API (browser-native, 19+ React supports it via startTransition) handles single-child swaps with zero JS deps. Each motion.div also instantiates a MotionValue per animated prop — measurable bundle cost.",
+        "fix": "Replace single-child AnimatePresence wrappers with CSS transitions:\n```tsx\n// StudioListView.tsx:552-568 — was AnimatePresence + motion.div + motion.span\n<div key={r.status} className=\"flex items-center gap-1.5 animate-status-morph\">\n  <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot} ${flash ? 'animate-pill-pulse' : ''}`} />\n  <span className={`text-[11px] ${meta.label} truncate font-medium`}>{statusLabel(r.status)}</span>\n</div>\n```\nAdd to dashboard-v2.css:\n```css\n@keyframes pill-pulse { 0%,100%{transform:scale(1);opacity:1} 40%{transform:scale(1.6);opacity:.85} }\n.animate-pill-pulse { animation: pill-pulse .7s ease-out; }\n.animate-status-morph { view-transition-name: status-pill; } /* free animation when used inside document.startViewTransition() */\n```\nWrap status flip in document.startViewTransition() (CarouselEditor.tsx:357):\n```ts\ndocument.startViewTransition?.(() => { /* setState that flips status */ });\n```\nFor Sheet.tsx, keep AnimatePresence — multi-child orchestration is its sweet spot.",
+        "effort": "M",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F6-controlled-textarea-rerender-storm",
+        "severity": "YELLOW",
+        "title": "Caption Textareas are fully controlled, re-rendering the entire CarouselEditor tree per keystroke including LinkedInPostPreview tokenization",
+        "evidence": "CarouselEditor.tsx:28-29 — `const [postBody, setPostBody] = useState(draft.postBody||'')` and igCaption. Textarea at line 241-246 wires `value={postBody} onChange={(e)=>setPostBody(e.target.value)}` — every keystroke re-renders the entire CarouselEditor (575-line component with QAVerdictPanel, FieldGrid, AgentLogFeed, PostMetricsPanel, SourceBriefing children all re-rendering since none are memoized). The character counter at line 238 `{postBody.length}{postBody.length>210 && <span>past fold</span>}` needs the value — that's the legitimate reason for control. BUT if user is in preview mode (line 247-260), LinkedInPostPreview re-tokenizes the full caption per keystroke (see F4). Same pattern for IG caption at line 278-289.",
+        "impact": "At 1500+ chars typing speed drops noticeably. Three children (QAVerdictPanel, FieldGrid, PostMetricsPanel) re-render on every keystroke even though their props (draft) didn't change. The agent-log feed at line 558-566 also re-renders, re-running its useMemo sort on every keystroke.",
+        "fix": "Two-part fix. (1) Switch to uncontrolled with defaultValue+ref for the textarea body, derive the counter via local subscription:\n```tsx\nconst postRef = useRef<HTMLTextAreaElement>(null);\nconst [postLen, setPostLen] = useState(draft.postBody?.length ?? 0);\n<Textarea defaultValue={draft.postBody||''} ref={postRef} onChange={(e)=>setPostLen(e.target.value.length)} rows={6} className=\"text-[13.5px] leading-relaxed\" />\n// counter uses postLen; Save reads postRef.current!.value\nonClick={()=>run('save', ()=>saveDraft({id:draft.id, post_body:postRef.current!.value, ig_caption:igRef.current!.value}), 'Saved')}\n```\n(2) For preview mode, defer the value:\n```tsx\nconst [previewText, setPreviewText] = useState(draft.postBody||'');\nuseEffect(()=>{ if(postMode!=='preview') return; const id = setTimeout(()=>setPreviewText(postRef.current?.value||''), 200); return ()=>clearTimeout(id); }, [postMode]);\n<LinkedInPostPreview text={previewText} ... />\n```\nOr simpler with React 19: `const deferredText = useDeferredValue(postBodyState)` and pass `deferredText` to LinkedInPostPreview.",
+        "effort": "S",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F7-5-overlapping-views-confirmed",
+        "severity": "RED",
+        "title": "Post Gen actually has 5 overlapping views — not 4 — and the legacy kanban Ivan's own comment says was removed is still mounted",
+        "evidence": "(1) PostStudioPanel.tsx:506 — canonical Posts surface with 4 internal view-modes (list/grid/board/table). (2) CarouselStudioPanel.tsx:18-25 — fetches useContentLibrary() then filters client-side to type==='carousel'. Marked as 'Carousel Studio' but the comment on PostStudioPanel.tsx:56-58 says it now restricts via prop — so CarouselStudioPanel is dead weight. (3) ContentPanel.tsx:583 — pipeline kanban (calendar+drag-reschedule), STILL MOUNTED at ContentStudio.tsx:101 inside performance > pipeline internal tab, even though the comment at ContentStudio.tsx:32-34 explicitly says 'Pipeline (kanban) removed — Posts panel already has a Board view that does the same job'. The comment lied; the panel is still wired. (4) Posts.tsx (v2 wrapper) — adds another Ideas/Drafts tab layer ABOVE PostStudioPanel — but PostStudioPanel already has its own filter UI. (5) Briefing.tsx:28 — also subscribes to useContentPipeline for its pulse cell. Within PostStudioPanel itself, the board view (lines 588-623) and grid view (625-671) are inline 40+ line render blocks duplicating column/card rendering — the list+table at least share StudioListView.",
+        "impact": "User confusion (4 ways to see the same draft, 3 are scoped subsets of #1). Code drift — fixing 'wrong date format' or 'status pill color' needs N edits. Bundle cost — ContentPanel.tsx is 897 lines including dnd-kit drag handlers that PostStudioPanel doesn't reuse. CarouselStudioPanel fetches the table AGAIN if rendered alongside.",
+        "fix": "(1) DELETE CarouselStudioPanel.tsx entirely — PostStudioPanel already supports restrictTypes=['carousel'] (line 56). Update ContentStudio.tsx 'pipeline' tab and any other importer to mount `<PostStudioPanel restrictTypes={['carousel']} title='Carousels' />`. (2) DELETE the 'pipeline' tab from ContentStudio.tsx:101 — match Ivan's own comment. ContentPanel can stay archived in components/dashboard/_archive/ if there's nostalgia for the drag-reschedule but it shouldn't be mounted. The drag-reschedule capability should be ported into StudioListView (one feature, one place). (3) Posts.tsx ideas/drafts split is fine — Ideas comes from a different table (lm_idea_candidates via LmIdeasPanel), so it's not a duplicate. (4) Within PostStudioPanel: extract the inline board render (588-623) and grid render (625-671) into `StudioBoardView` and `StudioGridView` so all 4 views are sibling component files, each ~80 lines, sharing StudioRowItem (from F4).",
+        "effort": "M",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F8-url-restore-race-fix-duplicated-and-uses-replaceState-wrong",
+        "severity": "YELLOW",
+        "title": "The ?open= deeplink race-fix is duplicated across PostStudio + LeadMagnetStudio with identical bugs in both (replaceState eats history)",
+        "evidence": "PostStudioPanel.tsx:191-219 (28 lines) and LeadMagnetStudioPanel.tsx:183-210 (28 lines) are IDENTICAL code blocks for syncing the ?open= URL param to local openId state, both using window.history.replaceState() which destroys back-button navigation between editor and list. LeadMagnetStudioPanel even has the comment 'same race-fix as PostStudioPanel'. Both use a useRef + boolean flag combo to handle the deeplink-arrives-before-data race. With react-router-dom v7 already in deps (package.json:13), useSearchParams() would handle this in one line and would push history entries so Back works.",
+        "impact": "Currently Cmd+Click open-in-new-tab works (URL has param), but inside the dashboard, opening then closing a draft does NOT add a back-button entry — the browser Back leaves the dashboard entirely instead of returning to the list. Duplicate code = guaranteed drift.",
+        "fix": "Extract to a single hook (hooks/useStudioOpenId.ts):\n```ts\nimport { useSearchParams } from 'react-router-dom';\nexport function useStudioOpenId(drafts: {id:string}[]) {\n  const [params, setParams] = useSearchParams();\n  const openId = params.get('open');\n  const setOpenId = useCallback((id: string|null) => {\n    setParams(prev => { const p = new URLSearchParams(prev); if(id) p.set('open', id); else p.delete('open'); return p; }, { replace: false });\n  }, [setParams]);\n  // If the deeplink target isn't in drafts yet, keep it; once drafts load and don't contain it, drop it.\n  useEffect(() => { if (openId && drafts.length > 0 && !drafts.some(d => d.id === openId)) setOpenId(null); }, [drafts, openId, setOpenId]);\n  return [openId, setOpenId] as const;\n}\n```\nReplace lines 191-219 in PostStudioPanel and 183-210 in LeadMagnetStudioPanel with `const [openId, setOpenId] = useStudioOpenId(drafts);`. The race is gone because URL is source-of-truth, not local state. Back button works because replace:false pushes history.",
+        "effort": "S",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "F9-tailwind-v4-features-unused-on-post-gen",
+        "severity": "GREEN",
+        "title": "Tailwind v4 in stack but PostStudio relies on hardcoded breakpoints/widths instead of container queries + :has() for view-aware styling",
+        "evidence": "No tailwind.config.js exists (verified by ls); deps confirm @tailwindcss/vite ^4.1.18 — v4 is live. StudioListView.tsx:283-286 hand-rolls `hidden md:flex / hidden lg:flex / flex` for column visibility based on viewport — but the SHEET it lives in (Sheet.tsx:27 'full' = max-w-[min(1600px,95vw)]) means the list's container width is decoupled from viewport when the editor is open. The list sits BEHIND the editor sheet during edit. Viewport-based breakpoints will show desktop columns while the list is actually 400px wide behind the drawer scrim. Tailwind v4 container queries (`@container` / `@md:flex`) would fix this with a single class change. Also: editor selection state could use `[aria-selected=true]:bg-emerald-950/20` + parent `:has()` for hover-trail styling that's currently a manual className concat at StudioListView.tsx:465.",
+        "impact": "Cosmetic — when Sheet is open and list is partially obscured, column overflow is wrong on mid-size screens. Not load-bearing.",
+        "fix": "Wrap StudioListView root in container scope (StudioListView.tsx:289):\n```tsx\n<div className=\"@container rounded-xl border ...\">\n```\nThen replace colClass helper (line 280-286):\n```ts\nconst colClass = (visible?: string) => dense ? 'flex' : visible === 'gte-md' ? 'hidden @md:flex' : visible === 'gte-lg' ? 'hidden @lg:flex' : 'flex';\n```\nNow columns hide/show based on the LIST'S width, not the viewport — works correctly when the editor sheet is open. No JS, no resize observer.",
+        "effort": "S",
+        "lens": "React architecture + state management — Post Gen interface"
+      },
+      {
+        "id": "R1-pillar-hook-tier-readonly",
+        "severity": "RED",
+        "title": "Pillar / Hook Type / Value Tier shown as decorative chips, not editable — forces ClickUp jump for every taxonomy fix",
+        "evidence": "CarouselEditor.tsx:167-181 renders pillar/hookType/valueTier as `<span>` chips inside `flex-wrap` divs with zero interaction handlers. FieldGrid.tsx:46-48 renders them as `<FieldRow>` static text. The underlying field `taxonomy` is a JSON column on carousel_drafts (useContentLibrary.ts:23, :46) and `saveDraft` (studioActions.ts:47-58) does NOT accept taxonomy in its patch — so even the API is closed. When QA rejects on wrong pillar mapping or Ivan wants to flip Value Tier T2→T3 to re-trigger gating, he has to open ClickUp, edit the custom field, wait for ClickUp→Supabase sync, then re-fire. This is the single most common edit on review-state drafts.",
+        "impact": "Multiple ClickUp roundtrips per day on review-state drafts. Breaks the 'dashboard as ClickUp replacement' thesis — Ivan still keeps ClickUp open just to edit dropdowns. Also blocks the Personal POV / Open Question sub-mode workflow (taxonomy-cleanup-2026-05-27.md) where Ivan flips pillar mid-review.",
+        "fix": "Add a `TaxonomyEditor` row above FieldGrid (CarouselEditor.tsx:292) using Tailwind v4 `:has()` for hover-reveal pencil. Three `<select>` primitives bound to `tax.pillar / tax.hook_type / tax.value_tier`, options pulled from a static constant or `dashboard_taxonomy_options` Supabase table. On change, call new `saveDraft({ id, taxonomy: { ...tax, pillar: v }})` — first extend studioActions.ts:47 to accept `taxonomy?: Record<string,any>` in the patch (merge then write). Wire `useOptimistic` so the chip updates instantly. Effort ~2h.",
+        "effort": "M",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "R2-no-per-slide-edit",
+        "severity": "RED",
+        "title": "Carousel slides are read-only — no per-slide text edit, only nuclear `Re-author` (~2 min full rebuild)",
+        "evidence": "CarouselEditor.tsx:129-145 renders `draft.slides` as static `<div>` cards with `line-clamp-2/4` on title and body — no inputs, no onClick. Only mutation path is `Re-author` button at L548-551 which calls `buildCarousel` for the full deck. The footer at L570 confirms: 'Per-slide image regen is coming next; for now \"Re-author\" rebuilds all slides.' But even per-slide TEXT edit is missing — a one-character typo on slide 5 of a 10-slide carousel = 2-minute regen + risks QA re-rejection on dimensions unrelated to the typo.",
+        "impact": "Highest-cost workflow tax on the carousel pipeline. Ivan ships ~5 carousels/wk; assume 30% have a slide-text nit → 1-2 unnecessary full regens per week = 4-8 min wasted + non-zero risk that QA rewrites everything else. Also explains the incident-carousel-type-field-strip-2026-05-26 pattern where regenerating just to fix one slide introduced new bugs.",
+        "fix": "In CarouselEditor.tsx:129-145, swap the slide `<div>` blocks for an inline `<Textarea>` per slide bound to a `localSlides` state, with a `Save slide text` button per slide that calls new `saveDraft({ id, slides: localSlides })`. Extend studioActions.ts:47 to accept `slides?: any[]`. The render endpoint (Remotion/HTML) already reads `slides[*].title/body/headline/hook` (CarouselEditor.tsx:133-134), so a save-only-no-rebuild flow is straightforward — add a separate `Re-render images only` button distinct from `Re-author`. Effort ~3h for text-only edits.",
+        "effort": "M",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "R3-no-iteration-diff",
+        "severity": "RED",
+        "title": "QA rewrite happens invisibly — no diff between pre-rewrite and post-rewrite copy",
+        "evidence": "QAVerdictPanel.tsx:140-170 expands each iteration's full agent body (containing ISSUES/REWRITE blocks) but only as markdown text. When `post-gen-auto-publish-rewrite.md` (in MEMORY.md) auto-publishes a REWRITE_OK rewrite, the user sees the FINAL `postBody` in the Textarea (CarouselEditor.tsx:241-246) but has no way to see what changed. The agent log stores the rewrite text in `body` (parseIteration at QAVerdictPanel:23-44 extracts `verdict/score/issuesCount` but NOT the REWRITE: block separately) — so the data is there, just not surfaced as a diff.",
+        "impact": "Auto-publish-on-REWRITE_OK is a black box: Ivan can't quickly tell whether the rewrite preserved his voice. With `feedback-stop-asking-permission.md` rule active, the system rewrites silently. Without diff, the only audit is reading the entire raw QA body and mentally diff-ing against current Textarea — a violation of feedback-visual-work-test-yourself.md (visual changes need visual confirmation).",
+        "fix": "In QAVerdictPanel.tsx:23-44 add `rewrite: string | undefined` to QAIteration by parsing `/REWRITE:\\s*([\\s\\S]*?)(?:\\n\\s*\\n|VOICE|END|$)/i`. In the expanded body block (L163-167), if `it.rewrite` exists AND there is a previous iteration's `rewrite` (or the original `postBody` from before this iteration), render a side-by-side using a small diff lib (e.g. `diff` npm pkg, ~10kb) with sage-on-paper added / muted strikethrough removed — matches brand. Add a 'previous iteration' selector at top. Effort ~3h incl. diff lib wire-up.",
+        "effort": "M",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "R4-status-only-via-action-buttons",
+        "severity": "RED",
+        "title": "No status override — stuck `generating` rows can only be retried via 15-min staleness gate, not manually unstuck",
+        "evidence": "CarouselEditor.tsx:398-429 — when `s === 'generating'`, the Retry button only appears after `elapsedMin >= 15` (the `stuck` flag at L401). Below that threshold there is NO way to abort, downgrade-status, or kick to `idea`. The `setStatus` helper exists at studioActions.ts:61 but is never wired to any UI primitive in CarouselEditor. Meanwhile `stuck-content-task-recovery.md` documents that 'n8n public API can't kill running executions' is the documented recovery for this exact case — the dashboard recovery primitive is missing.",
+        "impact": "Every false-stuck generating row (Ivan reports ~1-2/wk per incident-spp-lm-field-strand-2026-05-24 + lm-curator + post-gen-pairing) blocks the slot for 15 min before retry button appears. Compounded with `generating_started_at` (CarouselEditor.tsx:353) being SET on the optimistic update — if the n8n webhook returns 200 but n8n itself crashes immediately, the dashboard is stuck for 15 min before showing the retry CTA.",
+        "fix": "Add an always-visible `Reset to idea` ghost button in the generating Card (CarouselEditor.tsx:402-428) below the elapsed-time line — call `setStatus(draft.id, 'idea')` via studioActions.ts:61. Style as `text-zinc-500 text-[10px] hover:text-zinc-300` so it's an escape hatch, not a primary action. Also surface `Disqualify` (sets `status='disqualified'`) on review/approved/scheduled cards — currently the only path INTO disqualified is opaque. Effort ~30 min.",
+        "effort": "S",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "R5-image-fields-readonly-locked",
+        "severity": "RED",
+        "title": "Image Style / Image Description / Visual Content Link buried in collapsed panel and not editable — image regen impossible without ClickUp roundtrip",
+        "evidence": "CarouselEditor.tsx:304-325 'Imagery brief' Card is collapsed by default (`imageryOpen` defaults to `false` at L32). Even when opened, `imageStyle` (L315), `imageDesc` (L316), `visualLink` (L317-321) are static `<span>`/`<div>` text — no inputs. The only image-regen path is `Re-author` (full deck rebuild), and the actual image_style fed to single-image generation comes from `tax.image_style` (CarouselEditor.tsx:374). Editing requires: ClickUp → custom field → wait for sync → re-fire. There is no `include_image` toggle either despite it being a ClickUp field (only inferred from `draft.type==='single_image'` at L373).",
+        "impact": "Single-image post style nits (e.g. wrong 'Concept Visual' aesthetic, wrong reference link) require ClickUp dance. Combined with R2 (no slide-level), the entire image side of the pipeline is read-only from the dashboard.",
+        "fix": "Convert the Imagery brief Card body (CarouselEditor.tsx:314-323) to inputs: `<select>` for image_style (options from a constant or memory file), `<Textarea>` for image_description (3 rows), `<Input type='url'>` for visual_content_link. On change, debounced save via extended `saveDraft({ id, taxonomy: { ...tax, image_style, image_description, visual_content_link }})`. Also default `imageryOpen=true` when draft.type==='single_image' or 'carousel' (L32). Effort ~1.5h after R1's taxonomy-write plumbing lands.",
+        "effort": "M",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "Y1-fieldgrid-redundant-with-chips",
+        "severity": "YELLOW",
+        "title": "FieldGrid duplicates chip data — Pillar/Hook/Tier shown twice in same scroll",
+        "evidence": "FieldGrid.tsx:46-49 renders Pillar/Hook type/Value tier/Source as text rows. CarouselEditor.tsx:167-187 renders the same four as colored chips at the top of the editor. Status (FieldGrid L41) duplicates the header chip at CarouselEditor.tsx:161. Topic strength duplicates (chip L182, FieldGrid L51). Render engine duplicates (L188 / L53). Source post ID duplicates (L189-200 link / L54 mono row). 6 of FieldGrid's 18 rows are pure repeats; the other 12 (Style, Source candidate, Image count, Slide count, Agent log entries, QA verdict) are diagnostic and could move to a dev-mode popover.",
+        "impact": "Visual noise — two reads of the same data within ~500px. Violates progressive-disclosure intent FieldGrid was supposed to provide (see its own header comment FieldGrid.tsx:8-13: 'covers the gap for ... read-only for now — edit-in-place can come later'). With R1 landing, FieldGrid becomes obsolete for the editable fields.",
+        "fix": "Once R1 ships (chips become inline-editable), gut FieldGrid down to a 'Diagnostics' popover (Sheet or `<details>`) holding only the non-chip rows: Source candidate, Style id, Image/slide/agent-log counts, Updated timestamp. Triggered by a small `i` icon in the header next to status chip. Effort ~45 min.",
+        "effort": "S",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "Y2-rewrite-total-vs-total-not-parsed",
+        "severity": "YELLOW",
+        "title": "QA score parsed but rewrite_total vs total never compared in UI",
+        "evidence": "QAVerdictPanel.tsx:27 captures `SCORE:` once per iteration. The auto-publish rule (post-gen-auto-publish-rewrite.md in MEMORY.md) gates on `rewrite_total >= 60 && rewrite_total > total` — meaning the rewrite must clear absolute floor AND beat original. But the panel only shows the final score, not the original-vs-rewrite delta inside one iteration. Sparkline at L119-137 only compares ACROSS iterations.",
+        "impact": "Ivan can't see at a glance whether REWRITE_OK was a marginal win (rewrite 61 > original 60) or a real win (rewrite 85 > original 50). Marginal-win rewrites are the highest-risk auto-publishes because Claude's noise floor on the QA dimension scoring is roughly ±5 points.",
+        "fix": "Extend parseIteration at QAVerdictPanel.tsx:23 to extract `TOTAL:\\s*(\\d+)` and `REWRITE_TOTAL:\\s*(\\d+)` separately. In the iteration row L150-162, if both exist, show `60→85 (+25)` with sage if delta>15, amber if delta 5-15, red if delta<5. Effort ~45 min.",
+        "effort": "S",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "Y3-four-views-redundancy",
+        "severity": "YELLOW",
+        "title": "Post Gen has 4 list-view modes (grid/board/list/table) inside one panel — likely the '4-views' Ivan suspected",
+        "evidence": "PostStudioPanel.tsx:87 declares `view: 'grid' | 'board' | 'list' | 'table'` persisted to localStorage. Live URL `dashboard?section=content&sub=posts` opens PostStudioPanel (686 lines). It is also imported and re-wrapped by CarouselStudioPanel.tsx (120 lines) and ContentStudio.tsx v2 (141 lines), and StudioListView.tsx (710 lines) is a separate list renderer for individual drafts. Net: there are simultaneously 4 view modes within one panel AND 3 panel-level wrappers around the same data.",
+        "impact": "Decision fatigue. Each view mode is a near-full 200-line render path; maintenance cost per feature is ~4x. List+table likely collapse to one. Grid+board likely collapse.",
+        "fix": "Audit which view Ivan actually uses (instrument with simple `console.count` or Plausible event in PostStudioPanel.tsx:87). Hypothesis: only `list` survives. Collapse to 2 modes (list = default, board = scheduled-week pivot). Delete grid + table rendering paths. Also delete CarouselStudioPanel.tsx (thin pass-through with no unique props per L120) and route ContentStudio.tsx v2 directly. Effort ~2h once usage data confirms.",
+        "effort": "M",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "G1-qa-verdict-strong",
+        "severity": "GREEN",
+        "title": "QA verdict surfacing is genuinely strong — iteration timeline + sparkline + halt vs revision tones",
+        "evidence": "QAVerdictPanel.tsx:71-176 parses up to N iterations from agent_log, renders score-over-iterations sparkline at L119-137, expandable per-iteration body with renderLightMarkdown at L165, color tones (red HALT / emerald PASS-or-REWRITE_OK / amber REVISION) at L47-54. This is the one place the editor genuinely surpasses ClickUp.",
+        "impact": "Positive — no change needed except R3 (diff) and Y2 (rewrite delta) extensions.",
+        "fix": "Keep as-is. Use as reference pattern for any future agent-output surfacing (e.g. Carousel slide QA).",
+        "effort": "S",
+        "lens": "Editor depth — what can the user actually edit/see?"
+      },
+      {
+        "id": "POST-1",
+        "severity": "RED",
+        "title": "Four read-views + Editor = five overlapping surfaces for the same row, no IA reason for the split",
+        "evidence": "components/dashboard/PostStudioPanel.tsx:87-94 declares `view: 'grid' | 'board' | 'list' | 'table'` with localStorage default 'list'. Render branches at PostStudioPanel.tsx:505 (list|table → StudioListView), :587 (board → kanban), :624 (grid → image cards). `table` is literally the same `StudioListView` with `dense={view === 'table'}` and `groupByStatus={undefined}` (lines 506-543) — i.e. just List minus grouping plus 12.5% smaller padding. Then the editor sheet (PostStudioPanel.tsx:674-682) is a 5th read-surface that wraps the SAME draft in 3 columns + 2 caption-edit/preview toggles (CarouselEditor.tsx:230-237, 268-275). The Board view is also strictly redundant with the kanban that ContentStudio.tsx:101 still mounts as `Pipeline Kanban` under Performance → it's the SAME ContentPanel kanban shown twice in the IA.",
+        "impact": "Ivan has to remember which of 5 surfaces shows the column he wants to scan. Every view has a slightly different mental model (grouped vs flat vs columns vs cards vs 3-pane). localStorage `post-studio-view` (PostStudioPanel.tsx:87-94) bakes the choice in but the toggle buttons stay visible forever, inviting accidental switches mid-flow. The Grid view's 4-up image cards (PostStudioPanel.tsx:625) is useful for visual scan but only 22 carousels exist (per filter chips) so 5+ of every 9 cards render the gray emerald placeholder (line 645) — actively worse than list. Board is duplicated with the Pipeline kanban in Performance tab.",
+        "fix": "Collapse to 2 views: (a) `list` (status-grouped, with row thumbnails — what Ivan uses today, default), (b) `board` (drag-status kanban). Delete `grid` and `table` toggles outright. Move `dense` (the only signal-bearing thing about Table) into the list itself as a small density toggle in the same header. Concrete edits: PostStudioPanel.tsx:87 → `useState<'list'|'board'>('list')`; delete the Grid + Table `<button>` blocks at lines 270-284; delete the entire `view === 'grid' ?` branch at lines 624-671; delete `dense={view === 'table'}` and `groupByStatus={view === 'table' ? undefined : 'post-studio'}` conditionals at lines 507, 542, 544 — replace with constants. Also delete the redundant 'Pipeline Kanban' tab from ContentStudio.tsx:101 since Board view replaces it. Net delete ≈ 80 lines.",
+        "effort": "M",
+        "lens": "Real golden-path E2E walkthrough via Playwright (dashboard profile, headless 1440 → 768 → 375). 7 of 9 scripted steps captured cleanly; step 3/4 didn't auto-click into the editor because table rows aren't standard `article`/`role=listitem`, but the deeplink editor (steps 6/8/9) opens reliably and gave us the editor structure. Findings rest on real screenshots + DOM probes + source citations."
+      },
+      {
+        "id": "POST-2",
+        "severity": "RED",
+        "title": "Posts panel header collapses to a thin word-stack at 375 because view-toggle steals the row",
+        "evidence": "PostStudioPanel.tsx:255-293: header is a single `flex items-center gap-3` row with: 36px icon + h2 'Posts' + subtitle `text · single-image · carousel` (line 261, 11.5px) + `ml-auto` view-toggle (4 buttons, each ~50px = 200px) + refresh button. At 1440 it fits. At 375 it doesn't — Tailwind has no `flex-col` breakpoint here so it stays row-flex, the subtitle gets `min-width: min-content` and word-wraps into a 90px-wide stack. Screenshot `/tmp/pw-audit-postgen/09-mobile.png` shows 'text ·' / 'single-' / 'image ·' / 'carousel' stacked four lines tall.",
+        "impact": "Mobile list view header takes ~280px of vertical space before the New post button. On a 812px iPhone screen that's 34% of the fold gone to chrome. The View toggle at 11.5px in a 0.5-rem padded button is also sub-WCAG-tap-target (~28px tall vs 44px minimum).",
+        "fix": "Wrap the title+subtitle block and the view-toggle+refresh block in separate divs and stack them at <md. PostStudioPanel.tsx:255 → `<div className=\"flex flex-col md:flex-row md:items-center gap-2 md:gap-3\">`. Move the view-toggle div (lines 263-285) to `className=\"md:ml-auto\"` so it goes full-width-row-below on mobile, ml-auto on desktop. Bump button padding from `py-1` to `py-1.5 md:py-1` and tap-target from `w-3.5 h-3.5` icon + `text-[11.5px]` to `text-[12px] md:text-[11.5px]`. Also: hide the 4-way toggle entirely below md once POST-1 ships — single 'List ↔ Board' switch is fine.",
+        "effort": "S",
+        "lens": "Real golden-path E2E walkthrough via Playwright (dashboard profile, headless 1440 → 768 → 375). 7 of 9 scripted steps captured cleanly; step 3/4 didn't auto-click into the editor because table rows aren't standard `article`/`role=listitem`, but the deeplink editor (steps 6/8/9) opens reliably and gave us the editor structure. Findings rest on real screenshots + DOM probes + source citations."
+      },
+      {
+        "id": "POST-3",
+        "severity": "RED",
+        "title": "Editor sheet at 768 stacks to one column ~3000px tall with no anchor nav — Approve buried below fold",
+        "evidence": "CarouselEditor.tsx:206 uses `grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_360px] gap-5`. The `lg:` breakpoint is 1024px. At 768 the grid is `grid-cols-1`, stacking: SourceBriefing → QAVerdict → LinkedIn caption → IG caption → FieldGrid (left col, lines 208-293) → Preview + PostMetrics + Imagery + Approve action card + Save/Reauthor (right col, lines 295-510 in same single column). Screenshot `/tmp/pw-audit-postgen/08-tablet-editor.png` shows: top of stack visible (Source briefing → LinkedIn caption → IG caption); Approve button and agent activity rail completely off-screen below. Phase 2 probe `tablet_editor.sheet_height: 1024` (= viewport) but content is ~3000px → user must scroll 2+ viewports to reach Approve.",
+        "impact": "The whole point of the editor is to read the briefing → check the preview → click Approve. On a 768 iPad (Ivan's daily horizontal workflow) Approve is 2 scrolls down. The Agent activity rail (live status during the 90-180s generation wait) is at the very BOTTOM of the stack — the user can't see if generation succeeded without scrolling 2000+px past content they already approved.",
+        "fix": "Tighten the breakpoint and add a sticky action bar. CarouselEditor.tsx:206 → `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_360px]` so at 768 we get 2-col (left=copy editing, right=preview+actions+rail). The rail (RIGHT column starting at line 482-ish) is fine at 360px on a 768 viewport (~47% of width). Better: wrap the right-column action card (lines 327-510) in `lg:sticky lg:top-4` so it pins. At mobile <md, add a `sticky bottom-0 bg-zinc-950 border-t` action bar containing just Approve + Re-author so the primary action is one tap away regardless of scroll depth.",
+        "effort": "M",
+        "lens": "Real golden-path E2E walkthrough via Playwright (dashboard profile, headless 1440 → 768 → 375). 7 of 9 scripted steps captured cleanly; step 3/4 didn't auto-click into the editor because table rows aren't standard `article`/`role=listitem`, but the deeplink editor (steps 6/8/9) opens reliably and gave us the editor structure. Findings rest on real screenshots + DOM probes + source citations."
+      },
+      {
+        "id": "POST-4",
+        "severity": "RED",
+        "title": "Sheet header + CarouselEditor header render the title twice, 60px apart",
+        "evidence": "Sheet.tsx:70 renders `<div className=\"text-sm font-medium text-zinc-100 truncate flex-1\">{title}</div>` (the title prop passed from PostStudioPanel.tsx:678 as `<span className=\"truncate\">{open.title}</span>`). CarouselEditor.tsx:153-162 then opens with `<div className=\"flex items-center gap-3\"><button onClose><ArrowLeft/></button><h2 className=\"text-lg font-semibold text-zinc-100 truncate flex-1\">{draft.title}</h2><span>{draft.status}</span></div>`. Screenshot `/tmp/pw-audit-postgen/05-approved.png` clearly shows the same title at y≈12 (sheet) AND y≈72 (editor h2). Plus TWO close affordances: Sheet's X (Sheet.tsx:63-69) at top-left and CarouselEditor's ArrowLeft (CarouselEditor.tsx:157-159) at the same x position 60px below.",
+        "impact": "Wastes ~60px of vertical real estate (which compounds with POST-3 at 768/375). Two close buttons confuse users — the X dismisses the sheet, the ArrowLeft also dismisses but looks like 'back to list within editor'. The status text on line 161 is also redundant with the colored status pill that already appears in the taxonomy chip row right below.",
+        "fix": "Delete CarouselEditor.tsx:155-162 entirely. The Sheet header already shows the title and the close X. Move the redundant `{draft.status}` status text into the existing taxonomy chip block (line 164) where the other status info already lives. If a visible status pill at the top is wanted, render only the colored pill (with the dot from STATUS_META in PostStudioPanel.tsx:23-33) — no h2 duplication.",
+        "effort": "S",
+        "lens": "Real golden-path E2E walkthrough via Playwright (dashboard profile, headless 1440 → 768 → 375). 7 of 9 scripted steps captured cleanly; step 3/4 didn't auto-click into the editor because table rows aren't standard `article`/`role=listitem`, but the deeplink editor (steps 6/8/9) opens reliably and gave us the editor structure. Findings rest on real screenshots + DOM probes + source citations."
+      },
+      {
+        "id": "POST-5",
+        "severity": "RED",
+        "title": "GoTrueClient instantiated twice in the same bundle — auth state can desync silently",
+        "evidence": "Console captured 6× identical warning at /tmp/pw-audit-postgen/report.json: `\"Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.\"` Location: `https://ivanmanfredi.com/assets/vendor-supabase-yKjPlrCh.js:41:14121`. Storage key `sb-bjbvqvzbzczjbatgmccb-auth-token` — that's the Ivan project ref. Two `createClient(...)` calls in the bundle hitting the same project. `lib/supabase.ts` exports one client; somewhere else (likely `lib/supabaseAuth.ts`, a stale dashboard auth module, or a hook that calls `createClient` lazily) creates a second.",
+        "impact": "Auth state, session refresh, realtime subscriptions can fight. The dashboard already had a 2026-05-31 incident around auth → this is the canary. Also breaks Supabase Realtime, which is what the editor uses to flip `status: generating → review` live (CarouselEditor.tsx:54 comment). When the wrong client holds the channel, the user sees 'In progress' forever even after n8n flips the row.",
+        "fix": "Grep the repo for `createClient(` calls: `grep -rn \"createClient(\" /Users/ivanmanfredi/Desktop/personal-site/lib /Users/ivanmanfredi/Desktop/personal-site/components | grep -v node_modules`. Consolidate to a single exported instance in `lib/supabase.ts`. Any module currently re-instantiating (look for `DashboardAuth.tsx`, anything in `hooks/`, or any file importing `@supabase/supabase-js` directly besides lib/supabase.ts) must import from `../lib/supabase` instead. Verify after deploy by re-running this audit script — warning count should be 0.",
+        "effort": "S",
+        "lens": "Real golden-path E2E walkthrough via Playwright (dashboard profile, headless 1440 → 768 → 375). 7 of 9 scripted steps captured cleanly; step 3/4 didn't auto-click into the editor because table rows aren't standard `article`/`role=listitem`, but the deeplink editor (steps 6/8/9) opens reliably and gave us the editor structure. Findings rest on real screenshots + DOM probes + source citations."
+      }
+    ]
+  }
+}

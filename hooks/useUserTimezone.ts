@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 export interface TimezonePreset {
   label: string;
@@ -30,15 +30,11 @@ export function useUserTimezone(): UserTimezone {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
   // Load timezone settings on mount
   useEffect(() => {
     const loadTimezone = async () => {
       try {
         setLoading(true);
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         // Fetch both timezone settings in one query
         const { data, error: fetchError } = await supabase
@@ -61,13 +57,12 @@ export function useUserTimezone(): UserTimezone {
     };
 
     loadTimezone();
-  }, [supabaseUrl, supabaseAnonKey]);
+  }, []);
 
   const updateTimezone = async (preset: TimezonePreset) => {
     try {
       setLoading(true);
       setError(null);
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
       // Update both timezone rows
       const updates = [

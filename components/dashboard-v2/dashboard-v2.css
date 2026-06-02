@@ -29,7 +29,7 @@ body.dashboard-v2-active * {
   --d-ink-3: #221d18;
   --d-paper: #e7e7ea;
   --d-paper-dim: #a3a3aa;
-  --d-paper-dimmer: #6b6b73;
+  --d-paper-dimmer: #8a8a92;
   --d-good: #2A8F65;            /* brand sage */
   --d-warn: #f59e0b;
   --d-bad: #ef4444;
@@ -75,14 +75,21 @@ body.dashboard-v2-active * {
   border-radius: 2px;
 }
 
-/* Reduced motion — disable transitions */
+/* Reduced motion — disable transitions + neutralize named keyframe animations.
+ * The blanket animation-duration: 0.01ms covers most cases, but explicitly
+ * silencing our keyframe classes prevents any infinite loops (refresh-pulse)
+ * or visible bursts (status-flash, log-pulse-in) from rendering. */
 @media (prefers-reduced-motion: reduce) {
   .dashboard-v2 *,
   .dashboard-v2 *::before,
   .dashboard-v2 *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .animate-status-flash,
+  .animate-log-pulse,
+  .animate-refresh-pulse { animation: none !important; }
 }
 
 /* ============== PRIMITIVES ============== */

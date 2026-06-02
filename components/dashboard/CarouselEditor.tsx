@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
@@ -25,10 +25,16 @@ interface Props {
 }
 
 const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
+  const shouldReduceMotion = useReducedMotion();
   const [postBody, setPostBody] = useState(draft.postBody || '');
   const [igCaption, setIgCaption] = useState(draft.igCaption || '');
   const [when, setWhen] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  // userInitiatedRef flips true the moment run() fires. The status-transition
+  // effect then suppresses its toast for that flip (the run wrapper already
+  // toasted on success). Without this we double-toast on every Approve/Save
+  // and emit phantom toasts every 20s poll. Reset after the effect consumes it.
+  const userInitiatedRef = React.useRef(false);
   const [imageryOpen, setImageryOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
@@ -45,6 +51,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
+    userInitiatedRef.current = true;
     try { await fn(); toast.success(successMsg); onChanged(); }
     catch (err) { toastError(label, err); }
     finally { setBusy(null); }
@@ -58,15 +65,23 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     return () => clearInterval(iv);
   }, [draft.status, onChanged]);
 
-  // Detect status transitions on THIS draft + fire a toast so the user notices
-  // even when not looking at the right-card. Skip the initial mount.
+  // Detect status transitions on THIS draft. Only toast when the flip was
+  // SYSTEM-initiated (polled change while user wasn't acting) — the run()
+  // wrapper already toasts user-initiated changes, and the pill morph + card
+  // swap convey the rest. Also mirrored to an sr-only live region (below)
+  // so screen readers announce the new status without visual duplication.
   const prevStatusRef = React.useRef<string>(draft.status);
+  const [srStatus, setSrStatus] = useState<string>('');
   React.useEffect(() => {
     if (prevStatusRef.current === draft.status) return;
     const from = prevStatusRef.current;
     const to = draft.status;
     prevStatusRef.current = to;
-    // Friendly transition messages
+    const wasUser = userInitiatedRef.current;
+    userInitiatedRef.current = false;
+    // Always update sr-only announcement so AT users hear it
+    setSrStatus(`Status changed from ${from} to ${to}`);
+    if (wasUser) return; // user-initiated → run() already toasted
     const msgs: Record<string, string> = {
       'idea>generating': 'Generation fired — agents drafting now',
       'generating>review': '✓ Generation complete — ready for review',
@@ -76,8 +91,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       'scheduled>published': '🚀 Published live on LinkedIn',
       'approved>scheduled': '📅 Scheduled',
     };
-    const key = `${from}>${to}`;
-    const message = msgs[key] || `Status: ${from} → ${to}`;
+    const message = msgs[`${from}>${to}`] || `Status: ${from} → ${to}`;
     toast.success(message, { duration: 5000 });
   }, [draft.status]);
 
@@ -152,14 +166,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-200" title="Back">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h2 className="text-lg font-semibold text-zinc-100 truncate flex-1">{draft.title}</h2>
-        <span className="text-xs text-zinc-500">{draft.status}</span>
-      </div>
+      {/* sr-only live region — announces status changes to AT without visual dup.
+          Sheet already shows title + close button in its header. */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">{srStatus}</div>
 
       {/* Taxonomy chips — full width */}
       {(pillar || hookType || valueTier || source || draft.topicStrength || draft.renderEngine || draft.sourcePostId) && (
@@ -341,10 +350,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={draft.status}
-            initial={{ opacity: 0, y: 8, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 8, scale: 0.97 }}
+            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: 'easeOut' }}
           >
           {(() => {
             const s = draft.status;

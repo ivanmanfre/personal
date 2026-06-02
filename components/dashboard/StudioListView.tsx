@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown } from 'lucide-react';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
 import { statusLabel } from '../../lib/statusLabels';
 
@@ -141,6 +141,8 @@ export function StudioListView({
    *  columns visible regardless of viewport (horizontal scroll if needed). */
   dense?: boolean;
 }) {
+  const shouldReduceMotion = useReducedMotion();
+
   // Per-status collapse state (only used when groupByStatus is on).
   // Default: ALL groups collapsed — gives the pipeline-overview-at-a-glance
   // ClickUp-style scan. User clicks the group they want to drill into.
@@ -547,22 +549,23 @@ export function StudioListView({
                 onClick={canEdit ? (e) => { e.stopPropagation(); setEditingStatusId(r.id); } : undefined}
                 title={canEdit ? 'Click to change status' : undefined}
               >
-                {/* Status pill morphs when status changes — AnimatePresence keyed by status
-                    + a 600ms emerald flash via a separate motion.div overlay */}
+                {/* Status pill morphs when status changes — AnimatePresence keyed by status.
+                    Dropped the redundant inner dot-scale (parent pill scale conveys it).
+                    role='status' + aria-live='polite' announces flips to AT.
+                    Motion gates on prefers-reduced-motion (no scale/opacity for that user). */}
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={r.status}
-                    initial={{ opacity: 0, scale: 0.85, y: -3 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.85, y: 3 }}
-                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.85, y: -3 }}
+                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                    exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 3 }}
+                    transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: 'easeOut' }}
                     className="flex items-center gap-1.5"
+                    role="status"
+                    aria-live="polite"
+                    aria-label={`Status: ${statusLabel(r.status)}`}
                   >
-                    <motion.span
-                      className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`}
-                      animate={{ scale: [1, 1.6, 1], opacity: [1, 0.85, 1] }}
-                      transition={{ duration: 0.7, times: [0, 0.4, 1] }}
-                    />
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
                     <span className={`text-[11px] ${meta.label} truncate font-medium`}>{statusLabel(r.status)}</span>
                   </motion.div>
                 </AnimatePresence>

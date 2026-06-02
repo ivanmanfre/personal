@@ -296,7 +296,12 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           scheduled posts WITHOUT a LinkedIn URN. These are publisher misfires
           and need manual action (re-publish or disqualify). */}
       {stuckScheduled.length > 0 && (
-        <div className="rounded-xl ring-1 ring-amber-500/30 bg-gradient-to-r from-amber-950/40 to-amber-950/20 px-4 py-2.5 shadow-lg shadow-amber-950/10">
+        <div
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+          className="rounded-xl ring-1 ring-amber-500/30 bg-gradient-to-r from-amber-950/40 to-amber-950/20 px-4 py-2.5 shadow-lg shadow-amber-950/10"
+        >
           <button
             onClick={() => setShowStuckList((v) => !v)}
             className="w-full flex items-center gap-2 text-left text-[12.5px] text-amber-200"
