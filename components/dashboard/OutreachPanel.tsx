@@ -154,7 +154,7 @@ const OutreachPanel: React.FC = () => {
       return 0;
     });
     return list;
-  }, [prospects, stageFilter, campaignFilter, search, sortKey, sortAsc]);
+  }, [prospects, stageFilter, campaignFilter, channelFilter, search, sortKey, sortAsc]);
 
   // Reset to page 1 when filters or sort change
   useEffect(() => { setPage(1); }, [stageFilter, campaignFilter, channelFilter, search, sortKey, sortAsc]);

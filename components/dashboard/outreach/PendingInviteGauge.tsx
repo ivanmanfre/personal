@@ -1,7 +1,7 @@
 import React from 'react';
 
 export function PendingInviteGauge({ pending, ceiling, oldestPendingDays }: { pending: number; ceiling: number; oldestPendingDays?: number | null }) {
-  const pct = Math.min((pending / ceiling) * 100, 100);
+  const pct = ceiling > 0 ? Math.min((pending / ceiling) * 100, 100) : 0;
   const danger = pct >= 90, warn = pct >= 70;
   const bar = danger ? 'bg-red-500' : warn ? 'bg-amber-500' : 'bg-emerald-500';
   const txt = danger ? 'text-red-400' : warn ? 'text-amber-400' : 'text-zinc-300';
