@@ -469,7 +469,7 @@ export function StudioListView({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer ${selected.has(r.id) ? 'bg-emerald-950/20 ring-1 ring-inset ring-emerald-500/20' : ''} ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer has-[:checked]:bg-emerald-950/20 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-emerald-500/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
