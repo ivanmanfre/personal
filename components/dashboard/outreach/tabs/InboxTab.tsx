@@ -62,13 +62,14 @@ export const InboxTab: React.FC<InboxTabProps> = ({ prospects, messages, fetchMe
     setSelectedId(p.id);
     setReply('');
     setSendError(null);
-    onSelectProspect(p);
+    // Render the thread inline in the right pane — do NOT open the full
+    // ProspectDetailModal here (it would cover the inbox). Full details stay
+    // reachable via the "Details" affordance in the thread header.
     void fetchMessages(p.id);
   };
 
   const backToList = () => {
     setSelectedId(null);
-    onSelectProspect(null);
   };
 
   const needsReply = (p: OutreachProspect) => p.needsManualReply && !clearedReply.has(p.id);
@@ -212,6 +213,12 @@ export const InboxTab: React.FC<InboxTabProps> = ({ prospects, messages, fetchMe
             {[selected.title || selected.headline, selected.company].filter(Boolean).join(' @ ')}
           </p>
         </div>
+        <button
+          onClick={() => onSelectProspect(selected)}
+          className="ml-auto shrink-0 text-[10px] uppercase tracking-wider text-zinc-500 hover:text-zinc-300 border border-zinc-700/50 rounded px-2 py-1 transition-colors"
+        >
+          Details
+        </button>
       </div>
 
       {/* Messages */}
