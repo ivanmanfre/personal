@@ -23,6 +23,7 @@ import { ActivityFeed } from './outreach/ActivityFeed';
 import { PendingInviteGauge } from './outreach/PendingInviteGauge';
 import { CampaignPerformance } from './outreach/CampaignPerformance';
 import { AuditClicks } from './outreach/AuditClicks';
+import { InboxTab } from './outreach/tabs/InboxTab';
 import type { OutreachProspect } from '../../types/dashboard';
 
 // Phase 1 constant; Phase 2 makes this integration_config-driven.
@@ -970,36 +971,12 @@ const OutreachPanel: React.FC = () => {
   );
 
   const inboxTab = (
-    <div className="space-y-4">
-      <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl px-4 py-2.5 text-xs text-blue-300/80">
-        Full threaded inbox with in-dashboard reply lands in Phase 3. For now, this is your reply-needed queue.
-      </div>
-      {actionNeeded.length === 0 ? (
-        <EmptyState
-          title="Inbox clear"
-          description="No prospects are waiting on a reply right now."
-          icon={<MessageSquare className="w-10 h-10" />}
-        />
-      ) : (
-        <div className="space-y-2">
-          {actionNeeded.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setSelectedProspect(p)}
-              className="w-full text-left bg-zinc-900/90 border border-emerald-500/20 rounded-xl p-3 hover:border-emerald-500/40 transition-colors flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0">
-                <p className="font-medium text-zinc-200 text-sm truncate">{p.name}</p>
-                <p className="text-[11px] text-zinc-500 truncate">{[p.title || p.headline, p.company].filter(Boolean).join(' @ ') || ''}</p>
-              </div>
-              <span className="text-[10px] text-emerald-400 shrink-0">
-                {p.lastReplyAt ? `replied ${timeAgo(p.lastReplyAt)}` : 'needs reply'}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <InboxTab
+      prospects={prospects}
+      messages={messages}
+      fetchMessages={fetchMessages}
+      onSelectProspect={setSelectedProspect}
+    />
   );
 
   const healthTab = (
