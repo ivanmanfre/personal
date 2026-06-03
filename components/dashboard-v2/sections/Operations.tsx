@@ -13,8 +13,9 @@ const UsagePanel = lazy(() => import('../../dashboard/UsagePanel'));
 const AutoResearchPanel = lazy(() => import('../../dashboard/AutoResearchPanel'));
 const TasksPanel = lazy(() => import('../../dashboard/TasksPanel'));
 const EditTokenPanel = lazy(() => import('../../dashboard/EditTokenPanel'));
+const SkillDraftsPanel = lazy(() => import('../../dashboard/SkillDraftsPanel'));
 
-type SubKey = 'workflows' | 'logs' | 'usage' | 'research' | 'tasks' | 'tools';
+type SubKey = 'workflows' | 'logs' | 'usage' | 'research' | 'tasks' | 'skills' | 'tools';
 
 const SUB_LABELS: Record<SubKey, string> = {
   workflows: 'Workflows',
@@ -22,10 +23,11 @@ const SUB_LABELS: Record<SubKey, string> = {
   usage: 'Usage',
   research: 'Auto Research',
   tasks: 'Tasks',
+  skills: 'Skill Drafts',
   tools: 'Tools',
 };
 
-const SUB_ORDER: SubKey[] = ['workflows', 'logs', 'usage', 'research', 'tasks', 'tools'];
+const SUB_ORDER: SubKey[] = ['workflows', 'logs', 'usage', 'research', 'tasks', 'skills', 'tools'];
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'workflows';
@@ -67,6 +69,7 @@ export function Operations() {
       case 'usage':     return <UsagePanel />;
       case 'research':  return <AutoResearchPanel />;
       case 'tasks':     return <TasksPanel />;
+      case 'skills':    return <SkillDraftsPanel />;
       case 'tools':     return <ToolsSub />;
     }
   };
