@@ -13,10 +13,12 @@ const CompetitorIntelPanel = lazy(() => import('../../dashboard/CompetitorIntelP
 const UpworkPanel = lazy(() => import('../../dashboard/UpworkPanel'));
 const MeetingsPanel = lazy(() => import('../../dashboard/MeetingsPanel'));
 const AgentReadyPanel = lazy(() => import('../../dashboard/AgentReadyPanel'));
+const CrmPanel = lazy(() => import('../../dashboard/crm/CrmPanel'));
 
-type SubKey = 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready';
+type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready';
 
 const SUB_LABELS: Record<SubKey, string> = {
+  crm: 'CRM',
   outreach: 'Outreach',
   leads: 'Leads',
   competitors: 'Competitors',
@@ -25,15 +27,15 @@ const SUB_LABELS: Record<SubKey, string> = {
   agentready: 'Agent-Ready',
 };
 
-const SUB_ORDER: SubKey[] = ['outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready'];
+const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready'];
 
 export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolean } {
   if (raw && (SUB_ORDER as string[]).includes(raw)) return { sub: raw as SubKey, corrected: false };
-  return { sub: 'outreach', corrected: raw != null }; // corrected=true means URL had a bad value
+  return { sub: 'crm', corrected: raw != null }; // corrected=true means URL had a bad value
 }
 
 function getInitialSub(): SubKey {
-  if (typeof window === 'undefined') return 'outreach';
+  if (typeof window === 'undefined') return 'crm';
   const { sub, corrected } = resolveSub(new URLSearchParams(window.location.search).get('sub'));
   if (corrected) syncSubToUrl(sub); // rewrite stale ?sub=posts to ?sub=outreach
   return sub;
@@ -58,6 +60,7 @@ export function ReachPipeline() {
 
   const renderSub = () => {
     switch (sub) {
+      case 'crm':         return <CrmPanel />;
       case 'outreach':    return <OutreachPanel />;
       case 'leads':       return <LeadsPanel />;
       case 'competitors': return <CompetitorIntelPanel />;
