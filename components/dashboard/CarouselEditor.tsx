@@ -19,6 +19,7 @@ import PostPreview from '../ui/PostPreview';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
 import ImageLibraryPicker from './ImageLibraryPicker';
+import SwipeableCarousel from './SwipeableCarousel';
 import { Library } from 'lucide-react';
 
 interface Props {
@@ -179,6 +180,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : u;
       };
       const isVideo = (u: string) => /\.(mp4|mov|webm|m4v)($|\?)/i.test(u);
+      // Multi-image carousel → swipeable single-slide-at-a-time preview matching
+      // LinkedIn's 4:5 ratio. Replaces the 2-col thumbnail grid which compressed
+      // every slide to a square and made review impossible. Single image / video
+      // keeps the existing inline render.
+      if (urls.length > 1 && draft.type === 'carousel' && !urls.some(isVideo)) {
+        return <SwipeableCarousel urls={urls} toImgSrc={toImgSrc} />;
+      }
       return (
         <div className={urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}>
           {urls.map((url, i) => (
