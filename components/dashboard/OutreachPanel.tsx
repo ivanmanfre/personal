@@ -33,7 +33,10 @@ const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox', 'health'];
 const TAB_LABELS: Record<OutreachTab, string> = { pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', health: 'Health' };
 function readTab(): OutreachTab {
   if (typeof window === 'undefined') return 'pipeline';
-  const t = new URLSearchParams(window.location.search).get('tab') as OutreachTab | null;
+  // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
+  // contract where values like `health`/`settings` redirect to the Personal section.
+  // Reusing `tab` here made `?tab=health` jump to Personal. `otab` avoids the collision.
+  const t = new URLSearchParams(window.location.search).get('otab') as OutreachTab | null;
   return t && TAB_ORDER.includes(t) ? t : 'pipeline';
 }
 
@@ -91,7 +94,7 @@ const OutreachPanel: React.FC = () => {
     setTab(t);
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
-    url.searchParams.set('tab', t);
+    url.searchParams.set('otab', t);
     window.history.replaceState(null, '', url.toString());
   };
 
