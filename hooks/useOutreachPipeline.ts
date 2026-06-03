@@ -190,6 +190,7 @@ export function useOutreachPipeline(timezone?: string) {
   const [rateLimits, setRateLimits] = useState<Record<string, { count: number; daily_limit: number }>>({});
   const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
+  const [pendingCeiling, setPendingCeiling] = useState<number>(200);
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
   const [workflowHealth, setWorkflowHealth] = useState<Record<string, { lastExecutionAt: string | null; lastStatus: string | null; lastError: string | null; errorCount24h: number; totalExecutions24h: number; errorAcknowledged: boolean; statsRowId: string | null }>>({});
 
@@ -309,6 +310,10 @@ export function useOutreachPipeline(timezone?: string) {
         ff[r.key] = r.value === 'true';
       });
       setFeatureFlags(ff);
+      // Numeric config: pending-invite ceiling for the Health-tab gauge
+      const ceilingRow = (flagsRes.data || []).find((r: any) => r.key === 'outreach_pending_invite_ceiling');
+      const parsedCeiling = ceilingRow ? parseInt(ceilingRow.value, 10) : NaN;
+      if (Number.isFinite(parsedCeiling) && parsedCeiling > 0) setPendingCeiling(parsedCeiling);
 
       // Workflow statuses + health
       const ws: Record<string, boolean> = {};
@@ -883,6 +888,7 @@ export function useOutreachPipeline(timezone?: string) {
     rateLimits,
     cappedQueue,
     featureFlags,
+    pendingCeiling,
     stageCounts,
     actionNeeded,
     refresh: fetch,

@@ -27,7 +27,6 @@ import { InboxTab } from './outreach/tabs/InboxTab';
 import type { OutreachProspect } from '../../types/dashboard';
 
 // Phase 1 constant; Phase 2 makes this integration_config-driven.
-const PENDING_CEILING = 200;
 
 type OutreachTab = 'pipeline' | 'review' | 'inbox' | 'health';
 const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox', 'health'];
@@ -77,7 +76,7 @@ const OutreachPanel: React.FC = () => {
   const pipeline = useOutreachPipeline(userTimezone);
   const {
     prospects, campaigns, stats, loading, messages, engagementLog,
-    recentActivity, rateLimits, cappedQueue, featureFlags, stageCounts, actionNeeded,
+    recentActivity, rateLimits, cappedQueue, featureFlags, pendingCeiling, stageCounts, actionNeeded,
     refresh, fetchMessages, fetchEngagementLog,
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
@@ -1092,7 +1091,7 @@ const OutreachPanel: React.FC = () => {
       </div>
 
       {/* Pending-invite ceiling gauge */}
-      <PendingInviteGauge pending={stats.connectionSent} ceiling={PENDING_CEILING} />
+      <PendingInviteGauge pending={stats.connectionSent} ceiling={pendingCeiling} />
 
       {/* Section 2b: Daily Activity Limits */}
       <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4">
