@@ -28,9 +28,10 @@ import type { OutreachProspect } from '../../types/dashboard';
 
 // Phase 1 constant; Phase 2 makes this integration_config-driven.
 
-type OutreachTab = 'pipeline' | 'review' | 'inbox' | 'health';
-const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox', 'health'];
-const TAB_LABELS: Record<OutreachTab, string> = { pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', health: 'Health' };
+// Health folded into Pipeline (Ivan: the extra tab didn't earn its place) — 3 tabs.
+type OutreachTab = 'pipeline' | 'review' | 'inbox';
+const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox'];
+const TAB_LABELS: Record<OutreachTab, string> = { pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox' };
 function readTab(): OutreachTab {
   if (typeof window === 'undefined') return 'pipeline';
   // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
@@ -1339,10 +1340,17 @@ const OutreachPanel: React.FC = () => {
     </div>
   );
 
-  const activeTab = tab === 'pipeline' ? pipelineTab
-    : tab === 'review' ? reviewTab
+  const activeTab = tab === 'review' ? reviewTab
     : tab === 'inbox' ? inboxTab
-    : healthTab;
+    : (
+      <>
+        {pipelineTab}
+        <div className="pt-3 mt-3 border-t border-zinc-800/60">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-500 font-semibold mb-3">System Health</p>
+          {healthTab}
+        </div>
+      </>
+    );
 
   return (
     <div className="space-y-4">

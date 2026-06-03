@@ -41,13 +41,13 @@ export const InboxTab: React.FC<InboxTabProps> = ({ prospects, messages, fetchMe
 
   // ─── Conversation list: active conversations only ───
   const conversations = useMemo(() => {
-    const list = prospects.filter(
-      (p) => p.needsManualReply || ACTIVE_STAGES.includes(p.stage),
-    );
+    const list = prospects.filter((p) => ACTIVE_STAGES.includes(p.stage));
     const replyTs = (p: OutreachProspect) => p.lastReplyAt || p.updatedAt || '';
     return list.sort((a, b) => {
-      const aNeeds = a.needsManualReply && !clearedReply.has(a.id);
-      const bNeeds = b.needsManualReply && !clearedReply.has(b.id);
+      // Genuine inbound replies (reply_count > 0) sort first — NOT needs_manual_reply,
+      // which the pipeline sets when WE send a DM (so it's true for silent prospects too).
+      const aNeeds = a.replyCount > 0 && !clearedReply.has(a.id);
+      const bNeeds = b.replyCount > 0 && !clearedReply.has(b.id);
       if (aNeeds !== bNeeds) return aNeeds ? -1 : 1;
       return replyTs(b).localeCompare(replyTs(a));
     });
@@ -72,7 +72,9 @@ export const InboxTab: React.FC<InboxTabProps> = ({ prospects, messages, fetchMe
     setSelectedId(null);
   };
 
-  const needsReply = (p: OutreachProspect) => p.needsManualReply && !clearedReply.has(p.id);
+  // "Needs reply" = THEY actually replied (reply_count > 0) and we haven't answered.
+  // needs_manual_reply is unreliable (pipeline sets it on DM-send, not on inbound).
+  const needsReply = (p: OutreachProspect) => p.replyCount > 0 && !clearedReply.has(p.id);
 
   // Thread = fetched messages + any optimistic bubbles not yet reflected by a re-fetch.
   const thread: ChatBubble[] | undefined = useMemo(() => {
@@ -172,9 +174,13 @@ export const InboxTab: React.FC<InboxTabProps> = ({ prospects, messages, fetchMe
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <p className="font-medium text-zinc-200 text-sm truncate">{p.name}</p>
-                  {needsReply(p) && (
+                  {needsReply(p) ? (
                     <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                       needs reply
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/30 text-zinc-500 border border-zinc-700/40">
+                      awaiting
                     </span>
                   )}
                 </div>
