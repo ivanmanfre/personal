@@ -280,15 +280,20 @@ export function StudioListView({
   }
 
   const colClass = (visible?: string) => {
-    // In dense (Table) mode, force all columns visible regardless of viewport —
+    // In dense (Table) mode, force all columns visible regardless of width —
     // intent is a spreadsheet, even if it horizontally scrolls.
     if (dense) return 'flex';
-    return visible === 'gte-md' ? 'hidden md:flex' :
-      visible === 'gte-lg' ? 'hidden lg:flex' : 'flex';
+    // Container queries (Tailwind v4 native) — column visibility tracks the
+    // LIST's own width, not the viewport. Matters when the list is rendered
+    // inside a narrower parent (mobile drawer, side panel, future split-pane)
+    // where the previous md:/lg: viewport breakpoints overcrowded the row.
+    // @3xl = 768px container width; @5xl = 1024px.
+    return visible === 'gte-md' ? 'hidden @3xl:flex' :
+      visible === 'gte-lg' ? 'hidden @5xl:flex' : 'flex';
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800/60 overflow-hidden bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 shadow-2xl shadow-black/20">
+    <div className="@container rounded-xl border border-zinc-800/60 overflow-hidden bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 shadow-2xl shadow-black/20">
       {/* Bulk action bar — shown when any rows are selected */}
       {onBulkAction && selected.size > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/40 text-[12px] text-emerald-200">
