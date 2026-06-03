@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage } from '../../lib/studioActions';
@@ -17,6 +17,7 @@ import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
+import { InternalTabs } from './InternalTabs';
 
 interface Props {
   draft: CarouselDraft;
@@ -76,7 +77,6 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       'Image uploaded',
     );
   };
-  const [imageryOpen, setImageryOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
   // tax always tracks the LOCAL edited taxonomy so chips + editor stay in sync.
@@ -229,38 +229,25 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           Sheet already shows title + close button in its header. */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">{srStatus}</div>
 
-      {/* Taxonomy chips — full width */}
+      {/* Taxonomy line — single muted row. Was 4 jewel-tone chips that
+          out-glowed the caption (audit rank 12, "taxonomy bar steals the
+          F-pattern entry point"). Now reads as editorial annotation, not
+          primary signal. Editable values live in the "Edit fields" Card. */}
       {(pillar || hookType || valueTier || source || draft.topicStrength || draft.renderEngine || draft.sourcePostId) && (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {pillar && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/40 border border-emerald-900/40 px-2.5 py-0.5 text-emerald-300">
-              <span className="text-emerald-500/60 text-[10px] uppercase">Pillar</span> {pillar}
-            </span>
-          )}
-          {hookType && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-sky-950/40 border border-sky-900/40 px-2.5 py-0.5 text-sky-300">
-              <span className="text-sky-500/60 text-[10px] uppercase">Hook</span> {hookType}
-            </span>
-          )}
-          {valueTier && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/40 border border-amber-900/40 px-2.5 py-0.5 text-amber-300">
-              <span className="text-amber-500/60 text-[10px] uppercase">Tier</span> {valueTier}
-            </span>
-          )}
-          {draft.topicStrength && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
-              <span className="text-zinc-500 text-[10px] uppercase">Strength</span> {draft.topicStrength}
-            </span>
-          )}
-          {source && <span className="text-[11px] text-zinc-500">via {source}</span>}
-          {draft.renderEngine && <span className="text-[11px] text-zinc-500">render: {draft.renderEngine}</span>}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[length:var(--t-sm)] text-[color:var(--d-paper-dimmer)]">
+          {pillar      && <span><span className="opacity-60 mr-1">Pillar</span>{pillar}</span>}
+          {hookType    && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Hook</span>{hookType}</span>}
+          {valueTier   && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Tier</span>{valueTier}</span>}
+          {draft.topicStrength && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Strength</span>{draft.topicStrength}</span>}
+          {source      && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">via</span>{source}</span>}
+          {draft.renderEngine && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">render</span>{draft.renderEngine}</span>}
           {draft.sourcePostId && (
             <a
               href={draft.sourcePostId.startsWith('urn:li:activity:')
                 ? `https://www.linkedin.com/feed/update/${draft.sourcePostId}/`
                 : `https://www.linkedin.com/in/ivanmanfredi/`}
               target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-mono"
+              className="ml-auto inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-mono"
               title={draft.sourcePostId}
             >
               <ExternalLink className="w-3 h-3" /> on LinkedIn
@@ -294,27 +281,35 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             </div>
           )}
 
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <FieldLabel className="!mb-0">LinkedIn caption</FieldLabel>
-              <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
-                <button
-                  onClick={() => setPostMode('edit')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >Edit</button>
-                <button
-                  onClick={() => setPostMode('preview')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >Preview</button>
+          {/* Caption Card — primary edit surface, anchored with a sage left
+              rule + editorial section header. Was a small 10.5px uppercase
+              FieldLabel that read as secondary; the audit's F-pattern fix
+              promotes it visually so the eye lands here first. */}
+          <Card className="border-l-[3px] border-l-[var(--d-good)]">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="dv-section-h">LinkedIn caption</h3>
+              <div className="inline-flex items-center gap-2">
+                <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                  <button
+                    onClick={() => setPostMode('edit')}
+                    className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >Edit</button>
+                  <button
+                    onClick={() => setPostMode('preview')}
+                    className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >Preview</button>
+                </div>
+                <span className="text-[10.5px] text-[color:var(--d-paper-dimmer)] tabular-nums">
+                  {postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}
+                </span>
               </div>
-              <span className="text-[10.5px] text-zinc-600 tabular-nums">{postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}</span>
             </div>
             {postMode === 'edit' ? (
               <Textarea
                 value={postBody}
                 onChange={(e) => setPostBody(e.target.value)}
-                rows={6}
-                className="text-[13.5px] leading-relaxed"
+                rows={8}
+                className="text-[length:var(--t-base)] leading-relaxed"
               />
             ) : (
               <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
@@ -323,14 +318,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   mediaUrl={(() => {
                     const u = (draft.imageUrls && draft.imageUrls[0]) || null;
                     if (!u) return null;
-                    // Drive URLs → thumbnail render
                     const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
                     return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
                   })()}
                 />
               </div>
             )}
-          </div>
+          </Card>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -414,66 +408,71 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <FieldGrid draft={draft} />
         </div>
 
-        {/* RIGHT COLUMN — visual preview + scheduling + actions */}
+        {/* RIGHT COLUMN — reference material (Preview / Metrics / Imagery brief).
+            Audit rank 12: collapsed three stacked cards into one InternalTabs
+            "Reference" surface so the eye doesn't have to traverse Preview +
+            Metrics + Imagery before reaching the action card. Imagery tab
+            only renders when there's something to show. */}
         <div className="space-y-3 min-w-0">
-          <Card>
-            <div className="flex items-center justify-between mb-2">
-              <CardLabel className="!mb-0">Preview</CardLabel>
-              {/* Image upload — only for non-carousel posts. Text posts get
-                  "Add image" (and are auto-promoted to single_image on success);
-                  single_image posts get "Replace image". Carousels are PDFs and
-                  go through the Re-author pipeline instead. */}
-              {draft.type !== 'carousel' && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    className="hidden"
-                    onChange={onFilePicked}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={!!busy}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-                    title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
-                  >
-                    {busy === 'upload image'
-                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                      : <ImagePlus className="w-3 h-3" />}
-                    {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload image'}
-                  </button>
-                </>
-              )}
-            </div>
-            {renderMedia()}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={onFilePicked}
+          />
+          <Card padded={false} className="px-3 pt-2 pb-3">
+            <InternalTabs
+              storageKey="carousel-editor-reference"
+              tabs={[
+                {
+                  key: 'preview',
+                  label: 'Preview',
+                  render: () => (
+                    <div className="space-y-2">
+                      {draft.type !== 'carousel' && (
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={!!busy}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
+                          >
+                            {busy === 'upload image'
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <ImagePlus className="w-3 h-3" />}
+                            {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload image'}
+                          </button>
+                        </div>
+                      )}
+                      {renderMedia()}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'metrics',
+                  label: 'Metrics',
+                  render: () => <PostMetricsPanel draft={draft} />,
+                },
+                ...(hasImagery ? [{
+                  key: 'imagery',
+                  label: 'Imagery',
+                  render: () => (
+                    <div className="space-y-2 text-xs">
+                      {imageStyle && <div><span className="text-zinc-500 mr-2">Style</span><span className="text-zinc-200">{imageStyle}</span></div>}
+                      {imageDesc && <div><span className="text-zinc-500 block mb-1">Description</span><div className="text-zinc-200 whitespace-pre-wrap">{imageDesc}</div></div>}
+                      {visualLink && (
+                        <a href={visualLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300">
+                          <ExternalLink className="w-3.5 h-3.5" /> Visual reference
+                        </a>
+                      )}
+                    </div>
+                  ),
+                }] : []),
+              ]}
+            />
           </Card>
-
-          <PostMetricsPanel draft={draft} />
-
-          {hasImagery && (
-            <Card padded={false}>
-              <button
-                onClick={() => setImageryOpen((v) => !v)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-[10px] uppercase tracking-[0.08em] text-zinc-500 font-semibold hover:bg-zinc-800/40 transition-colors"
-              >
-                Imagery brief
-                <span className="ml-auto text-zinc-500">{imageryOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
-              </button>
-              {imageryOpen && (
-                <div className="border-t border-zinc-800/60 px-3 py-2.5 space-y-1.5 text-xs">
-                  {imageStyle && <div><span className="text-zinc-500 mr-2">Style</span><span className="text-zinc-200">{imageStyle}</span></div>}
-                  {imageDesc && <div><span className="text-zinc-500 block mb-1">Description</span><div className="text-zinc-200 whitespace-pre-wrap">{imageDesc}</div></div>}
-                  {visualLink && (
-                    <a href={visualLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300">
-                      <ExternalLink className="w-3.5 h-3.5" /> Visual reference
-                    </a>
-                  )}
-                </div>
-              )}
-            </Card>
-          )}
 
           {/* Right-column primary action card — driven by draft.status.
               State machine (matches the pipeline):
@@ -505,8 +504,6 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             const fireGenerate = async () => {
               const startedAt = new Date().toISOString();
               const nextTax = { ...(draft.taxonomy as any || {}), generating_started_at: startedAt };
-              // Update first — and check the response. supabase queries return
-              // { error } instead of throwing, so awaiting blindly was silent on failure.
               const { error: upErr } = await supabase.from('carousel_drafts').update({
                 status: 'generating',
                 taxonomy: nextTax,
