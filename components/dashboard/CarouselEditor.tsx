@@ -172,17 +172,22 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       );
     }
     if (urls.length > 0) {
-      // Single-image (or generic): render images. Convert Drive /file/d/X/view URLs
-      // to the /thumbnail?id= form which IS img-renderable.
+      // Single-image (or generic): render images or video. Convert Drive
+      // /file/d/X/view URLs to the /thumbnail?id= form which IS img-renderable.
       const toImgSrc = (u: string) => {
         const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
         return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200` : u;
       };
+      const isVideo = (u: string) => /\.(mp4|mov|webm|m4v)($|\?)/i.test(u);
       return (
         <div className={urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}>
           {urls.map((url, i) => (
             <div key={i} className="rounded-md border border-zinc-800 bg-zinc-950 overflow-hidden">
-              <img src={toImgSrc(url)} alt={urls.length === 1 ? 'Post image' : `Slide ${i + 1}`} className="w-full h-auto" loading="lazy" />
+              {isVideo(url) ? (
+                <video src={url} className="w-full h-auto" controls preload="metadata" />
+              ) : (
+                <img src={toImgSrc(url)} alt={urls.length === 1 ? 'Post image' : `Slide ${i + 1}`} className="w-full h-auto" loading="lazy" />
+              )}
               {urls.length > 1 && <div className="px-1 py-0.5 text-center text-[10px] text-zinc-500">{i + 1}</div>}
             </div>
           ))}
@@ -427,7 +432,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/quicktime,video/webm"
             className="hidden"
             onChange={onFilePicked}
           />

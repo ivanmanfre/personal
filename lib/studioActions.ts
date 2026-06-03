@@ -135,6 +135,12 @@ export interface PostStill {
   createdAt: string;
   sizeBytes: number;
   fromDraftId: string;
+  // 'video' for .mp4/.mov/.webm; 'image' for everything else.
+  kind: 'image' | 'video';
+}
+
+export function isVideoExt(name: string): boolean {
+  return /\.(mp4|mov|webm|m4v)$/i.test(name);
 }
 
 export async function listPostStills(limit = 200): Promise<PostStill[]> {
@@ -155,6 +161,7 @@ export async function listPostStills(limit = 200): Promise<PostStill[]> {
       createdAt: f.created_at || f.updated_at || '',
       sizeBytes: (f.metadata as any)?.size || 0,
       fromDraftId: folder,
+      kind: isVideoExt(f.name) ? 'video' as const : 'image' as const,
     }));
   }));
   const flat = fileLists.flat();
@@ -189,11 +196,12 @@ export async function applyImageToDraft(input: { draft_id: string; url: string; 
 export async function uploadPostImage(input: { draft_id: string; file: File; current_type?: string | null }) {
   const { supabase } = await import('./supabase');
   const file = input.file;
-  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
-    throw new Error(`Unsupported file type: ${file.type || 'unknown'} (use PNG / JPG / WebP / GIF)`);
+  const SUPPORTED = /^(image\/(png|jpe?g|webp|gif)|video\/(mp4|quicktime|webm))$/i;
+  if (!SUPPORTED.test(file.type)) {
+    throw new Error(`Unsupported file type: ${file.type || 'unknown'} (use PNG / JPG / WebP / GIF / MP4 / MOV / WebM)`);
   }
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB (max 10 MB)`);
+  if (file.size > 100 * 1024 * 1024) {
+    throw new Error(`File too large: ${(file.size / 1024 / 1024).toFixed(1)} MB (max 100 MB)`);
   }
   const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
   // Path is draft-scoped so re-uploads naturally overwrite via upsert; cache-busting

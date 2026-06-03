@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, ImagePlus, Loader2, Search, Calendar } from 'lucide-react';
+import { X, ImagePlus, Loader2, Search, Calendar, Play } from 'lucide-react';
 import { listPostStills, type PostStill } from '../../lib/studioActions';
 
 /**
@@ -116,7 +116,21 @@ export default function ImageLibraryPicker({ open, onClose, onPick, currentUrl }
                     }`}
                     title={`${it.name} · from draft ${it.fromDraftId.slice(0, 8)}…`}
                   >
-                    <img src={it.url} alt={it.name} className="w-full h-full object-cover bg-zinc-950" loading="lazy" />
+                    {it.kind === 'video' ? (
+                      <>
+                        <video src={it.url} className="w-full h-full object-cover bg-zinc-950" preload="metadata" muted playsInline />
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="w-9 h-9 rounded-full bg-black/60 ring-1 ring-white/40 flex items-center justify-center">
+                            <Play className="w-4 h-4 text-white" fill="currentColor" />
+                          </span>
+                        </span>
+                        <span className="absolute top-1.5 right-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-900/80 text-zinc-300 font-semibold">
+                          Video
+                        </span>
+                      </>
+                    ) : (
+                      <img src={it.url} alt={it.name} className="w-full h-full object-cover bg-zinc-950" loading="lazy" />
+                    )}
                     {isCurrent && (
                       <span className="absolute top-1.5 left-1.5 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500 text-zinc-900 font-semibold">
                         Current
