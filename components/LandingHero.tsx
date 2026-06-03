@@ -74,7 +74,7 @@ const LandingHero: React.FC = () => {
           >
             ●
           </motion.span>
-          <span style={{ color: '#2A8F65' }}>Booking {getBookingQuarter()} · {OPEN_SLOTS} slots open</span>
+          <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()} · {OPEN_SLOTS} slots open</span>
         </div>
         <div className="hidden md:block">90-day payback or no-build</div>
       </motion.div>
@@ -152,7 +152,7 @@ const LandingHero: React.FC = () => {
                 fontSize: '11px',
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
-                color: 'rgba(26,26,26,0.62)',
+                color: '#5A5752',
               }}
             >
               <motion.span
@@ -238,10 +238,11 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              AI systems for growing service businesses. So you{' '}
+              AI systems for growing service businesses, so you{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A', fontWeight: 500 }}>
                 scale without scaling payroll.
-              </span>
+              </span>{' '}
+              Hiring another person just buys a bigger team and the same bottleneck: you.
             </motion.p>
 
             {/* CTAs */}
@@ -252,7 +253,7 @@ const LandingHero: React.FC = () => {
               className="flex flex-col sm:flex-row items-start gap-3"
             >
               <a
-                href="/assessment"
+                href="/start"
                 className="btn-magnetic inline-flex items-center gap-3 px-9 py-4 bg-accent text-white"
                 style={{
                   fontFamily: '"Source Serif 4", serif',
@@ -261,7 +262,7 @@ const LandingHero: React.FC = () => {
                   letterSpacing: '0.005em',
                 }}
               >
-                Build your Blueprint <ArrowRight size={19} />
+                Book your fit call <ArrowRight size={19} />
               </a>
               <a
                 href="/scorecard"
@@ -271,12 +272,12 @@ const LandingHero: React.FC = () => {
                   fontWeight: 600,
                   fontSize: '15px',
                   fontStyle: 'italic',
-                  color: 'rgba(26,26,26,0.55)',
+                  color: '#4A4A48',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
               >
-                Are you Agent-Ready? <ArrowRight size={14} />
+                Take the 2-min Scorecard <ArrowRight size={14} />
               </a>
             </motion.div>
           </div>
