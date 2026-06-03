@@ -121,6 +121,64 @@ export async function saveDraft(input: {
   return { ok: true };
 }
 
+// List every image in the post-stills bucket (the library). Returns newest
+// first. Used by the editor's "From library" picker so a single uploaded
+// image can be reused across many posts without re-uploading from disk.
+//
+// Path convention: `${draft_id}/${cacheBust}.${ext}`. We walk the bucket
+// recursively (one folder per draft) and flatten. Caller can show a grid
+// of thumbnails + apply on click via applyImageToDraft.
+export interface PostStill {
+  name: string;
+  path: string;
+  url: string;
+  createdAt: string;
+  sizeBytes: number;
+  fromDraftId: string;
+}
+
+export async function listPostStills(limit = 200): Promise<PostStill[]> {
+  const { supabase } = await import('./supabase');
+  // 1) List top-level folders (each is a draft_id)
+  const { data: folders, error: foldersErr } = await supabase.storage
+    .from('post-stills').list('', { limit: 1000, sortBy: { column: 'created_at', order: 'desc' } });
+  if (foldersErr) throw new Error(`list bucket failed: ${foldersErr.message}`);
+  // 2) For each folder fetch its files in parallel
+  const folderNames = (folders || []).filter((f) => f.id === null).map((f) => f.name).slice(0, limit);
+  const fileLists = await Promise.all(folderNames.map(async (folder) => {
+    const { data: files } = await supabase.storage
+      .from('post-stills').list(folder, { limit: 20, sortBy: { column: 'created_at', order: 'desc' } });
+    return (files || []).filter((f) => f.id !== null).map((f) => ({
+      name: f.name,
+      path: `${folder}/${f.name}`,
+      url: supabase.storage.from('post-stills').getPublicUrl(`${folder}/${f.name}`).data.publicUrl,
+      createdAt: f.created_at || f.updated_at || '',
+      sizeBytes: (f.metadata as any)?.size || 0,
+      fromDraftId: folder,
+    }));
+  }));
+  const flat = fileLists.flat();
+  flat.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  return flat.slice(0, limit);
+}
+
+// Apply an existing image URL (from the library) to a draft without
+// re-uploading. Mirrors the post-write half of uploadPostImage: writes
+// image_urls + promotes type from text → single_image when relevant.
+export async function applyImageToDraft(input: { draft_id: string; url: string; current_type?: string | null }) {
+  const { supabase } = await import('./supabase');
+  if (!input.url || !/^https?:\/\//.test(input.url)) {
+    throw new Error(`Invalid image URL: ${input.url}`);
+  }
+  const patch: Record<string, unknown> = { image_urls: [input.url] };
+  if (input.current_type === 'text' || input.current_type === null || input.current_type === undefined) {
+    patch.type = 'single_image';
+  }
+  const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', input.draft_id);
+  if (error) throw new Error(`apply image failed: ${error.message}`);
+  return { ok: true, url: input.url };
+}
+
 // Upload a user-picked image for a single_image or text post.
 // Writes to the `post-stills` public bucket; returns the public URL.
 // On success, patches carousel_drafts:
