@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
@@ -18,6 +18,8 @@ import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/prim
 import PostPreview from '../ui/PostPreview';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
+import ImageLibraryPicker from './ImageLibraryPicker';
+import { Library } from 'lucide-react';
 
 interface Props {
   draft: CarouselDraft;
@@ -67,6 +69,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // We accept PNG/JPG/WebP/GIF and cap at 10 MB (bucket-enforced) — the studio
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow picking the same file again later
@@ -75,6 +78,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       'upload image',
       () => uploadPostImage({ draft_id: draft.id, file, current_type: draft.type }),
       'Image uploaded',
+    );
+  };
+  const onPickFromLibrary = async (still: { url: string }) => {
+    await run(
+      'apply library image',
+      () => applyImageToDraft({ draft_id: draft.id, url: still.url, current_type: draft.type }),
+      'Image applied from library',
     );
   };
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
@@ -431,7 +441,19 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   render: () => (
                     <div className="space-y-2">
                       {draft.type !== 'carousel' && (
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setLibraryOpen(true)}
+                            disabled={!!busy}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            title="Pick from previously-uploaded images"
+                          >
+                            {busy === 'apply library image'
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Library className="w-3 h-3" />}
+                            Library
+                          </button>
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
@@ -442,7 +464,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                             {busy === 'upload image'
                               ? <Loader2 className="w-3 h-3 animate-spin" />
                               : <ImagePlus className="w-3 h-3" />}
-                            {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload image'}
+                            {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload'}
                           </button>
                         </div>
                       )}
@@ -705,6 +727,14 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </div>
         </div>
       </div>
+
+      {/* Image library picker — modal opened by the "Library" button. */}
+      <ImageLibraryPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onPick={onPickFromLibrary}
+        currentUrl={(draft.imageUrls && draft.imageUrls[0]) || null}
+      />
     </div>
   );
 };
