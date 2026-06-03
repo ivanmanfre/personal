@@ -41,7 +41,7 @@ DECLARE
   n int;
   unit text;
   parts text[];
-  f_min text; f_hour text; f_dom text; f_dow text;
+  f_min text; f_hour text; f_dom text; f_month text; f_dow text;
 BEGIN
   IF expr IS NULL OR btrim(expr) = '' OR expr ILIKE '%undefined%' THEN
     RETURN NULL;
@@ -69,9 +69,10 @@ BEGIN
     parts := parts[2:6];
   END IF;
   IF array_length(parts, 1) = 5 THEN
-    f_min := parts[1]; f_hour := parts[2]; f_dom := parts[3]; f_dow := parts[5];
+    f_min := parts[1]; f_hour := parts[2]; f_dom := parts[3]; f_month := parts[4]; f_dow := parts[5];
     IF f_dom <> '*' THEN RETURN 43200; END IF;          -- specific day-of-month => ~monthly
     IF f_dow <> '*' THEN RETURN 10080; END IF;          -- specific day-of-week  => ~weekly
+    IF f_month <> '*' THEN RETURN NULL; END IF;         -- month-restricted: cadence not reliably derivable -> stay safe (no false OVERDUE)
     IF f_min ~ '^\*/\d+$' AND f_hour = '*' THEN          -- "*/N * * * *" => every N min
       RETURN (regexp_match(f_min, '(\d+)'))[1]::int;
     END IF;
@@ -86,6 +87,8 @@ BEGIN
   RETURN NULL;  -- unparseable
 END;
 $$;
+
+COMMENT ON FUNCTION derive_interval_minutes(text) IS 'Best-effort expected max-gap (minutes) between scheduled runs from a cron or human schedule string. Returns NULL for unparseable/ambiguous input so the status view never falsely flags OVERDUE.';
 
 -- ── Trigger: keep n8n registry rows in sync with the stats table ──
 -- Refreshes only DERIVED fields on conflict; preserves human-curated description/category/grace_minutes.
@@ -133,7 +136,7 @@ WITH base AS (
   FROM scheduled_job_registry r
   LEFT JOIN dashboard_workflow_stats ws
     ON r.source = 'n8n'
-   AND ws.workflow_id = substring(r.job_key FROM position(':' IN r.job_key) + 1)
+   AND ws.workflow_id = split_part(r.job_key, ':', 2)
 )
 SELECT
   base.*,
