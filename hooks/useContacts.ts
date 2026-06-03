@@ -3,11 +3,13 @@ import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError, toastSuccess } from '../lib/dashboardActions';
 import type { Contact, ContactLink } from '../types/dashboard';
 
-const mapContact = (r: any): Contact => ({
+export const mapContact = (r: any): Contact => ({
   id: r.id, name: r.name, company: r.company,
   linkedinUrl: r.linkedin_url, email: r.email, icpScore: r.icp_score,
   stage: r.stage, nextAction: r.next_action, nextActionDue: r.next_action_due,
   ownerNotes: r.owner_notes, referredBy: r.referred_by,
+  stageSuggested: r.stage_suggested ?? null,
+  stageManual: r.stage_manual ?? false,
   createdAt: r.created_at, updatedAt: r.updated_at,
 });
 
@@ -57,6 +59,14 @@ export function useContacts() {
     catch (err) { toastError('update contact', err); fetchAll(); }
   }, [fetchAll]);
 
+  const setStage = useCallback(async (id: string, value: string) => {
+    setContacts(cs => cs.map(c => c.id === id ? { ...c, stage: value, stageManual: true } as Contact : c));
+    try {
+      const { error } = await supabase.from('contacts').update({ stage: value, stage_manual: true }).eq('id', id);
+      if (error) throw error;
+    } catch (err) { toastError('set stage', err); fetchAll(); }
+  }, [fetchAll]);
+
   const reviewLink = useCallback(async (linkId: string, decision: 'confirm' | 'reject') => {
     const patch = decision === 'confirm'
       ? { review_status: 'active', confidence: 'confirmed' }
@@ -73,5 +83,5 @@ export function useContacts() {
     a[c.stage] = (a[c.stage] || 0) + 1; return a;
   }, {} as Record<string, number>), [contacts]);
 
-  return { contacts, pending, loading, resolving, resolveNow, updateField, reviewLink, stageCounts, refetch: fetchAll };
+  return { contacts, pending, loading, resolving, resolveNow, updateField, setStage, reviewLink, stageCounts, refetch: fetchAll };
 }

@@ -928,6 +928,8 @@ export interface Contact {
   icpScore: number | null; stage: string;
   nextAction: string | null; nextActionDue: string | null;
   ownerNotes: string | null; referredBy: string | null;
+  stageSuggested: string | null;
+  stageManual: boolean;
   createdAt: string; updatedAt: string;
 }
 export interface ContactLink {

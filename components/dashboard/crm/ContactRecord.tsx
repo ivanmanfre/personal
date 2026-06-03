@@ -6,9 +6,10 @@ import type { Contact } from '../../../types/dashboard';
 
 const ATTACHABLE = ['transcript','proposal_clickup','paid_assessment'] as const;
 
-export function ContactRecord({ contactId, stages, onChangeField, onChanged }: {
+export function ContactRecord({ contactId, stages, onChangeField, onSetStage, onChanged }: {
   contactId: string; stages: string[];
   onChangeField: (field: keyof Contact, value: string) => void;
+  onSetStage: (value: string) => void;
   onChanged: () => void;
 }) {
   const { data, loading, refetch } = useContact360(contactId);
@@ -40,10 +41,18 @@ export function ContactRecord({ contactId, stages, onChangeField, onChanged }: {
             {c.linkedinUrl && <> · <a href={c.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a></>}
           </div>
         </div>
-        <select value={c.stage} onChange={e=>onChangeField('stage', e.target.value)}>
+        <select value={c.stage} onChange={e=>onSetStage(e.target.value)}>
           {stages.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
+
+      {c.stageSuggested && c.stageSuggested !== c.stage && (
+        <div style={{ marginTop:8, fontSize:12, display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ opacity:.7 }}>Suggested: <strong>{c.stageSuggested}</strong></span>
+          <button onClick={() => onSetStage(c.stageSuggested!)}>Apply</button>
+          {c.stageManual && <span style={{ opacity:.5 }}>(stage set manually)</span>}
+        </div>
+      )}
 
       <div style={{ marginTop:12, display:'grid', gap:8 }}>
         <label style={{ fontSize:11, opacity:.7 }}>Next action
@@ -65,7 +74,7 @@ export function ContactRecord({ contactId, stages, onChangeField, onChanged }: {
         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:6 }}>
           {data.links.map(l => (
             <span key={l.id} style={{ fontSize:11, padding:'3px 8px', borderRadius:12,
-                  background:'var(--d-paper-3,#262626)' }}>{l.sourceType}</span>
+                  background:'var(--d-paper-3,#262626)', color:'#d8d8d8' }}>{l.sourceType}</span>
           ))}
           {!data.links.length && <span style={{ fontSize:11, opacity:.5 }}>none</span>}
         </div>
