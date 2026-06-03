@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, LayoutGrid, Columns3, List as ListIcon, Table2 } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, Columns3, List as ListIcon } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
-import { generatePostContent, buildCarousel } from '../../lib/studioActions';
+import { generatePostContent, buildCarousel, regenerateDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
@@ -84,11 +84,14 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   React.useEffect(() => {
     try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table'>(() => {
+  const [view, setView] = useState<'board' | 'list'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('post-studio-view');
-      // Legacy 'calendar' view migrates to 'list' — Calendar is its own sub-tab now.
-      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table') return v;
+      // List is the ClickUp-style table equivalent (all columns, horizontal scroll
+      // at narrow widths) — separate Grid + Table views were redundant. Old
+      // values migrate: grid/table → list (they all flattened to the same shape).
+      if (v === 'board' || v === 'list') return v;
+      if (v === 'grid' || v === 'table' || v === 'calendar') return 'list';
     }
     return 'list';
   });
@@ -266,23 +269,13 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             <button
               onClick={() => setView('list')}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="List view (grouped by status)"
+              title="List view — ClickUp-style table grouped by status (all columns, horizontal scroll)"
             ><ListIcon className="w-3.5 h-3.5" /> List</button>
-            <button
-              onClick={() => setView('grid')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'grid' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="Grid view"
-            ><LayoutGrid className="w-3.5 h-3.5" /> Grid</button>
             <button
               onClick={() => setView('board')}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="Board view (kanban by status)"
+              title="Board view — kanban by status"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
-            <button
-              onClick={() => setView('table')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'table' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="Table view (dense spreadsheet, no grouping)"
-            ><Table2 className="w-3.5 h-3.5" /> Table</button>
           </div>
           <button onClick={refresh} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -508,9 +501,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <div className="text-[13px] text-zinc-300 font-medium">No posts match the current filter</div>
           <div className="text-[11.5px] text-zinc-500 mt-0.5">Try clearing the filters above.</div>
         </div>
-      ) : view === 'list' || view === 'table' ? (
+      ) : view === 'list' ? (
         <StudioListView
-          dense={view === 'table'}
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
@@ -545,13 +537,30 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
           // Dense table doesn't group by status — it's a flat sortable spreadsheet.
-          groupByStatus={view === 'table' ? undefined : 'post-studio'}
+          groupByStatus={'post-studio'}
           statusOrder={STATUS_ORDER}
-          pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
+          pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
-            // Optimistic: flip the pill immediately. Realtime confirms; refresh()
-            // on error reverts. Eliminates the 400-700ms full-table-refetch lag.
+            const cur = drafts.find((d) => d.id === id);
+            // ClickUp parity: flipping a row BACK to 'idea' triggers a real
+            // regeneration via the right pipeline for the row's type. Mirrors
+            // how dragging a card to a previous column in ClickUp re-runs the
+            // workflow. Confirm first since this overwrites existing copy.
+            const LATER = new Set(['generating','review','approved','scheduled','published','disqualified','error']);
+            if (next === 'idea' && cur && LATER.has(cur.status)) {
+              if (!confirm(`Regenerate this ${cur.type || 'post'}? Flipping to 'idea' will refire the pipeline and overwrite the current copy${cur.imageUrls?.[0] ? ' and image' : ''}.`)) return;
+              applyOptimistic(id, { status: 'generating' });
+              try {
+                await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
+                toast.success('Regeneration fired');
+              } catch (err) {
+                toastError('regenerate', err);
+                refresh();
+              }
+              return;
+            }
+            // Default path: status-only flip, optimistic + supabase update.
             applyOptimistic(id, { status: next });
             try {
               const { error } = await supabase.from('carousel_drafts').update({ status: next }).eq('id', id);
@@ -639,54 +648,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             );
           })}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {visible.map((d: CarouselDraft) => {
-            const meta = STATUS_META[d.status] || STATUS_META.draft;
-            const pillar = (d.taxonomy as any)?.pillar;
-            const hookType = (d.taxonomy as any)?.hook_type;
-            const sched = formatScheduled(d.scheduledAt);
-            const hasImage = d.imageUrls && d.imageUrls[0];
-            const excerpt = postExcerpt(d);
-            return (
-              <button
-                key={d.id}
-                onClick={() => setOpenId(d.id)}
-                className="text-left rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden hover:border-zinc-600 transition flex flex-col"
-              >
-                {/* Hero: image if present, else stylized excerpt (no more gray TEXT placeholder) */}
-                {hasImage ? (
-                  <div className="aspect-[4/5] bg-zinc-950 overflow-hidden">
-                    <img src={driveThumbUrl(d.imageUrls[0], 400) || d.imageUrls[0]} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  </div>
-                ) : (
-                  <div className="aspect-[4/5] bg-emerald-950/30 border-b border-emerald-900/30 overflow-hidden p-4 flex flex-col justify-between">
-                    <span className="text-[10px] uppercase tracking-wider text-emerald-500/70 font-mono">{d.type === 'carousel' ? 'CAROUSEL' : d.type === 'single_image' ? 'IMAGE' : 'TEXT'}</span>
-                    <p className="text-[13px] text-zinc-300 leading-snug line-clamp-7 font-serif italic">{excerpt || '(no copy yet)'}</p>
-                  </div>
-                )}
-                {/* Body */}
-                <div className="p-3 space-y-1.5 flex-1">
-                  <div className="text-sm text-zinc-200 line-clamp-2 font-medium">{d.title}</div>
-                  {sched && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-                      <Calendar className="w-3 h-3" /> {sched}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                    <span className={`inline-flex items-center gap-1 text-[11px] ${meta.label}`}>
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                      {d.status}
-                    </span>
-                    {pillar && <span className="text-[11px] text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-800/60">{pillar}</span>}
-                    {hookType && <span className="text-[11px] text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-800/60">{hookType}</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      ) : null}
 
       {/* Editor opens in a right-anchored side-sheet — list stays visible behind */}
       <Sheet

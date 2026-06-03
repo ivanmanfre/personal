@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
@@ -692,9 +692,15 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <Button
               variant="secondary"
               disabled={!!busy}
-              onClick={() => run('re-author', () => buildCarousel({ carousel_id: draft.id, topic: draft.topic || draft.title, draft_id: draft.id }), 'Re-authored')}
+              onClick={() => {
+                if (!confirm(`Regenerate this ${draft.type || 'post'}? The current copy${draft.imageUrls?.[0] ? ' and image' : ''} will be replaced.`)) return;
+                run('re-author', () => regenerateDraft({
+                  id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
+                }), 'Regeneration fired');
+              }}
+              title="Regenerate post — text/single_image fires Post Gen v2, carousel fires Carousel Gen"
             >
-              {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author
+              {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Regenerate
             </Button>
           </div>
         </div>

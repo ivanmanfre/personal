@@ -44,6 +44,49 @@ export async function buildCarousel(input: {
   return { ok: true, draft_id: draftId, verdict: 'PENDING', attempts: 0, qa: { failing_slides: [], feedback: '' }, slides: [] };
 }
 
+// Type-aware regeneration helper. Replaces the old pattern where callers
+// hardcoded buildCarousel (which forced post_format='Carousel' even on text
+// or single_image posts, silently turning every Re-author into a carousel).
+// Sets status='generating' + records generating_started_at, then fires the
+// right pipeline per type.
+export async function regenerateDraft(draft: {
+  id: string;
+  type: string | null;
+  topic: string | null;
+  title: string | null;
+  taxonomy: Record<string, any> | null;
+}) {
+  const { supabase } = await import('./supabase');
+  const startedAt = new Date().toISOString();
+  const nextTax = { ...(draft.taxonomy || {}), generating_started_at: startedAt };
+  const { error: upErr } = await supabase.from('carousel_drafts').update({
+    status: 'generating',
+    taxonomy: nextTax,
+  }).eq('id', draft.id);
+  if (upErr) throw new Error(`status flip failed: ${upErr.message}`);
+
+  if (draft.type === 'carousel') {
+    return buildCarousel({
+      carousel_id: draft.id,
+      topic: draft.topic || draft.title || '',
+      key_points: [],
+      draft_id: draft.id,
+    });
+  }
+  const tax = (draft.taxonomy || {}) as Record<string, any>;
+  return generatePostContent({
+    draft_id: draft.id,
+    topic: draft.topic || draft.title || '',
+    title: draft.title || draft.topic || '',
+    author: 'Ivan',
+    source: (tax.source as string) || 'Studio',
+    post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
+    post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
+    include_image: draft.type === 'single_image' ? 'Yes' : 'No',
+    image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
+  });
+}
+
 export async function saveDraft(input: {
   id: string;
   title?: string;
