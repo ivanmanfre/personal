@@ -493,8 +493,6 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-600">Edit slide text inline and click "Save slides". Per-slide image regen still needs a Re-author. Scheduling writes to the isolated v2 queue.</p>
-
       {/* Sticky bottom action bar — spans the full sheet width across all 3
           grid columns. Primary action (state-machine) on the left, persistent
           Save / Re-author on the right. position:sticky bottom-0 pins it
