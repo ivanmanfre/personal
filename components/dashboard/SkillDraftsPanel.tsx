@@ -13,6 +13,7 @@ type Draft = {
   backup_path: string | null;
   created_at: string;
   rationale: string | null;
+  usefulness: number | null;
 };
 
 const KIND_LABEL: Record<Draft['kind'], string> = {
@@ -44,11 +45,42 @@ function stripFrontmatter(md: string): string {
   return md.replace(/^---[\r\n][\s\S]*?[\r\n]---[\r\n]?/, '').trimStart();
 }
 
+/** Usefulness badge: null → nothing, 1-5 → pill with color coding */
+function UsefulnessBadge({ score }: { score: number | null }) {
+  if (score === null) return null;
+  const colorCls =
+    score >= 4
+      ? 'bg-emerald-900/50 text-emerald-300 border-emerald-700/40'
+      : score === 3
+      ? 'bg-zinc-800/70 text-zinc-300 border-zinc-700/40'
+      : 'bg-amber-900/30 text-amber-400 border-amber-700/30';
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[10px] font-medium ${colorCls}`}
+    >
+      ★ {score}/5
+    </span>
+  );
+}
+
+/** Sort pending drafts by usefulness descending (nulls last — treated as 0). */
+function sortByUsefulness(drafts: Draft[]): Draft[] {
+  return [...drafts].sort((a, b) => {
+    const av = a.usefulness ?? 0;
+    const bv = b.usefulness ?? 0;
+    return bv - av;
+  });
+}
+
 export default function SkillDraftsPanel() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Bulk-reject state (pending non-prune section only)
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -73,22 +105,85 @@ export default function SkillDraftsPanel() {
     }
   };
 
-  const pending = drafts.filter((d) => d.status === 'pending' && d.kind !== 'prune_candidate');
+  const pending = sortByUsefulness(
+    drafts.filter((d) => d.status === 'pending' && d.kind !== 'prune_candidate')
+  );
   const prunes = drafts.filter((d) => d.status === 'pending' && d.kind === 'prune_candidate');
-  const log = drafts.filter((d) => d.status === 'applied' || d.status === 'rejected' || d.status === 'approved');
+  const log = drafts.filter(
+    (d) => d.status === 'applied' || d.status === 'rejected' || d.status === 'approved'
+  );
 
-  const renderDraft = (d: Draft, actions: boolean, approveLabel = 'Approve', rejectLabel = 'Reject') => {
+  // --- Bulk-reject helpers ---
+  const pendingIds = pending.map((d) => d.id);
+  const allSelected = pendingIds.length > 0 && pendingIds.every((id) => selected.has(id));
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(pendingIds));
+    }
+  };
+
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkReject = async () => {
+    if (selected.size === 0 || bulkBusy) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all(
+        [...selected].map((id) => dashboardAction('skill_drafts', id, 'status', 'rejected'))
+      );
+      setSelected(new Set());
+      await refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const renderDraft = (
+    d: Draft,
+    actions: boolean,
+    approveLabel = 'Approve',
+    rejectLabel = 'Reject',
+    showCheckbox = false
+  ) => {
     const description = d.kind === 'new' && d.draft_md ? parseDescription(d.draft_md) : null;
     const bodyMd = d.kind === 'new' && d.draft_md ? stripFrontmatter(d.draft_md) : null;
+    const isLowValue = d.usefulness !== null && d.usefulness <= 2;
 
     return (
-      <li key={d.id} className="border border-zinc-800/60 rounded-lg p-3 mb-2 bg-zinc-900/30">
-        {/* Header row: kind badge + name + timestamp */}
+      <li
+        key={d.id}
+        className={
+          'border border-zinc-800/60 rounded-lg p-3 mb-2 bg-zinc-900/30 transition-opacity ' +
+          (isLowValue ? 'opacity-60' : 'opacity-100')
+        }
+      >
+        {/* Header row: optional checkbox + kind badge + name + usefulness badge + timestamp */}
         <div className="flex items-center gap-2 mb-1">
+          {showCheckbox && (
+            <input
+              type="checkbox"
+              checked={selected.has(d.id)}
+              onChange={() => toggleOne(d.id)}
+              className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 shrink-0 cursor-pointer"
+              aria-label={`Select ${d.skill_name}`}
+            />
+          )}
           <span className="px-1.5 py-0.5 rounded bg-emerald-900/40 text-emerald-300 text-[10px] font-medium">
             {KIND_LABEL[d.kind]}
           </span>
           <span className="font-mono text-[12px] text-zinc-200">{d.skill_name}</span>
+          <UsefulnessBadge score={d.usefulness} />
           <span className="text-[10px] text-zinc-500 ml-auto">{new Date(d.created_at).toLocaleString()}</span>
         </div>
 
@@ -143,14 +238,14 @@ export default function SkillDraftsPanel() {
         {actions && (
           <div className="flex gap-2 mt-2">
             <button
-              disabled={busyId === d.id}
+              disabled={busyId === d.id || bulkBusy}
               onClick={() => setStatus(d.id, 'approved')}
               className="px-3 py-1 rounded-md bg-emerald-600/80 hover:bg-emerald-600 text-white text-[11px] disabled:opacity-50"
             >
               {busyId === d.id ? '…' : approveLabel}
             </button>
             <button
-              disabled={busyId === d.id}
+              disabled={busyId === d.id || bulkBusy}
               onClick={() => setStatus(d.id, 'rejected')}
               className="px-3 py-1 rounded-md bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 text-[11px] disabled:opacity-50"
             >
@@ -173,7 +268,42 @@ export default function SkillDraftsPanel() {
         {pending.length === 0 ? (
           <p className="text-[12px] text-zinc-500">Nothing waiting. Auto-applied changes appear in the log below.</p>
         ) : (
-          <ul>{pending.map((d) => renderDraft(d, true))}</ul>
+          <>
+            {/* Bulk-action control row */}
+            <div className="flex items-center gap-3 mb-2 px-1">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                  className="w-3.5 h-3.5 rounded border-zinc-600 bg-zinc-800 accent-emerald-500 cursor-pointer"
+                  aria-label="Select all pending drafts"
+                />
+                <span className="text-[11px] text-zinc-400">Select all</span>
+              </label>
+              <button
+                disabled={selected.size === 0 || bulkBusy}
+                onClick={bulkReject}
+                className="px-3 py-1 rounded-md bg-zinc-700/70 hover:bg-zinc-700 text-zinc-200 text-[11px] disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              >
+                {bulkBusy
+                  ? 'Rejecting…'
+                  : `Reject selected (${selected.size})`}
+              </button>
+              {selected.size > 0 && !bulkBusy && (
+                <button
+                  onClick={clearSelection}
+                  className="text-[11px] text-zinc-500 hover:text-zinc-300 underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <ul>
+              {pending.map((d) => renderDraft(d, true, 'Approve', 'Reject', true))}
+            </ul>
+          </>
         )}
       </section>
 
