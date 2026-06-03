@@ -37,7 +37,7 @@ const JobRow: React.FC<{ job: ScheduledJob }> = ({ job }) => {
     <div className="rounded-lg border border-zinc-800/60 bg-zinc-900/40">
       <button
         onClick={() => hasError && setOpen((o) => !o)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
+        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left ${hasError ? '' : 'cursor-default'}`}
       >
         <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot} ${job.status === 'OVERDUE' || job.status === 'ERRORING' ? 'animate-pulse' : ''}`} />
         <div className="min-w-0 flex-1">
@@ -74,7 +74,7 @@ const Stat: React.FC<{ icon: React.ReactNode; n: number; label: string; alarm?: 
 
 const ScheduledOpsPanel: React.FC = () => {
   const { jobs, stats, loading, refresh } = useScheduledOps();
-  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['scheduled_job_registry'] });
+  const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['dashboard_workflow_stats', 'scheduled_job_registry'] });
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ScheduledStatus | 'ALL'>('ALL');
