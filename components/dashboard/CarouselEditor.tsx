@@ -474,247 +474,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             />
           </Card>
 
-          {/* Right-column primary action card — driven by draft.status.
-              State machine (matches the pipeline):
-                idea / suggestion → Generate
-                generating        → "In progress" + spinner + elapsed time
-                review            → Approve (schedule + auto-slot)
-                approved          → Approve (kept for re-scheduling)
-                scheduled         → Reschedule (already approved, can shift date)
-                published         → Already published (read-only)
-                disqualified      → Restart (back to idea)
-                error             → Retry generation
-              Approve never shows during generation / before content exists.
-              Wrapped in AnimatePresence so the card slides + fades when status
-              changes — gives visible feedback for the workflow flipping under
-              your feet.
-              lg:sticky pins it as the left column scrolls at desktop — Approve
-              stays in view when the user is reading SourceBriefing / QA history. */}
-          <div className="lg:sticky lg:top-2">
-          <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={draft.status}
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 8, scale: 0.97 }}
-            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: 'easeOut' }}
-          >
-          {(() => {
-            const s = draft.status;
-            const fireGenerate = async () => {
-              const startedAt = new Date().toISOString();
-              const nextTax = { ...(draft.taxonomy as any || {}), generating_started_at: startedAt };
-              const { error: upErr } = await supabase.from('carousel_drafts').update({
-                status: 'generating',
-                taxonomy: nextTax,
-              }).eq('id', draft.id);
-              if (upErr) throw upErr;
-              if (draft.type === 'carousel') {
-                const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
-                return buildCarousel({ carousel_id: carouselId, topic: draft.topic || draft.title || '', key_points: [] });
-              }
-              return generatePostContent({
-                draft_id: draft.id,
-                topic: draft.topic || draft.title || '',
-                title: draft.title || draft.topic || '',
-                author: 'Ivan',
-                source: (tax.source as string) || 'Studio',
-                post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
-                post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
-                include_image: draft.type === 'single_image' ? 'Yes' : 'No',
-                image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
-              });
-            };
-
-            if (s === 'idea' || s === 'suggestion') {
-              return (
-                <Card>
-                  <CardLabel>Generate</CardLabel>
-                  <p className="text-[11.5px] text-zinc-500 mb-2 leading-snug">
-                    This post is a suggestion. Fire generation to draft the LinkedIn copy{draft.type === 'carousel' ? ' + carousel slides' : ''} (~{draft.type === 'carousel' ? '2 min' : '8 min'}).
-                  </p>
-                  <Button
-                    variant="primary"
-                    block
-                    disabled={!!busy}
-                    onClick={() => run('generate', fireGenerate, draft.type === 'carousel' ? 'Generation fired — building carousel (~2 min)' : 'Generation fired — drafting content (~8 min)')}
-                  >
-                    {busy === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {busy === 'generate' ? 'Firing…' : 'Generate content'}
-                  </Button>
-                </Card>
-              );
-            }
-
-            if (s === 'generating') {
-              const startStr = (draft.taxonomy as any)?.generating_started_at as string | undefined;
-              const elapsedMin = startStr ? Math.round((Date.now() - new Date(startStr).getTime()) / 60_000) : null;
-              const stuck = elapsedMin !== null && elapsedMin >= 15;
-              return (
-                <Card>
-                  <CardLabel>{stuck ? 'Generation stuck' : 'Generating'}</CardLabel>
-                  <div className="flex items-center gap-2 mb-2">
-                    {stuck
-                      ? <AlertTriangle className="w-4 h-4 text-amber-400" />
-                      : <Loader2 className="w-4 h-4 animate-spin text-sky-400" />}
-                    <span className={`text-[12px] ${stuck ? 'text-amber-300' : 'text-sky-300'} font-medium`}>
-                      {elapsedMin === null ? 'In progress' : stuck ? `${elapsedMin}m elapsed — likely failed silently` : `${elapsedMin}m elapsed`}
-                    </span>
-                  </div>
-                  <p className="text-[11.5px] text-zinc-500 leading-snug mb-3">
-                    Watch the Agent activity feed for live updates. Status will auto-flip to review when done.
-                  </p>
-                  {stuck && (
-                    <Button
-                      variant="secondary"
-                      block
-                      disabled={!!busy}
-                      onClick={() => run('retry', fireGenerate, 'Retry fired')}
-                    >
-                      {busy === 'retry' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                      Retry generation
-                    </Button>
-                  )}
-                </Card>
-              );
-            }
-
-            if (s === 'published') {
-              return (
-                <Card>
-                  <CardLabel>Published</CardLabel>
-                  <div className="text-[12px] text-emerald-300 font-medium mb-1">✓ Live on LinkedIn</div>
-                  {draft.sourcePostId && (
-                    <a
-                      href={`https://www.linkedin.com/feed/update/${draft.sourcePostId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11.5px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> open on LinkedIn
-                    </a>
-                  )}
-                </Card>
-              );
-            }
-
-            if (s === 'disqualified') {
-              return (
-                <Card>
-                  <CardLabel>Disqualified</CardLabel>
-                  <p className="text-[11.5px] text-zinc-500 mb-2 leading-snug">
-                    This post was disqualified. Restart to send it back through generation.
-                  </p>
-                  <Button
-                    variant="secondary"
-                    block
-                    disabled={!!busy}
-                    onClick={async () => {
-                      run('restart', async () => {
-                        const { error: upErr } = await supabase.from('carousel_drafts').update({ status: 'idea' }).eq('id', draft.id);
-                        if (upErr) throw upErr;
-                      }, 'Restarted — back to Suggestion');
-                    }}
-                  >
-                    {busy === 'restart' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Restart
-                  </Button>
-                </Card>
-              );
-            }
-
-            if (s === 'error') {
-              return (
-                <Card>
-                  <CardLabel className="text-red-400">Error</CardLabel>
-                  <p className="text-[11.5px] text-red-300 mb-2 leading-snug">
-                    Last generation failed. Retry will refire generation.
-                  </p>
-                  <Button
-                    variant="primary"
-                    block
-                    disabled={!!busy}
-                    onClick={() => run('retry', fireGenerate, 'Retry fired')}
-                  >
-                    {busy === 'retry' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    Retry generation
-                  </Button>
-                </Card>
-              );
-            }
-
-            // review / approved / scheduled — Approve & schedule
-            const isScheduled = s === 'scheduled';
-            return (
-              <Card>
-                <CardLabel>{isScheduled ? 'Reschedule' : 'Schedule'}</CardLabel>
-                <Input
-                  type="datetime-local"
-                  value={when}
-                  onChange={(e) => setWhen(e.target.value)}
-                  title="Leave empty to auto-pick the next free 9am slot"
-                  className="mb-2 py-1.5"
-                />
-                <Button
-                  variant="primary"
-                  block
-                  disabled={!!busy}
-                  onClick={async () => {
-                    let iso: string;
-                    if (when) {
-                      iso = new Date(when).toISOString();
-                    } else {
-                      const slot = await findNextSlot();
-                      iso = slot.toISOString();
-                      setWhen(toDatetimeLocalString(slot));
-                      toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
-                    }
-                    run('schedule', () => scheduleCarousel(draft.id, iso), isScheduled ? 'Rescheduled' : 'Scheduled');
-                  }}
-                >
-                  {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
-                  {isScheduled
-                    ? (when ? 'Update schedule' : 'Reschedule · auto-slot')
-                    : (when ? 'Approve & schedule' : 'Approve · auto-slot')}
-                </Button>
-              </Card>
-            );
-          })()}
-          </motion.div>
-          </AnimatePresence>
-
-          <div className="space-y-2">
-            <Button
-              variant="secondary"
-              block
-              disabled={!!busy}
-              onClick={() => run('save draft', () => saveDraft({ id: draft.id, post_body: postBody, ig_caption: igCaption }), 'Saved')}
-            >
-              {busy === 'save draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save copy
-            </Button>
-            {slidesDirty && (
-              <Button
-                variant="primary"
-                block
-                disabled={!!busy}
-                onClick={() => run('save slides', async () => {
-                  await saveDraft({ id: draft.id, slides: localSlides });
-                  setSlidesDirty(false);
-                }, 'Slides saved')}
-              >
-                {busy === 'save slides' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save slides
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              block
-              disabled={!!busy}
-              onClick={() => run('re-author', () => buildCarousel({ carousel_id: draft.id, topic: draft.topic || draft.title, draft_id: draft.id }), 'Re-authored')}
-            >
-              {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author <span className="text-[10px] text-zinc-500">~2 min</span>
-            </Button>
-          </div>
-          </div>{/* /lg:sticky action wrapper */}
+          {/* Action stack moved OUT of column 2 → sticky bottom bar below the grid.
+              Column 2 now contains only the Reference Card. */}
         </div>
 
         {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed) */}
@@ -733,6 +494,213 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       </div>
 
       <p className="text-[11px] text-zinc-600">Edit slide text inline and click "Save slides". Per-slide image regen still needs a Re-author. Scheduling writes to the isolated v2 queue.</p>
+
+      {/* Sticky bottom action bar — spans the full sheet width across all 3
+          grid columns. Primary action (state-machine) on the left, persistent
+          Save / Re-author on the right. position:sticky bottom-0 pins it
+          inside the Sheet's scrolling body so it stays visible at every
+          scroll position. -mx-4 cancels the Sheet's px-4 so the bar bleeds
+          to the sheet edges; the inner content keeps the panel max-width.
+          AnimatePresence keyed by status preserves the cross-state morph. */}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-2.5 bg-[color:var(--d-ink-2)]/95 backdrop-blur border-t border-[color:var(--d-rule-strong)]">
+        <div className="flex flex-wrap items-center gap-2">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={draft.status}
+              initial={shouldReduceMotion ? false : { opacity: 0, x: -8 }}
+              animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: 'easeOut' }}
+              className="flex items-center gap-2 flex-1 min-w-[260px]"
+            >
+              {(() => {
+                const s = draft.status;
+                const fireGenerate = async () => {
+                  const startedAt = new Date().toISOString();
+                  const nextTax = { ...(draft.taxonomy as any || {}), generating_started_at: startedAt };
+                  const { error: upErr } = await supabase.from('carousel_drafts').update({
+                    status: 'generating',
+                    taxonomy: nextTax,
+                  }).eq('id', draft.id);
+                  if (upErr) throw upErr;
+                  if (draft.type === 'carousel') {
+                    const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
+                    return buildCarousel({ carousel_id: carouselId, topic: draft.topic || draft.title || '', key_points: [] });
+                  }
+                  return generatePostContent({
+                    draft_id: draft.id,
+                    topic: draft.topic || draft.title || '',
+                    title: draft.title || draft.topic || '',
+                    author: 'Ivan',
+                    source: (tax.source as string) || 'Studio',
+                    post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
+                    post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
+                    include_image: draft.type === 'single_image' ? 'Yes' : 'No',
+                    image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
+                  });
+                };
+
+                if (s === 'idea' || s === 'suggestion') {
+                  return (
+                    <>
+                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)] mr-1">
+                        Suggestion · {draft.type === 'carousel' ? '~2 min build' : '~8 min draft'}
+                      </span>
+                      <Button
+                        variant="primary"
+                        disabled={!!busy}
+                        onClick={() => run('generate', fireGenerate, draft.type === 'carousel' ? 'Generation fired — building carousel (~2 min)' : 'Generation fired — drafting content (~8 min)')}
+                      >
+                        {busy === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        {busy === 'generate' ? 'Firing…' : 'Generate'}
+                      </Button>
+                    </>
+                  );
+                }
+
+                if (s === 'generating') {
+                  const startStr = (draft.taxonomy as any)?.generating_started_at as string | undefined;
+                  const elapsedMin = startStr ? Math.round((Date.now() - new Date(startStr).getTime()) / 60_000) : null;
+                  const stuck = elapsedMin !== null && elapsedMin >= 15;
+                  return (
+                    <>
+                      {stuck
+                        ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                        : <Loader2 className="w-4 h-4 animate-spin text-sky-400 shrink-0" />}
+                      <span className={`text-[12px] ${stuck ? 'text-amber-300' : 'text-sky-300'} font-medium`}>
+                        {elapsedMin === null ? 'In progress' : stuck ? `${elapsedMin}m elapsed · likely failed` : `${elapsedMin}m elapsed`}
+                      </span>
+                      {stuck && (
+                        <Button
+                          variant="secondary"
+                          disabled={!!busy}
+                          onClick={() => run('retry', fireGenerate, 'Retry fired')}
+                        >
+                          {busy === 'retry' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Retry
+                        </Button>
+                      )}
+                    </>
+                  );
+                }
+
+                if (s === 'published') {
+                  return (
+                    <>
+                      <span className="text-[12px] text-emerald-300 font-medium">✓ Live on LinkedIn</span>
+                      {draft.sourcePostId && (
+                        <a
+                          href={`https://www.linkedin.com/feed/update/${draft.sourcePostId}`}
+                          target="_blank" rel="noreferrer"
+                          className="text-[11.5px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" /> open on LinkedIn
+                        </a>
+                      )}
+                    </>
+                  );
+                }
+
+                if (s === 'disqualified') {
+                  return (
+                    <>
+                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)]">Disqualified — restart to send back through generation.</span>
+                      <Button
+                        variant="secondary"
+                        disabled={!!busy}
+                        onClick={() => run('restart', async () => {
+                          const { error: upErr } = await supabase.from('carousel_drafts').update({ status: 'idea' }).eq('id', draft.id);
+                          if (upErr) throw upErr;
+                        }, 'Restarted — back to Suggestion')}
+                      >
+                        {busy === 'restart' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Restart
+                      </Button>
+                    </>
+                  );
+                }
+
+                if (s === 'error') {
+                  return (
+                    <>
+                      <span className="text-[11.5px] text-red-300">Last generation failed.</span>
+                      <Button
+                        variant="primary"
+                        disabled={!!busy}
+                        onClick={() => run('retry', fireGenerate, 'Retry fired')}
+                      >
+                        {busy === 'retry' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Retry generation
+                      </Button>
+                    </>
+                  );
+                }
+
+                // review / approved / scheduled — Approve & schedule
+                const isScheduled = s === 'scheduled';
+                return (
+                  <>
+                    <Input
+                      type="datetime-local"
+                      value={when}
+                      onChange={(e) => setWhen(e.target.value)}
+                      title="Leave empty to auto-pick the next free 9am slot"
+                      className="py-1.5 max-w-[220px]"
+                    />
+                    <Button
+                      variant="primary"
+                      disabled={!!busy}
+                      onClick={async () => {
+                        let iso: string;
+                        if (when) {
+                          iso = new Date(when).toISOString();
+                        } else {
+                          const slot = await findNextSlot();
+                          iso = slot.toISOString();
+                          setWhen(toDatetimeLocalString(slot));
+                          toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+                        }
+                        run('schedule', () => scheduleCarousel(draft.id, iso), isScheduled ? 'Rescheduled' : 'Scheduled');
+                      }}
+                    >
+                      {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}
+                      {isScheduled
+                        ? (when ? 'Update' : 'Reschedule · auto-slot')
+                        : (when ? 'Approve & schedule' : 'Approve · auto-slot')}
+                    </Button>
+                  </>
+                );
+              })()}
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <Button
+              variant="secondary"
+              disabled={!!busy}
+              onClick={() => run('save draft', () => saveDraft({ id: draft.id, post_body: postBody, ig_caption: igCaption }), 'Saved')}
+            >
+              {busy === 'save draft' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save copy
+            </Button>
+            {slidesDirty && (
+              <Button
+                variant="primary"
+                disabled={!!busy}
+                onClick={() => run('save slides', async () => {
+                  await saveDraft({ id: draft.id, slides: localSlides });
+                  setSlidesDirty(false);
+                }, 'Slides saved')}
+              >
+                {busy === 'save slides' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save slides
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              disabled={!!busy}
+              onClick={() => run('re-author', () => buildCarousel({ carousel_id: draft.id, topic: draft.topic || draft.title, draft_id: draft.id }), 'Re-authored')}
+            >
+              {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Re-author
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
