@@ -930,6 +930,7 @@ export interface Contact {
   ownerNotes: string | null; referredBy: string | null;
   stageSuggested: string | null;
   stageManual: boolean;
+  lastActivityAt: string | null;
   createdAt: string; updatedAt: string;
 }
 export interface ContactLink {

@@ -10,24 +10,28 @@ export const mapContact = (r: any): Contact => ({
   ownerNotes: r.owner_notes, referredBy: r.referred_by,
   stageSuggested: r.stage_suggested ?? null,
   stageManual: r.stage_manual ?? false,
+  lastActivityAt: r.last_activity_at ?? null,
   createdAt: r.created_at, updatedAt: r.updated_at,
 });
 
 export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [pending, setPending] = useState<ContactLink[]>([]);
+  const [serverCounts, setServerCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState(false);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: cs }, { data: pl }] = await Promise.all([
+      const [{ data: cs }, { data: pl }, { data: counts }] = await Promise.all([
         supabase.from('contacts').select('*').is('merged_into', null)
           .order('next_action_due', { ascending: true, nullsFirst: false })
           .order('icp_score', { ascending: false, nullsFirst: false }).limit(2000),
         supabase.from('contact_links').select('*').eq('review_status', 'pending'),
+        supabase.rpc('get_contact_stage_counts'),
       ]);
+      setServerCounts((counts as Record<string, number>) || {});
       setContacts((cs || []).map(mapContact));
       setPending((pl || []).map((r: any): ContactLink => ({
         id: r.id, contactId: r.contact_id, sourceType: r.source_type, sourceId: r.source_id,
@@ -80,9 +84,12 @@ export function useContacts() {
     } catch (err) { toastError('review match', err); fetchAll(); }
   }, [fetchAll]);
 
-  const stageCounts = useMemo(() => contacts.reduce((a, c) => {
-    a[c.stage] = (a[c.stage] || 0) + 1; return a;
-  }, {} as Record<string, number>), [contacts]);
+  // Stage counts come from the server (PostgREST caps reads at 1000 rows, so client-side
+  // counting under-reports). Falls back to client count only if the RPC hasn't returned.
+  const stageCounts = useMemo(() => {
+    if (Object.keys(serverCounts).length) return serverCounts;
+    return contacts.reduce((a, c) => { a[c.stage] = (a[c.stage] || 0) + 1; return a; }, {} as Record<string, number>);
+  }, [serverCounts, contacts]);
 
   return { contacts, pending, loading, resolving, resolveNow, updateField, setStage, reviewLink, stageCounts, refetch: fetchAll };
 }
