@@ -37,7 +37,7 @@ export type ScheduledStatus = 'OK' | 'OVERDUE' | 'ERRORING' | 'DISABLED' | 'UNKN
 export interface ScheduledJob {
   id: string;
   jobKey: string;
-  source: 'n8n' | 'launchd' | 'claude-code';
+  source: 'n8n' | 'launchd' | 'claude-code' | 'cron';
   label: string;
   description: string | null;
   category: string;

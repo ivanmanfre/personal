@@ -25,6 +25,7 @@ const SOURCE_CHIP: Record<string, string> = {
   'n8n':         'bg-blue-500/15 text-blue-300 border-blue-500/30',
   'launchd':     'bg-purple-500/15 text-purple-300 border-purple-500/30',
   'claude-code': 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+  'cron':        'bg-teal-500/15 text-teal-300 border-teal-500/30',
 };
 
 /* ── One job row ── */
