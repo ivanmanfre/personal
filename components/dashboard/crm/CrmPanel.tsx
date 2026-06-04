@@ -85,7 +85,11 @@ export default function CrmPanel() {
             ? <ContactRecord contactId={selected} stages={STAGES}
                 onChangeField={(f,v)=>updateField(selected,f,v)}
                 onSetStage={(v)=>setStage(selected, v)} onChanged={refetch} />
-            : <div style={{ opacity:.5, padding:'2rem 0' }}>Select a contact.</div>}
+            : <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', minHeight:'320px', gap:'0.5rem', color:'var(--d-paper-dimmer)' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:0.55 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <div style={{ fontSize:'14px', fontWeight:600, color:'var(--d-paper-dim)' }}>Select a contact</div>
+                <div style={{ fontSize:'12px' }}>Pick someone from the list to view and edit their record.</div>
+              </div>}
         </div>
       </div>
     </div>

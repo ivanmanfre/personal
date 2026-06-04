@@ -108,7 +108,7 @@ const StatCard: React.FC<Props> = ({ label, value, icon, color, subValue, trend 
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium block mb-2">{label}</span>
+          <span className="text-[11px] text-zinc-400 tracking-normal font-medium block mb-2">{label}</span>
           <p className="text-[28px] font-bold tracking-tight leading-none animate-count-up">{displayValue}</p>
           {trend && (
             <div className={`flex items-center gap-1 mt-1.5 ${trend.value > 0 ? 'text-emerald-400' : trend.value < 0 ? 'text-red-400' : 'text-zinc-500'}`}>

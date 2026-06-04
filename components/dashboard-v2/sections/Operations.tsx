@@ -79,10 +79,7 @@ export function Operations() {
 
   return (
     <>
-      <HeadRow
-        title="Operations"
-        meta={<>Workflows · Logs · Usage<br />Auto Research · Tasks · Tools</>}
-      />
+      <HeadRow title="Operations" />
       <SubTabs>
         {SUB_ORDER.map(key => (
           <SubTab key={key} id={key} active={sub} onChange={handleSub}>
