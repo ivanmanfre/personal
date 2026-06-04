@@ -18,7 +18,7 @@ body.dashboard-v2-active {
    * as a designed surface, not flat near-black. Cool-neutral charcoal base. */
   background: radial-gradient(1100px 620px at 16% -8%, #1A1D24 0%, #0E0F12 58%) !important;
   background-attachment: fixed !important;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif !important;
   color: #ededf0;
 }
 body.dashboard-v2-active * {
@@ -56,6 +56,7 @@ body.dashboard-v2-active * {
 
   /* Shared motion language — one easing curve + standard durations. */
   --d-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --d-ease-spring: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849, 0.937 35.8%, 0.968, 0.991 44.1%, 1.006, 1.013 50.7%, 1.011 60.9%, 1.004 71.2%, 0.999 80.2%, 1);
   --d-dur: 0.2s;
   /* Geometry — three radii, no literals */
   --d-r: 12px;          /* cards / tiles / panels */
@@ -78,7 +79,7 @@ body.dashboard-v2-active * {
   --t-2xl:     24px;
   --t-display: 30px;
 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
   font-size: var(--t-md);
   line-height: 1.5;
   color: var(--d-paper);
@@ -95,7 +96,7 @@ body.dashboard-v2-active * {
 
 /* JetBrains Mono ONLY for: timestamps, keyboard hints, code identifiers */
 .dashboard-v2 .dv-mono {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   font-feature-settings: 'tnum';
 }
 
@@ -194,11 +195,11 @@ body.dashboard-v2-active * {
   font-size: 10px; font-weight: 700; padding: 0.1rem 0.4rem;
   background: var(--d-bad); color: var(--d-ink); letter-spacing: 0.04em;
   border-radius: var(--d-r-sm);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
 }
 .dv-nav-badge--amber { background: var(--d-warn); }
 .dv-sidebar-foot { padding: 0.75rem 1.5rem; border-top: 1px solid var(--d-rule); }
-.dv-kbd-hint { font-size: 11px; letter-spacing: 0.05em; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-kbd-hint { font-size: 11px; letter-spacing: 0.05em; color: var(--d-paper-dim); font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace; }
 .dv-kbd-hint kbd { background: var(--d-ink-3); border: 1px solid var(--d-rule-strong); padding: 0.1rem 0.3rem; margin-right: 0.2rem; color: var(--d-paper); border-radius: var(--d-r-sm); font-size: 10px; }
 
 /* ---- Sidebar collapse (desktop rail) ---- */
@@ -254,7 +255,7 @@ body.dashboard-v2-active * {
 
 /* HEAD ROW (per-section masthead) */
 .dv-head { border-bottom: 1px solid var(--d-rule-strong); padding-bottom: 1.5rem; margin-bottom: var(--sp-6); display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem; }
-.dv-h1 { font-family: 'Inter', system-ui, sans-serif; font-weight: 600; font-size: var(--t-2xl); line-height: 1.2; letter-spacing: -0.02em; color: var(--d-paper); display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+.dv-h1 { font-family: 'Geist', 'Inter', system-ui, sans-serif; font-weight: 600; font-size: var(--t-2xl); line-height: 1.2; letter-spacing: -0.02em; color: var(--d-paper); display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
 .dv-h1 em { font-style: normal; font-weight: 600; color: var(--d-good); }
 
 /* Section header — editorial register propagated below the masthead.
@@ -337,7 +338,7 @@ body.dashboard-v2-active * {
 /* Separated, rounded, elevated tiles (ClickUp-style) — no longer welded by
  * hairline dividers. Full-tile hover lift is now possible (nothing clips it)
  * and stays intent-based (hover only — never on mount/data-update). */
-.dv-kpi { position: relative; padding: 1.3rem 1.35rem; border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); background: var(--d-surface); box-shadow: var(--d-shadow-1), var(--d-edge-light); cursor: pointer; transition: transform var(--d-dur) var(--d-ease), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); }
+.dv-kpi { position: relative; padding: 1.3rem 1.35rem; border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); background: var(--d-surface); box-shadow: var(--d-shadow-1), var(--d-edge-light); cursor: pointer; transition: transform 0.34s var(--d-ease-spring), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); }
 .dv-kpi:hover { transform: translateY(-3px); box-shadow: var(--d-shadow-2), var(--d-edge-light); border-color: rgba(42, 143, 101, 0.30); }
 .dv-kpi-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.01em; color: var(--d-paper-dim); margin-bottom: 0.55rem; transition: color 0.18s ease; }
 .dv-kpi:hover .dv-kpi-lbl { color: var(--d-paper); }
@@ -353,7 +354,7 @@ body.dashboard-v2-active * {
 
 /* ACTION CARDS */
 .dv-action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-bottom: 1.5rem; }
-.dv-action-card { padding: var(--sp-5); border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); background: var(--d-bad-bg); box-shadow: var(--d-shadow-1), var(--d-edge-light); display: flex; flex-direction: column; gap: 0.55rem; transition: transform var(--d-dur) var(--d-ease), box-shadow var(--d-dur) var(--d-ease); }
+.dv-action-card { padding: var(--sp-5); border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); background: var(--d-bad-bg); box-shadow: var(--d-shadow-1), var(--d-edge-light); display: flex; flex-direction: column; gap: 0.55rem; transition: transform 0.34s var(--d-ease-spring), box-shadow var(--d-dur) var(--d-ease); }
 .dv-action-card:hover { transform: translateY(-2px); box-shadow: var(--d-shadow-2), var(--d-edge-light); }
 .dv-action-card--warn { background: var(--d-warn-bg); border-right-color: rgba(245, 158, 11, 0.18); }
 .dv-action-card-verb-row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -410,7 +411,7 @@ body.dashboard-v2-active * {
 
 /* PULSE STRIP */
 .dv-pulse { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: var(--sp-6); }
-.dv-pulse-cell { position: relative; padding: 1rem 1.15rem; border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); display: flex; align-items: center; gap: 0.65rem; cursor: pointer; transition: transform var(--d-dur) var(--d-ease), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); background: var(--d-surface); box-shadow: var(--d-shadow-1), var(--d-edge-light); color: var(--d-paper); font: inherit; }
+.dv-pulse-cell { position: relative; padding: 1rem 1.15rem; border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); display: flex; align-items: center; gap: 0.65rem; cursor: pointer; transition: transform 0.34s var(--d-ease-spring), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); background: var(--d-surface); box-shadow: var(--d-shadow-1), var(--d-edge-light); color: var(--d-paper); font: inherit; }
 .dv-pulse-cell:hover { transform: translateY(-3px); box-shadow: var(--d-shadow-2), var(--d-edge-light); border-color: var(--d-rule-strong); }
 .dv-pulse-cell:hover .dv-pulse-cell-dot { box-shadow: 0 0 12px currentColor; }
 .dv-pulse-cell-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
@@ -427,7 +428,7 @@ body.dashboard-v2-active * {
 .dv-row-list .dv-row:hover { padding-left: 0.55rem; background: rgba(231,231,234,0.03); }
 .dv-row-list .dv-row:hover::before { height: 62%; }
 .dv-row-list .dv-row:last-child { border-bottom: none; }
-.dv-row-date { font-size: 11.5px; letter-spacing: 0.04em; color: var(--d-paper); font-weight: 700; min-width: 70px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-row-date { font-size: 11.5px; letter-spacing: 0.04em; color: var(--d-paper); font-weight: 700; min-width: 70px; font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace; }
 .dv-row--failed .dv-row-date { color: var(--d-bad); }
 .dv-row-bullet { width: 5px; height: 5px; background: var(--d-good); flex-shrink: 0; border-radius: 50%; }
 .dv-row--failed .dv-row-bullet { background: var(--d-bad); }
@@ -465,7 +466,7 @@ body.dashboard-v2-active * {
 .dv-err-banner-txt strong { color: var(--d-warn); }
 
 /* CARD */
-.dv-card { background: linear-gradient(180deg, var(--d-surface), var(--d-ink-2) 90%); border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); padding: 1.5rem; margin-bottom: 1rem; box-shadow: var(--d-shadow-1), var(--d-edge-light); transition: transform var(--d-dur) var(--d-ease), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); }
+.dv-card { background: linear-gradient(180deg, var(--d-surface), var(--d-ink-2) 90%); border: 1px solid var(--d-rule-strong); border-radius: var(--d-r); padding: 1.5rem; margin-bottom: 1rem; box-shadow: var(--d-shadow-1), var(--d-edge-light); transition: transform 0.34s var(--d-ease-spring), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); }
 .dv-card:hover { transform: translateY(-3px); box-shadow: var(--d-shadow-2), var(--d-edge-light); border-color: rgba(42, 143, 101, 0.30); }
 .dv-card-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.01em; color: var(--d-paper-dim); margin-bottom: 0.5rem; }
 .dv-card h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
@@ -613,7 +614,7 @@ body.dashboard-v2-active * {
 .dv-cmdk-list { max-height: 400px; overflow-y: auto; padding: 0.5rem; }
 .dv-cmdk-item { padding: 0.6rem 0.75rem; font-size: 13px; cursor: pointer; border-radius: var(--d-r-sm); display: flex; justify-content: space-between; align-items: center; color: var(--d-paper); border: none; background: transparent; width: 100%; text-align: left; font: inherit; }
 .dv-cmdk-item:hover, .dv-cmdk-item[aria-selected="true"] { background: rgba(96,165,250,0.1); }
-.dv-cmdk-item-kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: var(--d-paper-dimmer); }
+.dv-cmdk-item-kbd { font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; color: var(--d-paper-dimmer); }
 
 /* ============== RESPONSIVE / MOBILE NAV ============== */
 /* Desktop: the mobile chrome is absent. The shell stays a 240px + 1fr grid. */
@@ -773,3 +774,15 @@ body.dashboard-v2-active * {
   border: solid #0E0F12; border-width: 0 2px 2px 0; transform: rotate(45deg);
 }
 .dashboard-v2 input[type="checkbox"]:focus-visible { outline: 2px solid var(--d-good); outline-offset: 2px; }
+
+/* ============== View Transitions — section nav only (intent-based) ============== */
+/* Triggered exclusively from nav handlers via document.startViewTransition; never
+ * fires on data updates (panel key is unchanged on poll). Reduced-motion users skip
+ * the transition entirely (handler falls back to a plain state update). */
+.dv-panel { view-transition-name: dv-panel; }
+::view-transition-old(dv-panel) { animation: dv-vt-out 0.18s var(--d-ease) both; }
+::view-transition-new(dv-panel) { animation: dv-vt-in 0.30s var(--d-ease) both; }
+@keyframes dv-vt-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes dv-vt-out { from { opacity: 1; } to { opacity: 0; } }
+/* The rest of the page (sidebar/masthead) cross-fades quickly via root */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.2s; animation-timing-function: var(--d-ease); }

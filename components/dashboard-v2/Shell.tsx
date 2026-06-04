@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
@@ -27,6 +28,21 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     const s = params.get('section') as SectionId | null;
     return s && ALL_SECTIONS.includes(s) ? s : 'briefing';
   });
+
+  // Section nav via the View Transitions API — gives a native cross-fade/rise
+  // between sections with zero animation JS. Intent-only: this is called from
+  // nav handlers, NEVER from data updates, so it can't read as a "screen
+  // refresh." Falls back to a plain state update when unsupported or when the
+  // user prefers reduced motion.
+  const transitionTo = useCallback((id: SectionId) => {
+    const doc = typeof document !== 'undefined' ? (document as Document & { startViewTransition?: (cb: () => void) => void }) : null;
+    const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (doc?.startViewTransition && !reduce) {
+      doc.startViewTransition(() => flushSync(() => setActive(id)));
+    } else {
+      setActive(id);
+    }
+  }, []);
 
   // Sync to URL — so refresh-to-same-place works (preserves v1 ?tab= contract)
   useEffect(() => {
@@ -63,7 +79,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
         const target = navItems[idx];
         if (target) {
           e.preventDefault();
-          setActive(target.id);
+          transitionTo(target.id);
         }
       }
     };
@@ -78,7 +94,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
       label: it.emphasis ? `${it.name}` : it.name,
       hint: i <= 7 ? `⌘${i}` : undefined,
       group: 'Sections',
-      onSelect: () => setActive(it.id),
+      onSelect: () => transitionTo(it.id),
     }));
     return [...sectionItems, ...paletteItems];
   }, [navItems, paletteItems]);
@@ -117,9 +133,9 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   }, [toggleCollapsed]);
 
   const handleSelect = useCallback((id: SectionId) => {
-    setActive(id);
+    transitionTo(id);
     setNavOpen(false); // choosing a section dismisses the drawer
-  }, []);
+  }, [transitionTo]);
 
   // Close the drawer on Escape, and whenever we grow back to desktop width
   // (so a resize/rotate never leaves it stuck open over the desktop layout).
