@@ -4,7 +4,9 @@ import { Loader2, Plus, ImageUp, Sparkles, X, ExternalLink, MessageCircle, Type 
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import { useCarouselStyles, CarouselStyle } from '../../hooks/useCarouselStyles';
+import { useStylePrompts, StylePrompt } from '../../hooks/useStylePrompts';
 import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
+import { renderLightMarkdown } from '../../lib/lightMarkdown';
 
 /**
  * Style Gallery — overview of every visual style the system can render in.
@@ -49,26 +51,32 @@ const STYLE_WEBHOOK =
 // so the user can click through to the live prompt + reference assets.
 
 interface AssetStyle {
-  id: string;
+  id: string;                 // ClickUp task ID
   name: string;
   blurb: string;
   category: 'carousel' | 'single_image';
-  usage?: number; // distinct rows in carousel_drafts using this style
+  promptSlug?: string;        // content_prompts.slug — set for carousel layouts that have a full prompt page mirrored
+  usage?: number;             // distinct rows in carousel_drafts using this style
 }
 
 const ASSET_STYLES: AssetStyle[] = [
   // ── Carousel layout archetypes (9) ─────────────────────────────────────
-  { id: '86afg31q5', name: 'Comic Explainer', category: 'carousel', blurb: 'Cover with editorial illustrated Ivan + 6–8 sequential beats via speech bubbles and short captions. Visual identity = the Editorial Comic-Grid kit (default).' },
-  { id: '86ahe7r3g', name: 'Founder Process', category: 'carousel', blurb: 'Cover with editorial Ivan portrait + bold serif italic headline → 5–6 process-beat slides, each with a sage outlined pill section-label top-center + photoreal Ivan in that beat.' },
-  { id: '86aff082u', name: 'Case Study', category: 'carousel', blurb: 'Cover → Challenge → Approach → Implementation (1–3 slides) → Results → Takeaways → CTA. Text-only PDF carousel — no AI imagery on body slides.' },
-  { id: '86afdhqx6', name: 'Framework Walkthrough', category: 'carousel', blurb: 'Framework name on cover → one component per slide → full diagram → CTA. Long-form architectural teardown.' },
-  { id: '86afdhqwm', name: 'Data-Driven', category: 'carousel', blurb: 'Stat headline cover → one stat per slide → CTA. Best for receipts, benchmarks, audit findings.' },
-  { id: '86afdhqw8', name: 'Before-After', category: 'carousel', blurb: '"Before vs After" cover → comparison pairs → CTA. Two-column visual on each body slide.' },
-  { id: '86afdhqvg', name: 'Myth-Busting', category: 'carousel', blurb: '"Myths vs Reality" cover → myth/truth pairs → CTA. Each body slide flags a misconception and corrects it.' },
-  { id: '86afdhqrm', name: 'Step-by-Step', category: 'carousel', blurb: 'Numbered cover → one step per slide → CTA. Clean linear sequence; pairs well with checklists.' },
-  { id: '86afdhqr9', name: 'Educational Breakdown', category: 'carousel', blurb: 'Title card → icon + key takeaway per slide → CTA. Lowest-friction format — one idea per beat.' },
+  // promptSlug maps to a row in content_prompts (synced from ClickUp doc 2ky5ezad-853
+  // by workflow 1jOmMEhOzxkabJYs). Adding a new style = (1) ClickUp page, (2) add
+  // page_id→slug entry to that workflow, (3) add slug here.
+  { id: '86afg31q5', name: 'Comic Explainer', category: 'carousel', promptSlug: 'style-comic-explainer', blurb: 'Cover with editorial illustrated Ivan + 6–8 sequential beats via speech bubbles and short captions. Visual identity = the Editorial Comic-Grid kit (default).' },
+  { id: '86ahe7r3g', name: 'Founder Process', category: 'carousel', promptSlug: 'style-founder-process', blurb: 'Cover with editorial Ivan portrait + bold serif italic headline → 5–6 process-beat slides, each with a sage outlined pill section-label top-center + photoreal Ivan in that beat.' },
+  { id: '86aff082u', name: 'Case Study', category: 'carousel', promptSlug: 'style-case-study', blurb: 'Cover → Challenge → Approach → Implementation (1–3 slides) → Results → Takeaways → CTA. Text-only PDF carousel — no AI imagery on body slides.' },
+  { id: '86afdhqx6', name: 'Framework Walkthrough', category: 'carousel', promptSlug: 'style-framework-walkthrough', blurb: 'Framework name on cover → one component per slide → full diagram → CTA. Long-form architectural teardown.' },
+  { id: '86afdhqwm', name: 'Data-Driven', category: 'carousel', promptSlug: 'style-data-driven', blurb: 'Stat headline cover → one stat per slide → CTA. Best for receipts, benchmarks, audit findings.' },
+  { id: '86afdhqw8', name: 'Before-After', category: 'carousel', promptSlug: 'style-before-after', blurb: '"Before vs After" cover → comparison pairs → CTA. Two-column visual on each body slide.' },
+  { id: '86afdhqvg', name: 'Myth-Busting', category: 'carousel', promptSlug: 'style-myth-busting', blurb: '"Myths vs Reality" cover → myth/truth pairs → CTA. Each body slide flags a misconception and corrects it.' },
+  { id: '86afdhqrm', name: 'Step-by-Step', category: 'carousel', promptSlug: 'style-step-by-step', blurb: 'Numbered cover → one step per slide → CTA. Clean linear sequence; pairs well with checklists.' },
+  { id: '86afdhqr9', name: 'Educational Breakdown', category: 'carousel', promptSlug: 'style-educational-breakdown', blurb: 'Title card → icon + key takeaway per slide → CTA. Lowest-friction format — one idea per beat.' },
 
   // ── Single-image post styles (6) ───────────────────────────────────────
+  // No promptSlug — single_image style hints are embedded in the Image Agent's
+  // main post-generation prompt (slug 'post-generation'), not separate pages.
   { id: '86afhgewx', name: 'Framework Diagram', category: 'single_image', blurb: 'Single architectural diagram — boxes/arrows showing how components connect. Most-used single_image style (19 posts).' },
   { id: '86afhgex8', name: 'Stat Card', category: 'single_image', blurb: 'Single oversized stat with caption underneath. Receipt-style proof point — 1 number, 1 line of context.' },
   { id: '86afhgexy', name: 'Concept Visual', category: 'single_image', blurb: 'Abstract conceptual illustration — metaphor for the post idea. Used when no concrete data or person is the subject.' },
@@ -120,6 +128,7 @@ const LM_FORMATS: { name: string; blurb: string; icon: string }[] = [
 
 const StyleGalleryPanel: React.FC = () => {
   const { styles, loading, error, refresh } = useCarouselStyles();
+  const { prompts: stylePrompts } = useStylePrompts();
   const [newOpen, setNewOpen] = useState(false);
 
   return (
@@ -164,7 +173,9 @@ const StyleGalleryPanel: React.FC = () => {
           Structural templates Claude composes per carousel. The author picks one per post; the kit above paints it. Source of truth = ClickUp Asset Styles.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {ASSET_STYLES.filter((s) => s.category === 'carousel').map((s) => <AssetStyleCard key={s.id} style={s} />)}
+          {ASSET_STYLES.filter((s) => s.category === 'carousel').map((s) => (
+            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} />
+          ))}
         </div>
       </section>
 
@@ -175,7 +186,9 @@ const StyleGalleryPanel: React.FC = () => {
           Image intents the generator picks per single-image post — steers the Gemini image agent toward a specific composition.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {ASSET_STYLES.filter((s) => s.category === 'single_image').map((s) => <AssetStyleCard key={s.id} style={s} />)}
+          {ASSET_STYLES.filter((s) => s.category === 'single_image').map((s) => (
+            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} />
+          ))}
         </div>
       </section>
 
@@ -233,7 +246,9 @@ const StyleGalleryPanel: React.FC = () => {
 };
 
 // ─── Asset Style card (ClickUp-backed layout archetypes + image intents) ─────
-const AssetStyleCard: React.FC<{ style: AssetStyle }> = ({ style }) => {
+const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt }> = ({ style, prompt }) => {
+  const [open, setOpen] = useState(false);
+  const hasPrompt = !!prompt && !!prompt.body;
   return (
     <Card className="space-y-2 group">
       <div className="flex items-start justify-between gap-2">
@@ -241,6 +256,7 @@ const AssetStyleCard: React.FC<{ style: AssetStyle }> = ({ style }) => {
           <div className="text-[13.5px] font-semibold text-zinc-100 truncate">{style.name}</div>
           <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">
             {style.category === 'carousel' ? 'Carousel layout' : 'Single-image intent'}
+            {hasPrompt && <span className="text-zinc-600"> · {(prompt!.body.length / 1000).toFixed(1)}k chars</span>}
           </div>
         </div>
         <a
@@ -248,12 +264,34 @@ const AssetStyleCard: React.FC<{ style: AssetStyle }> = ({ style }) => {
           target="_blank"
           rel="noreferrer"
           className="opacity-50 hover:opacity-100 transition text-emerald-400 hover:text-emerald-300 shrink-0"
-          title="Open style prompt in ClickUp"
+          title="Open style task in ClickUp"
         >
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
       <p className="text-[11.5px] leading-snug text-zinc-400">{style.blurb}</p>
+
+      {hasPrompt && (
+        <div className="pt-1 border-t border-zinc-900/60">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="text-[11px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
+          >
+            {open ? '− hide prompt' : '+ show prompt'}
+            <span className="text-zinc-600 ml-1">(synced from ClickUp)</span>
+          </button>
+          {open && (
+            <div className="mt-2 rounded-md border border-zinc-800/60 bg-zinc-950/50 px-3 py-2 max-h-[420px] overflow-y-auto">
+              {renderLightMarkdown(prompt!.body, { editorial: true })}
+            </div>
+          )}
+        </div>
+      )}
+      {style.category === 'carousel' && !hasPrompt && (
+        <div className="text-[10.5px] text-amber-400/70 italic pt-1 border-t border-zinc-900/60">
+          Prompt not yet synced — runs daily 04:00 UTC.
+        </div>
+      )}
     </Card>
   );
 };
