@@ -393,15 +393,15 @@ const BuildOutcomesSection: React.FC = () => (
 const PRECONDITIONS = [
   {
     n: '01',
-    titlePre: 'You decide with ',
-    pivot: 'data',
+    titlePre: 'Your decisions follow ',
+    pivot: 'rules you can name',
     titlePost: '',
     sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should be able to point to a row in a spreadsheet.',
   },
   {
     n: '02',
-    titlePre: 'Your best operator decides ',
-    pivot: 'by instinct',
+    titlePre: 'Your best operator follows ',
+    pivot: "rules no one's written down",
     titlePost: '',
     sub: 'Their calls are fast and consistent, but the logic has never been written down. The first job is documenting the rules. Then we automate them.',
   },
