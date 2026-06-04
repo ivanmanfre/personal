@@ -28,6 +28,7 @@ const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
 const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 const StyleGalleryPanel = lazy(() => import('../../dashboard/StyleGalleryPanel'));
+const PromptLibraryPanel = lazy(() => import('../../dashboard/PromptLibraryPanel'));
 const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: m.Calendar })));
 
 // IA reorg 2026-06-01: collapse 10 sub-tabs → 6. Pipeline (kanban) removed —
@@ -35,12 +36,13 @@ const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: 
 // houses both Post Performance + Site Audience via internal tabs. Video now
 // houses Recordings/Video Pipeline/Call Clips via internal tabs. Old `sub` values
 // are remapped to the new tabs on URL load so existing deeplinks keep working.
-type SubKey = 'posts' | 'leadmagnets' | 'styles' | 'calendar' | 'performance' | 'video' | 'newsletter' | 'strategy';
+type SubKey = 'posts' | 'leadmagnets' | 'styles' | 'prompts' | 'calendar' | 'performance' | 'video' | 'newsletter' | 'strategy';
 
 const SUB_LABELS: Record<SubKey, string> = {
   posts: 'Posts',
   leadmagnets: 'Lead Magnets',
   styles: 'Styles',
+  prompts: 'Prompts',
   calendar: 'Calendar',
   performance: 'Performance',
   video: 'Video & Clips',
@@ -48,7 +50,7 @@ const SUB_LABELS: Record<SubKey, string> = {
   strategy: 'Strategy',
 };
 
-const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'styles', 'calendar', 'performance', 'video', 'newsletter', 'strategy'];
+const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'styles', 'prompts', 'calendar', 'performance', 'video', 'newsletter', 'strategy'];
 
 // Map legacy ?sub= values to the new tab they live under.
 const LEGACY_SUB_REMAP: Record<string, SubKey> = {
@@ -95,6 +97,7 @@ export function ContentStudio() {
       case 'posts':       return <PostStudioPanel />;
       case 'leadmagnets': return <LeadMagnetStudioPanel />;
       case 'styles':      return <StyleGalleryPanel />;
+      case 'prompts':     return <PromptLibraryPanel />;
       case 'calendar':    return <CalendarSection />;
       case 'performance':
         return (
