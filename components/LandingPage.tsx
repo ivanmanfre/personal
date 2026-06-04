@@ -265,7 +265,7 @@ const ProblemSection: React.FC = () => {
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
                 { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It's documentable. It's automatable. It's not automated." },
-                { n: '02', h: 'Scaling means hiring, not building.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
+                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
@@ -391,9 +391,9 @@ const PRECONDITIONS = [
   {
     n: '01',
     titlePre: 'You decide with ',
-    pivot: 'data, not vibes',
+    pivot: 'data',
     titlePost: '',
-    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should point to a row in a spreadsheet, not a feeling.',
+    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should be able to point to a row in a spreadsheet.',
   },
   {
     n: '02',
