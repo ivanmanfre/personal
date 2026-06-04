@@ -89,6 +89,33 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   // below 768px the sidebar slides in over the content via a hamburger.
   const [navOpen, setNavOpen] = useState(false);
 
+  // Desktop sidebar collapse — rails the 240px nav down to a 66px icon strip.
+  // Persisted so the choice survives reloads. Mobile ignores it (CSS scopes the
+  // rail visuals to min-width:769px; the drawer always shows full labels).
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('dv-rail') === '1';
+  });
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem('dv-rail', next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  // ⌘\ / Ctrl+\ toggles the rail (standard sidebar-collapse shortcut).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+        e.preventDefault();
+        toggleCollapsed();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [toggleCollapsed]);
+
   const handleSelect = useCallback((id: SectionId) => {
     setActive(id);
     setNavOpen(false); // choosing a section dismisses the drawer
@@ -109,7 +136,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
 
   return (
     <div className="dashboard-v2">
-      <div className="dashboard-v2-shell">
+      <div className={`dashboard-v2-shell ${collapsed ? 'dashboard-v2-shell--rail' : ''}`}>
         {/* Mobile-only top bar — hidden ≥769px. Hosts the hamburger that opens
             the off-canvas nav drawer. */}
         <header className="dv-topbar">
@@ -132,7 +159,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           aria-hidden="true"
         />
 
-        <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} />
+        <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
         <main className="dv-main">
           <div className="dv-panel" key={active}>
             {renderer ? renderer() : (

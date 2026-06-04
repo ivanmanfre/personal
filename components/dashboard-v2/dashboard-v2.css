@@ -14,9 +14,12 @@
  * which leaks into v2 around panel gutters. Force warm-dark + Inter when v2 active.
  */
 body.dashboard-v2-active {
-  background: #14110d !important;
+  /* Subtle radial lift at top-left (behind brand + masthead) so the board reads
+   * as a designed surface, not flat near-black. Stays within the warm-dark identity. */
+  background: radial-gradient(1100px 620px at 16% -8%, #1e1914 0%, #14110d 58%) !important;
+  background-attachment: fixed !important;
   font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-  color: #e7e7ea;
+  color: #ededf0;
 }
 body.dashboard-v2-active * {
   /* Inputs and elements that explicitly set font-family will still win;
@@ -25,21 +28,29 @@ body.dashboard-v2-active * {
 
 .dashboard-v2 {
   --d-ink: #14110d;
-  --d-ink-2: #1a1713;
-  --d-ink-3: #221d18;
-  --d-paper: #e7e7ea;
-  --d-paper-dim: #a3a3aa;
-  --d-paper-dimmer: #8a8a92;
+  --d-ink-2: #1d1915;
+  --d-ink-3: #241f19;
+  --d-surface: #1b1712;         /* elevated card / panel surface — reads above the page bg */
+  --d-paper: #ededf0;
+  --d-paper-dim: #b6b6bd;       /* secondary text — raised from #a3a3aa for legibility on dark */
+  --d-paper-dimmer: #9a9aa3;    /* tertiary / mono labels — raised from #8a8a92 */
   --d-good: #2A8F65;            /* brand sage */
   --d-warn: #f59e0b;
   --d-bad: #ef4444;
   --d-accent: #60a5fa;
-  --d-rule: rgba(231, 231, 234, 0.07);
-  --d-rule-strong: rgba(231, 231, 234, 0.15);
+  --d-rule: rgba(231, 231, 234, 0.095);    /* hairlines were near-invisible at 0.07 */
+  --d-rule-strong: rgba(231, 231, 234, 0.20);
   --d-good-bg: rgba(42, 143, 101, 0.10);
   --d-warn-bg: rgba(245, 158, 11, 0.08);
   --d-bad-bg: rgba(239, 68, 68, 0.08);
   --d-accent-bg: rgba(96, 165, 250, 0.08);
+
+  /* Shared motion language — one easing curve + standard durations so every
+   * hover/transition across the board feels of-a-piece (expo-out = premium). */
+  --d-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --d-dur: 0.2s;
+  --d-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --d-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.34);
 
   /* Type scale tokens — replace scattered arbitrary text-[Npx] sizes across
    * PostStudioPanel / StudioListView / CarouselEditor with a 7-step ramp.
@@ -113,7 +124,10 @@ body.dashboard-v2-active * {
   grid-template-columns: 240px 1fr;
   height: 100vh;
   overflow: hidden;
+  transition: grid-template-columns 0.26s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* Collapsed "rail" — desktop only (mobile media query below overrides the grid). */
+.dashboard-v2-shell--rail { grid-template-columns: 74px 1fr; }
 
 /* SIDEBAR */
 .dv-sidebar {
@@ -122,8 +136,12 @@ body.dashboard-v2-active * {
   padding: 1.5rem 0 1rem;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* position:relative + overflow:visible so the edge toggle can straddle the
+   * right border (ClickUp pattern). The nav scrolls instead of the whole rail. */
+  position: relative;
+  overflow: visible;
 }
+.dv-nav { overflow-y: auto; min-height: 0; }
 .dv-brand { padding: 0 1.5rem 1.25rem; border-bottom: 1px solid var(--d-rule); margin-bottom: 1rem; }
 .dv-brand-mark { font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: var(--d-paper); line-height: 1; }
 .dv-brand-mark em { font-style: normal; font-weight: 700; color: var(--d-good); }
@@ -138,7 +156,8 @@ body.dashboard-v2-active * {
   background: transparent; border: none; width: 100%; text-align: left;
   color: var(--d-paper); font: inherit;
 }
-.dv-nav-item:hover { background: rgba(231, 231, 234, 0.04); }
+.dv-nav-item:hover { background: rgba(231, 231, 234, 0.055); }
+.dv-nav-item:hover .dv-nav-num { color: var(--d-paper-dim); }
 .dv-nav-item:active { transform: scale(0.98); }
 /* Sidebar uses sage accent (matches brand). Active item has subtle gradient + soft glow rail. */
 .dv-nav-item[aria-current="page"] {
@@ -155,6 +174,8 @@ body.dashboard-v2-active * {
 .dv-nav-name { flex: 1; font-size: 13.5px; font-weight: 500; }
 .dv-nav-name em { font-style: normal; font-weight: 700; color: var(--d-good); }
 .dv-nav-num { font-size: 11px; font-weight: 700; color: var(--d-paper-dimmer); width: 16px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.dv-nav-icon { display: none; }   /* expanded uses numbers; icons appear only in the rail */
+.dv-nav-short { display: none; }  /* compact label, rail only */
 .dv-nav-divider { font-size: 10.5px; letter-spacing: 0.04em; color: var(--d-paper-dimmer); padding: 1rem 1.4rem 0.4rem; font-weight: 600; }
 .dv-nav-badge {
   font-size: 10px; font-weight: 700; padding: 0.1rem 0.4rem;
@@ -166,6 +187,51 @@ body.dashboard-v2-active * {
 .dv-sidebar-foot { padding: 0.75rem 1.5rem; border-top: 1px solid var(--d-rule); }
 .dv-kbd-hint { font-size: 11px; letter-spacing: 0.05em; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .dv-kbd-hint kbd { background: var(--d-ink-3); border: 1px solid var(--d-rule-strong); padding: 0.1rem 0.3rem; margin-right: 0.2rem; color: var(--d-paper); border-radius: 3px; font-size: 10px; }
+
+/* ---- Sidebar collapse (desktop rail) ---- */
+.dv-rail-toggle { display: none; }   /* hidden on mobile; desktop block below enables it */
+@media (min-width: 769px) {
+  /* ClickUp-style edge toggle: a circular control hugging the sidebar's right
+   * border. Hidden until the sidebar is hovered (or it's collapsed), and it
+   * fills sage on hover. Absolute child of .dv-sidebar (position:relative). */
+  .dv-rail-toggle {
+    position: absolute; top: 64px; right: -11px; z-index: 25;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--d-ink-3); border: 1px solid var(--d-rule-strong);
+    color: var(--d-paper-dim); cursor: pointer;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.42);
+    opacity: 0; transform: scale(0.82); pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .dv-sidebar:hover .dv-rail-toggle,
+  .dv-rail-toggle:focus-visible,
+  .dashboard-v2-shell--rail .dv-rail-toggle { opacity: 1; transform: scale(1); pointer-events: auto; }
+  .dv-rail-toggle:hover { background: var(--d-good); color: #0b120e; border-color: var(--d-good); box-shadow: 0 3px 12px rgba(42, 143, 101, 0.4); }
+  .dv-rail-toggle:active { transform: scale(0.9); }
+  .dv-rail-chevron { display: inline-flex; transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+  .dashboard-v2-shell--rail .dv-rail-chevron { transform: rotate(180deg); }
+
+  /* Collapsed visuals — show the mono numbers only, badges become dots */
+  .dashboard-v2-shell--rail .dv-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+  .dashboard-v2-shell--rail .dv-brand-text { display: none; }
+  .dashboard-v2-shell--rail .dv-nav { padding: 0 0.35rem; }
+  /* icon-over-label, ClickUp style */
+  .dashboard-v2-shell--rail .dv-nav-item { flex-direction: column; gap: 0.22rem; padding: 0.5rem 0.1rem; border-radius: 9px; }
+  .dashboard-v2-shell--rail .dv-nav-num { display: none; }
+  .dashboard-v2-shell--rail .dv-nav-icon { display: inline-flex; color: var(--d-paper-dim); transition: color 0.15s ease; }
+  .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-icon { color: var(--d-paper); }
+  .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-icon { color: var(--d-good); }
+  .dashboard-v2-shell--rail .dv-nav-name { display: none; }
+  .dashboard-v2-shell--rail .dv-nav-short { display: block; flex: none; font-size: 9.5px; line-height: 1.15; font-weight: 600; text-align: center; letter-spacing: 0.01em; color: var(--d-paper-dim); transition: color 0.15s ease; }
+  .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-short { color: var(--d-paper); }
+  .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-short { color: var(--d-paper); }
+  .dashboard-v2-shell--rail .dv-nav-divider { font-size: 0; padding: 0; margin: 0.5rem 0.7rem; height: 0; overflow: hidden; border-top: 1px solid var(--d-rule); }
+  .dashboard-v2-shell--rail .dv-nav-badge { position: absolute; top: 4px; right: 12px; width: 7px; height: 7px; min-width: 0; padding: 0; font-size: 0; line-height: 0; border-radius: 50%; }
+  .dashboard-v2-shell--rail .dv-sidebar-foot { display: none; }
+  .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] { box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.18); }
+}
 
 /* MAIN */
 .dv-main { overflow-y: auto; }
@@ -254,12 +320,21 @@ body.dashboard-v2-active * {
 .dv-section-label--alert .dv-section-count { color: var(--d-bad); }
 
 /* KPI TILE */
-.dv-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--d-rule); border-radius: 6px; overflow: hidden; margin-bottom: 1.75rem; }
-.dv-kpi { padding: 1.1rem 1.25rem 1rem; border-right: 1px solid var(--d-rule); background: linear-gradient(180deg, rgba(255,255,255,0.012), transparent); transition: background 0.15s; cursor: pointer; }
+.dv-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--d-rule); border-radius: 6px; overflow: hidden; margin-bottom: 1.75rem; background: var(--d-surface); box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+.dv-kpi { position: relative; padding: 1.1rem 1.25rem 1rem; border-right: 1px solid var(--d-rule); background: linear-gradient(180deg, rgba(255,255,255,0.012), transparent); transition: background 0.18s ease; cursor: pointer; }
 .dv-kpi:last-child { border-right: none; }
 .dv-kpi:hover { background: var(--d-accent-bg); }
-.dv-kpi-lbl { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper-dimmer); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', ui-monospace, monospace; }
-.dv-kpi-num { font-size: 32px; line-height: 1; font-weight: 700; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; color: var(--d-paper); }
+/* Intent-based motion: a sage underline wipes in + the number nudges up on
+ * hover. Scoped strictly to :hover (never to mount / data-update) so it can
+ * never read as a "screen refresh" — the reason dvFadeIn was removed (see the
+ * .dv-main note above). The .dv-kpi-row clips overflow, so we animate WITHIN
+ * the cell (underline + number) rather than lifting the whole tile. */
+.dv-kpi::after { content: ''; position: absolute; left: 1.25rem; right: 1.25rem; bottom: 0.7rem; height: 2px; background: var(--d-good); transform: scaleX(0); transform-origin: left center; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.dv-kpi:hover::after { transform: scaleX(1); }
+.dv-kpi-lbl { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper-dimmer); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', ui-monospace, monospace; transition: color 0.18s ease; }
+.dv-kpi:hover .dv-kpi-lbl { color: var(--d-paper-dim); }
+.dv-kpi-num { font-size: 32px; line-height: 1; font-weight: 700; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; color: var(--d-paper); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.dv-kpi:hover .dv-kpi-num { transform: translateY(-2px); }
 .dv-kpi-num--good { color: var(--d-good); }
 .dv-kpi-num--warn { color: var(--d-warn); }
 .dv-kpi-num--bad  { color: var(--d-bad); }
@@ -300,7 +375,7 @@ body.dashboard-v2-active * {
   padding: 0.5rem 0.85rem;
   cursor: pointer;
   border-radius: 6px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.05s;
+  transition: background var(--d-dur), color var(--d-dur), border-color var(--d-dur), transform 0.14s var(--d-ease), box-shadow var(--d-dur) var(--d-ease);
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -313,7 +388,7 @@ body.dashboard-v2-active * {
 .dv-btn--dim { color: var(--d-paper-dim); }
 .dv-btn--dim:hover { color: var(--d-paper); }
 .dv-btn--good { color: #ffffff; background: var(--d-good); border-color: var(--d-good); }
-.dv-btn--good:hover { background: #2fa275; border-color: #2fa275; }
+.dv-btn--good:hover { background: #2fa275; border-color: #2fa275; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(42, 143, 101, 0.32); }
 .dv-btn--bad { color: #ffffff; background: var(--d-bad); border-color: var(--d-bad); }
 .dv-btn--bad:hover { background: #f15a5a; border-color: #f15a5a; }
 
@@ -328,9 +403,13 @@ body.dashboard-v2-active * {
 
 /* PULSE STRIP */
 .dv-pulse { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--d-rule-strong); border-radius: 6px; overflow: hidden; margin-bottom: 1.75rem; }
-.dv-pulse-cell { padding: 0.85rem 1rem; border-right: 1px solid var(--d-rule); display: flex; align-items: center; gap: 0.6rem; cursor: pointer; transition: background 0.15s; background: transparent; border-top: none; border-bottom: none; border-left: none; color: var(--d-paper); font: inherit; }
+.dv-pulse-cell { position: relative; padding: 0.85rem 1rem; border-right: 1px solid var(--d-rule); display: flex; align-items: center; gap: 0.6rem; cursor: pointer; transition: background var(--d-dur) var(--d-ease); background: transparent; border-top: none; border-bottom: none; border-left: none; color: var(--d-paper); font: inherit; }
 .dv-pulse-cell:last-child { border-right: none; }
-.dv-pulse-cell:hover { background: rgba(231,231,234,0.025); }
+.dv-pulse-cell:hover { background: rgba(231,231,234,0.03); }
+/* Sage underline wipe on hover — same vocabulary as .dv-kpi (intent-based only) */
+.dv-pulse-cell::after { content: ''; position: absolute; left: 1rem; right: 1rem; bottom: 0; height: 2px; background: var(--d-good); transform: scaleX(0); transform-origin: left center; transition: transform 0.32s var(--d-ease); }
+.dv-pulse-cell:hover::after { transform: scaleX(1); }
+.dv-pulse-cell:hover .dv-pulse-cell-dot { box-shadow: 0 0 12px currentColor; }
 .dv-pulse-cell-dot { width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
 .dv-pulse-cell-dot--good { color: var(--d-good); background: var(--d-good); }
 .dv-pulse-cell-dot--warn { color: var(--d-warn); background: var(--d-warn); }
@@ -339,8 +418,11 @@ body.dashboard-v2-active * {
 .dv-pulse-cell-meta { margin-left: auto; font-size: 11px; color: var(--d-paper-dim); letter-spacing: 0.02em; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
 /* ROW LIST */
-.dv-row-list .dv-row { display: flex; gap: 0.85rem; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--d-rule); cursor: pointer; transition: background 0.15s, padding-left 0.15s; }
-.dv-row-list .dv-row:hover { padding-left: 0.4rem; background: rgba(231,231,234,0.025); }
+.dv-row-list .dv-row { position: relative; display: flex; gap: 0.85rem; align-items: center; padding: 0.85rem 0; border-bottom: 1px solid var(--d-rule); cursor: pointer; transition: background var(--d-dur) var(--d-ease), padding-left var(--d-dur) var(--d-ease); }
+/* Sage left-accent grows from the row's vertical center on hover */
+.dv-row-list .dv-row::before { content: ''; position: absolute; left: -0.55rem; top: 50%; width: 2px; height: 0; background: var(--d-good); border-radius: 1px; transform: translateY(-50%); transition: height var(--d-dur) var(--d-ease); }
+.dv-row-list .dv-row:hover { padding-left: 0.55rem; background: rgba(231,231,234,0.03); }
+.dv-row-list .dv-row:hover::before { height: 62%; }
 .dv-row-list .dv-row:last-child { border-bottom: none; }
 .dv-row-date { font-size: 11.5px; letter-spacing: 0.04em; color: var(--d-paper); font-weight: 700; min-width: 70px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .dv-row--failed .dv-row-date { color: var(--d-bad); }
@@ -353,8 +435,10 @@ body.dashboard-v2-active * {
 .dv-row-meta { font-size: 10.5px; letter-spacing: 0.04em; color: var(--d-paper-dim); font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
 /* CLIENT ROW (compact) */
-.dv-client-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0; border-bottom: 1px solid var(--d-rule); font-size: 13px; cursor: pointer; transition: background 0.15s, padding-left 0.15s; }
-.dv-client-row:hover { background: rgba(231,231,234,0.025); padding-left: 0.4rem; }
+.dv-client-row { position: relative; display: flex; align-items: center; gap: 0.85rem; padding: 0.7rem 0; border-bottom: 1px solid var(--d-rule); font-size: 13px; cursor: pointer; transition: background var(--d-dur) var(--d-ease), padding-left var(--d-dur) var(--d-ease); }
+.dv-client-row::before { content: ''; position: absolute; left: -0.55rem; top: 50%; width: 2px; height: 0; background: var(--d-good); border-radius: 1px; transform: translateY(-50%); transition: height var(--d-dur) var(--d-ease); }
+.dv-client-row:hover { background: rgba(231,231,234,0.03); padding-left: 0.55rem; }
+.dv-client-row:hover::before { height: 60%; }
 .dv-client-row:last-child { border-bottom: none; }
 .dv-client-row-dot { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; }
 .dv-client-row-dot--good { background: var(--d-good); }
@@ -378,7 +462,8 @@ body.dashboard-v2-active * {
 .dv-err-banner-txt strong { color: var(--d-warn); }
 
 /* CARD */
-.dv-card { background: linear-gradient(180deg, var(--d-ink-2), var(--d-ink-2) 60%, rgba(0,0,0,0.2)); border: 1px solid var(--d-rule); border-radius: 6px; padding: 1.35rem; margin-bottom: 1rem; }
+.dv-card { background: linear-gradient(180deg, var(--d-surface), var(--d-ink-2) 90%); border: 1px solid var(--d-rule); border-radius: 8px; padding: 1.35rem; margin-bottom: 1rem; box-shadow: var(--d-shadow-1); transition: transform var(--d-dur) var(--d-ease), box-shadow var(--d-dur) var(--d-ease), border-color var(--d-dur) var(--d-ease); }
+.dv-card:hover { transform: translateY(-2px); box-shadow: var(--d-shadow-2); border-color: rgba(42, 143, 101, 0.28); }
 .dv-card-lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--d-paper-dimmer); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', ui-monospace, monospace; }
 .dv-card h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
 .dv-card h3 em { font-style: normal; font-weight: 700; color: var(--d-good); }
