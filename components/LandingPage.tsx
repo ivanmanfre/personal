@@ -264,7 +264,7 @@ const ProblemSection: React.FC = () => {
           <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
-                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It's documentable. It's automatable. It's not automated." },
+                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It could be automated. It just hasn't been." },
                 { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
               ].map((item) => (
@@ -957,6 +957,9 @@ const OfferSection: React.FC = () => (
             map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
             sequenced builds, costed gaps, decision logic for the first project.
           </p>
+          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
+            The build this plans for usually runs into five figures, and it pays back inside 90 days or I don't build it. Next to what the bottleneck is costing you every quarter, the diagnostic that scopes it pays for itself before the first build ships.
+          </p>
           <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.55 }}>
             100% credited toward the build if you proceed. You keep the scorecard either way. If we're not a fit after the 90-min discovery call, you don't pay.
           </p>
@@ -1028,6 +1031,9 @@ const FinalCTA: React.FC = () => (
     <div className="container mx-auto px-8 max-w-4xl relative z-10">
       <motion.div {...inView} className="text-center">
         <div className="w-8 h-0.5 mx-auto mb-10" style={{ backgroundColor: 'var(--color-accent)' }} />
+        <p style={{ ...T.serif, fontSize: '18px', maxWidth: '620px', margin: '0 auto 2rem', textAlign: 'center' }}>
+          Six months in, the work that used to wait on you runs without you: the repetitive calls made, the reports built, the same decision made the same way every time, whether you're in the room or on a plane. You're still the owner. You're just no longer the bottleneck.
+        </p>
         <RevealH2 style={{ ...T.display('clamp(2.8rem,6vw,5.5rem)'), marginBottom: '1.75rem' }}>
           Ready to scale<br />without hiring?
         </RevealH2>
