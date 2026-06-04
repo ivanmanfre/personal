@@ -946,3 +946,20 @@ export interface PaidAssessmentRow {
   intake_submitted_at: string | null;
 }
 export type SystemHealth = 'healthy' | 'degraded' | 'critical';
+export interface Contact {
+  id: string; name: string; company: string | null;
+  linkedinUrl: string | null; email: string | null;
+  icpScore: number | null; stage: string;
+  nextAction: string | null; nextActionDue: string | null;
+  ownerNotes: string | null; referredBy: string | null;
+  stageSuggested: string | null;
+  stageManual: boolean;
+  createdAt: string; updatedAt: string;
+}
+export interface ContactLink {
+  id: string; contactId: string; sourceType: string; sourceId: string;
+  sourceRef: Record<string, unknown> | null; linkedBy: string;
+  confidence: string; reviewStatus: 'active' | 'pending' | 'rejected'; createdAt: string;
+}
+export interface TimelineEvent { ts: string; kind: string; data: Record<string, unknown>; }
+export interface Contact360 { contact: Contact; links: ContactLink[]; timeline: TimelineEvent[]; }
