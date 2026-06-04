@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
+import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
@@ -40,7 +41,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   }
 
   const isReview = draft.status === 'review';
-  const isReady = draft.status === 'ready';
+  const isReady = draft.status === 'published';
   const dirty = postBody !== (draft.postBody || '')
     || emailCopy !== (draft.emailCopy || '')
     || resourceHtml !== (draft.resourceHtml || '')
@@ -256,6 +257,21 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 {busy === 'assets' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Approve &amp; build assets
               </Button>
             )}
+            <Button
+              variant="ghost" block
+              className="text-red-400 hover:text-red-300 hover:bg-red-950/40"
+              disabled={!!busy}
+              title="Delete this lead magnet permanently"
+              onClick={() => {
+                if (!confirm(`Delete this lead magnet permanently? This can't be undone.`)) return;
+                run('delete', async () => {
+                  const { error } = await supabase.from('lm_drafts_v2').delete().eq('id', draft.id);
+                  if (error) throw error;
+                  onClose();
+                }, 'Lead magnet deleted');
+              }}>
+              {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+            </Button>
           </div>
         </div>
       </div>

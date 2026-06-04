@@ -25,12 +25,28 @@ export interface LeadMagnetDraft {
   description: string | null;
 }
 
+// Canonical LM pipeline has 9 stages. Legacy/duplicate DB values are folded
+// into their canonical bucket here so grouping, counts, filters and the status
+// dropdown never surface the old "weird states" (draft / ready / complete) —
+// regardless of what the n8n workflow still writes. This is the single place
+// raw status is interpreted.
+const LM_STATUS_ALIASES: Record<string, string> = {
+  draft: 'idea',
+  ready: 'published',
+  complete: 'published',
+  pending: 'idea',
+};
+export function normalizeLmStatus(raw?: string | null): string {
+  const s = raw || 'idea';
+  return LM_STATUS_ALIASES[s] || s;
+}
+
 function mapDraft(row: any): LeadMagnetDraft {
   return {
     id: row.id,
     topic: row.topic,
     format: row.format,
-    status: row.status || 'idea',
+    status: normalizeLmStatus(row.status),
     postBody: row.post_body,
     resourceHtml: row.resource_html,
     resourceUrl: row.resource_url,

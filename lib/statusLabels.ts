@@ -25,10 +25,9 @@ export const LM_STATUSES = [
   'review',
   'approved',
   'scheduled',
-  'ready',
+  'published',
   'disqualified',
   'error',
-  'draft',
 ] as const;
 
 export type PostStatus = typeof POST_STATUSES[number];
@@ -47,9 +46,12 @@ const RAW_LABEL_MAP: Record<string, string> = {
   disqualified: 'Disqualified',
   error: 'Error',
   // LM-only
-  generating_assets: 'Generating assets',
-  ready: 'Complete',
-  draft: 'Draft',
+  generating_assets: 'Generating resources',
+  // Legacy/duplicate DB values — normalized away in useLeadMagnets, but kept
+  // here so any raw leak still renders the canonical label.
+  ready: 'Published',
+  complete: 'Published',
+  draft: 'Idea',
 };
 
 export function statusLabel(status: string): string {

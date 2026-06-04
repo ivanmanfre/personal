@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft } from '../../lib/studioActions';
@@ -101,7 +101,6 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const imageStyle = tax.image_style as string | undefined;
   const imageDesc = tax.image_description as string | undefined;
   const visualLink = tax.visual_content_link as string | undefined;
-  const hasImagery = imageStyle || imageDesc || visualLink;
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
@@ -431,11 +430,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           <FieldGrid draft={draft} />
         </div>
 
-        {/* RIGHT COLUMN — reference material (Preview / Metrics / Imagery brief).
-            Audit rank 12: collapsed three stacked cards into one InternalTabs
+        {/* RIGHT COLUMN — reference material (Preview / Metrics).
+            Audit rank 12: collapsed stacked cards into one InternalTabs
             "Reference" surface so the eye doesn't have to traverse Preview +
-            Metrics + Imagery before reaching the action card. Imagery tab
-            only renders when there's something to show. */}
+            Metrics before reaching the action card. */}
         <div className="space-y-3 min-w-0">
           <input
             ref={fileInputRef}
@@ -490,21 +488,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   label: 'Metrics',
                   render: () => <PostMetricsPanel draft={draft} />,
                 },
-                ...(hasImagery ? [{
-                  key: 'imagery',
-                  label: 'Imagery',
-                  render: () => (
-                    <div className="space-y-2 text-xs">
-                      {imageStyle && <div><span className="text-zinc-500 mr-2">Style</span><span className="text-zinc-200">{imageStyle}</span></div>}
-                      {imageDesc && <div><span className="text-zinc-500 block mb-1">Description</span><div className="text-zinc-200 whitespace-pre-wrap">{imageDesc}</div></div>}
-                      {visualLink && (
-                        <a href={visualLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300">
-                          <ExternalLink className="w-3.5 h-3.5" /> Visual reference
-                        </a>
-                      )}
-                    </div>
-                  ),
-                }] : []),
+                // Imagery tab removed — it was a read-only echo of the
+                // Image style / description / reference fields already shown
+                // (and editable) in the "Edit fields" card on the left.
               ]}
             />
           </Card>
@@ -705,6 +691,22 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </AnimatePresence>
 
           <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <Button
+              variant="ghost"
+              disabled={!!busy}
+              className="text-red-400 hover:text-red-300 hover:bg-red-950/40 mr-1"
+              title="Delete this post permanently"
+              onClick={() => {
+                if (!confirm(`Delete this ${draft.type || 'post'} permanently? This can't be undone.`)) return;
+                run('delete', async () => {
+                  const { error } = await supabase.from('carousel_drafts').delete().eq('id', draft.id);
+                  if (error) throw error;
+                  onClose();
+                }, 'Post deleted');
+              }}
+            >
+              {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+            </Button>
             <Button
               variant="secondary"
               disabled={!!busy}

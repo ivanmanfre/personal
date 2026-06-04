@@ -26,7 +26,9 @@ const STATUS_STYLE: Record<string, string> = {
   generating: 'bg-sky-900/50 text-sky-300',
   generating_assets: 'bg-sky-900/50 text-sky-300',
   review: 'bg-amber-900/50 text-amber-300',
-  ready: 'bg-emerald-900/50 text-emerald-300',
+  approved: 'bg-emerald-900/40 text-emerald-300',
+  scheduled: 'bg-emerald-900/40 text-emerald-300',
+  published: 'bg-emerald-900/50 text-emerald-300',
   disqualified: 'bg-zinc-800 text-zinc-400',
   error: 'bg-red-900/50 text-red-300',
 };
@@ -38,14 +40,13 @@ const STATUS_DOT: Record<string, string> = {
   review: 'bg-amber-400',
   approved: 'bg-emerald-400',
   scheduled: 'bg-emerald-400',
-  ready: 'bg-emerald-500',
+  published: 'bg-emerald-500',
   disqualified: 'bg-zinc-600',
   error: 'bg-red-500',
-  draft: 'bg-zinc-500',
 };
 
-const STATUS_ORDER = ['idea', 'generating', 'generating_assets', 'review', 'approved', 'scheduled', 'ready', 'disqualified', 'error', 'draft'];
-const PINNED_STATUSES = new Set(['generating', 'generating_assets', 'review', 'error']);
+const STATUS_ORDER = ['idea', 'generating', 'generating_assets', 'review', 'approved', 'scheduled', 'published', 'disqualified', 'error'];
+const PINNED_STATUSES = new Set(['generating', 'generating_assets', 'review', 'scheduled', 'published', 'error']);
 
 // dot + label pairing for the shared list view (dot is the scan anchor).
 const STATUS_META: Record<string, { dot: string; label: string }> = {
@@ -55,10 +56,9 @@ const STATUS_META: Record<string, { dot: string; label: string }> = {
   review:         { dot: 'bg-amber-400',  label: 'text-amber-300' },
   approved:          { dot: 'bg-emerald-400',label: 'text-emerald-300' },
   scheduled:         { dot: 'bg-emerald-400',label: 'text-emerald-300' },
-  ready:             { dot: 'bg-emerald-500',label: 'text-emerald-300' },
+  published:         { dot: 'bg-emerald-500',label: 'text-emerald-300' },
   disqualified:      { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
   error:             { dot: 'bg-red-500',    label: 'text-red-400' },
-  draft:             { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
 };
 
 function lmDate(iso: string | null | undefined): string | undefined {
@@ -403,7 +403,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
           groupByStatus={view === 'table' ? undefined : 'lm-studio'}
           statusOrder={STATUS_ORDER}
-          pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'review', 'approved', 'scheduled', 'ready', 'error']}
+          pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'generating_assets', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
             try {

@@ -32,6 +32,30 @@ export interface WorkflowStat {
   updatedAt: string;
 }
 
+export type ScheduledStatus = 'OK' | 'OVERDUE' | 'ERRORING' | 'DISABLED' | 'UNKNOWN';
+
+export interface ScheduledJob {
+  id: string;
+  jobKey: string;
+  source: 'n8n' | 'launchd' | 'claude-code' | 'cron';
+  label: string;
+  description: string | null;
+  category: string;
+  scheduleHuman: string | null;
+  expectedIntervalMinutes: number | null;
+  graceMinutes: number;
+  timezone: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  lastStatus: string | null;
+  errorCount24h: number;
+  successCount24h: number;
+  lastErrorMessage: string | null;
+  lastDurationMs: number | null;
+  minutesSinceLastRun: number | null;
+  status: ScheduledStatus;
+}
+
 export interface CompetitorPost {
   id: string;
   competitorName: string;
@@ -901,7 +925,7 @@ export interface StrategyMapData {
   activeClients: number;
 }
 
-export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'prompts' | 'studio' | 'leadmagnets' | 'signal-clusters' | 'settings';
+export type Tab = 'overview' | 'strategy' | 'performance' | 'content' | 'workflows' | 'competitors' | 'leads' | 'agent' | 'clients' | 'tasks' | 'upwork' | 'health' | 'outreach' | 'recordings' | 'auto-research' | 'meetings' | 'code' | 'usage' | 'video' | 'agent-ready' | 'audience' | 'letter' | 'brain' | 'prompts' | 'studio' | 'leadmagnets' | 'signal-clusters' | 'scheduled-ops' | 'settings';
 
 export interface PaidAssessmentRow {
   stripe_session_id: string;

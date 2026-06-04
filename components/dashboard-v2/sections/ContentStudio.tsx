@@ -124,10 +124,7 @@ export function ContentStudio() {
 
   return (
     <>
-      <HeadRow
-        title={<>Content <em>Studio</em></>}
-        meta={<>Posts · Lead Magnets · Styles · Calendar<br />Performance · Video & Clips · Newsletter · Strategy</>}
-      />
+      <HeadRow title={<>Content <em>Studio</em></>} />
       <SubTabs>
         {SUB_ORDER.map(key => (
           <SubTab key={key} id={key} active={sub} onChange={handleSub}>

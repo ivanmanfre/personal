@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 import { withUtmParams } from '../lib/utmCapture';
 
@@ -53,9 +53,21 @@ const decisionMakerOptions = [
   'I am researching',
 ];
 
+const TOTAL_STEPS = 4;
+const STEP_TITLES = ['Your business', 'The problem', 'Fit', 'Where to send it'];
+
 // Wave 0 / P30-1: Calendly URL is decorated with first-touch UTMs at click time
 // (see useEffect below) so calendar_events.utm_* gets populated.
 const CALENDLY_URL_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
+
+// Shared label + option-button styles (font-mono labels use ink-mute = #5A5752, AA-pass).
+const labelCls = 'font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3';
+const optionCls = (active: boolean) =>
+  `px-4 py-2 border font-medium text-sm transition-all ${
+    active
+      ? 'bg-black text-white border-black'
+      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
+  }`;
 
 const StartPage: React.FC = () => {
   useMetadata({
@@ -64,6 +76,7 @@ const StartPage: React.FC = () => {
     canonical: 'https://ivanmanfredi.com/start',
   });
   const [step, setStep] = useState<'form' | 'approved' | 'waitlist'>('form');
+  const [qStep, setQStep] = useState(0);
   const [form, setForm] = useState<FormData>({
     companySize: '',
     revenue: '',
@@ -76,9 +89,18 @@ const StartPage: React.FC = () => {
     name: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Per-step gating — mirrors the original required set (companySize, revenue,
+  // bottleneck, budget, name, email). Timeline/decisionMaker/priorAttempt stay
+  // optional so qualification routing is unchanged.
+  const canProceed = (s: number): boolean => {
+    if (s === 0) return !!form.companySize && !!form.revenue;
+    if (s === 1) return !!form.bottleneck.trim() && !!form.budget;
+    if (s === 2) return true;
+    if (s === 3) return !!form.name.trim() && !!form.email.trim();
+    return false;
+  };
 
+  const submit = () => {
     // Qualification: meaningful company size, real budget, true decision authority, actionable timeline.
     const qualified =
       form.companySize !== 'Solo' &&
@@ -110,10 +132,16 @@ const StartPage: React.FC = () => {
       /* silent - routing is client-side, capture is best-effort */
     });
 
-    if (qualified) {
-      setStep('approved');
+    setStep(qualified ? 'approved' : 'waitlist');
+  };
+
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canProceed(qStep)) return;
+    if (qStep < TOTAL_STEPS - 1) {
+      setQStep(qStep + 1);
     } else {
-      setStep('waitlist');
+      submit();
     }
   };
 
@@ -182,13 +210,15 @@ const StartPage: React.FC = () => {
     );
   }
 
+  const isLast = qStep === TOTAL_STEPS - 1;
+
   return (
     <div className="min-h-screen bg-paper pt-32 pb-16 px-6">
       <div className="container mx-auto max-w-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10"
+          className="mb-8"
         >
           <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
             Book a call
@@ -201,201 +231,173 @@ const StartPage: React.FC = () => {
           </p>
         </motion.div>
 
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-mono text-xs uppercase tracking-widest text-ink-mute">
+              Step {qStep + 1} of {TOTAL_STEPS} · {STEP_TITLES[qStep]}
+            </span>
+          </div>
+          <div className="h-[3px] w-full bg-zinc-200 overflow-hidden">
+            <motion.div
+              className="h-full bg-accent"
+              initial={false}
+              animate={{ width: `${((qStep + 1) / TOTAL_STEPS) * 100}%` }}
+              transition={{ duration: 0.4, ease: [0.22, 0.84, 0.36, 1] }}
+            />
+          </div>
+        </div>
+
         <motion.form
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          onSubmit={handleSubmit}
-          className="bg-paper rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle space-y-8"
+          onSubmit={handleNext}
+          className="bg-paper rounded-2xl border border-[color:var(--color-hairline)] p-8 md:p-12 shadow-card-subtle"
         >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={qStep}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.28, ease: [0.22, 0.84, 0.36, 1] }}
+              className="space-y-8"
+            >
+              {qStep === 0 && (
+                <>
+                  <div>
+                    <label className={labelCls}>01 - How many people on your team?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {companySizeOptions.map((option) => (
+                        <button key={option} type="button" onClick={() => setForm({ ...form, companySize: option })} className={optionCls(form.companySize === option)}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>02 - Annual revenue range</label>
+                    <div className="flex flex-wrap gap-2">
+                      {revenueOptions.map((option) => (
+                        <button key={option} type="button" onClick={() => setForm({ ...form, revenue: option })} className={optionCls(form.revenue === option)}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
 
-          {/* Q1 Company size */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              01 - How many people on your team?
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {companySizeOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setForm({ ...form, companySize: option })}
-                  className={`px-4 py-2 border font-medium text-sm transition-all ${
-                    form.companySize === option
-                      ? 'bg-black text-white border-black'
-                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+              {qStep === 1 && (
+                <>
+                  <div>
+                    <label className={labelCls}>03 - What's the operational bottleneck you're trying to solve? (one sentence)</label>
+                    <input
+                      type="text"
+                      value={form.bottleneck}
+                      onChange={(e) => setForm({ ...form, bottleneck: e.target.value })}
+                      placeholder="e.g. Lead qualification takes 8 hours a week..."
+                      className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>04 - Have you tried AI or automation before? What happened? (optional)</label>
+                    <textarea
+                      value={form.priorAttempt}
+                      onChange={(e) => setForm({ ...form, priorAttempt: e.target.value })}
+                      rows={3}
+                      placeholder="e.g. Tried ChatGPT for lead scoring. Output was inconsistent, nobody used it after 3 weeks."
+                      className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>05 - Budget range you're considering</label>
+                    <div className="flex flex-wrap gap-2">
+                      {budgetOptions.map((option) => (
+                        <button key={option} type="button" onClick={() => setForm({ ...form, budget: option })} className={optionCls(form.budget === option)}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {qStep === 2 && (
+                <>
+                  <div>
+                    <label className={labelCls}>06 - When do you want this solved?</label>
+                    <div className="flex flex-wrap gap-2">
+                      {timelineOptions.map((option) => (
+                        <button key={option} type="button" onClick={() => setForm({ ...form, timeline: option })} className={optionCls(form.timeline === option)}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>07 - Are you the decision-maker?</label>
+                    <div className="flex flex-col gap-2">
+                      {decisionMakerOptions.map((option) => (
+                        <button key={option} type="button" onClick={() => setForm({ ...form, decisionMaker: option })} className={`text-left ${optionCls(form.decisionMaker === option)}`}>
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {qStep === 3 && (
+                <>
+                  <p className="text-ink-soft leading-relaxed">
+                    Last step. Where should I send the confirmation and come-prepared notes?
+                  </p>
+                  <div>
+                    <label className={labelCls}>Name</label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Email</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
+                    />
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Nav — stacks on mobile (primary on top), row on sm+ */}
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 mt-10">
+            {qStep > 0 && (
+              <button
+                type="button"
+                onClick={() => setQStep(qStep - 1)}
+                className="inline-flex items-center justify-center gap-2 px-5 py-4 border border-zinc-300 text-ink-soft font-medium hover:border-black transition-colors w-full sm:w-auto"
+              >
+                <ArrowLeft aria-hidden="true" size={18} />
+                Back
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={!canProceed(qStep)}
+              className="btn-magnetic w-full sm:flex-1 px-8 py-4 bg-black text-white font-bold tracking-wide border-subtle shadow-card flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isLast ? 'See if we are a fit' : 'Continue'}
+              <ArrowRight aria-hidden="true" size={18} />
+            </button>
           </div>
-
-          {/* Q2 Revenue */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              02 - Annual revenue range
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {revenueOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setForm({ ...form, revenue: option })}
-                  className={`px-4 py-2 border font-medium text-sm transition-all ${
-                    form.revenue === option
-                      ? 'bg-black text-white border-black'
-                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Q3 Bottleneck */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              03 - What's the operational bottleneck you're trying to solve? (one sentence)
-            </label>
-            <input
-              type="text"
-              value={form.bottleneck}
-              onChange={(e) => setForm({ ...form, bottleneck: e.target.value })}
-              required
-              placeholder="e.g. Lead qualification takes 8 hours a week..."
-              className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
-            />
-          </div>
-
-          {/* Q4 Prior AI */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              04 - Have you tried AI or automation before? What happened?
-            </label>
-            <textarea
-              value={form.priorAttempt}
-              onChange={(e) => setForm({ ...form, priorAttempt: e.target.value })}
-              rows={3}
-              placeholder="e.g. Tried ChatGPT for lead scoring. Output was inconsistent, nobody used it after 3 weeks."
-              className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black resize-none"
-            />
-          </div>
-
-          {/* Q5 Budget */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              05 - Budget range you're considering
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {budgetOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setForm({ ...form, budget: option })}
-                  className={`px-4 py-2 border font-medium text-sm transition-all ${
-                    form.budget === option
-                      ? 'bg-black text-white border-black'
-                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Q6 Timeline */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              06 - When do you want this solved?
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {timelineOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setForm({ ...form, timeline: option })}
-                  className={`px-4 py-2 border font-medium text-sm transition-all ${
-                    form.timeline === option
-                      ? 'bg-black text-white border-black'
-                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Q7 Decision-maker */}
-          <div>
-            <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-              07 - Are you the decision-maker?
-            </label>
-            <div className="flex flex-col gap-2">
-              {decisionMakerOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setForm({ ...form, decisionMaker: option })}
-                  className={`text-left px-4 py-2 border font-medium text-sm transition-all ${
-                    form.decisionMaker === option
-                      ? 'bg-black text-white border-black'
-                      : 'bg-paper text-ink-soft border-zinc-300 hover:border-black'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div className="border-t border-zinc-200 pt-8 space-y-4">
-            <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-                Name
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-                className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
-              />
-            </div>
-            <div>
-              <label className="font-mono text-xs uppercase tracking-widest text-ink-mute block mb-3">
-                Email
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-                className="w-full px-4 py-3 border border-zinc-300 bg-paper focus:outline-none focus:border-black"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={
-              !form.companySize ||
-              !form.revenue ||
-              !form.bottleneck ||
-              !form.budget ||
-              !form.email ||
-              !form.name
-            }
-            className="btn-magnetic w-full px-8 py-4 bg-black text-white font-bold tracking-wide border-subtle shadow-card flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Continue
-            <ArrowRight aria-hidden="true" size={18} />
-          </button>
         </motion.form>
       </div>
     </div>

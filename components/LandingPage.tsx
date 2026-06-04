@@ -46,7 +46,7 @@ const T = {
     fontSize: '11px',
     letterSpacing: '0.22em',
     textTransform: 'uppercase' as const,
-    color: 'rgba(26,26,26,0.62)',
+    color: '#5A5752',
   } as React.CSSProperties,
   serif: {
     fontFamily: '"Source Serif 4", Georgia, serif',
@@ -70,7 +70,7 @@ const DIVIDER = { borderColor: 'rgba(26,26,26,0.1)' };
 
 // ─── Label ───────────────────────────────────────────────────────────────────
 const Label: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ children, dark }) => (
-  <div style={{ ...T.mono, color: dark ? 'rgba(247,244,239,0.5)' : 'rgba(26,26,26,0.62)', marginBottom: '1.75rem' }}>
+  <div style={{ ...T.mono, color: dark ? 'rgba(247,244,239,0.62)' : '#5A5752', marginBottom: '1.75rem' }}>
     {children}
   </div>
 );
@@ -132,7 +132,7 @@ const MagneticCTA: React.FC<{
     ? { backgroundColor: dark ? '#F7F4EF' : '#1A1A1A', color: dark ? '#1A1A1A' : '#F7F4EF' }
     : {
         fontStyle: 'italic',
-        color: dark ? 'rgba(247,244,239,0.52)' : 'rgba(26,26,26,0.52)',
+        color: dark ? 'rgba(247,244,239,0.62)' : '#4A4A48',
         border: `1px solid ${dark ? 'rgba(247,244,239,0.15)' : 'rgba(26,26,26,0.14)'}`,
       };
 
@@ -205,7 +205,7 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
         </div>
       )}
       {r.role && (
-        <div style={{ ...T.mono, fontSize: '9px', color: 'rgba(26,26,26,0.38)', marginBottom: '8px' }}>
+        <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginBottom: '8px' }}>
           {r.role}
         </div>
       )}
@@ -265,14 +265,14 @@ const ProblemSection: React.FC = () => {
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
                 { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It's documentable. It's automatable. It's not automated." },
-                { n: '02', h: 'Scaling means hiring, not building.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
+                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
                   <span style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
                   <div>
                     <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '16px', color: '#1A1A1A', marginBottom: '6px', lineHeight: 1.35 }}>{item.h}</div>
-                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '15px', color: 'rgba(26,26,26,0.58)', lineHeight: 1.65 }}>{item.b}</p>
+                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '16px', color: '#5A5752', lineHeight: 1.65 }}>{item.b}</p>
                   </div>
                 </div>
               ))}
@@ -338,6 +338,9 @@ const BuildOutcomesSection: React.FC = () => (
             <SageSweep delay={0.6} opacity={0.72} />
           </span>
         </RevealH2>
+        <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
+          The systems Agent-Ready operators are running right now.
+        </p>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
@@ -361,7 +364,7 @@ const BuildOutcomesSection: React.FC = () => (
               {o.metric}
             </div>
             <div style={{ ...T.mono, marginBottom: '20px' }}>{o.metricLabel}</div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(26,26,26,0.6)', lineHeight: 1.6, flex: 1 }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.6, flex: 1 }}>
               {o.story}
             </p>
             <div className="flex items-center justify-between gap-4 mt-5">
@@ -372,7 +375,7 @@ const BuildOutcomesSection: React.FC = () => (
                 fontFamily: '"Source Serif 4",serif',
                 fontStyle: 'italic',
                 fontSize: '13px',
-                color: 'rgba(26,26,26,0.5)',
+                color: '#5A5752',
               }} className="group-hover:text-[var(--color-accent)] transition-colors whitespace-nowrap">
                 Read case →
               </span>
@@ -391,9 +394,9 @@ const PRECONDITIONS = [
   {
     n: '01',
     titlePre: 'You decide with ',
-    pivot: 'data, not vibes',
+    pivot: 'data',
     titlePost: '',
-    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should point to a row in a spreadsheet, not a feeling.',
+    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should be able to point to a row in a spreadsheet.',
   },
   {
     n: '02',
@@ -863,7 +866,7 @@ const PaybackSection: React.FC = () => {
                 </div>
               ))}
             </div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.45)', lineHeight: 1.5, marginTop: '24px' }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', lineHeight: 1.5, marginTop: '24px' }}>
               Blended value = average hourly revenue target of the people doing the manual work.
             </p>
           </motion.div>
@@ -882,12 +885,18 @@ const PaybackSection: React.FC = () => {
                 prefix="$"
                 style={{ ...T.display('clamp(2.4rem,4.5vw,4rem)'), color: qualifies ? 'var(--color-accent)' : '#1A1A1A' }}
               />
-              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.5)', lineHeight: 1.5, marginTop: '10px' }}>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', lineHeight: 1.5, marginTop: '10px' }}>
                 {qualifies
                   ? 'This covers a real build. We scope to fit. Nothing over-engineered.'
                   : "Below the diagnostic threshold. We'd need to find a higher-leverage process, or start with the scorecard."}
               </p>
             </div>
+
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}>
+              Every quarter you wait costs about{' '}
+              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>{' '}
+              in leaked capacity. The diagnostic takes one week.
+            </p>
 
             <motion.a
               href="/assessment"
@@ -956,7 +965,7 @@ const OfferSection: React.FC = () => (
         <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(247,244,239,0.1)' }} />
 
         <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="pl-20 pt-8 lg:pt-0">
-          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.35)', marginBottom: '1.5rem' }}>What's included</div>
+          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.6)', marginBottom: '1.5rem' }}>What's included</div>
           <ul className="space-y-5 mb-10">
             {[
               ['90-min discovery call', 'We map your highest-leverage workflows together.'],
@@ -969,7 +978,7 @@ const OfferSection: React.FC = () => (
                 <span style={{ color: 'var(--color-accent-light)', fontFamily: '"Source Serif 4",serif', fontStyle: 'italic', fontSize: '17px', lineHeight: 1.4, flexShrink: 0 }}>↳</span>
                 <div>
                   <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#F7F4EF', lineHeight: 1.3 }}>{title}</div>
-                  <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.42)', lineHeight: 1.4, marginTop: '3px' }}>{desc}</div>
+                  <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.6)', lineHeight: 1.4, marginTop: '3px' }}>{desc}</div>
                 </div>
               </li>
             ))}
@@ -1034,7 +1043,7 @@ const FinalCTA: React.FC = () => (
             Prefer to talk first? Book a call <ArrowRight size={15} />
           </MagneticCTA>
         </div>
-        <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(26,26,26,0.55)', marginTop: '1.75rem' }}>
+        <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', marginTop: '1.75rem' }}>
           Booking {getBookingQuarter()} · {OPEN_SLOTS} diagnostic slots remaining
         </p>
       </motion.div>
@@ -1084,7 +1093,7 @@ const LandingFooter: React.FC = () => {
             <span style={{ fontStyle: 'italic' }}>that actually ship.</span>
           </h3>
           <p style={{ ...T.serif, fontSize: '15px', marginBottom: '2rem' }}>
-            Written for founders of growing service businesses. No fluff, no AI hype. Just the patterns that work.
+            Written for founders of growing service businesses going Agent-Ready. The patterns I'm actually running in production.
           </p>
 
           {status === 'success' ? (
@@ -1185,9 +1194,9 @@ const LandingFooter: React.FC = () => {
         <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4" style={{ ...DIVIDER, ...T.mono, fontSize: '10px' }}>
           <p>© {new Date().getFullYear()} Iván Manfredi · All rights reserved</p>
           <div className="flex gap-7">
-            <Link to="/store" style={{ color: 'rgba(26,26,26,0.55)', transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(26,26,26,0.55)'}>Store</Link>
-            <a href="/scorecard" style={{ color: 'rgba(26,26,26,0.55)' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(26,26,26,0.55)'}>Scorecard</a>
-            <a href="mailto:im@ivanmanfredi.com" style={{ color: 'rgba(26,26,26,0.55)' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(26,26,26,0.55)'}>Contact</a>
+            <Link to="/store" style={{ color: '#5A5752', transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = '#5A5752'}>Store</Link>
+            <a href="/scorecard" style={{ color: '#5A5752' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = '#5A5752'}>Scorecard</a>
+            <a href="mailto:im@ivanmanfredi.com" style={{ color: '#5A5752' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = '#5A5752'}>Contact</a>
           </div>
         </div>
 

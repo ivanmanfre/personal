@@ -70,6 +70,7 @@ const LazyPromptsPanel = lazy(retryImport(() => import('./PromptsPanel')));
 const LazyPostStudioPanel = lazy(retryImport(() => import('./PostStudioPanel')));
 const LazyLeadMagnetStudioPanel = lazy(retryImport(() => import('./LeadMagnetStudioPanel')));
 const LazySignalClustersPanel = lazy(retryImport(() => import('./SignalClustersPanel')));
+const LazyScheduledOpsPanel = lazy(retryImport(() => import('./ScheduledOpsPanel')));
 
 const panelComponents: Record<Tab, React.ComponentType> = {
   overview: OverviewPanel,
@@ -88,6 +89,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   recordings: LazyRecordingsPanel as unknown as React.ComponentType,
   'auto-research': LazyAutoResearchPanel as unknown as React.ComponentType,
   'signal-clusters': LazySignalClustersPanel as unknown as React.ComponentType,
+  'scheduled-ops': LazyScheduledOpsPanel as unknown as React.ComponentType,
   meetings: LazyMeetingsPanel as unknown as React.ComponentType,
   code: LazyCodePanel as unknown as React.ComponentType,
   usage: LazyUsagePanel as unknown as React.ComponentType,
@@ -134,6 +136,7 @@ const lazyImports = [
   retryImport(() => import('./PromptsPanel')),
   retryImport(() => import('./PostStudioPanel')),
   retryImport(() => import('./LeadMagnetStudioPanel')),
+  retryImport(() => import('./ScheduledOpsPanel')),
 ];
 
 function usePrefetchPanels() {
