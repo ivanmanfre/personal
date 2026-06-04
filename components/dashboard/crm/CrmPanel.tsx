@@ -80,33 +80,45 @@ export default function CrmPanel() {
       <Funnel>
         {PIPELINE.map(s => (
           <FunnelSeg key={s} label={stageMeta(s).label} value={stageCounts[s] || 0}
-            flex={fflex(stageCounts[s] || 0)} variant={FVAR[s]}
+            flex={fflex(stageCounts[s] || 0)} variant={(stageCounts[s] || 0) === 0 ? 'cold' : FVAR[s]}
             onClick={() => setStageFilter(stageFilter === s ? 'all' : s)} />
         ))}
       </Funnel>
 
-      {/* attention */}
-      <div className="crm-cols2">
-        <div>
-          <SectionLabel label="Needs you" count={todayList.length} alert={hasOverdue} />
-          {todayList.length === 0
-            ? <Marginalia>Nothing due — you're clear.</Marginalia>
-            : <RowList>{todayList.map(c => {
-              const od = c.nextActionDue! < today;
-              return <Row key={c.id} date={od ? 'OVERDUE' : 'TODAY'} variant={od ? 'failed' : 'amber'}
-                name={c.name} meta={c.nextAction || 'follow up'} onClick={() => setSelected(c.id)} />;
-            })}</RowList>}
-        </div>
-        <div>
-          <SectionLabel label="Hot leads" count={hotList.length} />
-          {hotList.length === 0
-            ? <Marginalia>No active high-ICP leads yet.</Marginalia>
-            : <RowList>{hotList.map(c => (
-              <ClientRow key={c.id} name={c.name} status={c.company || '—'} severity="good"
-                action={c.icpScore != null ? `ICP ${c.icpScore}` : ''} onClick={() => setSelected(c.id)} />
-            ))}</RowList>}
-        </div>
-      </div>
+      {/* attention — two columns when there are due actions, else hot leads full-width */}
+      {(() => {
+        const hot = hotList.length === 0
+          ? <Marginalia>No active high-ICP leads yet.</Marginalia>
+          : <RowList>{hotList.map(c => (
+            <ClientRow key={c.id} name={c.name} status={c.company || '—'} severity="good"
+              action={c.icpScore != null ? `ICP ${c.icpScore}` : ''} onClick={() => setSelected(c.id)} />
+          ))}</RowList>;
+        if (todayList.length === 0) {
+          return (
+            <div style={{ marginBottom: 'var(--sp-6)' }}>
+              <SectionLabel label="Hot leads" count={hotList.length}
+                hint={<span style={{ color: 'var(--d-good)' }}>✓ nothing due today</span>} />
+              {hot}
+            </div>
+          );
+        }
+        return (
+          <div className="crm-cols2">
+            <div>
+              <SectionLabel label="Needs you" count={todayList.length} alert={hasOverdue} />
+              <RowList>{todayList.map(c => {
+                const od = c.nextActionDue! < today;
+                return <Row key={c.id} date={od ? 'OVERDUE' : 'TODAY'} variant={od ? 'failed' : 'amber'}
+                  name={c.name} meta={c.nextAction || 'follow up'} onClick={() => setSelected(c.id)} />;
+              })}</RowList>
+            </div>
+            <div>
+              <SectionLabel label="Hot leads" count={hotList.length} />
+              {hot}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* review queue */}
       {pending.length > 0 && (

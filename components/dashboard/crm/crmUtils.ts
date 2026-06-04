@@ -2,16 +2,19 @@ export const PIPELINE = ['new','engaged','qualified','call_booked','proposal_sen
 export const ALL_STAGES = [...PIPELINE, 'lost', 'nurture'] as const;
 
 export interface StageMeta { label: string; c: string; bg: string; }
+// On-system: status uses sage(good) / amber(warn) / red(bad) / neutral-grey only.
+// Blue (--d-accent) is reserved for focus/info, not status. Chip colors match the funnel
+// buckets (cold=new, warm=all active, win=won).
 export const STAGE_META: Record<string, StageMeta> = {
-  new:           { label: 'New',         c: 'var(--d-paper-dim)',    bg: 'rgba(163,163,170,.10)' },
-  engaged:       { label: 'Engaged',     c: 'var(--d-accent)',       bg: 'var(--d-accent-bg)' },
-  qualified:     { label: 'Qualified',   c: 'var(--d-accent)',       bg: 'var(--d-accent-bg)' },
-  call_booked:   { label: 'Call booked', c: 'var(--d-accent)',       bg: 'var(--d-accent-bg)' },
+  new:           { label: 'New',         c: 'var(--d-paper-dim)',    bg: 'rgba(180,183,192,.10)' },
+  engaged:       { label: 'Engaged',     c: 'var(--d-warn)',         bg: 'var(--d-warn-bg)' },
+  qualified:     { label: 'Qualified',   c: 'var(--d-warn)',         bg: 'var(--d-warn-bg)' },
+  call_booked:   { label: 'Call booked', c: 'var(--d-warn)',         bg: 'var(--d-warn-bg)' },
   proposal_sent: { label: 'Proposal',    c: 'var(--d-warn)',         bg: 'var(--d-warn-bg)' },
   negotiating:   { label: 'Negotiating', c: 'var(--d-warn)',         bg: 'var(--d-warn-bg)' },
   won:           { label: 'Won',         c: 'var(--d-good)',         bg: 'var(--d-good-bg)' },
   lost:          { label: 'Lost',        c: 'var(--d-bad)',          bg: 'var(--d-bad-bg)' },
-  nurture:       { label: 'Nurture',     c: 'var(--d-paper-dimmer)', bg: 'rgba(138,138,146,.08)' },
+  nurture:       { label: 'Nurture',     c: 'var(--d-paper-dimmer)', bg: 'rgba(156,160,171,.08)' },
 };
 export const stageMeta = (s: string): StageMeta => STAGE_META[s] || STAGE_META.new;
 
