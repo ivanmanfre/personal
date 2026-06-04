@@ -95,3 +95,21 @@ Phase 2A (auto-resolve) and 2C (work queue) deliver the most marginal value afte
 2. Build the ingestion job (n8n): Gmail trigger/poll → for each thread upsert `email_threads(thread_id, subject, participant_emails, last_message_at, snippet)`. Filter to threads with ≥1 non-self participant.
 3. The pg_cron `resolve_contacts()` (already live, every 30 min) will then auto-link new threads to contacts — no further code needed.
 4. Bonus: the same OAuth unblocks the signal-clusters Gmail input.
+
+---
+
+## Phase 3 — COMPLETE (2026-06-04, Gmail authorized)
+
+**Status: Phase 3 fully shipped — no longer blocked.** Gmail OAuth was authorized in n8n; the rest was built and verified end-to-end. Migrations: `crm_email_threads`, `crm_email_wire`, `crm_email_create_contacts_v2`, `crm_email_stage_engaged` (+ `email_threads.name_map` column).
+
+**Built:**
+- **n8n workflow `l6yJ2DiV3HY4wslg` "CRM — Gmail Thread Ingest"** (active, Schedule "Every 2h"): Gmail `getAll` (cred `qkw4OHjtMonK7u5G` = im@ivanmanfredi, last 30d, excludes promotions/social/updates/forums) → Code groups messages by `threadId`, collecting `participant_emails` + `name_map` (email→display name) + `last_message_at`/`subject`/`snippet` → HTTP upsert into `email_threads` (on_conflict=thread_id). Mirrors the proven Signal-Clusters Gmail node + Supabase upsert pattern; no Code-node binary work.
+- **`_resolve_email_threads()`** now matches by email AND **creates contacts** from genuine inbound senders — hard-gated against own-domain (`@ivanmanfredi.com`), self, and bulk/no-reply/unsubscribe/customer.io/sendgrid/mailchimp/VERP (`=`) addresses. New contacts get the display name from `name_map` (fallback: init-capped local-part) and `email_thread → engaged` stage.
+
+**Verified on REAL data:** the 2h job ingested 18 threads; resolver surfaced actual deals into the CRM as **engaged** contacts with email threads on their timeline — **Henner (4creatives.net), Rafay Iqbal + Matthew (interlude.studio), Derek Chinners (proswppp.com)**. Noise (customer.io VERP, hello@ivanmanfredi.com) correctly excluded. The synthetic-thread proof + this live run confirm match→create→timeline all work. pg_cron `resolve_contacts` (already live) auto-links every new thread.
+
+**Key product insight:** inbound email is the channel that surfaces referral/inbound *deals* (Henner, Interlude) that the cold-outreach resolver never had — the CRM's highest-value contacts come from here, not from prospects.
+
+**Minor artifacts (operator can fix in UI):** `ivan@intelligents.agency` created an "Ivan" contact (likely self); display-name fallback can produce odd caps (e.g. "Dc"). Email participant_emails overwrite (not union) on re-upsert — fine for matching.
+
+**Bonus:** the same Gmail credential unblocks Signal Clusters (already wired there).
