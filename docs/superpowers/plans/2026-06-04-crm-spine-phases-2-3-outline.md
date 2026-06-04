@@ -77,3 +77,21 @@ Phase 2A (auto-resolve) and 2C (work queue) deliver the most marginal value afte
 3. **`limit(500)` truncation** — list + stage counts + review-queue name resolution only saw 500 of 1,599 contacts (`engaged` showed 3, not 17; David/Patrick matches showed id-slices). Raised to 2,000 + ICP secondary sort.
 
 **Deferred (genuine, not gaps):** merge/split UI (manual `merge_contacts()` exists); proposal_clickup auto-match (needs a ClickUp fetch — stays manual-attach); WhatsApp/morning-triage nudges. SOURCES chip contrast improved but still modest.
+
+---
+
+## Phase 3 execution record (2026-06-04) — built to the blocker
+
+**Status: Phase 3 matching layer COMPLETE & PROVEN; ingestion BLOCKED on Gmail OAuth.** Migrations: `crm_email_threads`, `crm_email_wire`.
+
+**Built & verified (no OAuth needed):**
+- `email_threads` table (`thread_id` pk, `subject`, `participant_emails text[]`, `last_message_at`, `snippet`) + RLS matching siblings.
+- `_resolve_email_threads()` — matches each participant email (exact) to an EXISTING contact; links as `email_thread` (`source_id = threadId|email`). Deliberately does **not** mint contacts from a bare email (avoids newsletter/vendor noise); Ivan's own addresses (`im@ivanmanfredi.com`, `ivan.manfredi2001@gmail.com`) excluded. Wired into the master `resolve_contacts()` (returns `email_linked`).
+- `get_contact_360` v3 adds `email` timeline events.
+- **Proof:** a synthetic `email_threads` row with a real contact's address resolved to 1 link and produced an `email` event on that contact's timeline; test data then deleted (0 threads / 0 email links remain). So the moment real threads exist, matching + display already work.
+
+**THE BLOCKER (needs Ivan):** Gmail OAuth was never wired (same dependency that's stalled signal-clusters since 05-18). Cannot be provisioned headlessly. **Handoff to unblock:**
+1. Authorize a Gmail OAuth credential for `im@ivanmanfredi.com` (n8n Google OAuth2 credential, or a Supabase-stored refresh token). See global memory `calendar-account` for the Google account.
+2. Build the ingestion job (n8n): Gmail trigger/poll → for each thread upsert `email_threads(thread_id, subject, participant_emails, last_message_at, snippet)`. Filter to threads with ≥1 non-self participant.
+3. The pg_cron `resolve_contacts()` (already live, every 30 min) will then auto-link new threads to contacts — no further code needed.
+4. Bonus: the same OAuth unblocks the signal-clusters Gmail input.
