@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
               marginBottom: '2rem',
             }}
           >
-            Written for founders of growing service businesses. No fluff, no AI hype. Just the patterns that work.
+            Written for founders of growing service businesses going Agent-Ready. The patterns I'm actually running in production.
           </p>
 
           {status === 'success' ? (

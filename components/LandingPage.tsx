@@ -338,6 +338,9 @@ const BuildOutcomesSection: React.FC = () => (
             <SageSweep delay={0.6} opacity={0.72} />
           </span>
         </RevealH2>
+        <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
+          The systems Agent-Ready operators are running right now.
+        </p>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
@@ -1090,7 +1093,7 @@ const LandingFooter: React.FC = () => {
             <span style={{ fontStyle: 'italic' }}>that actually ship.</span>
           </h3>
           <p style={{ ...T.serif, fontSize: '15px', marginBottom: '2rem' }}>
-            Written for founders of growing service businesses. No fluff, no AI hype. Just the patterns that work.
+            Written for founders of growing service businesses going Agent-Ready. The patterns I'm actually running in production.
           </p>
 
           {status === 'success' ? (
