@@ -668,11 +668,11 @@ export function StudioListView({
         {onBulkAction && (
           <button
             type="button"
-            aria-label="Delete post"
-            title="Delete post"
+            aria-label="Delete"
+            title="Delete"
             onClick={(e) => {
               e.stopPropagation();
-              if (!confirm(`Delete "${r.title || 'this post'}" permanently? This can't be undone.`)) return;
+              if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
               onBulkAction('delete', [r.id]);
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-zinc-500 bg-zinc-950/70 ring-1 ring-zinc-800/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-300 hover:bg-red-950/50 hover:ring-red-500/40 transition-all"
