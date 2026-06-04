@@ -2,26 +2,29 @@ import React, { useState, useMemo } from 'react';
 import './crm.css';
 import { useContacts } from '../../../hooks/useContacts';
 import { ContactRecord } from './ContactRecord';
-import { PIPELINE, ALL_STAGES, stageMeta, initials, avatarColor, relTime, TODAY } from './crmUtils';
+import { PIPELINE, stageMeta, initials, avatarColor, relTime, TODAY } from './crmUtils';
+import {
+  SectionLabel, Funnel, FunnelSeg, RowList, Row, ClientRow, BtnGhost, Marginalia,
+} from '../../dashboard-v2/primitives';
 
 const ACTIVE = new Set(['engaged', 'qualified', 'call_booked', 'proposal_sent', 'negotiating']);
+const FVAR: Record<string, 'win' | 'warm' | 'cold'> = {
+  new: 'cold', engaged: 'warm', qualified: 'warm', call_booked: 'warm',
+  proposal_sent: 'warm', negotiating: 'warm', won: 'win',
+};
+const fflex = (n: number) => Math.max(0.7, Math.log10((n || 0) + 1) + 0.35);
 
 function Avatar({ name, size = 28 }: { name: string; size?: number }) {
-  return (
-    <span className={size > 36 ? 'crm-av-lg' : 'crm-av'} style={{ background: avatarColor(name), width: size, height: size }}>
-      {initials(name)}
-    </span>
-  );
+  return <span className="crm-av" style={{ background: avatarColor(name), width: size, height: size }}>{initials(name)}</span>;
 }
-function StageBadge({ stage }: { stage: string }) {
+function StageChip({ stage }: { stage: string }) {
   const m = stageMeta(stage);
-  return <span className="crm-badge" style={{ ['--c' as any]: m.c, ['--bg' as any]: m.bg }}><span className="dot" />{m.label}</span>;
+  return <span className="dv-chip" style={{ color: m.c, background: m.bg }}>{m.label}</span>;
 }
 function Icp({ v }: { v: number | null }) {
   if (v == null) return <span className="crm-dim">—</span>;
-  const c = v >= 7 ? 'var(--d-good)' : v >= 4 ? 'var(--d-paper)' : 'var(--d-paper-dimmer)';
-  const bg = v >= 7 ? 'var(--d-good-bg)' : 'transparent';
-  return <span className="crm-icp" style={{ color: c, background: bg }}>{v}</span>;
+  const hi = v >= 7;
+  return <span className="crm-icp" style={{ color: hi ? 'var(--d-good)' : v >= 4 ? 'var(--d-paper)' : 'var(--d-paper-dimmer)', background: hi ? 'var(--d-good-bg)' : 'transparent' }}>{v}</span>;
 }
 
 type SortKey = 'name' | 'icp' | 'activity';
@@ -37,7 +40,7 @@ export default function CrmPanel() {
   const today = TODAY();
 
   const rows = useMemo(() => {
-    let r = contacts.filter(c =>
+    const r = contacts.filter(c =>
       (stageFilter === 'all' || c.stage === stageFilter) &&
       (icpBand === 'all'
         || (icpBand === 'high' && (c.icpScore ?? 0) >= 7)
@@ -46,169 +49,143 @@ export default function CrmPanel() {
       (!overdue || (c.nextActionDue != null && c.nextActionDue <= today)) &&
       (!q || `${c.name} ${c.company ?? ''} ${c.email ?? ''}`.toLowerCase().includes(q.toLowerCase()))
     );
-    r = [...r].sort((a, b) => {
-      if (sort === 'name') return a.name.localeCompare(b.name);
-      if (sort === 'icp') return (b.icpScore ?? -1) - (a.icpScore ?? -1);
-      return (b.lastActivityAt || '').localeCompare(a.lastActivityAt || '');
-    });
-    return r;
+    return [...r].sort((a, b) =>
+      sort === 'name' ? a.name.localeCompare(b.name)
+        : sort === 'icp' ? (b.icpScore ?? -1) - (a.icpScore ?? -1)
+          : (b.lastActivityAt || '').localeCompare(a.lastActivityAt || ''));
   }, [contacts, stageFilter, icpBand, overdue, q, sort, today]);
 
   const todayList = useMemo(() =>
     contacts.filter(c => c.nextActionDue != null && c.nextActionDue <= today)
-      .sort((a, b) => (a.nextActionDue || '').localeCompare(b.nextActionDue || '')).slice(0, 6),
+      .sort((a, b) => (a.nextActionDue || '').localeCompare(b.nextActionDue || '')).slice(0, 5),
     [contacts, today]);
+  const hasOverdue = todayList.some(c => c.nextActionDue! < today);
 
   const hotList = useMemo(() =>
     contacts.filter(c => (c.icpScore ?? 0) >= 7 && ACTIVE.has(c.stage))
       .sort((a, b) => (b.icpScore ?? 0) - (a.icpScore ?? 0) || (b.lastActivityAt || '').localeCompare(a.lastActivityAt || ''))
-      .slice(0, 6),
+      .slice(0, 5),
     [contacts]);
 
   const sel = selected ? contacts.find(c => c.id === selected) || null : null;
   const nameOf = (id: string) => contacts.find(c => c.id === id)?.name ?? id.slice(0, 8);
+  const sortArrow = (k: SortKey) => (sort === k ? ' ↓' : '');
+  const activeTotal = ['engaged', 'qualified', 'call_booked', 'proposal_sent', 'negotiating'].reduce((n, s) => n + (stageCounts[s] || 0), 0);
 
   return (
     <div className="crm-root">
-      <div className="crm-funnel">
-        {PIPELINE.map((s, i) => {
-          const m = stageMeta(s);
-          return (
-            <React.Fragment key={s}>
-              <button className="crm-fstage" style={{ ['--fc' as any]: m.c }}
-                data-active={stageFilter === s} onClick={() => setStageFilter(stageFilter === s ? 'all' : s)}>
-                <div className="crm-fcount">{stageCounts[s] || 0}</div>
-                <div className="crm-flabel">{m.label}</div>
-              </button>
-              {i < PIPELINE.length - 1 && <span className="crm-farrow">▸</span>}
-            </React.Fragment>
-          );
-        })}
-        <div className="crm-fside">
-          {(['nurture', 'lost'] as const).map(s => {
-            const m = stageMeta(s);
-            return (
-              <button key={s} className="crm-fstage" style={{ ['--fc' as any]: m.c }}
-                data-active={stageFilter === s} onClick={() => setStageFilter(stageFilter === s ? 'all' : s)}>
-                <div className="crm-fcount">{stageCounts[s] || 0}</div>
-                <div className="crm-flabel">{m.label}</div>
-              </button>
-            );
-          })}
+      {/* pipeline */}
+      <SectionLabel label="Pipeline" count={activeTotal}
+        hint={`${(stageCounts.nurture || 0).toLocaleString()} nurture · ${stageCounts.lost || 0} lost`} />
+      <Funnel>
+        {PIPELINE.map(s => (
+          <FunnelSeg key={s} label={stageMeta(s).label} value={stageCounts[s] || 0}
+            flex={fflex(stageCounts[s] || 0)} variant={FVAR[s]}
+            onClick={() => setStageFilter(stageFilter === s ? 'all' : s)} />
+        ))}
+      </Funnel>
+
+      {/* attention */}
+      <div className="crm-cols2">
+        <div>
+          <SectionLabel label="Needs you" count={todayList.length} alert={hasOverdue} />
+          {todayList.length === 0
+            ? <Marginalia>Nothing due — you're clear.</Marginalia>
+            : <RowList>{todayList.map(c => {
+              const od = c.nextActionDue! < today;
+              return <Row key={c.id} date={od ? 'OVERDUE' : 'TODAY'} variant={od ? 'failed' : 'amber'}
+                name={c.name} meta={c.nextAction || 'follow up'} onClick={() => setSelected(c.id)} />;
+            })}</RowList>}
+        </div>
+        <div>
+          <SectionLabel label="Hot leads" count={hotList.length} />
+          {hotList.length === 0
+            ? <Marginalia>No active high-ICP leads yet.</Marginalia>
+            : <RowList>{hotList.map(c => (
+              <ClientRow key={c.id} name={c.name} status={c.company || '—'} severity="good"
+                action={c.icpScore != null ? `ICP ${c.icpScore}` : ''} onClick={() => setSelected(c.id)} />
+            ))}</RowList>}
         </div>
       </div>
 
-      <div className="crm-attn">
-        <div className="crm-panel">
-          <div className="crm-panel-h">⏰ Needs you <span className="n">{todayList.length}</span></div>
-          {todayList.length === 0 && <div className="crm-empty">Nothing due — you're clear.</div>}
-          {todayList.map(c => (
-            <div key={c.id} className="crm-attn-row" onClick={() => setSelected(c.id)}>
-              <Avatar name={c.name} size={22} />
-              <span className="crm-attn-name">{c.name}</span>
-              <span className="crm-attn-sub">{c.nextAction || 'follow up'}</span>
-              <span className="crm-attn-due" style={{ color: c.nextActionDue! < today ? 'var(--d-bad)' : 'var(--d-warn)' }}>
-                {c.nextActionDue! < today ? 'overdue' : 'today'}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="crm-panel">
-          <div className="crm-panel-h">🔥 Hot leads <span className="n">{hotList.length}</span></div>
-          {hotList.length === 0 && <div className="crm-empty">No active high-ICP leads yet.</div>}
-          {hotList.map(c => (
-            <div key={c.id} className="crm-attn-row" onClick={() => setSelected(c.id)}>
-              <Avatar name={c.name} size={22} />
-              <span className="crm-attn-name">{c.name}</span>
-              <span className="crm-attn-sub">{c.company || '—'}</span>
-              <span className="crm-attn-due" style={{ marginLeft: 'auto' }}><Icp v={c.icpScore} /></span>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      {/* review queue */}
       {pending.length > 0 && (
-        <div className="crm-review">
-          <div className="crm-review-h">{pending.length} match{pending.length > 1 ? 'es' : ''} need review</div>
-          {pending.slice(0, 6).map(l => {
-            const who = nameOf(l.contactId);
-            const label = (l.sourceRef as any)?.participant ? `meeting attendee “${(l.sourceRef as any).participant}”` : l.sourceType;
-            return (
-              <div key={l.id} className="crm-review-row">
-                <span style={{ flex: 1 }}>Link {label} → <b style={{ color: 'var(--d-paper)' }}>{who}</b>?</span>
-                <button className="crm-link" onClick={() => reviewLink(l.id, 'confirm')}>Confirm</button>
-                <button className="crm-link bad" onClick={() => reviewLink(l.id, 'reject')}>Reject</button>
-              </div>
-            );
-          })}
+        <div style={{ marginBottom: 'var(--sp-6)' }}>
+          <SectionLabel label="Matches to review" count={pending.length} alert />
+          <RowList>
+            {pending.slice(0, 6).map(l => {
+              const label = (l.sourceRef as any)?.participant ? `Meeting attendee “${(l.sourceRef as any).participant}”` : l.sourceType;
+              return (
+                <Row key={l.id} date="LINK" variant="amber" name={<>{label} → <strong style={{ color: 'var(--d-paper)' }}>{nameOf(l.contactId)}</strong></>}
+                  trailing={<span style={{ display: 'flex', gap: '0.4rem', marginLeft: 'auto' }}>
+                    <BtnGhost variant="good" onClick={() => reviewLink(l.id, 'confirm')}>Confirm</BtnGhost>
+                    <BtnGhost variant="bad" onClick={() => reviewLink(l.id, 'reject')}>Reject</BtnGhost>
+                  </span>} />
+              );
+            })}
+          </RowList>
         </div>
       )}
 
+      {/* contacts */}
+      <SectionLabel label="Contacts" count={rows.length} />
       <div className="crm-bar">
         <input className="crm-search" placeholder="Search name, company, email…" value={q} onChange={e => setQ(e.target.value)} />
         <select className="crm-sel" value={stageFilter} onChange={e => setStageFilter(e.target.value)}>
           <option value="all">All stages</option>
-          {ALL_STAGES.map(s => <option key={s} value={s}>{stageMeta(s).label} ({stageCounts[s] || 0})</option>)}
+          {['new', 'engaged', 'qualified', 'call_booked', 'proposal_sent', 'negotiating', 'won', 'lost', 'nurture'].map(s =>
+            <option key={s} value={s}>{stageMeta(s).label} ({stageCounts[s] || 0})</option>)}
         </select>
         <select className="crm-sel" value={icpBand} onChange={e => setIcpBand(e.target.value)}>
-          <option value="all">All ICP</option>
-          <option value="high">High ≥7</option>
-          <option value="med">Med 4–6</option>
-          <option value="low">Low ≤3</option>
+          <option value="all">All ICP</option><option value="high">High ≥7</option>
+          <option value="med">Med 4–6</option><option value="low">Low ≤3</option>
         </select>
-        <label className="crm-check"><input type="checkbox" checked={overdue} onChange={e => setOverdue(e.target.checked)} /> Overdue</label>
-        <button className="crm-btn" onClick={resolveNow} disabled={resolving}>{resolving ? 'Resolving…' : 'Resolve now'}</button>
+        <label className="crm-toggle"><input type="checkbox" checked={overdue} onChange={e => setOverdue(e.target.checked)} /> Overdue</label>
+        <BtnGhost variant={resolving ? 'dim' : 'default'} onClick={resolving ? undefined : resolveNow}>{resolving ? 'Resolving…' : 'Resolve now'}</BtnGhost>
       </div>
 
-      <table className="crm-table">
-        <thead>
-          <tr>
-            <th onClick={() => setSort('name')}>Contact {sort === 'name' ? '↓' : ''}</th>
-            <th>Stage</th>
-            <th className="num" onClick={() => setSort('icp')}>ICP {sort === 'icp' ? '↓' : ''}</th>
-            <th className="num col-hide" onClick={() => setSort('activity')}>Last {sort === 'activity' ? '↓' : ''}</th>
-            <th className="col-hide">Next action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && <tr><td colSpan={5} style={{ color: 'var(--d-paper-dim)', padding: '1.4rem .7rem' }}>Loading…</td></tr>}
-          {!loading && rows.length === 0 && <tr><td colSpan={5} style={{ color: 'var(--d-paper-dim)', padding: '1.4rem .7rem' }}>No contacts match.</td></tr>}
-          {rows.slice(0, 300).map(c => {
-            const over = c.nextActionDue != null && c.nextActionDue <= today;
-            return (
-              <tr key={c.id} data-sel={selected === c.id} onClick={() => setSelected(c.id)}>
-                <td>
-                  <div className="crm-id">
-                    <Avatar name={c.name} />
-                    <div><div className="crm-name">{c.name}</div><div className="crm-co">{c.company || '—'}</div></div>
-                  </div>
-                </td>
-                <td><StageBadge stage={c.stage} /></td>
-                <td className="crm-num"><Icp v={c.icpScore} /></td>
-                <td className="crm-num crm-dim col-hide">{relTime(c.lastActivityAt)}</td>
-                <td className="col-hide">
-                  {c.nextAction
-                    ? <span className={`crm-na ${over ? 'over' : ''}`}>{c.nextAction}{c.nextActionDue ? ` · ${c.nextActionDue}` : ''}</span>
-                    : <span className="crm-dim">—</span>}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {rows.length > 300 && <div style={{ color: 'var(--d-paper-dimmer)', fontSize: 11.5, padding: '.6rem .7rem' }}>Showing first 300 of {rows.length}. Refine filters to narrow.</div>}
+      <div className="crm-list">
+        <div className="crm-chead">
+          <span />
+          <span className="sortable" onClick={() => setSort('name')}>Contact{sortArrow('name')}</span>
+          <span>Stage</span>
+          <span className="sortable r" onClick={() => setSort('icp')}>ICP{sortArrow('icp')}</span>
+          <span className="sortable r crm-col-last" onClick={() => setSort('activity')}>Last{sortArrow('activity')}</span>
+          <span className="crm-col-next">Next action</span>
+        </div>
+        {loading && <div className="crm-more">Loading…</div>}
+        {!loading && rows.length === 0 && <div className="crm-more">No contacts match.</div>}
+        {rows.slice(0, 300).map(c => {
+          const od = c.nextActionDue != null && c.nextActionDue <= today;
+          return (
+            <div className="crm-crow" key={c.id} data-sel={selected === c.id} onClick={() => setSelected(c.id)}>
+              <Avatar name={c.name} />
+              <div style={{ minWidth: 0 }}>
+                <div className="crm-name">{c.name}</div>
+                <div className="crm-co">{c.company || '—'}</div>
+              </div>
+              <StageChip stage={c.stage} />
+              <div className="crm-r"><Icp v={c.icpScore} /></div>
+              <div className="crm-r crm-mono crm-col-last">{relTime(c.lastActivityAt)}</div>
+              <div className="crm-col-next">
+                {c.nextAction
+                  ? <span className={`crm-na ${od ? 'over' : ''}`}>{c.nextAction}{c.nextActionDue ? ` · ${c.nextActionDue}` : ''}</span>
+                  : <span className="crm-dim">—</span>}
+              </div>
+            </div>
+          );
+        })}
+        {rows.length > 300 && <div className="crm-more">Showing first 300 of {rows.length.toLocaleString()} — refine filters to narrow.</div>}
+      </div>
 
+      {/* slide-over */}
       {sel && (
         <>
           <div className="crm-scrim" onClick={() => setSelected(null)} />
-          <div className="crm-over" role="dialog">
-            <ContactRecord
-              contact={sel}
-              onClose={() => setSelected(null)}
+          <div className="crm-over" role="dialog" aria-modal="true">
+            <ContactRecord contact={sel} onClose={() => setSelected(null)}
               onChangeField={(f, v) => updateField(sel.id, f, v)}
-              onSetStage={(v) => setStage(sel.id, v)}
-              onChanged={refetch}
-            />
+              onSetStage={(v) => setStage(sel.id, v)} onChanged={refetch} />
           </div>
         </>
       )}
