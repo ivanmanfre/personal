@@ -81,9 +81,9 @@ const LeadMagnetStudioPanel: React.FC = () => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('lm-studio-show-disqualified') === '1';
   });
-  // Show rows with non-canonical formats (newsletter signups, leads, deprecated Template).
-  // Hidden by default — they're data pollution that shouldn't surface in LM workflow.
-  const [showMisclassified, setShowMisclassified] = useState<boolean>(false);
+  // Rows with non-canonical formats (newsletter, /start funnel forms, deprecated
+  // Template) are NOT lead magnets — they leaked into lm_drafts_v2 but back live
+  // pages elsewhere. They are always excluded from this section (no toggle).
   React.useEffect(() => {
     try { localStorage.setItem('lm-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
@@ -96,11 +96,10 @@ const LeadMagnetStudioPanel: React.FC = () => {
   });
   React.useEffect(() => { try { localStorage.setItem('lm-studio-view', view); } catch {} }, [view]);
 
-  // Counts exclude misclassified rows (newsletter/leads/Template) unless toggled on,
-  // so the chip counts match the visible rows exactly.
+  // Counts exclude non-LM formats so the chip counts match the visible rows.
   const countedDrafts = React.useMemo(
-    () => showMisclassified ? drafts : drafts.filter((d) => FORMATS_SET.has(d.format || '')),
-    [drafts, showMisclassified],
+    () => drafts.filter((d) => FORMATS_SET.has(d.format || '')),
+    [drafts],
   );
   const statusCounts = React.useMemo(() => {
     const c: Record<string, number> = { all: countedDrafts.length };
@@ -115,14 +114,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
     }
     return c;
   }, [countedDrafts]);
-  // Count of rows whose format is not in the canonical FORMATS set —
-  // newsletter signups, leads, deprecated Template. Used for the
-  // "+N misclassified" footer toggle.
-  const misclassifiedCount = React.useMemo(
-    () => drafts.filter((d) => !FORMATS_SET.has(d.format || '')).length,
-    [drafts],
-  );
-
   // Auto-refresh while LM generation/asset-build is in flight.
   const generatingCount = React.useMemo(
     () => drafts.filter((d) => d.status === 'generating' || d.status === 'generating_assets').length,
@@ -138,9 +129,10 @@ const LeadMagnetStudioPanel: React.FC = () => {
     const q = searchQuery.trim().toLowerCase();
     return drafts
       .filter((d) => {
-        // Exclude rows whose format isn't a real LM format unless user opted in.
+        // Exclude rows whose format isn't a real LM format (newsletter / forms /
+        // deprecated Template — they back live pages but aren't lead magnets).
         const fmt = d.format || '';
-        if (!FORMATS_SET.has(fmt) && !showMisclassified) return false;
+        if (!FORMATS_SET.has(fmt)) return false;
         if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
         if (statusFilter !== 'all' && d.status !== statusFilter) return false;
         if (formatFilter !== 'all' && (d.format || 'unknown') !== formatFilter) return false;
@@ -151,7 +143,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified, showMisclassified]);
+  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -333,17 +325,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
               </button>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5">
-              {misclassifiedCount > 0 && (
-                <button
-                  onClick={() => setShowMisclassified((v) => !v)}
-                  className={`rounded px-1.5 py-0.5 transition ${
-                    showMisclassified ? 'text-amber-300 bg-amber-950/30' : 'text-zinc-600 hover:text-zinc-400'
-                  }`}
-                  title={showMisclassified ? 'Hide misclassified (newsletter, leads, deprecated Template)' : `Show ${misclassifiedCount} row(s) with non-LM format`}
-                >
-                  {showMisclassified ? 'Hide misclassified' : `+${misclassifiedCount} misclassified`}
-                </button>
-              )}
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
