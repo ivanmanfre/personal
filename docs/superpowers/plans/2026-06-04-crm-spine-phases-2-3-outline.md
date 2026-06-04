@@ -58,3 +58,22 @@
 
 ## Sequencing note
 Phase 2A (auto-resolve) and 2C (work queue) deliver the most marginal value after Phase 1 and have no external blockers — do them first. 2B/2D are polish. Phase 3 waits on OAuth regardless of Phase 2 progress, so it can proceed in parallel the moment OAuth lands.
+
+---
+
+## Phase 2 execution record (2026-06-04) — built & verified
+
+**Status: Phase 2 COMPLETE on `feat/crm-spine`.** Commits `b539b90` (UI), `1f8b93a` (limit fix). Migrations: `crm_stage_suggestions`, `crm_stage_manual_flag`, `crm_phase2_sources`, `crm_360_v2`.
+
+**Built:**
+- **Stage suggestions + seed.** `stage_suggested` + `stage_manual` columns; `_crm_canon_stage()` maps source signal → canonical stage; `refresh_stage_suggestions()` reads the **live** prospect stage (not a stale snapshot). One-time seed adopted suggestions for non-manual contacts → pipeline went from 1,598 false `new` to **new 494 · engaged 17 · won 1 · nurture 1,096**. `setStage` in the UI writes `stage_manual=true` so the cron never overrides an operator choice; an "Apply" affordance surfaces when a live suggestion diverges from the current stage.
+- **Source resolvers.** `_resolve_assessments()` (email-exact; created 1 `won` contact). `_resolve_transcripts()` (unnests `participants[]`, skips self, fuzzy-matches attendees to existing contacts → **4 pending** review links; `source_id = transcriptId#ord` to avoid collisions). Master `resolve_contacts()` now runs both + refresh + auto-seed, and seeds initial stage at creation. Driven by the existing pg_cron job.
+- **360 v2.** Timeline now merges meetings (active transcript links) + assessments alongside DMs/outreach/lead events.
+- **UI.** ICP-band filter, Overdue-only checkbox, Today strip, reviewable match queue (human labels: `Link meeting attendee "David" → <contact> ?`).
+
+**Bugs found & fixed during execution (the iterate loop):**
+1. **Seed discriminator self-destruct** — `refresh_stage_suggestions()` bumped `updated_at` via trigger before the seed checked `created_at = updated_at`, so the first seed matched 0 rows. Replaced the timestamp heuristic with an explicit `stage_manual` flag (also the correct long-term "never override manual" mechanism).
+2. **Latent Phase-1 snake_case bug** — `useContact360` passed the RPC result through unmapped, so the record's `icpScore`/`linkedinUrl`/`nextAction`/`ownerNotes` were always `undefined` (record showed no ICP/LinkedIn). Fixed by mapping through the shared `mapContact`.
+3. **`limit(500)` truncation** — list + stage counts + review-queue name resolution only saw 500 of 1,599 contacts (`engaged` showed 3, not 17; David/Patrick matches showed id-slices). Raised to 2,000 + ICP secondary sort.
+
+**Deferred (genuine, not gaps):** merge/split UI (manual `merge_contacts()` exists); proposal_clickup auto-match (needs a ClickUp fetch — stays manual-attach); WhatsApp/morning-triage nudges. SOURCES chip contrast improved but still modest.
