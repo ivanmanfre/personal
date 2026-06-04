@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
@@ -10,8 +10,8 @@ import QAVerdictPanel from './QAVerdictPanel';
 import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
-import PostPreview from '../ui/PostPreview';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
+import { InternalTabs } from './InternalTabs';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -19,6 +19,10 @@ interface Props {
   onChanged: () => void;
 }
 
+// Layout mirrors CarouselEditor (Posts) for cross-editor consistency:
+// LEFT = content editing, MIDDLE = reference tabs (Preview / Cover / Checks),
+// RIGHT = sticky agent-log rail, plus a sticky bottom action bar. LM-specific
+// content sections and actions are preserved; only the distribution changed.
 const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [postBody, setPostBody] = useState(draft.postBody || '');
@@ -60,39 +64,20 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-200" title="Back">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h2 className="text-lg font-semibold text-zinc-100 truncate flex-1">{draft.topic || '(untitled)'}</h2>
-        <span className="text-xs text-zinc-500">{draft.format || 'no format'} · {draft.status}</span>
-      </div>
-
-      {/* Taxonomy chips */}
-      {(draft.topicStrength || draft.source || spec.target_audience) && (
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {draft.topicStrength && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
-              <span className="text-zinc-500 text-[10px] uppercase">Strength</span> {draft.topicStrength}
-            </span>
-          )}
-          {draft.source && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/60 border border-zinc-700/50 px-2.5 py-0.5 text-zinc-300">
-              <span className="text-zinc-500 text-[10px] uppercase">Source</span> {draft.source}
-            </span>
-          )}
-          {spec.target_audience && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-950/40 border border-emerald-900/40 px-2.5 py-0.5 text-emerald-300/90">
-              <span className="text-emerald-500/60 text-[10px] uppercase">Audience</span> <span className="truncate max-w-[420px]">{spec.target_audience}</span>
-            </span>
-          )}
+      {/* Taxonomy line — muted editorial annotation (title lives in the Sheet header). */}
+      {(draft.topicStrength || draft.source || spec.target_audience || draft.format) && (
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[length:var(--t-sm)] text-[color:var(--d-paper-dimmer)]">
+          {draft.format && <span><span className="opacity-60 mr-1">Format</span>{draft.format}</span>}
+          {draft.topicStrength && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Strength</span>{draft.topicStrength}</span>}
+          {draft.source && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">via</span>{draft.source}</span>}
+          {spec.target_audience && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Audience</span><span className="truncate max-w-[420px]">{spec.target_audience}</span></span>}
         </div>
       )}
 
-      {/* 2-column body: left = editing, right = preview + meta + actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
-        {/* LEFT COLUMN — editing surfaces */}
+      {/* Adaptive grid — identical to CarouselEditor: 1col → md 2col (rail spans
+          both on row 2) → lg 3col with sticky rail. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_360px] gap-5 md:[&>*:nth-child(3)]:col-span-2 lg:[&>*:nth-child(3)]:col-span-1">
+        {/* LEFT COLUMN — content editing surfaces */}
         <div className="space-y-4 min-w-0">
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -170,80 +155,107 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <pre className="whitespace-pre-wrap text-xs text-zinc-300 font-sans leading-snug">{draft.notes}</pre>
             </div>
           )}
-
-          <QAVerdictPanel entries={draft.agentLog} />
-
-          <AgentLogFeed
-            entries={draft.agentLog}
-            table="lm_drafts_v2"
-            rowId={draft.id}
-            onNoteAdded={onChanged}
-            defaultOpen
-            renderMarkdown
-          />
         </div>
 
-        {/* RIGHT COLUMN — preview + actions */}
+        {/* MIDDLE COLUMN — reference tabs (Preview / Cover / Checks). */}
         <div className="space-y-3 min-w-0">
-          <Card>
-            <CardLabel>Cover</CardLabel>
-            {draft.coverUrl ? (
-              <>
-                <img src={draft.coverUrl} alt="cover" className="w-full rounded-md border border-zinc-800 mb-2" />
-                <Button
-                  variant="secondary" size="sm" block
-                  disabled={!!busy}
-                  onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — refresh in a moment')}
-                  title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
-                  {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
-                </Button>
-              </>
-            ) : (
-              <EmptyState
-                title="No cover yet"
-                action={draft.status !== 'idea' && draft.status !== 'generating' ? (
-                  <Button
-                    variant="secondary" size="sm"
-                    disabled={!!busy}
-                    onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}>
-                    {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
-                  </Button>
-                ) : undefined}
-              />
-            )}
+          <Card padded={false} className="px-3 pt-2 pb-3">
+            <InternalTabs
+              storageKey="lm-editor-reference"
+              tabs={[
+                {
+                  key: 'preview',
+                  label: 'Preview',
+                  render: () => (
+                    <div className="rounded-md bg-zinc-950/60 border border-zinc-800/60 p-3">
+                      <LinkedInPostPreview text={postBody} mediaUrl={draft.coverUrl || null} />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'cover',
+                  label: 'Cover',
+                  render: () => (
+                    <div className="space-y-3">
+                      {draft.coverUrl ? (
+                        <>
+                          <img src={draft.coverUrl} alt="cover" className="w-full rounded-md border border-zinc-800" />
+                          <Button
+                            variant="secondary" size="sm" block
+                            disabled={!!busy}
+                            onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover regen done — updates live in a moment')}
+                            title="Generate a fresh cover image (Gemini, ~2-3 min). Does NOT regenerate content.">
+                            {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Regen cover
+                          </Button>
+                        </>
+                      ) : (
+                        <EmptyState
+                          title="No cover yet"
+                          action={draft.status !== 'idea' && draft.status !== 'generating' ? (
+                            <Button
+                              variant="secondary" size="sm"
+                              disabled={!!busy}
+                              onClick={() => run('regen-cover', () => regenLMCover({ draft_id: draft.id }), 'Cover gen fired (~2-3 min)')}>
+                              {busy === 'regen-cover' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />} Generate cover
+                            </Button>
+                          ) : undefined}
+                        />
+                      )}
+                      {spec.promo_image_url && (
+                        <div>
+                          <CardLabel>Promo image</CardLabel>
+                          <img src={spec.promo_image_url as string} alt="promo" className="w-full rounded-md border border-zinc-800" />
+                        </div>
+                      )}
+                      {isReady && draft.resourceUrl && (
+                        <a
+                          href={draft.resourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded-lg border border-emerald-900/40 bg-emerald-950/20 px-3 py-2.5 text-sm text-emerald-300 hover:bg-emerald-950/30 transition-colors"
+                        >
+                          <CardLabel className="!text-emerald-500/70 !mb-1">Live URL</CardLabel>
+                          <div className="inline-flex items-center gap-1.5 truncate">
+                            <ExternalLink className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{draft.resourceUrl}</span>
+                          </div>
+                        </a>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'checks',
+                  label: 'Checks',
+                  render: () => <QAVerdictPanel entries={draft.agentLog} />,
+                },
+              ]}
+            />
           </Card>
+        </div>
 
-          {spec.promo_image_url && (
-            <Card>
-              <CardLabel>Promo image</CardLabel>
-              <img src={spec.promo_image_url as string} alt="promo" className="w-full rounded-md border border-zinc-800" />
-            </Card>
-          )}
+        {/* RIGHT RAIL — sticky agent activity feed (matches Posts). */}
+        <div className="min-w-0">
+          <div className="lg:sticky lg:top-2">
+            <AgentLogFeed
+              entries={draft.agentLog}
+              table="lm_drafts_v2"
+              rowId={draft.id}
+              onNoteAdded={onChanged}
+              defaultOpen
+              renderMarkdown
+            />
+          </div>
+        </div>
+      </div>
 
-          {isReady && draft.resourceUrl && (
-            <a
-              href={draft.resourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="block rounded-lg border border-emerald-900/40 bg-emerald-950/20 px-3 py-2.5 text-sm text-emerald-300 hover:bg-emerald-950/30 transition-colors"
-            >
-              <CardLabel className="!text-emerald-500/70 !mb-1">Live URL</CardLabel>
-              <div className="inline-flex items-center gap-1.5 truncate">
-                <ExternalLink className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{draft.resourceUrl}</span>
-              </div>
-            </a>
-          )}
-
-          <div className="space-y-2">
-            <Button
-              variant="secondary" block
-              disabled={!!busy || !dirty}
-              onClick={() => run('save', saveAll, 'Saved')}>
-              {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save changes
-            </Button>
+      {/* Sticky bottom action bar — spans the full sheet width. State action on
+          the left, persistent Save / Delete on the right. Mirrors Posts. */}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-2.5 bg-[color:var(--d-ink-2)]/95 backdrop-blur border-t border-[color:var(--d-rule-strong)]">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 min-w-[240px]">
             {(draft.status === 'idea' || draft.status === 'generating' || draft.status === 'error') && (
               <Button
-                variant="secondary" block
+                variant="secondary"
                 disabled={!!busy || !draft.topic || !draft.format}
                 onClick={() => run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)')}>
                 {busy === 'regen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Generate content <span className="text-[10px] text-zinc-500">~10 min</span>
@@ -251,14 +263,17 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             )}
             {isReview && (
               <Button
-                variant="primary" block
+                variant="primary"
                 disabled={!!busy}
                 onClick={() => run('assets', () => buildLMAssets({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Approved — building assets (~5 min)')}>
                 {busy === 'assets' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Approve &amp; build assets
               </Button>
             )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
             <Button
-              variant="ghost" block
+              variant="ghost"
               className="text-red-400 hover:text-red-300 hover:bg-red-950/40"
               disabled={!!busy}
               title="Delete this lead magnet permanently"
@@ -272,11 +287,15 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               }}>
               {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
             </Button>
+            <Button
+              variant="secondary"
+              disabled={!!busy || !dirty}
+              onClick={() => run('save', saveAll, 'Saved')}>
+              {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save changes
+            </Button>
           </div>
         </div>
       </div>
-
-      <p className="text-[11px] text-zinc-600">Saves write directly to Supabase. DM Templates and other extras live in <code>spec</code> JSON.</p>
     </div>
   );
 };

@@ -264,7 +264,7 @@ const ProblemSection: React.FC = () => {
           <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
-                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It's documentable. It's automatable. It's not automated." },
+                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It could be automated. It just hasn't been." },
                 { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
               ].map((item) => (
@@ -393,31 +393,31 @@ const BuildOutcomesSection: React.FC = () => (
 const PRECONDITIONS = [
   {
     n: '01',
-    titlePre: 'You decide with ',
-    pivot: 'data',
+    titlePre: 'Your data lives in ',
+    pivot: 'one place you can pull from',
     titlePost: '',
-    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should be able to point to a row in a spreadsheet.',
+    sub: 'When a call gets made, your team reads from one source they all trust, current enough to act on. An agent reads from that same source.',
   },
   {
     n: '02',
-    titlePre: 'Your best operator decides ',
-    pivot: 'by instinct',
+    titlePre: 'Your best operator can ',
+    pivot: 'write down how they decide',
     titlePost: '',
-    sub: 'Their calls are fast and consistent, but the logic has never been written down. The first job is documenting the rules. Then we automate them.',
+    sub: 'Their calls are fast and consistent. Once that judgment is on paper, an agent can run it the same way every time.',
   },
   {
     n: '03',
-    titlePre: 'Three people on your team name ',
-    pivot: 'the same problem',
+    titlePre: 'You can name ',
+    pivot: 'the one job to start with',
     titlePost: '',
-    sub: 'Ask them: "what work do you wish would just go away?" If you get the same answer from three people, that workflow is the build target.',
+    sub: 'Ask three people what they wish would just go away. The job they all name is where we start: one workflow, end to end, before widening.',
   },
   {
     n: '04',
     titlePre: 'The same work ',
     pivot: 'repeats every week',
     titlePost: '',
-    sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever.',
+    sub: "Daily, weekly, per client, per billing cycle. Fix it once and the hours compound. One-off projects don't qualify.",
   },
 ];
 
@@ -957,6 +957,9 @@ const OfferSection: React.FC = () => (
             map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
             sequenced builds, costed gaps, decision logic for the first project.
           </p>
+          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
+            The build this plans for usually runs into five figures, and it pays back inside 90 days or I don't build it. Next to what the bottleneck is costing you every quarter, the diagnostic that scopes it pays for itself before the first build ships.
+          </p>
           <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.55 }}>
             100% credited toward the build if you proceed. You keep the scorecard either way. If we're not a fit after the 90-min discovery call, you don't pay.
           </p>
@@ -1028,6 +1031,9 @@ const FinalCTA: React.FC = () => (
     <div className="container mx-auto px-8 max-w-4xl relative z-10">
       <motion.div {...inView} className="text-center">
         <div className="w-8 h-0.5 mx-auto mb-10" style={{ backgroundColor: 'var(--color-accent)' }} />
+        <p style={{ ...T.serif, fontSize: '18px', maxWidth: '620px', margin: '0 auto 2rem', textAlign: 'center' }}>
+          Six months in, the work that used to wait on you runs without you: the repetitive calls made, the reports built, the same decision made the same way every time, whether you're in the room or on a plane. You're still the owner. You're just no longer the bottleneck.
+        </p>
         <RevealH2 style={{ ...T.display('clamp(2.8rem,6vw,5.5rem)'), marginBottom: '1.75rem' }}>
           Ready to scale<br />without hiring?
         </RevealH2>

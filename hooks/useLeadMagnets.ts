@@ -85,7 +85,41 @@ export function useLeadMagnets() {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  // Initial load + realtime subscription — parity with useContentLibrary
+  // (Posts). Without this the LM editor showed a stale cover/status until a
+  // manual refresh (e.g. the Gemini cover finishing mid-generation never
+  // surfaced). Live INSERT/UPDATE/DELETE on lm_drafts_v2 now propagate.
+  useEffect(() => {
+    refresh();
+
+    const channel = supabase
+      .channel('lm_drafts_v2-lead-magnets')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lm_drafts_v2' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const id = (payload.old as any)?.id as string | undefined;
+            if (!id) return;
+            setDrafts((prev) => prev.filter((d) => d.id !== id));
+            return;
+          }
+          const row = payload.new as any;
+          if (!row?.id) return;
+          const next = mapDraft(row);
+          setDrafts((prev) => {
+            const i = prev.findIndex((d) => d.id === next.id);
+            if (i === -1) return [next, ...prev];
+            const copy = prev.slice();
+            copy[i] = next;
+            return copy;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [refresh]);
 
   return { drafts, loading, refresh };
 }
