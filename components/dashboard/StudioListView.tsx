@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
 import { statusLabel } from '../../lib/statusLabels';
@@ -469,7 +469,7 @@ export function StudioListView({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer has-[:checked]:bg-emerald-950/20 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-emerald-500/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer has-[:checked]:bg-emerald-950/20 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-emerald-500/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -662,6 +662,24 @@ export function StudioListView({
           }
           return null;
         })}
+        {/* Per-row delete — hover-revealed, far-right edge (sits over the empty
+            tail of the Date cell). Reuses the same bulk 'delete' path so the
+            optimistic-hide + realtime reconcile behaviour is identical. */}
+        {onBulkAction && (
+          <button
+            type="button"
+            aria-label="Delete post"
+            title="Delete post"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!confirm(`Delete "${r.title || 'this post'}" permanently? This can't be undone.`)) return;
+              onBulkAction('delete', [r.id]);
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-zinc-500 bg-zinc-950/70 ring-1 ring-zinc-800/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-300 hover:bg-red-950/50 hover:ring-red-500/40 transition-all"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </motion.div>
     );
   }
