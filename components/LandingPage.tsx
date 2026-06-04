@@ -393,31 +393,31 @@ const BuildOutcomesSection: React.FC = () => (
 const PRECONDITIONS = [
   {
     n: '01',
-    titlePre: 'Your decisions follow ',
-    pivot: 'rules you can name',
+    titlePre: 'Your data lives in ',
+    pivot: 'one place you can pull from',
     titlePost: '',
-    sub: 'If I asked your ops lead "why did you say no to that lead last Thursday?", they should be able to point to a row in a spreadsheet.',
+    sub: 'When a call gets made, your team reads from one source they all trust, current enough to act on. An agent reads from that same source.',
   },
   {
     n: '02',
-    titlePre: 'Your best operator follows ',
-    pivot: "rules no one's written down",
+    titlePre: 'Your best operator can ',
+    pivot: 'write down how they decide',
     titlePost: '',
-    sub: 'Their calls are fast and consistent, but the logic has never been written down. The first job is documenting the rules. Then we automate them.',
+    sub: 'Their calls are fast and consistent. Once that judgment is on paper, an agent can run it the same way every time.',
   },
   {
     n: '03',
-    titlePre: 'Three people on your team name ',
-    pivot: 'the same problem',
+    titlePre: 'You can name ',
+    pivot: 'the one job to start with',
     titlePost: '',
-    sub: 'Ask them: "what work do you wish would just go away?" If you get the same answer from three people, that workflow is the build target.',
+    sub: 'Ask three people what they wish would just go away. The job they all name is where we start: one workflow, end to end, before widening.',
   },
   {
     n: '04',
     titlePre: 'The same work ',
     pivot: 'repeats every week',
     titlePost: '',
-    sub: 'Daily, weekly, per client, per billing cycle. Fix it once, save those hours forever.',
+    sub: "Daily, weekly, per client, per billing cycle. Fix it once and the hours compound. One-off projects don't qualify.",
   },
 ];
 
