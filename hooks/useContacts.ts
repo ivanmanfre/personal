@@ -24,7 +24,8 @@ export function useContacts() {
     try {
       const [{ data: cs }, { data: pl }] = await Promise.all([
         supabase.from('contacts').select('*').is('merged_into', null)
-          .order('next_action_due', { ascending: true, nullsFirst: false }).limit(500),
+          .order('next_action_due', { ascending: true, nullsFirst: false })
+          .order('icp_score', { ascending: false, nullsFirst: false }).limit(2000),
         supabase.from('contact_links').select('*').eq('review_status', 'pending'),
       ]);
       setContacts((cs || []).map(mapContact));
