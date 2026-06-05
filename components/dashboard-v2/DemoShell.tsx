@@ -11,6 +11,7 @@ import { Operations } from './sections/Operations';
 import { Clients } from './sections/Clients';
 import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
+import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
 import type { NavItem, SectionId } from './types';
 
@@ -29,6 +30,7 @@ function ShellInner() {
     { id: 'clients', name: 'Clients', num: '04', group: 'knowledge' },
     { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
+    { id: 'steal', name: 'Steal Box', num: '⌖', group: 'knowledge' },
     { id: 'personal', name: 'Personal', num: '07', group: 'personal' },
   ];
 
@@ -53,6 +55,7 @@ function ShellInner() {
     clients: () => <Clients />,
     knowledge: () => <Knowledge />,
     agent: () => <Agent />,
+    steal: () => <StealBox />,
     personal: () => <Personal />,
   };
 

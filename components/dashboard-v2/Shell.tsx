@@ -6,7 +6,7 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'personal',
+  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'steal', 'personal',
 ];
 
 interface ShellProps {
