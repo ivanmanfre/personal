@@ -42,6 +42,9 @@ function evidenceSummary(c: Candidate): string {
   if (c.source === 'calls') {
     return `${c.evidence.length} call${c.evidence.length === 1 ? '' : 's'} (transcripts)`;
   }
+  if (c.source === 'kyle_call') {
+    return 'Kyle Hunt coaching call';
+  }
   if (c.source === 'slack') {
     return 'Slack discussion';
   }
@@ -62,6 +65,7 @@ function evidenceSummary(c: Candidate): string {
 
 const SOURCE_LABEL: Record<string, string> = {
   calls: 'Calls',
+  kyle_call: 'Other Call Sources KH',
   slack: 'Slack',
   hacker_news: 'Hacker News',
   search_demand: 'Search demand',
