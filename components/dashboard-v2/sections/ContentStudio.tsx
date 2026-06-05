@@ -26,9 +26,7 @@ const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
 const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
-// Lead Magnets tab renders the Ideas/Drafts wrapper (curator Ideas queue + Drafts studio),
-// not the Drafts studio alone. The wrapper lazy-loads LeadMagnetStudioPanel internally.
-const LeadMagnets = lazy(() => import('./LeadMagnets').then((m) => ({ default: m.LeadMagnets })));
+const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 const StyleGalleryPanel = lazy(() => import('../../dashboard/StyleGalleryPanel'));
 const PromptLibraryPanel = lazy(() => import('../../dashboard/PromptLibraryPanel'));
 const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: m.Calendar })));
@@ -97,7 +95,7 @@ export function ContentStudio() {
   const renderSub = () => {
     switch (sub) {
       case 'posts':       return <PostStudioPanel />;
-      case 'leadmagnets': return <LeadMagnets />;
+      case 'leadmagnets': return <LeadMagnetStudioPanel />;
       case 'styles':      return <StyleGalleryPanel />;
       case 'prompts':     return <PromptLibraryPanel />;
       case 'calendar':    return <CalendarSection />;
