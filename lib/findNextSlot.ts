@@ -4,16 +4,19 @@ import { supabase } from './supabase';
  * Finds the next available posting slot.
  *
  * Strategy:
- *   - Default cadence: 1 slot per weekday, 09:00 in Ivan's local TZ (Buenos Aires)
- *   - Scan from tomorrow forward
+ *   - Default cadence: 2 slots per weekday at 09:00 + 14:00 in Ivan's local TZ
+ *     (Buenos Aires) — morning window for global + early-afternoon for US East/Central
+ *   - Scan from tomorrow forward, fills each day before moving on
  *   - Skip any slot that collides with an already-scheduled scheduled_post (±2h window)
  *   - Cap the scan at 30 days out
  *
- * Returns an ISO string suitable for inserting into an <input type="datetime-local">
- * field via toLocalParts() OR for raw use as scheduled_at.
+ * Returns a Date in UTC representing the chosen slot. Use toDatetimeLocalString()
+ * to render in the BA-aware <input type="datetime-local"> field.
  */
 const TZ = 'America/Argentina/Buenos_Aires';
-const SLOT_HOUR_LOCAL = 9;
+// 2026-06-05: restored 2-slots-per-day cadence (was 1/day after the 09:00-only
+// rewrite). 09:00 BA = US East Coast morning; 14:00 BA = US lunch window.
+const SLOT_HOURS_LOCAL = [9, 14];
 const COLLISION_WINDOW_HOURS = 2;
 
 function ymdInTz(d: Date, tz: string): { y: number; m: number; d: number } {
@@ -57,19 +60,21 @@ export async function findNextSlot(): Promise<Date> {
     // was making us pick today's already-past 9am slot.
     const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
     const cl = ymdInTz(candidate, TZ);
-    const slot = buildSlot(cl.y, cl.m, cl.d, SLOT_HOUR_LOCAL, TZ);
-    const slotMs = slot.getTime();
-    // Hard guard: never pick a slot in the past.
-    if (slotMs <= nowMs) continue;
     // Skip weekends (Saturday=6, Sunday=0 in Date.getUTCDay)
     const dow = new Date(Date.UTC(cl.y, cl.m - 1, cl.d)).getUTCDay();
     if (dow === 0 || dow === 6) continue;
-    const collides = taken.some((t) => Math.abs(t - slotMs) < COLLISION_WINDOW_HOURS * 3600_000);
-    if (!collides) return slot;
+    // Try each slot hour for this day in order — fill the day before moving on.
+    for (const hour of SLOT_HOURS_LOCAL) {
+      const slot = buildSlot(cl.y, cl.m, cl.d, hour, TZ);
+      const slotMs = slot.getTime();
+      if (slotMs <= nowMs) continue;
+      const collides = taken.some((t) => Math.abs(t - slotMs) < COLLISION_WINDOW_HOURS * 3600_000);
+      if (!collides) return slot;
+    }
   }
-  // Fallback: 36h from now in BA, guaranteed future
+  // Fallback: 36h from now in BA at the first slot hour, guaranteed future
   const t = ymdInTz(new Date(Date.now() + 36 * 3600_000), TZ);
-  return buildSlot(t.y, t.m, t.d, SLOT_HOUR_LOCAL, TZ);
+  return buildSlot(t.y, t.m, t.d, SLOT_HOURS_LOCAL[0], TZ);
 }
 
 /** Formats a Date for an <input type="datetime-local"> in Ivan's tz. */
