@@ -1,21 +1,29 @@
--- kyle_steal_box: safe, anon-readable projection of Kyle-call "steal for my system" tactics.
+-- kyle_steal_box: anon-readable projection of Kyle-call "steal for my system" tactics.
 --
--- WHY A VIEW (not anon-read on the base table):
---   kyle_call_insights.insights also holds outreach_angles[].icp_quote (prospects'
---   verbatim quotes) and icp_profile (prospect names / company names) — third-party PII
---   that Kyle authorized Ivan to MINE, not PUBLISH. The dashboard's anon key ships in the
---   public JS bundle, so anything anon-readable is effectively world-readable via the REST
---   API (the UI password does NOT gate the data). This view exposes ONLY the steal tactics,
---   whose evidence_quotes are Kyle-the-coach's own words (no prospect PII).
+-- 2026-06-06 (Ivan's explicit decision): this view now ALSO exposes the call
+-- takeaway (summary) and the source ClickUp task_id, to give each tactic context
+-- plus a link back to the call. `summary` CAN name Kyle's prospects (third-party
+-- PII Kyle authorized Ivan to MINE, not PUBLISH). Because the dashboard anon key
+-- ships in the public JS bundle, this view is effectively WORLD-READABLE — the
+-- dashboard password gates the screen, not the data. Ivan was shown the threat
+-- model and accepted this exposure; the real fix (Supabase Auth + RLS on
+-- auth.uid()) is a separate, deferred, dashboard-wide project. The `participants`
+-- column is deliberately NOT projected.
 --
--- security_invoker = off → the view runs with definer (owner) rights, so anon can read the
--- curated projection even though base-table RLS blocks anon on kyle_call_insights.
+-- security_invoker = off → the view runs with definer (owner) rights, so anon can
+-- read the curated projection even though base-table RLS blocks anon on
+-- kyle_call_insights.
 
-CREATE OR REPLACE VIEW public.kyle_steal_box
+DROP VIEW IF EXISTS public.kyle_steal_box;
+
+CREATE VIEW public.kyle_steal_box
 WITH (security_invoker = off) AS
 SELECT
   k.id,
+  k.task_id,
+  k.call_type,
   k.call_date,
+  k.summary,
   k.created_at,
   (k.insights->>'signal_score')::int                AS signal_score,
   k.insights->'steal_for_my_system'                 AS steal_items
