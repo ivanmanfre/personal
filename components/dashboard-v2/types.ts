@@ -11,7 +11,7 @@ export type SectionId =
   | 'clients'
   | 'knowledge'
   | 'agent'
-  | 'steal'
+  | 'ideas'
   | 'personal';
 
 export type Severity = 'good' | 'warn' | 'bad' | 'neutral';

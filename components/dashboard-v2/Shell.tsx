@@ -6,8 +6,18 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'steal', 'personal',
+  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'ideas', 'personal',
 ];
+
+// Legacy slug remap: ?section=steal (the old standalone panel) now lives at
+// ?section=ideas&sub=steal. Old links keep working.
+const LEGACY_SECTION_REMAP: Record<string, SectionId> = { steal: 'ideas' };
+
+function resolveSection(raw: string | null): SectionId | null {
+  if (!raw) return null;
+  const mapped = (LEGACY_SECTION_REMAP[raw] ?? raw) as SectionId;
+  return ALL_SECTIONS.includes(mapped) ? mapped : null;
+}
 
 interface ShellProps {
   navItems: NavItem[];                                              // dynamic, with badge counts from live data
@@ -24,8 +34,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   const [active, setActive] = useState<SectionId>(() => {
     if (typeof window === 'undefined') return 'briefing';
     const params = new URLSearchParams(window.location.search);
-    const s = params.get('section') as SectionId | null;
-    return s && ALL_SECTIONS.includes(s) ? s : 'briefing';
+    return resolveSection(params.get('section')) ?? 'briefing';
   });
 
   // Section nav is an instant swap (Linear/Vercel-style) — no view transition.
@@ -51,8 +60,8 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     if (typeof window === 'undefined') return;
     const onPop = () => {
       const params = new URLSearchParams(window.location.search);
-      const s = params.get('section') as SectionId | null;
-      if (s && ALL_SECTIONS.includes(s) && s !== active) {
+      const s = resolveSection(params.get('section'));
+      if (s && s !== active) {
         setActive(s);
       }
     };
