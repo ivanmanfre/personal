@@ -9,18 +9,18 @@ import { useKyleStealBox, type StealCard } from '../../../hooks/useKyleStealBox'
  * prospect identity) deliberately live in a private channel, not here.
  */
 
-function relTime(iso: string): string {
+function fmtCallDate(iso: string | null): string {
+  if (!iso) return '';
   try {
-    const then = new Date(iso).getTime();
-    const days = Math.floor((Date.now() - then) / 86400000);
-    if (days <= 0) return 'today';
-    if (days === 1) return 'yesterday';
-    if (days < 7) return `${days}d ago`;
-    if (days < 30) return `${Math.floor(days / 7)}w ago`;
-    return `${Math.floor(days / 30)}mo ago`;
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   } catch {
     return '';
   }
+}
+
+function prettyCallType(t: string | null): string {
+  if (!t) return '';
+  return t.replace(/_/g, ' ');
 }
 
 const Loading = () => (
@@ -49,8 +49,40 @@ function StealTile({ card }: { card: StealCard }) {
         <span style={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: 11, color: 'var(--d-good)' }}>
           Kyle · steal
         </span>
-        <span style={{ fontSize: 11, color: 'var(--d-paper-dim)' }}>{relTime(card.created_at)}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--d-paper-dim)' }}>
+          {typeof card.signal_score === 'number' && (
+            <span title="Source-call signal strength (1–5)">signal {card.signal_score}/5</span>
+          )}
+          {card.call_date && <span>{fmtCallDate(card.call_date)}</span>}
+        </span>
       </div>
+
+      {(card.call_type || card.summary) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {card.call_type && (
+            <span
+              style={{
+                alignSelf: 'flex-start',
+                fontSize: 10.5,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                padding: '2px 7px',
+                borderRadius: 999,
+                background: 'var(--d-ink-2)',
+                color: 'var(--d-paper-dim)',
+                border: '1px solid var(--d-rule-strong, rgba(255,255,255,0.12))',
+              }}
+            >
+              {prettyCallType(card.call_type)}
+            </span>
+          )}
+          {card.summary && (
+            <p style={{ fontSize: 12.5, lineHeight: 1.5, margin: 0, color: 'var(--d-paper-dim)' }}>
+              {card.summary}
+            </p>
+          )}
+        </div>
+      )}
 
       <h3 style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.4, margin: 0, color: 'var(--d-paper)' }}>
         {card.tactic}
@@ -75,8 +107,19 @@ function StealTile({ card }: { card: StealCard }) {
             color: 'var(--d-paper-dim)',
           }}
         >
-          “{card.evidence_quote}”
+          "{card.evidence_quote}"
         </blockquote>
+      )}
+
+      {card.clickup_url && (
+        <a
+          href={card.clickup_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 11.5, color: 'var(--d-good)', textDecoration: 'none', alignSelf: 'flex-start' }}
+        >
+          source call ↗
+        </a>
       )}
     </div>
   );
@@ -102,7 +145,7 @@ export function StealBox() {
   return (
     <>
       <HeadRow
-        title="Steal Box"
+        title="Steal"
         meta={<>{cards.length} tactic{cards.length === 1 ? '' : 's'} from Kyle's calls</>}
       />
 
@@ -132,7 +175,7 @@ export function StealBox() {
         <Empty hint="Run migrations/kyle_steal_box_view.sql in Supabase to provision the safe view." />
       ) : error ? (
         <div className="dv-card" style={{ color: 'var(--d-bad)', fontSize: 13 }}>
-          Couldn’t load steal box: {error}{' '}
+          Couldn't load steal box: {error}{' '}
           <button onClick={refresh} style={{ marginLeft: 8, color: 'var(--d-good)', background: 'none', border: 'none', cursor: 'pointer' }}>
             retry
           </button>
