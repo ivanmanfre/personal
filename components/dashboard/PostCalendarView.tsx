@@ -10,16 +10,26 @@ import { useDashboard } from '../../contexts/DashboardContext';
  * Generic month-grid calendar. Originally posts-only (carousel_drafts.scheduled_at);
  * now accepts any item with {id, title, status, scheduledAt, kind, tone} so the
  * unified Calendar section can render BOTH posts and lead magnets on the same
- * grid. Kind drives an inline glyph (Magnet for LM); tone drives the chip color.
+ * grid. Kind drives the glyph + color family (posts = emerald, LMs = violet);
+ * tone drives the chip intensity/status.
  *
  * Design notes:
  *  - 7 cols × 6 rows = 42 cells; weeks start Monday.
- *  - Each cell shows up to 3 chips + "+N more" overflow.
+ *  - Each cell shows up to 4 chips + "+N more" overflow. Each chip shows the
+ *    scheduled time (in the operator's timezone) + title.
  *  - Drag a chip to a different day → onReschedule(id, isoDate). Time-of-day is
  *    preserved by the caller. We send the yyyy-mm-dd part only.
  *  - Click a chip → onOpenItem(item) opens the editor sheet for that kind.
- *  - Reads user timezone from DashboardContext so day boundaries match the rest
- *    of the dashboard (avoids off-by-one for users east of UTC).
+ *
+ * Timezone correctness:
+ *  - The grid is built from pure calendar integers (y/m/d), NOT browser-local
+ *    Date objects. Day numbers, day-keys, "today", and item bucketing are ALL
+ *    resolved in the operator's timezone (userTimezone). Previously the grid
+ *    displayed browser-local getDate() but keyed cells by reformatting the same
+ *    instant into userTimezone — so when the operator's machine ran a different
+ *    timezone than userTimezone (e.g. laptop in Europe, dashboard set to Buenos
+ *    Aires), the displayed number and the day-key diverged by a day, shifting
+ *    the "today" highlight and every chip onto the wrong cell.
  */
 
 export type CalendarItemKind = 'post' | 'lm';
@@ -44,9 +54,9 @@ interface Props {
   draggable?: boolean;
 }
 
-// Tone → chip color. Sage for scheduled/approved/published, amber for review/failed,
-// sky for generating, red for error, muted for idea/cancelled/disqualified.
-const TONE_COLOR: Record<CalendarTone, string> = {
+// Posts → emerald family. Tone drives intensity; amber for review, sky for
+// generating, red for error, muted for idea/cancelled/disqualified.
+const TONE_COLOR_POST: Record<CalendarTone, string> = {
   idea:         'bg-zinc-500/15 ring-zinc-500/30 text-zinc-300',
   generating:   'bg-sky-500/15 ring-sky-500/30 text-sky-200',
   review:       'bg-amber-500/15 ring-amber-500/30 text-amber-200',
@@ -59,12 +69,32 @@ const TONE_COLOR: Record<CalendarTone, string> = {
   cancelled:    'bg-zinc-500/10 ring-zinc-500/20 text-zinc-500 opacity-60',
 };
 
+// Lead magnets → violet family so they read as a different color than posts at a
+// glance. Tone still drives intensity; errors stay red (errors should always
+// read as red regardless of kind).
+const TONE_COLOR_LM: Record<CalendarTone, string> = {
+  idea:         'bg-violet-500/12 ring-violet-500/25 text-violet-300',
+  generating:   'bg-violet-500/18 ring-violet-500/35 text-violet-200',
+  review:       'bg-violet-500/20 ring-violet-500/40 text-violet-100',
+  approved:     'bg-violet-500/22 ring-violet-500/42 text-violet-100',
+  scheduled:    'bg-violet-500/28 ring-violet-500/48 text-violet-100',
+  published:    'bg-violet-500/38 ring-violet-500/55 text-violet-50',
+  disqualified: 'bg-violet-500/10 ring-violet-500/20 text-violet-400 opacity-60',
+  error:        'bg-red-500/15 ring-red-500/30 text-red-200',
+  failed:       'bg-red-500/15 ring-red-500/30 text-red-200',
+  cancelled:    'bg-violet-500/10 ring-violet-500/20 text-violet-400 opacity-60',
+};
+
 const TONE_LABEL: Record<CalendarTone, string> = {
   idea: 'Idea', generating: 'Generating', review: 'Review', approved: 'Approved',
   scheduled: 'Scheduled', published: 'Published', disqualified: 'Disqualified',
   error: 'Error', failed: 'Failed', cancelled: 'Cancelled',
 };
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+// yyyy-mm-dd key for an instant, resolved in the given timezone (or browser
+// local if omitted). Used for "today" and for bucketing item instants.
 function localDateKey(d: Date, timezone?: string): string {
   if (timezone) {
     const fmt = new Intl.DateTimeFormat('en-CA', {
@@ -72,29 +102,47 @@ function localDateKey(d: Date, timezone?: string): string {
     });
     return fmt.format(d);
   }
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function getMonthDays(year: number, month: number): { date: Date; inMonth: boolean }[] {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  let startOffset = firstDay.getDay() - 1;
+// yyyy-mm-dd key from pure calendar integers (month is 0-based). No Date/tz
+// roundtrip — this is what makes the grid timezone-independent.
+function ymdKey(y: number, month0: number, d: number): string {
+  return `${y}-${pad(month0 + 1)}-${pad(d)}`;
+}
+
+// HH:MM (24h) in the operator's timezone, e.g. "09:00".
+function formatTime(iso: string | null, timezone?: string): string {
+  if (!iso) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(new Date(iso));
+}
+
+interface GridDay { y: number; month0: number; d: number; inMonth: boolean }
+
+// Build the 42-cell month grid from pure UTC arithmetic so the result is a set
+// of calendar integers, independent of the browser's local timezone.
+function getMonthDays(year: number, month0: number): GridDay[] {
+  const firstDow = new Date(Date.UTC(year, month0, 1)).getUTCDay(); // 0=Sun
+  let startOffset = firstDow - 1; // shift to Monday-start
   if (startOffset < 0) startOffset = 6;
-  const days: { date: Date; inMonth: boolean }[] = [];
-  for (let i = startOffset - 1; i >= 0; i--) {
-    days.push({ date: new Date(year, month, -i), inMonth: false });
+  const daysInMonth = new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
+  const out: GridDay[] = [];
+  // leading days from the previous month
+  for (let i = startOffset; i > 0; i--) {
+    const dt = new Date(Date.UTC(year, month0, 1 - i));
+    out.push({ y: dt.getUTCFullYear(), month0: dt.getUTCMonth(), d: dt.getUTCDate(), inMonth: false });
   }
-  for (let i = 1; i <= lastDay.getDate(); i++) {
-    days.push({ date: new Date(year, month, i), inMonth: true });
+  for (let i = 1; i <= daysInMonth; i++) {
+    out.push({ y: year, month0: month0, d: i, inMonth: true });
   }
-  while (days.length < 42) {
-    const d = new Date(year, month + 1, days.length - startOffset - lastDay.getDate() + 1);
-    days.push({ date: d, inMonth: false });
+  let trailing = 1;
+  while (out.length < 42) {
+    const dt = new Date(Date.UTC(year, month0 + 1, trailing++));
+    out.push({ y: dt.getUTCFullYear(), month0: dt.getUTCMonth(), d: dt.getUTCDate(), inMonth: false });
   }
-  return days;
+  return out;
 }
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -103,13 +151,15 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () => void; draggable: boolean }) {
+function ItemChip({ item, onOpen, draggable, timezone }: { item: CalendarItem; onOpen: () => void; draggable: boolean; timezone?: string }) {
   // Stable draggable id: combine kind + id so a post + an LM with the same UUID
   // (extremely unlikely but theoretically possible across tables) can't collide.
   const draggableId = `${item.kind}:${item.id}`;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId, disabled: !draggable });
-  const tone = TONE_COLOR[item.tone] || TONE_COLOR.idea;
+  const palette = item.kind === 'lm' ? TONE_COLOR_LM : TONE_COLOR_POST;
+  const tone = palette[item.tone] || palette.idea;
   const Glyph = item.kind === 'lm' ? Magnet : FileText;
+  const time = formatTime(item.scheduledAt, timezone);
   return (
     <button
       ref={setNodeRef}
@@ -120,24 +170,26 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
         onOpen();
       }}
       className={`w-full text-left truncate rounded-sm ring-1 ring-inset px-1.5 py-0.5 text-[10.5px] font-medium inline-flex items-center gap-1 ${tone} ${isDragging ? 'opacity-40' : 'hover:brightness-110'}`}
-      title={`${item.statusLabel || TONE_LABEL[item.tone] || item.tone} — ${item.title}`}
+      title={`${time ? time + ' · ' : ''}${item.statusLabel || TONE_LABEL[item.tone] || item.tone} — ${item.title}`}
     >
       <Glyph className="w-2.5 h-2.5 shrink-0 opacity-70" />
+      {time && <span className="tabular-nums shrink-0 opacity-80">{time}</span>}
       <span className="truncate">{item.title || '(untitled)'}</span>
     </button>
   );
 }
 
 function DayCell({
-  date, inMonth, isToday, dayKey, items, onOpenItem, draggable,
+  dayNum, inMonth, isToday, dayKey, items, onOpenItem, draggable, timezone,
 }: {
-  date: Date;
+  dayNum: number;
   inMonth: boolean;
   isToday: boolean;
   dayKey: string;
   items: CalendarItem[];
   onOpenItem: (item: CalendarItem) => void;
   draggable: boolean;
+  timezone?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${dayKey}`, disabled: !draggable });
   const visible = items.slice(0, 4);
@@ -147,17 +199,17 @@ function DayCell({
       ref={setNodeRef}
       className={`relative min-h-[96px] border border-zinc-800/60 p-1.5 flex flex-col gap-1 transition-colors ${
         inMonth ? 'bg-zinc-950/40' : 'bg-zinc-950/10 opacity-60'
-      } ${isOver ? 'ring-1 ring-inset ring-emerald-400/60 bg-emerald-950/20' : ''}`}
+      } ${isToday ? 'ring-1 ring-inset ring-emerald-400/40' : ''} ${isOver ? 'ring-1 ring-inset ring-emerald-400/60 bg-emerald-950/20' : ''}`}
     >
       <div className="flex items-center justify-between text-[10.5px]">
         <span className={`tabular-nums ${isToday ? 'text-emerald-300 font-semibold' : inMonth ? 'text-zinc-400' : 'text-zinc-600'}`}>
-          {date.getDate()}
+          {dayNum}
         </span>
         {isToday && <span className="text-[9px] uppercase tracking-wider text-emerald-400/70">today</span>}
       </div>
       <div className="flex flex-col gap-0.5">
         {visible.map((it) => (
-          <ItemChip key={`${it.kind}:${it.id}`} item={it} onOpen={() => onOpenItem(it)} draggable={draggable} />
+          <ItemChip key={`${it.kind}:${it.id}`} item={it} onOpen={() => onOpenItem(it)} draggable={draggable} timezone={timezone} />
         ))}
         {overflow > 0 && (
           <span className="text-[10px] text-zinc-500 pl-1">+{overflow} more</span>
@@ -169,18 +221,21 @@ function DayCell({
 
 export default function PostCalendarView({ items, onOpenItem, onReschedule, draggable = true }: Props) {
   const { userTimezone } = useDashboard();
-  const [cursor, setCursor] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Cursor = the {year, month0} being viewed. Initialised to the operator's
+  // CURRENT month in their timezone (not the browser's), so a machine running a
+  // different tz near a month boundary still opens on the right month.
+  const [cursor, setCursor] = useState<{ year: number; month0: number }>(() => {
+    const [y, m] = localDateKey(new Date(), userTimezone).split('-').map(Number);
+    return { year: y, month0: m - 1 };
   });
 
-  const year = cursor.getFullYear();
-  const month = cursor.getMonth();
-  const days = useMemo(() => getMonthDays(year, month), [year, month]);
+  const { year, month0 } = cursor;
+  const days = useMemo(() => getMonthDays(year, month0), [year, month0]);
   const todayKey = useMemo(() => localDateKey(new Date(), userTimezone), [userTimezone]);
 
-  // Bucket items by their scheduled local date key. Items without scheduledAt
-  // aren't displayed in the calendar.
+  // Bucket items by their scheduled local date key (resolved in userTimezone).
+  // Items without scheduledAt aren't displayed in the calendar.
   const buckets = useMemo(() => {
     const map = new Map<string, CalendarItem[]>();
     for (const it of items) {
@@ -212,37 +267,52 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
   };
 
   const monthlyCount = useMemo(
-    () => days.filter((d) => d.inMonth).reduce((sum, d) => sum + (buckets.get(localDateKey(d.date, userTimezone))?.length || 0), 0),
-    [days, buckets, userTimezone],
+    () => days.filter((d) => d.inMonth).reduce((sum, d) => sum + (buckets.get(ymdKey(d.y, d.month0, d.d))?.length || 0), 0),
+    [days, buckets],
   );
+
+  const goToday = () => {
+    const [y, m] = localDateKey(new Date(), userTimezone).split('-').map(Number);
+    setCursor({ year: y, month0: m - 1 });
+  };
+  const addMonth = (delta: number) => {
+    const total = month0 + delta;
+    setCursor({ year: year + Math.floor(total / 12), month0: ((total % 12) + 12) % 12 });
+  };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <CalendarDays className="w-4 h-4 text-zinc-500" />
         <h2 className="dv-section-h">
-          {MONTH_NAMES[month]} <span className="dv-editorial-num text-[length:var(--t-lg)]">{year}</span>
+          {MONTH_NAMES[month0]} <span className="dv-editorial-num text-[length:var(--t-lg)]">{year}</span>
         </h2>
         <span className="text-[length:var(--t-sm)] text-[color:var(--d-paper-dimmer)]">
           {monthlyCount} scheduled this month
         </span>
-        {/* Legend */}
+        {/* Legend — color + glyph distinguish posts from lead magnets */}
         <span className="hidden md:inline-flex items-center gap-3 text-[10.5px] text-zinc-500 ml-3">
-          <span className="inline-flex items-center gap-1"><FileText className="w-2.5 h-2.5" /> Post</span>
-          <span className="inline-flex items-center gap-1"><Magnet className="w-2.5 h-2.5" /> Lead magnet</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2 h-2 rounded-sm bg-emerald-500/40 ring-1 ring-inset ring-emerald-500/50" />
+            <FileText className="w-2.5 h-2.5" /> Post
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="w-2 h-2 rounded-sm bg-violet-500/40 ring-1 ring-inset ring-violet-500/50" />
+            <Magnet className="w-2.5 h-2.5" /> Lead magnet
+          </span>
         </span>
         <div className="ml-auto inline-flex items-center gap-1">
           <button
-            onClick={() => setCursor(new Date(year, month - 1, 1))}
+            onClick={() => addMonth(-1)}
             className="p-1.5 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-zinc-100"
             title="Previous month" aria-label="Previous month"
           ><ChevronLeft className="w-4 h-4" /></button>
           <button
-            onClick={() => { const n = new Date(); setCursor(new Date(n.getFullYear(), n.getMonth(), 1)); }}
+            onClick={goToday}
             className="px-2 py-1 text-[11.5px] rounded hover:bg-zinc-800/60 text-zinc-300"
           >Today</button>
           <button
-            onClick={() => setCursor(new Date(year, month + 1, 1))}
+            onClick={() => addMonth(1)}
             className="p-1.5 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-zinc-100"
             title="Next month" aria-label="Next month"
           ><ChevronRight className="w-4 h-4" /></button>
@@ -259,19 +329,20 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
             ))}
           </div>
           <div className="grid grid-cols-7">
-            {days.map(({ date, inMonth }) => {
-              const dayKey = localDateKey(date, userTimezone);
+            {days.map(({ y, month0: m0, d, inMonth }) => {
+              const dayKey = ymdKey(y, m0, d);
               const cellItems = buckets.get(dayKey) || [];
               return (
                 <DayCell
                   key={dayKey + (inMonth ? '' : '-out')}
-                  date={date}
+                  dayNum={d}
                   inMonth={inMonth}
                   isToday={dayKey === todayKey}
                   dayKey={dayKey}
                   items={cellItems}
                   onOpenItem={onOpenItem}
                   draggable={draggable}
+                  timezone={userTimezone}
                 />
               );
             })}

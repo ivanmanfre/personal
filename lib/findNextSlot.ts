@@ -4,8 +4,9 @@ import { supabase } from './supabase';
  * Finds the next available posting slot.
  *
  * Strategy:
- *   - Default cadence: 2 slots per weekday at 09:00 + 14:00 in Ivan's local TZ
- *     (Buenos Aires) — morning window for global + early-afternoon for US East/Central
+ *   - Default cadence: 2 slots per day at 09:00 + 14:00 in Ivan's local TZ
+ *     (Buenos Aires) — morning window for global + early-afternoon for US East/Central.
+ *     Weekends included (audience engages on Sat/Sun too).
  *   - Scan from tomorrow forward, fills each day before moving on
  *   - Skip any slot that collides with an already-scheduled scheduled_post (±2h window)
  *   - Cap the scan at 30 days out
@@ -60,9 +61,7 @@ export async function findNextSlot(): Promise<Date> {
     // was making us pick today's already-past 9am slot.
     const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
     const cl = ymdInTz(candidate, TZ);
-    // Skip weekends (Saturday=6, Sunday=0 in Date.getUTCDay)
-    const dow = new Date(Date.UTC(cl.y, cl.m - 1, cl.d)).getUTCDay();
-    if (dow === 0 || dow === 6) continue;
+    // Weekends are intentionally NOT skipped — post every day, incl. Sat/Sun.
     // Try each slot hour for this day in order — fill the day before moving on.
     for (const hour of SLOT_HOURS_LOCAL) {
       const slot = buildSlot(cl.y, cl.m, cl.d, hour, TZ);
