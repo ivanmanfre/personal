@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { HeadRow } from '../primitives';
 import { useKyleStealBox, type StealCard } from '../../../hooks/useKyleStealBox';
 
 /**
@@ -107,7 +106,7 @@ function StealTile({ card }: { card: StealCard }) {
             color: 'var(--d-paper-dim)',
           }}
         >
-          "{card.evidence_quote}"
+          “{card.evidence_quote}”
         </blockquote>
       )}
 
@@ -136,7 +135,9 @@ export function StealBox() {
       (c) =>
         c.tactic.toLowerCase().includes(term) ||
         (c.how_ivan_applies || '').toLowerCase().includes(term) ||
-        (c.evidence_quote || '').toLowerCase().includes(term),
+        (c.evidence_quote || '').toLowerCase().includes(term) ||
+        (c.summary || '').toLowerCase().includes(term) ||
+        prettyCallType(c.call_type).toLowerCase().includes(term),
     );
   }, [cards, q]);
 
@@ -144,10 +145,11 @@ export function StealBox() {
 
   return (
     <>
-      <HeadRow
-        title="Steal"
-        meta={<>{cards.length} tactic{cards.length === 1 ? '' : 's'} from Kyle's calls</>}
-      />
+      {!loading && !error && cards.length > 0 && (
+        <p style={{ margin: '0 0 0.75rem', fontSize: 12, color: 'var(--d-paper-dim)' }}>
+          {cards.length} tactic{cards.length === 1 ? '' : 's'} from Kyle's calls
+        </p>
+      )}
 
       {!loading && !error && cards.length > 0 && (
         <input
