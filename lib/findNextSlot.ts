@@ -91,12 +91,15 @@ export async function findNextSlot(): Promise<Date> {
   return buildSlot(t.y, t.m, t.d, f.hour, f.minute, TZ);
 }
 
-/** Formats a Date for an <input type="datetime-local"> in Ivan's tz. */
+/**
+ * Formats a Date as browser-LOCAL wall-clock for an <input type="datetime-local">.
+ * Local (not BA) on purpose: the input is parsed back with `new Date(value)`,
+ * which interprets the string in the browser's timezone — so the field must be
+ * filled in that same local basis or the round-trip shifts the time. This keeps
+ * the editor consistent with the rest of the dashboard, which shows local time.
+ * (Scheduling windows are still BA-anchored inside findNextSlot.)
+ */
 export function toDatetimeLocalString(d: Date): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hour12: false,
-  }).formatToParts(d);
-  const p: any = Object.fromEntries(parts.filter((x) => x.type !== 'literal').map((x) => [x.type, x.value]));
-  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

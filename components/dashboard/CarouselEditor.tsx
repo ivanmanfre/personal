@@ -660,7 +660,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       type="datetime-local"
                       value={when}
                       onChange={(e) => setWhen(e.target.value)}
-                      title="Leave empty to auto-pick the next free 9am slot"
+                      title="Your local time. Leave empty to auto-pick the next free slot."
                       className="py-1.5 max-w-[220px]"
                     />
                     <Button
