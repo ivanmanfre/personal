@@ -4,7 +4,6 @@ import {
   DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { useDashboard } from '../../contexts/DashboardContext';
 
 /**
  * Generic month-grid calendar. Originally posts-only (carousel_drafts.scheduled_at);
@@ -16,20 +15,21 @@ import { useDashboard } from '../../contexts/DashboardContext';
  * Design notes:
  *  - 7 cols × 6 rows = 42 cells; weeks start Monday.
  *  - Each cell shows up to 4 chips + "+N more" overflow. Each chip shows the
- *    scheduled time (in the operator's timezone) + title.
+ *    scheduled time + title.
  *  - Drag a chip to a different day → onReschedule(id, isoDate). Time-of-day is
  *    preserved by the caller. We send the yyyy-mm-dd part only.
  *  - Click a chip → onOpenItem(item) opens the editor sheet for that kind.
  *
- * Timezone correctness:
- *  - The grid is built from pure calendar integers (y/m/d), NOT browser-local
- *    Date objects. Day numbers, day-keys, "today", and item bucketing are ALL
- *    resolved in the operator's timezone (userTimezone). Previously the grid
- *    displayed browser-local getDate() but keyed cells by reformatting the same
- *    instant into userTimezone — so when the operator's machine ran a different
- *    timezone than userTimezone (e.g. laptop in Europe, dashboard set to Buenos
- *    Aires), the displayed number and the day-key diverged by a day, shifting
- *    the "today" highlight and every chip onto the wrong cell.
+ * Timezone:
+ *  - Everything the operator SEES — chip times, day buckets, the "today"
+ *    highlight, and the initial month — is resolved in the operator's BROWSER
+ *    LOCAL timezone, so the calendar reads in the operator's own time wherever
+ *    they are. (Posts are still SCHEDULED relative to Buenos Aires audience
+ *    windows in findNextSlot; this component is purely the local-time view of
+ *    those instants.)
+ *  - The grid itself is built from pure calendar integers (no Date/tz roundtrip)
+ *    and day-keys / buckets / today are all derived with the SAME local basis,
+ *    so the displayed number and the day it buckets to can never diverge.
  */
 
 export type CalendarItemKind = 'post' | 'lm';
@@ -93,30 +93,34 @@ const TONE_LABEL: Record<CalendarTone, string> = {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-// yyyy-mm-dd key for an instant, resolved in the given timezone (or browser
-// local if omitted). Used for "today" and for bucketing item instants.
-function localDateKey(d: Date, timezone?: string): string {
-  if (timezone) {
-    const fmt = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
-    });
-    return fmt.format(d);
-  }
+// yyyy-mm-dd key for an instant in the BROWSER LOCAL timezone. Used for "today"
+// and for bucketing item instants onto their local calendar day.
+function localDateKey(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 // yyyy-mm-dd key from pure calendar integers (month is 0-based). No Date/tz
-// roundtrip — this is what makes the grid timezone-independent.
+// roundtrip — this is what makes the grid layout timezone-independent.
 function ymdKey(y: number, month0: number, d: number): string {
   return `${y}-${pad(month0 + 1)}-${pad(d)}`;
 }
 
-// HH:MM (24h) in the operator's timezone, e.g. "09:00".
-function formatTime(iso: string | null, timezone?: string): string {
+// HH:MM (24h) in the browser local timezone, e.g. "20:00".
+function formatTime(iso: string | null): string {
   if (!iso) return '';
   return new Intl.DateTimeFormat('en-GB', {
-    timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false,
+    hour: '2-digit', minute: '2-digit', hour12: false,
   }).format(new Date(iso));
+}
+
+// Short local timezone label (e.g. "EEST", "GMT-3") for the legend hint.
+function localTzLabel(): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' }).formatToParts(new Date());
+    return parts.find((p) => p.type === 'timeZoneName')?.value || '';
+  } catch {
+    return '';
+  }
 }
 
 interface GridDay { y: number; month0: number; d: number; inMonth: boolean }
@@ -151,7 +155,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function ItemChip({ item, onOpen, draggable, timezone }: { item: CalendarItem; onOpen: () => void; draggable: boolean; timezone?: string }) {
+function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () => void; draggable: boolean }) {
   // Stable draggable id: combine kind + id so a post + an LM with the same UUID
   // (extremely unlikely but theoretically possible across tables) can't collide.
   const draggableId = `${item.kind}:${item.id}`;
@@ -159,7 +163,7 @@ function ItemChip({ item, onOpen, draggable, timezone }: { item: CalendarItem; o
   const palette = item.kind === 'lm' ? TONE_COLOR_LM : TONE_COLOR_POST;
   const tone = palette[item.tone] || palette.idea;
   const Glyph = item.kind === 'lm' ? Magnet : FileText;
-  const time = formatTime(item.scheduledAt, timezone);
+  const time = formatTime(item.scheduledAt);
   return (
     <button
       ref={setNodeRef}
@@ -180,7 +184,7 @@ function ItemChip({ item, onOpen, draggable, timezone }: { item: CalendarItem; o
 }
 
 function DayCell({
-  dayNum, inMonth, isToday, dayKey, items, onOpenItem, draggable, timezone,
+  dayNum, inMonth, isToday, dayKey, items, onOpenItem, draggable,
 }: {
   dayNum: number;
   inMonth: boolean;
@@ -189,7 +193,6 @@ function DayCell({
   items: CalendarItem[];
   onOpenItem: (item: CalendarItem) => void;
   draggable: boolean;
-  timezone?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${dayKey}`, disabled: !draggable });
   const visible = items.slice(0, 4);
@@ -209,7 +212,7 @@ function DayCell({
       </div>
       <div className="flex flex-col gap-0.5">
         {visible.map((it) => (
-          <ItemChip key={`${it.kind}:${it.id}`} item={it} onOpen={() => onOpenItem(it)} draggable={draggable} timezone={timezone} />
+          <ItemChip key={`${it.kind}:${it.id}`} item={it} onOpen={() => onOpenItem(it)} draggable={draggable} />
         ))}
         {overflow > 0 && (
           <span className="text-[10px] text-zinc-500 pl-1">+{overflow} more</span>
@@ -220,27 +223,25 @@ function DayCell({
 }
 
 export default function PostCalendarView({ items, onOpenItem, onReschedule, draggable = true }: Props) {
-  const { userTimezone } = useDashboard();
-
   // Cursor = the {year, month0} being viewed. Initialised to the operator's
-  // CURRENT month in their timezone (not the browser's), so a machine running a
-  // different tz near a month boundary still opens on the right month.
+  // CURRENT month in their browser local timezone.
   const [cursor, setCursor] = useState<{ year: number; month0: number }>(() => {
-    const [y, m] = localDateKey(new Date(), userTimezone).split('-').map(Number);
-    return { year: y, month0: m - 1 };
+    const now = new Date();
+    return { year: now.getFullYear(), month0: now.getMonth() };
   });
 
+  const tzLabel = useMemo(() => localTzLabel(), []);
   const { year, month0 } = cursor;
   const days = useMemo(() => getMonthDays(year, month0), [year, month0]);
-  const todayKey = useMemo(() => localDateKey(new Date(), userTimezone), [userTimezone]);
+  const todayKey = useMemo(() => localDateKey(new Date()), []);
 
-  // Bucket items by their scheduled local date key (resolved in userTimezone).
-  // Items without scheduledAt aren't displayed in the calendar.
+  // Bucket items by their scheduled local date key (browser local). Items
+  // without scheduledAt aren't displayed in the calendar.
   const buckets = useMemo(() => {
     const map = new Map<string, CalendarItem[]>();
     for (const it of items) {
       if (!it.scheduledAt) continue;
-      const key = localDateKey(new Date(it.scheduledAt), userTimezone);
+      const key = localDateKey(new Date(it.scheduledAt));
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(it);
     }
@@ -249,7 +250,7 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
       arr.sort((a, b) => (a.scheduledAt || '').localeCompare(b.scheduledAt || ''));
     }
     return map;
-  }, [items, userTimezone]);
+  }, [items]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -272,8 +273,8 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
   );
 
   const goToday = () => {
-    const [y, m] = localDateKey(new Date(), userTimezone).split('-').map(Number);
-    setCursor({ year: y, month0: m - 1 });
+    const now = new Date();
+    setCursor({ year: now.getFullYear(), month0: now.getMonth() });
   };
   const addMonth = (delta: number) => {
     const total = month0 + delta;
@@ -300,6 +301,7 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
             <span className="w-2 h-2 rounded-sm bg-violet-500/40 ring-1 ring-inset ring-violet-500/50" />
             <Magnet className="w-2.5 h-2.5" /> Lead magnet
           </span>
+          <span className="text-zinc-600">· times in your local time{tzLabel ? ` (${tzLabel})` : ''}</span>
         </span>
         <div className="ml-auto inline-flex items-center gap-1">
           <button
@@ -342,7 +344,6 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
                   items={cellItems}
                   onOpenItem={onOpenItem}
                   draggable={draggable}
-                  timezone={userTimezone}
                 />
               );
             })}
