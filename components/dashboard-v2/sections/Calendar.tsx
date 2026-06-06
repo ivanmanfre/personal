@@ -4,7 +4,6 @@ import { supabase } from '../../../lib/supabase';
 import { toastError } from '../../../lib/dashboardActions';
 import { useContentLibrary } from '../../../hooks/useContentLibrary';
 import { useContentPipeline } from '../../../hooks/useContentPipeline';
-import { useDashboard } from '../../../contexts/DashboardContext';
 import PostCalendarView, { type CalendarItem, type CalendarTone } from '../../dashboard/PostCalendarView';
 import { Sheet } from '../../ui/Sheet';
 import CarouselEditor from '../../dashboard/CarouselEditor';
@@ -40,7 +39,6 @@ const SP_STATUS_TO_TONE: Record<string, CalendarTone> = {
 export function Calendar() {
   const { drafts: posts, applyOptimistic, refresh: refreshPosts } = useContentLibrary();
   const { posts: queue, refresh: refreshQueue } = useContentPipeline();
-  const { userTimezone } = useDashboard();
 
   // Right-sheet editor — only opens for posts (LM editor lives elsewhere).
   const [openPostId, setOpenPostId] = useState<string | null>(null);
