@@ -96,12 +96,28 @@ export function Calendar() {
     try {
       const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', item.id);
       if (error) throw error;
+      // Keep the publish queue in lockstep with the operator's intent. The bridge
+      // workflow only re-syncs future-dated drafts on a 5-min cron; writing the
+      // linked pending scheduled_posts row here makes the move instant and also
+      // covers past-dated reschedules the bridge skips (scheduled_at>now filter).
+      // Only pending rows — never re-time a post that already went out / was
+      // cancelled. clickup_task_id holds the draft id post-migration; see the
+      // "Bridge: carousel_drafts → scheduled_posts" workflow.
+      if (nextISO) {
+        const { error: qErr } = await supabase
+          .from('scheduled_posts')
+          .update({ scheduled_at: nextISO })
+          .eq('clickup_task_id', item.id)
+          .eq('status', 'pending');
+        if (qErr) throw qErr;
+      }
       toast.success('Rescheduled');
+      refreshQueue();
     } catch (err) {
       toastError('reschedule', err);
       refreshPosts();
     }
-  }, [posts, applyOptimistic, refreshPosts]);
+  }, [posts, applyOptimistic, refreshPosts, refreshQueue]);
 
   const rescheduleLm = useCallback(async (item: CalendarItem, isoDate: string) => {
     // LM lives in scheduled_posts. Preserve time-of-day if the row had one;
