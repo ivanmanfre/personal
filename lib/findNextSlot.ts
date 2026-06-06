@@ -15,10 +15,22 @@ import { supabase } from './supabase';
  * to render in the BA-aware <input type="datetime-local"> field.
  */
 const TZ = 'America/Argentina/Buenos_Aires';
-// 2026-06-05: restored 2-slots-per-day cadence (was 1/day after the 09:00-only
-// rewrite). 09:00 BA = US East Coast morning; 14:00 BA = US lunch window.
-const SLOT_HOURS_LOCAL = [9, 14];
+// 2-slots-per-day cadence, each within a WINDOW rather than a fixed time, so the
+// auto-pick varies the minute day-to-day instead of posting at a robotic 09:00 /
+// 14:00 every single day. Windows stay centered on the proven times — morning
+// (~09:00 BA = US East Coast morning) and early-afternoon (~14:00 BA = US lunch).
+//   startMin = minutes from local midnight; spreadMin = random jitter added on top.
+const SLOT_WINDOWS = [
+  { startMin: 8 * 60 + 30, spreadMin: 75 },  // 08:30–09:45 BA
+  { startMin: 13 * 60 + 30, spreadMin: 75 }, // 13:30–14:45 BA
+];
 const COLLISION_WINDOW_HOURS = 2;
+
+// Pick a random hour:minute inside a window.
+function pickSlotTime(w: { startMin: number; spreadMin: number }): { hour: number; minute: number } {
+  const total = w.startMin + Math.floor(Math.random() * (w.spreadMin + 1));
+  return { hour: Math.floor(total / 60), minute: total % 60 };
+}
 
 function ymdInTz(d: Date, tz: string): { y: number; m: number; d: number } {
   const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -26,11 +38,12 @@ function ymdInTz(d: Date, tz: string): { y: number; m: number; d: number } {
   return { y: +parts.year, m: +parts.month, d: +parts.day };
 }
 
-function buildSlot(year: number, month: number, day: number, hour: number, tz: string): Date {
-  // Construct a Date that represents `hour:00 on year-month-day in tz`.
+function buildSlot(year: number, month: number, day: number, hour: number, minute: number, tz: string): Date {
+  // Construct a Date that represents `hour:minute on year-month-day in tz`.
   // We approximate by building a UTC string, then shifting by the tz offset for that local time.
   // Two-iteration fixed-point converges for any IANA tz including DST transitions.
-  let attempt = new Date(Date.UTC(year, month - 1, day, hour, 0, 0));
+  // (Only whole-hour drift is corrected; the minute is preserved across shifts.)
+  let attempt = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
   for (let i = 0; i < 3; i++) {
     const tzParts = new Intl.DateTimeFormat('en-US', {
       timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false,
@@ -62,18 +75,20 @@ export async function findNextSlot(): Promise<Date> {
     const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
     const cl = ymdInTz(candidate, TZ);
     // Weekends are intentionally NOT skipped — post every day, incl. Sat/Sun.
-    // Try each slot hour for this day in order — fill the day before moving on.
-    for (const hour of SLOT_HOURS_LOCAL) {
-      const slot = buildSlot(cl.y, cl.m, cl.d, hour, TZ);
+    // Try each window for this day in order — fill the day before moving on.
+    for (const w of SLOT_WINDOWS) {
+      const { hour, minute } = pickSlotTime(w);
+      const slot = buildSlot(cl.y, cl.m, cl.d, hour, minute, TZ);
       const slotMs = slot.getTime();
       if (slotMs <= nowMs) continue;
       const collides = taken.some((t) => Math.abs(t - slotMs) < COLLISION_WINDOW_HOURS * 3600_000);
       if (!collides) return slot;
     }
   }
-  // Fallback: 36h from now in BA at the first slot hour, guaranteed future
+  // Fallback: 36h from now in BA in the first window, guaranteed future
   const t = ymdInTz(new Date(Date.now() + 36 * 3600_000), TZ);
-  return buildSlot(t.y, t.m, t.d, SLOT_HOURS_LOCAL[0], TZ);
+  const f = pickSlotTime(SLOT_WINDOWS[0]);
+  return buildSlot(t.y, t.m, t.d, f.hour, f.minute, TZ);
 }
 
 /** Formats a Date for an <input type="datetime-local"> in Ivan's tz. */
