@@ -65,10 +65,17 @@ Ivan is **not** "an AI agency." He builds **growth + retention systems for servi
 ## Surface-by-surface design
 
 ### Surface 1 — Home hero (`components/LandingHero.tsx`)
-**Near-zero change.** Already correct:
-- Headline "Systems scale. Headcount doesn't." + "scale without scaling payroll" = growth/leverage framing.
-- Primary CTA "Book your fit call" → `/start` = free-call-first, product-agnostic.
-- Optional only: a subhead nod to *what* gets built. Low priority; default is leave as-is.
+**Light, targeted upgrade.** Keep the structure, tone, and CTAs (they're correct: credible/premium voice, free-call-first, product-agnostic). Add concreteness + scannability borrowed from high-converting competitor heroes (e.g. 8figureagency.co) — **without** the hype tone, which would repel the sophisticated referred ICP and burn the trust advantage. Their hero also overpromises beyond delivery scope ("run an 8-figure agency"); Ivan's stays honestly scoped to what he ships.
+
+Changes:
+- **Headline:** keep — "Systems scale. Headcount doesn't." (strong, credible, leverage-led).
+- **Subhead:** sharpen — swap generic "AI systems" for the niche framing and a sharper payoff:
+  > "Growth and retention systems for service businesses — so you add pipeline and margin without adding payroll. Stop being the bottleneck in your own company."
+- **NEW: benefit-bullet row** under the subhead — three ✅ outcomes that map to the three builds (stated as outcomes, not product names), pre-selling the funnel before the scroll:
+  > ✅ More pipeline without more hires · ✅ Win more of the deals you're already in · ✅ Clients that don't quietly churn
+  - Bullet 1 → Content System (pipeline) · Bullets 2–3 → Call Intelligence (win-rate + churn).
+- **CTAs:** keep "Book your fit call" → `/start` (primary, product-agnostic) + "Take the 2-min Scorecard" → `/scorecard`.
+- Keep the hero broad-outcome: do NOT name products in the hero — the hero is the universal door; specificity lives in the Offers section below.
 
 ### Surface 2 — Home Offers section (`components/Offers.tsx`) — main rebuild
 - **Remove** the Agent-Ready Blueprint card (object index `01`).
@@ -113,7 +120,7 @@ Structured like `/lead-magnet-system` (`components/` page + route registration i
 
 ## Out of scope
 - Building/productizing the Call Intelligence System itself (sell-then-productize; this spec is positioning only).
-- Rebuilding the home hero beyond an optional subhead tweak.
+- Rebuilding the home hero beyond the subhead sharpen + benefit-bullet row (Surface 1). No layout/visual-system rebuild.
 - Any 4th+ productized offer.
 - Touching the Blueprint backend (it stays as-is, just hidden from the public grid).
 - Pricing changes beyond merging LM+Content into one ~$7k Content System card.
