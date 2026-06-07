@@ -12,6 +12,7 @@ import { Clients } from './sections/Clients';
 import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
 import { Ideas } from './sections/Ideas';
+import { SystemOverview } from './sections/SystemOverview';
 import { Personal } from './sections/Personal';
 import type { NavItem, SectionId } from './types';
 
@@ -31,6 +32,7 @@ function ShellInner() {
     { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
     { id: 'ideas', name: 'Ideas', num: '⌖', group: 'knowledge' },
+    { id: 'system', name: 'System', num: '08', group: 'knowledge' },
     { id: 'personal', name: 'Personal', num: '07', group: 'personal' },
   ];
 
@@ -56,6 +58,7 @@ function ShellInner() {
     knowledge: () => <Knowledge />,
     agent: () => <Agent />,
     ideas: () => <Ideas />,
+    system: () => <SystemOverview />,
     personal: () => <Personal />,
   };
 
