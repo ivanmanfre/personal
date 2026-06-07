@@ -238,12 +238,26 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              AI systems for growing service businesses, so you{' '}
+              Growth and retention systems for service businesses — so you add pipeline and margin without adding payroll.{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A', fontWeight: 500 }}>
-                scale without scaling payroll.
-              </span>{' '}
-              Hiring another person just buys a bigger team and the same bottleneck: you.
+                Stop being the bottleneck in your own company.
+              </span>
             </motion.p>
+
+            <motion.ul
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.05, duration: 0.7, ease }}
+              className="mb-10 flex flex-col sm:flex-row gap-x-6 gap-y-2"
+              style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '13px', color: '#3D3D3B', letterSpacing: '0.01em' }}
+            >
+              {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
+                <li key={b} className="flex items-center gap-2">
+                  <span style={{ color: '#2A8F65' }} aria-hidden="true">✓</span>
+                  {b}
+                </li>
+              ))}
+            </motion.ul>
 
             {/* CTAs */}
             <motion.div
