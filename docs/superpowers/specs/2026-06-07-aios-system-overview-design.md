@@ -68,7 +68,9 @@ Script **`scripts/sync-aios-capabilities.mjs`** (mirrors how Usage data already 
 5. Compute `last_used_at` / `invoke_count` from `~/.claude/projects` session logs (same source `usage-insights` uses).
 6. Upsert all rows to `aios_capabilities` (on conflict `(kind, slug)` update), stamp `synced_at`, mark missing rows `deprecated`.
 
-Run manually (`node scripts/sync-aios-capabilities.mjs`) for v1; optionally wired to a Stop-hook or launchd later. The script runs **locally** (it needs `~/.claude` access) — never in GitHub Actions.
+Runnable manually (`node scripts/sync-aios-capabilities.mjs`) **and** wired for auto-refresh in this build via a **debounced Stop-hook** (`~/.claude/hooks/`): on session end, re-sync only if the last `synced_at` is older than a threshold (default 6h) so it stays current without running every turn. The script runs **locally** (it needs `~/.claude` access) — never in GitHub Actions.
+
+The integration + edge-function rows (step 4) are seeded from a declared manifest built from existing memory files (n8n, Supabase, ClickUp, Apify, Slack, Evolution, Railway, Calendly, etc.) — confirmed in scope.
 
 ### Frontend
 
@@ -99,6 +101,7 @@ The overview is a **summary index**, overlapping existing panels *by design* —
 - RPC/hook failure → section renders the hero from whatever live hooks succeed + a "roster unavailable" inline notice; never blanks the whole section.
 - Empty table (sync never run) → roster shows a "Run sync to populate" empty state; hero still shows live workflow/memory/usage numbers.
 - Sync script: per-source try/catch so one bad source (e.g. n8n API down) doesn't abort the whole sync; logs what it skipped (no silent truncation).
+- Stop-hook: debounce check + hard timeout so a slow sync never blocks session exit; failures log and exit 0 (never break the session).
 
 ## Testing
 
