@@ -15,6 +15,7 @@ import CaseStudyOwnEngine from './components/CaseStudyOwnEngine';
 import PodcastPage from './components/PodcastPage';
 import StartPage from './components/StartPage';
 import LeadMagnetSystemPage from './components/LeadMagnetSystemPage';
+import CallIntelligencePage from './components/CallIntelligencePage';
 import ContentSystemPage from './components/ContentSystemPage';
 import FractionalPage from './components/FractionalPage';
 import WorkPage from './components/WorkPage';
@@ -200,6 +201,7 @@ function App() {
           <Route path="/lead-magnet-system" element={<LeadMagnetSystemPage />} />
           <Route path="/content-system" element={<ContentSystemPage />} />
           <Route path="/fractional" element={<FractionalPage />} />
+          <Route path="/call-intelligence" element={<CallIntelligencePage />} />
           <Route path="/work" element={<WorkPage />} />
           <Route path="/start" element={<StartPage />} />
           <Route path="/scorecard" element={<ScorecardPage />} />
