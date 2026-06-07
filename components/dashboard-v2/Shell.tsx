@@ -6,7 +6,7 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'ideas', 'personal',
+  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'ideas', 'system', 'personal',
 ];
 
 // Legacy slug remap: ?section=steal (the old standalone panel) now lives at
