@@ -31,20 +31,26 @@ function isIvanEmail(email: string | null): boolean {
   return lower === IVAN_EMAIL || lower.endsWith('@ivanmanfredi.com');
 }
 
-export function useScansList() {
+export function useScansList(includeTests = false) {
   const [rows, setRows] = useState<ScanListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const refresh = useCallback(async () => {
-    const { data, error: fetchError } = await supabase
+    let query = supabase
       .from('scans')
       .select(COLUMNS)
-      .neq('email', IVAN_EMAIL)
-      .not('email', 'ilike', '%@ivanmanfredi.com')
       .order('created_at', { ascending: false })
       .limit(LIMIT);
+
+    if (!includeTests) {
+      query = query
+        .neq('email', IVAN_EMAIL)
+        .not('email', 'ilike', '%@ivanmanfredi.com');
+    }
+
+    const { data, error: fetchError } = await query;
 
     if (fetchError) {
       setError(fetchError.message);
@@ -53,7 +59,7 @@ export function useScansList() {
     }
     setRows((data ?? []) as unknown as ScanListRow[]);
     setLoading(false);
-  }, []);
+  }, [includeTests]);
 
   useEffect(() => {
     refresh();
@@ -65,7 +71,7 @@ export function useScansList() {
         { event: 'INSERT', schema: 'public', table: 'scans' },
         (payload) => {
           const row = payload.new as ScanListRow;
-          if (isIvanEmail(row.email)) return;
+          if (!includeTests && isIvanEmail(row.email)) return;
           setRows((prev) => [row, ...prev.filter((r) => r.id !== row.id)].slice(0, LIMIT));
         }
       )
@@ -74,7 +80,7 @@ export function useScansList() {
         { event: 'UPDATE', schema: 'public', table: 'scans' },
         (payload) => {
           const row = payload.new as ScanListRow;
-          if (isIvanEmail(row.email)) return;
+          if (!includeTests && isIvanEmail(row.email)) return;
           setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, ...row } : r)));
         }
       )
