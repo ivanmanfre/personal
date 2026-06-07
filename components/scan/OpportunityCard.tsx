@@ -174,7 +174,7 @@ export const OpportunityCard: React.FC<Props> = ({
       whileHover={{ y: -2 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.7, ease: EASE, delay: index * 0.12 }}
-      className={`grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 ${prominent ? 'py-14 my-2 px-6 lg:px-10 -mx-6 lg:-mx-10' : 'py-10 border-t border-[color:var(--color-hairline)]'}`}
+      className={`grid lg:grid-cols-[1fr_240px] gap-8 lg:gap-14 ${prominent ? 'py-14 my-2 px-5 sm:px-6 lg:px-10 -mx-5 sm:-mx-6 lg:-mx-10' : 'py-10 border-t border-[color:var(--color-hairline)]'}`}
       style={prominent ? {
         background: 'rgba(76,110,61,0.04)',
         borderLeft: '3px solid var(--color-accent)',

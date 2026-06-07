@@ -1191,7 +1191,7 @@ function PentagonRadarChart({
   const scorePath = scorePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 
   return (
-    <svg viewBox="-30 -25 320 290" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '320px' }}>
+    <svg viewBox="-40 -25 340 290" width="100%" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '320px' }}>
       {gridRings.map((ring) => {
         const pts = cats.map((_, i) => getPoint(i, maxR * ring));
         return (
@@ -1241,16 +1241,24 @@ function PentagonRadarChart({
         );
       })}
       {cats.map(({ label }, i) => {
-        const pt = getPoint(i, maxR + 22);
+        const pt = getPoint(i, maxR + 20);
         const isLeft = pt.x < cx - 8;
         const textAnchor = isLeft ? 'end' : pt.x > cx + 8 ? 'start' : 'middle';
+        // Wrap each label onto one line per word. Single-line labels like "Spend visibility"
+        // (~104px wide) overflowed the viewBox and got clipped to "END VISIBILITY" on mobile;
+        // stacking the words keeps every label inside the SVG bounds at any width.
+        const words = label.split(' ');
+        const lineH = 10;
+        const x = pt.x.toFixed(1);
         return (
           <text key={i}
-            x={pt.x.toFixed(1)} y={pt.y.toFixed(1)}
+            x={x} y={pt.y.toFixed(1)}
             textAnchor={textAnchor} dominantBaseline="middle"
-            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.12em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
+            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.1em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
           >
-            {label}
+            {words.map((w, wi) => (
+              <tspan key={wi} x={x} dy={wi === 0 ? -((words.length - 1) * lineH) / 2 : lineH}>{w}</tspan>
+            ))}
           </text>
         );
       })}
@@ -1780,7 +1788,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 
         {/* STEP 1 — Quick win the buyer can do themselves */}
         {w && (
-          <div className="mb-10 max-w-2xl px-6 lg:px-8 py-7 lg:py-8 -mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
+          <div className="mb-10 max-w-2xl px-5 sm:px-6 lg:px-8 py-7 lg:py-8 -mx-5 sm:-mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
             <div className="flex items-center gap-3 mb-4">
               <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
                 Step 01
