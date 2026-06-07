@@ -27,14 +27,19 @@ function scanCmdSuite(pluginsRoot, group) {
   const walk = (dir) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.md') && /commands|skills/.test(dir)) {
-        const md = readFileSync(p, 'utf8');
-        const m = md.match(/^description:\s*["']?(.+?)["']?\s*$/m);
-        const name = e.name.replace(/\.md$/, '');
-        out.push({ kind: 'command', slug: slugify(name), name,
-          description: m ? m[1].trim() : null, group, source_path: p, status: 'live' });
-      }
+      if (e.isDirectory()) { walk(p); continue; }
+      if (!e.name.endsWith('.md') || e.name === 'SKILL.md' || e.name === 'README.md') continue;
+      // Only collect command markdown living inside a `commands/` directory.
+      const segs = dir.split(/[/\\]/);
+      const ci = segs.lastIndexOf('commands');
+      if (ci === -1) continue;
+      // Namespace by the owning plugin so e.g. help.md in two plugins don't collide.
+      const plugin = segs[ci - 1] || group;
+      const base = e.name.replace(/\.md$/, '');
+      const md = readFileSync(p, 'utf8');
+      const m = md.match(/^description:\s*["']?(.+?)["']?\s*$/m);
+      out.push({ kind: 'command', slug: slugify(`${plugin}-${base}`), name: `${plugin}:${base}`,
+        description: m ? m[1].trim() : null, group: plugin, source_path: p, status: 'live' });
     }
   };
   walk(pluginsRoot);
@@ -101,8 +106,15 @@ safe('manifest', () => loadManifest(join(HERE, 'aios-manifest.json')));
 safe('adoption', () => applyAdoption(rows, join(HOME, '.claude/projects')));
 
 const now = new Date().toISOString();
-const payload = rows.map((r) => ({ ...r, invoke_count: r.invoke_count || 0,
-  metadata: r.metadata || {}, synced_at: now }));
+// Dedupe by (kind, slug) — the upsert's ON CONFLICT cannot touch the same row twice in one batch.
+const seen = new Set();
+const payload = [];
+for (const r of rows) {
+  const k = `${r.kind}:${r.slug}`;
+  if (seen.has(k)) continue;
+  seen.add(k);
+  payload.push({ ...r, invoke_count: r.invoke_count || 0, metadata: r.metadata || {}, synced_at: now });
+}
 
 const { error: upErr } = await db.from('aios_capabilities')
   .upsert(payload, { onConflict: 'kind,slug' });
