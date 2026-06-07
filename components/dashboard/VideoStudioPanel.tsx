@@ -59,9 +59,10 @@ export default function VideoStudioPanel() {
   const doApprove = useCallback(async (id: string) => {
     setBusyFor(id, true);
     try {
-      await approveVideo(id);
-      applyOptimistic(id, { videoStatus: 'approved' });
-      toastSuccess('Video approved');
+      const r = await approveVideo(id);
+      applyOptimistic(id, { videoStatus: 'approved', status: 'scheduled', scheduledAt: r.scheduled_at });
+      const when = r.scheduled_at ? new Date(r.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+      toastSuccess(when ? `Approved — scheduled for ${when}` : 'Video approved');
     } catch (e) {
       toastError('approve video', e);
     } finally {
@@ -176,10 +177,12 @@ export default function VideoStudioPanel() {
                     disabled={isBusy || st !== 'review'}
                     className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-emerald-600/90 hover:bg-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Approve & schedule
                   </button>
                   {d.videoStatus === 'approved' && (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Approved</span>
+                    <span className="text-xs text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Approved{d.scheduledAt ? ` · ${new Date(d.scheduledAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : ''}
+                    </span>
                   )}
                 </div>
               </div>

@@ -269,14 +269,20 @@ export async function redoVideo(input: { draft_id: string; style: string; feedba
   return res.json().catch(() => ({ ok: true }));
 }
 
-// Approve a reviewed video. Marks video_status='approved'. Publishing (Bridge
-// fanout + LinkedIn/IG) is wired separately; until then this just clears review.
+// Approve a reviewed video AND schedule it to the next open slot. Sets
+// video_status='approved' + status='scheduled' + scheduled_at, which the Bridge
+// (yzXqLDIpuNzuhUQq) picks up → scheduled_posts {post_format:'video',
+// media_urls:[video_url]} → Scheduled Post Publisher → native LinkedIn video.
 export async function approveVideo(draft_id: string) {
   const { supabase } = await import('./supabase');
+  const { findNextSlot } = await import('./findNextSlot');
+  const slot = await findNextSlot();
+  const iso = slot.toISOString();
   const { error } = await supabase.from('carousel_drafts')
-    .update({ video_status: 'approved' }).eq('id', draft_id);
-  if (error) throw new Error(`approve failed: ${error.message}`);
-  return { ok: true, draft_id };
+    .update({ video_status: 'approved', status: 'scheduled', scheduled_at: iso })
+    .eq('id', draft_id);
+  if (error) throw new Error(`approve+schedule failed: ${error.message}`);
+  return { ok: true, draft_id, scheduled_at: iso };
 }
 
 // === Lead Magnets v2 (LM-gen-v2 webhook on n8n) =====================
