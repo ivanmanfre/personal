@@ -17,41 +17,31 @@ interface Offer {
 const offers: Offer[] = [
   {
     id: '01',
-    name: 'Agent-Ready Blueprint',
-    price: '$2,000',
-    cadence: 'One-week engagement',
-    description: 'A 1-week diagnostic. You leave with your 90-Day AI Rollout Plan — sequenced builds, costed gaps, and decision logic for the first project.',
-    creditNote: '100% credited toward any follow-on engagement within 60 days.',
-    href: '/assessment',
-    cta: 'Build your Blueprint',
-    highlighted: true,
-  },
-  {
-    id: '02',
-    name: 'Fractional AI Partner',
-    price: 'From $3,500/mo',
-    cadence: 'Monthly retainer · 3 tiers',
-    description: 'Your AI strategy, owned by someone who ships. Senior partner embedded monthly - not another consultant selling slide decks.',
-    href: '/fractional',
-    cta: 'Apply for fit',
-  },
-  {
-    id: '03',
-    name: 'Lead Magnet System',
+    name: 'Content System',
     price: 'From $7k',
-    cadence: '3-week project',
-    description: 'Your best salesperson stops doing triage. Launch new magnets in an afternoon. Every lead gets followed up, every time.',
-    href: '/lead-magnet-system',
+    cadence: '3-week build',
+    description: 'Your growth engine: lead magnets plus a content engine trained on your voice. New pipeline without new hires — you approve, the system ships.',
+    href: '/content-system',
     cta: 'Scope your build',
   },
   {
-    id: '04',
-    name: 'Content Engine',
-    price: 'From $6k',
-    cadence: '3-week project',
-    description: 'Ship 5 posts a week without writing them. Weekly planning agent trained on your voice. You approve; the system ships.',
-    href: '/content-system',
-    cta: 'Plan your engine',
+    id: '02',
+    name: 'Call Intelligence',
+    price: 'Installed system',
+    cadence: 'Scoped on a fit call',
+    description: "Close more of the deals you're already in. It scores every sales call, flags the accounts about to churn, and shows you exactly why deals slip.",
+    href: '/call-intelligence',
+    cta: 'See how it works',
+    highlighted: true,
+  },
+  {
+    id: '03',
+    name: 'Fractional AI Partner',
+    price: 'From $3,500/mo',
+    cadence: 'Ongoing partnership',
+    description: 'Want me building alongside you month over month? An embedded senior partner at an intensity you control. Step up for big builds, down as things settle — no lock-in.',
+    href: '/fractional',
+    cta: 'Explore partnership',
   },
 ];
 
@@ -98,7 +88,7 @@ const Offers: React.FC = () => {
                 </span>
                 {offer.highlighted && (
                   <span className="font-mono text-xs uppercase tracking-widest text-[var(--color-accent-light)] font-medium">
-                    Start here
+                    Signature
                   </span>
                 )}
               </div>
@@ -134,6 +124,21 @@ const Offers: React.FC = () => {
             </motion.a>
           ))}
         </div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-10 text-center text-[15px] text-ink-soft"
+          style={{ fontFamily: '"Source Serif 4", Georgia, serif' }}
+        >
+          Working on something that's not here?{' '}
+          <a href="/start" className="underline decoration-[#2A8F65] underline-offset-4 hover:text-black">
+            The call is for that too
+          </a>{' '}
+          — I scope custom builds for service businesses every week.
+        </motion.p>
 
       </div>
     </section>
