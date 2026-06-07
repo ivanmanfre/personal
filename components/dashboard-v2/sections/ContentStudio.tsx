@@ -25,6 +25,7 @@ const LetterPanel = lazy(() => import('../../dashboard/LetterPanel'));
 const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
+const VideoStudioPanel = lazy(() => import('../../dashboard/VideoStudioPanel'));
 const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 const StyleGalleryPanel = lazy(() => import('../../dashboard/StyleGalleryPanel'));
@@ -114,6 +115,7 @@ export function ContentStudio() {
           <InternalTabs
             storageKey="content-studio-video-tab"
             tabs={[
+              { key: 'animated', label: 'Animated', render: () => <VideoStudioPanel /> },
               { key: 'recordings', label: 'Recordings · Calls', render: () => <RecordingsPanel /> },
               { key: 'video', label: 'Video Pipeline', render: () => <VideoIdeasPanel /> },
               { key: 'clips', label: 'Call Clips', render: () => <CallClipsPanel /> },
