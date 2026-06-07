@@ -130,7 +130,7 @@ function renderInline(text: string): React.ReactNode[] {
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Monthly engagement. A senior AI partner embedded in your business, shipping systems every month. Pick an intensity that matches the work ahead: heavy month for big builds, lighter cadence as things settle.',
+    description: 'Ongoing partnership for service businesses that want a senior AI operator building alongside them month over month. Intensity you control, no lock-in — step up for big builds, down as things settle.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
 
@@ -146,7 +146,7 @@ const FractionalPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Fractional AI Partner · Senior operator, ongoing
+              Fractional AI Partner · Ongoing partnership
             </span>
           </motion.div>
 
@@ -156,8 +156,8 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
           >
-            A senior AI partner, <br />
-            <span className="font-drama italic">embedded in your business.</span>
+            A senior AI partner who <br />
+            <span className="font-drama italic">keeps building with you.</span>
           </motion.h1>
 
           <motion.p
@@ -166,7 +166,7 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-4"
           >
-            Monthly engagement. Pick an intensity that matches the work ahead: heavy month for big builds, lighter cadence as things settle.
+            For clients who want to keep going after the first build. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle. No retainer lock-in.
           </motion.p>
 
           <motion.p
