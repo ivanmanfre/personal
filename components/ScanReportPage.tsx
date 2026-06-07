@@ -134,6 +134,30 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
+// Company logo with a source-fallback chain. report.logo_url is often a Brandfetch CDN URL
+// that now 404s without an API key, so we fall back to a Google favicon derived from the
+// company domain, then hide entirely if neither resolves (the company name sits right below,
+// so a missing logo degrades cleanly to no logo rather than a broken-image tile).
+const CompanyLogo: React.FC<{ logoUrl: string | null; domain: string | null }> = ({ logoUrl, domain }) => {
+  const sources = React.useMemo(
+    () => [logoUrl, domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null].filter(Boolean) as string[],
+    [logoUrl, domain],
+  );
+  const [idx, setIdx] = React.useState(0);
+  if (idx >= sources.length) return null;
+  return (
+    <img
+      key={sources[idx]}
+      src={sources[idx]}
+      alt=""
+      loading="lazy"
+      className="w-16 h-16 object-contain mb-6"
+      style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+      onError={() => setIdx((i) => i + 1)}
+    />
+  );
+};
+
 // Scramble-on-enter — like a slot machine settling. Scrambles digit chars in any string.
 // Non-digit chars (commas, $, %, #, letters) stay put. Triggers once when in view.
 export const Scramble: React.FC<{ value: string; duration?: number; className?: string; style?: React.CSSProperties }> = ({
@@ -2257,7 +2281,7 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
 const CinematicHero: React.FC<{
   companyName: string;
   report: ReportJson;
-  scan: { completed_at: string | null; created_at: string };
+  scan: { completed_at: string | null; created_at: string; domain: string };
   reduceMotion: boolean;
 }> = ({ companyName, report, scan, reduceMotion }) => {
   return (
@@ -2266,11 +2290,7 @@ const CinematicHero: React.FC<{
         <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
         <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
           <div>
-            {report.logo_url && (
-              <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
-                style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
-                onError={fallbackOnError} />
-            )}
+            <CompanyLogo logoUrl={report.logo_url} domain={scan.domain} />
             <motion.h1
               initial={reduceMotion ? false : { y: 10 }}
               animate={{ y: 0 }}
