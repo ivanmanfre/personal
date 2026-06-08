@@ -247,7 +247,7 @@ const ProblemSection: React.FC = () => {
 
           <motion.div style={isLg ? { y: leftY } : undefined} className="pr-20">
             <motion.div {...inView}>
-              <Label>02 / The problem</Label>
+              <Label>01</Label>
               <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
                 You've hit the<br />headcount wall.
               </RevealH2>
@@ -330,7 +330,7 @@ const BuildOutcomesSection: React.FC = () => (
     <div className="container mx-auto px-8 max-w-6xl">
 
       <motion.div {...inView} className="mb-16 max-w-2xl">
-        <Label>04 / Built. Shipped. Live.</Label>
+        <Label>03</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Recent builds,<br />
           <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
@@ -339,7 +339,7 @@ const BuildOutcomesSection: React.FC = () => (
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
-          The systems Agent-Ready operators are running right now.
+          The systems clients are running right now.
         </p>
       </motion.div>
 
@@ -369,7 +369,7 @@ const BuildOutcomesSection: React.FC = () => (
             </p>
             <div className="flex items-center justify-between gap-4 mt-5">
               <div style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '9px' }}>
-                {o.qualifier} · 4/4 Agent-Ready
+                {o.qualifier}
               </div>
               <span style={{
                 fontFamily: '"Source Serif 4",serif',
@@ -393,31 +393,31 @@ const BuildOutcomesSection: React.FC = () => (
 const PRECONDITIONS = [
   {
     n: '01',
-    titlePre: 'Your data lives in ',
-    pivot: 'one place you can pull from',
+    titlePre: 'The work that waits on you ',
+    pivot: 'happens without you',
     titlePost: '',
-    sub: 'When a call gets made, your team reads from one source they all trust, current enough to act on. An agent reads from that same source.',
+    sub: "The repetitive calls, the reports, the same decision made the same way. All of it handled while you're on a plane.",
   },
   {
     n: '02',
-    titlePre: 'Your best operator can ',
-    pivot: 'write down how they decide',
+    titlePre: 'Your team stops ',
+    pivot: 'waiting on your sign-off',
     titlePost: '',
-    sub: 'Their calls are fast and consistent. Once that judgment is on paper, an agent can run it the same way every time.',
+    sub: 'The 14 Slack DMs and 23 approvals by 9am become a system that already knows the answer.',
   },
   {
     n: '03',
-    titlePre: 'You can name ',
-    pivot: 'the one job to start with',
+    titlePre: 'Scaling stops meaning ',
+    pivot: 'another hire',
     titlePost: '',
-    sub: 'Ask three people what they wish would just go away. The job they all name is where we start: one workflow, end to end, before widening.',
+    sub: 'New clients stop adding headcount and overhead. The system absorbs the volume, and your margins hold.',
   },
   {
     n: '04',
-    titlePre: 'The same work ',
-    pivot: 'repeats every week',
+    titlePre: 'You go from operator ',
+    pivot: 'back to owner',
     titlePost: '',
-    sub: "Daily, weekly, per client, per billing cycle. Fix it once and the hours compound. One-off projects don't qualify.",
+    sub: "Out of the daily firefight, back to the work only you can do. Take two weeks off and nothing breaks.",
   },
 ];
 
@@ -615,7 +615,7 @@ const AgentReadySection: React.FC = () => (
           marginBottom: '1.75rem',
         }}
       >
-        03 / What "Agent-Ready" means
+        02
       </motion.div>
 
       <motion.h2
@@ -634,11 +634,10 @@ const AgentReadySection: React.FC = () => (
           maxWidth: '22ch',
         }}
       >
-        What does it mean<br />
+        What changes once<br />
         <span style={{ fontStyle: 'italic' }}>
-          to be{' '}
           <span style={{ position: 'relative', display: 'inline-block' }}>
-            Agent-Ready?
+            the systems run.
             <motion.span
               initial={prefersReduced ? false : { scaleX: 0 }}
               whileInView={{ scaleX: 1 }}
@@ -707,7 +706,7 @@ const WorkSection: React.FC = () => {
   const steps = [
     {
       id: '01', title: 'Diagnose',
-      desc: <>I score your operation on the 4 preconditions and map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>where capacity is leaking.</span> You leave with your 90-Day AI Rollout Plan: what to build first, what compounds, what needs foundation work before it ships.</>,
+      desc: <>I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
       icon: (
         <svg viewBox="0 0 100 100" className="w-full h-full">
           <circle cx="50" cy="50" r="40" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" fill="none" opacity="0.4" />
@@ -746,7 +745,7 @@ const WorkSection: React.FC = () => {
     <section className="py-12 md:py-20 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
         <motion.div {...inView} className="mb-10">
-          <Label>05 / How we work together</Label>
+          <Label>04</Label>
           <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
             <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
@@ -798,7 +797,7 @@ const TestimonialsSection: React.FC = () => (
   <section className="pt-12 md:pt-20 pb-0 border-t overflow-hidden" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl mb-14">
       <motion.div {...inView}>
-        <Label>06 / Client proof</Label>
+        <Label>05</Label>
         <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
           Every project ships.<br />Every client comes back.
         </RevealH2>
@@ -836,7 +835,7 @@ const PaybackSection: React.FC = () => {
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
-          <Label>07 / The guarantee</Label>
+          <Label>06</Label>
           <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), marginBottom: '1.25rem' }}>
             The 90-Day<br />Payback Rule.
           </RevealH2>
@@ -905,7 +904,7 @@ const PaybackSection: React.FC = () => {
               className="flex items-center justify-between px-7 py-4 bg-black text-white"
               style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px' }}
             >
-              <span>See if you're Agent-Ready</span>
+              <span>See if it's a fit</span>
               <ArrowRight size={18} />
             </motion.a>
           </motion.div>
@@ -952,7 +951,7 @@ const OfferSection: React.FC = () => (
   <section className="py-16 md:py-24 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label dark>08 / What I build</Label>
+        <Label dark>07</Label>
         <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), color: '#F7F4EF' }}>
           Three systems.<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
@@ -1024,19 +1023,19 @@ const FinalCTA: React.FC = () => (
           Ready to scale<br />without hiring?
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '19px', maxWidth: '500px', margin: '0 auto 2.5rem', textAlign: 'center' }}>
-          One week. Four preconditions.{' '}
-          <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>Your 90-Day AI Rollout Plan.</span>
+          A free 30-minute fit call.{' '}
+          <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>We map where AI actually moves your numbers.</span>
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <MagneticCTA href="/assessment" variant="primary" fontSize="17px" px="px-8 py-4">
-            Build your Blueprint <ArrowRight size={18} />
+          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-8 py-4">
+            Book your fit call <ArrowRight size={18} />
           </MagneticCTA>
-          <MagneticCTA href="/start" variant="ghost" fontSize="16px" px="px-8 py-4">
-            Prefer to talk first? Book a call <ArrowRight size={15} />
+          <MagneticCTA href="/scorecard" variant="ghost" fontSize="16px" px="px-8 py-4">
+            Take the 2-min Scorecard <ArrowRight size={15} />
           </MagneticCTA>
         </div>
         <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', marginTop: '1.75rem' }}>
-          Booking {getBookingQuarter()} · {OPEN_SLOTS} diagnostic slots remaining
+          Booking {getBookingQuarter()} · {OPEN_SLOTS} fit-call slots remaining
         </p>
       </motion.div>
     </div>
@@ -1085,7 +1084,7 @@ const LandingFooter: React.FC = () => {
             <span style={{ fontStyle: 'italic' }}>that actually ship.</span>
           </h3>
           <p style={{ ...T.serif, fontSize: '15px', marginBottom: '2rem' }}>
-            Written for founders of growing service businesses going Agent-Ready. The patterns I'm actually running in production.
+            Written for founders of growing service businesses. The patterns I'm actually running in production.
           </p>
 
           {status === 'success' ? (
