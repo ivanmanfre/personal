@@ -917,110 +917,96 @@ const PaybackSection: React.FC = () => {
 };
 
 // ─── Section 6: The Offer ─────────────────────────────────────────────────────
+const OFFER_BUILDS = [
+  {
+    id: '01',
+    name: 'Content System',
+    price: 'From $7k',
+    cadence: '3-week build',
+    desc: 'Your growth engine: lead magnets plus a content engine trained on your voice. New pipeline without new hires.',
+    href: '/content-system',
+    cta: 'Scope your build',
+  },
+  {
+    id: '02',
+    name: 'Call Intelligence',
+    price: 'Installed system',
+    cadence: 'Scoped on a fit call',
+    desc: "Close more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
+    href: '/call-intelligence',
+    cta: 'See how it works',
+    signature: true,
+  },
+  {
+    id: '03',
+    name: 'Fractional AI Partner',
+    price: 'From $3,500/mo',
+    cadence: 'Ongoing partnership',
+    desc: 'Want me building alongside you month over month? An embedded senior partner at an intensity you control. No lock-in.',
+    href: '/fractional',
+    cta: 'Explore partnership',
+  },
+];
+
 const OfferSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
+  <section className="py-16 md:py-24 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <div className="grid lg:grid-cols-[1fr_1px_1fr] items-start">
-
-        <motion.div {...inView} className="pr-20">
-          <Label dark>08 / The offer</Label>
-          <motion.div
-            initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
-            whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.9, ease }}
-            style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), color: '#F7F4EF', marginBottom: '1rem' }}
-          >
-            Agent-Ready<br />Blueprint
-          </motion.div>
-          {/* Price with sage marker sweep — brand-signature gesture at the money moment */}
-          <div
-            style={{
-              fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-              fontStyle: 'italic',
-              fontWeight: 400,
-              fontSize: '44px',
-              lineHeight: 1,
-              color: '#F7F4EF',
-              letterSpacing: '-0.02em',
-              marginBottom: '1.75rem',
-              display: 'inline-block',
-              position: 'relative',
-              isolation: 'isolate',
-            }}
-          >
-            <span style={{ position: 'relative', zIndex: 1 }}>$2,000</span>
+      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+        <Label dark>08 / What I build</Label>
+        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), color: '#F7F4EF' }}>
+          Three systems.<br />
+          <span style={{ position: 'relative', display: 'inline-block' }}>
+            One less bottleneck.
             <SageSweep delay={0.6} opacity={0.85} />
-          </div>
-          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
-            A one-week diagnostic. I evaluate your operation against the 4 preconditions,
-            map where capacity is leaking, and hand back your 90-Day AI Rollout Plan:
-            sequenced builds, costed gaps, decision logic for the first project.
-          </p>
-          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.72)', marginBottom: '1.5rem' }}>
-            The build this plans for usually runs into five figures, and it pays back inside 90 days or I don't build it. Next to what the bottleneck is costing you every quarter, the diagnostic that scopes it pays for itself before the first build ships.
-          </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.5)', lineHeight: 1.55 }}>
-            100% credited toward the build if you proceed. You keep the scorecard either way. If we're not a fit after the 90-min discovery call, you don't pay.
-          </p>
-        </motion.div>
+          </span>
+        </RevealH2>
+      </motion.div>
 
-        <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(247,244,239,0.1)' }} />
-
-        <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="pl-20 pt-8 lg:pt-0">
-          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.6)', marginBottom: '1.5rem' }}>What's included</div>
-          <ul className="space-y-5 mb-10">
-            {[
-              ['90-min discovery call', 'We map your highest-leverage workflows together.'],
-              ['Agent-Ready Scorecard', 'Where you stand on all 4 preconditions. Yours to keep.'],
-              ['Workflow opportunity map', 'Every automatable process ranked by ROI.'],
-              ['90-Day AI Rollout Plan', 'What to build first, second, and what to skip entirely.'],
-              ['First-project spec', 'Full architecture for the highest-impact build. Ready to execute.'],
-            ].map(([title, desc]) => (
-              <li key={title} className="flex gap-4 items-start">
-                <span style={{ color: 'var(--color-accent-light)', fontFamily: '"Source Serif 4",serif', fontStyle: 'italic', fontSize: '17px', lineHeight: 1.4, flexShrink: 0 }}>↳</span>
-                <div>
-                  <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#F7F4EF', lineHeight: 1.3 }}>{title}</div>
-                  <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.6)', lineHeight: 1.4, marginTop: '3px' }}>{desc}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p style={{
-            fontFamily: '"Source Serif 4", Georgia, serif',
-            fontStyle: 'italic',
-            fontSize: '13px',
-            color: 'rgba(247,244,239,0.5)',
-            marginBottom: '14px',
-            lineHeight: 1.5,
-          }}>
-            Not ready?{' '}
-            <a
-              href="/scorecard"
-              style={{
-                color: 'rgba(247,244,239,0.7)',
-                textDecoration: 'underline',
-                textDecorationColor: 'rgba(247,244,239,0.25)',
-                textUnderlineOffset: '3px',
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent-light)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(247,244,239,0.7)')}
-            >
-              take the free Agent-Ready Scorecard →
-            </a>
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <MagneticCTA href="/assessment" variant="primary" dark>
-              Build your Blueprint <ArrowRight size={18} />
-            </MagneticCTA>
-            <MagneticCTA href="/start" variant="ghost" dark fontSize="15px">
-              Prefer to talk first? Book a call <ArrowRight size={15} />
-            </MagneticCTA>
-          </div>
-        </motion.div>
-
+      <div className="grid md:grid-cols-3 gap-px" style={{ backgroundColor: 'rgba(247,244,239,0.12)' }}>
+        {OFFER_BUILDS.map((b, i) => (
+          <motion.a
+            key={b.id}
+            href={b.href}
+            initial={prefersReduced ? false : { opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.7, ease, delay: i * 0.08 }}
+            className="group flex flex-col p-8 md:p-9"
+            style={{ backgroundColor: b.signature ? '#23211d' : '#1A1A1A', position: 'relative' }}
+          >
+            {b.signature && (
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }} />
+            )}
+            <div className="flex items-center justify-between mb-6">
+              <span style={{ ...T.mono, color: 'rgba(247,244,239,0.5)', marginBottom: 0 }}>{b.id}</span>
+              {b.signature && (
+                <span style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: 0 }}>Signature</span>
+              )}
+            </div>
+            <h3 style={{ ...T.display('1.7rem'), color: '#F7F4EF', marginBottom: '1rem' }}>{b.name}</h3>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '20px', color: 'var(--color-accent-light)', letterSpacing: '-0.01em', marginBottom: '0.4rem' }}>{b.price}</div>
+            <div style={{ ...T.mono, color: 'rgba(247,244,239,0.45)', marginBottom: '1.5rem' }}>{b.cadence}</div>
+            <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '15px', lineHeight: 1.6, color: 'rgba(247,244,239,0.7)', marginBottom: '1.75rem', flex: 1 }}>{b.desc}</p>
+            <div className="flex items-center gap-2" style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '14px', color: 'var(--color-accent-light)' }}>
+              {b.cta}
+              <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+            </div>
+          </motion.a>
+        ))}
       </div>
+
+      <motion.div {...inView} className="mt-12 flex flex-col items-center gap-6">
+        <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-9 py-4">
+          Book your fit call <ArrowRight size={18} />
+        </MagneticCTA>
+        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(247,244,239,0.55)', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
+          Working on something that's not here?{' '}
+          <a href="/start" style={{ color: 'rgba(247,244,239,0.8)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
+            The call is for that too
+          </a>
+          {' '}&mdash; I scope custom builds for service businesses every week.
+        </p>
+      </motion.div>
     </div>
   </section>
 );
