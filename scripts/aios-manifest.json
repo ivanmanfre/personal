@@ -1,0 +1,16 @@
+{
+  "integration": [
+    { "slug": "n8n",       "name": "n8n",       "description": "Workflow automation engine (ivanmanfredi.com)" },
+    { "slug": "supabase",  "name": "Supabase",  "description": "Postgres + pgvector + edge functions" },
+    { "slug": "clickup",   "name": "ClickUp",   "description": "Tasks + prompt pages (being retired)" },
+    { "slug": "apify",     "name": "Apify",     "description": "Scraping actors for outreach/ICP" },
+    { "slug": "slack",     "name": "Slack",     "description": "Curator + alert source" },
+    { "slug": "evolution", "name": "Evolution", "description": "WhatsApp API (n8nClaw, alerts)" },
+    { "slug": "railway",   "name": "Railway",   "description": "Video engine + Claude proxy host" },
+    { "slug": "calendly",  "name": "Calendly",  "description": "Discovery-call scheduling" }
+  ],
+  "edge_fn": [
+    { "slug": "claude-brain-query", "name": "claude-brain-query", "description": "Hybrid memory retrieval (BM25+vector)" },
+    { "slug": "lm-cover-gemini",    "name": "lm-cover-gemini",    "description": "Lead-magnet cover renderer (Gemini)" }
+  ]
+}

@@ -134,6 +134,30 @@ const fallbackOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
   (e.target as HTMLImageElement).style.display = 'none';
 };
 
+// Company logo with a source-fallback chain. report.logo_url is often a Brandfetch CDN URL
+// that now 404s without an API key, so we fall back to a Google favicon derived from the
+// company domain, then hide entirely if neither resolves (the company name sits right below,
+// so a missing logo degrades cleanly to no logo rather than a broken-image tile).
+const CompanyLogo: React.FC<{ logoUrl: string | null; domain: string | null }> = ({ logoUrl, domain }) => {
+  const sources = React.useMemo(
+    () => [logoUrl, domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : null].filter(Boolean) as string[],
+    [logoUrl, domain],
+  );
+  const [idx, setIdx] = React.useState(0);
+  if (idx >= sources.length) return null;
+  return (
+    <img
+      key={sources[idx]}
+      src={sources[idx]}
+      alt=""
+      loading="lazy"
+      className="w-16 h-16 object-contain mb-6"
+      style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+      onError={() => setIdx((i) => i + 1)}
+    />
+  );
+};
+
 // Scramble-on-enter — like a slot machine settling. Scrambles digit chars in any string.
 // Non-digit chars (commas, $, %, #, letters) stay put. Triggers once when in view.
 export const Scramble: React.FC<{ value: string; duration?: number; className?: string; style?: React.CSSProperties }> = ({
@@ -1191,7 +1215,7 @@ function PentagonRadarChart({
   const scorePath = scorePoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
 
   return (
-    <svg viewBox="-30 -25 320 290" width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '320px' }}>
+    <svg viewBox="-40 -25 340 290" width="100%" preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxWidth: '320px' }}>
       {gridRings.map((ring) => {
         const pts = cats.map((_, i) => getPoint(i, maxR * ring));
         return (
@@ -1241,16 +1265,24 @@ function PentagonRadarChart({
         );
       })}
       {cats.map(({ label }, i) => {
-        const pt = getPoint(i, maxR + 22);
+        const pt = getPoint(i, maxR + 20);
         const isLeft = pt.x < cx - 8;
         const textAnchor = isLeft ? 'end' : pt.x > cx + 8 ? 'start' : 'middle';
+        // Wrap each label onto one line per word. Single-line labels like "Spend visibility"
+        // (~104px wide) overflowed the viewBox and got clipped to "END VISIBILITY" on mobile;
+        // stacking the words keeps every label inside the SVG bounds at any width.
+        const words = label.split(' ');
+        const lineH = 10;
+        const x = pt.x.toFixed(1);
         return (
           <text key={i}
-            x={pt.x.toFixed(1)} y={pt.y.toFixed(1)}
+            x={x} y={pt.y.toFixed(1)}
             textAnchor={textAnchor} dominantBaseline="middle"
-            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.12em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
+            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.1em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
           >
-            {label}
+            {words.map((w, wi) => (
+              <tspan key={wi} x={x} dy={wi === 0 ? -((words.length - 1) * lineH) / 2 : lineH}>{w}</tspan>
+            ))}
           </text>
         );
       })}
@@ -1780,7 +1812,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 
         {/* STEP 1 — Quick win the buyer can do themselves */}
         {w && (
-          <div className="mb-10 max-w-2xl px-6 lg:px-8 py-7 lg:py-8 -mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
+          <div className="mb-10 max-w-2xl px-5 sm:px-6 lg:px-8 py-7 lg:py-8 -mx-5 sm:-mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
             <div className="flex items-center gap-3 mb-4">
               <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
                 Step 01
@@ -2249,7 +2281,7 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
 const CinematicHero: React.FC<{
   companyName: string;
   report: ReportJson;
-  scan: { completed_at: string | null; created_at: string };
+  scan: { completed_at: string | null; created_at: string; domain: string };
   reduceMotion: boolean;
 }> = ({ companyName, report, scan, reduceMotion }) => {
   return (
@@ -2258,11 +2290,7 @@ const CinematicHero: React.FC<{
         <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
         <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
           <div>
-            {report.logo_url && (
-              <img src={report.logo_url} alt="" loading="lazy" className="w-16 h-16 object-contain mb-6"
-                style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
-                onError={fallbackOnError} />
-            )}
+            <CompanyLogo logoUrl={report.logo_url} domain={scan.domain} />
             <motion.h1
               initial={reduceMotion ? false : { y: 10 }}
               animate={{ y: 0 }}

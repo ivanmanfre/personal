@@ -30,9 +30,15 @@ export interface CarouselDraft {
   sourcePostId: string | null;     // urn:li:activity:... from Unipile
   slides: any[];                   // historical slide structures when image_urls is empty
   description: string | null;      // markdown source briefing (Description + Suggested Angle + Quotes) from ClickUp task
+  // Animated video drafts (type='video') — render pipeline is video-gen-v2 + ivan-flow-video engine
+  videoUrl: string | null;
+  videoSpec: Record<string, any> | null;
+  videoStatus: string | null;      // queued | generating | review | approved | failed
+  videoStyle: string | null;       // serpentine-flow | product-ui-showcase | before-after
+  videoFeedback: string | null;
 }
 
-const SELECT_COLS = 'id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description';
+const SELECT_COLS = 'id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description, video_url, video_spec, video_status, video_style, video_feedback';
 
 function mapDraft(row: any): CarouselDraft {
   return {
@@ -55,10 +61,15 @@ function mapDraft(row: any): CarouselDraft {
     sourcePostId: row.source_post_id,
     slides: Array.isArray(row.slides) ? row.slides : [],
     description: row.description,
+    videoUrl: row.video_url ?? null,
+    videoSpec: row.video_spec ?? null,
+    videoStatus: row.video_status ?? null,
+    videoStyle: row.video_style ?? null,
+    videoFeedback: row.video_feedback ?? null,
   };
 }
 
-export type DraftPatch = Partial<Pick<CarouselDraft, 'status' | 'scheduledAt' | 'postBody' | 'igCaption' | 'taxonomy' | 'imageUrls' | 'qa' | 'slides'>>;
+export type DraftPatch = Partial<Pick<CarouselDraft, 'status' | 'scheduledAt' | 'postBody' | 'igCaption' | 'taxonomy' | 'imageUrls' | 'qa' | 'slides' | 'videoUrl' | 'videoStatus' | 'videoStyle' | 'videoFeedback'>>;
 
 export function useContentLibrary() {
   const [drafts, setDrafts] = useState<CarouselDraft[]>([]);

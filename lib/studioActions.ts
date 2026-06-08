@@ -245,6 +245,46 @@ export async function scheduleCarousel(draft_id: string, scheduled_at: string) {
   return { ok: true, draft_id, scheduled_at };
 }
 
+// === Animated videos (video-gen-v2 webhook + ivan-flow-video engine) ===
+// The engine renders async: video-gen-v2 returns immediately, the engine renders
+// in the background (~150s) and PATCHes carousel_drafts {video_url, video_status:'review'}.
+// Realtime on carousel_drafts surfaces the result, so the UI just fires + waits.
+const VIDEO_WEBHOOK = import.meta.env.VITE_VIDEO_GEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/video-gen-v2';
+
+// Redo a video: optionally write feedback (Author Spec folds it into the new spec),
+// flip video_status to 'generating', then fire the render. style defaults to the
+// draft's current style.
+export async function redoVideo(input: { draft_id: string; style: string; feedback?: string }) {
+  const { supabase } = await import('./supabase');
+  const patch: Record<string, unknown> = { video_status: 'generating' };
+  if (input.feedback != null) patch.video_feedback = input.feedback;
+  const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', input.draft_id);
+  if (error) throw new Error(`redo (status write) failed: ${error.message}`);
+  const res = await fetch(VIDEO_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ draft_id: input.draft_id, style: input.style }),
+  });
+  if (!res.ok) throw new Error(`video-gen-v2 failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json().catch(() => ({ ok: true }));
+}
+
+// Approve a reviewed video AND schedule it to the next open slot. Sets
+// video_status='approved' + status='scheduled' + scheduled_at, which the Bridge
+// (yzXqLDIpuNzuhUQq) picks up → scheduled_posts {post_format:'video',
+// media_urls:[video_url]} → Scheduled Post Publisher → native LinkedIn video.
+export async function approveVideo(draft_id: string) {
+  const { supabase } = await import('./supabase');
+  const { findNextSlot } = await import('./findNextSlot');
+  const slot = await findNextSlot();
+  const iso = slot.toISOString();
+  const { error } = await supabase.from('carousel_drafts')
+    .update({ video_status: 'approved', status: 'scheduled', scheduled_at: iso })
+    .eq('id', draft_id);
+  if (error) throw new Error(`approve+schedule failed: ${error.message}`);
+  return { ok: true, draft_id, scheduled_at: iso };
+}
+
 // === Lead Magnets v2 (LM-gen-v2 webhook on n8n) =====================
 const LM_WEBHOOK = import.meta.env.VITE_LM_GEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/lm-gen-v2';
 

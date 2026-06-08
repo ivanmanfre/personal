@@ -559,7 +559,8 @@ const OutreachOpenRow: React.FC<{ row: OutreachClickRow }> = ({ row }) => {
 };
 
 const FreeAuditsSection: React.FC = () => {
-  const { rows, loading } = useScansList();
+  const [showTests, setShowTests] = useState(false);
+  const { rows, loading } = useScansList(showTests);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -571,12 +572,24 @@ const FreeAuditsSection: React.FC = () => {
 
   return (
     <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <Search className="w-5 h-5 text-zinc-400" />
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">Free Audits</h2>
-          <p className="text-xs text-zinc-500">Last 30 submissions from <span className="font-mono">/audit</span> (your own emails filtered out).</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Search className="w-5 h-5 text-zinc-400" />
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Free Audits</h2>
+            <p className="text-xs text-zinc-500">
+              Last 30 submissions from <span className="font-mono">/audit</span>{' '}
+              {showTests ? '(including your own test runs).' : '(your own emails filtered out).'}
+            </p>
+          </div>
         </div>
+        <button
+          onClick={() => setShowTests((v) => !v)}
+          className={`shrink-0 px-3 py-1.5 rounded text-xs font-medium border transition-colors ${showTests ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:border-zinc-700'}`}
+          title="Show submissions made from your own emails (@ivanmanfredi.com and your gmail) — verification + self-test runs"
+        >
+          {showTests ? 'Hide test submissions' : 'Show test submissions'}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
