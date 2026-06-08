@@ -46,6 +46,38 @@
       padding: 32px 28px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
+    .brief {
+      background: #FFFFFF;
+      border: 1px solid #E8E2D6;
+      border-radius: 4px;
+      padding: 28px 28px;
+      margin: 0 0 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .brief-section + .brief-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #EFE9DD;
+    }
+    .brief-label {
+      font-family: 'Courier New', ui-monospace, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+      color: #8A8A86;
+      margin-bottom: 14px;
+    }
+    .brief-body p {
+      margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: #2A2A28;
+    }
+    .brief-body p:last-child { margin-bottom: 0; }
+    .brief-body ol {
+      margin: 8px 0 12px; padding-left: 22px; font-size: 14px; color: #2A2A28; line-height: 1.6;
+    }
+    .brief-body ol li { margin-bottom: 4px; }
+    .brief-body strong { color: #1A1A1A; font-weight: 600; }
+    .brief-body code {
+      background: #F7F4EF; padding: 1px 6px; border-radius: 2px; font-size: 13px;
+      font-family: 'Courier New', ui-monospace, monospace;
+    }
     .diagram {
       display: flex; justify-content: center;
       margin: 8px 0 24px;
@@ -109,6 +141,38 @@
     <p class="subtitle">
       How the new platform signup integration would work end-to-end. The n8n endpoint receives webhook events from your platform, classifies the user against existing HubSpot records, and writes the result into your Airtable workflow.
     </p>
+
+    <div class="brief">
+      <div class="brief-section">
+        <div class="brief-label">Original brief · Emil</div>
+        <div class="brief-body">
+          <p>We would like to import all new users who sign up to our platform on an ongoing basis.</p>
+          <p>Could you please set up a webhook that sends new signup data to our developers? We will then forward this data into our Airtable/n8n setup.</p>
+          <p>We would also like to run the same type of check against our existing customers and contacts in HubSpot, so we can identify whether a new signup already exists as a customer, lead, or contact.</p>
+          <p>In short, we need:</p>
+          <ol>
+            <li>A webhook for all new platform signups</li>
+            <li>The relevant user/company data included in the webhook</li>
+            <li>The ability to match new signups against existing HubSpot records</li>
+            <li>The data sent into our Airtable/n8n workflow</li>
+          </ol>
+        </div>
+      </div>
+      <div class="brief-section">
+        <div class="brief-label">What I sent back · Iván</div>
+        <div class="brief-body">
+          <p>Happy to help on this. I'll set up an n8n webhook endpoint and send the URL to you or your devs, so they can POST signup data to it from the platform whenever a new user signs up.</p>
+          <p>A few things to clarify before I quote:</p>
+          <p><strong>Match behavior.</strong> When we find an existing HubSpot record (contact / lead / customer), should we:</p>
+          <ol>
+            <li>Just tag the Airtable row with the matched record link, or</li>
+            <li>also update the HubSpot record (e.g., set a "Signed up to platform" property), or</li>
+            <li>also create a new contact in HubSpot if there's no match?</li>
+          </ol>
+          <p><strong>Slack notification.</strong> Do you want a Slack ping for new signups (same as the Leads flow)? If yes, same channel or a dedicated <code>#signups</code> one? Anything you want highlighted in the message (matched HubSpot status, plan signed up for, etc.)?</p>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="diagram">
