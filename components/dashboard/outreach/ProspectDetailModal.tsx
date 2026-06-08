@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Send, Archive, Ban, MessageSquare, Heart, Clock } from 'lucide-react';
+import { X, ExternalLink, Send, Archive, Ban, MessageSquare, Heart, Clock, FileSearch } from 'lucide-react';
 import { timeAgo } from '../shared/utils';
+import { supabase } from '../../../lib/supabase';
 import type { OutreachProspect, OutreachMessage, OutreachEngagementLog } from '../../../types/dashboard';
 
 interface Props {
@@ -62,10 +63,40 @@ export const ProspectDetailModal: React.FC<Props> = ({
   const [dmText, setDmText] = useState('');
   const [notesTimer, setNotesTimer] = useState<NodeJS.Timeout | null>(null);
 
+  // Pre-audit scan for this prospect's domain — the basis for the audit-first opener.
+  const [scan, setScan] = useState<{
+    status: string; automation_score: number | null; company_slug: string | null;
+    reframe: { pre?: string; emphasis?: string; post?: string } | null; completed_at: string | null;
+  } | null>(null);
+
   useEffect(() => {
     onFetchMessages(prospect.id);
     onFetchEngagements(prospect.id);
   }, [prospect.id, onFetchMessages, onFetchEngagements]);
+
+  useEffect(() => {
+    const raw = prospect.companyDomain;
+    if (!raw) { setScan(null); return; }
+    const domain = raw.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '').trim();
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from('scans')
+        .select('status, automation_score, company_slug, report_json, completed_at')
+        .eq('company_domain', domain)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!data) { setScan(null); return; }
+      const rj = (data.report_json || {}) as { reframe?: { pre?: string; emphasis?: string; post?: string } };
+      setScan({
+        status: data.status, automation_score: data.automation_score,
+        company_slug: data.company_slug, reframe: rj.reframe || null, completed_at: data.completed_at,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [prospect.companyDomain]);
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
@@ -170,6 +201,46 @@ export const ProspectDetailModal: React.FC<Props> = ({
               Open LinkedIn <ExternalLink className="w-3 h-3" />
             </a>
           </div>
+
+          {/* Pre-Audit Scan — basis for the audit-first opener (fires only after they ACCEPT) */}
+          {scan && (
+            <div className="bg-zinc-800/40 border border-sky-500/20 rounded-xl p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-sky-400 uppercase tracking-wider font-medium flex items-center gap-1.5">
+                  <FileSearch className="w-3.5 h-3.5" /> Pre-Audit Scan
+                </span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                  scan.status === 'complete' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : scan.status === 'processing' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  : 'bg-red-500/10 text-red-400 border-red-500/20'
+                }`}>
+                  {scan.status === 'processing' ? 'auditing…' : scan.status}
+                  {scan.automation_score != null ? ` · ${scan.automation_score}/100` : ''}
+                </span>
+              </div>
+              {scan.reframe?.emphasis && (
+                <div className="bg-zinc-900/60 rounded-lg p-2.5">
+                  <p className="text-[10px] text-zinc-500 mb-1">Opener reframe (X but Y):</p>
+                  <p className="text-xs text-zinc-200 italic">
+                    "{`${scan.reframe.pre || ''}${scan.reframe.emphasis}${scan.reframe.post || ''}`.replace(/\s+/g, ' ').trim()}"
+                  </p>
+                </div>
+              )}
+              {scan.company_slug && (
+                <a
+                  href={`https://ivanmanfredi.com/scan/${scan.company_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                >
+                  Open audit report <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              {scan.status === 'complete' && !scan.reframe?.emphasis && (
+                <p className="text-[10px] text-zinc-500">Audit ran but produced no reframe — the opener falls back to the campaign template.</p>
+              )}
+            </div>
+          )}
 
           {/* Research Trigger - Full Reasoning Chain */}
           {prospect.triggerType && prospect.triggerType !== 'none' && (
