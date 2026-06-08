@@ -16,7 +16,6 @@ import { timeAgo } from './shared/utils';
 import { OutreachFunnel } from './outreach/OutreachFunnel';
 import { ProspectDetailModal } from './outreach/ProspectDetailModal';
 import { CampaignManager } from './outreach/CampaignManager';
-import { AgencyVariantPerformance } from './AgencyVariantPerformance';
 import { SubTabs, SubTab } from '../dashboard-v2/primitives';
 import PanelErrorBoundary from './shared/PanelErrorBoundary';
 import { ActivityFeed } from './outreach/ActivityFeed';
@@ -217,9 +216,6 @@ const OutreachPanel: React.FC = () => {
           );
         })()}
       </div>
-
-      {/* Section 2d: Agency DM Variant Performance (A/B test live) */}
-      <AgencyVariantPerformance />
 
       {/* Per-campaign performance */}
       <CampaignPerformance prospects={prospects} />

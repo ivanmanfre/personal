@@ -66,7 +66,8 @@ export const ProspectDetailModal: React.FC<Props> = ({
   // Pre-audit scan for this prospect's domain — the basis for the audit-first opener.
   const [scan, setScan] = useState<{
     status: string; automation_score: number | null; company_slug: string | null;
-    reframe: { pre?: string; emphasis?: string; post?: string } | null; completed_at: string | null;
+    reframe: { pre?: string; emphasis?: string; post?: string } | null;
+    matched_offer: string | null; created_at: string | null; completed_at: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
     void (async () => {
       const { data } = await supabase
         .from('scans')
-        .select('status, automation_score, company_slug, report_json, completed_at')
+        .select('status, automation_score, company_slug, report_json, matched_offer, created_at, completed_at')
         .eq('domain', domain)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -92,11 +93,20 @@ export const ProspectDetailModal: React.FC<Props> = ({
       const rj = (data.report_json || {}) as { reframe?: { pre?: string; emphasis?: string; post?: string } };
       setScan({
         status: data.status, automation_score: data.automation_score,
-        company_slug: data.company_slug, reframe: rj.reframe || null, completed_at: data.completed_at,
+        company_slug: data.company_slug, reframe: rj.reframe || null,
+        matched_offer: data.matched_offer ?? null, created_at: data.created_at, completed_at: data.completed_at,
       });
     })();
     return () => { cancelled = true; };
   }, [prospect.companyDomain]);
+
+  // Audit trail: both audit-first openers (Mode A and Mode B) start with "ran a quick scan on",
+  // so detect the opener-sent moment from the message text without needing the ai_model field.
+  const auditOpenerMsg = messages.find(m => m.direction === 'outbound' && /ran a quick scan/i.test(m.messageText || ''));
+  const auditOpenerDate = auditOpenerMsg ? (auditOpenerMsg.sentAt || auditOpenerMsg.createdAt) : null;
+  const offerLabels: Record<string, string> = {
+    content_system: 'Content System', lead_magnets: 'Lead Magnets', call_intelligence: 'Call Intelligence',
+  };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
@@ -224,6 +234,29 @@ export const ProspectDetailModal: React.FC<Props> = ({
                   <p className="text-xs text-zinc-200 italic">
                     "{`${scan.reframe.pre || ''}${scan.reframe.emphasis}${scan.reframe.post || ''}`.replace(/\s+/g, ' ').trim()}"
                   </p>
+                </div>
+              )}
+              {scan.matched_offer && (
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  <span className="text-zinc-500">Routed offer:</span>
+                  <span className="px-1.5 py-0.5 rounded border bg-violet-500/10 text-violet-300 border-violet-500/20">
+                    {offerLabels[scan.matched_offer] || scan.matched_offer}
+                  </span>
+                </div>
+              )}
+              {(scan.created_at || scan.completed_at || auditOpenerDate) && (
+                <div className="pt-1 space-y-1">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Audit trail</p>
+                  {[
+                    { label: 'Pre-audit scan run', date: scan.created_at },
+                    { label: 'Audit complete', date: scan.completed_at },
+                    { label: 'Audit-first opener sent', date: auditOpenerDate },
+                  ].filter((e) => e.date).map((e, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className="text-zinc-400">{e.label}</span>
+                      <span className="text-zinc-500">{timeAgo(e.date!)}</span>
+                    </div>
+                  ))}
                 </div>
               )}
               {scan.company_slug && (
