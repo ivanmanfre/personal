@@ -83,7 +83,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
       const { data } = await supabase
         .from('scans')
         .select('status, automation_score, company_slug, report_json, completed_at')
-        .eq('company_domain', domain)
+        .eq('domain', domain)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
