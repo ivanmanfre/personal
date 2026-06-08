@@ -130,7 +130,7 @@ function renderInline(text: string): React.ReactNode[] {
 const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'Fractional AI Partner | Manfredi',
-    description: 'Ongoing partnership for service businesses that want a senior AI operator building alongside them month over month. Intensity you control, no lock-in — step up for big builds, down as things settle.',
+    description: 'Ongoing partnership for service businesses that want a senior AI operator building alongside them month over month. Intensity you control, no lock-in. Step up for big builds, down as things settle.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
 
@@ -166,7 +166,7 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-4"
           >
-            For clients who want to keep going after the first build. Pick an intensity that matches the work ahead — heavy month for big builds, lighter cadence as things settle. No retainer lock-in.
+            For clients who want to keep going after the first build. Pick an intensity that matches the work ahead. Heavy month for big builds, lighter cadence as things settle. No retainer lock-in.
           </motion.p>
 
           <motion.p

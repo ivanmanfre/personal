@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
@@ -238,7 +238,7 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              Growth and retention systems for service businesses — so you add pipeline and margin without adding payroll.{' '}
+              Growth and retention systems for service businesses, so you add pipeline and margin without adding payroll.{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A', fontWeight: 500 }}>
                 Stop being the bottleneck in your own company.
               </span>
@@ -248,12 +248,23 @@ const LandingHero: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.05, duration: 0.7, ease }}
-              className="mb-10 flex flex-col sm:flex-row gap-x-6 gap-y-2"
-              style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '13px', color: '#3D3D3B', letterSpacing: '0.01em' }}
+              className="mb-10 flex flex-wrap gap-2.5"
             >
               {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
-                <li key={b} className="flex items-center gap-2">
-                  <span style={{ color: '#2A8F65' }} aria-hidden="true">✓</span>
+                <li
+                  key={b}
+                  className="inline-flex items-center gap-2 rounded-full"
+                  style={{
+                    border: '1px solid rgba(42,143,101,0.30)',
+                    backgroundColor: 'rgba(42,143,101,0.07)',
+                    padding: '7px 15px',
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '12px',
+                    letterSpacing: '0.02em',
+                    color: '#2C3A31',
+                  }}
+                >
+                  <Check size={13} strokeWidth={2.6} style={{ color: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
                   {b}
                 </li>
               ))}

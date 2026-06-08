@@ -8,24 +8,24 @@ const benefits = [
   "Win more of the deals you already have — see exactly where calls go wrong and fix it.",
   "Catch churn before it happens — early-warning flags on accounts going cold.",
   "Know which reps need coaching — per-person scoring across every call, automatically.",
-  "No new leads required — this is revenue from pipeline you’ve already paid to create.",
+  "No new leads required. This is revenue from pipeline you’ve already paid to create.",
 ];
 
 // How it works - for buyers who want to know what's under the hood
 const howItWorks = [
-  "Plugs into your existing call recorder — once it’s installed, every new call is scored automatically.",
+  "Plugs into your existing call recorder. Once it’s installed, every new call is scored automatically.",
   "A dashboard with per-rep scores, churn-risk flags, and the recurring reasons deals slip.",
   "Head-start bonus: if your call tool is queryable (Fireflies, Fathom, Otter, tl;dv), I’ll retro-score your last ~30 calls so you get value on day one.",
 ];
 
 const notIncluded =
-  "This finds and fixes the deals you’re losing on calls. It doesn’t generate new top-of-funnel leads — that’s the Content System. If your bottleneck is “not enough leads,” start there instead.";
+  "This finds and fixes the deals you’re losing on calls. It doesn’t generate new top-of-funnel leads. That’s the Content System. If your bottleneck is “not enough leads,” start there instead.";
 
 const CallIntelligencePage: React.FC = () => {
   useMetadata({
     title: 'Call Intelligence | Manfredi',
     description:
-      "An installed system that scores every sales and client call, flags the accounts about to churn, and shows you exactly why deals slip — so you fix what’s costing you revenue you can already see.",
+      "An installed system that scores every sales and client call, flags the accounts about to churn, and shows you exactly why deals slip, so you fix what’s costing you revenue you can already see.",
     canonical: 'https://ivanmanfredi.com/call-intelligence',
   });
 
@@ -63,7 +63,7 @@ const CallIntelligencePage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed mb-10"
           >
-            An installed system that scores every sales and client call, flags the accounts about to churn, and shows you exactly why deals slip &mdash; so you fix what&rsquo;s costing you revenue you can already see.
+            An installed system that scores every sales and client call, flags the accounts about to churn, and shows you exactly why deals slip, so you fix what&rsquo;s costing you revenue you can already see.
           </motion.p>
 
           {/* Hero CTA */}
@@ -164,7 +164,7 @@ const CallIntelligencePage: React.FC = () => {
               Pricing
             </h2>
             <p className="text-ink-soft leading-relaxed">
-              Pricing is scoped to your call volume and stack on the fit call &mdash; every setup is a little different.
+              Pricing is scoped to your call volume and stack on the fit call. Every setup is a little different.
             </p>
           </motion.div>
 

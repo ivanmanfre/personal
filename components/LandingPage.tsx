@@ -1004,7 +1004,7 @@ const OfferSection: React.FC = () => (
           <a href="/start" style={{ color: 'rgba(247,244,239,0.8)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
             The call is for that too
           </a>
-          {' '}&mdash; I scope custom builds for service businesses every week.
+          . I scope custom builds for service businesses every week.
         </p>
       </motion.div>
     </div>
