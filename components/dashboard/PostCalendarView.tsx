@@ -46,6 +46,10 @@ export interface CalendarItem {
   // For lm chips: the lm_drafts_v2 id used to open the LM editor (the chip's
   // `id` is the scheduled_posts row id, used for drag/reschedule).
   editId?: string;
+  // Whether this chip can still be re-timed. Already-published/posted/cancelled
+  // rows are locked — dragging them would silently no-op. Default true when
+  // omitted (back-compat for callers that don't set it).
+  reschedulable?: boolean;
 }
 
 interface Props {
@@ -162,22 +166,28 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
   // Stable draggable id: combine kind + id so a post + an LM with the same UUID
   // (extremely unlikely but theoretically possible across tables) can't collide.
   const draggableId = `${item.kind}:${item.id}`;
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId, disabled: !draggable });
+  // Locked chips (already published/posted/cancelled) can't be re-timed — a drag
+  // would silently no-op against the DB guard and snap back. Disable drag for
+  // them; they stay clickable so the editor still opens.
+  const locked = item.reschedulable === false;
+  const canDrag = draggable && !locked;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId, disabled: !canDrag });
   const palette = item.kind === 'lm' ? TONE_COLOR_LM : TONE_COLOR_POST;
   const tone = palette[item.tone] || palette.idea;
   const Glyph = item.kind === 'lm' ? Magnet : item.kind === 'post-queue' ? Clock : FileText;
   const time = formatTime(item.scheduledAt);
+  const statusText = item.statusLabel || TONE_LABEL[item.tone] || item.tone;
   return (
     <button
       ref={setNodeRef}
-      {...(draggable ? attributes : {})}
-      {...(draggable ? listeners : {})}
+      {...(canDrag ? attributes : {})}
+      {...(canDrag ? listeners : {})}
       onClick={(e) => {
         if (isDragging) { e.preventDefault(); return; }
         onOpen();
       }}
-      className={`w-full text-left truncate rounded-sm ring-1 ring-inset px-1.5 py-0.5 text-[10.5px] font-medium inline-flex items-center gap-1 ${tone} ${isDragging ? 'opacity-40' : 'hover:brightness-110'}`}
-      title={`${time ? time + ' · ' : ''}${item.statusLabel || TONE_LABEL[item.tone] || item.tone} — ${item.title}`}
+      className={`w-full text-left truncate rounded-sm ring-1 ring-inset px-1.5 py-0.5 text-[10.5px] font-medium inline-flex items-center gap-1 ${tone} ${isDragging ? 'opacity-40' : 'hover:brightness-110'} ${locked ? 'opacity-60 cursor-default' : draggable ? 'cursor-grab' : ''}`}
+      title={`${time ? time + ' · ' : ''}${statusText} — ${item.title}${locked ? ' (already out — can’t reschedule)' : ''}`}
     >
       <Glyph className="w-2.5 h-2.5 shrink-0 opacity-70" />
       {time && <span className="tabular-nums shrink-0 opacity-80">{time}</span>}

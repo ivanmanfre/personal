@@ -34,6 +34,15 @@ function isLinkedIn(platform: string | null): boolean {
   return !platform || platform === 'linkedin';
 }
 
+// A chip can only be dragged if its underlying row can still be re-timed.
+// Queue rows (lm/post-queue) re-time only while pending/queued_v2 (matches the
+// scheduled_posts update guard); carousel posts re-time until published.
+// Locking the rest stops drags that silently no-op and snap back.
+const QUEUE_RESCHEDULABLE = new Set(['pending', 'queued_v2']);
+function isReschedulable(kind: CalendarItem['kind'], status: string): boolean {
+  return kind === 'post' ? status !== 'published' : QUEUE_RESCHEDULABLE.has(status);
+}
+
 function queueTitle(postText: string, keyword?: string): string {
   const firstLine = (postText.split('\n').find((l) => l.trim()) || '').trim();
   const base = firstLine.length > 60 ? firstLine.slice(0, 60) + '…' : firstLine;
@@ -67,6 +76,7 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftI
       scheduledAt: p.scheduledAt,
       tone: (p.status as CalendarTone) || 'scheduled',
       statusLabel: p.status,
+      reschedulable: isReschedulable('post', p.status),
     });
   }
 
@@ -86,6 +96,7 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftI
         scheduledAt: qr.scheduledAt,
         tone,
         statusLabel: qr.status,
+        reschedulable: isReschedulable('lm', qr.status),
       });
     } else {
       out.push({
@@ -95,6 +106,7 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftI
         scheduledAt: qr.scheduledAt,
         tone,
         statusLabel: qr.status,
+        reschedulable: isReschedulable('post-queue', qr.status),
       });
     }
   }

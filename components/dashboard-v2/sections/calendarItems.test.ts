@@ -74,3 +74,32 @@ test('queued_v2 maps to scheduled tone', () => {
   const items = buildCalendarItems([], [q({ status: 'queued_v2' })]);
   expect(items[0].tone).toBe('scheduled');
 });
+
+// reschedulable: a chip can only be dragged if its underlying row can still be
+// re-timed. Queue rows (lm/post-queue) re-time only while pending/queued_v2;
+// carousel posts re-time until published. Anything already out / cancelled is
+// locked — otherwise a drag silently no-ops (DB guard) and snaps back.
+test('post-queue is reschedulable only while pending/queued_v2', () => {
+  const pending = buildCalendarItems([], [q({ id: 'a', status: 'pending' })])[0];
+  const queued = buildCalendarItems([], [q({ id: 'b', status: 'queued_v2' })])[0];
+  const posted = buildCalendarItems([], [q({ id: 'c', status: 'posted' })])[0];
+  const cancelled = buildCalendarItems([], [q({ id: 'd', status: 'cancelled' })])[0];
+  expect(pending.reschedulable).toBe(true);
+  expect(queued.reschedulable).toBe(true);
+  expect(posted.reschedulable).toBe(false);
+  expect(cancelled.reschedulable).toBe(false);
+});
+
+test('lm chip follows the same reschedulable rule as post-queue', () => {
+  const live = buildCalendarItems([], [q({ id: 'l1', clickupTaskId: 'lm1', status: 'pending' })], ['lm1'])[0];
+  const dead = buildCalendarItems([], [q({ id: 'l2', clickupTaskId: 'lm2', status: 'cancelled' })], ['lm2'])[0];
+  expect(live).toMatchObject({ kind: 'lm', reschedulable: true });
+  expect(dead).toMatchObject({ kind: 'lm', reschedulable: false });
+});
+
+test('carousel posts are reschedulable until published', () => {
+  const approved = buildCalendarItems([post({ id: 'p1', status: 'approved' })], [])[0];
+  const published = buildCalendarItems([post({ id: 'p2', status: 'published' })], [])[0];
+  expect(approved.reschedulable).toBe(true);
+  expect(published.reschedulable).toBe(false);
+});

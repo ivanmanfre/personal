@@ -115,12 +115,19 @@ export function Calendar() {
     try {
       // Only re-time rows that haven't gone out yet — never move a published/
       // posting/cancelled/failed row (mirrors the pending guard on the posts path).
-      const { error } = await supabase
+      // .select() so we can tell an actual move from a 0-row no-op and not lie
+      // with a success toast (the UI also locks these chips from dragging).
+      const { data, error } = await supabase
         .from('scheduled_posts')
         .update({ scheduled_at: nextISO })
         .eq('id', item.id)
-        .in('status', ['pending', 'queued_v2']);
+        .in('status', ['pending', 'queued_v2'])
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.error('That post already went out or was cancelled — can’t reschedule it.');
+        return;
+      }
       toast.success('Rescheduled');
       refreshQueue();
     } catch (err) {
