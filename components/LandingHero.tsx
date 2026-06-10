@@ -246,17 +246,15 @@ const LandingHero: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.05, duration: 0.7, ease }}
-              className="mb-10 flex flex-wrap gap-2.5"
+              className="mb-10 flex flex-col gap-2.5"
             >
               {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
                 <li
                   key={b}
-                  className="inline-flex items-center gap-2"
+                  className="flex items-center gap-2.5"
                   style={{
-                    border: '1px solid rgba(26,26,26,0.15)',
-                    padding: '7px 15px',
                     fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     letterSpacing: '0.02em',
                     color: '#2C3A31',
                   }}

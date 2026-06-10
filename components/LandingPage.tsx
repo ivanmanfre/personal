@@ -174,12 +174,12 @@ type Review = { text: string; project: string; author?: string; role?: string };
 const REVIEWS: Review[] = [
   { text: "Ivan is top notch. Response time is incredible, he is eager to do the work and deliverables are high functioning products.", project: "N8N Inventory System", author: "Don Morrow", role: "Highland Tech" },
   { text: "Quality work and lightning fast. Would rehire him again without any doubt.", project: "Automation Build", author: "Michel de Wachter", role: "BNP Paribas Fortis" },
-  { text: "Ivan has a sublime understanding of data manipulation, visualization, and automation. You can tell he is very thoughtful in his work. He is reliable and did a great job. Will rehire next time.", project: "Data & Automation Project", author: "Andrew Motiwalla", role: "The Good Life Abroad" },
+  { text: "Ivan has a sublime understanding of data manipulation, visualization, and automation. He is reliable and did a great job. Will rehire next time.", project: "Data & Automation Project", author: "Andrew Motiwalla", role: "The Good Life Abroad" },
   { text: "Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.", project: "Lead Flow & Slack Integration", author: "Camille Haas", role: "Head of Operations" },
-  { text: "Ivan's one of those people where you see how he uses AI and immediately feel like you've been doing things the hard way. Had a session with him around Salesforce, Apex, automations — the stuff I do every day. Walked away with a completely different approach.", project: "AI Orientation Session", author: "Cristian Trif", role: "Salesforce Consultant · 9 yrs" },
+  { text: "Ivan's one of those people where you see how he uses AI and immediately feel like you've been doing things the hard way. Walked away with a completely different approach.", project: "AI Orientation Session", author: "Cristian Trif", role: "Salesforce Consultant · 9 yrs" },
   { text: "His solutions helped uncover opportunities we were missing, directly impacting our bottom line.", project: "Make.com Workflow Audit", author: "Rodrigo Ibañez", role: "Managing Director" },
   { text: "Complete architectural overhaul. The documentation alone was worth the price.", project: "Enterprise Architecture", author: "Henrik Sund", role: "CTO" },
-  { text: "As a current META developer, ex Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had 3 things to implement in my workflow. The guy makes it practical.", project: "AI Strategy Session", author: "Adeeb Mohammed", role: "Software Engineer · ex-Amazon · Meta" },
+  { text: "As a current META developer, ex Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had 3 things to implement in my workflow.", project: "AI Strategy Session", author: "Adeeb Mohammed", role: "Software Engineer · ex-Amazon · Meta" },
   { text: "Ivan is pure class, excellent, hard working and has attention to detail. Hire him.", project: "AI Voice Agent Infrastructure", author: "Priya Nair", role: "Co-Founder" },
   { text: "Very knowledgeable in n8n. Will be doing more projects with Ivan.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
@@ -192,10 +192,10 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
     whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
     transition={{ duration: 0.22, ease: 'easeOut' }}
     className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
-    style={{ width: 'min(85vw, 400px)', height: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+    style={{ width: 'min(85vw, 400px)', minHeight: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
   >
     <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1, overflow: 'hidden' }}>
+    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
       "{r.text}"
     </p>
     <div style={{ marginTop: '14px' }}>
