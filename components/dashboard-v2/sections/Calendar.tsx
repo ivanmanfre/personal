@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { toastError } from '../../../lib/dashboardActions';
 import { useContentLibrary } from '../../../hooks/useContentLibrary';
 import { useContentPipeline } from '../../../hooks/useContentPipeline';
-import PostCalendarView, { type CalendarItem, type CalendarTone } from '../../dashboard/PostCalendarView';
+import PostCalendarView, { type CalendarItem } from '../../dashboard/PostCalendarView';
 import { Sheet } from '../../ui/Sheet';
 import CarouselEditor from '../../dashboard/CarouselEditor';
 import { buildCalendarItems } from './calendarItems';
@@ -146,7 +146,7 @@ export function Calendar() {
       </Sheet>
 
       <Sheet open={!!openLm} onClose={() => setOpenLmId(null)} size="full"
-        title={openLm ? <span className="truncate">{openLm.title || 'Lead magnet'}</span> : ''}>
+        title={openLm ? <span className="truncate">{openLm.topic || 'Lead magnet'}</span> : ''}>
         {openLm && (
           <LeadMagnetEditor draft={openLm} onClose={() => setOpenLmId(null)} onChanged={() => { refreshLm(); refreshQueue(); }} />
         )}
