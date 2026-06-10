@@ -96,7 +96,7 @@ export function Calendar() {
     }
   }, [posts, applyOptimistic, refreshPosts, refreshQueue]);
 
-  const rescheduleLm = useCallback(async (item: CalendarItem, isoDate: string) => {
+  const rescheduleQueueRow = useCallback(async (item: CalendarItem, isoDate: string) => {
     // LM lives in scheduled_posts. Preserve time-of-day if the row had one;
     // otherwise default to 09:00 in the operator's timezone (matches the
     // posts side).
@@ -122,8 +122,8 @@ export function Calendar() {
   }, [queue, refreshQueue]);
 
   const onReschedule = useCallback((item: CalendarItem, isoDate: string) => {
-    return item.kind === 'post' ? reschedulePost(item, isoDate) : rescheduleLm(item, isoDate);
-  }, [reschedulePost, rescheduleLm]);
+    return item.kind === 'post' ? reschedulePost(item, isoDate) : rescheduleQueueRow(item, isoDate);
+  }, [reschedulePost, rescheduleQueueRow]);
 
   const onOpenItem = useCallback((item: CalendarItem) => {
     if (item.kind === 'post') {
