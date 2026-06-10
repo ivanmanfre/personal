@@ -113,7 +113,13 @@ export function Calendar() {
       return;
     }
     try {
-      const { error } = await supabase.from('scheduled_posts').update({ scheduled_at: nextISO }).eq('id', item.id);
+      // Only re-time rows that haven't gone out yet — never move a published/
+      // posting/cancelled/failed row (mirrors the pending guard on the posts path).
+      const { error } = await supabase
+        .from('scheduled_posts')
+        .update({ scheduled_at: nextISO })
+        .eq('id', item.id)
+        .in('status', ['pending', 'queued_v2']);
       if (error) throw error;
       toast.success('Rescheduled');
       refreshQueue();
