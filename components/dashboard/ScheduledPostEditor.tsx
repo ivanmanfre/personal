@@ -16,6 +16,8 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB, matches StyleGalleryPanel
 
 const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   const readOnly = READONLY_STATUSES.has(post.status);
+  // Cancelled/failed posts are revivable: editing + saving re-arms them to pending.
+  const isDead = post.status === 'cancelled' || post.status === 'failed';
   // Guard async setState against the Sheet closing mid-flight.
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
@@ -53,9 +55,11 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
     try {
       const patch: Record<string, unknown> = { post_text: text, media_urls: media };
       if (when) patch.scheduled_at = new Date(when).toISOString();
+      // Reviving a cancelled/failed post re-arms it for publishing.
+      if (isDead) patch.status = 'pending';
       const { error } = await supabase.from('scheduled_posts').update(patch).eq('id', post.id);
       if (error) throw error;
-      toast.success('Saved');
+      toast.success(isDead ? 'Rescheduled — back on the calendar' : 'Saved');
       onChanged();
       onClose();
     } catch (err) {
@@ -84,6 +88,11 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
       {readOnly && (
         <div className="rounded-md bg-amber-500/10 ring-1 ring-amber-500/30 text-amber-300 px-3 py-2">
           This post already went out ({post.status}) — fields are read-only.
+        </div>
+      )}
+      {isDead && (
+        <div className="rounded-md bg-violet-500/10 ring-1 ring-violet-500/30 text-violet-200 px-3 py-2">
+          This post is {post.status}. Set a time and Save to put it back on the calendar.
         </div>
       )}
       <label className="block">
@@ -128,13 +137,15 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
 
       {!readOnly && (
         <div className="flex items-center justify-between pt-2">
-          <button onClick={cancelPost} disabled={saving}
-            className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 text-xs">
-            <Trash2 className="w-3.5 h-3.5" /> Cancel post
-          </button>
+          {isDead ? <span /> : (
+            <button onClick={cancelPost} disabled={saving}
+              className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 text-xs">
+              <Trash2 className="w-3.5 h-3.5" /> Cancel post
+            </button>
+          )}
           <button onClick={save} disabled={saving || uploading}
             className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-white">
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Save
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} {isDead ? 'Reschedule' : 'Save'}
           </button>
         </div>
       )}

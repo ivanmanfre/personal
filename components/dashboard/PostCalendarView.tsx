@@ -166,10 +166,14 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
   // Stable draggable id: combine kind + id so a post + an LM with the same UUID
   // (extremely unlikely but theoretically possible across tables) can't collide.
   const draggableId = `${item.kind}:${item.id}`;
-  // Locked chips (already published/posted/cancelled) can't be re-timed — a drag
-  // would silently no-op against the DB guard and snap back. Disable drag for
-  // them; they stay clickable so the editor still opens.
+  // Locked chips can't be DRAGGED (the DB guard would no-op + snap back), but they
+  // stay clickable so the editor opens. Two flavours:
+  //  - dead (cancelled/failed): didn't/won't go out, but REVIVABLE — open it and
+  //    reschedule. Shown struck-through, cursor-pointer, "click to reschedule".
+  //  - done (posted/published): already out, truly not reschedulable.
   const locked = item.reschedulable === false;
+  const dead = item.tone === 'cancelled' || item.tone === 'failed';
+  const done = locked && !dead;
   const canDrag = draggable && !locked;
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId, disabled: !canDrag });
   const palette = item.kind === 'lm' ? TONE_COLOR_LM : TONE_COLOR_POST;
@@ -177,6 +181,8 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
   const Glyph = item.kind === 'lm' ? Magnet : item.kind === 'post-queue' ? Clock : FileText;
   const time = formatTime(item.scheduledAt);
   const statusText = item.statusLabel || TONE_LABEL[item.tone] || item.tone;
+  const hint = dead ? ` (${statusText.toLowerCase()} — click to reschedule)` : done ? ' (already out — can’t reschedule)' : '';
+  const cursor = canDrag ? (draggable ? 'cursor-grab' : '') : dead ? 'cursor-pointer' : 'cursor-default';
   return (
     <button
       ref={setNodeRef}
@@ -186,12 +192,12 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
         if (isDragging) { e.preventDefault(); return; }
         onOpen();
       }}
-      className={`w-full text-left truncate rounded-sm ring-1 ring-inset px-1.5 py-0.5 text-[10.5px] font-medium inline-flex items-center gap-1 ${tone} ${isDragging ? 'opacity-40' : 'hover:brightness-110'} ${locked ? 'opacity-60 cursor-default' : draggable ? 'cursor-grab' : ''}`}
-      title={`${time ? time + ' · ' : ''}${statusText} — ${item.title}${locked ? ' (already out — can’t reschedule)' : ''}`}
+      className={`w-full text-left truncate rounded-sm ring-1 ring-inset px-1.5 py-0.5 text-[10.5px] font-medium inline-flex items-center gap-1 ${tone} ${isDragging ? 'opacity-40' : 'hover:brightness-110'} ${locked ? 'opacity-60' : ''} ${cursor}`}
+      title={`${time ? time + ' · ' : ''}${statusText} — ${item.title}${hint}`}
     >
       <Glyph className="w-2.5 h-2.5 shrink-0 opacity-70" />
       {time && <span className="tabular-nums shrink-0 opacity-80">{time}</span>}
-      <span className="truncate">{item.title || '(untitled)'}</span>
+      <span className={`truncate ${dead ? 'line-through decoration-1' : ''}`}>{item.title || '(untitled)'}</span>
     </button>
   );
 }
