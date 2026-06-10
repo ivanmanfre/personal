@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
@@ -70,10 +70,9 @@ const LandingHero: React.FC = () => {
           <motion.span
             animate={{ opacity: [1, 0.2, 1] }}
             transition={{ duration: 1.4, repeat: Infinity }}
-            style={{ color: '#2A8F65', fontSize: '9px' }}
-          >
-            ●
-          </motion.span>
+            style={{ width: '7px', height: '7px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+            aria-hidden="true"
+          />
           <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()} · {OPEN_SLOTS} slots open</span>
         </div>
         <div className="hidden md:block">90-day payback or no-build</div>
@@ -158,10 +157,9 @@ const LandingHero: React.FC = () => {
               <motion.span
                 animate={{ opacity: [1, 0.3, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                style={{ color: '#2A8F65', fontSize: '8px' }}
-              >
-                ●
-              </motion.span>
+                style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+                aria-hidden="true"
+              />
               <span>Iván Manfredi · Agent-Ready Ops™</span>
             </motion.div>
 
@@ -253,10 +251,9 @@ const LandingHero: React.FC = () => {
               {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
                 <li
                   key={b}
-                  className="inline-flex items-center gap-2 rounded-full"
+                  className="inline-flex items-center gap-2"
                   style={{
-                    border: '1px solid rgba(42,143,101,0.30)',
-                    backgroundColor: 'rgba(42,143,101,0.07)',
+                    border: '1px solid rgba(26,26,26,0.15)',
                     padding: '7px 15px',
                     fontFamily: '"IBM Plex Mono", monospace',
                     fontSize: '12px',
@@ -264,7 +261,7 @@ const LandingHero: React.FC = () => {
                     color: '#2C3A31',
                   }}
                 >
-                  <Check size={13} strokeWidth={2.6} style={{ color: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
+                  <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
                   {b}
                 </li>
               ))}
