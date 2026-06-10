@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Save, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { toastError } from '../../lib/dashboardActions';
 import type { ScheduledPost } from '../../types/dashboard';
 
 interface Props {
@@ -11,9 +12,13 @@ interface Props {
 }
 
 const READONLY_STATUSES = new Set(['posted', 'posting']);
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB, matches StyleGalleryPanel
 
 const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   const readOnly = READONLY_STATUSES.has(post.status);
+  // Guard async setState against the Sheet closing mid-flight.
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
   const [text, setText] = useState(post.postText);
   const [media, setMedia] = useState<string[]>(post.mediaUrls || []);
   // datetime-local wants "YYYY-MM-DDTHH:mm" in local time.
@@ -27,17 +32,19 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   const [uploading, setUploading] = useState(false);
 
   const uploadImage = async (file: File) => {
+    if (!/^image\//.test(file.type)) { toast.error('Only image files are allowed'); return; }
+    if (file.size > MAX_UPLOAD_BYTES) { toast.error('Image must be under 10MB'); return; }
     setUploading(true);
     try {
       const path = `scheduled/${post.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const { error } = await supabase.storage.from('post-stills').upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data } = supabase.storage.from('post-stills').getPublicUrl(path);
-      setMedia((m) => [...m, data.publicUrl]);
-    } catch (err: any) {
-      toast.error(`Upload failed: ${err.message || err}`);
+      if (mounted.current) setMedia((m) => [...m, data.publicUrl]);
+    } catch (err) {
+      toastError('upload image', err);
     } finally {
-      setUploading(false);
+      if (mounted.current) setUploading(false);
     }
   };
 
@@ -51,10 +58,9 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
       toast.success('Saved');
       onChanged();
       onClose();
-    } catch (err: any) {
-      toast.error(`Save failed: ${err.message || err}`);
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      toastError('save scheduled post', err);
+      if (mounted.current) setSaving(false);
     }
   };
 
@@ -67,10 +73,9 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
       toast.success('Post cancelled');
       onChanged();
       onClose();
-    } catch (err: any) {
-      toast.error(`Cancel failed: ${err.message || err}`);
-    } finally {
-      setSaving(false);
+    } catch (err) {
+      toastError('cancel scheduled post', err);
+      if (mounted.current) setSaving(false);
     }
   };
 

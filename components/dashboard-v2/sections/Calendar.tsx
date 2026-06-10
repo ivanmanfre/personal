@@ -97,9 +97,9 @@ export function Calendar() {
   }, [posts, applyOptimistic, refreshPosts, refreshQueue]);
 
   const rescheduleQueueRow = useCallback(async (item: CalendarItem, isoDate: string) => {
-    // LM lives in scheduled_posts. Preserve time-of-day if the row had one;
-    // otherwise default to 09:00 in the operator's timezone (matches the
-    // posts side).
+    // Both lm and post-queue chips live in scheduled_posts. Preserve time-of-day
+    // if the row had one; otherwise default to 09:00 in the operator's timezone
+    // (matches the posts side).
     const cur = queue.find((q) => q.id === item.id)?.scheduledAt;
     let nextISO: string;
     if (isoDate) {
@@ -117,7 +117,7 @@ export function Calendar() {
       toast.success('Rescheduled');
       refreshQueue();
     } catch (err) {
-      toastError('reschedule LM', err);
+      toastError('reschedule', err);
     }
   }, [queue, refreshQueue]);
 
