@@ -8,6 +8,8 @@ import PostCalendarView, { type CalendarItem, type CalendarTone } from '../../da
 import { Sheet } from '../../ui/Sheet';
 import CarouselEditor from '../../dashboard/CarouselEditor';
 import { buildCalendarItems } from './calendarItems';
+import { useLeadMagnets } from '../../../hooks/useLeadMagnets';
+import LeadMagnetEditor from '../../dashboard/LeadMagnetEditor';
 
 /**
  * Unified content calendar — posts (carousel_drafts) + lead magnets
@@ -33,6 +35,10 @@ export function Calendar() {
   // Right-sheet editor — only opens for posts (LM editor lives elsewhere).
   const [openPostId, setOpenPostId] = useState<string | null>(null);
   const openPost = useMemo(() => posts.find((d) => d.id === openPostId) || null, [posts, openPostId]);
+
+  const { drafts: lmDrafts, refresh: refreshLm } = useLeadMagnets();
+  const [openLmId, setOpenLmId] = useState<string | null>(null);
+  const openLm = useMemo(() => lmDrafts.find((d) => d.id === openLmId) || null, [lmDrafts, openLmId]);
 
   const items: CalendarItem[] = useMemo(
     () => buildCalendarItems(
@@ -118,16 +124,11 @@ export function Calendar() {
   const onOpenItem = useCallback((item: CalendarItem) => {
     if (item.kind === 'post') {
       setOpenPostId(item.id);
+    } else if (item.kind === 'lm') {
+      if (item.editId) setOpenLmId(item.editId);
+      else toast.error('No lead-magnet draft linked to this post');
     } else {
-      // LM — for now route to the Lead Magnets section editor via URL. The
-      // LeadMagnetStudioPanel keys off ?open=<id> the same way Posts does.
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.set('section', 'content');
-        url.searchParams.set('sub', 'leadmagnets');
-        url.searchParams.set('open', item.id);
-        window.location.assign(url.toString());
-      }
+      setOpenQueueId(item.id); // post-queue → ScheduledPostEditor (Task 6)
     }
   }, []);
 
@@ -135,9 +136,16 @@ export function Calendar() {
     <div className="space-y-4">
       <PostCalendarView items={items} onOpenItem={onOpenItem} onReschedule={onReschedule} />
 
-      {/* Post editor sheet — only opens for kind='post'. LMs deeplink out. */}
+      {/* Post editor sheet — only opens for kind='post'. */}
       <Sheet open={!!openPost} onClose={() => setOpenPostId(null)} size="full" title={openPost ? <span className="truncate">{openPost.title}</span> : ''}>
         {openPost && <CarouselEditor draft={openPost} onClose={() => setOpenPostId(null)} onChanged={refreshPosts} />}
+      </Sheet>
+
+      <Sheet open={!!openLm} onClose={() => setOpenLmId(null)} size="full"
+        title={openLm ? <span className="truncate">{openLm.title || 'Lead magnet'}</span> : ''}>
+        {openLm && (
+          <LeadMagnetEditor draft={openLm} onClose={() => setOpenLmId(null)} onChanged={() => { refreshLm(); refreshQueue(); }} />
+        )}
       </Sheet>
     </div>
   );
