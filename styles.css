@@ -286,6 +286,26 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
   transition: background-color 0.2s ease, color 0.2s ease;
   z-index: 1;
 }
+/* Hover color-shift: paper-tint overlay below the label (z -1 inside the
+   button's stacking context) so it lightens ink and sage fills alike. */
+.btn-magnetic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(247, 244, 239, 0.14);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.btn-magnetic:hover::after {
+  opacity: 1;
+}
+
+/* Text selection stays on-brand (default OS blue breaks the paper illusion) */
+::selection {
+  background: rgba(42, 143, 101, 0.3);
+}
 
 /* Global Cinematic Interactions */
 .hover-lift {

@@ -10,7 +10,7 @@ import {
   useInView,
   MotionConfig,
 } from 'framer-motion';
-import { ArrowRight, Star, Linkedin, Mail, Check } from 'lucide-react';
+import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
@@ -205,13 +205,10 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
         </div>
       )}
       {r.role && (
-        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752', marginBottom: '8px' }}>
+        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752' }}>
           {r.role}
         </div>
       )}
-      <div className="flex items-center gap-1">
-        {[...Array(5)].map((_, i) => <Star key={i} size={10} style={{ fill: 'var(--color-accent)', color: 'var(--color-accent)', flexShrink: 0 }} />)}
-      </div>
     </div>
   </motion.div>
 );
@@ -1023,9 +1020,9 @@ const LandingFooter: React.FC = () => {
         {/* Wordmark + socials */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12 pt-12 border-t" style={DIVIDER}>
           <div className="text-center md:text-left">
-            <h2 style={{ ...T.display('clamp(1.8rem,2.4vw,2.4rem)'), fontStyle: 'normal', marginBottom: '4px' }}>
+            <div style={{ ...T.display('clamp(1.8rem,2.4vw,2.4rem)'), fontStyle: 'normal', marginBottom: '4px' }}>
               Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
-            </h2>
+            </div>
             <p style={T.mono}>Agent-Ready Ops™</p>
           </div>
 
