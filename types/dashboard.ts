@@ -182,6 +182,7 @@ export interface ScheduledPost {
   igCaption: string | null;
   igDmKeyword: string | null;
   igDmReply: string | null;
+  platform: string | null;
 }
 
 export interface PipelineTask {

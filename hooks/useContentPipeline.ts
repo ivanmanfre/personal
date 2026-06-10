@@ -18,6 +18,7 @@ function mapPost(row: any): ScheduledPost {
     igCaption: row.ig_caption,
     igDmKeyword: row.ig_dm_keyword,
     igDmReply: row.ig_dm_reply,
+    platform: row.platform ?? null,
   };
 }
 
