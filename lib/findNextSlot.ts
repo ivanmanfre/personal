@@ -103,3 +103,17 @@ export function toDatetimeLocalString(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/**
+ * Seed value for a schedule <input type="datetime-local"> from a row's current
+ * scheduled_at. Returns the local "YYYY-MM-DDTHH:mm" string, or '' when there's
+ * no valid time. Editors MUST seed from this so the field shows the current
+ * schedule (instead of empty) and the action becomes "Update <that time>"
+ * rather than silently auto-slotting to a different date.
+ */
+export function initialScheduleInput(scheduledAt: string | null | undefined): string {
+  if (!scheduledAt) return '';
+  const d = new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return '';
+  return toDatetimeLocalString(d);
+}

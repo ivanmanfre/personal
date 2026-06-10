@@ -12,7 +12,7 @@ import QAVerdictPanel from './QAVerdictPanel';
 import FieldGrid from './FieldGrid';
 import PostMetricsPanel from './PostMetricsPanel';
 import SourceBriefing from './SourceBriefing';
-import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
+import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
@@ -32,7 +32,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const shouldReduceMotion = useReducedMotion();
   const [postBody, setPostBody] = useState(draft.postBody || '');
   const [igCaption, setIgCaption] = useState(draft.igCaption || '');
-  const [when, setWhen] = useState('');
+  // Seed from the post's current schedule so the field shows the real date and
+  // the action becomes "Update" instead of silently auto-slotting a new one.
+  const [when, setWhen] = useState(() => initialScheduleInput(draft.scheduledAt));
   const [busy, setBusy] = useState<string | null>(null);
   // Editable copies — initialized from draft, mutated by inline editors.
   // Saved via saveDraft({ taxonomy, slides }) when the user clicks "Save fields"

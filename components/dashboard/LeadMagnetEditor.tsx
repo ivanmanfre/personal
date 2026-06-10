@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2, CalendarClock } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft } from '../../lib/studioActions';
-import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
+import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
 import { versionedAssetUrl } from '../../lib/driveThumb';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
@@ -43,6 +43,25 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [resourceOpen, setResourceOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [when, setWhen] = useState('');
+
+  // The LM's schedule lives on its scheduled_posts queue row (lm_drafts_v2 has no
+  // scheduled_at), so fetch the current time and seed the field — otherwise it
+  // shows empty and the action auto-slots to a different date. Same row scheduleLM
+  // reads/writes (most recent by created_at).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('scheduled_posts')
+        .select('scheduled_at')
+        .eq('clickup_task_id', draft.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const at = data?.[0]?.scheduled_at as string | undefined;
+      if (!cancelled && at) setWhen(initialScheduleInput(at));
+    })();
+    return () => { cancelled = true; };
+  }, [draft.id]);
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
