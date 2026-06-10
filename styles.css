@@ -22,12 +22,17 @@
   --color-paper-raise: #FFFFFF;
 
   /* ── ACCENT (the ONE brand accent) ──────────────────────── */
-  --color-accent: #4C6E3D;
+  /* Sage #2A8F65 per brand-visual-system — moss #4C6E3D retired 2026-05-20
+     (the page was running two greens: hardcoded sage sweeps + moss tokens).
+     Sage on paper is 3.67:1 → fails AA for SMALL text. Use it as punctuation
+     (large numerals, sweeps, fills behind bold/large type only); any sage
+     text under ~19px on paper must use --color-accent-ink instead. */
+  --color-accent: #2A8F65;
   /* accent-light is ONLY for use on dark backgrounds (bg-black / bg-ink).
-     On paper it drops to ~2.5:1 contrast and silently fails WCAG AA. */
-  --color-accent-light: #709A5D;
-  --color-accent-ink: #344B29;
-  --color-accent-soft: rgba(76, 110, 61, 0.08);
+     On paper it silently fails WCAG AA. */
+  --color-accent-light: #4FB286;
+  --color-accent-ink: #1F6B4B;
+  --color-accent-soft: rgba(42, 143, 101, 0.08);
 
   /* ── Deprecated - do not use in new code ───────────────── */
   --color-cyan: #1E40AF;
@@ -490,4 +495,21 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
 .intake-wave-bar--lg {
   width: 6px;
   border-radius: 3px;
+}
+
+/* ── Testimonial marquee (2026-06-10) ─────────────────────────────────────
+   CSS animation instead of a framer tween so the rows pause on hover
+   (quotes become readable) and halt under prefers-reduced-motion. */
+@keyframes lm-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation-name: lm-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.marquee-row:hover .marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation-play-state: paused; }
 }

@@ -192,20 +192,20 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
     whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
     transition={{ duration: 0.22, ease: 'easeOut' }}
     className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
-    style={{ width: 'min(85vw, 380px)', height: '240px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+    style={{ width: 'min(85vw, 400px)', height: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
   >
     <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(14px,1.3vw,15px)', lineHeight: 1.52, color: '#1A1A1A', flex: 1, overflow: 'hidden' }}>
+    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1, overflow: 'hidden' }}>
       "{r.text}"
     </p>
     <div style={{ marginTop: '14px' }}>
       {r.author && (
-        <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '13px', color: '#1A1A1A', lineHeight: 1.3, marginBottom: '3px' }}>
+        <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3, marginBottom: '3px' }}>
           {r.author}
         </div>
       )}
       {r.role && (
-        <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginBottom: '8px' }}>
+        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752', marginBottom: '8px' }}>
           {r.role}
         </div>
       )}
@@ -269,10 +269,10 @@ const ProblemSection: React.FC = () => {
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
-                  <span style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
+                  <span style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
                   <div>
                     <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '16px', color: '#1A1A1A', marginBottom: '6px', lineHeight: 1.35 }}>{item.h}</div>
-                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '16px', color: '#5A5752', lineHeight: 1.65 }}>{item.b}</p>
+                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65 }}>{item.b}</p>
                   </div>
                 </div>
               ))}
@@ -364,11 +364,11 @@ const BuildOutcomesSection: React.FC = () => (
               {o.metric}
             </div>
             <div style={{ ...T.mono, marginBottom: '20px' }}>{o.metricLabel}</div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.6, flex: 1 }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.6, flex: 1 }}>
               {o.story}
             </p>
             <div className="flex items-center justify-between gap-4 mt-5">
-              <div style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '9px' }}>
+              <div style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '12px' }}>
                 {o.qualifier}
               </div>
               <span style={{
@@ -452,222 +452,68 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
   </motion.svg>
 );
 
-// PreconditionItem — side-stage entrance (numeral from left, content from right) +
-// horizontal parallax on the ghost numeral. Each item tracks its own scroll progress.
-const PreconditionItem: React.FC<{
-  p: typeof PRECONDITIONS[0];
-  index: number;
-  isLast: boolean;
-}> = ({ p, index, isLast }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  });
-  // Subtle lateral parallax on the ghost numeral only.
-  // Previously -280/+280 at opacity 0.06 — too aggressive, competed with reading.
-  // Now -100/+100 at opacity 0.04. The visible sage numeral does not parallax
-  // (counter-drift was distracting since the eye lands on it first).
-  const parallaxDir = index % 2 === 0 ? 1 : -1;
-  const ghostX = useTransform(scrollYProgress, [0, 1], [-100 * parallaxDir, 100 * parallaxDir]);
-
-  return (
-    <motion.div ref={ref} className="relative">
-      {/* Ghost numeral — drifts dramatically horizontally on scroll */}
-      <div aria-hidden style={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -55%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }}>
-        <motion.div
-          style={{
-            x: ghostX,
-            fontSize: 'clamp(100px, 18vw, 260px)',
-            fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            color: '#F7F4EF',
-            opacity: 0.04,
-            lineHeight: 1,
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {p.n}
-        </motion.div>
-      </div>
-
-      <div className="relative" style={{ zIndex: 1 }}>
-        {/* Numeral — slides in from left on viewport entry, then static */}
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0, x: -80 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.9, ease, delay: index * 0.06 }}
-          style={{
-            fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            fontSize: 'clamp(2rem, 2.8vw, 2.6rem)',
-            lineHeight: 1,
-            letterSpacing: '-0.02em',
-            color: 'var(--color-accent-light)',
-            marginBottom: '18px',
-          }}
-        >
-          {p.n}.
-        </motion.div>
-
-        {/* H3 — fades in from right with delay. Italic pivot with sage sweep mirrors the hero. */}
-        <motion.h3
-          initial={prefersReduced ? false : { opacity: 0, x: 60 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.85, ease, delay: 0.25 + index * 0.06 }}
-          style={{
-            fontFamily: '"Source Serif 4", Georgia, serif',
-            fontStyle: 'normal',
-            fontWeight: 600,
-            fontSize: 'clamp(1.4rem, 2vw, 1.85rem)',
-            lineHeight: 1.35,
-            letterSpacing: '-0.01em',
-            color: '#F7F4EF',
-            marginBottom: '14px',
-            maxWidth: '24ch',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          }}
-        >
-          {p.titlePre}
-          <span
-            style={{
-              display: 'inline-block',
-              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-              fontStyle: 'italic',
-              fontWeight: 400,
-              position: 'relative',
-            }}
-          >
-            {p.pivot}
-            <SageSweep delay={0.7 + index * 0.06} opacity={0.72} />
-          </span>
-          {p.titlePost}
-        </motion.h3>
-
-        {/* Body — fades in from right with more delay */}
-        <motion.p
-          initial={prefersReduced ? false : { opacity: 0, x: 80 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.85, ease, delay: 0.4 + index * 0.06 }}
-          style={{
-            fontFamily: '"Source Serif 4", Georgia, serif',
-            fontWeight: 400,
-            fontSize: '17px',
-            color: 'rgba(247,244,239,0.74)',
-            lineHeight: 1.65,
-            maxWidth: '52ch',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-          }}
-        >
-          {p.sub}
-        </motion.p>
-
-        {/* Sage rule separator — between items only */}
-        {!isLast && (
-          <div className="mx-auto mt-10 md:mt-16" style={{
-            width: '40px',
-            height: '1px',
-            backgroundColor: 'var(--color-accent-light)',
-            opacity: 0.4,
-          }} />
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-// Pattern-break section — DARK editorial pull-quote manifesto.
-// Third dark moment on the page; centered editorial typography with huge ghost numerals.
-// Decisively breaks the paper rhythm of neighboring sections.
+// What-changes section — paper editorial, asymmetric (left lede, numbered right
+// rail), mirroring ProblemSection's grid. Rebuilt 2026-06-10 from the dark
+// centered manifesto: that version was centered-symmetric, ~1,700px tall for
+// four short statements, and set small muted text on dark. The offers grid is
+// now the page's single dark moment.
 const AgentReadySection: React.FC = () => (
-  <section
-    className="py-12 md:py-24 border-t relative overflow-hidden"
-    style={{ backgroundColor: '#1A1A1A', borderColor: 'rgba(247,244,239,0.08)' }}
-  >
-    <div className="container mx-auto px-8 max-w-3xl text-center">
+  <section className="py-12 md:py-20 border-t relative" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <div className="grid lg:grid-cols-[1fr_1px_1.2fr] items-start">
 
-      <motion.div
-        initial={prefersReduced ? false : { opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ duration: 0.9, ease }}
-        style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '12px',
-          letterSpacing: '0.25em',
-          textTransform: 'uppercase',
-          color: 'var(--color-accent-light)',
-          marginBottom: '1.75rem',
-        }}
-      >
-        02
-      </motion.div>
+        <div className="lg:pr-16">
+          <motion.div {...inView}>
+            <Label>02</Label>
+            <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
+              What changes once<br />
+              <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
+                the systems run.
+                <SageSweep delay={0.6} opacity={0.72} />
+              </span>
+            </RevealH2>
+            <p style={{ ...T.serif, maxWidth: '44ch' }}>
+              The day-to-day, six months after the build.
+            </p>
+          </motion.div>
+        </div>
 
-      <motion.h2
-        initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
-        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ duration: 0.9, ease }}
-        className="mb-12 md:mb-20 mx-auto"
-        style={{
-          fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-          fontWeight: 400,
-          fontSize: 'clamp(2.4rem, 5vw, 4.2rem)',
-          lineHeight: 1.1,
-          letterSpacing: '-0.02em',
-          color: '#F7F4EF',
-          maxWidth: '22ch',
-        }}
-      >
-        What changes once<br />
-        <span style={{ fontStyle: 'italic' }}>
-          <span style={{ position: 'relative', display: 'inline-block' }}>
-            the systems run.
-            <motion.span
-              initial={prefersReduced ? false : { scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ delay: 0.7, duration: 0.85, ease }}
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: '0.14em',
-                height: '0.34em',
-                backgroundColor: 'var(--color-accent-light)',
-                transformOrigin: 'left',
-                opacity: 0.34,
-                zIndex: -1,
-              }}
-            />
-          </span>
-        </span>
-      </motion.h2>
+        <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(26,26,26,0.1)' }} />
 
-      <div className="space-y-14 md:space-y-20 overflow-x-clip">
-        {PRECONDITIONS.map((p, i) => (
-          <PreconditionItem
-            key={p.n}
-            p={p}
-            index={i}
-            isLast={i === PRECONDITIONS.length - 1}
-          />
-        ))}
+        <div className="lg:pl-16 pt-10 lg:pt-0">
+          <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-9">
+            {PRECONDITIONS.map((p) => (
+              <div key={p.n} className="flex gap-6 items-start">
+                <span
+                  aria-hidden
+                  style={{
+                    fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+                    fontStyle: 'italic',
+                    fontWeight: 400,
+                    fontSize: 'clamp(1.7rem,2.2vw,2.1rem)',
+                    lineHeight: 1.1,
+                    color: 'var(--color-accent)',
+                    flexShrink: 0,
+                    minWidth: '2.4ch',
+                  }}
+                >
+                  {p.n}.
+                </span>
+                <div>
+                  <h3 style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: 'clamp(1.15rem,1.6vw,1.35rem)', lineHeight: 1.35, color: '#1A1A1A', marginBottom: '6px' }}>
+                    {p.titlePre}
+                    <span style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, color: 'var(--color-accent-ink)' }}>{p.pivot}</span>
+                    {p.titlePost}
+                  </h3>
+                  <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65, maxWidth: '52ch' }}>
+                    {p.sub}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
       </div>
     </div>
   </section>
@@ -706,7 +552,7 @@ const WorkSection: React.FC = () => {
   const steps = [
     {
       id: '01', title: 'Diagnose',
-      desc: <>I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
+      desc: <>I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
       icon: (
         <svg viewBox="0 0 100 100" className="w-full h-full">
           <circle cx="50" cy="50" r="40" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" fill="none" opacity="0.4" />
@@ -722,12 +568,12 @@ const WorkSection: React.FC = () => {
     },
     {
       id: '02', title: 'Design',
-      desc: <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>before anyone writes code.</span> You sign off on the spec. What gets built is exactly what we agreed on.</>,
+      desc: <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec. What gets built is exactly what we agreed on.</>,
       icon: <DesignIcon />,
     },
     {
       id: '03', title: 'Build',
-      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>the day it launches.</span> No multi-month rollout, no invisible progress. You see every step.</>,
+      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>the day it launches.</span> No multi-month rollout, no invisible progress. You see every step.</>,
       icon: (
         <svg viewBox="0 0 100 100" className="w-full h-full">
           {[20, 50, 80].map((y, i) => (
@@ -779,7 +625,7 @@ const WorkSection: React.FC = () => {
                 }}>
                   {step.id}
                 </div>
-                <div style={{ ...T.mono, color: 'var(--color-accent)', fontSize: '11px' }}>{step.id}</div>
+                <div style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px' }}>{step.id}</div>
                 <h3 style={{ ...T.display('clamp(1.6rem,2.2vw,2rem)') }}>{step.title}</h3>
                 <p style={{ ...T.serif, fontSize: '15px', lineHeight: 1.6 }}>{step.desc}</p>
                 <div className="hidden lg:flex items-center justify-center h-20">{step.icon}</div>
@@ -799,23 +645,24 @@ const TestimonialsSection: React.FC = () => (
       <motion.div {...inView}>
         <Label>05</Label>
         <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
-          Every project ships.<br />Every client comes back.
+          Every project shipped,<br />and every client came back.
         </RevealH2>
       </motion.div>
     </div>
+    {/* CSS marquee (was framer tween): pauses on hover so quotes are actually
+        readable, and stops entirely under prefers-reduced-motion. Keyframes +
+        .marquee-* classes live in styles.css. */}
     <div className="flex flex-col gap-5 pb-0">
-      {[{ row: ROW1, dir: 1 }, { row: ROW2, dir: -1 }].map(({ row, dir }, ri) => (
-        <div key={ri} className="relative">
+      {[{ row: ROW1, dur: 95, reverse: false }, { row: ROW2, dur: 115, reverse: true }].map(({ row, dur, reverse }, ri) => (
+        <div key={ri} className="relative marquee-row">
           <div className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--color-paper), transparent)' }} />
           <div className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--color-paper), transparent)' }} />
-          <motion.div
-            className="flex gap-5 w-max px-5"
-            initial={dir === -1 ? { x: '-50%' } : undefined}
-            animate={{ x: dir === 1 ? '-50%' : '0%' }}
-            transition={{ duration: dir === 1 ? 95 : 115, repeat: Infinity, ease: 'linear' }}
+          <div
+            className="flex gap-5 w-max px-5 marquee-track"
+            style={{ animationDuration: `${dur}s`, animationDirection: reverse ? 'reverse' : 'normal' }}
           >
             {row.map((r, i) => <ReviewCard key={i} r={r} />)}
-          </motion.div>
+          </div>
         </div>
       ))}
     </div>
@@ -859,13 +706,13 @@ const PaybackSection: React.FC = () => {
                     <span style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '18px', color: '#1A1A1A', fontWeight: 500 }}>{field.fmt(field.value)}</span>
                   </div>
                   <input type="range" min={field.min} max={field.max} step={field.step} value={field.value} onChange={(e) => field.setValue(Number(e.target.value))} className="stat-slider w-full" />
-                  <div className="flex justify-between mt-2" style={{ ...T.mono, fontSize: '9px' }}>
+                  <div className="flex justify-between mt-2" style={{ ...T.mono, fontSize: '11px' }}>
                     <span>{field.range[0]}</span><span>{field.range[1]}</span>
                   </div>
                 </div>
               ))}
             </div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', lineHeight: 1.5, marginTop: '24px' }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, marginTop: '24px' }}>
               Blended value = average hourly revenue target of the people doing the manual work.
             </p>
           </motion.div>
@@ -884,14 +731,14 @@ const PaybackSection: React.FC = () => {
                 prefix="$"
                 style={{ ...T.display('clamp(2.4rem,4.5vw,4rem)'), color: qualifies ? 'var(--color-accent)' : '#1A1A1A' }}
               />
-              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', lineHeight: 1.5, marginTop: '10px' }}>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, marginTop: '10px' }}>
                 {qualifies
                   ? 'This covers a real build. We scope to fit. Nothing over-engineered.'
                   : "Below the diagnostic threshold. We'd need to find a higher-leverage process, or start with the scorecard."}
               </p>
             </div>
 
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.5 }}>
               Every quarter you wait costs about{' '}
               <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>{' '}
               in leaked capacity. The diagnostic takes one week.
@@ -953,9 +800,9 @@ const OfferSection: React.FC = () => (
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
         <Label dark>07</Label>
         <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), color: '#F7F4EF' }}>
-          Three systems.<br />
+          Three systems,<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
-            One less bottleneck.
+            one less bottleneck.
             <SageSweep delay={0.6} opacity={0.85} />
           </span>
         </RevealH2>
@@ -977,14 +824,14 @@ const OfferSection: React.FC = () => (
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }} />
             )}
             <div className="flex items-center justify-between mb-6">
-              <span style={{ ...T.mono, color: 'rgba(247,244,239,0.5)', marginBottom: 0 }}>{b.id}</span>
+              <span style={{ ...T.mono, color: 'rgba(247,244,239,0.62)', marginBottom: 0 }}>{b.id}</span>
               {b.signature && (
                 <span style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: 0 }}>Signature</span>
               )}
             </div>
             <h3 style={{ ...T.display('1.7rem'), color: '#F7F4EF', marginBottom: '1rem' }}>{b.name}</h3>
             <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '20px', color: 'var(--color-accent-light)', letterSpacing: '-0.01em', marginBottom: '0.4rem' }}>{b.price}</div>
-            <div style={{ ...T.mono, color: 'rgba(247,244,239,0.45)', marginBottom: '1.5rem' }}>{b.cadence}</div>
+            <div style={{ ...T.mono, color: 'rgba(247,244,239,0.65)', marginBottom: '1.5rem' }}>{b.cadence}</div>
             <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '15px', lineHeight: 1.6, color: 'rgba(247,244,239,0.7)', marginBottom: '1.75rem', flex: 1 }}>{b.desc}</p>
             <div className="flex items-center gap-2" style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '14px', color: 'var(--color-accent-light)' }}>
               {b.cta}
@@ -998,7 +845,7 @@ const OfferSection: React.FC = () => (
         <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-9 py-4">
           Book your fit call <ArrowRight size={18} />
         </MagneticCTA>
-        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(247,244,239,0.55)', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
+        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14.5px', color: 'rgba(247,244,239,0.72)', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
           Working on something that's not here?{' '}
           <a href="/start" style={{ color: 'rgba(247,244,239,0.8)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
             The call is for that too
@@ -1024,7 +871,7 @@ const FinalCTA: React.FC = () => (
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '19px', maxWidth: '500px', margin: '0 auto 2.5rem', textAlign: 'center' }}>
           A free 30-minute fit call.{' '}
-          <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>We map where AI actually moves your numbers.</span>
+          <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>We map where AI actually moves your numbers.</span>
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-8 py-4">
@@ -1182,7 +1029,7 @@ const LandingFooter: React.FC = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4" style={{ ...DIVIDER, ...T.mono, fontSize: '10px' }}>
+        <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4" style={{ ...DIVIDER, ...T.mono, fontSize: '11px' }}>
           <p>© {new Date().getFullYear()} Iván Manfredi · All rights reserved</p>
           <div className="flex gap-7">
             <Link to="/store" style={{ color: '#5A5752', transition: 'color 0.15s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#1A1A1A'} onMouseLeave={(e) => e.currentTarget.style.color = '#5A5752'}>Store</Link>
@@ -1196,9 +1043,11 @@ const LandingFooter: React.FC = () => {
   );
 };
 
-// ─── About strip — dark credibility break before the footer ──────────────────
+// ─── About strip — paper credibility break before the footer ─────────────────
+// Was the page's third dark band; moved to paper 2026-06-10 so the offers grid
+// is the single dark moment and the strip's small text gets real contrast.
 const AboutStrip: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
+  <section className="py-12 md:py-20 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
     <div className="container mx-auto px-8 max-w-5xl">
       <div className="grid md:grid-cols-[220px_1fr] gap-8 md:gap-14 items-start md:items-center">
         <motion.div
@@ -1212,21 +1061,21 @@ const AboutStrip: React.FC = () => (
             <img
               src="/ivan-hero.jpeg"
               alt="Iván Manfredi"
-              className="w-32 md:w-full aspect-square object-cover object-top"
-              style={{ borderRadius: '0' }}
+              className="w-32 md:w-full aspect-square object-cover object-top portrait-editorial"
+              style={{ borderRadius: '0', border: '1px solid rgba(26,26,26,0.15)' }}
             />
           </picture>
         </motion.div>
         <motion.div {...inView} style={{ maxWidth: '55ch' }}>
-          <div style={{ ...T.mono, color: 'rgba(247,244,239,0.5)', marginBottom: '1.5rem' }}>Behind the work</div>
-          <h2 style={{ ...T.display('clamp(1.8rem,2.6vw,2.6rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '6px' }}>
+          <Label>Behind the work</Label>
+          <h2 style={{ ...T.display('clamp(1.8rem,2.6vw,2.6rem)'), fontStyle: 'normal', marginBottom: '6px' }}>
             Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
           </h2>
-          <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.25rem' }}>Agent-Ready Ops™</div>
-          <p style={{ ...T.serif, fontSize: '17px', color: 'rgba(247,244,239,0.78)', lineHeight: 1.6, marginBottom: '14px' }}>
-            I've shipped <span style={{ fontStyle: 'italic', color: '#F7F4EF' }}>100+ AI and automation systems</span> for growing service businesses.
+          <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '1.25rem' }}>Agent-Ready Ops™</div>
+          <p style={{ ...T.serif, fontSize: '17px', lineHeight: 1.6, marginBottom: '14px' }}>
+            I've shipped <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>100+ AI and automation systems</span> for growing service businesses.
           </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: 'rgba(247,244,239,0.42)', lineHeight: 1.5 }}>
+          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}>
             Off-keyboard, I play tennis. With more enthusiasm than skill.
           </p>
         </motion.div>

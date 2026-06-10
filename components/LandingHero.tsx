@@ -279,12 +279,14 @@ const LandingHero: React.FC = () => {
             >
               <a
                 href="/start"
-                className="btn-magnetic inline-flex items-center gap-3 px-9 py-4 bg-accent text-white"
+                className="btn-magnetic inline-flex items-center gap-3 px-9 py-4"
                 style={{
                   fontFamily: '"Source Serif 4", serif',
                   fontWeight: 600,
                   fontSize: '17px',
                   letterSpacing: '0.005em',
+                  backgroundColor: '#1A1A1A',
+                  color: '#F7F4EF',
                 }}
               >
                 Book your fit call <ArrowRight size={19} />
