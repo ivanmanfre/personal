@@ -4,6 +4,7 @@ import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
+import { versionedAssetUrl } from '../../lib/driveThumb';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
@@ -30,6 +31,10 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [emailCopy, setEmailCopy] = useState(draft.emailCopy || '');
   const [resourceHtml, setResourceHtml] = useState(draft.resourceHtml || '');
   const spec = (draft.spec || {}) as Record<string, any>;
+  // Cover regen overwrites the SAME slug-derived storage path, so the URL is
+  // stable — version it by updatedAt so a fresh render actually refetches
+  // instead of showing the browser-cached old cover.
+  const coverSrc = versionedAssetUrl(draft.coverUrl, draft.updatedAt);
   // LM upstream-source resolver — uses spec.source_candidate_id when present,
   // OR falls back to draft.source (Client Calls / Web Research / Competitor / Manual).
   const upstream = useUpstreamSource({ source_candidate_id: spec.source_candidate_id, source: draft.source });
@@ -103,7 +108,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={6} className="text-[13.5px] leading-relaxed font-sans" />
             ) : (
               <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
-                <LinkedInPostPreview text={postBody} mediaUrl={draft.coverUrl || null} />
+                <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} />
               </div>
             )}
           </div>
@@ -173,7 +178,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   label: 'Preview',
                   render: () => (
                     <div className="rounded-md bg-zinc-950/60 border border-zinc-800/60 p-3">
-                      <LinkedInPostPreview text={postBody} mediaUrl={draft.coverUrl || null} />
+                      <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} />
                     </div>
                   ),
                 },
@@ -184,7 +189,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                     <div className="space-y-3">
                       {draft.coverUrl ? (
                         <>
-                          <img src={draft.coverUrl} alt="cover" className="w-full rounded-md border border-zinc-800" />
+                          <img src={coverSrc || undefined} alt="cover" className="w-full rounded-md border border-zinc-800" />
                           <Button
                             variant="secondary" size="sm" block
                             disabled={!!busy}

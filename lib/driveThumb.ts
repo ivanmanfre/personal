@@ -12,3 +12,14 @@ export function driveThumbUrl(url: string | null | undefined, size = 200): strin
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}`;
   return url;
 }
+
+// Append a cache-busting version token to an asset URL. When an image is
+// overwritten at a STABLE storage path (e.g. an LM cover regen writes the same
+// slug-derived filename), the URL never changes, so the browser/CDN keep serving
+// the old bytes. Keying `?v=` on the row's updated_at forces a refetch exactly
+// when the asset actually changed — and nothing else.
+export function versionedAssetUrl(url: string | null | undefined, version: string | null | undefined): string | null {
+  if (!url) return null;
+  if (!version) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(version)}`;
+}

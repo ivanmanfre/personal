@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import LeadMagnetEditor from './LeadMagnetEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
-import { driveThumbUrl } from '../../lib/driveThumb';
+import { driveThumbUrl, versionedAssetUrl } from '../../lib/driveThumb';
 import { statusLabel } from '../../lib/statusLabels';
 
 // Canonical LM formats — sourced from the curator + content pipeline.
@@ -370,7 +370,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
             title: d.topic || '(untitled)',
             excerpt: (d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined,
             status: d.status,
-            thumbUrl: driveThumbUrl(d.coverUrl, 96),
+            thumbUrl: driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 96),
             kicker: 'LM',
             date: lmDate(d.updatedAt),
             dateSort: d.updatedAt ? new Date(d.updatedAt).getTime() : 0,
@@ -448,7 +448,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
             >
               <div className="aspect-[16/9] bg-zinc-950 overflow-hidden relative">
                 {d.coverUrl
-                  ? <img src={driveThumbUrl(d.coverUrl, 400) || d.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  ? <img src={driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 400) || d.coverUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                   : (
                     <div className="w-full h-full flex flex-col justify-center px-3 py-2 bg-gradient-to-br from-[#1c241f] via-[#161914] to-[#14110d]">
                       <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 mb-1">{d.format || 'Lead magnet'}</div>
