@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
@@ -36,6 +36,11 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // the action becomes "Update" instead of silently auto-slotting a new one.
   const [when, setWhen] = useState(() => initialScheduleInput(draft.scheduledAt));
   const [busy, setBusy] = useState<string | null>(null);
+  // Animated-video origin control (footer). Firing redoVideo() sets
+  // video_status='generating' + fires video-gen-v2 → ivan-flow-video renders a
+  // vertical mp4 (~150s) and the draft surfaces in Content → Video → Animated
+  // for review/redo/approve. Default to the draft's existing style if any.
+  const [videoStyle, setVideoStyle] = useState<string>(draft.videoStyle || 'serpentine-flow');
   // Editable copies — initialized from draft, mutated by inline editors.
   // Saved via saveDraft({ taxonomy, slides }) when the user clicks "Save fields"
   // or "Save slides". `*Dirty` flips on any change to expose the unsaved-edit
@@ -62,6 +67,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     setTaxDirty(false);
     setLocalSlides(Array.isArray(draft.slides) ? draft.slides.map((s) => ({ ...s })) : []);
     setSlidesDirty(false);
+    setVideoStyle(draft.videoStyle || 'serpentine-flow');
   }, [draft.id]);
   // userInitiatedRef flips true the moment run() fires. The status-transition
   // effect then suppresses its toast for that flip (the run wrapper already
@@ -727,6 +733,29 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               >
                 {busy === 'save slides' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save slides
               </Button>
+            )}
+            {postBody && (
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={videoStyle}
+                  onChange={(e) => setVideoStyle(e.target.value)}
+                  disabled={!!busy}
+                  title="Animated video style"
+                  className="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-[12px] text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                >
+                  <option value="serpentine-flow">Serpentine Flow</option>
+                  <option value="product-ui-showcase">Product UI</option>
+                  <option value="before-after">Before / After</option>
+                </select>
+                <Button
+                  variant="secondary"
+                  disabled={!!busy}
+                  title="Render a vertical animated video from this post (ivan-flow-video, ~2-3 min). Review it in Content → Video → Animated."
+                  onClick={() => run('animate', () => redoVideo({ draft_id: draft.id, style: videoStyle }), 'Rendering animated video (~2-3 min). Review it in Content → Video → Animated.')}
+                >
+                  {busy === 'animate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clapperboard className="w-4 h-4" />} Animate
+                </Button>
+              </div>
             )}
             <Button
               variant="secondary"

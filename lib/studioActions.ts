@@ -256,17 +256,26 @@ const VIDEO_WEBHOOK = import.meta.env.VITE_VIDEO_GEN_WEBHOOK || 'https://n8n.iva
 // draft's current style.
 export async function redoVideo(input: { draft_id: string; style: string; feedback?: string }) {
   const { supabase } = await import('./supabase');
-  const patch: Record<string, unknown> = { video_status: 'generating' };
+  // Persist the chosen style too — keeps the Animated-tab label correct and makes
+  // a later Redo default to the same style instead of falling back to serpentine.
+  const patch: Record<string, unknown> = { video_status: 'generating', video_style: input.style };
   if (input.feedback != null) patch.video_feedback = input.feedback;
   const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', input.draft_id);
   if (error) throw new Error(`redo (status write) failed: ${error.message}`);
-  const res = await fetch(VIDEO_WEBHOOK, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ draft_id: input.draft_id, style: input.style }),
-  });
-  if (!res.ok) throw new Error(`video-gen-v2 failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
-  return res.json().catch(() => ({ ok: true }));
+  // Fire the render. The n8n gateway occasionally 502s on a cold webhook hit;
+  // one retry covers it. The engine then renders async (~150s) and PATCHes back
+  // { video_url, video_status:'review' }, which realtime surfaces in the UI.
+  let lastErr = '';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(VIDEO_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft_id: input.draft_id, style: input.style }),
+    });
+    if (res.ok) return res.json().catch(() => ({ ok: true }));
+    lastErr = `${res.status} ${(await res.text()).slice(0, 200)}`;
+  }
+  throw new Error(`video-gen-v2 failed: ${lastErr}`);
 }
 
 // Approve a reviewed video AND schedule it to the next open slot. Sets
