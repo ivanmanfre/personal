@@ -47,7 +47,6 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   }
 
   const isReview = draft.status === 'review';
-  const isReady = draft.status === 'published';
   // Once assets are built (page deployed), the promo post can be scheduled to a
   // time you pick — or rescheduled if already queued. Mirrors the carousel editor.
   const canSchedule = draft.status === 'approved' || draft.status === 'scheduled';
@@ -213,7 +212,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                           <img src={spec.promo_image_url as string} alt="promo" className="w-full rounded-md border border-zinc-800" />
                         </div>
                       )}
-                      {isReady && draft.resourceUrl && (
+                      {draft.resourceUrl && (
                         <a
                           href={draft.resourceUrl}
                           target="_blank"
