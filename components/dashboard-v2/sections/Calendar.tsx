@@ -7,6 +7,7 @@ import { useContentPipeline } from '../../../hooks/useContentPipeline';
 import PostCalendarView, { type CalendarItem, type CalendarTone } from '../../dashboard/PostCalendarView';
 import { Sheet } from '../../ui/Sheet';
 import CarouselEditor from '../../dashboard/CarouselEditor';
+import { buildCalendarItems } from './calendarItems';
 
 /**
  * Unified content calendar — posts (carousel_drafts) + lead magnets
@@ -25,17 +26,6 @@ import CarouselEditor from '../../dashboard/CarouselEditor';
  * LMs surface from scheduled_posts.
  */
 
-const LM_PATTERN = /\bcomment\s+["“”]?(\w+)["“”]?\b/i;
-
-// scheduled_posts statuses → tone vocabulary the generic calendar understands.
-const SP_STATUS_TO_TONE: Record<string, CalendarTone> = {
-  pending: 'scheduled',
-  posting: 'generating',
-  posted: 'published',
-  failed: 'failed',
-  cancelled: 'cancelled',
-};
-
 export function Calendar() {
   const { drafts: posts, applyOptimistic, refresh: refreshPosts } = useContentLibrary();
   const { posts: queue, refresh: refreshQueue } = useContentPipeline();
@@ -44,43 +34,20 @@ export function Calendar() {
   const [openPostId, setOpenPostId] = useState<string | null>(null);
   const openPost = useMemo(() => posts.find((d) => d.id === openPostId) || null, [posts, openPostId]);
 
-  const items: CalendarItem[] = useMemo(() => {
-    const out: CalendarItem[] = [];
-    // Posts — carousel_drafts.scheduled_at. Only render rows that ACTUALLY
-    // have a scheduled date, regardless of status (idea/error rows with no
-    // scheduled_at are excluded by the inner `if`).
-    for (const p of posts) {
-      if (!p.scheduledAt) continue;
-      out.push({
-        id: p.id,
-        title: p.title,
-        kind: 'post',
-        scheduledAt: p.scheduledAt,
-        tone: (p.status as CalendarTone) || 'scheduled',
-        statusLabel: p.status,
-      });
-    }
-    // Lead magnets — scheduled_posts rows that match the comment-keyword pattern.
-    // We extract the keyword for the chip label so the chip reads "Keyword: …"
-    // rather than the first words of the post body.
-    for (const q of queue) {
-      const match = q.postText.match(LM_PATTERN);
-      if (!match) continue;
-      const keyword = match[1].toUpperCase();
-      // Use the first non-empty line as title fallback; fall back to keyword.
-      const firstLine = (q.postText.split('\n').find((l) => l.trim()) || '').trim();
-      const title = firstLine.length > 60 ? firstLine.slice(0, 60) + '…' : firstLine || keyword;
-      out.push({
-        id: q.id,
-        title: `${keyword} — ${title}`,
-        kind: 'lm',
-        scheduledAt: q.scheduledAt,
-        tone: SP_STATUS_TO_TONE[q.status] || 'scheduled',
-        statusLabel: q.status,
-      });
-    }
-    return out;
-  }, [posts, queue]);
+  const items: CalendarItem[] = useMemo(
+    () => buildCalendarItems(
+      posts.map((p) => ({ id: p.id, title: p.title, status: p.status, scheduledAt: p.scheduledAt })),
+      queue.map((qr) => ({
+        id: qr.id,
+        clickupTaskId: qr.clickupTaskId,
+        postText: qr.postText,
+        platform: qr.platform,
+        status: qr.status,
+        scheduledAt: qr.scheduledAt,
+      })),
+    ),
+    [posts, queue],
+  );
 
   const reschedulePost = useCallback(async (item: CalendarItem, isoDate: string) => {
     const cur = posts.find((d) => d.id === item.id)?.scheduledAt;
