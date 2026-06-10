@@ -10,6 +10,7 @@ import CarouselEditor from '../../dashboard/CarouselEditor';
 import { buildCalendarItems } from './calendarItems';
 import { useLeadMagnets } from '../../../hooks/useLeadMagnets';
 import LeadMagnetEditor from '../../dashboard/LeadMagnetEditor';
+import ScheduledPostEditor from '../../dashboard/ScheduledPostEditor';
 
 /**
  * Unified content calendar — posts (carousel_drafts) + lead magnets
@@ -39,6 +40,9 @@ export function Calendar() {
   const { drafts: lmDrafts, refresh: refreshLm } = useLeadMagnets();
   const [openLmId, setOpenLmId] = useState<string | null>(null);
   const openLm = useMemo(() => lmDrafts.find((d) => d.id === openLmId) || null, [lmDrafts, openLmId]);
+
+  const [openQueueId, setOpenQueueId] = useState<string | null>(null);
+  const openQueue = useMemo(() => queue.find((q) => q.id === openQueueId) || null, [queue, openQueueId]);
 
   const items: CalendarItem[] = useMemo(
     () => buildCalendarItems(
@@ -145,6 +149,13 @@ export function Calendar() {
         title={openLm ? <span className="truncate">{openLm.title || 'Lead magnet'}</span> : ''}>
         {openLm && (
           <LeadMagnetEditor draft={openLm} onClose={() => setOpenLmId(null)} onChanged={() => { refreshLm(); refreshQueue(); }} />
+        )}
+      </Sheet>
+
+      <Sheet open={!!openQueue} onClose={() => setOpenQueueId(null)} size="lg"
+        title={openQueue ? 'Scheduled post' : ''}>
+        {openQueue && (
+          <ScheduledPostEditor post={openQueue} onClose={() => setOpenQueueId(null)} onChanged={refreshQueue} />
         )}
       </Sheet>
     </div>
