@@ -44,14 +44,19 @@ function queueTitle(postText: string, keyword?: string): string {
 /**
  * Merge the three calendar sources into a single chip list:
  *  - `post`       ← carousel_drafts with a scheduledAt
- *  - `lm`         ← LinkedIn scheduled_posts matching the "comment X" CTA
- *  - `post-queue` ← LinkedIn scheduled_posts that are neither LM nor already
- *                   shown as a post (clickupTaskId not in draft ids)
- * LinkedIn-only. Precedence post > lm > post-queue.
+ *  - `lm`         ← LinkedIn scheduled_posts whose clickupTaskId is a real
+ *                   lm_drafts_v2 id (so the LM editor can open it)
+ *  - `post-queue` ← every other LinkedIn scheduled_posts row not already shown
+ *                   as a post (editable via ScheduledPostEditor)
+ * The "comment X" pattern is used ONLY to extract a keyword label — NOT to
+ * decide LM-vs-post. Many regular posts carry a comment-gate CTA without being
+ * lead magnets; routing those to the LM editor (which needs an lm_drafts_v2
+ * row) would silently fail to open. LinkedIn-only. Precedence post > lm > post-queue.
  */
-export function buildCalendarItems(posts: PostRow[], queue: QueueRow[]): CalendarItem[] {
+export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftIds: string[] = []): CalendarItem[] {
   const out: CalendarItem[] = [];
   const draftIds = new Set(posts.map((p) => p.id));
+  const lmIds = new Set(lmDraftIds);
 
   for (const p of posts) {
     if (!p.scheduledAt) continue;
@@ -70,11 +75,12 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[]): Calenda
     // Already represented as a post chip — skip its queue twin.
     if (qr.clickupTaskId && draftIds.has(qr.clickupTaskId)) continue;
     const tone = SP_STATUS_TO_TONE[qr.status] || 'scheduled';
-    const lm = qr.postText.match(LM_PATTERN);
-    if (lm) {
+    const isLm = !!qr.clickupTaskId && lmIds.has(qr.clickupTaskId);
+    if (isLm) {
+      const lm = qr.postText.match(LM_PATTERN);
       out.push({
         id: qr.id,
-        title: queueTitle(qr.postText, lm[1].toUpperCase()),
+        title: queueTitle(qr.postText, lm ? lm[1].toUpperCase() : undefined),
         kind: 'lm',
         editId: qr.clickupTaskId || undefined,
         scheduledAt: qr.scheduledAt,

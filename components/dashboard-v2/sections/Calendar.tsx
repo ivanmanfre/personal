@@ -55,8 +55,9 @@ export function Calendar() {
         status: qr.status,
         scheduledAt: qr.scheduledAt,
       })),
+      lmDrafts.map((d) => d.id),
     ),
-    [posts, queue],
+    [posts, queue, lmDrafts],
   );
 
   const reschedulePost = useCallback(async (item: CalendarItem, isoDate: string) => {

@@ -19,18 +19,35 @@ test('posts with no scheduledAt are excluded', () => {
   expect(buildCalendarItems([post({ scheduledAt: null })], [])).toHaveLength(0);
 });
 
-test('LM-pattern queue rows render as lm chips with editId = clickupTaskId', () => {
-  const items = buildCalendarItems([], [q({ id: 'q9', clickupTaskId: 'lm-draft-9', postText: 'Want it? comment "GROWTH" below' })]);
+test('queue rows whose clickupTaskId is a real lm_drafts_v2 id render as lm chips', () => {
+  const items = buildCalendarItems(
+    [], [q({ id: 'q9', clickupTaskId: 'lm-draft-9', postText: 'Want it? comment "GROWTH" below' })],
+    ['lm-draft-9'],
+  );
   expect(items).toHaveLength(1);
   expect(items[0]).toMatchObject({ id: 'q9', kind: 'lm', editId: 'lm-draft-9' });
   expect(items[0].title.startsWith('GROWTH')).toBe(true);
 });
 
-test('LM pattern matches curly “” quotes (real LinkedIn copy-paste)', () => {
-  const items = buildCalendarItems([], [q({ id: 'q10', postText: 'Want it? comment “GROWTH” below' })]);
+test('lm chip keyword label matches curly “” quotes (real LinkedIn copy-paste)', () => {
+  const items = buildCalendarItems(
+    [], [q({ id: 'q10', clickupTaskId: 'lm-draft-10', postText: 'Want it? comment “GROWTH” below' })],
+    ['lm-draft-10'],
+  );
   expect(items).toHaveLength(1);
   expect(items[0]).toMatchObject({ id: 'q10', kind: 'lm' });
   expect(items[0].title.startsWith('GROWTH')).toBe(true);
+});
+
+test('a comment-gated post that is NOT an lm draft renders as post-queue (not lm)', () => {
+  // Regular posts often carry a "comment X" CTA but have no lm_drafts_v2 row;
+  // routing them to the LM editor would silently fail to open.
+  const items = buildCalendarItems(
+    [], [q({ id: 'q3', clickupTaskId: '86ahmzd4f', postText: 'Grab it — comment "READY" and I\'ll send it' })],
+    [], // no lm draft ids
+  );
+  expect(items).toHaveLength(1);
+  expect(items[0]).toMatchObject({ id: 'q3', kind: 'post-queue' });
 });
 
 test('plain LinkedIn queue rows render as post-queue chips', () => {
