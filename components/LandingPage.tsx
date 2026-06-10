@@ -216,6 +216,25 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   </motion.div>
 );
 
+// ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
+// The hero ask and the calculator ask were ~5,000px apart (10 screens on
+// mobile) with the entire persuasion core between them and nothing to click.
+const MidCTA: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <motion.p
+    {...inView}
+    className="mt-12"
+    style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', color: '#5A5752', lineHeight: 1.6 }}
+  >
+    {children}{' '}
+    <a
+      href="/start"
+      style={{ color: 'var(--color-accent-ink)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}
+    >
+      Book the free fit call →
+    </a>
+  </motion.p>
+);
+
 // ─── Media query hook ────────────────────────────────────────────────────────
 const useMediaQuery = (query: string): boolean => {
   const [matches, setMatches] = useState(false);
@@ -264,9 +283,9 @@ const ProblemSection: React.FC = () => {
           <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
-                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It could be automated. It just hasn't been." },
-                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. The unit economics get worse as you grow." },
-                { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots. The summaries. The general-purpose tools. None of it moved the needle because none of it was designed around your specific workflow." },
+                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It just hasn't been automated yet." },
+                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. Unit economics get worse as you grow." },
+                { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots, the summaries, the general-purpose tools. None of it stuck, because none of it was designed around your workflow." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
                   <span style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
@@ -292,7 +311,7 @@ const OUTCOMES = [
     category: 'Judgment-heavy AI',
     metric: '5% → 100%',
     metricLabel: 'of calls graded',
-    story: "Their best manager could only sample 5% of sales calls. I encoded her 8-criteria rubric into an agent that grades every call and routes risk to leadership within the hour.",
+    story: "Their best manager could sample 5% of calls. Now every call is graded against her 8-criteria rubric, with risk routed within the hour.",
     qualifier: 'Running daily',
     href: '/work#case-01',
   },
@@ -301,7 +320,7 @@ const OUTCOMES = [
     category: 'Productized build',
     metric: '15 min',
     metricLabel: 'idea to launched',
-    story: "Every lead magnet took days of manual work across disconnected tools. One idea in ClickUp now generates the full package: landing page, email, smart link, scheduled post.",
+    story: "One idea in ClickUp generates the full package: landing page, email, smart link, scheduled post.",
     qualifier: 'Self-serve since launch',
     href: '/work#case-02',
   },
@@ -310,7 +329,7 @@ const OUTCOMES = [
     category: 'Back-office that runs itself',
     metric: 'Multi-FTE → same-day',
     metricLabel: 'permit turnaround',
-    story: "Every permit needed hours of manual environmental research across 50 states. Intake to delivered documents now runs end-to-end, no researcher in the loop.",
+    story: "Permit research that took hours per filing now runs intake-to-delivered across 50 states, no researcher in the loop.",
     qualifier: 'Live across 50 states',
     href: '/work#case-03',
   },
@@ -319,13 +338,18 @@ const OUTCOMES = [
     category: 'Inventory orchestration',
     metric: '15+ hrs/week',
     metricLabel: 'manual entry removed',
-    story: "A cannabis distributor was reconciling inventory from WhatsApp, supplier sites, and Google Sheets daily. Now n8n auto-consolidates every channel into one sheet, standardizes formats, refreshes every 60–120 min.",
+    story: "Inventory from WhatsApp, supplier sites, and Google Sheets auto-consolidates into one standardized sheet, refreshed hourly.",
     qualifier: 'Refreshes hourly',
     href: '/work#case-06',
   },
 ];
 
-const BuildOutcomesSection: React.FC = () => (
+const BuildOutcomesSection: React.FC = () => {
+  const isMd = useMediaQuery('(min-width: 768px)');
+  const [showAll, setShowAll] = useState(false);
+  const visible = isMd || showAll ? OUTCOMES : OUTCOMES.slice(0, 2);
+
+  return (
   <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
 
@@ -333,10 +357,7 @@ const BuildOutcomesSection: React.FC = () => (
         <Label>03</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Recent builds,<br />
-          <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
-            already in production.
-            <SageSweep delay={0.6} opacity={0.72} />
-          </span>
+          <span style={{ fontStyle: 'italic' }}>already in production.</span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
           The systems clients are running right now.
@@ -344,7 +365,7 @@ const BuildOutcomesSection: React.FC = () => (
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
-        {OUTCOMES.map((o, i) => (
+        {visible.map((o, i) => (
           <motion.a
             key={o.type}
             href={o.href}
@@ -383,9 +404,26 @@ const BuildOutcomesSection: React.FC = () => (
           </motion.a>
         ))}
       </div>
+
+      {!isMd && !showAll && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-8 w-full py-3.5"
+          style={{
+            fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '15px',
+            color: '#4A4A48', background: 'transparent', border: '1px solid rgba(26,26,26,0.18)', cursor: 'pointer',
+          }}
+        >
+          Show 2 more builds ↓
+        </button>
+      )}
+
+      <MidCTA>Want one of these running in your business?</MidCTA>
     </div>
   </section>
-);
+  );
+};
 
 // ─── Section 3: What Agent-Ready means ──────────────────────────────────────
 // titlePre + pivot + titlePost — pivot is the italic phrase with sage sweep behind it
@@ -452,69 +490,65 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
   </motion.svg>
 );
 
-// What-changes section — paper editorial, asymmetric (left lede, numbered right
-// rail), mirroring ProblemSection's grid. Rebuilt 2026-06-10 from the dark
-// centered manifesto: that version was centered-symmetric, ~1,700px tall for
-// four short statements, and set small muted text on dark. The offers grid is
-// now the page's single dark moment.
+// What-changes section — paper-sunk band, header row + 2×2 grid (2026-06-10 v2).
+// v1 (same-day) mirrored ProblemSection's numbered right-rail, which made
+// sections 01 and 02 read as one endless list at the seam (217 words in a
+// single viewport). The sunk band + grid breaks the pattern and halves the
+// words per screen. The offers grid stays the page's single dark moment.
 const AgentReadySection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t relative" style={DIVIDER}>
+  <section className="py-14 md:py-24 border-t relative" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <div className="grid lg:grid-cols-[1fr_1px_1.2fr] items-start">
 
-        <div className="lg:pr-16">
-          <motion.div {...inView}>
-            <Label>02</Label>
-            <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
-              What changes once<br />
-              <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
-                the systems run.
-                <SageSweep delay={0.6} opacity={0.72} />
-              </span>
-            </RevealH2>
-            <p style={{ ...T.serif, maxWidth: '44ch' }}>
-              The day-to-day, six months after the build.
-            </p>
+      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+        <Label>02</Label>
+        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
+          What changes once<br />
+          <span style={{ fontStyle: 'italic' }}>the systems run.</span>
+        </RevealH2>
+        <p style={{ ...T.serif, maxWidth: '44ch' }}>
+          The day-to-day, six months after the build.
+        </p>
+      </motion.div>
+
+      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10 md:gap-y-14">
+        {PRECONDITIONS.map((p, i) => (
+          <motion.div
+            key={p.n}
+            initial={prefersReduced ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease, delay: i * 0.08 }}
+            className="flex gap-6 items-start"
+          >
+            <span
+              aria-hidden
+              style={{
+                fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+                fontStyle: 'italic',
+                fontWeight: 400,
+                fontSize: 'clamp(1.7rem,2.2vw,2.1rem)',
+                lineHeight: 1.1,
+                color: 'var(--color-accent)',
+                flexShrink: 0,
+                minWidth: '2.4ch',
+              }}
+            >
+              {p.n}.
+            </span>
+            <div>
+              <h3 style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: 'clamp(1.15rem,1.6vw,1.35rem)', lineHeight: 1.35, color: '#1A1A1A', marginBottom: '6px' }}>
+                {p.titlePre}
+                <span style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, color: 'var(--color-accent-ink)' }}>{p.pivot}</span>
+                {p.titlePost}
+              </h3>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65, maxWidth: '46ch' }}>
+                {p.sub}
+              </p>
+            </div>
           </motion.div>
-        </div>
-
-        <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(26,26,26,0.1)' }} />
-
-        <div className="lg:pl-16 pt-10 lg:pt-0">
-          <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-9">
-            {PRECONDITIONS.map((p) => (
-              <div key={p.n} className="flex gap-6 items-start">
-                <span
-                  aria-hidden
-                  style={{
-                    fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-                    fontStyle: 'italic',
-                    fontWeight: 400,
-                    fontSize: 'clamp(1.7rem,2.2vw,2.1rem)',
-                    lineHeight: 1.1,
-                    color: 'var(--color-accent)',
-                    flexShrink: 0,
-                    minWidth: '2.4ch',
-                  }}
-                >
-                  {p.n}.
-                </span>
-                <div>
-                  <h3 style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: 'clamp(1.15rem,1.6vw,1.35rem)', lineHeight: 1.35, color: '#1A1A1A', marginBottom: '6px' }}>
-                    {p.titlePre}
-                    <span style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, color: 'var(--color-accent-ink)' }}>{p.pivot}</span>
-                    {p.titlePost}
-                  </h3>
-                  <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65, maxWidth: '52ch' }}>
-                    {p.sub}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-
+        ))}
       </div>
+
     </div>
   </section>
 );
@@ -591,13 +625,10 @@ const WorkSection: React.FC = () => {
     <section className="py-12 md:py-20 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
         <motion.div {...inView} className="mb-10">
-          <Label>04</Label>
+          <Label>05</Label>
           <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
-            <span style={{ fontStyle: 'italic', position: 'relative', display: 'inline-block' }}>
-              Build second.
-              <SageSweep delay={0.6} opacity={0.72} />
-            </span>
+            <span style={{ fontStyle: 'italic' }}>Build second.</span>
           </RevealH2>
         </motion.div>
 
@@ -640,10 +671,10 @@ const WorkSection: React.FC = () => {
 
 // ─── Section 4: Testimonials ─────────────────────────────────────────────────
 const TestimonialsSection: React.FC = () => (
-  <section className="pt-12 md:pt-20 pb-0 border-t overflow-hidden" style={DIVIDER}>
+  <section className="pt-12 md:pt-20 pb-12 md:pb-16 border-t overflow-hidden" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl mb-14">
       <motion.div {...inView}>
-        <Label>05</Label>
+        <Label>04</Label>
         <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
           Every project shipped,<br />and every client came back.
         </RevealH2>
@@ -666,6 +697,9 @@ const TestimonialsSection: React.FC = () => (
         </div>
       ))}
     </div>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <MidCTA>Want to be the next one?</MidCTA>
+    </div>
   </section>
 );
 
@@ -678,7 +712,7 @@ const PaybackSection: React.FC = () => {
   const qualifies = maxBuild >= 2000;
 
   return (
-    <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <section className="py-12 md:pt-20 md:pb-28 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
@@ -745,7 +779,7 @@ const PaybackSection: React.FC = () => {
             </p>
 
             <motion.a
-              href="/assessment"
+              href="/start"
               whileHover={{ y: -2 }}
               transition={{ duration: 0.18 }}
               className="flex items-center justify-between px-7 py-4 bg-black text-white"
@@ -864,7 +898,7 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="text-center">
         <div className="w-8 h-0.5 mx-auto mb-10" style={{ backgroundColor: 'var(--color-accent)' }} />
         <p style={{ ...T.serif, fontSize: '18px', maxWidth: '620px', margin: '0 auto 2rem', textAlign: 'center' }}>
-          Six months in, the work that used to wait on you runs without you: the repetitive calls made, the reports built, the same decision made the same way every time, whether you're in the room or on a plane. You're still the owner. You're just no longer the bottleneck.
+          Six months in, the work that used to wait on you runs without you. You're still the owner, just no longer the bottleneck.
         </p>
         <RevealH2 style={{ ...T.display('clamp(2.8rem,6vw,5.5rem)'), marginBottom: '1.75rem' }}>
           Ready to scale<br />without hiring?
@@ -1137,8 +1171,8 @@ const LandingPage: React.FC = () => {
         <ProblemSection />
         <AgentReadySection />
         <BuildOutcomesSection />
-        <WorkSection />
         <TestimonialsSection />
+        <WorkSection />
         <PaybackSection />
         <OfferSection />
         <FinalCTA />
