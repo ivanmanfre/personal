@@ -26,6 +26,13 @@ test('LM-pattern queue rows render as lm chips with editId = clickupTaskId', () 
   expect(items[0].title.startsWith('GROWTH')).toBe(true);
 });
 
+test('LM pattern matches curly “” quotes (real LinkedIn copy-paste)', () => {
+  const items = buildCalendarItems([], [q({ id: 'q10', postText: 'Want it? comment “GROWTH” below' })]);
+  expect(items).toHaveLength(1);
+  expect(items[0]).toMatchObject({ id: 'q10', kind: 'lm' });
+  expect(items[0].title.startsWith('GROWTH')).toBe(true);
+});
+
 test('plain LinkedIn queue rows render as post-queue chips', () => {
   const items = buildCalendarItems([], [q({ id: 'q2', postText: 'A plain hot take' })]);
   expect(items).toHaveLength(1);

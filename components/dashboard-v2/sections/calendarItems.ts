@@ -18,7 +18,7 @@ export interface QueueRow {
   scheduledAt: string | null;
 }
 
-const LM_PATTERN = /\bcomment\s+["""]?(\w+)["""]?\b/i;
+const LM_PATTERN = /\bcomment\s+["“”]?(\w+)["“”]?\b/i;
 
 // scheduled_posts.status → calendar tone vocabulary.
 const SP_STATUS_TO_TONE: Record<string, CalendarTone> = {
