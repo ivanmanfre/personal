@@ -63,6 +63,23 @@ function evidenceSummary(c: Candidate): string {
   return '';
 }
 
+// Call-sourced candidates (kyle_call / calls / ivan_call) carry the real moment in
+// evidence[]: the verbatim quote, who said it, and the source-call task id. Surface
+// that inline instead of leaving it buried in the raw-JSON <details> — a bare angle
+// headline with no quote reads as "out of context".
+function callContext(c: Candidate): { quote?: string; persona?: string; clickupUrl?: string } | null {
+  const isCall = c.source === 'kyle_call' || c.source === 'calls' || c.source === 'ivan_call';
+  if (!isCall || !Array.isArray(c.evidence) || c.evidence.length === 0) return null;
+  const e = c.evidence[0] || {};
+  const taskId = e.task_id || e.taskId || null;
+  const ctx = {
+    quote: typeof e.quote === 'string' ? e.quote : undefined,
+    persona: typeof e.persona === 'string' ? e.persona : undefined,
+    clickupUrl: taskId ? `https://app.clickup.com/t/${taskId}` : undefined,
+  };
+  return ctx.quote || ctx.persona || ctx.clickupUrl ? ctx : null;
+}
+
 const SOURCE_LABEL: Record<string, string> = {
   calls: 'Calls',
   kyle_call: 'Other Call Sources KH',
@@ -318,6 +335,27 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
                 <div style={{ fontSize: 12, color: 'var(--d-paper-dim)', marginBottom: 4 }}>
                   Source: {evidenceSummary(c)}
                 </div>
+                {(() => {
+                  const ctx = callContext(c);
+                  if (!ctx) return null;
+                  return (
+                    <div style={{ marginBottom: 6 }}>
+                      {ctx.quote && (
+                        <blockquote style={{ margin: '0 0 4px', paddingLeft: 10, borderLeft: '2px solid #2A8F65', fontSize: 12.5, fontStyle: 'italic', lineHeight: 1.5, color: 'var(--d-paper)' }}>
+                          “{ctx.quote}”
+                        </blockquote>
+                      )}
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', fontSize: 11, color: 'var(--d-paper-dim)' }}>
+                        {ctx.persona && <span>— {ctx.persona}</span>}
+                        {ctx.clickupUrl && (
+                          <a href={ctx.clickupUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#2A8F65', textDecoration: 'none' }}>
+                            source call ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ fontSize: 12, color: 'var(--d-paper-dim)', marginBottom: 6 }}>
                   Format: <strong>{c.format_recommendation || '—'}</strong> · Ladder: <strong>{c.offer_ladder_map || '—'}</strong>
                 </div>
