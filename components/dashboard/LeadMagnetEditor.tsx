@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2, CalendarClock } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
-import { generateLMContent, buildLMAssets, regenLMCover, saveLMDraft } from '../../lib/studioActions';
+import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft } from '../../lib/studioActions';
+import { findNextSlot, toDatetimeLocalString } from '../../lib/findNextSlot';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
 import SourceBriefing from './SourceBriefing';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
-import { Card, CardLabel, Button, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
+import { Card, CardLabel, Button, Input, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
 
@@ -36,6 +37,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [dmB, setDmB] = useState((spec.dm_template_b as string) || '');
   const [resourceOpen, setResourceOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
+  const [when, setWhen] = useState('');
 
   async function run(label: string, fn: () => Promise<unknown>, successMsg: string) {
     setBusy(label);
@@ -46,6 +48,10 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
 
   const isReview = draft.status === 'review';
   const isReady = draft.status === 'published';
+  // Once assets are built (page deployed), the promo post can be scheduled to a
+  // time you pick — or rescheduled if already queued. Mirrors the carousel editor.
+  const canSchedule = draft.status === 'approved' || draft.status === 'scheduled';
+  const isScheduled = draft.status === 'scheduled';
   const dirty = postBody !== (draft.postBody || '')
     || emailCopy !== (draft.emailCopy || '')
     || resourceHtml !== (draft.resourceHtml || '')
@@ -268,6 +274,35 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 onClick={() => run('assets', () => buildLMAssets({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Approved — building assets (~5 min)')}>
                 {busy === 'assets' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />} Approve &amp; build assets
               </Button>
+            )}
+            {canSchedule && (
+              <>
+                <Input
+                  type="datetime-local"
+                  value={when}
+                  onChange={(e) => setWhen(e.target.value)}
+                  title="Your local time. Leave empty to auto-pick the next free slot."
+                  className="py-1.5 max-w-[220px]"
+                />
+                <Button
+                  variant="primary"
+                  disabled={!!busy}
+                  onClick={async () => {
+                    let iso: string;
+                    if (when) {
+                      iso = new Date(when).toISOString();
+                    } else {
+                      const slot = await findNextSlot();
+                      iso = slot.toISOString();
+                      setWhen(toDatetimeLocalString(slot));
+                      toast.message(`Auto-scheduled for ${slot.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`);
+                    }
+                    run('schedule', () => scheduleLM(draft.id, iso), isScheduled ? 'Rescheduled' : 'Scheduled');
+                  }}>
+                  {busy === 'schedule' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />}{' '}
+                  {isScheduled ? (when ? 'Update' : 'Reschedule · auto-slot') : (when ? 'Schedule' : 'Schedule · auto-slot')}
+                </Button>
+              </>
             )}
           </div>
 
