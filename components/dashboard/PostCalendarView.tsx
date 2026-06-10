@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, Magnet, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Magnet, FileText, Clock } from 'lucide-react';
 import {
   DndContext, useDraggable, useDroppable, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -32,7 +32,7 @@ import {
  *    so the displayed number and the day it buckets to can never diverge.
  */
 
-export type CalendarItemKind = 'post' | 'lm';
+export type CalendarItemKind = 'post' | 'lm' | 'post-queue';
 export type CalendarTone = 'idea' | 'generating' | 'review' | 'approved' | 'scheduled' | 'published' | 'disqualified' | 'error' | 'failed' | 'cancelled';
 
 export interface CalendarItem {
@@ -43,6 +43,9 @@ export interface CalendarItem {
   tone: CalendarTone;
   // Display-only status label (overrides built-in label for that tone if set)
   statusLabel?: string;
+  // For lm chips: the lm_drafts_v2 id used to open the LM editor (the chip's
+  // `id` is the scheduled_posts row id, used for drag/reschedule).
+  editId?: string;
 }
 
 interface Props {
@@ -162,7 +165,7 @@ function ItemChip({ item, onOpen, draggable }: { item: CalendarItem; onOpen: () 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: draggableId, disabled: !draggable });
   const palette = item.kind === 'lm' ? TONE_COLOR_LM : TONE_COLOR_POST;
   const tone = palette[item.tone] || palette.idea;
-  const Glyph = item.kind === 'lm' ? Magnet : FileText;
+  const Glyph = item.kind === 'lm' ? Magnet : item.kind === 'post-queue' ? Clock : FileText;
   const time = formatTime(item.scheduledAt);
   return (
     <button
