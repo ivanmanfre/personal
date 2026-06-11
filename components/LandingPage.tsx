@@ -595,7 +595,7 @@ const WorkSection: React.FC = () => {
           <ProcessAssembly steps={steps} />
         </div>
 
-        {/* Mobile: static rows with stage glyphs — never pin on touch */}
+        {/* Mobile/narrow: static rows with stage glyphs — no pinned scrub below lg */}
         <div className="lg:hidden flex flex-col">
           {steps.map((step, i) => (
             <motion.div

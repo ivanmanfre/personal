@@ -42,89 +42,94 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
 
   useEffect(() => {
     if (reduced || !rootRef.current) return;
-    // This component is desktop-only (parent hides it under lg). Don't build a
-    // pin against a display:none element — ScrollTrigger would measure zeros.
-    if (typeof window !== 'undefined' && !window.matchMedia('(min-width: 1024px)').matches) return;
     const root = rootRef.current;
-    const svg = root.querySelector('svg')!;
-    const groups = Array.from(svg.querySelectorAll('[data-diagram-node]')) as SVGGElement[];
-    const rects = Array.from(svg.querySelectorAll('[data-node-rect]')) as SVGRectElement[];
-    const ticks = Array.from(svg.querySelectorAll('[data-node-tick]')) as SVGRectElement[];
-    const inkPath = svg.querySelector('[data-ink-path]') as SVGPathElement;
-    const sagePath = svg.querySelector('[data-signal-path]') as SVGPathElement;
-    const stepEls = Array.from(root.querySelectorAll('[data-process-step]')) as HTMLElement[];
-    const counterEls = Array.from(root.querySelectorAll('[data-process-counter]')) as HTMLElement[];
-
-    const inkLen = inkPath.getTotalLength();
-    const sageLen = sagePath.getTotalLength();
-
-    // initial states. NOTE: GSAP parses each <g>'s transform attribute into its
-    // own x/y cache and REPLACES (not composes) the translation when x/y are
-    // set — so all values here are ABSOLUTE svg coords, not offsets.
-    gsap.set(groups, {
-      opacity: 0,
-      x: (i: number) => SCATTER[i].cx - ordered.nodes[i].w / 2,
-      y: (i: number) => SCATTER[i].cy - ordered.nodes[i].h / 2,
-    });
-    gsap.set(inkPath, { strokeDasharray: inkLen, strokeDashoffset: inkLen });
-    gsap.set(sagePath, { strokeDasharray: `${DIAGRAM.pulseLen} ${sageLen}`, strokeDashoffset: DIAGRAM.pulseLen, opacity: 1 });
-    gsap.set(rects[PINK_INDEX], { stroke: DIAGRAM.pink });
-    gsap.set(counterEls, { opacity: 0, y: 10 });
-    gsap.set(stepEls, { opacity: 0.35 });
-
-    const tl = gsap.timeline();
-    // Stage 1 — Diagnose (t 0..1)
-    tl.to(stepEls[0], { opacity: 1, duration: 0.1 }, 0);
-    tl.to(groups, { opacity: 1, duration: 0.5, stagger: 0.12 }, 0.05);
-    // Stage 2 — Design (t 1..2)
-    tl.to(stepEls[0], { opacity: 0.35, duration: 0.1 }, 1);
-    tl.to(stepEls[1], { opacity: 1, duration: 0.1 }, 1);
-    tl.to(inkPath, { strokeDashoffset: 0, duration: 0.6, ease: 'none' }, 1.05);
-    tl.to(
-      groups,
-      {
-        x: (i: number) => ordered.nodes[i].x,
-        y: (i: number) => ordered.nodes[i].y,
-        duration: 0.7,
-        ease: 'power2.inOut',
-      },
-      1.15,
-    );
-    tl.to(rects[PINK_INDEX], { stroke: DIAGRAM.ink, duration: 0.3 }, 1.6);
-    // Stage 3 — Build (t 2..3)
-    tl.to(stepEls[1], { opacity: 0.35, duration: 0.1 }, 2);
-    tl.to(stepEls[2], { opacity: 1, duration: 0.1 }, 2);
-    tl.to(sagePath, { strokeDashoffset: -sageLen, duration: 0.8, ease: 'none' }, 2.05);
-    rects.forEach((r, i) => {
-      const at = 2.05 + (i / (rects.length - 1)) * 0.8;
-      tl.to(r, { stroke: DIAGRAM.inkDone, duration: 0.1 }, at);
-      tl.to(ticks[i], { opacity: 1, duration: 0.1 }, at);
-    });
-    tl.to(counterEls, { opacity: 1, y: 0, duration: 0.3, stagger: 0.15 }, 2.6);
-
-    // Webfonts (serif display faces) finish after ScrollTrigger's load-refresh
-    // and shift everything below by hundreds of px — re-measure once ready.
+    const mm = gsap.matchMedia();
     let cancelled = false;
-    if (typeof document !== 'undefined' && document.fonts?.ready) {
-      document.fonts.ready.then(() => {
-        if (!cancelled) ScrollTrigger.refresh();
-      });
-    }
 
-    const st = ScrollTrigger.create({
-      trigger: root,
-      start: 'top top+=80',
-      // spec: modest 150vh pin — conversion guardrail. NOTE: '+=150%' here
-      // would be 150% of the TRIGGER height (not viewport), so compute px.
-      end: () => `+=${window.innerHeight * 1.5}`,
-      pin: true,
-      scrub: 0.5,
-      animation: tl,
+    mm.add('(min-width: 1024px)', () => {
+      const svg = root.querySelector('svg')!;
+      const groups = Array.from(svg.querySelectorAll('[data-diagram-node]')) as SVGGElement[];
+      const rects = Array.from(svg.querySelectorAll('[data-node-rect]')) as SVGRectElement[];
+      const ticks = Array.from(svg.querySelectorAll('[data-node-tick]')) as SVGRectElement[];
+      const inkPath = svg.querySelector('[data-ink-path]') as SVGPathElement;
+      const sagePath = svg.querySelector('[data-signal-path]') as SVGPathElement;
+      const stepEls = Array.from(root.querySelectorAll('[data-process-step]')) as HTMLElement[];
+      const counterEls = Array.from(root.querySelectorAll('[data-process-counter]')) as HTMLElement[];
+
+      if (!inkPath || !sagePath) return;
+
+      const inkLen = inkPath.getTotalLength();
+      const sageLen = sagePath.getTotalLength();
+
+      // initial states. NOTE: GSAP parses each <g>'s transform attribute into its
+      // own x/y cache and REPLACES (not composes) the translation when x/y are
+      // set — so all values here are ABSOLUTE svg coords, not offsets.
+      gsap.set(groups, {
+        opacity: 0,
+        x: (i: number) => SCATTER[i].cx - ordered.nodes[i].w / 2,
+        y: (i: number) => SCATTER[i].cy - ordered.nodes[i].h / 2,
+      });
+      gsap.set(inkPath, { strokeDasharray: inkLen, strokeDashoffset: inkLen });
+      gsap.set(sagePath, { strokeDasharray: `${DIAGRAM.pulseLen} ${sageLen}`, strokeDashoffset: DIAGRAM.pulseLen, opacity: 1 });
+      gsap.set(rects[PINK_INDEX], { stroke: DIAGRAM.pink });
+      gsap.set(counterEls, { opacity: 0, y: 10 });
+      gsap.set(stepEls, { opacity: 0.35 });
+
+      const tl = gsap.timeline();
+      // Stage 1 — Diagnose (t 0..1)
+      tl.to(stepEls[0], { opacity: 1, duration: 0.1 }, 0);
+      tl.to(groups, { opacity: 1, duration: 0.5, stagger: 0.12 }, 0.05);
+      // Stage 2 — Design (t 1..2)
+      tl.to(stepEls[0], { opacity: 0.35, duration: 0.1 }, 1);
+      tl.to(stepEls[1], { opacity: 1, duration: 0.1 }, 1);
+      tl.to(inkPath, { strokeDashoffset: 0, duration: 0.6, ease: 'none' }, 1.05);
+      tl.to(
+        groups,
+        {
+          x: (i: number) => ordered.nodes[i].x,
+          y: (i: number) => ordered.nodes[i].y,
+          duration: 0.7,
+          ease: 'power2.inOut',
+        },
+        1.15,
+      );
+      tl.to(rects[PINK_INDEX], { stroke: DIAGRAM.ink, duration: 0.3 }, 1.6);
+      // Stage 3 — Build (t 2..3)
+      tl.to(stepEls[1], { opacity: 0.35, duration: 0.1 }, 2);
+      tl.to(stepEls[2], { opacity: 1, duration: 0.1 }, 2);
+      tl.to(sagePath, { strokeDashoffset: -sageLen, duration: 0.8, ease: 'none' }, 2.05);
+      rects.forEach((r, i) => {
+        const at = 2.05 + (i / (rects.length - 1)) * 0.8;
+        tl.to(r, { stroke: DIAGRAM.inkDone, duration: 0.1 }, at);
+        tl.to(ticks[i], { opacity: 1, duration: 0.1 }, at);
+      });
+      tl.to(counterEls, { opacity: 1, y: 0, duration: 0.3, stagger: 0.15 }, 2.6);
+
+      // Webfonts (serif display faces) finish after ScrollTrigger's load-refresh
+      // and shift everything below by hundreds of px — re-measure once ready.
+      const onFonts = () => { if (!cancelled) ScrollTrigger.refresh(); };
+      document.fonts.ready.then(onFonts);
+
+      const st = ScrollTrigger.create({
+        trigger: root,
+        start: 'top top+=80', // 80 = breathing room; landing route has no fixed nav
+        // spec: modest 150vh pin — conversion guardrail. NOTE: '+=150%' here
+        // would be 150% of the TRIGGER height (not viewport), so compute px.
+        end: () => `+=${window.innerHeight * 1.5}`,
+        pin: true,
+        scrub: 0.5,
+        animation: tl,
+      });
+
+      return () => {
+        st.kill();
+        tl.kill();
+      };
     });
+
     return () => {
       cancelled = true;
-      st.kill();
-      tl.kill();
+      mm.revert();
     };
   }, [reduced, ordered]);
 
@@ -152,6 +157,7 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
               style={{
                 fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
                 fontWeight: 400,
+                fontStyle: 'italic',
                 fontSize: 'clamp(1.6rem,2.2vw,2rem)',
                 lineHeight: 1.1,
                 letterSpacing: '-0.02em',
@@ -222,6 +228,7 @@ export const StageSnapshot: React.FC<{ stage: 1 | 2 | 3 }> = ({ stage }) => {
       aria-hidden="true"
       style={{ display: 'block', maxWidth: '120px' }}
     >
+      {/* strokes are pre-scaled for the 560→~120px render (tokens would vanish at this scale) */}
       {stage >= 2 && (
         <path d={ordered.pathD} stroke={DIAGRAM.connector} strokeWidth={3} fill="none" />
       )}
