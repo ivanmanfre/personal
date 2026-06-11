@@ -270,9 +270,10 @@ const ProblemSection: React.FC = () => {
                 You've hit the<br />headcount wall.
               </RevealH2>
               <p style={{ ...T.serif, maxWidth: '50ch' }}>
-                Revenue is growing. The team is full. You're the bottleneck. Hiring
-                another person doesn't fix the process that's eating everyone's time.
-                It just gives the process another victim.
+                Each new hire adds salary and oversight before it adds margin, and
+                you're still the one everything routes through. I build AI systems
+                that take over the repetitive work, so the next stage of growth
+                doesn't need the next round of hires.
               </p>
             </motion.div>
           </motion.div>
@@ -280,20 +281,24 @@ const ProblemSection: React.FC = () => {
           <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(26,26,26,0.1)' }} />
 
           <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
-            <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
-              {[
-                { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It just hasn't been automated yet." },
-                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. Every new client adds salary before it adds margin." },
-                { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots, the summaries, the general-purpose tools. None of it stuck, because a tool bolted onto a broken process just automates the mess." },
-              ].map((item) => (
-                <div key={item.n} className="flex gap-5 items-start">
-                  <span style={{ width: '7px', height: '7px', backgroundColor: 'var(--color-accent)', flexShrink: 0, marginTop: '7px' }} aria-hidden="true" />
-                  <div>
-                    <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '16px', color: '#1A1A1A', marginBottom: '6px', lineHeight: 1.35 }}>{item.h}</div>
-                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65 }}>{item.b}</p>
+            <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }}>
+              <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '1.75rem' }}>
+                From live client builds
+              </div>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-10">
+                {[
+                  { verb: 'Review', stat: '100%', line: "of sales calls graded against the manager's rubric. She used to sample 5%." },
+                  { verb: 'Cut', stat: '15+ hrs/wk', line: 'of manual entry gone from one ops team. The sheet refreshes itself hourly.' },
+                  { verb: 'Turn', stat: 'same-day', line: 'permit turnaround on work that took days, across all 50 states.' },
+                  { verb: 'Grow', stat: '2–3x', line: 'client capacity on the payroll you already have.' },
+                ].map((item) => (
+                  <div key={item.verb}>
+                    <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>
+                    <div style={{ ...T.display('clamp(1.9rem,2.5vw,2.5rem)'), color: 'var(--color-accent-ink)', marginBottom: '8px' }}>{item.stat}</div>
+                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', color: '#5A5752', lineHeight: 1.55 }}>{item.line}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </motion.div>
           </motion.div>
 
@@ -330,7 +335,7 @@ const OUTCOMES = [
     category: 'Back-office that runs itself',
     metric: 'Days of work → same-day',
     metricLabel: 'permit turnaround',
-    story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states. More filings, same team.",
+    story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states, and the team never grew.",
     qualifier: 'live across 50 states',
     pipeline: ['intake', 'rules', 'research', 'delivered'],
     href: '/work#case-03',
@@ -363,7 +368,7 @@ const BuildOutcomesSection: React.FC = () => {
           <span style={{ fontStyle: 'italic' }}>already in production.</span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
-          The systems clients are running right now.
+          The numbers above come from these. Click into any build for the full story.
         </p>
       </motion.div>
 
@@ -472,11 +477,11 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 const FUTURES = {
   without: {
     label: 'WITHOUT THE SYSTEMS',
-    lines: ['Still 23 approvals waiting by 9am.', 'Another coordinator on payroll.', 'Margins a little thinner than last year.'],
+    lines: ['Still 23 approvals waiting by 9am.', 'A new admin hire just to keep up.', 'Margins a little thinner than last year.'],
   },
   with: {
     label: 'WITH THEM',
-    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', 'Payroll unchanged. Two new clients live.'],
+    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', 'Two more clients on the same payroll.'],
   },
 };
 
@@ -527,17 +532,17 @@ const WorkSection: React.FC = () => {
     {
       id: '01',
       title: 'Diagnose',
-      desc: <>It starts with the free fit call. I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
+      desc: <>It starts with the free fit call. I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a plan ranked by how fast each build pays back.</>,
     },
     {
       id: '02',
       title: 'Design',
-      desc: <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec. What gets built is exactly what we agreed on.</>,
+      desc: <>I draw the full system out, every data flow and integration, <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec, so what ships is what we agreed on.</>,
     },
     {
       id: '03',
       title: 'Build',
-      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>the day it launches.</span> No multi-month rollout, no invisible progress. You see every step.</>,
+      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>the day it launches,</span> and you watch the progress the whole way.</>,
     },
   ];
 
@@ -643,7 +648,7 @@ const PaybackSection: React.FC = () => {
           </RevealH2>
           <p style={{ ...T.serif, maxWidth: '480px' }}>
             Every build is scoped to pay back within 90 days or I don't build it.
-            Plug in your numbers. See how much we can invest and still hit that bar.
+            Plug in your numbers and see how much we can invest while still hitting that bar.
           </p>
         </motion.div>
 
@@ -688,15 +693,15 @@ const PaybackSection: React.FC = () => {
               />
               <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, marginTop: '10px' }}>
                 {qualifies
-                  ? 'This covers a real build. We scope to fit. Nothing over-engineered.'
-                  : "Below the diagnostic threshold. We'd need to find a higher-leverage process, or start with the scorecard."}
+                  ? 'That budget covers a real build, scoped to what this number says.'
+                  : "Below the threshold for a build. We'd need to find a process where more is leaking, or start with the scorecard."}
               </p>
             </div>
 
             <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.5 }}>
               Every quarter you wait costs about{' '}
-              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>{' '}
-              in leaked capacity. The diagnostic takes one week.
+              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>.
+              {' '}The diagnosis takes one week.
             </p>
 
             <motion.a
@@ -724,7 +729,7 @@ const OFFER_BUILDS = [
     name: 'Content System',
     price: 'From $7k',
     cadence: '3-week build',
-    desc: 'Your growth engine: lead magnets plus a content engine trained on your voice. New pipeline from systems, not staff.',
+    desc: 'Lead magnets plus a content engine trained on your voice, filling your pipeline while you run the business.',
     href: '/content-system',
     cta: 'Scope your build',
   },
@@ -743,7 +748,7 @@ const OFFER_BUILDS = [
     name: 'Fractional AI Partner',
     price: 'From $3,500/mo',
     cadence: 'Ongoing partnership',
-    desc: 'Want me building alongside you month over month? An embedded senior partner at an intensity you control. No lock-in.',
+    desc: 'Want me building alongside you month over month? You set the intensity, and you can stop any month.',
     href: '/fractional',
     cta: 'Explore partnership',
   },
@@ -755,9 +760,9 @@ const OfferSection: React.FC = () => (
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
         <Label>07</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
-          Three systems,<br />
+          Pick the build that<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
-            one less bottleneck.
+            pays back fastest.
             <SageSweep delay={0.6} opacity={0.85} />
           </span>
         </RevealH2>
@@ -844,15 +849,15 @@ const FinalCTA: React.FC = () => (
             08 / THE NEXT STEP
           </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
-            Find out what to build first,<br />
-            and <span style={{ fontStyle: 'italic' }}>what to skip.</span>
+            See what I'd build<br />
+            in <span style={{ fontStyle: 'italic' }}>your</span> business.
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            I'm not theorizing. The posts and the DM that found you were built and sent by{' '}
+            The posts and the DM that found you came from{' '}
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
               systems I run myself
             </a>
-            , and I've shipped 100+ of them for growing service businesses. Book a call and I'll show you where AI cuts hours and adds margin in your business.
+            , and I've shipped 100+ builds for growing service businesses. Book the call and I'll show you where AI cuts hours and adds margin in yours, even if we never work together.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">

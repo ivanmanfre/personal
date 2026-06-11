@@ -142,7 +142,7 @@ const LandingHero: React.FC = () => {
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
-                fontSize: 'clamp(2.6rem, 6vw, 5.25rem)',
+                fontSize: 'clamp(2.8rem, 7vw, 6.25rem)',
                 lineHeight: 1.0,
                 letterSpacing: '-0.02em',
                 color: '#1A1A1A',
@@ -185,11 +185,11 @@ const LandingHero: React.FC = () => {
               initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
               animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
               transition={{ delay: 0.95, duration: 1.1, ease }}
-              className="max-w-2xl mx-auto mb-8"
+              className="max-w-3xl mx-auto mb-8"
               style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
                 fontWeight: 400,
-                fontSize: '21px',
+                fontSize: '22px',
                 lineHeight: 1.55,
                 color: '#3D3D3B',
               }}
@@ -213,7 +213,7 @@ const LandingHero: React.FC = () => {
                   className="flex items-center gap-2.5"
                   style={{
                     fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     letterSpacing: '0.02em',
                     color: '#2C3A31',
                   }}
