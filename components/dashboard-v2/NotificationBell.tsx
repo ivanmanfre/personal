@@ -17,12 +17,11 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const toggle = useCallback(() => {
-    setOpen((o) => {
-      if (!o) markAllSeen();   // opening = "seen"
-      return !o;
-    });
-  }, [markAllSeen]);
+  const toggle = useCallback(() => { setOpen((o) => !o); }, []);
+
+  // Opening the bell marks everything seen. Done in an effect (not inside the
+  // setState updater) so it doesn't double-fire under React StrictMode.
+  useEffect(() => { if (open) markAllSeen(); }, [open, markAllSeen]);
 
   useEffect(() => {
     if (!open) return;
