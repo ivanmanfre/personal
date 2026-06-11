@@ -70,6 +70,17 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     return () => window.removeEventListener('popstate', onPop);
   }, [active]);
 
+  // Deeplink navigation (e.g. the notification bell) remounts the active panel so
+  // the target section re-reads its `sub`/`otab` from the URL — sections only read
+  // those on mount, so a same-section sub-tab jump otherwise wouldn't switch.
+  const [navNonce, setNavNonce] = useState(0);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onDeep = () => setNavNonce((n) => n + 1);
+    window.addEventListener('dashboard:deeplink', onDeep);
+    return () => window.removeEventListener('dashboard:deeplink', onDeep);
+  }, []);
+
   // Keyboard ⌘0–⌘7 jump
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -180,7 +191,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
 
         <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
         <main className="dv-main">
-          <div className="dv-panel" key={active}>
+          <div className="dv-panel" key={`${active}:${navNonce}`}>
             {renderer ? renderer() : (
               <div style={{ padding: '4rem', color: 'var(--d-paper-dim)' }}>
                 Section <code>{active}</code> not yet implemented.

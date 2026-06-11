@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePendingActions, type Severity } from '../../hooks/usePendingActions';
+import { timeAgo } from '../../lib/pendingActions';
 import { navigateToDeeplink } from '../../lib/deeplink';
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -13,15 +14,12 @@ const CATEGORY_LABEL: Record<string, string> = {
 const SEVERITY_CLASS: Record<Severity, string> = { tier1: 'bad', tier2: 'warn', tier3: 'good' };
 
 export function NotificationBell() {
-  const { groups, unreadCount, topSeverity, markAllSeen } = usePendingActions();
+  const { groups, unreadCount, topSeverity, lastOpenedAt, markAllSeen } = usePendingActions();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const now = Date.now();
 
   const toggle = useCallback(() => { setOpen((o) => !o); }, []);
-
-  // Opening the bell marks everything seen. Done in an effect (not inside the
-  // setState updater) so it doesn't double-fire under React StrictMode.
-  useEffect(() => { if (open) markAllSeen(); }, [open, markAllSeen]);
 
   useEffect(() => {
     if (!open) return;
@@ -32,11 +30,20 @@ export function NotificationBell() {
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onEsc); };
   }, [open]);
 
-  const go = (deeplink: string) => { navigateToDeeplink(deeplink); setOpen(false); };
+  // Navigate to the item's panel, then close after the press animation settles.
+  const go = (deeplink: string) => {
+    navigateToDeeplink(deeplink);
+    window.setTimeout(() => setOpen(false), 130);
+  };
 
   return (
     <div className="nb-root" ref={ref}>
-      <button type="button" className="nb-button" aria-label="Notifications" onClick={toggle}>
+      <button
+        type="button"
+        className={`nb-button ${unreadCount > 0 ? 'nb-button--active' : ''}`}
+        aria-label="Notifications"
+        onClick={toggle}
+      >
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.7 21a2 2 0 0 1-3.4 0" />
@@ -51,8 +58,15 @@ export function NotificationBell() {
       {open && (
         <div className="nb-dropdown" role="menu">
           <div className="nb-dropdown-head">
-            <span>Pending</span>
-            <button type="button" className="nb-mark" onClick={() => markAllSeen()}>Mark all seen</button>
+            <span>Pending {unreadCount > 0 && <em className="nb-head-count">{unreadCount} new</em>}</span>
+            <button
+              type="button"
+              className="nb-mark"
+              onClick={() => markAllSeen()}
+              disabled={unreadCount === 0}
+            >
+              Mark all seen
+            </button>
           </div>
           {groups.length === 0 ? (
             <div className="nb-empty">You're all caught up.</div>
@@ -63,12 +77,27 @@ export function NotificationBell() {
                   <span>{CATEGORY_LABEL[g.category] ?? g.category}</span>
                   <span className="nb-count">{g.count}</span>
                 </div>
-                {g.items.slice(0, 3).map((it) => (
-                  <button key={it.itemKey} type="button" className="nb-item" role="menuitem" onClick={() => go(it.deeplink)}>
-                    <span className="nb-item-title">{it.title}</span>
-                    {it.subtitle && <span className="nb-item-sub">{it.subtitle}</span>}
-                  </button>
-                ))}
+                {g.items.slice(0, 3).map((it) => {
+                  const unread = it.createdAt > lastOpenedAt;
+                  return (
+                    <button
+                      key={it.itemKey}
+                      type="button"
+                      className={`nb-item ${unread ? 'nb-item--unread' : ''}`}
+                      role="menuitem"
+                      onClick={() => go(it.deeplink)}
+                    >
+                      <span className="nb-dot" aria-hidden="true" />
+                      <span className="nb-item-body">
+                        <span className="nb-item-row">
+                          <span className="nb-item-title">{it.title}</span>
+                          <span className="nb-item-time">{timeAgo(it.createdAt, now)}</span>
+                        </span>
+                        {it.subtitle && <span className="nb-item-sub">{it.subtitle}</span>}
+                      </span>
+                    </button>
+                  );
+                })}
                 {g.count > 3 && (
                   <button type="button" className="nb-more" onClick={() => go(g.items[0].deeplink)}>
                     +{g.count - 3} more →

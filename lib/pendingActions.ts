@@ -61,3 +61,22 @@ export function groupByCategory(items: PendingItem[]): PendingGroup[] {
     }))
     .sort((a, b) => SEVERITY_RANK[a.topSeverity] - SEVERITY_RANK[b.topSeverity]);
 }
+
+// Relative "time ago" label from an ISO timestamp. nowMs is injected for testability.
+export function timeAgo(iso: string, nowMs: number): string {
+  const then = Date.parse(iso);
+  if (Number.isNaN(then)) return '';
+  const s = Math.max(0, Math.floor((nowMs - then) / 1000));
+  if (s < 45) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${Math.max(1, m)}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (d < 30) return `${w}w ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(d / 365)}y ago`;
+}

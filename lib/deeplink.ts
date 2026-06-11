@@ -20,4 +20,8 @@ export function navigateToDeeplink(deeplink: string): void {
   const next = buildNavUrl(window.location.href, deeplink);
   window.history.pushState(null, '', next);
   window.dispatchEvent(new PopStateEvent('popstate'));
+  // Sections read their own `sub`/`otab` only on mount. The popstate above
+  // switches `section`; this event tells the Shell to remount the active panel
+  // so a deeplink that targets a sub-tab (even within the current section) lands.
+  window.dispatchEvent(new CustomEvent('dashboard:deeplink'));
 }

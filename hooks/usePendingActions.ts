@@ -59,5 +59,5 @@ export function usePendingActions() {
     }
   }, []);
 
-  return { items, groups, totalPending: items.length, unreadCount, topSeverity, loading, markAllSeen, refresh: fetch };
+  return { items, groups, totalPending: items.length, unreadCount, topSeverity, lastOpenedAt, loading, markAllSeen, refresh: fetch };
 }

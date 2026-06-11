@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  mapRow, sortItems, computeUnreadCount, computeTopSeverity, groupByCategory,
+  mapRow, sortItems, computeUnreadCount, computeTopSeverity, groupByCategory, timeAgo,
   type PendingItem,
 } from './pendingActions';
 
@@ -51,5 +51,19 @@ describe('pendingActions', () => {
     const skill = groups.find((g) => g.category === 'skill_draft');
     expect(skill?.count).toBe(2);
     expect(skill?.topSeverity).toBe('tier3');
+  });
+});
+
+describe('timeAgo', () => {
+  const NOW = Date.parse('2026-06-11T12:00:00Z');
+  it('formats recent/min/hr/day/week', () => {
+    expect(timeAgo('2026-06-11T11:59:40Z', NOW)).toBe('just now');
+    expect(timeAgo('2026-06-11T11:30:00Z', NOW)).toBe('30m ago');
+    expect(timeAgo('2026-06-11T09:00:00Z', NOW)).toBe('3h ago');
+    expect(timeAgo('2026-06-09T12:00:00Z', NOW)).toBe('2d ago');
+    expect(timeAgo('2026-05-30T12:00:00Z', NOW)).toBe('1w ago');
+  });
+  it('returns empty for an unparseable timestamp', () => {
+    expect(timeAgo('not-a-date', NOW)).toBe('');
   });
 });
