@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
+import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -558,78 +559,30 @@ const AgentReadySection: React.FC = () => (
   </section>
 );
 
-// ─── Design icon — path draws as row scrolls through viewport ───────────────
-const DesignIcon: React.FC = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  });
-  const pathLength = useTransform(scrollYProgress, [0.25, 0.55], [0, 1]);
-
-  return (
-    <div ref={ref} className="w-full h-full relative">
-      <svg viewBox="0 0 200 100" className="w-full h-full">
-        <path d="M 10 20 L 190 20 M 10 50 L 190 50 M 10 80 L 190 80 M 40 10 L 40 90 M 100 10 L 100 90 M 160 10 L 160 90" stroke="#1A1A1A" strokeWidth="0.5" fill="none" opacity="0.2" />
-        <motion.path
-          d="M 40 50 C 70 50, 70 20, 100 20 C 130 20, 130 80, 160 80"
-          stroke="currentColor"
-          style={{ color: 'var(--color-accent)', pathLength }}
-          strokeWidth="1.5"
-          fill="none"
-        />
-        {[{ cx: 40, cy: 50 }, { cx: 100, cy: 20 }, { cx: 160, cy: 80 }].map((pt, i) => (
-          <circle key={i} cx={pt.cx} cy={pt.cy} r="2.5" fill="#F7F4EF" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="1" />
-        ))}
-      </svg>
-    </div>
-  );
-};
-
-// ─── Section 3: How we work ──────────────────────────────────────────────────
+// ─── Section 5: How we work — Scene 2 pinned assembly ───────────────────────
 const WorkSection: React.FC = () => {
   const steps = [
     {
-      id: '01', title: 'Diagnose',
+      id: '01',
+      title: 'Diagnose',
       desc: <>I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
-      icon: (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <circle cx="50" cy="50" r="40" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" fill="none" opacity="0.4" />
-          <circle cx="50" cy="50" r="20" stroke="#1A1A1A" strokeWidth="0.75" fill="none" strokeDasharray="3 3" opacity="0.3" />
-          <line x1="50" y1="5" x2="50" y2="95" stroke="#1A1A1A" strokeWidth="0.5" opacity="0.15" />
-          <line x1="5" y1="50" x2="95" y2="50" stroke="#1A1A1A" strokeWidth="0.5" opacity="0.15" />
-          <motion.line x1="50" y1="50" x2="50" y2="10" stroke="currentColor" style={{ color: 'var(--color-accent)', transformOrigin: '50px 50px' }} strokeWidth="1" animate={{ rotate: 360 }} transition={{ duration: 12, repeat: Infinity, ease: 'linear' }} />
-          {[{ x: 30, y: 35 }, { x: 70, y: 40 }, { x: 60, y: 70 }, { x: 25, y: 65 }].map((pt, i) => (
-            <circle key={i} cx={pt.x} cy={pt.y} r="1.5" fill="currentColor" style={{ color: 'var(--color-accent)' }} />
-          ))}
-        </svg>
-      ),
     },
     {
-      id: '02', title: 'Design',
+      id: '02',
+      title: 'Design',
       desc: <>I architect the full system end-to-end. Every data flow, decision point, and integration drawn out <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec. What gets built is exactly what we agreed on.</>,
-      icon: <DesignIcon />,
     },
     {
-      id: '03', title: 'Build',
+      id: '03',
+      title: 'Build',
       desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>the day it launches.</span> No multi-month rollout, no invisible progress. You see every step.</>,
-      icon: (
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          {[20, 50, 80].map((y, i) => (
-            <rect key={i} x="20" y={y} width="60" height="15" rx="1.5" fill="none" stroke="currentColor" style={{ color: 'var(--color-accent)' }} strokeWidth="0.75" />
-          ))}
-          {[27, 57, 87].map((y, i) => (
-            <motion.circle key={i} cx="72" cy={y} r="2" fill="currentColor" style={{ color: 'var(--color-accent)' }} animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 3, repeat: Infinity, delay: i * 0.6, ease: [0.25, 0.46, 0.45, 0.94] }} />
-          ))}
-        </svg>
-      ),
     },
   ];
 
   return (
     <section className="py-12 md:py-20 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-6xl">
-        <motion.div {...inView} className="mb-10">
+        <motion.div {...inView} className="mb-10 lg:mb-16">
           <Label>05</Label>
           <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
@@ -637,38 +590,31 @@ const WorkSection: React.FC = () => {
           </RevealH2>
         </motion.div>
 
-        <div className="flex flex-col">
+        {/* Desktop: pinned scroll-scrubbed assembly */}
+        <div className="hidden lg:block">
+          <ProcessAssembly steps={steps} />
+        </div>
+
+        {/* Mobile: static rows with stage glyphs — never pin on touch */}
+        <div className="lg:hidden flex flex-col">
           {steps.map((step, i) => (
-            <React.Fragment key={step.id}>
-              <motion.div
-                initial={prefersReduced ? false : { opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                whileHover={{ y: -3, backgroundColor: 'rgba(42,143,101,0.022)' }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.8, ease, delay: i * 0.08 }}
-                className="grid lg:grid-cols-[56px_1fr_1.2fr_120px] gap-6 py-7 border-t items-center relative overflow-hidden cursor-default"
-                style={DIVIDER}
-              >
-                {/* Ghost italic numeral — depth texture */}
-                <div aria-hidden style={{
-                  position: 'absolute', right: '-0.04em', top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: 'clamp(70px,10vw,130px)',
-                  fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-                  fontStyle: 'italic', fontWeight: 400,
-                  color: '#1A1A1A', opacity: 0.04, lineHeight: 1,
-                  pointerEvents: 'none', userSelect: 'none',
-                }}>
-                  {step.id}
-                </div>
-                <div style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px' }}>{step.id}</div>
-                <h3 style={{ ...T.display('clamp(1.6rem,2.2vw,2rem)') }}>{step.title}</h3>
+            <motion.div
+              key={step.id}
+              {...inView}
+              className="grid grid-cols-[1fr_96px] gap-5 py-7 border-t items-center"
+              style={DIVIDER}
+            >
+              <div>
+                <div style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px', marginBottom: '6px' }}>{step.id}</div>
+                <h3 style={{ ...T.display('1.6rem'), marginBottom: '8px' }}>{step.title}</h3>
                 <p style={{ ...T.serif, fontSize: '15px', lineHeight: 1.6 }}>{step.desc}</p>
-                <div className="hidden lg:flex items-center justify-center h-20">{step.icon}</div>
-              </motion.div>
-            </React.Fragment>
+              </div>
+              <StageSnapshot stage={(i + 1) as 1 | 2 | 3} />
+            </motion.div>
           ))}
         </div>
+
+        <MidCTA>Want to see what I'd map in your business?</MidCTA>
       </div>
     </section>
   );
