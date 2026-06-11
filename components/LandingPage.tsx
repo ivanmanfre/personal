@@ -186,6 +186,35 @@ const REVIEWS: Review[] = [
   { text: "Very knowledgeable in n8n. Will be doing more projects with Ivan.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
 
+const ROW1 = [...REVIEWS, ...REVIEWS];
+const ROW2 = [...REVIEWS.slice(5), ...REVIEWS.slice(0, 5), ...REVIEWS.slice(5), ...REVIEWS.slice(0, 5)];
+
+const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
+  <motion.div
+    whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
+    transition={{ duration: 0.22, ease: 'easeOut' }}
+    className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
+    style={{ width: 'min(85vw, 400px)', minHeight: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+  >
+    <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
+    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
+      "{r.text}"
+    </p>
+    <div style={{ marginTop: '14px' }}>
+      {r.author && (
+        <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3, marginBottom: '3px' }}>
+          {r.author}
+        </div>
+      )}
+      {r.role && (
+        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752' }}>
+          {r.role}
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
 // The hero ask and the calculator ask were ~5,000px apart (10 screens on
 // mobile) with the entire persuasion core between them and nothing to click.
@@ -299,7 +328,7 @@ const OUTCOMES = [
   {
     type: 'SWPPP Automation',
     category: 'Back-office that runs itself',
-    metric: 'Multi-FTE → same-day',
+    metric: 'Days of work → same-day',
     metricLabel: 'permit turnaround',
     story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states. More filings, same team.",
     qualifier: 'live across 50 states',
@@ -439,40 +468,48 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 // v1 (same-day) mirrored ProblemSection's numbered right-rail, which made
 // sections 01 and 02 read as one endless list at the seam (217 words in a
 // single viewport). The sunk band + grid breaks the pattern and halves the
-// Six-months-after strip — three time-stamped scenes on plain paper.
-// Replaces the old 2x2 "What changes" band (a mirror of the problem section
-// on a 1.07:1 sunk tint that read as a rendering bug; teardown 2026-06-11).
-const VIGNETTES = [
-  { t: '9:00am', line: 'Zero approvals waiting on you.' },
-  { t: '2:00pm', line: 'The weekly report wrote itself.' },
-  { t: 'Friday', line: 'Payroll unchanged. Two new clients live.' },
-];
+// Six months from now — either/or split. FOMO via contrast, receipts only.
+const FUTURES = {
+  without: {
+    label: 'WITHOUT THE SYSTEMS',
+    lines: ['Still 23 approvals waiting by 9am.', 'Another coordinator on payroll.', 'Margins a little thinner than last year.'],
+  },
+  with: {
+    label: 'WITH THEM',
+    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', 'Payroll unchanged. Two new clients live.'],
+  },
+};
 
 const AgentReadySection: React.FC = () => (
   <section className="py-12 md:py-16 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-10 max-w-2xl">
+      <motion.div {...inView} className="mb-10 max-w-3xl">
         <Label>02</Label>
         <RevealH2 style={{ ...T.display('clamp(2rem,3vw,2.8rem)'), marginBottom: 0 }}>
-          Six months <span style={{ fontStyle: 'italic' }}>after the build.</span>
+          Six months from now,{' '}
+          <span style={{ fontStyle: 'italic' }}>one of two things is true.</span>
         </RevealH2>
       </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-x-12 gap-y-8">
-        {VIGNETTES.map((v, i) => (
+      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
+        {[FUTURES.without, FUTURES.with].map((f, col) => (
           <motion.div
-            key={v.t}
+            key={f.label}
             initial={prefersReduced ? false : { opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, ease, delay: i * 0.1 }}
+            transition={{ duration: 0.6, ease, delay: col * 0.12 }}
             className="border-t pt-5"
-            style={{ borderColor: 'rgba(26,26,26,0.18)' }}
+            style={{ borderColor: col === 1 ? 'var(--color-accent)' : 'rgba(26,26,26,0.25)', borderTopWidth: '2px' }}
           >
-            <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '10px' }}>{v.t}</div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '19px', lineHeight: 1.4, color: '#1A1A1A' }}>
-              {v.line}
-            </p>
+            <div style={{ ...T.mono, color: col === 1 ? 'var(--color-accent-ink)' : '#5A5752', marginBottom: '14px' }}>{f.label}</div>
+            <div className="flex flex-col gap-3">
+              {f.lines.map((l) => (
+                <p key={l} style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '18px', lineHeight: 1.45, color: col === 1 ? '#1A1A1A' : '#5A5752' }}>
+                  {l}
+                </p>
+              ))}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -544,66 +581,35 @@ const WorkSection: React.FC = () => {
   );
 };
 
-// ─── Section 4: Testimonials — curated, static (marquee retired 2026-06-11) ───
-const FEATURED = REVIEWS[7]; // Adeeb — Meta / ex-Amazon
-const GRID = [REVIEWS[0], REVIEWS[3], REVIEWS[2], REVIEWS[6], REVIEWS[4]];
-
+// ─── Section 4: Testimonials ─────────────────────────────────────────────────
 const TestimonialsSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-12">
+  <section className="pt-12 md:pt-20 pb-12 md:pb-16 border-t overflow-hidden" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl mb-14">
+      <motion.div {...inView}>
         <Label>04</Label>
-        <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
-          100+ builds shipped.<br />Every client came back.
+        <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
+          100+ builds shipped.<br />In their words.
         </RevealH2>
       </motion.div>
-
-      {/* Featured pull-quote — the strongest skeptic-to-believer quote gets the stage */}
-      <motion.figure {...inView} className="mb-14 max-w-3xl">
-        <blockquote
-          style={{
-            fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-            fontStyle: 'italic',
-            fontWeight: 400,
-            fontSize: 'clamp(1.5rem,2.4vw,2.1rem)',
-            lineHeight: 1.25,
-            letterSpacing: '-0.01em',
-            color: '#1A1A1A',
-            borderLeft: '2px solid var(--color-accent)',
-            paddingLeft: '24px',
-          }}
-        >
-          "{FEATURED.text}"
-        </blockquote>
-        <figcaption className="mt-4 pl-6">
-          <span style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '15px', color: '#1A1A1A' }}>{FEATURED.author}</span>
-          <span style={{ ...T.mono, fontSize: '12px', marginLeft: '12px' }}>{FEATURED.role}</span>
-        </figcaption>
-      </motion.figure>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {GRID.map((r, i) => (
-          <motion.div
-            key={r.author}
-            initial={prefersReduced ? false : { opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, ease, delay: i * 0.07 }}
-            className="border p-6 flex flex-col"
-            style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+    </div>
+    {/* CSS marquee (was framer tween): pauses on hover so quotes are actually
+        readable, and stops entirely under prefers-reduced-motion. Keyframes +
+        .marquee-* classes live in styles.css. */}
+    <div className="flex flex-col gap-5 pb-0">
+      {[{ row: ROW1, dur: 95, reverse: false }, { row: ROW2, dur: 115, reverse: true }].map(({ row, dur, reverse }, ri) => (
+        <div key={ri} className="relative marquee-row">
+          <div className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--color-paper), transparent)' }} />
+          <div className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--color-paper), transparent)' }} />
+          <div
+            className="flex gap-5 w-max px-5 marquee-track"
+            style={{ animationDuration: `${dur}s`, animationDirection: reverse ? 'reverse' : 'normal' }}
           >
-            <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
-              "{r.text}"
-            </p>
-            <div style={{ marginTop: '14px' }}>
-              <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', marginBottom: '3px' }}>{r.author}</div>
-              <div style={{ ...T.mono, fontSize: '12px' }}>{r.role}</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
+            {row.map((r, i) => <ReviewCard key={i} r={r} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className="container mx-auto px-8 max-w-6xl">
       <motion.p
         {...inView}
         className="mt-10"
