@@ -218,7 +218,7 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
 // The hero ask and the calculator ask were ~5,000px apart (10 screens on
 // mobile) with the entire persuasion core between them and nothing to click.
-const MidCTA: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const MidCTA: React.FC<{ children: React.ReactNode; href?: string; linkText?: string }> = ({ children, href = '/start', linkText = 'Book the free fit call →' }) => (
   <motion.p
     {...inView}
     className="mt-12"
@@ -226,10 +226,10 @@ const MidCTA: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   >
     {children}{' '}
     <a
-      href="/start"
+      href={href}
       style={{ color: 'var(--color-accent-ink)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}
     >
-      Book the free fit call →
+      {linkText}
     </a>
   </motion.p>
 );
@@ -284,7 +284,7 @@ const ProblemSection: React.FC = () => {
               {[
                 { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It just hasn't been automated yet." },
                 { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. Unit economics get worse as you grow." },
-                { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots, the summaries, the general-purpose tools. None of it stuck, because none of it was designed around your workflow." },
+                { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots, the summaries, the general-purpose tools. None of it stuck, because a tool bolted onto a broken process just automates the mess." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
                   <span style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
@@ -555,6 +555,10 @@ const AgentReadySection: React.FC = () => (
         ))}
       </div>
 
+      <MidCTA href="/scorecard" linkText="Take the 2-min scorecard →">
+        Not ready for a call? See where your business lands first.
+      </MidCTA>
+
     </div>
   </section>
 );
@@ -627,7 +631,7 @@ const TestimonialsSection: React.FC = () => (
       <motion.div {...inView}>
         <Label>04</Label>
         <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
-          Every project shipped,<br />and every client came back.
+          100+ builds shipped.<br />Every client came back.
         </RevealH2>
       </motion.div>
     </div>
@@ -733,8 +737,8 @@ const PaybackSection: React.FC = () => {
               href="/start"
               whileHover={{ y: -2 }}
               transition={{ duration: 0.18 }}
-              className="flex items-center justify-between px-7 py-4 bg-black text-white"
-              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px' }}
+              className="flex items-center justify-between px-7 py-4"
+              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', backgroundColor: '#1A1A1A', color: '#F7F4EF' }}
             >
               <span>See if it's a fit</span>
               <ArrowRight size={18} />
@@ -761,8 +765,8 @@ const OFFER_BUILDS = [
   {
     id: '02',
     name: 'Call Intelligence',
-    price: 'Installed system',
-    cadence: 'Scoped on a fit call',
+    price: 'Priced per build',
+    cadence: 'Scoped on the fit call',
     desc: "Close more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
     href: '/call-intelligence',
     cta: 'See how it works',
@@ -852,7 +856,7 @@ const FinalCTA: React.FC = () => (
           src="/ivan-portrait.jpg"
           alt="Iván Manfredi"
           loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover portrait-editorial"
           style={{ objectPosition: '50% 18%' }}
         />
         <div

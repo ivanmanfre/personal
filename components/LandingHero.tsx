@@ -196,7 +196,10 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              AI growth and retention systems for service businesses.
+              I build AI systems that let service businesses grow without growing payroll.{' '}
+              <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>
+                Every build pays back inside 90 days, or I don't build it.
+              </span>
             </motion.p>
 
             {/* CTAs */}
