@@ -283,14 +283,14 @@ const ProblemSection: React.FC = () => {
           <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }}>
               <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '1.75rem' }}>
-                From live client builds
+                What you get
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-10">
                 {[
-                  { verb: 'Review', stat: '100%', line: "of sales calls graded against the manager's rubric. She used to sample 5%." },
-                  { verb: 'Cut', stat: '15+ hrs/wk', line: 'of manual entry gone from one ops team. The sheet refreshes itself hourly.' },
-                  { verb: 'Turn', stat: 'same-day', line: 'permit turnaround on work that took days, across all 50 states.' },
-                  { verb: 'Grow', stat: '2–3x', line: 'client capacity on the payroll you already have.' },
+                  { verb: 'Review', stat: '100%', line: 'of your sales calls graded, with at-risk accounts flagged the same hour.' },
+                  { verb: 'Cut', stat: '15+ hrs/wk', line: "of manual work off your team's plate, every single week." },
+                  { verb: 'Turn', stat: 'same-day', line: 'delivery on work that takes your team days right now.' },
+                  { verb: 'Grow', stat: '2–3x', line: 'more client capacity on the payroll you already have.' },
                 ].map((item) => (
                   <div key={item.verb}>
                     <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>
