@@ -426,6 +426,21 @@ const BuildOutcomesSection: React.FC = () => {
       )}
 
       <MidCTA>Want one of these running in your business?</MidCTA>
+      <motion.p
+        {...inView}
+        className="mt-3"
+        style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.6 }}
+      >
+        The lead-magnet system's output is public.{' '}
+        <a
+          href="https://resources.ivanmanfredi.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--color-accent-ink)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}
+        >
+          Browse the live library →
+        </a>
+      </motion.p>
     </div>
   </section>
   );
@@ -882,7 +897,11 @@ const FinalCTA: React.FC = () => (
             and <span style={{ fontStyle: 'italic' }}>what to skip.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            I'm not theorizing. The posts and the DM that found you were built and sent by systems I run myself, and I've shipped 100+ of them for growing service businesses. Book a call and I'll tell you where AI would actually move your numbers.
+            I'm not theorizing. The posts and the DM that found you were built and sent by{' '}
+            <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
+              systems I run myself
+            </a>
+            , and I've shipped 100+ of them for growing service businesses. Book a call and I'll tell you where AI would actually move your numbers.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
