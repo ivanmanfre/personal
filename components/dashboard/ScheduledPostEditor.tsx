@@ -4,6 +4,7 @@ import { Loader2, Save, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import type { ScheduledPost } from '../../types/dashboard';
+import { SchedulePicker } from './SchedulePicker';
 
 interface Props {
   post: ScheduledPost;
@@ -131,8 +132,7 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
 
       <label className="block">
         <span className="text-zinc-400 text-xs">Scheduled time</span>
-        <input type="datetime-local" value={when} disabled={readOnly} onChange={(e) => setWhen(e.target.value)}
-          className="mt-1 block rounded-md bg-zinc-900 ring-1 ring-zinc-700 px-3 py-2 text-zinc-100 disabled:opacity-60" />
+        <div className="mt-1"><SchedulePicker value={when} onChange={setWhen} disabled={readOnly} openDirection="down" /></div>
       </label>
 
       {!readOnly && (

@@ -13,6 +13,7 @@ import FieldGrid from './FieldGrid';
 import PostMetricsPanel from './PostMetricsPanel';
 import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
+import { SchedulePicker } from './SchedulePicker';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
@@ -664,13 +665,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 const isScheduled = s === 'scheduled';
                 return (
                   <>
-                    <Input
-                      type="datetime-local"
-                      value={when}
-                      onChange={(e) => setWhen(e.target.value)}
-                      title="Your local time. Leave empty to auto-pick the next free slot."
-                      className="py-1.5 max-w-[220px]"
-                    />
+                    <SchedulePicker value={when} onChange={setWhen} />
                     <Button
                       variant="primary"
                       disabled={!!busy}

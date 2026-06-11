@@ -4,6 +4,7 @@ import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft } from '../../lib/studioActions';
 import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
+import { SchedulePicker } from './SchedulePicker';
 import { versionedAssetUrl } from '../../lib/driveThumb';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
@@ -307,13 +308,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             )}
             {canSchedule && (
               <>
-                <Input
-                  type="datetime-local"
-                  value={when}
-                  onChange={(e) => setWhen(e.target.value)}
-                  title="Your local time. Leave empty to auto-pick the next free slot."
-                  className="py-1.5 max-w-[220px]"
-                />
+                <SchedulePicker value={when} onChange={setWhen} />
                 <Button
                   variant="primary"
                   disabled={!!busy}
