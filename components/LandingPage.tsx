@@ -330,7 +330,7 @@ const OUTCOMES = [
     category: 'Back-office that runs itself',
     metric: 'Multi-FTE → same-day',
     metricLabel: 'permit turnaround',
-    story: "Permit research that took hours per filing now runs intake-to-delivered across 50 states, no researcher in the loop.",
+    story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states. More filings, zero added headcount.",
     qualifier: 'live across 50 states',
     pipeline: ['intake', 'rules', 'research', 'delivered'],
     href: '/work#case-03',
