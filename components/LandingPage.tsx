@@ -878,7 +878,7 @@ const FinalCTA: React.FC = () => (
             and <span style={{ fontStyle: 'italic' }}>what to skip.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            I'm not theorizing. The posts and the DM that found you were built and sent by systems I run myself. Book a call and I'll tell you where AI would actually move your numbers.
+            I'm not theorizing. The posts and the DM that found you were built and sent by systems I run myself, and I've shipped 100+ of them for growing service businesses. Book a call and I'll tell you where AI would actually move your numbers.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
@@ -1048,47 +1048,6 @@ const LandingFooter: React.FC = () => {
   );
 };
 
-// ─── About strip — paper credibility break before the footer ─────────────────
-// Was the page's third dark band; moved to paper 2026-06-10 so the offers grid
-// is the single dark moment and the strip's small text gets real contrast.
-const AboutStrip: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
-    <div className="container mx-auto px-8 max-w-5xl">
-      <div className="grid md:grid-cols-[220px_1fr] gap-8 md:gap-14 items-start md:items-center">
-        <motion.div
-          initial={prefersReduced ? false : { opacity: 0, scale: 1.05 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.9, ease }}
-        >
-          <picture>
-            <source type="image/webp" srcSet="/ivan-hero-800.webp 800w, /ivan-hero-1200.webp 1200w" sizes="(min-width: 768px) 220px, 130px" />
-            <img
-              src="/ivan-hero.jpeg"
-              alt="Iván Manfredi"
-              className="w-32 md:w-full aspect-square object-cover object-top portrait-editorial"
-              style={{ borderRadius: '0', border: '1px solid rgba(26,26,26,0.15)' }}
-            />
-          </picture>
-        </motion.div>
-        <motion.div {...inView} style={{ maxWidth: '55ch' }}>
-          <Label>Behind the work</Label>
-          <h2 style={{ ...T.display('clamp(1.8rem,2.6vw,2.6rem)'), fontStyle: 'normal', marginBottom: '6px' }}>
-            Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
-          </h2>
-          <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '1.25rem' }}>Agent-Ready Ops™</div>
-          <p style={{ ...T.serif, fontSize: '17px', lineHeight: 1.6, marginBottom: '14px' }}>
-            I've shipped <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>100+ AI and automation systems</span> for growing service businesses.
-          </p>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}>
-            Off-keyboard, I play tennis. With more enthusiasm than skill.
-          </p>
-        </motion.div>
-      </div>
-    </div>
-  </section>
-);
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const LandingPage: React.FC = () => {
   useEffect(() => {
@@ -1147,7 +1106,6 @@ const LandingPage: React.FC = () => {
         <PaybackSection />
         <OfferSection />
         <FinalCTA />
-        <AboutStrip />
         <LandingFooter />
       </div>
     </div>

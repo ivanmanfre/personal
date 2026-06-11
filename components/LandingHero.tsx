@@ -111,8 +111,9 @@ const LandingHero: React.FC = () => {
         className="flex-1 flex flex-col justify-center relative z-10"
       >
         <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
-          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(300px,23vw,340px)] lg:gap-12 lg:items-center">
-          <div className="max-w-[680px] xl:max-w-[820px] pt-8 lg:pt-0">
+          {/* Byline + headline span the full container — display scale comes first,
+              the diagram shares the row with the lede/CTA block below. */}
+          <div className="pt-8 lg:pt-0">
 
             {/* Byline */}
             <motion.div
@@ -143,8 +144,8 @@ const LandingHero: React.FC = () => {
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
-                fontSize: 'clamp(2.3rem, 6vw, 4.6rem)',
-                lineHeight: 1.02,
+                fontSize: 'clamp(2.6rem, 7.5vw, 6.5rem)',
+                lineHeight: 0.98,
                 letterSpacing: '-0.02em',
                 color: '#1A1A1A',
               }}
@@ -178,7 +179,10 @@ const LandingHero: React.FC = () => {
                 without adding headcount.
               </motion.span>
             </h1>
+          </div>
 
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(300px,23vw,340px)] lg:gap-12 lg:items-start">
+          <div className="max-w-[680px]">
             {/* Body — restored italic emphasis on closer phrase */}
             <motion.p
               initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}

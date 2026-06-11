@@ -75,7 +75,11 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
       gsap.set(counterEls, { opacity: 0, y: 10 });
       gsap.set(stepEls, { opacity: 0.35 });
 
-      const tl = gsap.timeline();
+      // Autoplay once when the section enters view (no pin, no scrub — the
+      // pinned version scroll-jacked and read as "stuck"; Ivan 2026-06-11).
+      // timeScale 0.5 stretches the 3-unit choreography to ~6s of real time.
+      const tl = gsap.timeline({ paused: true });
+      tl.timeScale(0.5);
       // Stage 1 — Diagnose (t 0..1)
       tl.to(stepEls[0], { opacity: 1, duration: 0.1 }, 0);
       tl.to(groups, { opacity: 1, duration: 0.5, stagger: 0.12 }, 0.05);
@@ -104,21 +108,20 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
         tl.to(ticks[i], { opacity: 1, duration: 0.1 }, at);
       });
       tl.to(counterEls, { opacity: 1, y: 0, duration: 0.3, stagger: 0.15 }, 2.6);
+      // One-shot autoplay rests here forever — restore all steps to full
+      // opacity so the section doesn't sit with two dimmed paragraphs.
+      tl.to(stepEls, { opacity: 1, duration: 0.4 }, 3.1);
 
       // Webfonts (serif display faces) finish after ScrollTrigger's load-refresh
-      // and shift everything below by hundreds of px — re-measure once ready.
+      // and shift trigger positions by hundreds of px — re-measure once ready.
       const onFonts = () => { if (!cancelled) ScrollTrigger.refresh(); };
       document.fonts.ready.then(onFonts);
 
       const st = ScrollTrigger.create({
         trigger: root,
-        start: 'top top+=80', // 80 = breathing room; landing route has no fixed nav
-        // spec: modest 150vh pin — conversion guardrail. NOTE: '+=150%' here
-        // would be 150% of the TRIGGER height (not viewport), so compute px.
-        end: () => `+=${window.innerHeight * 1.5}`,
-        pin: true,
-        scrub: 0.5,
-        animation: tl,
+        start: 'top 65%', // fire when the section is comfortably in view
+        once: true,
+        onEnter: () => tl.play(),
       });
 
       return () => {
