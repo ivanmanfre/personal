@@ -888,33 +888,53 @@ const OfferSection: React.FC = () => (
   </section>
 );
 
-// ─── Section 7: Final CTA ─────────────────────────────────────────────────────
+// ─── Section 7: Final CTA — founder block ─────────────────────────────────────
 const FinalCTA: React.FC = () => (
-  <section className="py-16 md:py-24 border-t relative overflow-hidden" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-4xl relative z-10">
-      <motion.div {...inView} className="text-center">
-        <div className="w-8 h-0.5 mx-auto mb-10" style={{ backgroundColor: 'var(--color-accent)' }} />
-        <p style={{ ...T.serif, fontSize: '18px', maxWidth: '620px', margin: '0 auto 2rem', textAlign: 'center' }}>
-          Six months in, the work that used to wait on you runs without you. You're still the owner, just no longer the bottleneck.
-        </p>
-        <RevealH2 style={{ ...T.display('clamp(2.8rem,6vw,5.5rem)'), marginBottom: '1.75rem' }}>
-          Ready to scale<br />without hiring?
-        </RevealH2>
-        <p style={{ ...T.serif, fontSize: '19px', maxWidth: '500px', margin: '0 auto 2.5rem', textAlign: 'center' }}>
-          A free 30-minute fit call.{' '}
-          <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>We map where AI actually moves your numbers.</span>
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-8 py-4">
-            Book your fit call <ArrowRight size={18} />
-          </MagneticCTA>
-          <MagneticCTA href="/scorecard" variant="ghost" fontSize="16px" px="px-8 py-4">
-            Take the 2-min Scorecard <ArrowRight size={15} />
-          </MagneticCTA>
+  <section className="border-t relative overflow-hidden" style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}>
+    <div className="grid lg:grid-cols-[minmax(0,42%)_1fr]">
+      {/* Portrait — left, full-bleed, sage rule on right edge */}
+      <div className="relative" style={{ minHeight: '320px' }}>
+        <img
+          src="/ivan-portrait.jpg"
+          alt="Iván Manfredi"
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: '50% 18%' }}
+        />
+        <div
+          className="hidden lg:block absolute top-0 right-0 h-full"
+          style={{ width: '2px', backgroundColor: '#2A8F65' }}
+          aria-hidden="true"
+        />
+        <div
+          className="lg:hidden absolute bottom-0 left-0 w-full"
+          style={{ height: '2px', backgroundColor: '#2A8F65' }}
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Copy — right */}
+      <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
+        <div className="max-w-xl">
+          <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
+            07 / THE NEXT STEP
+          </div>
+          <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
+            Find out what to build first,<br />
+            and <span style={{ fontStyle: 'italic' }}>what to skip.</span>
+          </RevealH2>
+          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
+            I'm not theorizing. The posts and the DM that found you were built and sent by systems I run myself. Book a call and I'll tell you where AI would actually move your numbers.
+          </p>
+          <div className="flex items-center">
+            <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
+              Book your fit call <ArrowRight size={18} />
+            </MagneticCTA>
+          </div>
+          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.55)', marginTop: '1.75rem' }}>
+            Booking {getBookingQuarter()} · {OPEN_SLOTS} fit-call slots remaining
+          </p>
         </div>
-        <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: '#5A5752', marginTop: '1.75rem' }}>
-          Booking {getBookingQuarter()} · {OPEN_SLOTS} fit-call slots remaining
-        </p>
       </motion.div>
     </div>
   </section>
