@@ -144,8 +144,8 @@ const LandingHero: React.FC = () => {
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
-                fontSize: 'clamp(2.6rem, 7.5vw, 6.5rem)',
-                lineHeight: 0.98,
+                fontSize: 'clamp(2.6rem, 6vw, 5.25rem)',
+                lineHeight: 1.0,
                 letterSpacing: '-0.02em',
                 color: '#1A1A1A',
               }}
@@ -181,7 +181,6 @@ const LandingHero: React.FC = () => {
             </h1>
           </div>
 
-          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(300px,23vw,340px)] lg:gap-12 lg:items-start">
           <div className="max-w-[680px]">
             {/* Body — restored italic emphasis on closer phrase */}
             <motion.p
@@ -244,16 +243,15 @@ const LandingHero: React.FC = () => {
             </div>
           </div>
 
-          {/* Scene 1 — the system is the hero's visual object (desktop) */}
+          {/* Scene 1 — full-width pipeline strip anchored under the copy (desktop) */}
           <motion.div
-            className="hidden lg:block"
+            className="hidden lg:block mt-16 xl:mt-20"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.3, duration: 1.2, ease }}
           >
             <HeroPipeline />
           </motion.div>
-          </div>
         </div>
       </motion.div>
     </section>

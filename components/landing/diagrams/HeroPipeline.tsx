@@ -1,24 +1,23 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
-import { serpentineLayout, horizontalLayout } from './layout';
+import { horizontalLayout } from './layout';
 import { DiagramNode } from './DiagramSvg';
 import { DIAGRAM, prefersReducedMotion } from './tokens';
 
-// Scene 1: the Call Intelligence pipeline (real build) as the hero's visual
-// anchor. Desktop: vertical serpentine in the right column, one sage pulse
-// looping end-to-end (~5.5s travel + 2s rest). Nodes tick to done-state as
-// the pulse passes. Mobile (compact): 3-node static horizontal version.
-// Reduced motion: static final state (solid sage path, all nodes ticked).
+// Scene 1: the Call Intelligence pipeline (real build) under the hero copy.
+// Desktop (strip): full-width horizontal ticker, one sage pulse looping
+// end-to-end (~5.5s travel + 2s rest); nodes tick to done as it passes.
+// Mobile (compact): 3-node static version. Reduced motion: static final
+// state (solid sage path, all nodes ticked). The earlier right-column
+// serpentine read as a detached float at laptop sizes — retired 2026-06-11.
 const LABELS = ['call recorded', 'transcribed', 'graded vs 8-criteria rubric', 'risk flagged', 'routed < 1 hr'];
 const COMPACT_LABELS = ['recorded', 'graded', 'routed'];
-const W = 420;
-const H = 520;
 const TRAVEL = 5.5;
 
 const HeroPipeline: React.FC<{ compact?: boolean }> = ({ compact }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const layout = useMemo(
-    () => (compact ? horizontalLayout(COMPACT_LABELS, 320, 48) : serpentineLayout(LABELS, W, H)),
+    () => (compact ? horizontalLayout(COMPACT_LABELS, 320, 48) : horizontalLayout(LABELS, 1120, 56)),
     [compact],
   );
   const animate = !compact && !prefersReducedMotion();
