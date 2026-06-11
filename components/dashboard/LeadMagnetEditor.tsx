@@ -286,8 +286,15 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <Button
                 variant="secondary"
                 disabled={!!busy || !draft.topic || !draft.format}
-                onClick={() => run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)')}>
-                {busy === 'regen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Generate content <span className="text-[10px] text-zinc-500">~10 min</span>
+                onClick={() => {
+                  // While a run is in flight the button stays as an escape hatch
+                  // for stuck rows, but re-firing must be explicit — a double
+                  // click was silently spawning two pipeline runs.
+                  if (draft.status === 'generating' && !window.confirm('A generation is already running for this LM (~10 min). Fire it again anyway?')) return;
+                  run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)');
+                }}>
+                {busy === 'regen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}{' '}
+                {draft.status === 'generating' ? 'Generating… (re-fire)' : 'Generate content'} <span className="text-[10px] text-zinc-500">~10 min</span>
               </Button>
             )}
             {isReview && (

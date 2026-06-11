@@ -316,7 +316,16 @@ async function fireLM(payload: LMGenPayload) {
   return res.json();
 }
 
-export function generateLMContent(input: Omit<LMGenPayload, 'phase'>) {
+export async function generateLMContent(input: Omit<LMGenPayload, 'phase'>) {
+  // Flip the stage BEFORE firing, same as regenerateDraft does for posts — the
+  // board card moves to Generating immediately and a second click can't
+  // silently double-fire the pipeline.
+  const { supabase } = await import('./supabase');
+  const { error } = await supabase
+    .from('lm_drafts_v2')
+    .update({ status: 'generating' })
+    .eq('id', input.draft_id);
+  if (error) throw new Error(`status flip failed: ${error.message}`);
   return fireLM({ ...input, phase: 'content' });
 }
 
