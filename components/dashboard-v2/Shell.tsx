@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
+import { NotificationBell } from './NotificationBell';
 import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
@@ -151,8 +152,8 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   return (
     <div className="dashboard-v2">
       <div className={`dashboard-v2-shell ${collapsed ? 'dashboard-v2-shell--rail' : ''}`}>
-        {/* Mobile-only top bar — hidden ≥769px. Hosts the hamburger that opens
-            the off-canvas nav drawer. */}
+        {/* Top bar — hosts the mobile hamburger + brand, and the notification
+            bell on the right (slim sticky bar on desktop, see dashboard-v2.css). */}
         <header className="dv-topbar">
           <button
             type="button"
@@ -164,6 +165,9 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
             <span /><span /><span />
           </button>
           <div className="dv-topbar-brand">Ivan <em>System</em></div>
+          <div className="dv-topbar-actions">
+            <NotificationBell />
+          </div>
         </header>
 
         {/* Scrim behind the open drawer (mobile only) */}
