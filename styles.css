@@ -533,3 +533,18 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
 @media (prefers-reduced-motion: reduce) {
   .marquee-track { animation-play-state: paused; }
 }
+
+/* Diagram language — sage signal path reveal (Scene 3 build cards).
+   Hidden until card hover; always lit where hover doesn't exist. */
+.diagram-sage {
+  opacity: 0;
+  transition: opacity 0.35s cubic-bezier(0.22, 0.84, 0.36, 1);
+}
+.group:hover .diagram-sage {
+  opacity: 1;
+}
+@media (hover: none) {
+  .diagram-sage {
+    opacity: 1;
+  }
+}

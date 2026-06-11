@@ -14,6 +14,7 @@ import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
+import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -309,7 +310,8 @@ const OUTCOMES = [
     metric: '5% → 100%',
     metricLabel: 'of calls graded',
     story: "Their best manager could sample 5% of calls. Now every call is graded against her 8-criteria rubric, with risk routed within the hour.",
-    qualifier: 'Running daily',
+    qualifier: 'running daily · every call graded',
+    pipeline: ['call', 'transcript', 'rubric', 'route'],
     href: '/work#case-01',
   },
   {
@@ -318,7 +320,8 @@ const OUTCOMES = [
     metric: '15 min',
     metricLabel: 'idea to launched',
     story: "One idea in ClickUp generates the full package: landing page, email, smart link, scheduled post.",
-    qualifier: 'Self-serve since launch',
+    qualifier: 'idea to launched: 15 min',
+    pipeline: ['idea', 'page', 'email', 'link', 'post'],
     href: '/work#case-02',
   },
   {
@@ -327,7 +330,8 @@ const OUTCOMES = [
     metric: 'Multi-FTE → same-day',
     metricLabel: 'permit turnaround',
     story: "Permit research that took hours per filing now runs intake-to-delivered across 50 states, no researcher in the loop.",
-    qualifier: 'Live across 50 states',
+    qualifier: 'live across 50 states',
+    pipeline: ['intake', 'state rules', 'research', 'delivered'],
     href: '/work#case-03',
   },
   {
@@ -336,7 +340,8 @@ const OUTCOMES = [
     metric: '15+ hrs/week',
     metricLabel: 'manual entry removed',
     story: "Inventory from WhatsApp, supplier sites, and Google Sheets auto-consolidates into one standardized sheet, refreshed hourly.",
-    qualifier: 'Refreshes hourly',
+    qualifier: 'refreshes hourly',
+    pipeline: ['wa · sites · sheets', 'consolidate', 'sheet'],
     href: '/work#case-06',
   },
 ];
@@ -381,7 +386,10 @@ const BuildOutcomesSection: React.FC = () => {
             <div style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(1.6rem,2.2vw,2.2rem)', color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '5px' }}>
               {o.metric}
             </div>
-            <div style={{ ...T.mono, marginBottom: '20px' }}>{o.metricLabel}</div>
+            <div style={{ ...T.mono, marginBottom: '14px' }}>{o.metricLabel}</div>
+            <div style={{ marginBottom: '18px' }}>
+              <BuildCardDiagram labels={o.pipeline} />
+            </div>
             <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.6, flex: 1 }}>
               {o.story}
             </p>
