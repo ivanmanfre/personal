@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
+import HeroPipeline from './landing/diagrams/HeroPipeline';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
@@ -109,7 +110,8 @@ const LandingHero: React.FC = () => {
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-6xl">
+        <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
+          <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(300px,23vw,340px)] lg:gap-12 lg:items-center">
           <div className="max-w-[680px] xl:max-w-[820px] pt-8 lg:pt-0">
 
             {/* Byline */}
@@ -231,6 +233,22 @@ const LandingHero: React.FC = () => {
                 See the scorecard <ArrowRight size={14} />
               </a>
             </motion.div>
+
+            {/* Compact pipeline — mobile only, below the CTAs */}
+            <div className="lg:hidden mt-14">
+              <HeroPipeline compact />
+            </div>
+          </div>
+
+          {/* Scene 1 — the system is the hero's visual object (desktop) */}
+          <motion.div
+            className="hidden lg:block"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3, duration: 1.2, ease }}
+          >
+            <HeroPipeline />
+          </motion.div>
           </div>
         </div>
       </motion.div>
