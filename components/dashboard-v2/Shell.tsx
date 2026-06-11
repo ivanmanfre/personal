@@ -165,10 +165,11 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
             <span /><span /><span />
           </button>
           <div className="dv-topbar-brand">Ivan <em>System</em></div>
-          <div className="dv-topbar-actions">
-            <NotificationBell />
-          </div>
         </header>
+
+        {/* Notification bell — fixed top-right, layout-independent so it shows on
+            every section/viewport without disturbing the shell's sidebar+main grid. */}
+        <NotificationBell />
 
         {/* Scrim behind the open drawer (mobile only) */}
         <div
