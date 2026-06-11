@@ -53,17 +53,21 @@ These tokens go in `tokens.ts` AND get canonicalized in `brand-visual-system.md`
 | Counter | IBM Plex Mono, settles on a real number; numerals may upgrade to the italic-serif numeral lockup when featured |
 | Canvas | Always on paper (`--color-paper` or `--color-paper-sunk`); diagrams never sit on dark bands |
 
-## 5. Scene 1 — Hero: the system runs under the cover
+## 5. Scene 1 — Hero: the system is the hero's visual object
 
-**What:** A horizontal pipeline strip across the bottom of the hero viewport — full container width, ~110–130px tall, sitting below the copy/CTA block and beneath the portrait's bottom edge. Thin ink nodes + connectors, mono labels, one sage signal pulse looping end-to-end (~7s cycle, 2s rest between cycles).
+> **Context (2026-06-11):** `feat/landing-copy-refresh` (commit `d3f134e`) introduces **Hero A** — text-only headline ("Take on 2–3x more clients / without adding headcount."), portrait removed from the hero and relocated to a founder-block FinalCTA. This spec assumes Hero A merges first; it is the better substrate for this scene. If Hero A is dropped, fall back to the bottom-strip variant at the end of this section.
+
+**What (Hero A layout):** the pipeline diagram occupies the hero's right column — the portrait-shaped slot Hero A leaves empty on desktop (~36–40vw). Arranged as a vertical/serpentine flow (top-to-bottom with one S-bend) so it fills a portrait-aspect area. Thin ink nodes + connectors, mono labels, one sage signal pulse looping end-to-end (~7s cycle, 2s rest between cycles). The diagram *replaces the portrait as the hero's visual anchor*: author-cover becomes operator-evidence in the first viewport, and the new FinalCTA founder copy ("the posts and the DM that found you were built and sent by systems I run myself") pays it off at the end — the page opens with the system and closes with its operator.
 
 **The pipeline is real — Call Intelligence (signature offer):**
 
 `CALL RECORDED → TRANSCRIBED → GRADED VS 8-CRITERIA RUBRIC → RISK FLAGGED → ROUTED < 1 HR`
 
-Five nodes. As the pulse passes each node, the node ticks to its done state (stroke darkens, sage corner square appears). After the last node, a small mono caption at the strip's right end: `every call · daily` (verbatim from the live case data).
+Five nodes. As the pulse passes each node, the node ticks to its done state (stroke darkens, sage corner square appears). Below the last node, a small mono caption: `every call · daily` (verbatim from the live case data).
 
-**Why this placement:** the headline/portrait magazine cover stays untouched (it converts; don't fight it). The strip occupies currently-empty hero bottom space and reads as "work happening under the surface" — operator signal without competing with the CTA. Desktop shows it fully; the hero remains `min-h-screen` with the strip inside the first viewport at ≥1280px.
+**Restraint rules:** the diagram is quieter than the headline — ink strokes at reduced opacity (~0.35), labels 11px, the sage pulse is the only moving element. It must read as a drawing on the paper, not a dashboard widget. Hero A's sage `2–3x` in the headline + the pulse = the viewport's sage budget; the existing status-strip dots drop their pulse animation if the viewport feels busy (judgment call at build, verified by screenshot).
+
+**Fallback (if Hero A is dropped and the magazine-cover hero stays):** horizontal strip variant — full container width, ~110–130px tall, below the copy/CTA block and beneath the portrait's bottom edge, same five nodes, same loop.
 
 **Mobile (<1024px):** static fully-drawn version compressed to 3 nodes (`RECORDED → GRADED → ROUTED`) so it fits 375px without scrolling. No pulse loop on mobile (battery + noise) — static sage path.
 
@@ -109,7 +113,7 @@ Five nodes. As the pulse passes each node, the node ticks to its done state (str
 2. Max gap between asks ≤ June 10 values (~2,600px desktop / ~3,600 mobile), measured *with* the 150vh pin included.
 3. Words-per-viewport corridor unchanged (scenes add diagrams, not text).
 4. Page weight: added JS ≤ 60KB gz; diagrams are inline SVG (no image requests).
-5. The offers grid remains the page's single dark band; all diagrams live on paper.
+5. All diagrams live on paper. **Open flag:** `feat/landing-copy-refresh` adds a second dark band (founder FinalCTA) alongside the offers grid, breaking the June 10 single-dark-band rule. Decide at merge: either accept "max two dark bands, never adjacent" (and update the brand doc rule to match) or render the founder block on `paper-sunk` with the dark treatment reserved for offers. This spec works either way — diagrams stay on paper regardless.
 6. Sweep economy holds (2 sage sweeps on page); the diagram signal paths are a different element class and don't count against it, but max one looping animation visible per viewport.
 
 ## 9. Brand doc update (ships with this work)
