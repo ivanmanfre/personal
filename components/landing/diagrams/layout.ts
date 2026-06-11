@@ -11,8 +11,9 @@ export type DiagramLayout = {
   height: number;
 };
 
-const CHAR_W = 6.6; // IBM Plex Mono advance @ 11px, approx
-const PAD_X = 12;
+// IBM Plex Mono ~0.6em advance + 0.08em tracking (renderer applies letterSpacing 0.08em) @ 11px
+export const CHAR_W = 11 * (0.6 + 0.08);
+export const PAD_X = 12;
 export const NODE_H = 26;
 
 export const nodeWidth = (label: string, maxW = Infinity): number =>
@@ -23,7 +24,7 @@ export function horizontalLayout(labels: string[], width: number, height = 48): 
   const sum = widths.reduce((a, b) => a + b, 0);
   const gap = labels.length > 1 ? Math.max(16, (width - sum) / (labels.length - 1)) : 0;
   const cy = height / 2;
-  let x = 0;
+  let x = labels.length === 1 ? (width - widths[0]) / 2 : 0;
   const nodes: PlacedNode[] = labels.map((label, i) => {
     const w = widths[i];
     const n = { label, x, y: cy - NODE_H / 2, w, h: NODE_H, cx: x + w / 2, cy };
@@ -37,7 +38,7 @@ export function horizontalLayout(labels: string[], width: number, height = 48): 
 
 export function serpentineLayout(labels: string[], width: number, height: number): DiagramLayout {
   const n = labels.length;
-  const rowH = height / n;
+  const rowH = Math.max(height / n, NODE_H + 8); // never overlap rows
   const nodes: PlacedNode[] = labels.map((label, i) => {
     const w = nodeWidth(label, width * 0.8);
     const rawCx = i % 2 === 0 ? width * 0.38 : width * 0.62;
@@ -53,5 +54,5 @@ export function serpentineLayout(labels: string[], width: number, height: number
     const my = (a.cy + b.cy) / 2;
     d += ` C ${a.cx} ${my}, ${b.cx} ${my}, ${b.cx} ${b.cy}`;
   }
-  return { nodes, pathD: d, width, height };
+  return { nodes, pathD: d, width, height: Math.max(height, rowH * n) };
 }
