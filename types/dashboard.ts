@@ -456,8 +456,52 @@ export interface OutreachProspect {
   microPersona: string | null;
   messagingPattern: string | null;
   researchSources: Record<string, any> | null;
+  enrichmentSource: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// --- Feeds model (Cold / Harvest / Hiring / Intent-Hot) ---
+export type OutreachFeed = 'cold' | 'harvest' | 'hiring' | 'hot';
+
+export interface HarvestSource {
+  id: string;
+  name: string;
+  linkedinUrl: string | null;
+  linkedinProfileId: string | null;
+  sourceTier: string | null;
+  status: string;
+  lastHarvestedAt: string | null;
+  postsSeen: number;
+  engagersInserted: number;
+  notes: string | null;
+  createdAt: string | null;
+}
+
+export interface HiringRoleOffer {
+  id: number;
+  rolePattern: string;
+  matchedOffer: string | null;
+  interceptTemplate: string | null;
+  active: boolean;
+}
+
+export interface DomainScreenBands {
+  hot: number;
+  warm: number;
+  cold: number;
+  total: number;
+}
+
+export interface FeedRollupRow {
+  feed: OutreachFeed;
+  total: number;
+  connectionSent: number; // connection_sent and beyond
+  connected: number;      // connected and beyond
+  dmSent: number;         // dm_sent and beyond
+  replied: number;        // replied and beyond
+  acceptRate: number;     // connected / connectionSent  (%, 0 when no sends)
+  replyRate: number;      // replied / dmSent            (%, 0 when no DMs)
 }
 
 export interface OutreachMessage {

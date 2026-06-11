@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 const PROSPECTS_PER_PAGE = 30;
 import { Target, Users, MessageSquare, TrendingUp, Activity, AlertTriangle, Send } from 'lucide-react';
 import { useOutreachPipeline } from '../../hooks/useOutreachPipeline';
+import { useOutreachFeeds } from '../../hooks/useOutreachFeeds';
 import { supabase } from '../../lib/supabase';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -23,21 +24,26 @@ import { PendingInviteGauge } from './outreach/PendingInviteGauge';
 import { CampaignPerformance } from './outreach/CampaignPerformance';
 import { AuditClicks } from './outreach/AuditClicks';
 import { InboxTab } from './outreach/tabs/InboxTab';
-import type { OutreachProspect } from '../../types/dashboard';
+import { OverviewTab } from './outreach/tabs/OverviewTab';
+import { SourcesTab } from './outreach/tabs/SourcesTab';
+import { feedOf, FEED_ORDER, FEED_LABELS, FEED_BADGE } from './outreach/feedHelpers';
+import type { OutreachProspect, OutreachFeed } from '../../types/dashboard';
 
 // Phase 1 constant; Phase 2 makes this integration_config-driven.
 
-// Health folded into Pipeline (Ivan: the extra tab didn't earn its place) — 3 tabs.
-type OutreachTab = 'pipeline' | 'review' | 'inbox';
-const TAB_ORDER: OutreachTab[] = ['pipeline', 'review', 'inbox'];
-const TAB_LABELS: Record<OutreachTab, string> = { pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox' };
+// Feeds-centric revamp: Overview (all feeds at a glance) is the new default;
+// Sources is the per-source prune/add control center. Health stays folded into
+// Pipeline. Review/Inbox unchanged.
+type OutreachTab = 'overview' | 'sources' | 'pipeline' | 'review' | 'inbox';
+const TAB_ORDER: OutreachTab[] = ['overview', 'sources', 'pipeline', 'review', 'inbox'];
+const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', sources: 'Sources', pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox' };
 function readTab(): OutreachTab {
-  if (typeof window === 'undefined') return 'pipeline';
+  if (typeof window === 'undefined') return 'overview';
   // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
   // contract where values like `health`/`settings` redirect to the Personal section.
   // Reusing `tab` here made `?tab=health` jump to Personal. `otab` avoids the collision.
   const t = new URLSearchParams(window.location.search).get('otab') as OutreachTab | null;
-  return t && TAB_ORDER.includes(t) ? t : 'pipeline';
+  return t && TAB_ORDER.includes(t) ? t : 'overview';
 }
 
 const stageColors: Record<string, string> = {
@@ -74,6 +80,7 @@ type SortKey = 'icp_score' | 'activity_score' | 'updated_at' | 'created_at';
 const OutreachPanel: React.FC = () => {
   const { userTimezone } = useDashboard();
   const pipeline = useOutreachPipeline(userTimezone);
+  const feeds = useOutreachFeeds();
   const {
     prospects, campaigns, stats, loading, messages, engagementLog,
     recentActivity, rateLimits, cappedQueue, featureFlags, pendingCeiling, stageCounts, actionNeeded,
@@ -103,6 +110,7 @@ const OutreachPanel: React.FC = () => {
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [campaignFilter, setCampaignFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [feedFilter, setFeedFilter] = useState<'all' | OutreachFeed>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('updated_at');
   const [sortAsc, setSortAsc] = useState(false);
@@ -122,6 +130,9 @@ const OutreachPanel: React.FC = () => {
     }
     if (campaignFilter !== 'all') {
       list = list.filter((p) => p.campaignId === campaignFilter);
+    }
+    if (feedFilter !== 'all') {
+      list = list.filter((p) => feedOf(p, feeds.hotDomains) === feedFilter);
     }
     if (channelFilter !== 'all') {
       if (channelFilter === 'email') {
@@ -154,10 +165,10 @@ const OutreachPanel: React.FC = () => {
       return 0;
     });
     return list;
-  }, [prospects, stageFilter, campaignFilter, channelFilter, search, sortKey, sortAsc]);
+  }, [prospects, stageFilter, campaignFilter, channelFilter, feedFilter, feeds.hotDomains, search, sortKey, sortAsc]);
 
   // Reset to page 1 when filters or sort change
-  useEffect(() => { setPage(1); }, [stageFilter, campaignFilter, channelFilter, search, sortKey, sortAsc]);
+  useEffect(() => { setPage(1); }, [stageFilter, campaignFilter, channelFilter, feedFilter, search, sortKey, sortAsc]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PROSPECTS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -270,7 +281,15 @@ const OutreachPanel: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <select
+            value={feedFilter}
+            onChange={(e) => setFeedFilter(e.target.value as 'all' | OutreachFeed)}
+            className="px-2 py-1 rounded-lg text-xs bg-zinc-800/60 border border-zinc-700/40 text-zinc-300 cursor-pointer"
+          >
+            <option value="all">All feeds</option>
+            {FEED_ORDER.map((f) => <option key={f} value={f}>{FEED_LABELS[f]}</option>)}
+          </select>
           <select
             value={campaignFilter}
             onChange={(e) => setCampaignFilter(e.target.value)}
@@ -360,6 +379,10 @@ const OutreachPanel: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                  {(() => {
+                    const f = feedOf(p, feeds.hotDomains);
+                    return <span className={`px-1.5 py-0.5 rounded-full text-[9px] border ${FEED_BADGE[f]}`}>{FEED_LABELS[f]}</span>;
+                  })()}
                   {p.campaignName && (
                     <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-purple-500/10 text-purple-400">{p.campaignName}</span>
                   )}
@@ -444,6 +467,10 @@ const OutreachPanel: React.FC = () => {
                             <p className="text-[10px] text-red-400/60">No email address</p>
                           )}
                           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                            {(() => {
+                              const f = feedOf(p, feeds.hotDomains);
+                              return <span className={`px-1.5 py-0 rounded-full text-[8px] border ${FEED_BADGE[f]}`}>{FEED_LABELS[f]}</span>;
+                            })()}
                             {p.preferredChannel && (
                               <span className={`px-1.5 py-0 rounded-full text-[8px] ${p.preferredChannel === 'email' ? 'bg-green-500/10 text-green-400/70' : 'bg-blue-500/10 text-blue-400/70'}`}>
                                 {p.preferredChannel === 'email' ? '✉ email' : '🔗 linkedin'}
@@ -1336,7 +1363,32 @@ const OutreachPanel: React.FC = () => {
     </div>
   );
 
-  const activeTab = tab === 'review' ? reviewTab
+  const overviewTab = (
+    <OverviewTab
+      prospects={prospects}
+      hotDomains={feeds.hotDomains}
+      bandsTotal={feeds.bands.total}
+      bandsHot={feeds.bands.hot}
+      onPickFeed={(f) => { setFeedFilter(f); changeTab('pipeline'); }}
+    />
+  );
+
+  const sourcesTab = (
+    <SourcesTab
+      harvestSources={feeds.harvestSources}
+      hiringMap={feeds.hiringMap}
+      bands={feeds.bands}
+      recentHotDomains={feeds.recentHotDomains}
+      prospects={prospects}
+      hotDomains={feeds.hotDomains}
+      onSetStatus={feeds.setHarvestStatus}
+      onAddSource={feeds.addHarvestSource}
+    />
+  );
+
+  const activeTab = tab === 'overview' ? overviewTab
+    : tab === 'sources' ? sourcesTab
+    : tab === 'review' ? reviewTab
     : tab === 'inbox' ? inboxTab
     : (
       <>

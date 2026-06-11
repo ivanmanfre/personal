@@ -85,6 +85,7 @@ function mapProspect(r: any): OutreachProspect {
     microPersona: r.micro_persona || null,
     messagingPattern: r.messaging_pattern || null,
     researchSources: r.research_sources || null,
+    enrichmentSource: r.enrichment_data?.source || null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
