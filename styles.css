@@ -540,7 +540,7 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
   opacity: 0;
   transition: opacity 0.35s cubic-bezier(0.22, 0.84, 0.36, 1);
 }
-.group:hover .diagram-sage {
+.group:hover .diagram-sage, .group:focus-visible .diagram-sage {
   opacity: 1;
 }
 @media (hover: none) {

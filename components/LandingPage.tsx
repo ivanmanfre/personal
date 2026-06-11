@@ -320,7 +320,7 @@ const OUTCOMES = [
     metric: '15 min',
     metricLabel: 'idea to launched',
     story: "One idea in ClickUp generates the full package: landing page, email, smart link, scheduled post.",
-    qualifier: 'idea to launched: 15 min',
+    qualifier: 'self-serve since launch',
     pipeline: ['idea', 'page', 'email', 'link', 'post'],
     href: '/work#case-02',
   },
@@ -331,7 +331,7 @@ const OUTCOMES = [
     metricLabel: 'permit turnaround',
     story: "Permit research that took hours per filing now runs intake-to-delivered across 50 states, no researcher in the loop.",
     qualifier: 'live across 50 states',
-    pipeline: ['intake', 'state rules', 'research', 'delivered'],
+    pipeline: ['intake', 'rules', 'research', 'delivered'],
     href: '/work#case-03',
   },
   {
@@ -341,7 +341,7 @@ const OUTCOMES = [
     metricLabel: 'manual entry removed',
     story: "Inventory from WhatsApp, supplier sites, and Google Sheets auto-consolidates into one standardized sheet, refreshed hourly.",
     qualifier: 'refreshes hourly',
-    pipeline: ['wa · sites · sheets', 'consolidate', 'sheet'],
+    pipeline: ['sources', 'consolidate', 'sheet'],
     href: '/work#case-06',
   },
 ];

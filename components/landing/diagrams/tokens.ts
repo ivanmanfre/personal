@@ -14,7 +14,7 @@ export const DIAGRAM = {
   pulseLen: 26,                      // px length of the traveling sage dash
   tick: 6,                           // sage corner square size (node done-state)
   font: '"IBM Plex Mono", monospace',
-  fontSize: 11,                      // micro-type floor — never smaller
+  fontSize: 11,                      // floor for HTML/UI text; scaled SVG diagram labels may render smaller — keep ≥8px effective
   easeCss: 'cubic-bezier(0.22, 0.84, 0.36, 1)',
 } as const;
 
