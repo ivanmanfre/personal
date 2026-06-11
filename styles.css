@@ -538,7 +538,7 @@ input[type='range'].stat-slider:focus-visible::-webkit-slider-thumb {
    Hidden until card hover; always lit where hover doesn't exist. */
 .diagram-sage {
   opacity: 0;
-  transition: opacity 0.35s cubic-bezier(0.22, 0.84, 0.36, 1);
+  transition: opacity 0.35s cubic-bezier(0.22, 0.84, 0.36, 1); /* house ease — keep in sync with components ease const */
 }
 .group:hover .diagram-sage, .group:focus-visible .diagram-sage {
   opacity: 1;

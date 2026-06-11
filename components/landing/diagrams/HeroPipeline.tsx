@@ -26,27 +26,31 @@ const HeroPipeline: React.FC<{ compact?: boolean }> = ({ compact }) => {
   useEffect(() => {
     if (!animate || !svgRef.current) return;
     const svg = svgRef.current;
-    const sage = svg.querySelector<SVGPathElement>('[data-signal-path]');
-    const rects = Array.from(svg.querySelectorAll('[data-node-rect]')) as SVGRectElement[];
-    const ticks = Array.from(svg.querySelectorAll('[data-node-tick]')) as SVGRectElement[];
-    if (!sage) return;
-    const total = sage.getTotalLength();
-    gsap.set(sage, { strokeDasharray: `${DIAGRAM.pulseLen} ${total}`, opacity: 1 });
-    const tl = gsap.timeline({ repeat: -1, repeatDelay: 2 });
-    tl.fromTo(
-      sage,
-      { strokeDashoffset: DIAGRAM.pulseLen },
-      { strokeDashoffset: -total, duration: TRAVEL, ease: 'none' },
-      0,
-    );
-    rects.forEach((r, i) => {
-      const at = (i / (rects.length - 1)) * TRAVEL;
-      tl.fromTo(r, { stroke: DIAGRAM.ink }, { stroke: DIAGRAM.inkDone, duration: 0.3 }, at);
-      tl.fromTo(ticks[i], { opacity: 0 }, { opacity: 1, duration: 0.3 }, at);
+    const mm = gsap.matchMedia();
+    mm.add('(min-width: 1024px)', () => {
+      const sage = svg.querySelector<SVGPathElement>('[data-signal-path]');
+      const rects = Array.from(svg.querySelectorAll('[data-node-rect]')) as SVGRectElement[];
+      const ticks = Array.from(svg.querySelectorAll('[data-node-tick]')) as SVGRectElement[];
+      if (!sage) return;
+      const total = sage.getTotalLength();
+      gsap.set(sage, { strokeDasharray: `${DIAGRAM.pulseLen} ${total}`, opacity: 1 });
+      const tl = gsap.timeline({ repeat: -1, repeatDelay: 2 });
+      tl.fromTo(
+        sage,
+        { strokeDashoffset: DIAGRAM.pulseLen },
+        { strokeDashoffset: -total, duration: TRAVEL, ease: 'none' },
+        0,
+      );
+      rects.forEach((r, i) => {
+        const at = (i / (rects.length - 1)) * TRAVEL;
+        tl.fromTo(r, { stroke: DIAGRAM.ink }, { stroke: DIAGRAM.inkDone, duration: 0.3 }, at);
+        tl.fromTo(ticks[i], { opacity: 0 }, { opacity: 1, duration: 0.3 }, at);
+      });
+      return () => {
+        tl.kill();
+      };
     });
-    return () => {
-      tl.kill();
-    };
+    return () => mm.revert();
   }, [animate]);
 
   const isStatic = !animate; // compact or reduced-motion: render the final state

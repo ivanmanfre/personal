@@ -15,7 +15,7 @@ gsap.registerPlugin(ScrollTrigger);
 // Desktop-only; the mobile fallback renders <StageSnapshot> per step.
 // Reduced motion: no pin, final assembled state.
 
-export const LEAKS = ['manual triage', 'partner review', 're-keyed data', 'approval queue', 'status chasing'];
+const LEAKS = ['manual triage', 'partner review', 're-keyed data', 'approval queue', 'status chasing'];
 const PINK_INDEX = 3; // approval queue — the costliest leak (before-state)
 const W = 560;
 const H = 440;
@@ -31,7 +31,7 @@ const SCATTER = [
   { cx: 260, cy: 390 },
 ];
 
-export type ProcessStep = { id: string; title: string; desc: React.ReactNode };
+type ProcessStep = { id: string; title: string; desc: React.ReactNode };
 
 const COUNTERS = ['5% → 100% calls graded', 'multi-FTE → same-day turnaround'];
 
