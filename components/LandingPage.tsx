@@ -290,7 +290,7 @@ const ProblemSection: React.FC = () => {
                   { verb: 'Review', stat: '100%', line: 'of your sales calls graded, with at-risk accounts flagged the same hour.' },
                   { verb: 'Cut', stat: '15+ hrs/wk', line: "of manual work off your team's plate, every single week." },
                   { verb: 'Turn', stat: 'same-day', line: 'delivery on work that takes your team days right now.' },
-                  { verb: 'Grow', stat: '2–3x', line: 'more client capacity on the payroll you already have.' },
+                  { verb: 'Grow', stat: '2–3x', line: 'more client capacity with the team you already have.' },
                 ].map((item) => (
                   <div key={item.verb}>
                     <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>
@@ -481,7 +481,7 @@ const FUTURES = {
   },
   with: {
     label: 'WITH THEM',
-    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', 'Two more clients on the same payroll.'],
+    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', "Two more clients, and you didn't hire anyone."],
   },
 };
 

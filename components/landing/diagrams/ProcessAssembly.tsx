@@ -15,7 +15,7 @@ gsap.registerPlugin(ScrollTrigger);
 // Desktop-only; the mobile fallback renders <StageSnapshot> per step.
 // Reduced motion: no pin, final assembled state.
 
-const LEAKS = ['chasing updates', 'copy-paste work', 'waiting on sign-off', 'missed follow-ups', 'reports by hand'];
+const LEAKS = ['chasing updates', 'copy-paste work', 'waiting on sign-off', 'missed follow-ups', 'writing reports'];
 const PINK_INDEX = 2; // waiting on sign-off — the costliest leak (before-state)
 const W = 560;
 const H = 440;

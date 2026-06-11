@@ -194,7 +194,7 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              AI systems that grow service businesses on the same payroll.{' '}
+              AI systems that do the work you keep hiring people to do.{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>
                 Every build pays back inside 90 days, or I don't build it.
               </span>
