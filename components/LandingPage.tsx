@@ -426,21 +426,6 @@ const BuildOutcomesSection: React.FC = () => {
       )}
 
       <MidCTA>Want one of these running in your business?</MidCTA>
-      <motion.p
-        {...inView}
-        className="mt-3"
-        style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.6 }}
-      >
-        The lead-magnet system's output is public.{' '}
-        <a
-          href="https://resources.ivanmanfredi.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--color-accent-ink)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}
-        >
-          Browse the live library →
-        </a>
-      </motion.p>
     </div>
   </section>
   );
@@ -955,8 +940,8 @@ const LandingFooter: React.FC = () => {
         <div className="text-center mb-12 md:mb-20 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
           <h3 style={{ ...T.display('clamp(2rem,3.5vw,3rem)'), marginBottom: '0.75rem' }}>
-            Weekly notes on systems<br />
-            <span style={{ fontStyle: 'italic' }}>that actually ship.</span>
+            What I built this week,<br />
+            <span style={{ fontStyle: 'italic' }}>and what it changed.</span>
           </h3>
           <p style={{ ...T.serif, fontSize: '15px', marginBottom: '2rem' }}>
             Written for founders of growing service businesses. The patterns I'm actually running in production.

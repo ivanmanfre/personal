@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
-import HeroPipeline from './landing/diagrams/HeroPipeline';
+import HeroScaleChart from './landing/diagrams/HeroScaleChart';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
@@ -113,14 +113,14 @@ const LandingHero: React.FC = () => {
         <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
           {/* Byline + headline span the full container — display scale comes first,
               the diagram shares the row with the lede/CTA block below. */}
-          <div className="pt-8 lg:pt-0">
+          <div className="pt-8 lg:pt-0 text-center">
 
             {/* Byline */}
             <motion.div
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mb-10 flex items-center gap-3"
+              className="mb-10 flex items-center justify-center gap-3"
               style={{
                 fontFamily: '"IBM Plex Mono", monospace',
                 fontSize: '11px',
@@ -181,13 +181,13 @@ const LandingHero: React.FC = () => {
             </h1>
           </div>
 
-          <div className="max-w-[680px]">
+          <div className="text-center">
             {/* Body — restored italic emphasis on closer phrase */}
             <motion.p
               initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
               animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
               transition={{ delay: 0.95, duration: 1.1, ease }}
-              className="max-w-xl mb-10"
+              className="max-w-2xl mx-auto mb-8"
               style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
                 fontWeight: 400,
@@ -202,12 +202,36 @@ const LandingHero: React.FC = () => {
               </span>
             </motion.p>
 
+            {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
+            <motion.ul
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.05, duration: 0.7, ease }}
+              className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
+            >
+              {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
+                <li
+                  key={b}
+                  className="flex items-center gap-2.5"
+                  style={{
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '13px',
+                    letterSpacing: '0.02em',
+                    color: '#2C3A31',
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
+                  {b}
+                </li>
+              ))}
+            </motion.ul>
+
             {/* CTAs */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.15, duration: 0.6, ease }}
-              className="flex flex-col sm:flex-row items-start gap-3"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3"
             >
               <a
                 href="/start"
@@ -240,20 +264,20 @@ const LandingHero: React.FC = () => {
               </a>
             </motion.div>
 
-            {/* Compact pipeline — mobile only, below the CTAs */}
+            {/* Compact chart — mobile only, below the CTAs */}
             <div className="lg:hidden mt-14">
-              <HeroPipeline compact />
+              <HeroScaleChart compact />
             </div>
           </div>
 
-          {/* Scene 1 — full-width pipeline strip anchored under the copy (desktop) */}
+          {/* The value prop as a drawing — clients climb, payroll stays flat */}
           <motion.div
-            className="hidden lg:block mt-16 xl:mt-20"
+            className="hidden lg:block mt-14 xl:mt-16"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.3, duration: 1.2, ease }}
+            transition={{ delay: 1.3, duration: 0.8, ease }}
           >
-            <HeroPipeline />
+            <HeroScaleChart />
           </motion.div>
         </div>
       </motion.div>
