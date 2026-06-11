@@ -7,13 +7,13 @@ import { DIAGRAM, prefersReducedMotion } from './tokens';
 // gets the final state. The 2–3x marker is the headline's own claim, not a
 // new statistic — the chart is explicitly schematic (no axis numbers).
 const W = 1120;
-const H = 240;
+const H = 185;
 const X0 = 8;
 const X1 = 1000;
-const FLAT_Y = 168;
-const RISE_END_Y = 44;
+const FLAT_Y = 138;
+const RISE_END_Y = 30;
 const flatD = `M ${X0} ${FLAT_Y} L ${X1} ${FLAT_Y}`;
-const riseD = `M ${X0} ${FLAT_Y} C 320 ${FLAT_Y - 8}, 560 ${FLAT_Y - 34}, 740 ${FLAT_Y - 70} S 950 ${RISE_END_Y + 26}, ${X1} ${RISE_END_Y}`;
+const riseD = `M ${X0} ${FLAT_Y} C 300 ${FLAT_Y - 10}, 520 ${FLAT_Y - 36}, 700 ${FLAT_Y - 62} S 940 ${RISE_END_Y + 18}, ${X1} ${RISE_END_Y}`;
 
 const MONO_LABEL: React.CSSProperties = {};
 
@@ -63,7 +63,10 @@ const HeroScaleChart: React.FC<{ compact?: boolean }> = ({ compact }) => {
       ))}
 
       <path data-flat-line d={flatD} stroke={DIAGRAM.connector} strokeWidth={DIAGRAM.nodeStroke} fill="none" />
-      <path data-rise-line d={riseD} stroke={DIAGRAM.sage} strokeWidth={DIAGRAM.signalStroke} fill="none" />
+      <path data-rise-line d={riseD} stroke={DIAGRAM.sage} strokeWidth={2} fill="none" />
+      {[{ x: 340, y: FLAT_Y - 17 }, { x: 670, y: FLAT_Y - 56 }].map((t) => (
+        <rect key={t.x} data-chart-mark x={t.x - 3} y={t.y - 3} width={6} height={6} fill={DIAGRAM.sage} style={markStyle} />
+      ))}
 
       {/* sage endpoint — done-state square, same vocabulary as the diagrams */}
       <rect data-chart-mark x={X1 - 4} y={RISE_END_Y - 4} width={8} height={8} fill={DIAGRAM.sage} style={markStyle} />

@@ -13,7 +13,7 @@ import {
 import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
-import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
+
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
 
@@ -186,35 +186,6 @@ const REVIEWS: Review[] = [
   { text: "Very knowledgeable in n8n. Will be doing more projects with Ivan.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
 
-const ROW1 = [...REVIEWS, ...REVIEWS];
-const ROW2 = [...REVIEWS.slice(5), ...REVIEWS.slice(0, 5), ...REVIEWS.slice(5), ...REVIEWS.slice(0, 5)];
-
-const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
-  <motion.div
-    whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
-    transition={{ duration: 0.22, ease: 'easeOut' }}
-    className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
-    style={{ width: 'min(85vw, 400px)', minHeight: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
-  >
-    <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
-      "{r.text}"
-    </p>
-    <div style={{ marginTop: '14px' }}>
-      {r.author && (
-        <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3, marginBottom: '3px' }}>
-          {r.author}
-        </div>
-      )}
-      {r.role && (
-        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752' }}>
-          {r.role}
-        </div>
-      )}
-    </div>
-  </motion.div>
-);
-
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
 // The hero ask and the calculator ask were ~5,000px apart (10 screens on
 // mobile) with the entire persuasion core between them and nothing to click.
@@ -283,11 +254,11 @@ const ProblemSection: React.FC = () => {
             <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }} className="space-y-8">
               {[
                 { n: '01', h: 'Repetitive decisions eat partner hours.', b: "Your highest-value people spend a third of their week on work that follows the same pattern every time. It just hasn't been automated yet." },
-                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. Unit economics get worse as you grow." },
+                { n: '02', h: 'Right now, scaling means hiring.', b: "Every new client brings another coordinator, another account manager, another ops call. Every new client adds salary before it adds margin." },
                 { n: '03', h: "AI experiments haven't worked.", b: "You've tried the chatbots, the summaries, the general-purpose tools. None of it stuck, because a tool bolted onto a broken process just automates the mess." },
               ].map((item) => (
                 <div key={item.n} className="flex gap-5 items-start">
-                  <span style={{ ...T.mono, color: 'var(--color-accent-ink)', fontSize: '11px', flexShrink: 0, paddingTop: '3px' }}>{item.n}</span>
+                  <span style={{ width: '7px', height: '7px', backgroundColor: 'var(--color-accent)', flexShrink: 0, marginTop: '7px' }} aria-hidden="true" />
                   <div>
                     <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '16px', color: '#1A1A1A', marginBottom: '6px', lineHeight: 1.35 }}>{item.h}</div>
                     <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65 }}>{item.b}</p>
@@ -320,7 +291,7 @@ const OUTCOMES = [
     category: 'Productized build',
     metric: '15 min',
     metricLabel: 'idea to launched',
-    story: "One idea in ClickUp generates the full package: landing page, email, smart link, scheduled post.",
+    story: "One typed idea becomes the full package: landing page, email, smart link, scheduled post.",
     qualifier: 'self-serve since launch',
     pipeline: ['idea', 'page', 'email', 'link', 'post'],
     href: '/work#case-02',
@@ -330,7 +301,7 @@ const OUTCOMES = [
     category: 'Back-office that runs itself',
     metric: 'Multi-FTE → same-day',
     metricLabel: 'permit turnaround',
-    story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states. More filings, zero added headcount.",
+    story: "Permit work that needed multiple full-time researchers now runs intake-to-delivered across 50 states. More filings, same team.",
     qualifier: 'live across 50 states',
     pipeline: ['intake', 'rules', 'research', 'delivered'],
     href: '/work#case-03',
@@ -433,38 +404,6 @@ const BuildOutcomesSection: React.FC = () => {
 
 // ─── Section 3: What Agent-Ready means ──────────────────────────────────────
 // titlePre + pivot + titlePost — pivot is the italic phrase with sage sweep behind it
-// (brand signature gesture from the hero, applied at the section level).
-const PRECONDITIONS = [
-  {
-    n: '01',
-    titlePre: 'The work that waits on you ',
-    pivot: 'happens without you',
-    titlePost: '',
-    sub: "The repetitive calls, the reports, the same decision made the same way. All of it handled while you're on a plane.",
-  },
-  {
-    n: '02',
-    titlePre: 'Your team stops ',
-    pivot: 'waiting on your sign-off',
-    titlePost: '',
-    sub: 'The 14 Slack DMs and 23 approvals by 9am become a system that already knows the answer.',
-  },
-  {
-    n: '03',
-    titlePre: 'Scaling stops meaning ',
-    pivot: 'another hire',
-    titlePost: '',
-    sub: 'New clients stop adding headcount and overhead. The system absorbs the volume, and your margins hold.',
-  },
-  {
-    n: '04',
-    titlePre: 'You go from operator ',
-    pivot: 'back to owner',
-    titlePost: '',
-    sub: "Out of the daily firefight, back to the work only you can do. Take two weeks off and nothing breaks.",
-  },
-];
-
 // Reusable sage highlighter sweep — same hand-painted SVG path as the hero.
 // Sized to fit behind an italic word block via absolute positioning.
 const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5, opacity = 0.78 }) => (
@@ -500,57 +439,40 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 // v1 (same-day) mirrored ProblemSection's numbered right-rail, which made
 // sections 01 and 02 read as one endless list at the seam (217 words in a
 // single viewport). The sunk band + grid breaks the pattern and halves the
-// words per screen. The offers grid stays the page's single dark moment.
-const AgentReadySection: React.FC = () => (
-  <section className="py-14 md:py-24 border-t relative" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
-    <div className="container mx-auto px-8 max-w-6xl">
+// Six-months-after strip — three time-stamped scenes on plain paper.
+// Replaces the old 2x2 "What changes" band (a mirror of the problem section
+// on a 1.07:1 sunk tint that read as a rendering bug; teardown 2026-06-11).
+const VIGNETTES = [
+  { t: '9:00am', line: 'Zero approvals waiting on you.' },
+  { t: '2:00pm', line: 'The weekly report wrote itself.' },
+  { t: 'Friday', line: 'Payroll unchanged. Two new clients live.' },
+];
 
-      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+const AgentReadySection: React.FC = () => (
+  <section className="py-12 md:py-16 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-10 max-w-2xl">
         <Label>02</Label>
-        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
-          What changes once<br />
-          <span style={{ fontStyle: 'italic' }}>the systems run.</span>
+        <RevealH2 style={{ ...T.display('clamp(2rem,3vw,2.8rem)'), marginBottom: 0 }}>
+          Six months <span style={{ fontStyle: 'italic' }}>after the build.</span>
         </RevealH2>
-        <p style={{ ...T.serif, maxWidth: '44ch' }}>
-          The day-to-day, six months after the build.
-        </p>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10 md:gap-y-14">
-        {PRECONDITIONS.map((p, i) => (
+      <div className="grid md:grid-cols-3 gap-x-12 gap-y-8">
+        {VIGNETTES.map((v, i) => (
           <motion.div
-            key={p.n}
-            initial={prefersReduced ? false : { opacity: 0, y: 18 }}
+            key={v.t}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.7, ease, delay: i * 0.08 }}
-            className="flex gap-6 items-start"
+            transition={{ duration: 0.6, ease, delay: i * 0.1 }}
+            className="border-t pt-5"
+            style={{ borderColor: 'rgba(26,26,26,0.18)' }}
           >
-            <span
-              aria-hidden
-              style={{
-                fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-                fontStyle: 'italic',
-                fontWeight: 400,
-                fontSize: 'clamp(1.7rem,2.2vw,2.1rem)',
-                lineHeight: 1.1,
-                color: 'var(--color-accent)',
-                flexShrink: 0,
-                minWidth: '2.4ch',
-              }}
-            >
-              {p.n}.
-            </span>
-            <div>
-              <h3 style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: 'clamp(1.15rem,1.6vw,1.35rem)', lineHeight: 1.35, color: '#1A1A1A', marginBottom: '6px' }}>
-                {p.titlePre}
-                <span style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, color: 'var(--color-accent-ink)' }}>{p.pivot}</span>
-                {p.titlePost}
-              </h3>
-              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', color: '#5A5752', lineHeight: 1.65, maxWidth: '46ch' }}>
-                {p.sub}
-              </p>
-            </div>
+            <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '10px' }}>{v.t}</div>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '19px', lineHeight: 1.4, color: '#1A1A1A' }}>
+              {v.line}
+            </p>
           </motion.div>
         ))}
       </div>
@@ -558,7 +480,6 @@ const AgentReadySection: React.FC = () => (
       <MidCTA href="/scorecard" linkText="Take the 2-min scorecard →">
         Not ready for a call? See where your business lands first.
       </MidCTA>
-
     </div>
   </section>
 );
@@ -569,7 +490,7 @@ const WorkSection: React.FC = () => {
     {
       id: '01',
       title: 'Diagnose',
-      desc: <>I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
+      desc: <>It starts with the free fit call. I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a clear plan: what to build first, what compounds, what to skip.</>,
     },
     {
       id: '02',
@@ -618,42 +539,78 @@ const WorkSection: React.FC = () => {
           ))}
         </div>
 
-        <MidCTA>Want to see what I'd map in your business?</MidCTA>
       </div>
     </section>
   );
 };
 
-// ─── Section 4: Testimonials ─────────────────────────────────────────────────
+// ─── Section 4: Testimonials — curated, static (marquee retired 2026-06-11) ───
+const FEATURED = REVIEWS[7]; // Adeeb — Meta / ex-Amazon
+const GRID = [REVIEWS[0], REVIEWS[3], REVIEWS[2], REVIEWS[6], REVIEWS[4]];
+
 const TestimonialsSection: React.FC = () => (
-  <section className="pt-12 md:pt-20 pb-12 md:pb-16 border-t overflow-hidden" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl mb-14">
-      <motion.div {...inView}>
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-12">
         <Label>04</Label>
-        <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
+        <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
           100+ builds shipped.<br />Every client came back.
         </RevealH2>
       </motion.div>
-    </div>
-    {/* CSS marquee (was framer tween): pauses on hover so quotes are actually
-        readable, and stops entirely under prefers-reduced-motion. Keyframes +
-        .marquee-* classes live in styles.css. */}
-    <div className="flex flex-col gap-5 pb-0">
-      {[{ row: ROW1, dur: 95, reverse: false }, { row: ROW2, dur: 115, reverse: true }].map(({ row, dur, reverse }, ri) => (
-        <div key={ri} className="relative marquee-row">
-          <div className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--color-paper), transparent)' }} />
-          <div className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--color-paper), transparent)' }} />
-          <div
-            className="flex gap-5 w-max px-5 marquee-track"
-            style={{ animationDuration: `${dur}s`, animationDirection: reverse ? 'reverse' : 'normal' }}
+
+      {/* Featured pull-quote — the strongest skeptic-to-believer quote gets the stage */}
+      <motion.figure {...inView} className="mb-14 max-w-3xl">
+        <blockquote
+          style={{
+            fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            fontSize: 'clamp(1.5rem,2.4vw,2.1rem)',
+            lineHeight: 1.25,
+            letterSpacing: '-0.01em',
+            color: '#1A1A1A',
+            borderLeft: '2px solid var(--color-accent)',
+            paddingLeft: '24px',
+          }}
+        >
+          "{FEATURED.text}"
+        </blockquote>
+        <figcaption className="mt-4 pl-6">
+          <span style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '15px', color: '#1A1A1A' }}>{FEATURED.author}</span>
+          <span style={{ ...T.mono, fontSize: '12px', marginLeft: '12px' }}>{FEATURED.role}</span>
+        </figcaption>
+      </motion.figure>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {GRID.map((r, i) => (
+          <motion.div
+            key={r.author}
+            initial={prefersReduced ? false : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease, delay: i * 0.07 }}
+            className="border p-6 flex flex-col"
+            style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
           >
-            {row.map((r, i) => <ReviewCard key={i} r={r} />)}
-          </div>
-        </div>
-      ))}
-    </div>
-    <div className="container mx-auto px-8 max-w-6xl">
-      <MidCTA>Want to be the next one?</MidCTA>
+            <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
+              "{r.text}"
+            </p>
+            <div style={{ marginTop: '14px' }}>
+              <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', marginBottom: '3px' }}>{r.author}</div>
+              <div style={{ ...T.mono, fontSize: '12px' }}>{r.role}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.p
+        {...inView}
+        className="mt-10"
+        style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', color: '#5A5752', lineHeight: 1.6 }}
+      >
+        Want to hear it firsthand? I'm happy to put you on a call with a past client.
+      </motion.p>
     </div>
   </section>
 );
@@ -667,7 +624,10 @@ const PaybackSection: React.FC = () => {
   const qualifies = maxBuild >= 2000;
 
   return (
-    <section className="py-12 md:pt-20 md:pb-28 border-t" style={DIVIDER}>
+    <section
+      className="py-12 md:pt-20 md:pb-28 border-t"
+      style={{ ...DIVIDER, backgroundColor: '#ECE6DA', boxShadow: 'inset 0 10px 18px -14px rgba(26,26,26,0.3)' }}
+    >
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
@@ -683,7 +643,7 @@ const PaybackSection: React.FC = () => {
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
 
-          <motion.div initial={prefersReduced ? false : { opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="border p-10" style={DIVIDER}>
+          <motion.div initial={prefersReduced ? false : { opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="border p-10" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
             <div className="space-y-10">
               {[
                 { label: 'Hours lost per week', value: hours, setValue: setHours, min: 5, max: 100, step: 5, fmt: (v: number) => `${v} hrs`, range: ['5 hrs', '100 hrs'] },
@@ -702,18 +662,18 @@ const PaybackSection: React.FC = () => {
               ))}
             </div>
             <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, marginTop: '24px' }}>
-              Blended value = average hourly revenue target of the people doing the manual work.
+              Blended value: what an hour of the affected people's time is worth to the business.
             </p>
           </motion.div>
 
           <motion.div initial={prefersReduced ? false : { opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="flex flex-col gap-5">
 
-            <div className="border p-8" style={DIVIDER}>
+            <div className="border p-8" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
               <div style={{ ...T.mono, marginBottom: '10px' }}>Annual cost of this bottleneck</div>
               <Counter value={yearly} prefix="$" style={T.display('clamp(3rem,5.5vw,5rem)')} />
             </div>
 
-            <div className="border p-8" style={{ ...DIVIDER, borderLeftWidth: '2px', borderLeftColor: qualifies ? 'var(--color-accent)' : 'rgba(26,26,26,0.2)' }}>
+            <div className="border p-8" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)', borderLeftWidth: '2px', borderLeftColor: qualifies ? 'var(--color-accent)' : 'rgba(26,26,26,0.2)' }}>
               <div style={{ ...T.mono, marginBottom: '10px' }}>Max build budget for 90-day payback</div>
               <Counter
                 value={maxBuild}
@@ -758,14 +718,14 @@ const OFFER_BUILDS = [
     name: 'Content System',
     price: 'From $7k',
     cadence: '3-week build',
-    desc: 'Your growth engine: lead magnets plus a content engine trained on your voice. New pipeline without new hires.',
+    desc: 'Your growth engine: lead magnets plus a content engine trained on your voice. New pipeline from systems, not staff.',
     href: '/content-system',
     cta: 'Scope your build',
   },
   {
     id: '02',
     name: 'Call Intelligence',
-    price: 'Priced per build',
+    price: 'From $5,000',
     cadence: 'Scoped on the fit call',
     desc: "Close more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
     href: '/call-intelligence',
@@ -784,11 +744,11 @@ const OFFER_BUILDS = [
 ];
 
 const OfferSection: React.FC = () => (
-  <section className="py-16 md:py-24 border-t" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: '#1A1A1A' }}>
+  <section className="py-16 md:py-24 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label dark>07</Label>
-        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), color: '#F7F4EF' }}>
+        <Label>07</Label>
+        <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Three systems,<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
             one less bottleneck.
@@ -797,7 +757,7 @@ const OfferSection: React.FC = () => (
         </RevealH2>
       </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-px" style={{ backgroundColor: 'rgba(247,244,239,0.12)' }}>
+      <div className="grid md:grid-cols-3 gap-5">
         {OFFER_BUILDS.map((b, i) => (
           <motion.a
             key={b.id}
@@ -806,23 +766,23 @@ const OfferSection: React.FC = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
             transition={{ duration: 0.7, ease, delay: i * 0.08 }}
-            className="group flex flex-col p-8 md:p-9"
-            style={{ backgroundColor: b.signature ? '#23211d' : '#1A1A1A', position: 'relative' }}
+            className="group flex flex-col p-8 md:p-9 border"
+            style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: 'var(--color-paper)', position: 'relative' }}
           >
             {b.signature && (
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }} />
             )}
             <div className="flex items-center justify-between mb-6">
-              <span style={{ ...T.mono, color: 'rgba(247,244,239,0.62)', marginBottom: 0 }}>{b.id}</span>
+              <span style={{ ...T.mono, marginBottom: 0 }}>{b.id}</span>
               {b.signature && (
-                <span style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: 0 }}>Signature</span>
+                <span style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: 0 }}>Signature</span>
               )}
             </div>
-            <h3 style={{ ...T.display('1.7rem'), color: '#F7F4EF', marginBottom: '1rem' }}>{b.name}</h3>
-            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '20px', color: 'var(--color-accent-light)', letterSpacing: '-0.01em', marginBottom: '0.4rem' }}>{b.price}</div>
-            <div style={{ ...T.mono, color: 'rgba(247,244,239,0.65)', marginBottom: '1.5rem' }}>{b.cadence}</div>
-            <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '15px', lineHeight: 1.6, color: 'rgba(247,244,239,0.7)', marginBottom: '1.75rem', flex: 1 }}>{b.desc}</p>
-            <div className="flex items-center gap-2" style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '14px', color: 'var(--color-accent-light)' }}>
+            <h3 style={{ ...T.display('1.7rem'), marginBottom: '1rem' }}>{b.name}</h3>
+            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '20px', color: 'var(--color-accent-ink)', letterSpacing: '-0.01em', marginBottom: '0.4rem' }}>{b.price}</div>
+            <div style={{ ...T.mono, marginBottom: '1.5rem' }}>{b.cadence}</div>
+            <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '15px', lineHeight: 1.6, color: '#5A5752', marginBottom: '1.75rem', flex: 1 }}>{b.desc}</p>
+            <div className="flex items-center gap-2" style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '14px', color: 'var(--color-accent-ink)' }}>
               {b.cta}
               <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
             </div>
@@ -831,12 +791,12 @@ const OfferSection: React.FC = () => (
       </div>
 
       <motion.div {...inView} className="mt-12 flex flex-col items-center gap-6">
-        <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-9 py-4">
+        <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
           Book your fit call <ArrowRight size={18} />
         </MagneticCTA>
-        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14.5px', color: 'rgba(247,244,239,0.72)', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
+        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14.5px', color: '#5A5752', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
           Working on something that's not here?{' '}
-          <a href="/start" style={{ color: 'rgba(247,244,239,0.8)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
+          <a href="/start" style={{ color: 'var(--color-accent-ink)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
             The call is for that too
           </a>
           . I scope custom builds for service businesses every week.
@@ -875,7 +835,7 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            07 / THE NEXT STEP
+            08 / THE NEXT STEP
           </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
             Find out what to build first,<br />
@@ -886,16 +846,13 @@ const FinalCTA: React.FC = () => (
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
               systems I run myself
             </a>
-            , and I've shipped 100+ of them for growing service businesses. Book a call and I'll tell you where AI would actually move your numbers.
+            , and I've shipped 100+ of them for growing service businesses. Book a call and I'll show you where AI cuts hours and adds margin in your business.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
               Book your fit call <ArrowRight size={18} />
             </MagneticCTA>
           </div>
-          <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontStyle: 'italic', fontSize: '13px', color: 'rgba(247,244,239,0.55)', marginTop: '1.75rem' }}>
-            Booking {getBookingQuarter()} · {OPEN_SLOTS} fit-call slots remaining
-          </p>
         </div>
       </motion.div>
     </div>
@@ -939,12 +896,8 @@ const LandingFooter: React.FC = () => {
         {/* Newsletter */}
         <div className="text-center mb-12 md:mb-20 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
-          <h3 style={{ ...T.display('clamp(2rem,3.5vw,3rem)'), marginBottom: '0.75rem' }}>
-            What I built this week,<br />
-            <span style={{ fontStyle: 'italic' }}>and what it changed.</span>
-          </h3>
-          <p style={{ ...T.serif, fontSize: '15px', marginBottom: '2rem' }}>
-            Written for founders of growing service businesses. The patterns I'm actually running in production.
+          <p style={{ ...T.serif, fontSize: '16px', marginBottom: '1.5rem' }}>
+            What I built this week, and what it changed. Weekly, for service-business founders.
           </p>
 
           {status === 'success' ? (
@@ -1067,19 +1020,21 @@ const LandingPage: React.FC = () => {
   const { scrollYProgress } = useScroll();
   const scaleY = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
+  const [pointerActive, setPointerActive] = useState(false);
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
   const springX = useSpring(mouseX, { stiffness: 60, damping: 22 });
   const springY = useSpring(mouseY, { stiffness: 60, damping: 22 });
   const xPct = useTransform(springX, (x) => `${x * 100}%`);
   const yPct = useTransform(springY, (y) => `${y * 100}%`);
-  const spotlight = useMotionTemplate`radial-gradient(600px circle at ${xPct} ${yPct}, rgba(42,143,101,0.15), transparent 70%)`;
+  const spotlight = useMotionTemplate`radial-gradient(600px circle at ${xPct} ${yPct}, rgba(42,143,101,0.09), transparent 70%)`;
 
   return (
     <MotionConfig reducedMotion="user">
     <div
       style={{ backgroundColor: 'var(--color-paper)', position: 'relative' }}
       onMouseMove={(e) => {
+        if (!pointerActive) setPointerActive(true);
         mouseX.set(e.clientX / window.innerWidth);
         mouseY.set(e.clientY / window.innerHeight);
       }}
@@ -1102,7 +1057,7 @@ const LandingPage: React.FC = () => {
           leaving it on creates a static green blob in the middle of the screen). */}
       <motion.div
         className="pointer-events-none hidden lg:block"
-        style={{ background: spotlight, position: 'fixed', inset: 0, zIndex: 9999 }}
+        style={{ background: spotlight, position: 'fixed', inset: 0, zIndex: 9999, opacity: pointerActive ? 1 : 0, transition: 'opacity 0.8s' }}
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <LandingHero />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { getBookingQuarter, OPEN_SLOTS } from '../lib/bookingConfig';
+import { getBookingQuarter } from '../lib/bookingConfig';
 import HeroScaleChart from './landing/diagrams/HeroScaleChart';
 
 // Production hero for /landing — no font picker, no right rail.
@@ -82,7 +82,7 @@ const LandingHero: React.FC = () => {
             style={{ width: '7px', height: '7px', backgroundColor: '#2A8F65', flexShrink: 0 }}
             aria-hidden="true"
           />
-          <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()} · {OPEN_SLOTS} slots open</span>
+          <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()}</span>
         </div>
         <div className="hidden md:block">90-day payback or no-build</div>
       </motion.div>
@@ -196,7 +196,7 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              I build AI systems that let service businesses grow without growing payroll.{' '}
+              I build AI systems that grow service businesses on the same payroll.{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>
                 Every build pays back inside 90 days, or I don't build it.
               </span>
@@ -209,7 +209,7 @@ const LandingHero: React.FC = () => {
               transition={{ delay: 1.05, duration: 0.7, ease }}
               className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
             >
-              {['More pipeline without more hires', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
+              {['More pipeline, same team', "Win more of the deals you're already in", "Clients that don't quietly churn"].map((b) => (
                 <li
                   key={b}
                   className="flex items-center gap-2.5"
@@ -262,6 +262,31 @@ const LandingHero: React.FC = () => {
               >
                 See the scorecard <ArrowRight size={14} />
               </a>
+            </motion.div>
+
+            {/* Receipts strip — numbers do the work adjectives were doing */}
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.7, ease }}
+              className="mt-12 flex flex-col sm:flex-row items-center justify-center"
+            >
+              {['100+ systems shipped', '90-day payback or no build', 'Every client came back'].map((r, i) => (
+                <div
+                  key={r}
+                  className={`px-6 py-1.5 ${i > 0 ? 'sm:border-l' : ''}`}
+                  style={{
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '12px',
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: '#3D3D3B',
+                    borderColor: 'rgba(26,26,26,0.15)',
+                  }}
+                >
+                  {r}
+                </div>
+              ))}
             </motion.div>
 
             {/* Compact chart — mobile only, below the CTAs */}
