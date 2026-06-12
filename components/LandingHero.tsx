@@ -194,7 +194,7 @@ const LandingHero: React.FC = () => {
               }}
             >
               AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
-              <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>
+              <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
                 Every build pays back inside 90 days, or I don't build it.
               </span>
             </motion.p>

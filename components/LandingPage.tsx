@@ -59,7 +59,7 @@ const T = {
   } as React.CSSProperties,
   display: (size = 'clamp(2.4rem, 4vw, 3.8rem)'): React.CSSProperties => ({
     fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-    fontStyle: 'italic',
+    fontStyle: 'normal',
     fontWeight: 400,
     fontSize: size,
     lineHeight: 1.1,
@@ -619,15 +619,6 @@ const TestimonialsSection: React.FC = () => (
         </div>
       ))}
     </div>
-    <div className="container mx-auto px-8 max-w-6xl">
-      <motion.p
-        {...inView}
-        className="mt-10"
-        style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', color: '#5A5752', lineHeight: 1.6 }}
-      >
-        Want to hear it firsthand? I'm happy to put you on a call with a past client.
-      </motion.p>
-    </div>
   </section>
 );
 
@@ -641,27 +632,17 @@ const PaybackSection: React.FC = () => {
 
   return (
     <section
-      className="py-12 md:pt-20 md:pb-28 border-t relative overflow-hidden"
-      style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}
+      className="py-12 md:pt-20 md:pb-28 border-t"
+      style={DIVIDER}
     >
-      {/* Editorial grid — light lines, echoing the hero cover */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(247,244,239,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(247,244,239,0.05) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-        aria-hidden="true"
-      />
-      <div className="container mx-auto px-8 max-w-6xl relative" style={{ zIndex: 1 }}>
+      <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
-          <Label dark>06</Label>
-          <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), color: '#F7F4EF', marginBottom: '1.25rem' }}>
+          <Label>06</Label>
+          <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), marginBottom: '1.25rem' }}>
             The 90-Day<br />Payback Rule.
           </RevealH2>
-          <p style={{ ...T.serif, color: 'rgba(247,244,239,0.72)', maxWidth: '480px' }}>
+          <p style={{ ...T.serif, maxWidth: '480px' }}>
             Every build is scoped to pay back within 90 days or I don't build it.
             Plug in your numbers and see how much we can invest while still hitting that bar.
           </p>
@@ -713,9 +694,9 @@ const PaybackSection: React.FC = () => {
               </p>
             </div>
 
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: 'rgba(247,244,239,0.7)', lineHeight: 1.5 }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.5 }}>
               Every quarter you wait costs about{' '}
-              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#F7F4EF' }}>${Math.round(yearly / 4).toLocaleString()}</span>.
+              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>.
               {' '}The diagnosis takes one week.
             </p>
 
@@ -724,7 +705,7 @@ const PaybackSection: React.FC = () => {
               whileHover={{ y: -2 }}
               transition={{ duration: 0.18 }}
               className="flex items-center justify-between px-7 py-4"
-              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', backgroundColor: '#F7F4EF', color: '#1A1A1A' }}
+              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', backgroundColor: '#1A1A1A', color: '#F7F4EF' }}
             >
               <span>See if it's a fit</span>
               <ArrowRight size={18} />
@@ -835,15 +816,14 @@ const OfferSection: React.FC = () => (
 // ─── Section 7: Final CTA — founder block ─────────────────────────────────────
 const FinalCTA: React.FC = () => (
   <section className="border-t relative overflow-hidden" style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}>
-    <div className="grid lg:grid-cols-[minmax(0,42%)_1fr]">
+    <div className="grid lg:grid-cols-[minmax(0,46%)_1fr]">
       {/* Portrait — left, full-bleed, sage rule on right edge */}
-      <div className="relative" style={{ minHeight: '320px' }}>
+      <div className="relative" style={{ minHeight: '440px' }}>
         <img
           src="/ivan-portrait.jpg"
           alt="Iván Manfredi"
-          loading="lazy"
           className="absolute inset-0 w-full h-full object-cover portrait-editorial"
-          style={{ objectPosition: '50% 18%' }}
+          style={{ objectPosition: '50% 30%' }}
         />
         <div
           className="hidden lg:block absolute top-0 right-0 h-full"
@@ -861,11 +841,11 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            08 / WHO BUILDS IT
+            08 / WORK WITH ME
           </div>
-          <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
+          <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
             Iván Manfredi.<br />
-            <span style={{ fontStyle: 'italic' }}>100+ builds, in production.</span>
+            <span style={{ color: 'var(--color-accent-light)' }}>100+ builds, in production.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
             I design and ship every build myself, for solo founders and for engineers at
