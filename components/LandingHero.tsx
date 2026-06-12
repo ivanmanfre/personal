@@ -148,16 +148,15 @@ const LandingHero: React.FC = () => {
                 color: '#1A1A1A',
               }}
             >
-              {word('Take', 0.4)}{' '}{word('on', 0.5)}{' '}
+              {word('Stop', 0.4)}{' '}{word('being', 0.5)}{' '}{word('the', 0.62)}{' '}
               <motion.span
                 initial={{ opacity: 0, y: 38, filter: 'blur(10px)' }}
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ delay: 0.6, duration: 0.85, ease }}
+                transition={{ delay: 0.72, duration: 0.85, ease }}
                 style={{ display: 'inline-block', color: '#2A8F65' }}
               >
-                2–3x
-              </motion.span>{' '}
-              {word('more', 0.72)}{' '}{word('clients', 0.82)}
+                bottleneck
+              </motion.span>
               <br />
               {/* Solid black block with paper text — brand signature move */}
               <motion.span
@@ -174,7 +173,7 @@ const LandingHero: React.FC = () => {
                   marginTop: '0.12em',
                 }}
               >
-                without adding headcount.
+                in your own business.
               </motion.span>
             </h1>
           </div>
@@ -194,7 +193,7 @@ const LandingHero: React.FC = () => {
                 color: '#3D3D3B',
               }}
             >
-              AI systems that do the work you keep hiring people to do.{' '}
+              AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
               <span style={{ fontStyle: 'italic', color: '#1A1A1A' }}>
                 Every build pays back inside 90 days, or I don't build it.
               </span>
@@ -207,7 +206,7 @@ const LandingHero: React.FC = () => {
               transition={{ delay: 1.05, duration: 0.7, ease }}
               className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
             >
-              {['More pipeline, same team', 'Follow-up that beats your competitors to the reply', 'Know a client is leaving before they say it'].map((b) => (
+              {['Leads cold while follow-up waits on a human', 'Churn you catch after they have already gone', 'Pipeline capped by who you can afford to hire'].map((b) => (
                 <li
                   key={b}
                   className="flex items-center gap-2.5"
@@ -258,7 +257,7 @@ const LandingHero: React.FC = () => {
                 onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
               >
-                See the scorecard <ArrowRight size={14} />
+                See where you're leaking <ArrowRight size={14} />
               </a>
             </motion.div>
           </div>

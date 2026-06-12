@@ -477,11 +477,11 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 const FUTURES = {
   without: {
     label: 'WITHOUT THE SYSTEMS',
-    lines: ['Still 23 approvals waiting by 9am.', 'A new admin hire just to keep up.', 'Margins a little thinner than last year.'],
+    lines: ["It's 9am and 23 approvals are already waiting on you.", 'You hired another coordinator to keep pace, and now you manage them too.', 'You worked more this year and the margin came in thinner.'],
   },
   with: {
     label: 'WITH THEM',
-    lines: ['Zero approvals waiting on you.', 'The weekly report wrote itself.', "Two more clients, and you didn't hire anyone."],
+    lines: ['Approvals clear overnight. Nothing waits on you.', 'The weekly report wrote itself before you woke up.', 'Same payroll, two new clients live.'],
   },
 };
 
@@ -519,8 +519,8 @@ const AgentReadySection: React.FC = () => (
         ))}
       </div>
 
-      <MidCTA href="/scorecard" linkText="Take the 2-min scorecard →">
-        Not ready for a call? See where your business lands first.
+      <MidCTA href="/scorecard" linkText="See where you're leaking. 2 minutes →">
+        Not ready for a call? Find out where the time and money go first.
       </MidCTA>
     </div>
   </section>
@@ -721,6 +721,35 @@ const PaybackSection: React.FC = () => {
     </section>
   );
 };
+
+// ─── Gap band — urgency between proof and the calculator (numberless) ────────
+// Lights the fuse: proof has landed, now the clock starts before the math.
+// Thin band, mono kicker (no section number), single CTA into the scorecard.
+const GapSection: React.FC = () => (
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-3xl text-center">
+      <motion.div {...inView}>
+        <Label>While you wait</Label>
+        <RevealH2 style={{ ...T.display('clamp(2.2rem,4vw,3.4rem)'), marginBottom: '1.5rem' }}>
+          Every quarter, the gap{' '}
+          <span style={{ fontStyle: 'italic' }}>gets wider.</span>
+        </RevealH2>
+        <p style={{ ...T.serif, maxWidth: '56ch', margin: '0 auto 1.5rem' }}>
+          The businesses that automated this keep pulling further ahead. They answer
+          leads in minutes, deliver same day, and take on the clients you turn away for
+          lack of hours. Wait another quarter and you're not closing the gap to where
+          they are today. You're chasing where they'll be tomorrow.
+        </p>
+        <p style={{ ...T.serif, fontSize: '16px', maxWidth: '56ch', margin: '0 auto 2rem', color: '#1A1A1A' }}>
+          Your bottleneck has a price tag. Take two minutes and see yours.
+        </p>
+        <MagneticCTA href="/scorecard" variant="primary" fontSize="16px" px="px-8 py-4">
+          See what it's costing you <ArrowRight size={17} />
+        </MagneticCTA>
+      </motion.div>
+    </div>
+  </section>
+);
 
 // ─── Section 6: The Offer ─────────────────────────────────────────────────────
 const OFFER_BUILDS = [
@@ -1077,6 +1106,7 @@ const LandingPage: React.FC = () => {
         <BuildOutcomesSection />
         <TestimonialsSection />
         <WorkSection />
+        <GapSection />
         <PaybackSection />
         <OfferSection />
         <FinalCTA />
