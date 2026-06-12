@@ -8,6 +8,7 @@ export interface PendingItem {
   severity: Severity;
   deeplink: string;
   createdAt: string;
+  unread: boolean;
 }
 
 export interface PendingGroup {
@@ -24,6 +25,7 @@ export function mapRow(r: any): PendingItem {
     category: r.category, itemKey: r.item_key, title: r.title,
     subtitle: r.subtitle || '', severity: (r.severity as Severity) || 'tier3',
     deeplink: r.deeplink, createdAt: r.created_at,
+    unread: r.unread !== false, // RPC returns boolean; default unread when absent
   };
 }
 
@@ -79,4 +81,36 @@ export function timeAgo(iso: string, nowMs: number): string {
   const mo = Math.floor(d / 30);
   if (mo < 12) return `${mo}mo ago`;
   return `${Math.floor(d / 365)}y ago`;
+}
+
+export interface ResolveAction {
+  label: string;
+  method: 'rpc' | 'direct';
+  table: string;
+  field: string;
+  value: string | null;
+}
+
+// Only the cheap/safe categories. method='rpc' goes through dashboard_action (whitelisted
+// table.field pairs); method='direct' uses supabase.from(table).update() (not whitelisted,
+// but anon UPDATE is allowed on those tables). Consequential categories are absent → navigate-only.
+export const RESOLVE_ACTIONS: Record<string, ResolveAction> = {
+  skill_draft:      { label: 'Approve',  method: 'rpc',    table: 'skill_drafts',             field: 'status',             value: 'approved' },
+  dashboard_task:   { label: 'Complete', method: 'rpc',    table: 'dashboard_tasks',          field: 'status',             value: 'completed' },
+  stuck_automation: { label: 'Ack',      method: 'rpc',    table: 'dashboard_workflow_stats', field: 'error_acknowledged', value: 'true' },
+  scheduled_check:  { label: 'Reviewed', method: 'direct', table: 'scheduled_checks',         field: 'status',             value: 'reviewed' },
+  crm_action_due:   { label: 'Done',     method: 'direct', table: 'contacts',                 field: 'next_action_due',    value: null },
+};
+
+export function resolveActionFor(
+  category: string,
+  itemKey: string,
+): (ResolveAction & { id: string }) | null {
+  // overdue crons (key 'overdue:...') under stuck_automation are navigate-only.
+  if (itemKey.startsWith('overdue:')) return null;
+  const action = RESOLVE_ACTIONS[category];
+  if (!action) return null;
+  const idx = itemKey.indexOf(':');
+  if (idx < 0) return null;
+  return { ...action, id: itemKey.slice(idx + 1) };
 }

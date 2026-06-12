@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   mapRow, sortItems, computeUnreadCount, computeTopSeverity, groupByCategory, timeAgo,
+  resolveActionFor,
   type PendingItem,
 } from './pendingActions';
 
@@ -20,7 +21,10 @@ describe('pendingActions', () => {
     expect(it0).toEqual<PendingItem>({
       category: 'scheduled_check', itemKey: 'scheduled_check:2', title: 'B',
       subtitle: 'due', severity: 'tier1', deeplink: '?section=ops&sub=checks', createdAt: NOW,
+      unread: true, // absent r.unread defaults to unread
     });
+    expect(mapRow({ ...rawRows[1], unread: true }).unread).toBe(true);
+    expect(mapRow({ ...rawRows[1], unread: false }).unread).toBe(false);
   });
 
   it('mapRow defaults missing subtitle/severity', () => {
@@ -51,6 +55,26 @@ describe('pendingActions', () => {
     const skill = groups.find((g) => g.category === 'skill_draft');
     expect(skill?.count).toBe(2);
     expect(skill?.topSeverity).toBe('tier3');
+  });
+});
+
+describe('resolveActionFor', () => {
+  it('returns the action + parsed id for the 5 safe categories', () => {
+    const a = resolveActionFor('skill_draft', 'skill_draft:abc-123');
+    expect(a).toEqual({ label: 'Approve', method: 'rpc', table: 'skill_drafts', field: 'status', value: 'approved', id: 'abc-123' });
+    expect(resolveActionFor('dashboard_task', 'dashboard_task:t1')?.value).toBe('completed');
+    expect(resolveActionFor('stuck_automation', 'stuck_automation:w1')).toMatchObject({ method: 'rpc', field: 'error_acknowledged', id: 'w1' });
+  });
+  it('overdue stuck keys are navigate-only (null)', () => {
+    expect(resolveActionFor('stuck_automation', 'overdue:cron-x')).toBeNull();
+  });
+  it('consequential categories have no inline action', () => {
+    for (const c of ['carousel_review','lm_review','upwork_proposal','prospect_reply','paid_intake','call_clip','memory_proposal']) {
+      expect(resolveActionFor(c, `${c}:x`)).toBeNull();
+    }
+  });
+  it('parses the id as everything after the first colon', () => {
+    expect(resolveActionFor('skill_draft', 'skill_draft:a:b:c')?.id).toBe('a:b:c');
   });
 });
 
