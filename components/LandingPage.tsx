@@ -754,8 +754,8 @@ const OFFER_BUILDS = [
   {
     id: '01',
     name: 'Content System',
-    price: 'From $7k',
-    cadence: '3-week build',
+    price: 'Live in 30 days',
+    cadence: 'Fixed price · scoped on the fit call',
     desc: 'Lead magnets plus a content engine trained on your voice, filling your pipeline while you run the business.',
     href: '/content-system',
     cta: 'Scope your build',
@@ -763,8 +763,8 @@ const OFFER_BUILDS = [
   {
     id: '02',
     name: 'Call Intelligence',
-    price: 'From $5,000',
-    cadence: 'Scoped on the fit call',
+    price: 'Every call scored',
+    cadence: 'Fixed price · scoped on the fit call',
     desc: "Close more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
     href: '/call-intelligence',
     cta: 'See how it works',
@@ -773,11 +773,11 @@ const OFFER_BUILDS = [
   {
     id: '03',
     name: 'Fractional AI Partner',
-    price: 'From $3,500/mo',
-    cadence: 'Ongoing partnership',
-    desc: 'Want me building alongside you month over month? You set the intensity, and you can stop any month.',
+    price: 'Build by build',
+    cadence: 'No retainer',
+    desc: 'Most clients stack builds: the roadmap from each one feeds the next, until you have a partner who ships every month. Without ever signing a retainer.',
     href: '/fractional',
-    cta: 'Explore partnership',
+    cta: 'See how it works',
   },
 ];
 
