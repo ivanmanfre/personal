@@ -247,6 +247,38 @@ const useMediaQuery = (query: string): boolean => {
   return matches;
 };
 
+// ─── Credibility strip — above-the-fold proof, numeral lockups (§5f) ─────────
+const METRICS = [
+  { fig: '100+', label: 'Builds shipped' },
+  { fig: '90-day', label: 'Payback rule' },
+  { fig: '50-state', label: 'Coverage' },
+  { fig: '0', label: 'Lock-in' },
+];
+
+const MetricStrip: React.FC = () => (
+  <section className="border-t border-b" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-black/10">
+        {METRICS.map((m, i) => (
+          <motion.div
+            key={m.label}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, ease, delay: i * 0.08 }}
+            className="py-8 md:py-11 px-4 text-center"
+          >
+            <div style={{ ...T.display('clamp(1.9rem,3vw,2.7rem)'), color: 'var(--color-accent)', lineHeight: 1, marginBottom: '9px' }}>
+              {m.fig}
+            </div>
+            <div style={T.mono}>{m.label}</div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
 // ─── Section 2: Problem (with parallax depth, lg+ only) ──────────────────────
 const ProblemSection: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -537,17 +569,17 @@ const WorkSection: React.FC = () => {
     {
       id: '01',
       title: 'Diagnose',
-      desc: <>It starts with the free fit call. I map exactly <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a plan ranked by how fast each build pays back.</>,
+      desc: <>It starts with the free fit call. I map exactly <span style={{ fontWeight: 600, color: 'var(--color-accent-ink)' }}>where your time and money are leaking,</span> and hand you a plan ranked by how fast each build pays back.</>,
     },
     {
       id: '02',
       title: 'Design',
-      desc: <>I draw the full system out, every data flow and integration, <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec, so what ships is what we agreed on.</>,
+      desc: <>I draw the full system out, every data flow and integration, <span style={{ fontWeight: 600, color: 'var(--color-accent-ink)' }}>before anyone writes code.</span> You sign off on the spec, so what ships is what we agreed on.</>,
     },
     {
       id: '03',
       title: 'Build',
-      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>the day it launches,</span> and you watch the progress the whole way.</>,
+      desc: <>I build, test, and deploy into your existing stack. Your team uses it <span style={{ fontWeight: 600, color: 'var(--color-accent-ink)' }}>the day it launches.</span> You own all of it. The code, the integrations, and the data live in your stack, so if we ever stop, it keeps running without me.</>,
     },
   ];
 
@@ -1069,6 +1101,7 @@ const LandingPage: React.FC = () => {
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <LandingHero />
+        <MetricStrip />
         <ProblemSection />
         <AgentReadySection />
         <BuildOutcomesSection />
