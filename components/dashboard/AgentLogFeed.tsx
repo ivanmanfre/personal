@@ -14,6 +14,35 @@ import { renderLightMarkdown } from '../../lib/lightMarkdown';
  * The body is rendered as `<pre>` so the agents' formatted blocks (QA scores,
  * verdict bars, "━━━" separators) keep their shape exactly like ClickUp showed.
  */
+// Many n8n agents (QA, Content, Hook, …) write their log body as a raw JSON-stringified
+// blob, with the actual human-readable text buried inside as one field. Un-wrap it for
+// display: prefer a known prose field; otherwise pretty-print a slimmed object. Plain-text
+// bodies (Promoter, lint gates) pass through untouched.
+const HUMAN_FIELDS = [
+  'qa_feedback', 'feedback', 'overall_feedback', 'generated_post', 'final_post',
+  'hooks_text', 'revised_caption', 'summary', 'verdict_summary', 'note', 'text', 'body', 'message',
+];
+function humanizeBody(raw: string): string {
+  const s = (raw || '').trim();
+  if (!s || (s[0] !== '{' && s[0] !== '[')) return raw;
+  let obj: any;
+  try { obj = JSON.parse(s); } catch { return raw; }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return raw;
+  for (const f of HUMAN_FIELDS) {
+    if (typeof obj[f] === 'string' && obj[f].trim()) return obj[f].trim();
+  }
+  // No known prose field — pretty-print, dropping bulky/duplicate/noise keys.
+  try {
+    const slim: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (k.endsWith('_body') || k.endsWith('_raw') || k === 'rewrite' || k === 'qa_rewrite') continue;
+      if (typeof v === 'string' && v.length > 600) continue;
+      slim[k] = v;
+    }
+    return JSON.stringify(Object.keys(slim).length ? slim : obj, null, 2);
+  } catch { return raw; }
+}
+
 const AGENT_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   'Ivan':                  User,
   'Editorial Agent':       Sparkles,
@@ -187,8 +216,9 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
             const Icon = AGENT_ICON[e.agent] || MessageSquareDashed;
             const tint = AGENT_TINT[e.agent] || 'text-zinc-300 bg-zinc-800/40 border-zinc-700/30';
             const expanded = bodyOpen[i] ?? false;
-            const preview = (e.body || '').replace(/\s+/g, ' ').slice(0, 140);
-            const truncated = (e.body || '').length > 140;
+            const display = humanizeBody(e.body || '');
+            const preview = display.replace(/\s+/g, ' ').slice(0, 140);
+            const truncated = display.length > 140;
             return (
               <div key={i} className={`px-3 py-1.5 hover:bg-zinc-800/20 transition-colors ${newKeys.has(`${e.ts}|${e.agent}`) ? 'animate-log-pulse' : ''}`}>
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
@@ -211,8 +241,8 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
                 <div className="mt-1">
                   {expanded || !truncated ? (
                     renderMarkdown
-                      ? <div className="text-[12px] text-zinc-300 leading-snug pl-1 border-l-2 border-zinc-800/60 ml-0.5 pl-2">{renderLightMarkdown(e.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
-                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans pl-2 border-l-2 border-zinc-800/60">{e.body || '(empty)'}</pre>
+                      ? <div className="text-[12px] text-zinc-300 leading-snug pl-1 border-l-2 border-zinc-800/60 ml-0.5 pl-2">{renderLightMarkdown(display || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
+                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans pl-2 border-l-2 border-zinc-800/60">{display || '(empty)'}</pre>
                   ) : (
                     <p className="text-[11.5px] text-zinc-500 line-clamp-1 pl-1">{preview}{truncated ? '…' : ''}</p>
                   )}
