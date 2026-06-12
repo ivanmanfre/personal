@@ -338,39 +338,18 @@ export function buildLMAssets(input: Omit<LMGenPayload, 'phase'>) {
 // most recent row for this LM at the chosen time, or insert one from the draft's
 // post_body + cover if no row exists yet. Also moves the LM stage to 'scheduled'.
 export async function scheduleLM(draft_id: string, scheduled_at: string) {
-  const { supabase } = await import('./supabase');
-  const { data: rows } = await supabase
-    .from('scheduled_posts')
-    .select('id')
-    .eq('clickup_task_id', draft_id)
-    .order('created_at', { ascending: false })
-    .limit(1);
-  const existing = rows && rows[0];
-  if (existing) {
-    const { error } = await supabase
-      .from('scheduled_posts')
-      .update({ status: 'queued_v2', scheduled_at })
-      .eq('id', existing.id);
-    if (error) throw new Error(`schedule failed: ${error.message}`);
-  } else {
-    const { data: d } = await supabase
-      .from('lm_drafts_v2')
-      .select('post_body, cover_url')
-      .eq('id', draft_id)
-      .single();
-    const { error } = await supabase.from('scheduled_posts').insert({
-      clickup_task_id: draft_id,
-      post_text: d?.post_body || '',
-      media_urls: d?.cover_url ? [d.cover_url] : [],
-      post_format: d?.cover_url ? 'image' : 'text',
-      scheduled_at,
-      status: 'queued_v2',
-      platform: 'linkedin',
-    });
-    if (error) throw new Error(`schedule failed: ${error.message}`);
-  }
-  const { error: sErr } = await supabase.from('lm_drafts_v2').update({ status: 'scheduled' }).eq('id', draft_id);
-  if (sErr) throw new Error(`schedule failed: ${sErr.message}`);
+  // scheduled_posts is SELECT-only for the dashboard's anon key (RLS) — a direct
+  // update silently matches 0 rows while the draft status flip succeeds, so the
+  // card says scheduled but the queue keeps the stale time. The lm-schedule edge
+  // function does the queue write with the service role and flips the draft.
+  const anonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  const res = await fetch('https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-schedule', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + anonKey },
+    body: JSON.stringify({ draft_id, scheduled_at }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok || !out.ok) throw new Error(`schedule failed: ${out.error || res.status}${out.detail ? ' — ' + out.detail : ''}`);
   return { ok: true, draft_id, scheduled_at };
 }
 
