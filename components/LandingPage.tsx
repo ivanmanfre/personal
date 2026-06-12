@@ -251,14 +251,13 @@ const useMediaQuery = (query: string): boolean => {
 const METRICS = [
   { fig: '100+', label: 'Builds shipped' },
   { fig: '90-day', label: 'Payback rule' },
-  { fig: '50-state', label: 'Coverage' },
-  { fig: '0', label: 'Lock-in' },
+  { fig: '2–3x', label: 'More capacity' },
 ];
 
 const MetricStrip: React.FC = () => (
   <section className="border-t border-b" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-black/10">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-black/10">
         {METRICS.map((m, i) => (
           <motion.div
             key={m.label}
@@ -514,11 +513,11 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 const FUTURES = {
   without: {
     label: 'WITHOUT THE SYSTEMS',
-    lines: ["It's 9am and 23 approvals are already waiting on you.", 'You hired another coordinator to keep pace, and now you manage them too.', 'You worked more this year and the margin came in thinner.'],
+    lines: ["It's 9am and 23 approvals are already waiting on you.", 'You hired another coordinator to keep pace, and now you manage them too.', 'Leads come in faster than you can follow up.', 'You worked more this year and the margin came in thinner.'],
   },
   with: {
     label: 'WITH THEM',
-    lines: ['Approvals clear overnight. Nothing waits on you.', 'The weekly report wrote itself before you woke up.', 'Same payroll, two new clients live.'],
+    lines: ['Approvals clear overnight. Nothing waits on you.', 'The weekly report wrote itself before you woke up.', 'Lead gen and outreach run on their own. The pipeline stays full.', 'Same payroll, two new clients live.'],
   },
 };
 
@@ -880,13 +879,12 @@ const FinalCTA: React.FC = () => (
             <span style={{ color: 'var(--color-accent-light)' }}>100+ builds, in production.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            I build and ship everything myself, start to finish. Clients have ranged from
-            solo founders to engineers at Meta and BNP Paribas. The posts and the DM that
-            found you came from{' '}
+            Everything I build, I build and run myself. The posts and the DM that found you
+            came from{' '}
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
-              systems I run myself
+              those same systems
             </a>
-            . Book the call and I'll show you where AI saves hours and adds margin in your business, even if we never work together.
+            . Book the call and I'll show you where AI saves hours and adds margin in yours, even if we never work together.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
