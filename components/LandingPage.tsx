@@ -274,11 +274,11 @@ const ProblemSection: React.FC = () => {
                 </span>
               </RevealH2>
               <p style={{ ...T.serif, maxWidth: '50ch' }}>
-                Every new client should widen your margin. Instead it adds another
-                coordinator, another handoff, another thing routing through you, and
-                the margin barely moves. I build AI systems that take the repeatable
-                work off the payroll, so the next stage of growth drops to the bottom
-                line instead of getting eaten by it.
+                Every new client should widen your margin. Instead it means another
+                salary and more work routed back through you, and the margin barely
+                moves. I build AI systems that take the repeatable work off the
+                payroll, so the next stage of growth drops to the bottom line instead
+                of getting eaten by it.
               </p>
             </motion.div>
           </motion.div>
@@ -848,12 +848,13 @@ const FinalCTA: React.FC = () => (
             <span style={{ color: 'var(--color-accent-light)' }}>100+ builds, in production.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            I design and ship every build myself, for solo founders and for engineers at
-            companies like Meta and BNP Paribas. The posts and the DM that found you run on{' '}
+            I build and ship everything myself, start to finish. Clients have ranged from
+            solo founders to engineers at Meta and BNP Paribas. The posts and the DM that
+            found you came from{' '}
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
               systems I run myself
             </a>
-            . Book the call and I'll show you where AI cuts hours and adds margin in your business, even if we never work together.
+            . Book the call and I'll show you where AI saves hours and adds margin in your business, even if we never work together.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
