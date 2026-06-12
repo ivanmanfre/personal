@@ -206,7 +206,7 @@ const LandingHero: React.FC = () => {
               transition={{ delay: 1.05, duration: 0.7, ease }}
               className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
             >
-              {['Leads cold while follow-up waits on a human', 'Churn you catch after they have already gone', 'Pipeline capped by who you can afford to hire'].map((b) => (
+              {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
                 <li
                   key={b}
                   className="flex items-center gap-2.5"

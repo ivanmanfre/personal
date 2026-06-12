@@ -267,13 +267,18 @@ const ProblemSection: React.FC = () => {
             <motion.div {...inView}>
               <Label>01</Label>
               <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
-                You've hit the<br />headcount wall.
+                You're growing.<br />
+                <span style={{ position: 'relative', display: 'inline-block' }}>
+                  The margin isn't.
+                  <SageSweep delay={0.5} opacity={0.85} />
+                </span>
               </RevealH2>
               <p style={{ ...T.serif, maxWidth: '50ch' }}>
-                Each new hire adds salary and oversight before it adds margin, and
-                you're still the one everything routes through. I build AI systems
-                that take over the repetitive work, so the next stage of growth
-                doesn't need the next round of hires.
+                Every new client should widen your margin. Instead it adds another
+                coordinator, another handoff, another thing routing through you, and
+                the margin barely moves. I build AI systems that take the repeatable
+                work off the payroll, so the next stage of growth drops to the bottom
+                line instead of getting eaten by it.
               </p>
             </motion.div>
           </motion.div>
@@ -636,17 +641,27 @@ const PaybackSection: React.FC = () => {
 
   return (
     <section
-      className="py-12 md:pt-20 md:pb-28 border-t"
-      style={{ ...DIVIDER, backgroundColor: '#ECE6DA', boxShadow: 'inset 0 10px 18px -14px rgba(26,26,26,0.3)' }}
+      className="py-12 md:pt-20 md:pb-28 border-t relative overflow-hidden"
+      style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}
     >
-      <div className="container mx-auto px-8 max-w-6xl">
+      {/* Editorial grid — light lines, echoing the hero cover */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(247,244,239,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(247,244,239,0.05) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+        aria-hidden="true"
+      />
+      <div className="container mx-auto px-8 max-w-6xl relative" style={{ zIndex: 1 }}>
 
         <motion.div {...inView} className="mb-16">
-          <Label>06</Label>
-          <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), marginBottom: '1.25rem' }}>
+          <Label dark>06</Label>
+          <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), color: '#F7F4EF', marginBottom: '1.25rem' }}>
             The 90-Day<br />Payback Rule.
           </RevealH2>
-          <p style={{ ...T.serif, maxWidth: '480px' }}>
+          <p style={{ ...T.serif, color: 'rgba(247,244,239,0.72)', maxWidth: '480px' }}>
             Every build is scoped to pay back within 90 days or I don't build it.
             Plug in your numbers and see how much we can invest while still hitting that bar.
           </p>
@@ -698,9 +713,9 @@ const PaybackSection: React.FC = () => {
               </p>
             </div>
 
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.5 }}>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: 'rgba(247,244,239,0.7)', lineHeight: 1.5 }}>
               Every quarter you wait costs about{' '}
-              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#1A1A1A' }}>${Math.round(yearly / 4).toLocaleString()}</span>.
+              <span style={{ fontStyle: 'normal', fontWeight: 600, color: '#F7F4EF' }}>${Math.round(yearly / 4).toLocaleString()}</span>.
               {' '}The diagnosis takes one week.
             </p>
 
@@ -709,7 +724,7 @@ const PaybackSection: React.FC = () => {
               whileHover={{ y: -2 }}
               transition={{ duration: 0.18 }}
               className="flex items-center justify-between px-7 py-4"
-              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', backgroundColor: '#1A1A1A', color: '#F7F4EF' }}
+              style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', backgroundColor: '#F7F4EF', color: '#1A1A1A' }}
             >
               <span>See if it's a fit</span>
               <ArrowRight size={18} />
@@ -721,35 +736,6 @@ const PaybackSection: React.FC = () => {
     </section>
   );
 };
-
-// ─── Gap band — urgency between proof and the calculator (numberless) ────────
-// Lights the fuse: proof has landed, now the clock starts before the math.
-// Thin band, mono kicker (no section number), single CTA into the scorecard.
-const GapSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-3xl text-center">
-      <motion.div {...inView}>
-        <Label>While you wait</Label>
-        <RevealH2 style={{ ...T.display('clamp(2.2rem,4vw,3.4rem)'), marginBottom: '1.5rem' }}>
-          Every quarter, the gap{' '}
-          <span style={{ fontStyle: 'italic' }}>gets wider.</span>
-        </RevealH2>
-        <p style={{ ...T.serif, maxWidth: '56ch', margin: '0 auto 1.5rem' }}>
-          The businesses that automated this keep pulling further ahead. They answer
-          leads in minutes, deliver same day, and take on the clients you turn away for
-          lack of hours. Wait another quarter and you're not closing the gap to where
-          they are today. You're chasing where they'll be tomorrow.
-        </p>
-        <p style={{ ...T.serif, fontSize: '16px', maxWidth: '56ch', margin: '0 auto 2rem', color: '#1A1A1A' }}>
-          Your bottleneck has a price tag. Take two minutes and see yours.
-        </p>
-        <MagneticCTA href="/scorecard" variant="primary" fontSize="16px" px="px-8 py-4">
-          See what it's costing you <ArrowRight size={17} />
-        </MagneticCTA>
-      </motion.div>
-    </div>
-  </section>
-);
 
 // ─── Section 6: The Offer ─────────────────────────────────────────────────────
 const OFFER_BUILDS = [
@@ -875,18 +861,19 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            08 / THE NEXT STEP
+            08 / WHO BUILDS IT
           </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), fontStyle: 'normal', color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
-            See what I'd build<br />
-            in <span style={{ fontStyle: 'italic' }}>your</span> business.
+            Iván Manfredi.<br />
+            <span style={{ fontStyle: 'italic' }}>100+ builds, in production.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            The posts and the DM that found you came from{' '}
+            I design and ship every build myself, for solo founders and for engineers at
+            companies like Meta and BNP Paribas. The posts and the DM that found you run on{' '}
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
               systems I run myself
             </a>
-            , and I've shipped 100+ builds for growing service businesses. Book the call and I'll show you where AI cuts hours and adds margin in yours, even if we never work together.
+            . Book the call and I'll show you where AI cuts hours and adds margin in your business, even if we never work together.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
@@ -1106,7 +1093,6 @@ const LandingPage: React.FC = () => {
         <BuildOutcomesSection />
         <TestimonialsSection />
         <WorkSection />
-        <GapSection />
         <PaybackSection />
         <OfferSection />
         <FinalCTA />
