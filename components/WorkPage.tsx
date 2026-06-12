@@ -99,6 +99,38 @@ const cases: Case[] = [
     images: ['/cases/easygapps-billing.png', '/cases/easygapps.png'],
     imageAlts: ['easyGapps Partner Sales Console showing billing accounts', 'Generated invoice in Xero with Google Workspace line items and automated tax allocation'],
   },
+  {
+    id: '08',
+    client: 'Effektify',
+    industry: 'Marketing Agency · Norway',
+    title: <>Every lead, routed <span className="font-drama italic">in minutes.</span></>,
+    metric: 'Hours → minutes',
+    problem: "A Norwegian marketing agency was collecting leads from SEOptimer, Typeform, Facebook Ads, Google Ads, and LinkedIn with no unified system. Leads slipped through, response times suffered, and sales reps had no visibility into whether a contact had engaged before.",
+    solution: "Built a lead management automation that centralizes every source through a single webhook endpoint and normalizes the data regardless of origin. Every lead backs up to Airtable before any processing, so nothing is ever lost. Deduplication checks both email and domain against existing Pipedrive contacts. Returning leads route to their original sales rep with full context on how they re-entered; new leads distribute round-robin across the team with persistent tracking that survives system restarts. Slack fires instantly with complete context and a direct Pipedrive link.",
+    outcome: "The sales team responds in minutes instead of hours. Duplicate outreach is gone. Marketing has full source attribution for ROI analysis, down to the ad platform.",
+  },
+  {
+    id: '09',
+    client: 'Digital Agency',
+    anonymized: true,
+    industry: 'Marketing · Two Founders',
+    title: <>Two voices, <span className="font-drama italic">one content engine.</span></>,
+    metric: '2 founders · daily output',
+    problem: "Two agency founders both needed a consistent LinkedIn presence plus lead magnets, and they write nothing alike. Manual production meant output was capped by whoever had a free evening, and ghostwritten drafts kept flattening both of them into the same generic voice.",
+    solution: "Built a dual-author content engine on a three-layer voice architecture: a shared brand layer, a separate calibrated voice layer per founder, and a forbidden-language layer that strips the patterns that make copy read as AI. An editorial agent reviews every draft before it reaches a human. The lead magnet pipeline generates complete packages from a single idea: the content itself, live landing and resource pages, and email copy. Captured leads enrich through Apollo and flow into the newsletter automatically, and weekly research keeps the topic queue full.",
+    outcome: "Both founders publish consistently in their own registers from one pipeline. Lead magnets ship as finished packages instead of week-long assembly projects. Running in production for months, maintained, still shipping.",
+  },
+  {
+    id: '10',
+    client: 'Consulting Firm',
+    anonymized: true,
+    industry: 'Client Onboarding',
+    title: <>Deal won. Onboarding <span className="font-drama italic">fires itself.</span></>,
+    metric: 'Closed → set up, same hour',
+    problem: "Every closed deal kicked off the same manual scramble: create the folders, prepare the documents, send the e-signature, set up the project workspace. Steps slipped exactly when the team was busiest, which is exactly when deals close.",
+    solution: "Built a two-stage automation off the deal-won trigger. Stage one assembles everything for review: workspace structure, documents, e-signature packet, project tasks. Stage two executes the onboarding once a human approves, so nothing client-facing ever sends unreviewed. The team's feedback from the first weeks of live use was folded back into the flow.",
+    outcome: "Onboarding starts the same hour the deal closes, every step in the same order every time, with the review gate keeping a human in front of anything the client sees.",
+  },
 ];
 
 const WorkPage: React.FC = () => {
@@ -139,7 +171,7 @@ const WorkPage: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-ink-soft max-w-2xl leading-relaxed"
           >
-            Selected Agent-Ready Ops engagements. Each one followed the same method: score the 4 preconditions, pick the narrow first scope, encode the judgment, design the review loop, build.
+            Selected engagements. Each one shipped the same way: fixed scope agreed up front, built inside the client's stack, production-hardened with monitoring and review loops, owned by them at the end.
           </motion.p>
         </div>
       </section>
@@ -231,13 +263,13 @@ const WorkPage: React.FC = () => {
             Have a system you need <span className="font-drama italic">shipped like this?</span>
           </h2>
           <p className="text-lg text-ink-soft mb-8 max-w-xl mx-auto leading-relaxed">
-            The Agent-Ready Blueprint evaluates your operation against the 4 preconditions and hands back your 90-Day AI Rollout Plan.
+            30 minutes, free. We figure out what to build first and what it costs. If the answer is "nothing yet," I'll tell you that too.
           </p>
           <a
-            href="/assessment"
+            href="/start"
             className="inline-flex items-center gap-3 px-8 py-4 bg-accent text-black font-semibold tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
           >
-            Build your Blueprint <ArrowRight size={18} />
+            Book the fit call <ArrowRight size={18} />
           </a>
         </div>
       </section>
