@@ -401,7 +401,7 @@ const BuildOutcomesSection: React.FC = () => {
         <Label>03</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Recent builds,<br />
-          <span style={{ fontStyle: 'italic' }}>already in production.</span>
+          already in production.
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
           The numbers above come from these. Click into any build for the full story.
@@ -422,10 +422,10 @@ const BuildOutcomesSection: React.FC = () => {
             style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
           >
             <div style={{ ...T.mono, marginBottom: '10px' }}>{o.category}</div>
-            <h3 style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.5rem,1.8vw,1.85rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontWeight: 400, fontSize: 'clamp(1.5rem,1.8vw,1.85rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
               {o.type}
             </h3>
-            <div style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontStyle: 'italic', fontSize: 'clamp(1.6rem,2.2vw,2.2rem)', color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '5px' }}>
+            <div style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontSize: 'clamp(1.6rem,2.2vw,2.2rem)', color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '5px' }}>
               {o.metric}
             </div>
             <div style={{ ...T.mono, marginBottom: '14px' }}>{o.metricLabel}</div>
@@ -528,7 +528,7 @@ const AgentReadySection: React.FC = () => (
         <Label>02</Label>
         <RevealH2 style={{ ...T.display('clamp(2rem,3vw,2.8rem)'), marginBottom: 0 }}>
           Six months from now,{' '}
-          <span style={{ fontStyle: 'italic' }}>one of two things is true.</span>
+          one of two things is true.
         </RevealH2>
       </motion.div>
 
@@ -589,7 +589,7 @@ const WorkSection: React.FC = () => {
           <Label>05</Label>
           <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
             Diagnose first.{' '}
-            <span style={{ fontStyle: 'italic' }}>Build second.</span>
+            Build second.
           </RevealH2>
         </motion.div>
 

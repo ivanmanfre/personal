@@ -160,7 +160,6 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
               style={{
                 fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
                 fontWeight: 400,
-                fontStyle: 'italic',
                 fontSize: 'clamp(1.6rem,2.2vw,2rem)',
                 lineHeight: 1.1,
                 letterSpacing: '-0.02em',
