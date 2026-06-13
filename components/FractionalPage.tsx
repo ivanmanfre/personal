@@ -33,6 +33,14 @@ const builds = [
   },
 ];
 
+const systems = [
+  { name: 'Demand', role: 'Creates attention and inbound.', livesHere: 'Content System', isProduct: true },
+  { name: 'Pipeline', role: 'Captures, qualifies and routes every lead.', livesHere: 'Lead magnets · outreach', isProduct: false },
+  { name: 'Conversion', role: 'Wins the deals you are already in.', livesHere: 'Call Intelligence', isProduct: true },
+  { name: 'Delivery', role: 'Runs the repeatable work behind the service.', livesHere: 'Scoped to you', isProduct: false },
+  { name: 'Command', role: 'Watches all of it and shows you what is happening.', livesHere: 'Dashboards · alerts', isProduct: false },
+];
+
 const buildSteps = [
   {
     title: 'Fit call',
@@ -174,6 +182,49 @@ const FractionalPage: React.FC = () => {
             You work with the person who builds it. No account manager, no handoff, no junior doing the actual work. I take 2-3 builds per month.
           </motion.p>
 
+          {/* THE MAP — five systems */}
+          <motion.div
+            initial={{ y: 20 }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
+              Every service business runs on <span className="font-drama italic">five systems.</span>
+            </h2>
+            <p className="text-ink-soft mb-10 max-w-2xl leading-relaxed">
+              I build the AI version of each, one at a time, and you own every one. You start where it hurts most, usually Demand or Conversion, and the system you install starts feeding the next.
+            </p>
+
+            <div className="space-y-5 mb-8">
+              {systems.map((sys, i) => (
+                <div key={sys.name} className="border-l border-accent pl-6 relative">
+                  <span className="absolute -left-[7px] top-1.5 w-3 h-3 rounded-full bg-accent" aria-hidden="true" />
+                  <div className="flex items-baseline justify-between gap-4 flex-wrap mb-1">
+                    <h3 className="font-semibold text-lg text-black tracking-tight">
+                      <span className="font-mono text-[11px] uppercase tracking-widest text-ink-mute mr-3">0{i + 1}</span>
+                      {sys.name}
+                    </h3>
+                    <span className={`font-mono text-[10px] uppercase tracking-widest ${sys.isProduct ? 'text-black' : 'text-ink-mute'}`}>
+                      {sys.livesHere}
+                    </span>
+                  </div>
+                  <p className="text-ink-soft leading-relaxed">
+                    {sys.role}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-ink-soft leading-relaxed max-w-2xl mb-6">
+              Each one feeds the next. Demand fills the pipeline, a clean pipeline sharpens conversion, and Command finally lets you see the bottleneck after this one. The roadmap you get after your first build is exactly that: the next system worth installing.
+            </p>
+
+            <p className="text-sm text-ink-mute leading-relaxed max-w-2xl border-l-2 border-zinc-300 pl-4">
+              Two of these, Demand and Conversion, I have productized because every business needs them. The rest get shaped to your business on the call. Most businesses run beautifully on two or three, not five.
+            </p>
+          </motion.div>
+
           {/* WHAT I BUILD */}
           <motion.div
             initial={{ y: 10 }}
@@ -185,7 +236,7 @@ const FractionalPage: React.FC = () => {
               What I build
             </h2>
             <p className="text-ink-soft mb-10 max-w-2xl">
-              Three places people usually start. The fit call decides what your first build is and what it costs, in one conversation.
+              The two systems I have productized, plus the one that covers everything else. The fit call decides which you start with and what it costs, in one conversation.
             </p>
           </motion.div>
 
@@ -276,7 +327,7 @@ const FractionalPage: React.FC = () => {
               The roadmap <span className="font-drama italic">is honest.</span>
             </h3>
             <p className="text-lg text-ink-soft leading-relaxed mb-3">
-              Every first build produces a roadmap of the highest-leverage systems I found while working inside your business, costed and sequenced. It is yours regardless of what you do next.
+              Every first build produces a roadmap of the highest-leverage systems I found while working inside your business: which of the five to install next, costed and sequenced. It is yours regardless of what you do next.
             </p>
             <p className="text-lg text-black leading-relaxed font-medium">
               If there is nothing worth building next, the roadmap says so. You move to the Care Plan or just walk with working systems. I would rather lose the next build than sell you one you don't need.

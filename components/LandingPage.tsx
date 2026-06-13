@@ -775,7 +775,7 @@ const OFFER_BUILDS = [
     name: 'Fractional AI Partner',
     price: 'Build by build',
     cadence: 'No retainer',
-    desc: 'Most clients stack builds: the roadmap from each one feeds the next, until you have a partner who ships every month. Without ever signing a retainer.',
+    desc: 'Most clients install one system, then the next, across the five that run a service business: Demand, Pipeline, Conversion, Delivery, Command. A partner who ships every month, no retainer.',
     href: '/fractional',
     cta: 'See how it works',
   },
