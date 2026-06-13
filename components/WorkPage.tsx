@@ -2,13 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
+import { T, DIVIDER, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA } from './editorial';
 
 type Case = {
   id: string;
   client: string;
   anonymized?: boolean;
   industry: string;
-  title: React.ReactNode;
+  title: string;
   metric: string;
   problem: string;
   solution: string;
@@ -22,7 +23,7 @@ const cases: Case[] = [
     id: '01',
     client: 'ProvalTech',
     industry: 'Sales Tech',
-    title: <>AI call auditing, <span className="font-drama italic">at 100% coverage.</span></>,
+    title: "AI call auditing, at 100% coverage.",
     metric: '5% sampled → 100% graded',
     problem: "ProvalTech records every sales call in Fireflies. But with multiple call types and a shared recording account, there was no consistent view of rep performance, no fast escalation path when customer risk appeared, and no way to compare reps fairly across different call shapes.",
     solution: "Built a system that ingests every finished call, evaluates it on service and expertise criteria, calculates a final score that adapts to the call type, emails each participant their own summary and action items, and alerts leadership when real risk surfaces, with the excerpt and recording link attached. Internal and solo calls filter out automatically so reports stay clean. Airtable dashboards surface per-call detail, per-rep scorecards, trends, and an issues board.",
@@ -35,7 +36,7 @@ const cases: Case[] = [
     client: 'Marketing Coach',
     anonymized: true,
     industry: 'Agency Operations',
-    title: <>A lead magnet system that <span className="font-drama italic">runs itself after approval.</span></>,
+    title: "A lead magnet system that runs itself after approval.",
     metric: '15 min · idea to launched',
     problem: "Every lead magnet took days of manual work across disconnected tools: writing the content, building landing and resource pages, configuring the email sequence, wiring the tracking link, formatting the spreadsheet if it was a calculator. Output was capped by how much assembly one person could grind through each week.",
     solution: "Built a system where a single idea submitted in the project tool generates the full package in under 15 minutes. AI drafts everything grounded on the founder's masterclass transcripts and top-performing posts via RAG, in the founder's voice. He reviews and approves. The system then auto-builds every downstream asset in parallel: live landing page, live resource page on the founder's subdomain, email draft ready to activate, geo-routed smart link, Google Sheet with working formulas if it's a calculator, and a scheduled LinkedIn post with comment monitoring and DM sequences.",
@@ -45,7 +46,7 @@ const cases: Case[] = [
     id: '03',
     client: 'ProSWPPP',
     industry: 'Compliance · 50 states',
-    title: <>Environmental compliance, <span className="font-drama italic">no researcher in the loop.</span></>,
+    title: "Environmental compliance, no researcher in the loop.",
     metric: 'Multi-FTE → same-day',
     problem: "Every stormwater permit required hours of manual research: MS4 operators, endangered species assessments, soil composition, watershed data, state-specific permit terminology. At scale this would have demanded several full-time researchers, and same-day delivery was impossible.",
     solution: "Built an end-to-end n8n automation from intake to delivery. Gravity Forms feeds a research layer that pulls EPA ECHO for MS4 detection with distance-weighted scoring and fallback logic for delegated states; FWS IPaC for endangered species with project-centered polygons (99.9% reduction in query area vs the county-centroid approach); USDA SSURGO for area-scaled soil sampling; Census and TIGERweb for watershed boundaries. State-specific document chains route through alphabetically ordered switches with continueOnFail resilience. A client-facing audit interface lets the team review and correct pre-populated data before generation runs.",
@@ -57,7 +58,7 @@ const cases: Case[] = [
     id: '04',
     client: 'ProSWPPP',
     industry: 'SEO Content Ops',
-    title: <>Multi-format content, <span className="font-drama italic">from a single interface.</span></>,
+    title: "Multi-format content, from a single interface.",
     metric: '1 → 3 article formats',
     problem: "The SEO content pipeline lived in a single Google Sheet supporting only one article type (keyword spokes, 1,000-1,500 words). Derek wanted to scale across three formats (spokes, state pillars, competitor comparisons), but the existing setup had no concept of article types, no pillar-to-spoke relationships, no production visibility, and no way to see coverage gaps across 50 states.",
     solution: "Built a dedicated AI Content module inside ProSWPPP's internal Railway app. 50-state dashboard shows coverage color-coded at a glance: has pillar, articles but no pillar, untouched. Bulk operations replace one-at-a-time entry. WordPress syncs every 5 minutes. The n8n workflow routes each article through a format-specific research and writing branch (1,500w spoke / 3,500w pillar / comparison table), all converging on a shared image pipeline that embeds the ProSWPPP logo naturally into worker photographs via Gemini.",
@@ -69,7 +70,7 @@ const cases: Case[] = [
     id: '05',
     client: 'ProSWPPP',
     industry: 'Sales Operations',
-    title: <>State-aware sales follow-up, <span className="font-drama italic">zero-touch.</span></>,
+    title: "State-aware sales follow-up, zero-touch.",
     metric: 'Manual → zero-touch',
     problem: "The sales team was manually managing post-bid follow-up across four sequence types and three reps, copy-pasting templates and swapping regulatory acronyms per state. Misfires happened. Follow-up slipped. Regulatory terminology varied by rep.",
     solution: "Built a Pipedrive-integrated SDR automation that classifies every lead into the right sequence based on project stage, auto-detects the project state and inserts the correct environmental acronym (TCEQ Texas, GA EPD Georgia, CASQUA California, and so on across all 50 states), rotates sender assignment across the team (or honors manual overrides), and sends every email from the assigned rep's actual inbox so deliverability and reply tracking stay authentic. Sequence progression is automatic: as leads move through stages, old trigger fields clear and new sequences fire. Overlap detection surfaces conflicts as Pipedrive tasks.",
@@ -81,7 +82,7 @@ const cases: Case[] = [
     id: '06',
     client: 'Destino Farms',
     industry: 'Cannabis Distribution',
-    title: <>A supplier menu that <span className="font-drama italic">reconciles itself.</span></>,
+    title: "A supplier menu that reconciles itself.",
     metric: '15+ hrs/week eliminated',
     problem: "A cannabis distributor was manually consolidating inventory from multiple suppliers across WhatsApp messages, supplier websites, and Google Sheets. Hours daily of data entry. Pricing errors and stale listings slipped through constantly.",
     solution: "Built an intelligent n8n automation that auto-consolidates inventory from every channel into a single master Google Sheet, standardizes product classifications across inconsistent supplier formats (strain types, flower categories, THC percentages), protects supplier identity through vendor coding and automated COA redaction, maintains data integrity with automatic out-of-stock tracking and duplicate management, and mirrors supplier images and documents to the client's own Google Drive so nothing depends on external hosting.",
@@ -91,7 +92,7 @@ const cases: Case[] = [
     id: '07',
     client: 'easyGapps',
     industry: 'Cloud Reseller',
-    title: <>Month-end billing, <span className="font-drama italic">down to hours.</span></>,
+    title: "Month-end billing, down to hours.",
     metric: 'Days → hours',
     problem: "A Google Workspace reseller was running month-end billing through manual spreadsheet calculations. Errors compounded, margins drifted inconsistent, and tax allocation from Google's aggregated exports, where voice taxes arrived without customer attribution, was a particular reconciliation nightmare.",
     solution: "Built a cloud-native billing automation handling the complete flow from raw usage data to verified invoices in Xero. Daily billing exports ingest into BigQuery. Subscriptions classify automatically as New, Renewal, or Transfer using customer history and heuristic logic. A three-tier pricing engine applies dynamic markup rules with support for customer and SKU-specific overrides. Aggregated voice taxes distribute proportionally based on usage, solving the attribution problem that previously required hours of manual mapping. A dry-run mode lets the team simulate a full billing cycle without touching the live ledger.",
@@ -103,7 +104,7 @@ const cases: Case[] = [
     id: '08',
     client: 'Effektify',
     industry: 'Marketing Agency · Norway',
-    title: <>Every lead, routed <span className="font-drama italic">in minutes.</span></>,
+    title: "Every lead, routed in minutes.",
     metric: 'Hours → minutes',
     problem: "A Norwegian marketing agency was collecting leads from SEOptimer, Typeform, Facebook Ads, Google Ads, and LinkedIn with no unified system. Leads slipped through, response times suffered, and sales reps had no visibility into whether a contact had engaged before.",
     solution: "Built a lead management automation that centralizes every source through a single webhook endpoint and normalizes the data regardless of origin. Every lead backs up to Airtable before any processing, so nothing is ever lost. Deduplication checks both email and domain against existing Pipedrive contacts. Returning leads route to their original sales rep with full context on how they re-entered; new leads distribute round-robin across the team with persistent tracking that survives system restarts. Slack fires instantly with complete context and a direct Pipedrive link.",
@@ -114,7 +115,7 @@ const cases: Case[] = [
     client: 'Digital Agency',
     anonymized: true,
     industry: 'Marketing · Two Founders',
-    title: <>Two voices, <span className="font-drama italic">one content engine.</span></>,
+    title: "Two voices, one content engine.",
     metric: '2 founders · daily output',
     problem: "Two agency founders both needed a consistent LinkedIn presence plus lead magnets, and they write nothing alike. Manual production meant output was capped by whoever had a free evening, and ghostwritten drafts kept flattening both of them into the same generic voice.",
     solution: "Built a dual-author content engine on a three-layer voice architecture: a shared brand layer, a separate calibrated voice layer per founder, and a forbidden-language layer that strips the patterns that make copy read as AI. An editorial agent reviews every draft before it reaches a human. The lead magnet pipeline generates complete packages from a single idea: the content itself, live landing and resource pages, and email copy. Captured leads enrich through Apollo and flow into the newsletter automatically, and weekly research keeps the topic queue full.",
@@ -125,7 +126,7 @@ const cases: Case[] = [
     client: 'Consulting Firm',
     anonymized: true,
     industry: 'Client Onboarding',
-    title: <>Deal won. Onboarding <span className="font-drama italic">fires itself.</span></>,
+    title: "Deal won. Onboarding fires itself.",
     metric: 'Closed → set up, same hour',
     problem: "Every closed deal kicked off the same manual scramble: create the folders, prepare the documents, send the e-signature, set up the project workspace. Steps slipped exactly when the team was busiest, which is exactly when deals close.",
     solution: "Built a two-stage automation off the deal-won trigger. Stage one assembles everything for review: workspace structure, documents, e-signature packet, project tasks. Stage two executes the onboarding once a human approves, so nothing client-facing ever sends unreviewed. The team's feedback from the first weeks of live use was folded back into the flow.",
@@ -141,136 +142,115 @@ const WorkPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-paper)' }}>
 
-      {/* Header */}
-      <section className="pt-32 pb-16 px-6 border-b border-[color:var(--color-hairline)]">
-        <div className="container mx-auto max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
-            <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              Work
-            </span>
+      {/* HEADER */}
+      <section className="pt-36 pb-14 md:pb-20 border-b px-8" style={DIVIDER}>
+        <div className="container mx-auto max-w-6xl">
+          <motion.div {...inView}>
+            <Label>Work</Label>
+            <RevealH2 style={{ ...T.display('clamp(2.6rem,5.2vw,4.6rem)'), marginBottom: '1.5rem', maxWidth: '16ch' }}>
+              Systems that{' '}
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                shipped.
+                <SageSweep delay={0.5} opacity={0.85} />
+              </span>
+            </RevealH2>
+            <p style={{ ...T.serif, fontSize: '19px', maxWidth: '52ch' }}>
+              Selected engagements. Each one shipped the same way: fixed scope agreed up front, built inside the client's stack, production-hardened with monitoring and review loops, owned by them at the end.
+            </p>
           </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
-          >
-            Systems that <span className="font-drama italic">shipped.</span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-xl text-ink-soft max-w-2xl leading-relaxed"
-          >
-            Selected engagements. Each one shipped the same way: fixed scope agreed up front, built inside the client's stack, production-hardened with monitoring and review loops, owned by them at the end.
-          </motion.p>
         </div>
       </section>
 
-      {/* Cases */}
-      <section className="py-20 px-6">
-        <div className="container mx-auto max-w-5xl space-y-32">
+      {/* CASES */}
+      <section className="px-8">
+        <div className="container mx-auto max-w-6xl">
           {cases.map((c, i) => (
             <motion.article
               key={c.id}
               id={`case-${c.id}`}
-              initial={{ opacity: 0, y: 30 }}
+              initial={prefersReduced ? false : { opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 0.5 }}
-              className="grid md:grid-cols-12 gap-8 md:gap-12 scroll-mt-32"
+              viewport={{ once: true, amount: 0.12 }}
+              transition={{ duration: 0.6, ease }}
+              className="grid md:grid-cols-12 gap-8 md:gap-12 py-16 md:py-20 border-t first:border-t-0 scroll-mt-32"
+              style={DIVIDER}
             >
               {/* Meta column */}
-              <div className="md:col-span-4 space-y-4">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{c.id}</span>
-                  <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-soft border border-[color:var(--color-hairline-bold)] px-2 py-1">
+              <div className="md:col-span-4">
+                <div className="flex items-center gap-3 flex-wrap mb-3">
+                  <span style={{ ...T.mono, marginBottom: 0 }}>{c.id}</span>
+                  <span style={{ ...T.mono, marginBottom: 0, color: '#1A1A1A', border: '1px solid rgba(26,26,26,0.25)', padding: '3px 8px' }}>
                     {c.client}
                   </span>
                 </div>
-                <p className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
-                  {c.industry}
-                </p>
-                {/* Metric */}
-                <div className="pt-6 border-t border-[color:var(--color-hairline)]">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute mb-2">Outcome</p>
-                  <p className="font-drama italic text-2xl md:text-3xl text-black leading-tight">
+                <p style={{ ...T.mono, marginBottom: 0 }}>{c.industry}</p>
+
+                {/* Numeral lockup */}
+                <div className="mt-8 pt-6 border-t" style={DIVIDER}>
+                  <div style={{ ...T.mono, marginBottom: '8px' }}>Outcome</div>
+                  <div style={{ ...T.display('clamp(1.7rem,2.4vw,2.4rem)'), color: 'var(--color-accent)', lineHeight: 1.05 }}>
                     {c.metric}
-                  </p>
+                  </div>
                 </div>
+
+                {c.anonymized && (
+                  <p style={{ ...T.mono, marginTop: '1.5rem', textTransform: 'none', letterSpacing: '0.04em' }}>
+                    Client name withheld at their request.
+                  </p>
+                )}
               </div>
 
               {/* Content column */}
-              <div className="md:col-span-8 space-y-6">
-                <h2 className="text-3xl md:text-4xl font-semibold tracking-tight leading-[1.1]">
+              <div className="md:col-span-8">
+                <h2 style={{ ...T.display('clamp(1.9rem,3vw,2.7rem)'), lineHeight: 1.1, marginBottom: '1.5rem' }}>
                   {c.title}
                 </h2>
 
                 {c.images && c.images.length > 0 && (
-                  <div className={`my-8 ${c.images.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}`}>
-                    {c.images.map((src, i) => (
-                      <div key={i} className="border border-[color:var(--color-hairline)] overflow-hidden bg-paper-sunk">
-                        <img
-                          src={src}
-                          alt={c.imageAlts?.[i] ?? ''}
-                          loading="lazy"
-                          className="w-full h-auto"
-                        />
+                  <div className={`mb-8 ${c.images.length > 1 ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}`}>
+                    {c.images.map((src, idx) => (
+                      <div key={idx} className="border overflow-hidden" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: 'var(--color-paper-sunk)' }}>
+                        <img src={src} alt={c.imageAlts?.[idx] ?? ''} loading="lazy" className="w-full h-auto" />
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <div>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute mb-2">The problem</p>
-                    <p className="text-lg text-ink-soft leading-relaxed">{c.problem}</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute mb-2">What shipped</p>
-                    <p className="text-lg text-ink-soft leading-relaxed">{c.solution}</p>
-                  </div>
-                  <div>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute mb-2">The result</p>
-                    <p className="text-lg text-ink-soft leading-relaxed">{c.outcome}</p>
-                  </div>
+                <div className="space-y-5">
+                  {([['The problem', c.problem], ['What shipped', c.solution], ['The result', c.outcome]] as const).map(([lbl, body]) => (
+                    <div key={lbl}>
+                      <div style={{ ...T.mono, marginBottom: '6px' }}>{lbl}</div>
+                      <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '17px', lineHeight: 1.65, color: '#3D3D3B' }}>{body}</p>
+                    </div>
+                  ))}
                 </div>
-
-                {c.anonymized && (
-                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-mute pt-4 border-t border-[color:var(--color-hairline)]">
-                    Client name withheld at their request.
-                  </p>
-                )}
               </div>
             </motion.article>
           ))}
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-24 px-6 border-t border-[color:var(--color-hairline)] bg-paper-sunk">
-        <div className="container mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">
-            Have a system you need <span className="font-drama italic">shipped like this?</span>
-          </h2>
-          <p className="text-lg text-ink-soft mb-8 max-w-xl mx-auto leading-relaxed">
-            30 minutes, free. We figure out what to build first and what it costs. If the answer is "nothing yet," I'll tell you that too.
-          </p>
-          <a
-            href="/start"
-            className="inline-flex items-center gap-3 px-8 py-4 bg-accent text-black font-semibold tracking-wide hover:bg-accent-ink hover:text-white transition-colors"
-          >
-            Book the fit call <ArrowRight size={18} />
-          </a>
+      {/* FINAL CTA — dark band */}
+      <section className="border-t" style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}>
+        <div className="container mx-auto max-w-6xl px-8 py-20 md:py-28 text-center">
+          <motion.div {...inView}>
+            <Label dark>Your turn</Label>
+            <h2 style={{ ...T.display('clamp(2.2rem,4vw,3.6rem)'), color: '#F7F4EF', marginBottom: '1.25rem' }}>
+              Have a system you need{' '}
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                shipped like this?
+                <SageSweep delay={0.45} opacity={0.9} />
+              </span>
+            </h2>
+            <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '17px', color: 'rgba(247,244,239,0.66)', maxWidth: '42ch', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+              30 minutes, free. We figure out what to build first and what it costs. If the answer is "nothing yet," I'll tell you that too.
+            </p>
+            <MagneticCTA href="/start" dark fontSize="17px" px="px-9 py-4">
+              Book the fit call <ArrowRight size={18} />
+            </MagneticCTA>
+          </motion.div>
         </div>
       </section>
     </div>
