@@ -306,10 +306,9 @@ const ProblemSection: React.FC = () => {
               </RevealH2>
               <p style={{ ...T.serif, maxWidth: '50ch' }}>
                 Every new client should widen your margin. Instead it means another
-                salary and more work routed back through you, and the margin barely
-                moves. I build AI systems that take the repeatable work off the
-                payroll, so the next stage of growth drops to the bottom line instead
-                of getting eaten by it.
+                salary and more work routed through you, and the margin barely moves.
+                I build the AI systems that take that work off the payroll, so growth
+                adds margin instead of eating it.
               </p>
             </motion.div>
           </motion.div>
@@ -616,6 +615,8 @@ const WorkSection: React.FC = () => {
             </motion.div>
           ))}
         </div>
+
+        <MidCTA>Want me to map where yours is leaking?</MidCTA>
 
       </div>
     </section>

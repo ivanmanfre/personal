@@ -22,16 +22,6 @@ const LandingHero: React.FC = () => {
   const headlineY = useTransform(scrollYProgress, [0, 1], [0, -36]);
   const headlineOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.5]);
 
-  const word = (text: string, delay: number, italic = false) => (
-    <motion.span
-      initial={{ opacity: 0, y: 38, filter: 'blur(10px)' }}
-      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ delay, duration: 0.85, ease }}
-      style={{ display: 'inline-block', fontStyle: italic ? 'italic' : 'normal' }}
-    >
-      {text}
-    </motion.span>
-  );
 
   return (
     <section
@@ -148,21 +138,20 @@ const LandingHero: React.FC = () => {
                 color: '#1A1A1A',
               }}
             >
-              {word('Stop', 0.4)}{' '}{word('being', 0.5)}{' '}{word('the', 0.62)}{' '}
               <motion.span
-                initial={{ opacity: 0, y: 38, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ delay: 0.72, duration: 0.85, ease }}
-                style={{ display: 'inline-block', color: '#2A8F65' }}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.7, ease }}
+                style={{ display: 'inline-block' }}
               >
-                bottleneck
+                Stop being the <span style={{ color: '#2A8F65' }}>bottleneck</span>
               </motion.span>
               <br />
               {/* Solid black block with paper text — brand signature move */}
               <motion.span
-                initial={{ opacity: 0, y: 50, filter: 'blur(14px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                transition={{ delay: 0.95, duration: 0.9, ease }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.7, ease }}
                 className="whitespace-normal sm:whitespace-nowrap"
                 style={{
                   display: 'inline-block',
