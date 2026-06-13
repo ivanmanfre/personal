@@ -249,6 +249,17 @@ const LandingHero: React.FC = () => {
                 See where you're leaking <ArrowRight size={14} />
               </a>
             </motion.div>
+
+            {/* Named, quantified fold-proof — answers "can I trust you" in viewport 1 */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.35, duration: 0.6 }}
+              className="mt-6"
+              style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}
+            >
+              One client graded <span style={{ color: '#1F6B4B', fontWeight: 600 }}>5%</span> of their sales calls by hand. Now a system grades <span style={{ color: '#1F6B4B', fontWeight: 600 }}>every one</span>, daily.
+            </motion.p>
           </div>
         </div>
       </motion.div>

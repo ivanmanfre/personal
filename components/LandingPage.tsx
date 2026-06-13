@@ -1049,6 +1049,52 @@ const LandingFooter: React.FC = () => {
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Sticky mini-CTA — docks after the fold, hides near the footer ───────────
+// +14% mobile lift on scrolling pages (2026 conversion study); the sticky
+// absorbs most of the CTA benefit once the hero scrolls off. Mobile: full-width
+// bottom bar. Desktop: compact bottom-right. Sharp corners (brand), soft shadow.
+const StickyCTA: React.FC = () => {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const vh = window.innerHeight;
+      const docH = document.documentElement.scrollHeight;
+      const nearBottom = y + vh > docH - vh * 1.25;
+      setShow(y > vh * 0.9 && !nearBottom);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
+  return (
+    <motion.a
+      href="/start"
+      initial={false}
+      animate={{ opacity: show ? 1 : 0, y: show ? 0 : 16 }}
+      transition={{ duration: 0.35, ease }}
+      className="fixed z-[9997] inline-flex items-center justify-center gap-2 left-4 right-4 bottom-4 py-3.5 sm:left-auto sm:right-6 sm:bottom-6 sm:px-7"
+      style={{
+        fontFamily: '"Source Serif 4", serif',
+        fontWeight: 600,
+        fontSize: '15px',
+        backgroundColor: '#1A1A1A',
+        color: '#F7F4EF',
+        boxShadow: '0 10px 34px rgba(26,26,26,0.20)',
+        pointerEvents: show ? 'auto' : 'none',
+      }}
+      aria-hidden={!show}
+    >
+      Book the fit call <ArrowRight size={16} />
+    </motion.a>
+  );
+};
+
 const LandingPage: React.FC = () => {
   useEffect(() => {
     const prev = document.title;
@@ -1111,6 +1157,7 @@ const LandingPage: React.FC = () => {
         <FinalCTA />
         <LandingFooter />
       </div>
+      <StickyCTA />
     </div>
     </MotionConfig>
   );
