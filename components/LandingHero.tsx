@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter } from '../lib/bookingConfig';
+import HeroArtifact from './HeroArtifact';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
@@ -99,16 +100,17 @@ const LandingHero: React.FC = () => {
         className="flex-1 flex flex-col justify-center relative z-10"
       >
         <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
-          {/* Byline + headline span the full container — display scale comes first,
-              the diagram shares the row with the lede/CTA block below. */}
-          <div className="pt-8 lg:pt-0 text-center">
+          <div className="grid lg:grid-cols-[1.25fr_0.85fr] gap-12 lg:gap-14 items-center">
+            {/* LEFT — text */}
+            <div className="text-center lg:text-left">
+              <div className="pt-8 lg:pt-0">
 
             {/* Byline */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mb-10 flex items-center justify-center gap-3"
+              className="mb-8 flex items-center justify-center lg:justify-start gap-3"
               style={{
                 fontFamily: '"IBM Plex Mono", monospace',
                 fontSize: '11px',
@@ -132,7 +134,7 @@ const LandingHero: React.FC = () => {
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
-                fontSize: 'clamp(2.8rem, 7vw, 6.25rem)',
+                fontSize: 'clamp(2.5rem, 4vw, 4rem)',
                 lineHeight: 1.0,
                 letterSpacing: '-0.02em',
                 color: '#1A1A1A',
@@ -152,7 +154,7 @@ const LandingHero: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.7, ease }}
-                className="whitespace-normal sm:whitespace-nowrap"
+                className="whitespace-normal"
                 style={{
                   display: 'inline-block',
                   fontStyle: 'italic',
@@ -167,13 +169,13 @@ const LandingHero: React.FC = () => {
             </h1>
           </div>
 
-          <div className="text-center">
+          <div>
             {/* Body — restored italic emphasis on closer phrase */}
             <motion.p
               initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
               animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
               transition={{ delay: 0.95, duration: 1.1, ease }}
-              className="max-w-3xl mx-auto mb-8"
+              className="max-w-xl mx-auto lg:mx-0 mb-7"
               style={{
                 fontFamily: '"Source Serif 4", Georgia, serif',
                 fontWeight: 400,
@@ -193,7 +195,7 @@ const LandingHero: React.FC = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.05, duration: 0.7, ease }}
-              className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
+              className="mb-8 flex flex-col sm:flex-row lg:flex-col items-center lg:items-start justify-center lg:justify-start gap-3 sm:gap-6 lg:gap-2.5"
             >
               {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
                 <li
@@ -217,7 +219,7 @@ const LandingHero: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.15, duration: 0.6, ease }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
             >
               <a
                 href="/start"
@@ -260,6 +262,14 @@ const LandingHero: React.FC = () => {
             >
               One client graded <span style={{ color: '#1F6B4B', fontWeight: 600 }}>5%</span> of their sales calls by hand. Now a system grades <span style={{ color: '#1F6B4B', fontWeight: 600 }}>every one</span>, daily.
             </motion.p>
+            </div>
+            </div>
+
+            {/* RIGHT — live artifact (lg+; mobile keeps the text-only hero) */}
+            <div className="hidden lg:block">
+              <HeroArtifact />
+            </div>
+
           </div>
         </div>
       </motion.div>
