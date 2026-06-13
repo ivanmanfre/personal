@@ -582,9 +582,17 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               if (!cur) base.setHours(9, 0, 0, 0);
               nextISO = base.toISOString();
             }
-            applyOptimistic(id, { scheduledAt: nextISO });
+            // Setting a future date must also promote status→'scheduled' so the Bridge
+            // (yzXqLDIpuNzuhUQq) queues a scheduled_posts row; otherwise a 'review' post
+            // gets a date but never publishes (incident-calendar-schedule-no-queue-2026-06-13).
+            const curStatus = drafts.find((d) => d.id === id)?.status;
+            const SCHEDULABLE = new Set(['review', 'approved', 'scheduled']);
+            const promote = !!(nextISO && curStatus && SCHEDULABLE.has(curStatus));
+            const patch: { scheduled_at: string | null; status?: string } = { scheduled_at: nextISO };
+            if (promote) patch.status = 'scheduled';
+            applyOptimistic(id, { scheduledAt: nextISO, ...(promote ? { status: 'scheduled' } : {}) });
             try {
-              const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', id);
+              const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', id);
               if (error) throw error;
               toast.success(nextISO ? 'Rescheduled' : 'Date cleared');
             } catch (err) {

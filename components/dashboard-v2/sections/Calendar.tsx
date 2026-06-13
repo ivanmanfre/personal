@@ -70,9 +70,18 @@ export function Calendar() {
       if (!cur) base.setHours(9, 0, 0, 0);
       nextISO = base.toISOString();
     }
-    applyOptimistic(item.id, { scheduledAt: nextISO });
+    // Setting a future date on a schedulable post must ALSO flip status→'scheduled'
+    // so the Bridge (yzXqLDIpuNzuhUQq) inserts the scheduled_posts queue row. Without
+    // this the draft keeps its prior status (e.g. 'review') and the publisher never
+    // sees it — the silent-drop bug (incident-calendar-schedule-no-queue-2026-06-13).
+    const curStatus = posts.find((d) => d.id === item.id)?.status;
+    const SCHEDULABLE = new Set(['review', 'approved', 'scheduled']);
+    const promote = !!(nextISO && curStatus && SCHEDULABLE.has(curStatus));
+    const patch: { scheduled_at: string | null; status?: string } = { scheduled_at: nextISO };
+    if (promote) patch.status = 'scheduled';
+    applyOptimistic(item.id, { scheduledAt: nextISO, ...(promote ? { status: 'scheduled' } : {}) });
     try {
-      const { error } = await supabase.from('carousel_drafts').update({ scheduled_at: nextISO }).eq('id', item.id);
+      const { error } = await supabase.from('carousel_drafts').update(patch).eq('id', item.id);
       if (error) throw error;
       // Keep the publish queue in lockstep with the operator's intent. The bridge
       // workflow only re-syncs future-dated drafts on a 5-min cron; writing the
