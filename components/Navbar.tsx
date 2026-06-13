@@ -4,8 +4,8 @@ import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_LINKS = [
+  { name: 'Work', href: '/work', internal: true },
   { name: 'Scorecard', href: '/scorecard', internal: true },
-  { name: 'Store', href: '/store', internal: true },
 ];
 
 const Navbar: React.FC = () => {
