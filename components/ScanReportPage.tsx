@@ -281,19 +281,35 @@ const useMediaQuery = (query: string): boolean => {
 const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
   const [displayed, setDisplayed] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
   const reduceMotion = useReducedMotion();
+  const done = useRef(false);
 
+  // Plain rect-based trigger. framer-motion's useInView margin proved flaky on narrow
+  // viewports here (counters stuck at 0 on mobile) — a direct getBoundingClientRect + scroll
+  // check fires reliably on every device and never leaves the number stranded at 0.
   useEffect(() => {
-    if (!isInView) return;
     if (reduceMotion) { setDisplayed(value); return; }
-    const controls = animate(0, value, {
-      duration: 1.2,
-      ease: EASE as unknown as [number, number, number, number],
-      onUpdate: (v) => setDisplayed(Math.round(v)),
-    });
-    return () => controls.stop();
-  }, [value, isInView, reduceMotion]);
+    const el = ref.current;
+    if (!el) return;
+    let controls: ReturnType<typeof animate> | undefined;
+    const run = () => {
+      if (done.current) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.top < vh * 0.92 && r.bottom > 0) {
+        done.current = true;
+        window.removeEventListener('scroll', run);
+        controls = animate(0, value, {
+          duration: 1.2,
+          ease: EASE as unknown as [number, number, number, number],
+          onUpdate: (v) => setDisplayed(Math.round(v)),
+        });
+      }
+    };
+    run();
+    window.addEventListener('scroll', run, { passive: true });
+    return () => { window.removeEventListener('scroll', run); controls?.stop(); };
+  }, [value, reduceMotion]);
 
   return <span ref={ref} style={style}>{displayed}</span>;
 };
@@ -1309,12 +1325,12 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       {/* HERO — outcome + the homepage screenshot as proof we audited THEIR site */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-14 lg:pt-20 lg:pb-16">
         <div className="flex items-center gap-3 mb-7">
-          {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
+          {logo && <img src={logo} alt="" className="h-7 w-7 object-contain" loading="lazy" onError={fallbackOnError} style={{ filter: 'grayscale(1)', opacity: 0.8 }} />}
           <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
             Call Intelligence · {meta.tag}
           </span>
         </div>
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-14">
           <motion.div
             initial={reduce ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1344,14 +1360,19 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
 
       {/* WHAT WE CAN SEE — volume + interpreted signals + verified receipts */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
+        <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:gap-14">
           <div>
             <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.1rem, 4.4vw, 3.1rem)', lineHeight: 1.0, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 10 }}>
               {ci.volume_estimate.value}
             </p>
+            {ci.volume_estimate.basis && (
+              <p className="mt-3 max-w-xs" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#5A5752' }}>
+                {ci.volume_estimate.basis}
+              </p>
+            )}
           </div>
-          <ul className="space-y-2.5 lg:pb-2">
+          <ul className="space-y-2.5 lg:pt-1">
             {ci.observable_signals.map((s, i) => (
               <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
                 <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
@@ -1420,18 +1441,20 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
         <h3 className="max-w-2xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-          AI call auditing, at <Italic>100% coverage.</Italic>
+          More trials closed. <Italic>Churn caught early.</Italic>
         </h3>
         <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          A sales team recording every call in Fireflies, but no consistent read on rep performance and no fast path when a deal went sideways. We built a system that scores every finished call, coaches each rep, and escalates real risk by the next morning.
+          A sales team recording every call in Fireflies, but no consistent read on rep performance and no fast path when a deal went sideways. We built a system that scores every finished call, coaches each rep on what cost them the deal, and escalates at-risk accounts by the next morning, while the account is still saveable.
         </p>
 
-        {/* benefit stat tiles — quantified outcome, count-up on scroll */}
+        {/* benefit stat tiles — quantified outcome, count-up on scroll.
+            ⚠️ PLACEHOLDER FIGURES — Ivan to replace the two flagged tiles with the real
+            ProvalTech numbers before this page is sent to a prospect. "100% graded" is real. */}
         <div className="mt-9 grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: `1px solid ${hairline}`, borderBottom: `1px solid ${hairline}` }}>
           {[
-            { fig: '100', suf: '%', label: 'of calls graded', sub: 'up from 5% sampled by hand' },
-            { fig: null, txt: 'Next AM', label: 'risk escalated', sub: 'was days, sometimes never' },
-            { fig: '100', suf: '%', label: 'of reps coached', sub: 'after every customer call' },
+            { pre: '+', fig: '27', suf: '%', label: 'trial → paid', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
+            { pre: '−', fig: '41', suf: '%', label: 'at-risk churn', sub: 'risk caught the next morning', placeholder: true }, // PLACEHOLDER
+            { pre: '', fig: '100', suf: '%', label: 'of calls graded', sub: 'up from 5% sampled by hand' }, // REAL
           ].map((s, i) => (
             <motion.div key={i}
               initial={reduce ? false : { opacity: 0, y: 16 }}
@@ -1442,7 +1465,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               style={{ borderLeft: i ? `1px solid ${hairline}` : undefined }}
             >
               <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.4rem, 4.5vw, 3.4rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
-                {s.fig ? <><Counter value={Number(s.fig)} />{s.suf}</> : s.txt}
+                {s.pre}<Counter value={Number(s.fig)} />{s.suf}
               </div>
               <p className="mt-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
               <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
