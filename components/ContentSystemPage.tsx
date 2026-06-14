@@ -6,11 +6,92 @@ import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCT
 import { VideoSlot } from './VideoSlot';
 import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE } from '../lib/contentSystemContent';
 
+/** Scroll-reveal wrapper with staggered delay. */
+function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?: number; className?: string }) {
+  return (
+    <motion.div
+      className={className}
+      initial={prefersReduced ? false : { opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, ease, delay: prefersReduced ? 0 : i * 0.08 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** A dark dashboard screenshot in a polished browser-window frame. */
+function BrowserFrame({ src, alt, caption, eager }: { src: string; alt: string; caption?: string; eager?: boolean }) {
+  return (
+    <figure className="m-0">
+      <div
+        className="overflow-hidden rounded-xl border shadow-card-lift"
+        style={{ borderColor: 'var(--color-hairline-bold)', backgroundColor: '#0E0F12' }}
+      >
+        <div
+          className="flex items-center gap-1.5 px-3.5 py-2.5 border-b"
+          style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+          aria-hidden="true"
+        >
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.20)' }} />
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.14)' }} />
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
+        </div>
+        <img
+          src={src}
+          alt={alt}
+          loading={eager ? 'eager' : 'lazy'}
+          className="block w-full"
+          onError={(e) => {
+            const fig = e.currentTarget.closest('figure') as HTMLElement | null;
+            if (fig) fig.style.display = 'none';
+          }}
+        />
+      </div>
+      {caption && (
+        <figcaption className="mt-2.5 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
+interface CaseMetric { value: string; label: string; }
+/** Client case-study row: framed screenshot + name + summary + big metrics. */
+function CaseStudy({ client, role, src, alt, summary, metrics, flip }: {
+  client: string; role: string; src: string; alt: string; summary: string; metrics: CaseMetric[]; flip?: boolean;
+}) {
+  return (
+    <Reveal>
+      <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+        <div className={flip ? 'lg:order-2' : ''}>
+          <BrowserFrame src={src} alt={alt} />
+        </div>
+        <div className={flip ? 'lg:order-1' : ''}>
+          <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{role}</div>
+          <h3 className="mt-1.5 text-2xl md:text-3xl font-semibold tracking-tight">{client}</h3>
+          <p className="mt-3 text-[15px] md:text-base text-ink-soft leading-relaxed">{summary}</p>
+          <div className="mt-7 flex flex-wrap gap-x-10 gap-y-6">
+            {metrics.map((m) => (
+              <div key={m.label}>
+                <div className="font-drama italic text-4xl md:text-5xl text-accent-ink leading-none">{m.value}</div>
+                <div className="mt-2 text-sm text-ink-soft leading-snug max-w-[190px]">{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
 export default function ContentSystemPage() {
   useMetadata({
     title: 'Content System | Manfredi',
     description:
-      'An always-on content engine that decides what to post, writes it in your voice, refuses to ship AI slop, turns one idea into every format, and publishes itself. Five posts a week — without writing a word.',
+      'An always-on content engine that decides what to post, writes it in your voice, refuses to ship AI slop, turns one idea into every format, and publishes itself. Five posts a week, without writing a word.',
     canonical: 'https://ivanmanfredi.com/content-system',
   });
 
@@ -26,11 +107,11 @@ export default function ContentSystemPage() {
             {...(prefersReduced ? {} : inView)}
             className="mt-5 text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter max-w-4xl"
           >
-            Be the sharpest voice in your space —{' '}
-            <span className="font-drama italic">every day,</span> without writing a word.
+            Be the sharpest voice in your space,{' '}
+            <span className="font-drama italic">every day</span>, without writing a word.
           </motion.h1>
           <p className="mt-6 max-w-2xl text-xl text-ink-soft leading-relaxed">
-            Five posts a week, carousels, lead magnets, even video — all in your voice, all on
+            Five posts a week, carousels, lead magnets, even video, all in your voice and all on
             autopilot. You approve. It does the rest.
           </p>
           <div className="mt-8">
@@ -41,20 +122,58 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
-        {/* 2 — WALKTHROUGH VIDEO SLOT (src passed when filmed) */}
+        {/* 2 — INTERFACE SHOWCASE (real dashboard screenshots) */}
         <section className="mb-24">
-          <VideoSlot caption="Watch the system run — 3 min" scriptHref="/content-system-walkthrough.md" />
+          <Label>The interface</Label>
+          <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
+            Not a prompt box.{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              A real operating console.
+              <SageSweep delay={0.4} opacity={0.85} />
+            </span>
+          </RevealH2>
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+            Every post, lead magnet, and metric lives in one place. You glance, approve, and move on.
+            This is the actual system, running.
+          </p>
+          <Reveal>
+            <BrowserFrame
+              eager
+              src="/content-system/ui/board.png"
+              alt="The content pipeline board, a week of posts drafted and queued"
+              caption="The pipeline · a week of posts, drafted and queued"
+            />
+          </Reveal>
+          <div className="grid md:grid-cols-2 gap-5 mt-5">
+            <Reveal i={0}>
+              <BrowserFrame src="/content-system/ui/editor.png" alt="The post editor" caption="Edit any draft · copy, image, timing" />
+            </Reveal>
+            <Reveal i={1}>
+              <BrowserFrame src="/content-system/ui/calendar.png" alt="The publishing calendar" caption="Calendar · it schedules itself" />
+            </Reveal>
+            <Reveal i={2}>
+              <BrowserFrame src="/content-system/ui/performance.png" alt="The performance dashboard" caption="Performance · it learns what lands" />
+            </Reveal>
+            <Reveal i={3}>
+              <BrowserFrame src="/content-system/ui/leadmagnets.png" alt="The lead magnet studio" caption="Lead magnets · built and published" />
+            </Reveal>
+          </div>
+        </section>
+
+        {/* 3 — WALKTHROUGH VIDEO SLOT (src passed when filmed) */}
+        <section className="mb-24">
+          <VideoSlot caption="Watch the system run, 3 min" scriptHref="/content-system-walkthrough.md" />
         </section>
 
         {/* 3 — PROBLEM → FLIP */}
         <section className="mb-24 max-w-3xl">
           <p className="text-lg md:text-xl text-ink-soft leading-relaxed">
-            Showing up daily is the whole game — and it's the thing that always slips. The blank
+            Showing up daily is the whole game, and it's the thing that always slips. The blank
             page, the posts that sound like everyone else, the weeks you go quiet.{' '}
             <span className="font-drama italic text-ink">
               This removes the bottleneck entirely.
             </span>{' '}
-            Not a tool you operate — a system that operates itself, in your voice.
+            Not a tool you operate. A system that operates itself, in your voice.
           </p>
         </section>
 
@@ -122,7 +241,7 @@ export default function ContentSystemPage() {
             </span>
           </RevealH2>
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-8">
-            A single approved idea fans out into every format you&apos;d ever post — each one
+            A single approved idea fans out into every format you&apos;d ever post, each one
             on-brand, each one in your voice.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -193,74 +312,85 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
-        {/* 8 — RECEIPTS (3 real auto-captured live assets) */}
+        {/* 8 — CLIENT CASE STUDIES (real operators + numbers) */}
         <section className="mb-24">
-          <Label>Receipts</Label>
+          <Label>Client results</Label>
           <RevealH2
-            style={{ ...T.display('clamp(1.8rem,3.6vw,2.6rem)'), margin: '1rem 0 2rem' }}
+            style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 2.5rem' }}
           >
-            Real output, live right now.
+            Already running for{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              real operators.
+              <SageSweep delay={0.4} opacity={0.85} />
+            </span>
           </RevealH2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {(
-              [
-                {
-                  src: '/content-system/lead-magnet.png',
-                  alt: 'A live interactive assessment lead magnet',
-                  cap: 'Interactive assessment · live & scoring',
-                },
-                {
-                  src: '/content-system/calculator.png',
-                  alt: 'A live ROI calculator lead magnet',
-                  cap: 'ROI calculator · live page',
-                },
-                {
-                  src: '/content-system/lm-cover.jpg',
-                  alt: 'An auto-generated on-brand lead-magnet cover',
-                  cap: 'On-brand cover · auto-generated',
-                },
-                {
-                  src: '/content-system/kyle-content-system.png',
-                  alt: "A client's full content engine running in production",
-                  cap: "Kyle Hunt's content engine · live",
-                },
-                {
-                  src: '/content-system/kyle-guides.png',
-                  alt: "A client's lead magnet guide on a live hosted page",
-                  cap: "Kyle Hunt's lead magnet · live page",
-                },
-                {
-                  src: '/content-system/lemonade-thankyou.png',
-                  alt: "A client's lead-capture page, live",
-                  cap: "Lemonade's capture page · live",
-                },
-              ] as { src: string; alt: string; cap: string }[]
-            ).map((r) => (
-              <figure key={r.src}>
-                <div
-                  className="overflow-hidden rounded-xl border"
-                  style={{
-                    borderColor: 'var(--color-hairline-bold)',
-                    backgroundColor: 'var(--color-paper-sunk)',
-                    aspectRatio: '4 / 5',
-                  }}
-                >
-                  <img
-                    src={r.src}
-                    alt={r.alt}
-                    loading="lazy"
-                    className="h-full w-full object-cover object-top"
-                    onError={(e) => {
-                      const fig = e.currentTarget.closest('figure') as HTMLElement | null;
-                      if (fig) fig.style.display = 'none';
+
+          <div className="space-y-16 md:space-y-20">
+            <CaseStudy
+              client="Kyle Hunt"
+              role="Creative-video agency · founder"
+              src="/content-system/kyle-content-system.png"
+              alt="Kyle Hunt's content engine running in the system"
+              summary="Kyle runs his entire content operation on the system. Every post and every lead magnet is drafted in his voice and shipped, without him ever facing a blank page."
+              metrics={[
+                { value: '100%', label: 'of his content, run by the system' },
+                { value: '~300', label: 'comments per lead-magnet post' },
+                { value: '30K', label: 'impressions per post' },
+              ]}
+            />
+            <CaseStudy
+              flip
+              client="Lemonade"
+              role="Demand-gen studio"
+              src="/content-system/lemonade-thankyou.png"
+              alt="Lemonade's lead-capture page built by the system"
+              summary="Lemonade turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar."
+              metrics={[
+                { value: '5', label: 'new clients a month from the lead-magnet system' },
+                { value: 'Live', label: 'gated funnel, running on autopilot' },
+              ]}
+            />
+          </div>
+
+          {/* Supplementary: live output straight from the engine */}
+          <div className="mt-20">
+            <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-5">
+              Also live, straight from the engine
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {(
+                [
+                  { src: '/content-system/lead-magnet.png', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment · scoring' },
+                  { src: '/content-system/calculator.png', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator · live page' },
+                  { src: '/content-system/lm-cover.jpg', alt: 'An auto-generated on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
+                ] as { src: string; alt: string; cap: string }[]
+              ).map((r) => (
+                <figure key={r.src} className="m-0">
+                  <div
+                    className="overflow-hidden rounded-xl border"
+                    style={{
+                      borderColor: 'var(--color-hairline-bold)',
+                      backgroundColor: 'var(--color-paper-sunk)',
+                      aspectRatio: '4 / 5',
                     }}
-                  />
-                </div>
-                <figcaption className="mt-2 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
-                  {r.cap}
-                </figcaption>
-              </figure>
-            ))}
+                  >
+                    <img
+                      src={r.src}
+                      alt={r.alt}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top"
+                      onError={(e) => {
+                        const fig = e.currentTarget.closest('figure') as HTMLElement | null;
+                        if (fig) fig.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <figcaption className="mt-2 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
+                    {r.cap}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -288,7 +418,7 @@ export default function ContentSystemPage() {
                   key={s}
                   className="flex items-start gap-3 text-[15px] text-ink-mute leading-relaxed"
                 >
-                  <span className="font-mono text-ink-mute mt-0.5 shrink-0">—</span>
+                  <span className="font-mono text-ink-mute mt-0.5 shrink-0">✕</span>
                   {s}
                 </li>
               ))}
@@ -310,7 +440,7 @@ export default function ContentSystemPage() {
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-zinc-300 leading-relaxed">
             Book a 20-minute look. We&apos;ll scope it to your channels, formats, and voice, and
-            you&apos;ll get a fixed proposal — no obligation.
+            you&apos;ll get a fixed proposal, no obligation.
           </p>
           <div className="mt-8 flex flex-col items-center gap-4">
             <MagneticCTA href="/start" dark fontSize="18px" px="px-10 py-5">
