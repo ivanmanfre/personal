@@ -384,18 +384,17 @@ const BuildOutcomesSection: React.FC = () => {
         </p>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-x-6 gap-y-8">
+      <div className="grid md:grid-cols-2 gap-x-12 gap-y-12">
         {visible.map((o, i) => (
           <motion.a
             key={o.type}
             href={o.href}
             initial={prefersReduced ? false : { opacity: 0, y: 22 }}
             whileInView={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.7, ease, delay: i * 0.1 }}
-            className="group border p-7 flex flex-col md:min-h-[340px] transition-colors"
-            style={{ borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
+            className="group flex flex-col border-t pt-7"
+            style={{ borderColor: 'rgba(26,26,26,0.16)' }}
           >
             <div style={{ ...T.mono, marginBottom: '10px' }}>{o.category}</div>
             <h3 style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontWeight: 400, fontSize: 'clamp(1.5rem,1.8vw,1.85rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A', marginBottom: '1.5rem' }}>
@@ -714,9 +713,9 @@ const PaybackSection: React.FC = () => {
 
           <motion.div initial={prefersReduced ? false : { opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="flex flex-col gap-5">
 
-            <div className="border p-8" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
-              <div style={{ ...T.mono, marginBottom: '10px' }}>Annual cost of this bottleneck</div>
-              <Counter value={yearly} prefix="$" style={T.display('clamp(3rem,5.5vw,5rem)')} />
+            <div className="border p-8 md:p-10" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
+              <div style={{ ...T.mono, marginBottom: '14px' }}>Annual cost of this bottleneck</div>
+              <Counter value={yearly} prefix="$" style={{ ...T.display('clamp(3.4rem,6.5vw,6rem)'), lineHeight: 0.95, letterSpacing: '-0.02em' }} />
             </div>
 
             <div className="border p-8" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)', borderLeftWidth: '2px', borderLeftColor: qualifies ? 'var(--color-accent)' : 'rgba(26,26,26,0.2)' }}>
