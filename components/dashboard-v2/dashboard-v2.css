@@ -997,3 +997,15 @@ body.dashboard-v2-active * {
 .dashboard-v2 .dv-lifecycle-stage--accent { color: var(--d-accent); border-color: var(--d-accent); background: var(--d-accent-bg); }
 
 @keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Demo-path v1-panel consistency ──────────────────────── */
+/* Remap emerald-400 one-off accent toward the single sage token so the
+ * v1 panels share the same green as the v2 chrome. Scoped to the
+ * content-studio body wrapper to avoid touching v2 elements above.
+ * NOTE: .dv-section-h already uses var(--t-lg)/var(--d-paper)/weight-600
+ *   via the global rule at line 265 — no scoped override needed.
+ * NOTE: bg-emerald-500/10, rounded-xl radius, and bg-zinc-900/90 box-shadow
+ *   rules were dropped: bg-emerald-500/10 is absent from the four target
+ *   panels; rounded-xl and bg-zinc-900/90 appear on nested elements (icon
+ *   badges, filter pills, chart cards) making any broad selector unsafe. */
+.dashboard-v2 .dv-content-studio-body .text-emerald-400 { color: var(--d-good-hi); }
