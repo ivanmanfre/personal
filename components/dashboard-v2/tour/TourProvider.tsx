@@ -30,22 +30,22 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
 
   const start = useCallback(() => { dispatch({ type: 'START', total }); go(0); }, [go, total]);
   const next = useCallback(() => {
-    const nextIdx = Math.min(state.index + 1, total - 1);
-    dispatch({ type: 'NEXT', total }); go(nextIdx);
+    const idx = Math.min(state.index + 1, total - 1);
+    dispatch({ type: 'GOTO', index: idx, total }); go(idx);
   }, [go, state.index, total]);
   const back = useCallback(() => {
-    const prevIdx = Math.max(state.index - 1, 0);
-    dispatch({ type: 'BACK' }); go(prevIdx);
-  }, [go, state.index]);
+    const idx = Math.max(state.index - 1, 0);
+    dispatch({ type: 'GOTO', index: idx, total }); go(idx);
+  }, [go, state.index, total]);
   const end = useCallback(() => dispatch({ type: 'END' }), []);
 
-  const value: TourCtx = {
+  const value = useMemo<TourCtx>(() => ({
     active: state.active,
     index: state.index,
     total,
     step: state.active ? steps[state.index] ?? null : null,
     start, next, back, end,
-  };
+  }), [state.active, state.index, total, steps, start, next, back, end]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
