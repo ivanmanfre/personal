@@ -2,7 +2,6 @@ import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { getBookingQuarter } from '../lib/bookingConfig';
-import HeroArtifact from './HeroArtifact';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
@@ -99,178 +98,153 @@ const LandingHero: React.FC = () => {
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
-          <div className="grid lg:grid-cols-[1.25fr_0.85fr] gap-12 lg:gap-14 items-center">
-            {/* LEFT — text */}
-            <div className="text-center lg:text-left">
-              <div className="pt-8 lg:pt-0">
+        <div className="container mx-auto px-8 max-w-4xl text-center pt-8 lg:pt-0">
 
-            {/* Byline */}
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
+          {/* Byline */}
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="mb-8 flex items-center justify-center gap-3"
+            style={{
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '11px',
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: '#5A5752',
+            }}
+          >
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+              aria-hidden="true"
+            />
+            <span>Iván Manfredi · Agent-Ready Ops™</span>
+          </motion.div>
+
+          {/* Headline — DM Serif Display (brand spec) */}
+          <h1
+            className="mb-10"
+            style={{
+              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+              fontWeight: 400,
+              fontSize: 'clamp(2.75rem, 6vw, 5rem)',
+              lineHeight: 1.0,
+              letterSpacing: '-0.02em',
+              color: '#1A1A1A',
+            }}
+          >
+            <motion.span
+              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="mb-8 flex items-center justify-center lg:justify-start gap-3"
-              style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: '11px',
-                letterSpacing: '0.22em',
-                textTransform: 'uppercase',
-                color: '#5A5752',
-              }}
+              transition={{ delay: 0.3, duration: 0.7, ease }}
+              style={{ display: 'inline-block' }}
             >
-              <motion.span
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
-                aria-hidden="true"
-              />
-              <span>Iván Manfredi · Agent-Ready Ops™</span>
-            </motion.div>
-
-            {/* Headline — DM Serif Display (brand spec) */}
-            <h1
-              className="mb-10"
-              style={{
-                fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-                fontWeight: 400,
-                fontSize: 'clamp(2.5rem, 4vw, 4rem)',
-                lineHeight: 1.0,
-                letterSpacing: '-0.02em',
-                color: '#1A1A1A',
-              }}
-            >
-              <motion.span
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.7, ease }}
-                style={{ display: 'inline-block' }}
-              >
-                Stop being the <span style={{ color: '#2A8F65' }}>bottleneck</span>
-              </motion.span>
-              <br />
-              {/* Solid black block with paper text — brand signature move */}
-              <motion.span
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.7, ease }}
-                className="whitespace-normal"
-                style={{
-                  display: 'inline-block',
-                  fontStyle: 'italic',
-                  backgroundColor: '#1A1A1A',
-                  color: '#F7F4EF',
-                  padding: '0 18px 9px',
-                  marginTop: '0.12em',
-                }}
-              >
-                in your own business.
-              </motion.span>
-            </h1>
-          </div>
-
-          <div>
-            {/* Body — restored italic emphasis on closer phrase */}
-            <motion.p
-              initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-              animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-              transition={{ delay: 0.95, duration: 1.1, ease }}
-              className="max-w-xl mx-auto lg:mx-0 mb-7"
-              style={{
-                fontFamily: '"Source Serif 4", Georgia, serif',
-                fontWeight: 400,
-                fontSize: '22px',
-                lineHeight: 1.55,
-                color: '#3D3D3B',
-              }}
-            >
-              AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
-              <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
-                Every build pays back inside 90 days, or I don't build it.
-              </span>
-            </motion.p>
-
-            {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
-            <motion.ul
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.05, duration: 0.7, ease }}
-              className="mb-8 flex flex-col sm:flex-row lg:flex-col items-center lg:items-start justify-center lg:justify-start gap-3 sm:gap-6 lg:gap-2.5"
-            >
-              {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
-                <li
-                  key={b}
-                  className="flex items-center gap-2.5"
-                  style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '14px',
-                    letterSpacing: '0.02em',
-                    color: '#2C3A31',
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
-                  {b}
-                </li>
-              ))}
-            </motion.ul>
-
-            {/* CTAs */}
-            <motion.div
+              Stop being the <span style={{ color: '#2A8F65' }}>bottleneck</span>
+            </motion.span>
+            <br />
+            {/* Solid black block with paper text — brand signature move */}
+            <motion.span
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.15, duration: 0.6, ease }}
-              className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3"
+              transition={{ delay: 0.6, duration: 0.7, ease }}
+              className="whitespace-normal"
+              style={{
+                display: 'inline-block',
+                fontStyle: 'italic',
+                backgroundColor: '#1A1A1A',
+                color: '#F7F4EF',
+                padding: '0 18px 9px',
+                marginTop: '0.12em',
+              }}
             >
-              <a
-                href="/start"
-                className="btn-magnetic inline-flex items-center gap-3 px-9 py-4"
+              in your own business.
+            </motion.span>
+          </h1>
+
+          {/* Body — restored italic emphasis on closer phrase */}
+          <motion.p
+            initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
+            animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
+            transition={{ delay: 0.95, duration: 1.1, ease }}
+            className="max-w-xl mx-auto mb-7"
+            style={{
+              fontFamily: '"Source Serif 4", Georgia, serif',
+              fontWeight: 400,
+              fontSize: '22px',
+              lineHeight: 1.55,
+              color: '#3D3D3B',
+            }}
+          >
+            AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
+            <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
+              Every build pays back inside 90 days, or I don't build it.
+            </span>
+          </motion.p>
+
+          {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
+          <motion.ul
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.05, duration: 0.7, ease }}
+            className="mb-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6"
+          >
+            {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
+              <li
+                key={b}
+                className="flex items-center gap-2.5"
                 style={{
-                  fontFamily: '"Source Serif 4", serif',
-                  fontWeight: 600,
-                  fontSize: '17px',
-                  letterSpacing: '0.005em',
-                  backgroundColor: '#1A1A1A',
-                  color: '#F7F4EF',
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '14px',
+                  letterSpacing: '0.02em',
+                  color: '#2C3A31',
                 }}
               >
-                Book your fit call <ArrowRight size={19} />
-              </a>
-              <a
-                href="/scorecard"
-                className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
-                style={{
-                  fontFamily: '"Source Serif 4", serif',
-                  fontWeight: 600,
-                  fontSize: '15px',
-                  fontStyle: 'italic',
-                  color: '#4A4A48',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
-              >
-                See where you're leaking <ArrowRight size={14} />
-              </a>
-            </motion.div>
+                <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
+                {b}
+              </li>
+            ))}
+          </motion.ul>
 
-            {/* Named, quantified fold-proof — answers "can I trust you" in viewport 1 */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.35, duration: 0.6 }}
-              className="mt-6"
-              style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5 }}
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.15, duration: 0.6, ease }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
+            <a
+              href="/start"
+              className="btn-magnetic inline-flex items-center gap-3 px-9 py-4"
+              style={{
+                fontFamily: '"Source Serif 4", serif',
+                fontWeight: 600,
+                fontSize: '17px',
+                letterSpacing: '0.005em',
+                backgroundColor: '#1A1A1A',
+                color: '#F7F4EF',
+              }}
             >
-              One client graded <span style={{ color: '#1F6B4B', fontWeight: 600 }}>5%</span> of their sales calls by hand. Now a system grades <span style={{ color: '#1F6B4B', fontWeight: 600 }}>every one</span>, daily.
-            </motion.p>
-            </div>
-            </div>
+              Book your fit call <ArrowRight size={19} />
+            </a>
+            <a
+              href="/scorecard"
+              className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
+              style={{
+                fontFamily: '"Source Serif 4", serif',
+                fontWeight: 600,
+                fontSize: '15px',
+                fontStyle: 'italic',
+                color: '#4A4A48',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
+            >
+              See where you're leaking <ArrowRight size={14} />
+            </a>
+          </motion.div>
 
-            {/* RIGHT — live artifact (lg+; mobile keeps the text-only hero) */}
-            <div className="hidden lg:block">
-              <HeroArtifact />
-            </div>
-
-          </div>
         </div>
       </motion.div>
     </section>
