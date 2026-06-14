@@ -764,9 +764,9 @@ const OFFER_BUILDS = [
   {
     id: '02',
     name: 'Call Intelligence',
-    price: 'Every call scored',
+    price: 'Close more, keep more',
     cadence: 'Fixed price · scoped on the fit call',
-    desc: "Close more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
+    desc: "Win more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
     href: '/call-intelligence',
     cta: 'See how it works',
     signature: true,
