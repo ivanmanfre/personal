@@ -8,7 +8,7 @@ import {
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
-import type { ReportJson, AdCreative, Opportunity } from '../lib/scanTypes';
+import type { ReportJson, AdCreative, Opportunity, CallIntel, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
@@ -968,6 +968,385 @@ function Section3Opportunities({ report, companyName }: { report: ReportJson; co
         ))}
       </div>
     </Section>
+  );
+}
+
+// ── Call-Intelligence variant ─────────────────────────────────────────────────
+// Rendered IN PLACE OF Section3Opportunities when matched_offer === 'call_intelligence'.
+// The cold DM promised this prospect that nobody reviews what's said across their calls;
+// this section delivers on exactly that — an external audit of their call situation, what's
+// leaking inside those calls, and the system that surfaces it — instead of a generic ops list.
+const CI_ARCHETYPE: Record<CallIntel['archetype'], { kicker: string; sampleKicker: string }> = {
+  intake_driven:       { kicker: 'Call Intelligence · Intake',    sampleKicker: 'Sample · flagged intake call' },
+  sales_demo_driven:   { kicker: 'Call Intelligence · Pipeline',  sampleKicker: 'Sample · weekly deal signal' },
+  cs_retention_driven: { kicker: 'Call Intelligence · Accounts',  sampleKicker: 'Sample · weekly account signal' },
+};
+
+function CallIntelSection({ report, companyName }: { report: ReportJson; companyName: string }) {
+  const ci = report.call_intel;
+  if (!ci) return null;
+  const meta = CI_ARCHETYPE[ci.archetype] ?? CI_ARCHETYPE.intake_driven;
+  const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
+  const hairline = 'var(--color-hairline)';
+  // Accent-ink (darker sage) for small text on paper — passes WCAG AA <19px where the brighter accent (3.6:1) fails.
+  const accentInk = 'var(--color-accent-ink)';
+
+  return (
+    <Section
+      id="opportunities"
+      kicker={meta.kicker}
+      title={<>What your calls are <Italic>hiding</Italic>.</>}
+      section={5}
+    >
+      <SectionAnswer>{ci.thesis}</SectionAnswer>
+
+      {/* ── What we can see from outside (the honest external audit) ── */}
+      <div className="mb-14">
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+          What we can see from outside
+        </p>
+        <p style={{
+          fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+          fontSize: 'clamp(2.75rem, 7vw, 5rem)', lineHeight: 0.95,
+          letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 10,
+        }}>
+          {ci.volume_estimate.value}
+        </p>
+        {ci.volume_estimate.basis && (
+          <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(26,26,26,0.65)' }}>
+            {ci.volume_estimate.basis}
+          </p>
+        )}
+        {/* Self-bordered cards (not a gap-px bg grid) so an odd count leaves clean blank space, not a gray cell. */}
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          {ci.observable_signals.map((s, i) => (
+            <div key={i} className="p-5" style={{ border: `1px solid ${hairline}` }}>
+              <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
+                {s.label}
+              </p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
+                {s.detail}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── What's leaking in those calls (archetype-tailored value) ── */}
+      <div className="mb-14">
+        <Kicker>What's leaking in those calls</Kicker>
+        <div className="mt-6 space-y-2">
+          {ci.leaking_signals.map((l, i) => (
+            <div key={i} className="flex gap-4 p-5" style={{ border: `1px solid ${hairline}` }}>
+              <span aria-hidden style={{
+                fontFamily: MONO, fontSize: '13px', color: accentInk, fontWeight: 600,
+                lineHeight: 1.5, flexShrink: 0,
+              }}>{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.4vw, 1.6rem)', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+                  {l.title}
+                </p>
+                <p className="mt-1.5 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
+                  {l.detail}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── The system + a tangible sample of its output (the pitch) ── */}
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+        <div>
+          <Kicker>The system</Kicker>
+          <SerifBody large className="mt-4">{ci.system.summary}</SerifBody>
+          <ul className="mt-6 space-y-3">
+            {ci.system.capabilities.map((c, i) => (
+              <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 16, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Sample output — faux product surface so they can picture the deliverable */}
+        <div style={{ border: `1px solid ${hairline}`, background: 'var(--color-paper, #F7F4EF)' }}>
+          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${hairline}` }}>
+            <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)' }} />
+            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              {meta.sampleKicker}
+            </p>
+          </div>
+          <div className="p-5">
+            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.35rem', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+              {ci.sample_output.title}
+            </p>
+            <ul className="mt-4 space-y-2.5">
+              {ci.sample_output.items.map((it, i) => (
+                <li key={i} className="flex gap-2.5" style={{ fontFamily: MONO, fontSize: '13px', lineHeight: 1.5, color: '#3D3D3B' }}>
+                  <span aria-hidden style={{ color: accentInk, flexShrink: 0 }}>→</span>
+                  <span>{it}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Revenue math + CTA ── */}
+      <div className="mt-14 p-7 lg:p-9" style={{ border: `1px solid ${hairline}` }}>
+        <SerifBody large><Emphasized>{ci.revenue_math}</Emphasized></SerifBody>
+        <a
+          href={calendlyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 mt-6 group"
+          style={{
+            fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase',
+            color: accentInk, fontWeight: 600, textDecoration: 'none',
+          }}
+        >
+          See what your calls are hiding
+          <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+        </a>
+      </div>
+    </Section>
+  );
+}
+
+// ── Call-Intelligence PITCH page (v2) ─────────────────────────────────────────
+// Cut-down, outcome-led pitch rendered IN PLACE OF the whole generic report when
+// matched_offer === 'call_intelligence'. No automation score, no tech-stack brief,
+// no $2k assessment — just: outcome hero -> where close-rate/churn hides ->
+// a designed product mock (centerpiece) -> book a call.
+const CI_META: Record<CallIntel['archetype'], { tag: string; hiding: string; review: string }> = {
+  intake_driven:       { tag: 'Intake',   hiding: 'Where the signed cases are hiding', review: 'Weekly intake review' },
+  sales_demo_driven:   { tag: 'Pipeline', hiding: 'Where the close rate is hiding',     review: 'Weekly call review' },
+  cs_retention_driven: { tag: 'Accounts', hiding: 'Where the churn is hiding',          review: 'Weekly account review' },
+};
+
+// The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
+function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName: string }) {
+  const meta = CI_META[ci.archetype] ?? CI_META.sales_demo_driven;
+  const hairline = 'var(--color-hairline)';
+  return (
+    <div style={{ border: `1px solid ${hairline}` }}>
+      {/* window titlebar — the single dark accent on the page; reads as "this is software" */}
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+        <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
+          {companyName} · {meta.review}
+        </span>
+      </div>
+      <div className="p-6 lg:p-7" style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+        <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          {ci.sample_output.title}
+        </p>
+        <ul className="mt-5">
+          {ci.sample_output.items.map((it, i) => (
+            <li key={i} className="flex gap-3.5" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.85rem' : 0, marginTop: i ? '0.85rem' : 0 }}>
+              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: 'var(--color-accent-ink)', lineHeight: 1.55, flexShrink: 0, minWidth: 16 }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
+  const ci = report.call_intel;
+  if (!ci) return null;
+  const meta = CI_META[ci.archetype] ?? CI_META.sales_demo_driven;
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
+  const logo = report.logo_url || scan.logo_url;
+  const screenshot = report.homepage_screenshot_url || scan.report_json?.homepage_screenshot_url;
+
+  // Verified receipts — real signals that prove the audit is grounded, beside the claim.
+  const receipts: { label: string; value: string }[] = [];
+  const hires = (report.hiring?.sample_titles ?? []).slice(0, 2);
+  if (hires.length) receipts.push({ label: 'Hiring', value: hires.join(' · ') });
+  const tools = (report.tech_stack_assessment?.confirmed_tools ?? []).slice(0, 3);
+  if (tools.length) receipts.push({ label: 'Verified stack', value: tools.join(' · ') });
+  const facts: string[] = [];
+  if (report.company_size) facts.push(`${report.company_size} employees`);
+  if (report.domain_age_years) facts.push(`${report.domain_age_years}-yr domain`);
+  if (report.traffic?.monthly_visits) facts.push(`${report.traffic.monthly_visits.toLocaleString()} visits/mo`);
+  if (facts.length) receipts.push({ label: 'Firmographics', value: facts.join(' · ') });
+
+  const BookButton = ({ label, small }: { label: string; small?: boolean }) => (
+    <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 group"
+       style={{ fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 16px' : '14px 26px', minHeight: small ? 40 : 52 }}>
+      {label}
+      <ArrowRight size={small ? 14 : 16} className="transition-transform group-hover:translate-x-1" />
+    </a>
+  );
+
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <ScrollProgress />
+      <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <Link to="/" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Call Intelligence · {companyName}</span>
+          <BookButton label="Book a call" small />
+        </div>
+      </header>
+
+      {/* HERO — outcome + the homepage screenshot as proof we audited THEIR site */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-14 lg:pt-20 lg:pb-16">
+        <div className="flex items-center gap-3 mb-7">
+          {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
+          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
+            Call Intelligence · {meta.tag}
+          </span>
+        </div>
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
+          <div>
+            <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.025em', color: '#1A1A1A' }}>
+              {ci.thesis}
+            </h1>
+            <div className="mt-9"><BookButton label="See it on your calls" /></div>
+          </div>
+          {screenshot && (
+            <figure>
+              <p className="mb-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+                {scan.domain ?? companyName} · captured today
+              </p>
+              <div className="overflow-hidden" style={{ border: `1px solid ${hairline}`, maxHeight: 360, background: '#EFEAE2' }}>
+                <img src={screenshot} alt={`${companyName} homepage`} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+              </div>
+            </figure>
+          )}
+        </div>
+      </section>
+
+      {/* WHAT WE CAN SEE — volume + interpreted signals + verified receipts */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
+              {ci.volume_estimate.value}
+            </p>
+          </div>
+          <ul className="space-y-2.5 lg:pb-2">
+            {ci.observable_signals.map((s, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
+                <span><b style={{ fontWeight: 600, color: '#1A1A1A' }}>{s.label}.</b> {s.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {receipts.length > 0 && (
+          <div className="mt-10 flex flex-wrap gap-2.5">
+            {receipts.map((r, i) => (
+              <span key={i} className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* WHERE THE CLOSE-RATE / CHURN IS HIDING */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>{meta.hiding}</Kicker>
+        <div className="mt-8 grid gap-x-10 gap-y-9 sm:grid-cols-3">
+          {ci.leaking_signals.map((l, i) => (
+            <div key={i}>
+              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk }}>{String(i + 1).padStart(2, '0')}</span>
+              <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.2vw, 1.45rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{l.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* THE SYSTEM — product mock centerpiece */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+          <div>
+            <Kicker>The system</Kicker>
+            <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              Every call scored. <Italic>The pattern surfaced.</Italic>
+            </h2>
+            <SerifBody className="mt-4">{ci.system.summary}</SerifBody>
+            <ul className="mt-5 space-y-2.5">
+              {ci.system.capabilities.map((c, i) => (
+                <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
+                  <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.65em', flexShrink: 0 }} />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <CallIntelProductMock ci={ci} companyName={companyName} />
+        </div>
+      </section>
+
+      {/* PROOF — who's building this + named client outcomes */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Who's building this</p>
+        <div className="mb-12 max-w-2xl flex items-start gap-4">
+          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-12 h-12 object-cover shrink-0" style={{ borderRadius: 0 }} onError={fallbackOnError} />
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses — including call intelligence that lifts close rates and catches churn early. This is the same diagnostic he runs before every build.
+          </p>
+        </div>
+        {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
+        <div className="grid gap-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div className="lg:pt-2">
+            <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              AI call auditing, at <Italic>100% coverage.</Italic>
+            </h3>
+            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>
+              They already recorded every sales call in Fireflies. We scored <b style={{ color: '#1A1A1A', fontWeight: 600 }}>100% of them</b>, moved escalation from days to the next morning, and gave every rep feedback after every customer call — zero extra manual work.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Coverage</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>5% sampled → 100% graded</span>
+              </span>
+              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Stack</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>Fireflies · Airtable · n8n · Claude</span>
+              </span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <figure className="overflow-hidden" style={{ border: `1px solid ${hairline}`, boxShadow: '0 8px 32px rgba(26,26,26,0.08)' }}>
+              <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            </figure>
+            <figure className="overflow-hidden lg:max-w-[58%]" style={{ border: `1px solid ${hairline}` }}>
+              <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA — book a call (no $2k assessment) */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A', maxWidth: '20ch' }}>
+          {ci.revenue_math}
+        </h2>
+        <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <BookButton label="Book a call" />
+          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.6)', fontStyle: 'italic' }}>
+            15 minutes. I'll show you the system running on calls like yours.
+          </span>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -2516,6 +2895,12 @@ const ScanReportPage: React.FC = () => {
     ? rawName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
     : rawName;
 
+  // Call-intelligence prospects get a dedicated, cut-down pitch page (no automation
+  // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
+  if (report.matched_offer === 'call_intelligence' && report.call_intel) {
+    return <CallIntelReport report={report} scan={scan} companyName={companyName} />;
+  }
+
   return (
     <div className="min-h-screen bg-paper text-ink">
       <ScrollProgress />
@@ -2596,19 +2981,27 @@ const ScanReportPage: React.FC = () => {
         <SectionPriorityGap report={report} />
       </div>
 
-      <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <Transition>
-          Five places it's happening today. Ranked by leverage.
-        </Transition>
-      </div>
+      {(() => {
+        const isCallIntel = report.matched_offer === 'call_intelligence' && !!report.call_intel;
+        return (
+          <>
+            <div className="max-w-6xl mx-auto px-5 sm:px-6">
+              <Transition>
+                {isCallIntel
+                  ? "You can't hear those calls. Here's what mining them would surface."
+                  : "Five places it's happening today. Ranked by leverage."}
+              </Transition>
+            </div>
 
-      {/* §6 — New Way. The ranked opportunities. */}
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
-        <Section3Opportunities report={report} companyName={companyName} />
+            {/* §6 — New Way. Call-intelligence audit+pitch, or the ranked opportunities. */}
+            <div className="max-w-6xl mx-auto px-5 sm:px-6 pb-24">
+              {isCallIntel
+                ? <CallIntelSection report={report} companyName={companyName} />
+                : <Section3Opportunities report={report} companyName={companyName} />}
 
-        <Transition>
-          Every number above traces back to this.
-        </Transition>
+              <Transition>
+                Every signal above traces back to this.
+              </Transition>
 
         {/* §7 — Trust ballast. Quiet, optional. */}
         <SupportingEvidenceAccordion report={report} />
@@ -2620,7 +3013,10 @@ const ScanReportPage: React.FC = () => {
 
         {/* §8 — Your Solution. CTA. */}
         <SectionClosingArc report={report} companyName={companyName} />
-      </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
