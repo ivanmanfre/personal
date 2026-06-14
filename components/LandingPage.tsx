@@ -559,11 +559,11 @@ const WorkSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-12 md:py-20 border-t" style={DIVIDER}>
-      <div className="container mx-auto px-8 max-w-6xl">
-        <motion.div {...inView} className="mb-10 lg:mb-16">
+    <section className="py-16 md:py-28 border-t" style={DIVIDER}>
+      <div className="container mx-auto px-8 max-w-7xl">
+        <motion.div {...inView} className="mb-12 lg:mb-20 max-w-4xl">
           <Label>05</Label>
-          <RevealH2 style={T.display('clamp(2.4rem,4vw,3.6rem)')}>
+          <RevealH2 style={{ ...T.display('clamp(2.6rem,5vw,4.5rem)'), lineHeight: 1.02 }}>
             Diagnose first.{' '}
             Build second.
           </RevealH2>

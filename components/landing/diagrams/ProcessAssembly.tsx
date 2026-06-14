@@ -140,7 +140,7 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
   const finalState = reduced;
 
   return (
-    <div ref={rootRef} className="grid lg:grid-cols-[minmax(0,40%)_1fr] gap-12 items-center">
+    <div ref={rootRef} className="grid lg:grid-cols-[minmax(0,30%)_1fr] gap-16 items-center">
       <div className="flex flex-col gap-10">
         {steps.map((s) => (
           <div key={s.id} data-process-step style={finalState ? undefined : { opacity: 0.35 }}>
@@ -160,11 +160,11 @@ const ProcessAssembly: React.FC<{ steps: ProcessStep[] }> = ({ steps }) => {
               style={{
                 fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
                 fontWeight: 400,
-                fontSize: 'clamp(1.6rem,2.2vw,2rem)',
-                lineHeight: 1.1,
+                fontSize: 'clamp(1.7rem,2.6vw,2.4rem)',
+                lineHeight: 1.08,
                 letterSpacing: '-0.02em',
                 color: '#1A1A1A',
-                marginBottom: '10px',
+                marginBottom: '12px',
               }}
             >
               {s.title}
