@@ -207,17 +207,32 @@ export default function ContentSystemPage() {
                 {
                   src: '/content-system/lead-magnet.png',
                   alt: 'A live interactive assessment lead magnet',
-                  cap: 'Interactive assessment — live & scoring',
+                  cap: 'Interactive assessment · live & scoring',
                 },
                 {
                   src: '/content-system/calculator.png',
                   alt: 'A live ROI calculator lead magnet',
-                  cap: 'ROI calculator — live page',
+                  cap: 'ROI calculator · live page',
                 },
                 {
                   src: '/content-system/lm-cover.jpg',
                   alt: 'An auto-generated on-brand lead-magnet cover',
-                  cap: 'On-brand cover — auto-generated',
+                  cap: 'On-brand cover · auto-generated',
+                },
+                {
+                  src: '/content-system/kyle-content-system.png',
+                  alt: "A client's full content engine running in production",
+                  cap: "Kyle Hunt's content engine · live",
+                },
+                {
+                  src: '/content-system/kyle-guides.png',
+                  alt: "A client's lead magnet guide on a live hosted page",
+                  cap: "Kyle Hunt's lead magnet · live page",
+                },
+                {
+                  src: '/content-system/lemonade-thankyou.png',
+                  alt: "A client's lead-capture page, live",
+                  cap: "Lemonade's capture page · live",
                 },
               ] as { src: string; alt: string; cap: string }[]
             ).map((r) => (
