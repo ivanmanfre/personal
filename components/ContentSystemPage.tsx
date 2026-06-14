@@ -43,7 +43,7 @@ export default function ContentSystemPage() {
 
         {/* 2 — WALKTHROUGH VIDEO SLOT (src passed when filmed) */}
         <section className="mb-24">
-          <VideoSlot caption="Watch the system run — 3 min" />
+          <VideoSlot caption="Watch the system run — 3 min" scriptHref="/content-system-walkthrough.md" />
         </section>
 
         {/* 3 — PROBLEM → FLIP */}

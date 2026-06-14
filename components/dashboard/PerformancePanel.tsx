@@ -114,8 +114,7 @@ const PerformancePanel: React.FC = () => {
         purpose="What actually landed — and what the system learns from it."
         how="Daily LinkedIn metrics flow back in to inform which topics, hooks, and formats get posted next."
       />
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Performance</h1>
+      <div className="flex items-center justify-end flex-wrap gap-3">
         <div className="flex items-center gap-2">
           {(['7d', '30d', '90d'] as Range[]).map((r) => (
             <button key={r} onClick={() => setRange(r)}
@@ -170,7 +169,7 @@ const PerformancePanel: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Content type breakdown */}
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">By Content Type</h3>
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">By content type</h3>
               {typeData.length > 0 ? (
                 <div className="flex items-center gap-6">
                   <ResponsiveContainer width={120} height={120}>
@@ -194,7 +193,7 @@ const PerformancePanel: React.FC = () => {
 
             {/* Competitor benchmark */}
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">vs Competitors - avg likes per post</h3>
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">How you compare <span className="font-normal text-zinc-500">· avg likes per post</span></h3>
               {benchmarkData.length > 1 ? (
                 <ResponsiveContainer width="100%" height={Math.max(160, benchmarkData.length * 26)}>
                   <BarChart data={benchmarkData} layout="vertical" margin={{ right: 40 }}>
@@ -226,7 +225,7 @@ const PerformancePanel: React.FC = () => {
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Topic - bar width shows avg impressions per post</h3>
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which topics land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
               {topicData.length > 0 ? (
                 <div className="space-y-2">
                   {topicData.slice(0, 6).map((t) => {
@@ -248,7 +247,7 @@ const PerformancePanel: React.FC = () => {
             </div>
 
             <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-3">By Hook Pattern - bar width shows avg impressions per post</h3>
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which hooks land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
               {hookData.length > 0 ? (
                 <div className="space-y-2">
                   {hookData.slice(0, 6).map((h) => {
@@ -274,7 +273,7 @@ const PerformancePanel: React.FC = () => {
           <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-zinc-500" />
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Top Posts by {METRIC_LABELS[metric]}</h3>
+              <h3 className="text-[13px] font-semibold text-zinc-200">Top posts <span className="font-normal text-zinc-500">· by {METRIC_LABELS[metric].toLowerCase()}</span></h3>
             </div>
             <div className="divide-y divide-zinc-800/40">
               {topPosts.map((post, i) => (

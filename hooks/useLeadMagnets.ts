@@ -35,6 +35,10 @@ const LM_STATUS_ALIASES: Record<string, string> = {
   ready: 'published',
   complete: 'published',
   pending: 'idea',
+  // Legacy n8n workflow outputs — fold to canonical statuses so the UI never
+  // surfaces "Lm Review" or "Generating content" as separate ghost groups.
+  lm_review: 'review',
+  generating_content: 'generating',
 };
 export function normalizeLmStatus(raw?: string | null): string {
   const s = raw || 'idea';

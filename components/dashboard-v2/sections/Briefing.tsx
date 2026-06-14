@@ -18,6 +18,46 @@ import type { Severity, SectionId } from '../types';
  * Composes existing hooks: zero new data sources. All writes documented in
  * INVENTORY.md still flow through the original components when drilled-into.
  */
+
+/**
+ * Safely extract a human-readable message from a value that may be a raw
+ * JSON string (e.g. `{"severity":"high","action":"escalate","summary":"…"}`).
+ * Returns the `summary` field when found, otherwise returns the raw string.
+ */
+function safeMessage(value: string | null | undefined, fallback = ''): string {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed.summary === 'string') return parsed.summary;
+      if (typeof parsed.message === 'string') return parsed.message;
+      if (typeof parsed.error === 'string') return parsed.error;
+    } catch { /* not JSON, fall through */ }
+  }
+  return trimmed;
+}
+
+/** Humanize a post format DB value → display label. */
+function formatLabel(value: string | null | undefined): string {
+  if (!value) return 'Text';
+  switch (value.toLowerCase()) {
+    case 'text': return 'Text';
+    case 'single_image': return 'Single image';
+    case 'carousel': return 'Carousel';
+    case 'video': return 'Video';
+    default: return value;
+  }
+}
+
+/** Word-boundary–safe truncation: never cuts mid-word. */
+function truncateWords(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const cut = text.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut) + '…';
+}
+
 export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: string) => void }) {
   const userTz = useMemo(() => {
     if (typeof Intl !== 'undefined') return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -130,8 +170,8 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
         key: `post-fail:${p.id}`,
         verb: 'Replay',
         when: new Date(p.scheduledAt).toLocaleDateString(),
-        head: <>Post failed: <em>"{p.postText.slice(0, 40)}…"</em></>,
-        body: (p.errorMessage || 'Publish failed.').slice(0, 140),
+        head: <>Post failed: <em>"{truncateWords(p.postText, 40)}"</em></>,
+        body: safeMessage(p.errorMessage, 'Publish failed.').slice(0, 140),
         primary: { label: 'Retry in 5min →', onClick: () => retryFailedPost(p.id) },
         secondary: { label: 'Dismiss', onClick: () => dismissPost(p.id) },
       }));
@@ -165,8 +205,8 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
         key: `err:${e.id}`,
         verb: 'Fix',
         when: e.createdAt ? new Date(e.createdAt).toLocaleDateString() : 'recent',
-        head: <>{e.workflowName}: <em>{(e.errorMessage || 'error').slice(0, 50)}</em></>,
-        body: (e.aiAnalysis || 'High-severity error needs attention.').slice(0, 140),
+        head: <>{e.workflowName}: <em>{safeMessage(e.errorMessage, 'error').slice(0, 50)}</em></>,
+        body: safeMessage(e.aiAnalysis, 'High-severity error needs attention.').slice(0, 140),
         warn: true,
         primary: { label: 'Open log →', onClick: () => onNavigate?.('clients') },
         secondary: { label: 'Mark resolved', onClick: () => resolveError(e.id) },
@@ -200,9 +240,9 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
   }, [clients, errors, getClientHealth]);
 
   const healthChip: { label: string; severity: Severity } =
-    wfStats.health === 'critical' ? { label: 'System Red', severity: 'bad' } :
-    wfStats.health === 'degraded' ? { label: 'System Yellow', severity: 'warn' } :
-    { label: 'System Green', severity: 'good' };
+    wfStats.health === 'critical' ? { label: 'Action needed', severity: 'bad' } :
+    wfStats.health === 'degraded' ? { label: 'Needs attention', severity: 'warn' } :
+    { label: 'All systems go', severity: 'good' };
 
   const isLoading = wfLoading || postsLoading || orLoading || clLoading || leadsLoading;
   const todayStr = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
@@ -292,8 +332,8 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
                 <Row
                   key={p.id}
                   date={new Date(p.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  name={p.postText.slice(0, 80)}
-                  tag={p.postFormat || 'Text'}
+                  name={truncateWords(p.postText, 80)}
+                  tag={formatLabel(p.postFormat)}
                   onClick={() => onNavigate?.('content', 'pipeline')}
                 />
               ))}

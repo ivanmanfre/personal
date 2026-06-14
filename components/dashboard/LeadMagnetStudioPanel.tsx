@@ -371,7 +371,13 @@ const LeadMagnetStudioPanel: React.FC = () => {
           dense={view === 'table'}
           rows={visible.map((d) => ({
             id: d.id,
-            title: d.topic || '(untitled)',
+            // Title priority: topic (the real headline) → description → format +
+            // date (e.g. "Checklist — Jun 14") → bare format. Never "(untitled)".
+            title: d.topic
+              || d.description
+              || (d.format
+                ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`),
             excerpt: (d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined,
             status: d.status,
             thumbUrl: driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 96),
@@ -428,15 +434,27 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
                   {col.length === 0 ? (
                     <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
-                  ) : col.map((d) => (
+                  ) : col.map((d) => {
+                    const cover = driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 200);
+                    const titleText = d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
+                    return (
                     <button
                       key={d.id}
                       onClick={() => setOpenId(d.id)}
-                      className="w-full text-left rounded border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition px-1.5 py-1.5"
+                      className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
                     >
-                      <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.topic || '(untitled)'}</div>
+                      {cover && (
+                        <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
+                          <img src={cover} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      )}
+                      <div className="px-1.5 py-1.5">
+                        {d.format && <div className="text-[8.5px] uppercase tracking-wider text-emerald-400/50 mb-0.5">{d.format}</div>}
+                        <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{titleText}</div>
+                      </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -456,13 +474,17 @@ const LeadMagnetStudioPanel: React.FC = () => {
                   : (
                     <div className="w-full h-full flex flex-col justify-center px-3 py-2 bg-gradient-to-br from-[#1c241f] via-[#161914] to-[#14110d]">
                       <div className="text-[10px] uppercase tracking-wider text-emerald-400/60 mb-1">{d.format || 'Lead magnet'}</div>
-                      <div className="text-[12px] leading-tight text-zinc-300/90 font-serif italic line-clamp-3">{d.topic || '(untitled)'}</div>
+                      <div className="text-[12px] leading-tight text-zinc-300/90 font-serif italic line-clamp-3">
+                      {d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`)}
+                    </div>
                     </div>
                   )}
                 <span className={`absolute top-2 right-2 inline-block w-2 h-2 rounded-full ${STATUS_DOT[d.status] || STATUS_DOT.idea} shadow-[0_0_0_2px_rgba(0,0,0,0.4)]`} />
               </div>
               <div className="p-3 space-y-2">
-                <div className="text-sm text-zinc-200 line-clamp-2">{d.topic || '(untitled)'}</div>
+                <div className="text-sm text-zinc-200 line-clamp-2">
+                  {d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`)}
+                </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`inline-block rounded px-2 py-0.5 text-[11px] ${STATUS_STYLE[d.status] || STATUS_STYLE.idea}`}>
                     {d.status}

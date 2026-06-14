@@ -21,6 +21,14 @@ export function toastError(action: string, err?: unknown) {
   } else if (typeof err === 'string') {
     msg = err;
   }
+  // Humanize low-level errors so demo/sales surfaces never show a raw
+  // "TypeError: Failed to fetch" or "canceling statement due to statement
+  // timeout" stack-style string.
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+    msg = "Couldn't reach the server — check your connection.";
+  } else if (/statement timeout|canceling statement|query timeout/i.test(msg)) {
+    msg = 'The server is busy — give it a moment and retry.';
+  }
   toast.error(`Failed to ${action}`, { description: msg });
 }
 

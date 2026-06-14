@@ -4,7 +4,10 @@ import { useTourSpotlight } from './useTourSpotlight';
 
 export function TourNarratorCard() {
   const { active, step, index, total, next, back, end } = useTour();
-  useTourSpotlight(active, step?.target);
+  // Sheet-driven steps open a full editor panel — suppress the scrim + spotlight
+  // so the editor is fully visible, and move the card clear of the right sheet.
+  const opensSheet = !!step?.opensSheet;
+  useTourSpotlight(active, opensSheet ? undefined : step?.target);
 
   useEffect(() => {
     if (!active) return;
@@ -19,8 +22,8 @@ export function TourNarratorCard() {
 
   return (
     <>
-      <div className="dv-tour-scrim" onClick={end} aria-hidden />
-      <aside className="dv-tour-card" role="dialog" aria-modal="true" aria-label="Guided tour">
+      {!opensSheet && <div className="dv-tour-scrim" onClick={end} aria-hidden />}
+      <aside className={`dv-tour-card ${opensSheet ? 'dv-tour-card--left' : ''}`} role="dialog" aria-modal="true" aria-label="Guided tour">
         <div className="dv-tour-progress">{index + 1} / {total}</div>
         <h3 className="dv-tour-title">{step.title}</h3>
         <p className="dv-tour-body">{step.body}</p>

@@ -11,6 +11,7 @@ import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
 import { PanelIntro, LifecycleLegend } from '../dashboard-v2/primitives';
+import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -143,6 +144,56 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   }, [drafts, statusFilter, typeFilter, searchQuery, effectiveSort, showDisqualified, restrictTypes]);
 
   const open = drafts.find((d) => d.id === openId) || null;
+
+  // ── Guided-tour hooks ────────────────────────────────────────────────────
+  // The tour can trigger real interactions here: open the compose form, or open
+  // a draft's editor. We read the intent on the tour event AND on mount (so
+  // back-navigation into this panel mid-tour still resolves). The reset path
+  // only runs on a tour event — never on a normal data refresh — so this never
+  // fights a user operating the panel outside the tour.
+  const draftsRef = React.useRef(drafts);
+  draftsRef.current = drafts;
+  const pickEditable = React.useCallback(() => {
+    const ds = draftsRef.current;
+    return (
+      ds.find((d) => d.status === 'review') ||
+      ds.find((d) => d.status === 'approved') ||
+      ds.find((d) => d.status === 'scheduled') ||
+      ds.find((d) => d.status === 'published') ||
+      ds[0] || null
+    );
+  }, []);
+  React.useEffect(() => {
+    const apply = () => {
+      const intent = getTourIntent();
+      if (intent === 'posts-compose') {
+        setFormOpen(true);
+        setOpenId(null);
+        setTimeout(() => {
+          try { (document.querySelector('[data-tour="new-post"] input') as HTMLInputElement | null)?.focus(); } catch {}
+        }, 80);
+      } else if (intent === 'posts-edit') {
+        setFormOpen(false);
+        const pick = pickEditable();
+        if (pick) setOpenId(pick.id);
+      } else {
+        // Tour advanced away / ended — clear any tour-driven UI.
+        setFormOpen(false);
+        setOpenId(null);
+      }
+    };
+    const off = onTourIntent(apply);
+    if (getTourIntent() !== null) apply();
+    return off;
+  }, [pickEditable]);
+  // If the edit step fired before drafts loaded, open one as soon as they arrive.
+  React.useEffect(() => {
+    if (getTourIntent() === 'posts-edit' && !openId) {
+      const pick = pickEditable();
+      if (pick) setOpenId(pick.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts]);
 
   async function handleCreate() {
     if (!topic.trim()) { toast.error('Enter a topic'); return; }
@@ -350,7 +401,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       )}
 
       {/* New post — collapsed by default. Polished container with subtle gradient. */}
-      <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/50 to-zinc-950/30 overflow-hidden shadow-lg shadow-black/10">
+      <div data-tour="new-post" className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/50 to-zinc-950/30 overflow-hidden shadow-lg shadow-black/10">
         <button
           onClick={() => setFormOpen((v) => !v)}
           className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] font-medium text-zinc-200 hover:bg-zinc-900/40 transition-colors group"
@@ -466,7 +517,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
                 className="rounded-md bg-zinc-900/40 ring-1 ring-inset ring-zinc-800/80 px-2 py-1 text-zinc-300 hover:ring-zinc-700 cursor-pointer transition-colors text-[11px]"
               >
-                <option value="auto">Sort: smart</option>
+                <option value="auto">Smart sort</option>
                 <option value="updated">Sort: updated</option>
                 <option value="scheduled">Sort: scheduled</option>
               </select>
@@ -478,7 +529,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
-                  {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
+                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} more`}
                 </button>
               )}
             </span>
@@ -643,18 +694,28 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                     <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
                   ) : col.map((d: CarouselDraft) => {
                     const sched = formatScheduled(d.scheduledAt);
+                    const thumb = driveThumbUrl((d.imageUrls && d.imageUrls[0]) || null, 200);
+                    const kicker = d.type === 'carousel' ? 'Carousel' : d.type === 'single_image' ? 'Image' : 'Text';
                     return (
                       <button
                         key={d.id}
                         onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition px-1.5 py-1.5"
+                        className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
                       >
-                        <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.title}</div>
-                        {sched && (
-                          <div className="mt-1 flex items-center gap-1 text-[9.5px] text-zinc-500">
-                            <Calendar className="w-2.5 h-2.5" /> {sched}
+                        {thumb && (
+                          <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
+                            <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
                           </div>
                         )}
+                        <div className="px-1.5 py-1.5">
+                          <div className="text-[8.5px] uppercase tracking-wider text-zinc-500 mb-0.5">{kicker}</div>
+                          <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.title || d.topic || 'Untitled'}</div>
+                          {sched && (
+                            <div className="mt-1 flex items-center gap-1 text-[9.5px] text-zinc-500">
+                              <Calendar className="w-2.5 h-2.5" /> {sched}
+                            </div>
+                          )}
+                        </div>
                       </button>
                     );
                   })}

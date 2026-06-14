@@ -47,7 +47,11 @@ export function useScheduledChecks() {
       if (error) throw error;
       setChecks((data || []).map(mapRow));
     } catch (err) {
-      toastError('load scheduled checks', err);
+      // Read-only initial load: degrade silently to an empty list rather than
+      // throwing a raw "Failed to fetch" toast onto the front page. The Ops
+      // panel shows the empty state; user-initiated mutations below still toast.
+      console.warn('[scheduled-checks] load failed:', err);
+      setChecks([]);
     } finally {
       setLoading(false);
       hasFetched.current = true;

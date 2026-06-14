@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useCallback, useMemo } fr
 import { tourReducer, initialTourState } from './tourReducer';
 import { getTourSteps } from './demoSafe';
 import { dispatchNav } from '../lib/navBus';
+import { setTourIntent } from './tourBus';
 import type { TourStep } from './tourSteps';
 
 interface TourCtx {
@@ -22,10 +23,14 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const total = steps.length;
   const [state, dispatch] = useReducer(tourReducer, initialTourState);
 
-  // Navigate to the step's section/sub whenever the active step changes.
+  // Navigate to the step's section/sub whenever the active step changes, and
+  // publish the step's UI intent (open compose form / open editor) so the
+  // target panel can trigger the matching real interaction.
   const go = useCallback((idx: number) => {
     const s = steps[idx];
-    if (s) dispatchNav({ section: s.section, sub: s.sub });
+    if (!s) return;
+    dispatchNav({ section: s.section, sub: s.sub });
+    setTourIntent(s.intent ?? null);
   }, [steps]);
 
   const start = useCallback(() => { dispatch({ type: 'START', total }); go(0); }, [go, total]);
@@ -37,10 +42,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     const idx = Math.max(state.index - 1, 0);
     dispatch({ type: 'GOTO', index: idx, total }); go(idx);
   }, [go, state.index, total]);
-  const end = useCallback(() => dispatch({ type: 'END' }), []);
+  const end = useCallback(() => { dispatch({ type: 'END' }); setTourIntent(null); }, []);
 
   React.useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('tour') === '1') start();
+    if (new URLSearchParams(window.location.search).get('tour') === '1') {
+      // Defer to the next task so the parent Shell's onNav subscription (a
+      // parent effect, which runs AFTER this child effect) is attached before
+      // step 0 dispatches its navigation — otherwise the first nav is lost and
+      // the tour opens on the wrong section.
+      const t = setTimeout(() => start(), 0);
+      return () => clearTimeout(t);
+    }
   }, [start]);
 
   const value = useMemo<TourCtx>(() => ({

@@ -144,16 +144,23 @@ export function StudioListView({
   const shouldReduceMotion = useReducedMotion();
 
   // Per-status collapse state (only used when groupByStatus is on).
-  // Default: ALL groups collapsed — gives the pipeline-overview-at-a-glance
-  // ClickUp-style scan. User clicks the group they want to drill into.
+  // Default: non-empty groups are EXPANDED so real content fills the screen on
+  // first load. Only genuinely empty (0-count) groups are collapsed. The user
+  // can still collapse any group manually; that choice is persisted.
   // Persisted to localStorage so user's expansion choices survive reloads.
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    if (!groupByStatus || typeof window === 'undefined') return new Set(statusOrder);
+    if (!groupByStatus || typeof window === 'undefined') {
+      // No persistence key — collapse nothing (flat view or SSR).
+      return new Set<string>();
+    }
     try {
       const raw = localStorage.getItem(`studio-collapse-${groupByStatus}`);
       if (raw) return new Set(JSON.parse(raw) as string[]);
     } catch {}
-    return new Set(statusOrder);
+    // First visit — start with empty set (all groups expanded).
+    // Groups with 0 rows are hidden entirely (see render logic below),
+    // so this effectively means "show all real content immediately."
+    return new Set<string>();
   });
   React.useEffect(() => {
     if (!groupByStatus || typeof window === 'undefined') return;
@@ -396,32 +403,28 @@ export function StudioListView({
             for (const s of byStatus.keys()) { if (!seen.has(s)) { ordered.push(s); seen.add(s); } }
             return ordered.map((status) => {
               const groupRows = byStatus.get(status) || [];
-              const isPinned = pinnedStatuses.includes(status) || statusOrder.includes(status);
-              // Hide entirely if not in statusOrder/pinned AND has no rows (no point showing a phantom group)
-              if (groupRows.length === 0 && !isPinned) return null;
+              // Hide 0-count groups entirely — no phantom/empty buckets cluttering
+              // the default view. Populated groups always render (even if not in
+              // statusOrder or pinnedStatuses). Empty groups are always hidden so
+              // the screen shows real content, not "Idea 0 / Approved 0 / Error 0".
+              if (groupRows.length === 0) return null;
               const meta = statusMeta[status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
               const isCollapsed = collapsed.has(status);
-              const isEmpty = groupRows.length === 0;
               return (
                 <div key={status} className="border-b border-zinc-800/40 last:border-b-0">
                   <button
-                    onClick={() => !isEmpty && toggleGroup(status)}
-                    disabled={isEmpty}
-                    className={`w-full flex items-center gap-2 px-4 py-2 transition-all text-left ${
-                      isEmpty ? 'bg-transparent cursor-default' : 'bg-zinc-900/30 hover:bg-zinc-900/60'
-                    }`}
+                    onClick={() => toggleGroup(status)}
+                    className="w-full flex items-center gap-2 px-4 py-2 transition-all text-left bg-zinc-900/30 hover:bg-zinc-900/60"
                   >
-                    {isEmpty ? (
-                      <span className="w-3.5 h-3.5" />
-                    ) : isCollapsed
+                    {isCollapsed
                       ? <ChevronRight className="w-3.5 h-3.5 text-zinc-500 transition-transform" />
                       : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform" />}
-                    <span className={`inline-block w-2 h-2 rounded-full ring-2 ${isEmpty ? 'opacity-30 ring-transparent' : 'ring-current/10'} ${meta.dot}`} />
-                    <span className={`dv-section-h ${isEmpty ? 'opacity-50' : ''}`} style={{ fontSize: 'var(--t-base)' }}>{statusLabel(status)}</span>
-                    <span className={`dv-editorial-num text-[length:var(--t-sm)] ml-0.5 ${isEmpty ? 'opacity-50' : ''}`}>{groupRows.length}</span>
+                    <span className={`inline-block w-2 h-2 rounded-full ring-2 ring-current/10 ${meta.dot}`} />
+                    <span className="dv-section-h" style={{ fontSize: 'var(--t-base)' }}>{statusLabel(status)}</span>
+                    <span className="dv-editorial-num text-[length:var(--t-sm)] ml-0.5">{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
-                    {!isCollapsed && !isEmpty && (
+                    {!isCollapsed && (
                       <motion.div
                         key="body"
                         initial={{ height: 0, opacity: 0 }}

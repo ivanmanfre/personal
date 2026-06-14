@@ -6,9 +6,11 @@ interface VideoSlotProps {
   poster?: string;
   caption?: string;
   ratio?: string;
+  /** Link to the walkthrough script doc, shown while the video isn't filmed yet. */
+  scriptHref?: string;
 }
 
-export function VideoSlot({ src, poster, caption, ratio = '16 / 9' }: VideoSlotProps) {
+export function VideoSlot({ src, poster, caption, ratio = '16 / 9', scriptHref }: VideoSlotProps) {
   return (
     <figure className="my-4">
       <div
@@ -24,6 +26,17 @@ export function VideoSlot({ src, poster, caption, ratio = '16 / 9' }: VideoSlotP
               <Play aria-hidden="true" size={22} />
             </span>
             <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">Walkthrough — coming</span>
+            {scriptHref && (
+              <a
+                href={scriptHref}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-xs uppercase tracking-[0.1em] underline underline-offset-4 transition-opacity hover:opacity-70"
+                style={{ color: 'var(--color-accent-ink)' }}
+              >
+                View script ↗
+              </a>
+            )}
           </div>
         )}
       </div>

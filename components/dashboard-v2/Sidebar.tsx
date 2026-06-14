@@ -15,6 +15,8 @@ const SECTION_ICON: Record<string, React.ReactNode> = {
   clients:  ic(<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>),
   knowledge: ic(<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></>),
   agent:    ic(<><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" /><line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" /><line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" /></>),
+  ideas:    ic(<><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" /></>),
+  system:   ic(<><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></>),
   personal: ic(<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>),
 };
 const SECTION_SHORT: Record<string, string> = {
@@ -85,9 +87,14 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
         </button>
       )}
       <div className="dv-brand">
+        <span className="dv-brand-logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28">
+            <rect width="32" height="32" rx="7" fill="var(--d-good)" />
+            <path d="M7 22 V10 H10.5 L16 18 L21.5 10 H25 V22 H22 V14.5 L17 21.5 H15 L10 14.5 V22 Z" fill="var(--d-ink)" />
+          </svg>
+        </span>
         <div className="dv-brand-text">
           <div className="dv-brand-mark">Ivan <em>System</em></div>
-          <div className="dv-brand-sub">Console · v2</div>
         </div>
         {onClose && (
           <button type="button" className="dv-sidebar-close" aria-label="Close navigation" onClick={onClose}>×</button>
@@ -108,8 +115,7 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
       </nav>
 
       <div className="dv-sidebar-foot">
-        <div className="dv-kbd-hint"><kbd>⌘</kbd><kbd>K</kbd> Jump</div>
-        <div className="dv-kbd-hint" style={{ marginTop: '0.4rem' }}><kbd>⌘</kbd><kbd>0</kbd>–<kbd>7</kbd> Sections</div>
+        <div className="dv-kbd-hint"><kbd>⌘</kbd><kbd>K</kbd> Jump to anything</div>
       </div>
     </aside>
   );

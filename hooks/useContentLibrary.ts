@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { toastError } from '../lib/dashboardActions';
 
 export interface AgentLogEntry {
   ts: string | null;
@@ -90,7 +89,11 @@ export function useContentLibrary() {
       tombstonesRef.current.clear();
       setDrafts((data || []).map(mapDraft));
     } catch (err) {
-      toastError('load carousel drafts', err);
+      // Posts is the demo's first surface — a transient read failure (e.g. a
+      // Postgres statement timeout on this heavy query) should not throw a
+      // raw toast onto it. Degrade silently; the empty/loaded state and the
+      // refresh button remain. Realtime + the next refresh will reconcile.
+      console.warn('[content-library] load failed:', err);
     } finally {
       setLoading(false);
     }
