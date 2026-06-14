@@ -963,4 +963,35 @@ body.dashboard-v2-active * {
 .dashboard-v2 .dv-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 
 @keyframes dv-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── PanelIntro ──────────────────────────────────────────── */
+.dashboard-v2 .dv-panel-intro {
+  display: flex; align-items: center; gap: 8px;
+  margin: 2px 0 var(--sp-4);
+  font-size: var(--t-base); color: var(--d-paper-dim);
+}
+.dashboard-v2 .dv-panel-intro-how { position: relative; display: inline-flex; }
+.dashboard-v2 .dv-panel-intro-q {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid var(--d-rule-strong); background: var(--d-ink-3);
+  color: var(--d-paper-dim); font-size: var(--t-xs); line-height: 1; cursor: pointer;
+}
+.dashboard-v2 .dv-panel-intro-q:hover { color: var(--d-paper); }
+.dashboard-v2 .dv-panel-intro-pop {
+  position: absolute; top: 24px; left: 0; z-index: 20; width: 280px;
+  background: var(--d-ink-2); border: 1px solid var(--d-rule-strong);
+  border-radius: var(--d-r-sm); box-shadow: var(--d-shadow-1);
+  padding: 10px 12px; font-size: var(--t-sm); color: var(--d-paper-dim); line-height: 1.5;
+}
+
+/* ── Lifecycle legend ────────────────────────────────────── */
+.dashboard-v2 .dv-lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--sp-4); }
+.dashboard-v2 .dv-lifecycle-arrow { color: var(--d-paper-dimmer); font-size: var(--t-sm); }
+.dashboard-v2 .dv-lifecycle-stage {
+  font-size: var(--t-xs); padding: 3px 8px; border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-rule); background: var(--d-ink-3); color: var(--d-paper-dim);
+}
+.dashboard-v2 .dv-lifecycle-stage--good   { color: var(--d-good);   border-color: var(--d-good);   background: var(--d-good-bg); }
+.dashboard-v2 .dv-lifecycle-stage--warn   { color: var(--d-warn);   border-color: var(--d-warn);   background: var(--d-warn-bg); }
+.dashboard-v2 .dv-lifecycle-stage--accent { color: var(--d-accent); border-color: var(--d-accent); background: var(--d-accent-bg); }
 @keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
