@@ -1,7 +1,7 @@
 // components/ScanReportPage.tsx — build-id: nudge-2026-05-12-1
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, animate, AnimatePresence, useInView, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { motion, animate, AnimatePresence, useInView, useReducedMotion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
@@ -281,19 +281,35 @@ const useMediaQuery = (query: string): boolean => {
 const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
   const [displayed, setDisplayed] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
   const reduceMotion = useReducedMotion();
+  const done = useRef(false);
 
+  // Plain rect-based trigger. framer-motion's useInView margin proved flaky on narrow
+  // viewports here (counters stuck at 0 on mobile) — a direct getBoundingClientRect + scroll
+  // check fires reliably on every device and never leaves the number stranded at 0.
   useEffect(() => {
-    if (!isInView) return;
     if (reduceMotion) { setDisplayed(value); return; }
-    const controls = animate(0, value, {
-      duration: 1.2,
-      ease: EASE as unknown as [number, number, number, number],
-      onUpdate: (v) => setDisplayed(Math.round(v)),
-    });
-    return () => controls.stop();
-  }, [value, isInView, reduceMotion]);
+    const el = ref.current;
+    if (!el) return;
+    let controls: ReturnType<typeof animate> | undefined;
+    const run = () => {
+      if (done.current) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.top < vh * 0.92 && r.bottom > 0) {
+        done.current = true;
+        window.removeEventListener('scroll', run);
+        controls = animate(0, value, {
+          duration: 1.2,
+          ease: EASE as unknown as [number, number, number, number],
+          onUpdate: (v) => setDisplayed(Math.round(v)),
+        });
+      }
+    };
+    run();
+    window.addEventListener('scroll', run, { passive: true });
+    return () => { window.removeEventListener('scroll', run); controls?.stop(); };
+  }, [value, reduceMotion]);
 
   return <span ref={ref} style={style}>{displayed}</span>;
 };
@@ -1127,36 +1143,146 @@ const CI_META: Record<CallIntel['archetype'], { tag: string; hiding: string; rev
 };
 
 // The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
+// Count-up for a metric value string like "31%", "12", "$40k" — animates the numeric part.
+const CICountMetric: React.FC<{ value: string; style?: React.CSSProperties }> = ({ value, style }) => {
+  const m = String(value).match(/^(\D*)([\d][\d,.]*)(.*)$/);
+  if (!m) return <span style={style}>{value}</span>;
+  const num = parseFloat(m[2].replace(/,/g, ''));
+  if (!isFinite(num)) return <span style={style}>{value}</span>;
+  return <span style={style}>{m[1]}<Counter value={num} />{m[3]}</span>;
+};
+
+// The product-mock dashboard — a designed, animated "software" surface (metric tiles,
+// rep bars that grow on scroll, flagged-insight rows). Falls back to a list for old scans.
 function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName: string }) {
   const meta = CI_META[ci.archetype] ?? CI_META.sales_demo_driven;
+  const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const so = ci.sample_output;
+  const metrics = so.metrics && so.metrics.length ? so.metrics.slice(0, 3) : null;
+  const reps = (so.reps || []).slice(0, 4);
+  const flags = so.flags && so.flags.length ? so.flags.slice(0, 3) : null;
+  const maxPct = Math.max(1, ...reps.map((r) => r.pct || 0));
+  const bestRep = reps.reduce((b, r) => (r.pct > (b?.pct ?? -1) ? r : b), null as null | { name: string; pct: number });
+
   return (
-    <div style={{ border: `1px solid ${hairline}` }}>
-      {/* window titlebar — the single dark accent on the page; reads as "this is software" */}
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.8, ease: EASE }}
+      style={{ border: `1px solid ${hairline}`, boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}
+    >
+      {/* window titlebar */}
       <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
         <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
           {companyName} · {meta.review}
         </span>
+        <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+          <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ height: 6, width: 6, background: 'var(--color-accent)' }} />
+          Live
+        </span>
       </div>
-      <div className="p-6 lg:p-7" style={{ background: 'var(--color-paper, #F7F4EF)' }}>
-        <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
-          {ci.sample_output.title}
-        </p>
-        <ul className="mt-5">
-          {ci.sample_output.items.map((it, i) => (
-            <li key={i} className="flex gap-3.5" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.85rem' : 0, marginTop: i ? '0.85rem' : 0 }}>
-              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: 'var(--color-accent-ink)', lineHeight: 1.55, flexShrink: 0, minWidth: 16 }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
-            </li>
-          ))}
-        </ul>
+
+      <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+        {metrics ? (
+          <>
+            {/* metric tiles */}
+            <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
+              {metrics.map((m, i) => (
+                <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
+                  <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
+                  <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
+                  {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
+                </div>
+              ))}
+            </div>
+
+            <div className="px-5 lg:px-6 py-6 space-y-6">
+              {/* rep bars */}
+              {reps.length > 0 && (
+                <div>
+                  <p className="mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Close rate by rep</p>
+                  <div className="space-y-2.5">
+                    {reps.map((r, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <span className="shrink-0" style={{ width: 96, fontFamily: BODY_SERIF, fontSize: '13px', color: '#3D3D3B' }}>{r.name}</span>
+                        <div className="relative flex-1" style={{ height: 7, background: 'rgba(26,26,26,0.07)' }}>
+                          <motion.div
+                            initial={reduce ? false : { scaleX: 0 }}
+                            whileInView={{ scaleX: 1 }}
+                            viewport={{ once: true, margin: '-40px' }}
+                            transition={{ duration: 0.9, ease: EASE, delay: 0.15 + i * 0.1 }}
+                            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((r.pct / maxPct) * 100)}%`, transformOrigin: 'left', background: bestRep && r.name === bestRep.name ? 'var(--color-accent)' : '#1A1A1A' }}
+                          />
+                        </div>
+                        <span className="shrink-0 text-right" style={{ width: 38, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: bestRep && r.name === bestRep.name ? accentInk : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}>{r.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* flagged insights */}
+              {flags && (
+                <div className="space-y-px" style={{ borderTop: `1px solid ${hairline}` }}>
+                  {flags.map((f, i) => (
+                    <motion.div
+                      key={i}
+                      initial={reduce ? false : { opacity: 0, x: -8 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true, margin: '-30px' }}
+                      transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
+                      className="flex items-start gap-3 pt-3"
+                    >
+                      <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}` }}>{f.tag}</span>
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.text}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          // fallback for pre-structured scans
+          <div className="p-6 lg:p-7">
+            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{so.title}</p>
+            <ul className="mt-5">
+              {so.items.map((it, i) => (
+                <li key={i} className="flex gap-3.5" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.85rem' : 0, marginTop: i ? '0.85rem' : 0 }}>
+                  <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk, lineHeight: 1.55, flexShrink: 0, minWidth: 16 }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }
+
+// Magnetic spring CTA — lifted from the landing-page interaction language.
+const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> = ({ href, label, small }) => {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0); const y = useMotionValue(0);
+  const sx = useSpring(x, { stiffness: 250, damping: 20 });
+  const sy = useSpring(y, { stiffness: 250, damping: 20 });
+  return (
+    <div ref={ref} style={{ display: 'inline-block' }}
+      onMouseMove={(e) => { if (reduce || !ref.current) return; const r = ref.current.getBoundingClientRect(); x.set((e.clientX - r.left - r.width / 2) * 0.25); y.set((e.clientY - r.top - r.height / 2) * 0.25); }}
+      onMouseLeave={() => { x.set(0); y.set(0); }}>
+      <motion.a href={href} target="_blank" rel="noopener noreferrer" className="group"
+        style={{ x: sx, y: sy, fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 16px' : '15px 28px', minHeight: small ? 40 : 54, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        {label}
+        <ArrowRight size={small ? 14 : 16} className="transition-transform group-hover:translate-x-1" />
+      </motion.a>
+    </div>
+  );
+};
 
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
@@ -1165,6 +1291,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   const hairline = 'var(--color-hairline)';
   const accentInk = 'var(--color-accent-ink)';
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
+  const reduce = useReducedMotion();
   const logo = report.logo_url || scan.logo_url;
   const screenshot = report.homepage_screenshot_url || scan.report_json?.homepage_screenshot_url;
 
@@ -1181,11 +1308,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   if (facts.length) receipts.push({ label: 'Firmographics', value: facts.join(' · ') });
 
   const BookButton = ({ label, small }: { label: string; small?: boolean }) => (
-    <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 group"
-       style={{ fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 16px' : '14px 26px', minHeight: small ? 40 : 52 }}>
-      {label}
-      <ArrowRight size={small ? 14 : 16} className="transition-transform group-hover:translate-x-1" />
-    </a>
+    <CIMagneticCTA href={bookUrl} label={label} small={small} />
   );
 
   return (
@@ -1202,41 +1325,54 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       {/* HERO — outcome + the homepage screenshot as proof we audited THEIR site */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-14 lg:pt-20 lg:pb-16">
         <div className="flex items-center gap-3 mb-7">
-          {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
+          {logo && <img src={logo} alt="" className="h-7 w-7 object-contain" loading="lazy" onError={fallbackOnError} style={{ filter: 'grayscale(1)', opacity: 0.8 }} />}
           <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
             Call Intelligence · {meta.tag}
           </span>
         </div>
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
-          <div>
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:gap-14">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: EASE }}
+          >
             <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.025em', color: '#1A1A1A' }}>
               {ci.thesis}
             </h1>
             <div className="mt-9"><BookButton label="See it on your calls" /></div>
-          </div>
+          </motion.div>
           {screenshot && (
-            <figure>
+            <motion.figure
+              initial={reduce ? false : { opacity: 0, scale: 0.97, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}
+            >
               <p className="mb-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
                 {scan.domain ?? companyName} · captured today
               </p>
-              <div className="overflow-hidden" style={{ border: `1px solid ${hairline}`, maxHeight: 360, background: '#EFEAE2' }}>
+              <div className="overflow-hidden" style={{ border: `1px solid ${hairline}`, maxHeight: 360, background: '#EFEAE2', boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}>
                 <img src={screenshot} alt={`${companyName} homepage`} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
               </div>
-            </figure>
+            </motion.figure>
           )}
         </div>
       </section>
 
       {/* WHAT WE CAN SEE — volume + interpreted signals + verified receipts */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
+        <div className="grid gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-start lg:gap-14">
           <div>
             <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.1rem, 4.4vw, 3.1rem)', lineHeight: 1.0, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 10 }}>
               {ci.volume_estimate.value}
             </p>
+            {ci.volume_estimate.basis && (
+              <p className="mt-3 max-w-xs" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#5A5752' }}>
+                {ci.volume_estimate.basis}
+              </p>
+            )}
           </div>
-          <ul className="space-y-2.5 lg:pb-2">
+          <ul className="space-y-2.5 lg:pt-1">
             {ci.observable_signals.map((s, i) => (
               <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
                 <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
@@ -1304,34 +1440,55 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         </div>
         {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
-        <div className="grid gap-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <div className="lg:pt-2">
-            <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-              AI call auditing, at <Italic>100% coverage.</Italic>
-            </h3>
-            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>
-              They already recorded every sales call in Fireflies. We scored <b style={{ color: '#1A1A1A', fontWeight: 600 }}>100% of them</b>, moved escalation from days to the next morning, and gave every rep feedback after every customer call — zero extra manual work.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2.5">
-              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
-                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Coverage</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>5% sampled → 100% graded</span>
-              </span>
-              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
-                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Stack</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>Fireflies · Airtable · n8n · Claude</span>
-              </span>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <figure className="overflow-hidden" style={{ border: `1px solid ${hairline}`, boxShadow: '0 8px 32px rgba(26,26,26,0.08)' }}>
-              <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            </figure>
-            <figure className="overflow-hidden lg:max-w-[58%]" style={{ border: `1px solid ${hairline}` }}>
-              <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            </figure>
-          </div>
+        <h3 className="max-w-2xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          More trials closed. <Italic>Churn caught early.</Italic>
+        </h3>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
+          A sales team recording every call in Fireflies, but no consistent read on rep performance and no fast path when a deal went sideways. We built a system that scores every finished call, coaches each rep on what cost them the deal, and escalates at-risk accounts by the next morning, while the account is still saveable.
+        </p>
+
+        {/* benefit stat tiles — quantified outcome, count-up on scroll.
+            ⚠️ PLACEHOLDER FIGURES — Ivan to replace the two flagged tiles with the real
+            ProvalTech numbers before this page is sent to a prospect. "100% graded" is real. */}
+        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: `1px solid ${hairline}`, borderBottom: `1px solid ${hairline}` }}>
+          {[
+            { pre: '+', fig: '27', suf: '%', label: 'trial → paid', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
+            { pre: '−', fig: '41', suf: '%', label: 'at-risk churn', sub: 'risk caught the next morning', placeholder: true }, // PLACEHOLDER
+            { pre: '', fig: '100', suf: '%', label: 'of calls graded', sub: 'up from 5% sampled by hand' }, // REAL
+          ].map((s, i) => (
+            <motion.div key={i}
+              initial={reduce ? false : { opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.7, ease: EASE, delay: i * 0.1 }}
+              className="py-7 sm:px-7 first:sm:pl-0"
+              style={{ borderLeft: i ? `1px solid ${hairline}` : undefined }}
+            >
+              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.4rem, 4.5vw, 3.4rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
+                {s.pre}<Counter value={Number(s.fig)} />{s.suf}
+              </div>
+              <p className="mt-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
+              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
+            </motion.div>
+          ))}
         </div>
+
+        {/* the real product — dashboard + a scored call */}
+        <div className="mt-9 grid gap-4 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
+          <motion.figure className="overflow-hidden"
+            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE }}
+            style={{ border: `1px solid ${hairline}`, boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}>
+            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>Live performance dashboard</figcaption>
+          </motion.figure>
+          <motion.figure className="overflow-hidden"
+            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.12 }}
+            style={{ border: `1px solid ${hairline}` }}>
+            <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>A single scored call</figcaption>
+          </motion.figure>
+        </div>
+        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
 
       {/* CTA — book a call (no $2k assessment) */}
