@@ -643,18 +643,28 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                     <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
                   ) : col.map((d: CarouselDraft) => {
                     const sched = formatScheduled(d.scheduledAt);
+                    const thumb = driveThumbUrl((d.imageUrls && d.imageUrls[0]) || null, 200);
+                    const kicker = d.type === 'carousel' ? 'Carousel' : d.type === 'single_image' ? 'Image' : 'Text';
                     return (
                       <button
                         key={d.id}
                         onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition px-1.5 py-1.5"
+                        className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
                       >
-                        <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.title}</div>
-                        {sched && (
-                          <div className="mt-1 flex items-center gap-1 text-[9.5px] text-zinc-500">
-                            <Calendar className="w-2.5 h-2.5" /> {sched}
+                        {thumb && (
+                          <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
+                            <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
                           </div>
                         )}
+                        <div className="px-1.5 py-1.5">
+                          <div className="text-[8.5px] uppercase tracking-wider text-zinc-500 mb-0.5">{kicker}</div>
+                          <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.title || d.topic || 'Untitled'}</div>
+                          {sched && (
+                            <div className="mt-1 flex items-center gap-1 text-[9.5px] text-zinc-500">
+                              <Calendar className="w-2.5 h-2.5" /> {sched}
+                            </div>
+                          )}
+                        </div>
                       </button>
                     );
                   })}

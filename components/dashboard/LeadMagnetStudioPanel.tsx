@@ -434,17 +434,27 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
                   {col.length === 0 ? (
                     <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
-                  ) : col.map((d) => (
+                  ) : col.map((d) => {
+                    const cover = driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 200);
+                    const titleText = d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
+                    return (
                     <button
                       key={d.id}
                       onClick={() => setOpenId(d.id)}
-                      className="w-full text-left rounded border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition px-1.5 py-1.5"
+                      className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
                     >
-                      <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">
-                        {d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`)}
+                      {cover && (
+                        <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
+                          <img src={cover} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      )}
+                      <div className="px-1.5 py-1.5">
+                        {d.format && <div className="text-[8.5px] uppercase tracking-wider text-emerald-400/50 mb-0.5">{d.format}</div>}
+                        <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{titleText}</div>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );

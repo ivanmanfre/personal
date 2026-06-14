@@ -21,6 +21,11 @@ export function toastError(action: string, err?: unknown) {
   } else if (typeof err === 'string') {
     msg = err;
   }
+  // Humanize low-level network errors so demo/sales surfaces never show a
+  // raw "TypeError: Failed to fetch" stack-style string.
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+    msg = "Couldn't reach the server — check your connection.";
+  }
   toast.error(`Failed to ${action}`, { description: msg });
 }
 
