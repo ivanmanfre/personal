@@ -1166,6 +1166,19 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   const accentInk = 'var(--color-accent-ink)';
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
   const logo = report.logo_url || scan.logo_url;
+  const screenshot = report.homepage_screenshot_url || scan.report_json?.homepage_screenshot_url;
+
+  // Verified receipts — real signals that prove the audit is grounded, beside the claim.
+  const receipts: { label: string; value: string }[] = [];
+  const hires = (report.hiring?.sample_titles ?? []).slice(0, 2);
+  if (hires.length) receipts.push({ label: 'Hiring', value: hires.join(' · ') });
+  const tools = (report.tech_stack_assessment?.confirmed_tools ?? []).slice(0, 3);
+  if (tools.length) receipts.push({ label: 'Verified stack', value: tools.join(' · ') });
+  const facts: string[] = [];
+  if (report.company_size) facts.push(`${report.company_size} employees`);
+  if (report.domain_age_years) facts.push(`${report.domain_age_years}-yr domain`);
+  if (report.traffic?.monthly_visits) facts.push(`${report.traffic.monthly_visits.toLocaleString()} visits/mo`);
+  if (facts.length) receipts.push({ label: 'Firmographics', value: facts.join(' · ') });
 
   const BookButton = ({ label, small }: { label: string; small?: boolean }) => (
     <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 group"
@@ -1186,19 +1199,37 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         </div>
       </header>
 
-      {/* HERO — outcome, no score */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-16 lg:pt-20 lg:pb-24">
+      {/* HERO — outcome + the homepage screenshot as proof we audited THEIR site */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-14 lg:pt-20 lg:pb-16">
         <div className="flex items-center gap-3 mb-7">
           {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
           <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
             Call Intelligence · {meta.tag}
           </span>
         </div>
-        <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.4rem, 5.2vw, 4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#1A1A1A', maxWidth: '20ch' }}>
-          {ci.thesis}
-        </h1>
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
+          <div>
+            <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.025em', color: '#1A1A1A' }}>
+              {ci.thesis}
+            </h1>
+            <div className="mt-9"><BookButton label="See it on your calls" /></div>
+          </div>
+          {screenshot && (
+            <figure>
+              <p className="mb-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+                {scan.domain ?? companyName} · captured today
+              </p>
+              <div className="overflow-hidden" style={{ border: `1px solid ${hairline}`, maxHeight: 360, background: '#EFEAE2' }}>
+                <img src={screenshot} alt={`${companyName} homepage`} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+              </div>
+            </figure>
+          )}
+        </div>
+      </section>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
+      {/* WHAT WE CAN SEE — volume + interpreted signals + verified receipts */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
           <div>
             <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
             <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
@@ -1214,8 +1245,16 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             ))}
           </ul>
         </div>
-
-        <div className="mt-12"><BookButton label="See it on your calls" /></div>
+        {receipts.length > 0 && (
+          <div className="mt-10 flex flex-wrap gap-2.5">
+            {receipts.map((r, i) => (
+              <span key={i} className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* WHERE THE CLOSE-RATE / CHURN IS HIDING */}
@@ -1251,6 +1290,47 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             </ul>
           </div>
           <CallIntelProductMock ci={ci} companyName={companyName} />
+        </div>
+      </section>
+
+      {/* PROOF — who's building this + named client outcomes */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Who's building this</p>
+        <div className="mb-12 max-w-2xl flex items-start gap-4">
+          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-12 h-12 object-cover shrink-0" style={{ borderRadius: 0 }} onError={fallbackOnError} />
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses — including call intelligence that lifts close rates and catches churn early. This is the same diagnostic he runs before every build.
+          </p>
+        </div>
+        {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
+        <div className="grid gap-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div className="lg:pt-2">
+            <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3vw, 2.3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              AI call auditing, at <Italic>100% coverage.</Italic>
+            </h3>
+            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>
+              They already recorded every sales call in Fireflies. We scored <b style={{ color: '#1A1A1A', fontWeight: 600 }}>100% of them</b>, moved escalation from days to the next morning, and gave every rep feedback after every customer call — zero extra manual work.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2.5">
+              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Coverage</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>5% sampled → 100% graded</span>
+              </span>
+              <span className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Stack</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>Fireflies · Airtable · n8n · Claude</span>
+              </span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <figure className="overflow-hidden" style={{ border: `1px solid ${hairline}`, boxShadow: '0 8px 32px rgba(26,26,26,0.08)' }}>
+              <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            </figure>
+            <figure className="overflow-hidden lg:max-w-[58%]" style={{ border: `1px solid ${hairline}` }}>
+              <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+            </figure>
+          </div>
         </div>
       </section>
 
