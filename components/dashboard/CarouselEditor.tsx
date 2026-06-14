@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
 import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo } from '../../lib/studioActions';
@@ -15,7 +15,7 @@ import SourceBriefing from './SourceBriefing';
 import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
 import { SchedulePicker } from './SchedulePicker';
 import { useUpstreamSource } from '../../hooks/useUpstreamSource';
-import { Card, CardLabel, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
+import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import PostPreview from '../ui/PostPreview';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
@@ -28,6 +28,21 @@ interface Props {
   onClose: () => void;
   onChanged: () => void;
 }
+
+// Humanize raw taxonomy/enum values for display only (snake_case → Title Case).
+// Underlying values used in logic are never touched — this is presentation only.
+const humanizeValue = (v?: string): string => {
+  if (!v) return '';
+  // Tier codes (T1..T4) render after a "Tier" label, so return the digit only
+  // to avoid "Tier Tier 2".
+  const tierMatch = /^T(\d)$/i.exec(v.trim());
+  if (tierMatch) return tierMatch[1];
+  return v
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const shouldReduceMotion = useReducedMotion();
@@ -99,6 +114,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   };
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [igMode, setIgMode] = useState<'edit' | 'preview'>('edit');
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   // tax always tracks the LOCAL edited taxonomy so chips + editor stay in sync.
   // saveDraft() reconciles to the server when the user clicks "Save fields".
   const tax = localTax;
@@ -141,15 +157,15 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     setSrStatus(`Status changed from ${from} to ${to}`);
     if (wasUser) return; // user-initiated → run() already toasted
     const msgs: Record<string, string> = {
-      'idea>generating': 'Generation fired — agents drafting now',
-      'generating>review': '✓ Generation complete — ready for review',
-      'generating>error':  '⚠ Generation failed — see Agent activity for details',
-      'review>scheduled':  '📅 Approved and scheduled',
-      'review>approved':   '✓ Approved',
-      'scheduled>published': '🚀 Published live on LinkedIn',
-      'approved>scheduled': '📅 Scheduled',
+      'idea>generating': 'Generation started, agents are drafting now',
+      'generating>review': 'Generation complete, ready for review',
+      'generating>error':  'Generation failed. See Activity for details',
+      'review>scheduled':  'Approved and scheduled',
+      'review>approved':   'Approved',
+      'scheduled>published': 'Published live on LinkedIn',
+      'approved>scheduled': 'Scheduled',
     };
-    const message = msgs[`${from}>${to}`] || `Status: ${from} → ${to}`;
+    const message = msgs[`${from}>${to}`] || `Status: ${humanizeValue(from)} to ${humanizeValue(to)}`;
     toast.success(message, { duration: 5000 });
   }, [draft.status]);
 
@@ -171,9 +187,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       return (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-            <span className="uppercase tracking-wider text-emerald-500/70">Carousel PDF</span>
+            <span className="text-emerald-500/80">Carousel PDF</span>
             <a href={firstUrl} target="_blank" rel="noreferrer" className="ml-auto text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1">
-              <ExternalLink className="w-3 h-3" /> open
+              <ExternalLink className="w-3 h-3" /> Open
             </a>
           </div>
           <iframe src={embedSrc} className="w-full aspect-square rounded-md border border-zinc-800 bg-zinc-950" title="Carousel PDF preview" />
@@ -220,7 +236,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             const bodyKey  = s?.body !== undefined ? 'body' : s?.content !== undefined ? 'content' : s?.subtext !== undefined ? 'subtext' : 'body';
             return (
               <div key={i} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-2.5 space-y-1.5">
-                <div className="text-[10px] uppercase tracking-wider text-emerald-500/70">Slide {i + 1}</div>
+                <div className="text-[11px] font-medium text-emerald-500/80">Slide {i + 1}</div>
                 <Input
                   value={String(s?.[titleKey] || s?.hook || '')}
                   onChange={(e) => updateSlide(i, titleKey, e.target.value)}
@@ -232,7 +248,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   onChange={(e) => updateSlide(i, bodyKey, e.target.value)}
                   rows={2}
                   placeholder="Slide body"
-                  className="text-[11.5px] leading-snug"
+                  className="text-[12.5px] leading-relaxed"
                 />
               </div>
             );
@@ -243,10 +259,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     // Type-aware empty state. Carousel awaits the build webhook; single_image
     // expects an upload; text posts are content-only by design.
     const empty = draft.type === 'carousel'
-      ? 'No slides rendered yet — build will populate.'
+      ? 'No slides rendered yet. The build will populate them.'
       : draft.type === 'single_image'
-      ? 'No image yet — click "Upload image" above to attach one.'
-      : 'Text-only post. Click "Upload image" above to attach a visual.';
+      ? 'No image yet. Click "Upload" above to attach one.'
+      : 'Text-only post. Click "Upload" above to attach a visual.';
     return (
       <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-sm text-zinc-500 italic">
         {empty}
@@ -266,12 +282,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           primary signal. Editable values live in the "Edit fields" Card. */}
       {(pillar || hookType || valueTier || source || draft.topicStrength || draft.renderEngine || draft.sourcePostId) && (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[length:var(--t-sm)] text-[color:var(--d-paper-dimmer)]">
-          {pillar      && <span><span className="opacity-60 mr-1">Pillar</span>{pillar}</span>}
-          {hookType    && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Hook</span>{hookType}</span>}
-          {valueTier   && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Tier</span>{valueTier}</span>}
-          {draft.topicStrength && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Strength</span>{draft.topicStrength}</span>}
-          {source      && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">via</span>{source}</span>}
-          {draft.renderEngine && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">render</span>{draft.renderEngine}</span>}
+          {pillar      && <span><span className="opacity-60 mr-1">Pillar</span>{humanizeValue(pillar)}</span>}
+          {hookType    && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Hook</span>{humanizeValue(hookType)}</span>}
+          {valueTier   && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Tier</span>{humanizeValue(valueTier)}</span>}
+          {draft.topicStrength && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Strength</span>{humanizeValue(draft.topicStrength)}</span>}
+          {source      && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">via</span>{humanizeValue(source)}</span>}
+          {draft.renderEngine && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Render</span>{humanizeValue(draft.renderEngine)}</span>}
           {draft.sourcePostId && (
             <a
               href={draft.sourcePostId.startsWith('urn:li:activity:')
@@ -308,7 +324,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-300'
                 : 'border-amber-900/60 bg-amber-950/30 text-amber-300'
             }`}>
-              QA: {qa.verdict}{qa.failing_slides?.length ? ` — slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
+              QA: {qa.verdict === 'PASS' ? 'Pass' : humanizeValue(qa.verdict)}{qa.failing_slides?.length ? `, slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
             </div>
           )}
 
@@ -377,7 +393,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 value={igCaption}
                 onChange={(e) => setIgCaption(e.target.value)}
                 rows={3}
-                className="text-[13px] leading-relaxed"
+                className="text-[13.5px] leading-relaxed"
               />
             ) : (
               <div className="min-h-[100px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
@@ -389,8 +405,16 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           {/* Editable taxonomy + imagery — closes the read-only gap with ClickUp.
               Pillar/Hook/Tier/ImageStyle/ImageDesc/VisualLink were forcing a
               ClickUp roundtrip on the most common review-state edit. */}
-          <Card>
-            <CardLabel>Edit fields</CardLabel>
+          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+            <button
+              onClick={() => setFieldsOpen((v) => !v)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 font-medium hover:bg-zinc-900"
+            >
+              Edit fields
+              <span className="ml-auto text-zinc-500">{fieldsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+            </button>
+            {fieldsOpen && (
+            <div className="border-t border-zinc-800/60 p-3">
             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
               <div>
                 <FieldLabel>Pillar</FieldLabel>
@@ -434,7 +458,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               {busy === 'save fields' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {taxDirty ? 'Save fields' : 'Saved'}
             </Button>
-          </Card>
+            </div>
+            )}
+          </div>
 
           <FieldGrid draft={draft} />
         </div>
@@ -577,7 +603,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       <Button
                         variant="primary"
                         disabled={!!busy}
-                        onClick={() => run('generate', fireGenerate, draft.type === 'carousel' ? 'Generation fired — building carousel (~2 min)' : 'Generation fired — drafting content (~8 min)')}
+                        onClick={() => run('generate', fireGenerate, draft.type === 'carousel' ? 'Generation started, building carousel (~2 min)' : 'Generation started, drafting content (~8 min)')}
                       >
                         {busy === 'generate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                         {busy === 'generate' ? 'Firing…' : 'Generate'}
@@ -596,7 +622,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                         ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
                         : <Loader2 className="w-4 h-4 animate-spin text-sky-400 shrink-0" />}
                       <span className={`text-[12px] ${stuck ? 'text-amber-300' : 'text-sky-300'} font-medium`}>
-                        {elapsedMin === null ? 'In progress' : stuck ? `${elapsedMin}m elapsed · likely failed` : `${elapsedMin}m elapsed`}
+                        {elapsedMin === null ? 'In progress' : stuck ? `${elapsedMin}m elapsed · likely stalled` : `${elapsedMin}m elapsed`}
                       </span>
                       {stuck && (
                         <Button
@@ -614,7 +640,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'published') {
                   return (
                     <>
-                      <span className="text-[12px] text-emerald-300 font-medium">✓ Live on LinkedIn</span>
+                      <span className="text-[12px] text-emerald-300 font-medium">Live on LinkedIn</span>
                       {draft.sourcePostId && (
                         <a
                           href={`https://www.linkedin.com/feed/update/${draft.sourcePostId}`}
@@ -631,14 +657,14 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'disqualified') {
                   return (
                     <>
-                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)]">Disqualified — restart to send back through generation.</span>
+                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)]">Disqualified. Restart to send it back through generation.</span>
                       <Button
                         variant="secondary"
                         disabled={!!busy}
                         onClick={() => run('restart', async () => {
                           const { error: upErr } = await supabase.from('carousel_drafts').update({ status: 'idea' }).eq('id', draft.id);
                           if (upErr) throw upErr;
-                        }, 'Restarted — back to Suggestion')}
+                        }, 'Restarted, back to Suggestion')}
                       >
                         {busy === 'restart' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Restart
                       </Button>
@@ -745,8 +771,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 <Button
                   variant="secondary"
                   disabled={!!busy}
-                  title="Render a vertical animated video from this post (ivan-flow-video, ~2-3 min). Review it in Content → Video → Animated."
-                  onClick={() => run('animate', () => redoVideo({ draft_id: draft.id, style: videoStyle }), 'Rendering animated video (~2-3 min). Review it in Content → Video → Animated.')}
+                  title="Render a vertical animated video from this post (~2-3 min). Review it in Content, Video, Animated."
+                  onClick={() => run('animate', () => redoVideo({ draft_id: draft.id, style: videoStyle }), 'Rendering animated video (~2-3 min). Review it in Content, Video, Animated.')}
                 >
                   {busy === 'animate' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clapperboard className="w-4 h-4" />} Animate
                 </Button>
@@ -761,7 +787,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
                 }), 'Regeneration fired');
               }}
-              title="Regenerate post — text/single_image fires Post Gen v2, carousel fires Carousel Gen"
+              title="Regenerate this post from scratch"
             >
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Regenerate
             </Button>

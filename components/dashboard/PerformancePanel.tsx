@@ -111,7 +111,7 @@ const PerformancePanel: React.FC = () => {
     <div className="space-y-6">
       <PanelIntro
         tourId="performance"
-        purpose="What actually landed — and what the system learns from it."
+        purpose="What actually landed, and what the system learns from it."
         how="Daily LinkedIn metrics flow back in to inform which topics, hooks, and formats get posted next."
       />
       <div className="flex items-center justify-end flex-wrap gap-3">

@@ -51,13 +51,27 @@ function parseIteration(e: AgentLogEntry): QAIteration {
   };
 }
 
+// Map raw QA verdict codes to readable labels (presentation only).
+const VERDICT_LABEL: Record<string, string> = {
+  PASS: 'Passed',
+  REWRITE_OK: 'Auto-rewritten',
+  NEEDS_REGENERATE: 'Needs another pass',
+  FAIL: 'Needs another pass',
+  APPROVED: 'Approved',
+};
+function prettyVerdict(v: string, fallback: string): string {
+  if (!v) return fallback;
+  if (VERDICT_LABEL[v]) return VERDICT_LABEL[v];
+  return v.replace(/_/g, ' ').toLowerCase().replace(/\b\w/, (c) => c.toUpperCase());
+}
+
 function verdictTone(it: QAIteration): { tone: string; label: string; Icon: React.ComponentType<{ className?: string }> } {
-  if (it.isHalt) return { tone: 'text-red-300 bg-red-500/10 border-red-500/30', label: 'HALT', Icon: AlertTriangle };
+  if (it.isHalt) return { tone: 'text-red-300 bg-red-500/10 border-red-500/30', label: 'Halted', Icon: AlertTriangle };
   const v = (it.verdict || '').toUpperCase();
   if (v === 'PASS' || v === 'REWRITE_OK' || (it.status || '').includes('APPROV')) {
-    return { tone: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', label: v || 'APPROVED', Icon: CheckCircle2 };
+    return { tone: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', label: prettyVerdict(v, 'Approved'), Icon: CheckCircle2 };
   }
-  return { tone: 'text-amber-300 bg-amber-500/10 border-amber-500/30', label: v || 'REVISION', Icon: RefreshCw };
+  return { tone: 'text-amber-300 bg-amber-500/10 border-amber-500/30', label: prettyVerdict(v, 'Needs revision'), Icon: RefreshCw };
 }
 
 function relTime(iso: string | null): string {

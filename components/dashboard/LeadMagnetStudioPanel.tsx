@@ -207,7 +207,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
     <div className="space-y-6">
       <PanelIntro
         tourId="leadmagnets"
-        purpose="Turn attention into qualified leads — built and published automatically."
+        purpose="Turn attention into qualified leads, built and published automatically."
         how="One idea becomes an interactive asset on a live hosted page, with gated CTAs that route signups by fit and a full launch kit (post, DM, email, cover)."
       />
       <div className="flex items-center gap-2">
@@ -253,38 +253,49 @@ const LeadMagnetStudioPanel: React.FC = () => {
           <span className="ml-auto text-zinc-500">{formOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
         </button>
         {formOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60 pt-3">
-            <input
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="Topic — e.g. The 12 ops checks that catch 80% of revenue leaks"
-              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
-            />
-            <div className="flex items-center gap-3">
-              <label className="text-xs text-zinc-400">Format</label>
-              <select
-                value={format}
-                onChange={(e) => setFormat(e.target.value)}
-                className="rounded-md bg-zinc-950 border border-zinc-800 px-2 py-1.5 text-sm text-zinc-100"
-              >
-                {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
+          <div className="px-4 pb-4 space-y-4 border-t border-zinc-800/60 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 sm:items-end">
+              <div>
+                <div className="dv-field-label">What should it help with?</div>
+                <input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="e.g. The 12 ops checks that catch 80% of revenue leaks"
+                  className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                />
+              </div>
+              <div>
+                <div className="dv-field-label">Format</div>
+                <select
+                  value={format}
+                  onChange={(e) => setFormat(e.target.value)}
+                  className="rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all cursor-pointer"
+                >
+                  {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
             </div>
-            <textarea
-              value={editorialNotes}
-              onChange={(e) => setEditorialNotes(e.target.value)}
-              placeholder="Editorial notes (optional)"
-              rows={2}
-              className="w-full rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600"
-            />
-            <button
-              onClick={() => { handleCreate(); setFormOpen(false); }}
-              disabled={creating}
-              className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-medium text-white"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {creating ? 'Firing…' : 'Generate content (~10 min)'}
-            </button>
+            <div>
+              <div className="dv-field-label">Direction <span className="normal-case font-normal text-zinc-600">· optional</span></div>
+              <textarea
+                value={editorialNotes}
+                onChange={(e) => setEditorialNotes(e.target.value)}
+                placeholder="Any angle, audience, or detail to steer it"
+                rows={2}
+                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { handleCreate(); setFormOpen(false); }}
+                disabled={creating}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400/30 transition-all"
+              >
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {creating ? 'Firing…' : 'Generate'}
+              </button>
+              <span className="text-[11px] text-zinc-600">Builds the asset, a live page, and the launch kit. ~10 min.</span>
+            </div>
           </div>
         )}
       </div>

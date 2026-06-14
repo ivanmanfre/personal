@@ -10,7 +10,7 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
-import { PanelIntro, LifecycleLegend } from '../dashboard-v2/primitives';
+import { LifecycleLegend } from '../dashboard-v2/primitives';
 import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
 
 type PostType = 'text' | 'single_image' | 'carousel';
@@ -64,7 +64,7 @@ interface PostStudioPanelProps {
   subtitle?: string;
 }
 
-const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts', subtitle = 'text · single-image · carousel' }) => {
+const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts' }) => {
   const { drafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
   const [type, setType] = useState<PostType>('text');
   const [topic, setTopic] = useState('');
@@ -305,22 +305,16 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
 
   return (
     <div className="space-y-6">
-      <PanelIntro
-        tourId="posts"
-        purpose="Where every post is born, reviewed, and shipped — without you writing it."
-        how="Ideas arrive from a 6-source curator, are drafted in your trained voice, pass quality + lint gates, then schedule to LinkedIn automatically."
-      />
       <LifecycleLegend />
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-tour="posts">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 ring-1 ring-emerald-500/20 flex items-center justify-center">
           <FileText className="w-4 h-4 text-emerald-400" />
         </div>
         <div>
-          <h2 className="dv-section-h">
+          <h2 className="dv-section-h flex items-center gap-2">
             {title}
-            <span className="dv-editorial-num text-[18px]">{drafts.length}</span>
+            <span className="rounded-full bg-zinc-800/70 px-2 py-0.5 text-[11px] font-medium text-zinc-400 tabular-nums leading-none">{drafts.length}</span>
           </h2>
-          <span className="text-[length:var(--t-sm)] text-zinc-500">{subtitle}</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <div className="inline-flex rounded-lg bg-zinc-900/60 ring-1 ring-zinc-800/80 p-0.5">
@@ -413,44 +407,56 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <span className="ml-auto text-zinc-500 transition-transform">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
         </button>
         {formOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t border-zinc-800/60">
-            <div className="flex items-center gap-1.5 text-xs pt-3">
-              <span className="text-zinc-500 mr-1 font-medium tracking-tight">Type</span>
-              {(['text','single_image','carousel'] as PostType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' : 'bg-zinc-900/40 text-zinc-400 ring-1 ring-inset ring-zinc-800/80 hover:text-zinc-200 hover:ring-zinc-700'}`}
-                >{TYPE_LABELS[t]}</button>
-              ))}
+          <div className="px-4 pb-4 space-y-4 border-t border-zinc-800/60 pt-4">
+            <div>
+              <div className="dv-field-label">Format</div>
+              <div className="flex items-center gap-1.5">
+                {(['text','single_image','carousel'] as PostType[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setType(t)}
+                    className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' : 'bg-zinc-900/40 text-zinc-400 ring-1 ring-inset ring-zinc-800/80 hover:text-zinc-200 hover:ring-zinc-700'}`}
+                  >{TYPE_LABELS[t]}</button>
+                ))}
+              </div>
             </div>
-            <input
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder={type === 'carousel' ? 'Topic — e.g. Why hiring more people made your firm slower' : "Topic — e.g. Stop hiring to fix a process you haven't automated yet"}
-              className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
-            />
+            <div>
+              <div className="dv-field-label">What should it be about?</div>
+              <input
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder={type === 'carousel' ? 'e.g. Why hiring more people made your firm slower' : "e.g. Stop hiring to fix a process you haven't automated yet"}
+                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+              />
+              <p className="mt-1.5 text-[11px] text-zinc-600">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
+            </div>
             {type === 'carousel' ? (
-              <textarea
-                value={keyPoints}
-                onChange={(e) => setKeyPoints(e.target.value)}
-                placeholder="Key points (one per line, optional)"
-                rows={3}
-                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
-              />
+              <div>
+                <div className="dv-field-label">Key points <span className="normal-case font-normal text-zinc-600">· optional, one per line</span></div>
+                <textarea
+                  value={keyPoints}
+                  onChange={(e) => setKeyPoints(e.target.value)}
+                  placeholder="One point per line"
+                  rows={3}
+                  className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                />
+              </div>
             ) : (
-              <textarea
-                value={details}
-                onChange={(e) => setDetails(e.target.value)}
-                placeholder="Post format details (optional)"
-                rows={2}
-                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-emerald-500/40 transition-all"
-              />
+              <div>
+                <div className="dv-field-label">Direction <span className="normal-case font-normal text-zinc-600">· optional</span></div>
+                <textarea
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  placeholder="Any angle, tone, or detail to steer it"
+                  rows={2}
+                  className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                />
+              </div>
             )}
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400/30 transition-all"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400/30 transition-all"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {buttonLabel}
@@ -594,7 +600,9 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           statusMeta={STATUS_META}
           onOpen={setOpenId}
           loading={loading && drafts.length === 0}
-          // Dense table doesn't group by status — it's a flat sortable spreadsheet.
+          // Hide the ML taxonomy columns (pillar / hook / tier / source) — they're
+          // pipeline internals that read as jargon on a client-facing surface.
+          hiddenCols={new Set(['pillar', 'hookType', 'valueTier', 'source'])}
           groupByStatus={'post-studio'}
           statusOrder={STATUS_ORDER}
           pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
