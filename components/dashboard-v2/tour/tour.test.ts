@@ -5,22 +5,28 @@ import { DEMO_SAFE, getTourSteps } from './demoSafe';
 const DEMO_PATH = new Set(['briefing', 'content']);
 
 describe('tour steps', () => {
-  it('has 7 stops in promise order', () => {
-    expect(TOUR_STEPS).toHaveLength(7);
+  it('has 6 task-based stops in operator order', () => {
+    expect(TOUR_STEPS).toHaveLength(6);
     expect(TOUR_STEPS.map(s => s.id)).toEqual([
-      'briefing', 'posts', 'post-review', 'calendar', 'leadmagnets', 'styles', 'performance',
+      'pipeline', 'create', 'edit', 'schedule', 'leadmagnet', 'performance',
     ]);
+  });
+
+  it('starts on the Posts pipeline, never the Morning Dispatch', () => {
+    expect(TOUR_STEPS[0].section).toBe('content');
+    expect(TOUR_STEPS[0].sub).toBe('posts');
+    expect(TOUR_STEPS.some(s => s.section === 'briefing')).toBe(false);
   });
 
   it('every step targets a demo-path section', () => {
     for (const s of TOUR_STEPS) expect(DEMO_PATH.has(s.section)).toBe(true);
   });
 
-  it('every step has non-empty narrator copy and a data-tour target', () => {
+  it('every step has narrator copy; non-sheet steps anchor a data-tour target', () => {
     for (const s of TOUR_STEPS) {
       expect(s.title.length).toBeGreaterThan(0);
       expect(s.body.length).toBeGreaterThan(0);
-      expect(s.target.startsWith('[data-tour=')).toBe(true);
+      if (!s.opensSheet) expect(s.target?.startsWith('[data-tour=')).toBe(true);
     }
   });
 });

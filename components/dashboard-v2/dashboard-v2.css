@@ -930,6 +930,8 @@ body.dashboard-v2-active * {
   padding: var(--sp-4);
   animation: dv-tour-in 0.28s var(--d-ease-spring);
 }
+/* Sheet-driven step: editor sheet anchors right, so move the card to the left. */
+.dashboard-v2 .dv-tour-card--left { left: 24px; right: auto; }
 .dashboard-v2 .dv-tour-progress { font-size: var(--t-xs); color: var(--d-paper-dimmer); letter-spacing: .04em; }
 .dashboard-v2 .dv-tour-title { font-size: var(--t-lg); color: var(--d-paper); margin: 6px 0 4px; }
 .dashboard-v2 .dv-tour-body { font-size: var(--t-base); color: var(--d-paper-dim); line-height: 1.5; }

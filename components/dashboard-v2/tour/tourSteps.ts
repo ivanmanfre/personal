@@ -1,28 +1,38 @@
 import type { SectionId } from '../lib/navBus';
+import type { TourIntent } from './tourBus';
 
 export interface TourStep {
   id: string;
   section: SectionId;
   sub?: string;            // ContentStudio sub-tab key
-  target: string;          // CSS selector, always a [data-tour="..."] anchor
+  target?: string;         // CSS selector ([data-tour="..."]); omitted on sheet-driven steps
+  intent?: TourIntent;     // UI state to trigger in the target panel (open form / open editor)
+  opensSheet?: boolean;    // step opens a full editor sheet → suppress scrim + spotlight
   title: string;           // outcome headline
   body: string;            // one-line narrator copy
 }
 
-// 7 stops mapped to the six outcome promises.
+// Task-based walkthrough: the demo follows what an operator actually does —
+// see the pipeline → create a post → edit it → schedule it → turn it into a
+// lead magnet → watch it learn. It deliberately does NOT start on the Morning
+// Dispatch and does NOT just hop between section labels.
 export const TOUR_STEPS: TourStep[] = [
-  { id: 'briefing',    section: 'briefing', target: '[data-tour="briefing"]',
-    title: 'It runs — and tells you so', body: 'The whole system’s health and what needs you, at a glance.' },
-  { id: 'posts',       section: 'content', sub: 'posts', target: '[data-tour="posts"]',
-    title: 'Never face a blank page', body: 'Ideas become drafts and move through review to published — automatically.' },
-  { id: 'post-review', section: 'content', sub: 'posts', target: '[data-tour="post-lifecycle"]',
-    title: 'It sounds like you, never slop', body: 'Every post is voice-trained and quality-checked before it reaches you.' },
-  { id: 'calendar',    section: 'content', sub: 'calendar', target: '[data-tour="calendar"]',
-    title: 'A feed that never goes quiet', body: 'Approved content schedules itself into a steady publishing rhythm.' },
-  { id: 'leadmagnets', section: 'content', sub: 'leadmagnets', target: '[data-tour="leadmagnets"]',
-    title: 'Attention → qualified leads', body: 'One idea becomes a live lead magnet that captures and qualifies signups.' },
-  { id: 'styles',      section: 'content', sub: 'styles', target: '[data-tour="styles"]',
-    title: 'One idea becomes everything', body: 'The same idea renders into nine on-brand carousel styles and video.' },
+  { id: 'pipeline', section: 'content', sub: 'posts', target: '[data-tour="posts"]',
+    title: 'Your content pipeline',
+    body: 'A week of posts — drafted, reviewed, and shipped to LinkedIn without you writing them.' },
+  { id: 'create', section: 'content', sub: 'posts', intent: 'posts-compose', target: '[data-tour="new-post"]',
+    title: 'Turn one line into a post',
+    body: 'Type a single idea. The system writes the hook, body, and image in your trained voice.' },
+  { id: 'edit', section: 'content', sub: 'posts', intent: 'posts-edit', opensSheet: true,
+    title: 'Edit anything before it ships',
+    body: 'Every draft is quality-checked and voice-matched. Tweak the copy, swap the image, or change the timing — right here.' },
+  { id: 'schedule', section: 'content', sub: 'calendar', target: '[data-tour="calendar"]',
+    title: 'It schedules itself',
+    body: 'Approve a post and it drops into a steady publishing rhythm. Your feed never goes quiet.' },
+  { id: 'leadmagnet', section: 'content', sub: 'leadmagnets', target: '[data-tour="leadmagnets"]',
+    title: 'The same idea captures leads',
+    body: 'One topic also becomes an interactive lead magnet on a live page that qualifies every signup.' },
   { id: 'performance', section: 'content', sub: 'performance', target: '[data-tour="performance"]',
-    title: 'It learns what lands', body: 'Real LinkedIn performance feeds back into what gets posted next.' },
+    title: 'And it learns what lands',
+    body: 'Real LinkedIn results feed back in — the system doubles down on what actually works.' },
 ];
