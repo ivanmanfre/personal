@@ -98,153 +98,158 @@ const LandingHero: React.FC = () => {
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-4xl text-center pt-8 lg:pt-0">
+        <div className="container mx-auto px-8 max-w-6xl lg:max-w-7xl">
+          {/* Byline + headline span the full container — display scale comes first,
+              the diagram shares the row with the lede/CTA block below. */}
+          <div className="pt-8 lg:pt-0 text-center">
 
-          {/* Byline */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="mb-8 flex items-center justify-center gap-3"
-            style={{
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '11px',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              color: '#5A5752',
-            }}
-          >
-            <motion.span
-              animate={{ opacity: [1, 0.3, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
-              aria-hidden="true"
-            />
-            <span>Iván Manfredi · Agent-Ready Ops™</span>
-          </motion.div>
-
-          {/* Headline — DM Serif Display (brand spec) */}
-          <h1
-            className="mb-10"
-            style={{
-              fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
-              fontWeight: 400,
-              fontSize: 'clamp(2.75rem, 6vw, 5rem)',
-              lineHeight: 1.0,
-              letterSpacing: '-0.02em',
-              color: '#1A1A1A',
-            }}
-          >
-            <motion.span
-              initial={{ opacity: 0, y: 24 }}
+            {/* Byline */}
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.7, ease }}
-              style={{ display: 'inline-block' }}
-            >
-              Stop being the <span style={{ color: '#2A8F65' }}>bottleneck</span>
-            </motion.span>
-            <br />
-            {/* Solid black block with paper text — brand signature move */}
-            <motion.span
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.7, ease }}
-              className="whitespace-normal"
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="mb-10 flex items-center justify-center gap-3"
               style={{
-                display: 'inline-block',
-                fontStyle: 'italic',
-                backgroundColor: '#1A1A1A',
-                color: '#F7F4EF',
-                padding: '0 18px 9px',
-                marginTop: '0.12em',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '11px',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: '#5A5752',
               }}
             >
-              in your own business.
-            </motion.span>
-          </h1>
+              <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+                aria-hidden="true"
+              />
+              <span>Iván Manfredi · Agent-Ready Ops™</span>
+            </motion.div>
 
-          {/* Body — restored italic emphasis on closer phrase */}
-          <motion.p
-            initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
-            animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
-            transition={{ delay: 0.95, duration: 1.1, ease }}
-            className="max-w-xl mx-auto mb-7"
-            style={{
-              fontFamily: '"Source Serif 4", Georgia, serif',
-              fontWeight: 400,
-              fontSize: '22px',
-              lineHeight: 1.55,
-              color: '#3D3D3B',
-            }}
-          >
-            AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
-            <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
-              Every build pays back inside 90 days, or I don't build it.
-            </span>
-          </motion.p>
-
-          {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
-          <motion.ul
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.05, duration: 0.7, ease }}
-            className="mb-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6"
-          >
-            {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
-              <li
-                key={b}
-                className="flex items-center gap-2.5"
+            {/* Headline — DM Serif Display (brand spec) */}
+            <h1
+              className="mb-10"
+              style={{
+                fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
+                fontWeight: 400,
+                fontSize: 'clamp(2.8rem, 7vw, 6.25rem)',
+                lineHeight: 1.0,
+                letterSpacing: '-0.02em',
+                color: '#1A1A1A',
+              }}
+            >
+              <motion.span
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.7, ease }}
+                style={{ display: 'inline-block' }}
+              >
+                Stop being the <span style={{ color: '#2A8F65' }}>bottleneck</span>
+              </motion.span>
+              <br />
+              {/* Solid black block with paper text — brand signature move */}
+              <motion.span
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.7, ease }}
+                className="whitespace-normal sm:whitespace-nowrap"
                 style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: '14px',
-                  letterSpacing: '0.02em',
-                  color: '#2C3A31',
+                  display: 'inline-block',
+                  fontStyle: 'italic',
+                  backgroundColor: '#1A1A1A',
+                  color: '#F7F4EF',
+                  padding: '0 18px 9px',
+                  marginTop: '0.12em',
                 }}
               >
-                <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
-                {b}
-              </li>
-            ))}
-          </motion.ul>
+                in your own business.
+              </motion.span>
+            </h1>
+          </div>
 
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.15, duration: 0.6, ease }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
-          >
-            <a
-              href="/start"
-              className="btn-magnetic inline-flex items-center gap-3 px-9 py-4"
+          <div className="text-center">
+            {/* Body — restored italic emphasis on closer phrase */}
+            <motion.p
+              initial={{ opacity: 0, clipPath: 'inset(0 100% 0 0)' }}
+              animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
+              transition={{ delay: 0.95, duration: 1.1, ease }}
+              className="max-w-3xl mx-auto mb-8"
               style={{
-                fontFamily: '"Source Serif 4", serif',
-                fontWeight: 600,
-                fontSize: '17px',
-                letterSpacing: '0.005em',
-                backgroundColor: '#1A1A1A',
-                color: '#F7F4EF',
+                fontFamily: '"Source Serif 4", Georgia, serif',
+                fontWeight: 400,
+                fontSize: '22px',
+                lineHeight: 1.55,
+                color: '#3D3D3B',
               }}
             >
-              Book your fit call <ArrowRight size={19} />
-            </a>
-            <a
-              href="/scorecard"
-              className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
-              style={{
-                fontFamily: '"Source Serif 4", serif',
-                fontWeight: 600,
-                fontSize: '15px',
-                fontStyle: 'italic',
-                color: '#4A4A48',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
-            >
-              See where you're leaking <ArrowRight size={14} />
-            </a>
-          </motion.div>
+              AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
+              <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
+                Every build pays back inside 90 days, or I don't build it.
+              </span>
+            </motion.p>
 
+            {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
+            <motion.ul
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.05, duration: 0.7, ease }}
+              className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
+            >
+              {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
+                <li
+                  key={b}
+                  className="flex items-center gap-2.5"
+                  style={{
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '14px',
+                    letterSpacing: '0.02em',
+                    color: '#2C3A31',
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
+                  {b}
+                </li>
+              ))}
+            </motion.ul>
+
+            {/* CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.15, duration: 0.6, ease }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+            >
+              <a
+                href="/start"
+                className="btn-magnetic inline-flex items-center gap-3 px-9 py-4"
+                style={{
+                  fontFamily: '"Source Serif 4", serif',
+                  fontWeight: 600,
+                  fontSize: '17px',
+                  letterSpacing: '0.005em',
+                  backgroundColor: '#1A1A1A',
+                  color: '#F7F4EF',
+                }}
+              >
+                Book your fit call <ArrowRight size={19} />
+              </a>
+              <a
+                href="/scorecard"
+                className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
+                style={{
+                  fontFamily: '"Source Serif 4", serif',
+                  fontWeight: 600,
+                  fontSize: '15px',
+                  fontStyle: 'italic',
+                  color: '#4A4A48',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
+              >
+                See where you're leaking <ArrowRight size={14} />
+              </a>
+            </motion.div>
+          </div>
         </div>
       </motion.div>
     </section>
