@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { useMetadata } from '../hooks/useMetadata';
-import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA } from './editorial';
+import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
 import { VideoSlot } from './VideoSlot';
 import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE } from '../lib/contentSystemContent';
 
@@ -63,12 +63,18 @@ interface CaseMetric { value: string; label: string; }
 function CaseStudy({ client, role, src, alt, summary, metrics, flip }: {
   client: string; role: string; src: string; alt: string; summary: string; metrics: CaseMetric[]; flip?: boolean;
 }) {
+  // Scroll-linked parallax on the screenshot (lg+ only), borrowed from the
+  // landing page's two-column depth treatment.
+  const ref = React.useRef<HTMLDivElement>(null);
+  const isLg = useMediaQuery('(min-width: 1024px)');
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const shotY = useTransform(scrollYProgress, [0, 1], [44, -44]);
   return (
     <Reveal>
-      <div className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
-        <div className={flip ? 'lg:order-2' : ''}>
+      <div ref={ref} className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
+        <motion.div style={isLg && !prefersReduced ? { y: shotY } : undefined} className={flip ? 'lg:order-2' : ''}>
           <BrowserFrame src={src} alt={alt} />
-        </div>
+        </motion.div>
         <div className={flip ? 'lg:order-1' : ''}>
           <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{role}</div>
           <h3 className="mt-1.5 text-2xl md:text-3xl font-semibold tracking-tight">{client}</h3>
