@@ -8,7 +8,7 @@ import {
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
-import type { ReportJson, AdCreative, Opportunity, CallIntel } from '../lib/scanTypes';
+import type { ReportJson, AdCreative, Opportunity, CallIntel, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
@@ -1112,6 +1112,161 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
         </a>
       </div>
     </Section>
+  );
+}
+
+// ── Call-Intelligence PITCH page (v2) ─────────────────────────────────────────
+// Cut-down, outcome-led pitch rendered IN PLACE OF the whole generic report when
+// matched_offer === 'call_intelligence'. No automation score, no tech-stack brief,
+// no $2k assessment — just: outcome hero -> where close-rate/churn hides ->
+// a designed product mock (centerpiece) -> book a call.
+const CI_META: Record<CallIntel['archetype'], { tag: string; hiding: string; review: string }> = {
+  intake_driven:       { tag: 'Intake',   hiding: 'Where the signed cases are hiding', review: 'Weekly intake review' },
+  sales_demo_driven:   { tag: 'Pipeline', hiding: 'Where the close rate is hiding',     review: 'Weekly call review' },
+  cs_retention_driven: { tag: 'Accounts', hiding: 'Where the churn is hiding',          review: 'Weekly account review' },
+};
+
+// The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
+function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName: string }) {
+  const meta = CI_META[ci.archetype] ?? CI_META.sales_demo_driven;
+  const hairline = 'var(--color-hairline)';
+  return (
+    <div style={{ border: `1px solid ${hairline}` }}>
+      {/* window titlebar — the single dark accent on the page; reads as "this is software" */}
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+        <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
+          {companyName} · {meta.review}
+        </span>
+      </div>
+      <div className="p-6 lg:p-7" style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+        <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          {ci.sample_output.title}
+        </p>
+        <ul className="mt-5">
+          {ci.sample_output.items.map((it, i) => (
+            <li key={i} className="flex gap-3.5" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.85rem' : 0, marginTop: i ? '0.85rem' : 0 }}>
+              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: 'var(--color-accent-ink)', lineHeight: 1.55, flexShrink: 0, minWidth: 16 }}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
+  const ci = report.call_intel;
+  if (!ci) return null;
+  const meta = CI_META[ci.archetype] ?? CI_META.sales_demo_driven;
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
+  const logo = report.logo_url || scan.logo_url;
+
+  const BookButton = ({ label, small }: { label: string; small?: boolean }) => (
+    <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 group"
+       style={{ fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 16px' : '14px 26px', minHeight: small ? 40 : 52 }}>
+      {label}
+      <ArrowRight size={small ? 14 : 16} className="transition-transform group-hover:translate-x-1" />
+    </a>
+  );
+
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <ScrollProgress />
+      <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <Link to="/" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Call Intelligence · {companyName}</span>
+          <BookButton label="Book a call" small />
+        </div>
+      </header>
+
+      {/* HERO — outcome, no score */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-16 lg:pt-20 lg:pb-24">
+        <div className="flex items-center gap-3 mb-7">
+          {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
+          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
+            Call Intelligence · {meta.tag}
+          </span>
+        </div>
+        <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.4rem, 5.2vw, 4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#1A1A1A', maxWidth: '20ch' }}>
+          {ci.thesis}
+        </h1>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
+          <div>
+            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
+            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
+              {ci.volume_estimate.value}
+            </p>
+          </div>
+          <ul className="space-y-2.5 lg:pb-2">
+            {ci.observable_signals.map((s, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
+                <span><b style={{ fontWeight: 600, color: '#1A1A1A' }}>{s.label}.</b> {s.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-12"><BookButton label="See it on your calls" /></div>
+      </section>
+
+      {/* WHERE THE CLOSE-RATE / CHURN IS HIDING */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>{meta.hiding}</Kicker>
+        <div className="mt-8 grid gap-x-10 gap-y-9 sm:grid-cols-3">
+          {ci.leaking_signals.map((l, i) => (
+            <div key={i}>
+              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk }}>{String(i + 1).padStart(2, '0')}</span>
+              <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.2vw, 1.45rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{l.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* THE SYSTEM — product mock centerpiece */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+          <div>
+            <Kicker>The system</Kicker>
+            <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              Every call scored. <Italic>The pattern surfaced.</Italic>
+            </h2>
+            <SerifBody className="mt-4">{ci.system.summary}</SerifBody>
+            <ul className="mt-5 space-y-2.5">
+              {ci.system.capabilities.map((c, i) => (
+                <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
+                  <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.65em', flexShrink: 0 }} />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <CallIntelProductMock ci={ci} companyName={companyName} />
+        </div>
+      </section>
+
+      {/* CTA — book a call (no $2k assessment) */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A', maxWidth: '20ch' }}>
+          {ci.revenue_math}
+        </h2>
+        <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <BookButton label="Book a call" />
+          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.6)', fontStyle: 'italic' }}>
+            15 minutes. I'll show you the system running on calls like yours.
+          </span>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -2659,6 +2814,12 @@ const ScanReportPage: React.FC = () => {
   const companyName = (rawName === rawName.toUpperCase() && rawName.length > 2)
     ? rawName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
     : rawName;
+
+  // Call-intelligence prospects get a dedicated, cut-down pitch page (no automation
+  // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
+  if (report.matched_offer === 'call_intelligence' && report.call_intel) {
+    return <CallIntelReport report={report} scan={scan} companyName={companyName} />;
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink">
