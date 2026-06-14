@@ -3,6 +3,7 @@ import { Video, Loader2, RotateCcw, CheckCircle2, AlertCircle, Clock, Film, Chev
 import { useContentLibrary } from '../../hooks/useContentLibrary';
 import { redoVideo, approveVideo } from '../../lib/studioActions';
 import { toastError, toastSuccess } from '../../lib/dashboardActions';
+import { PanelIntro } from '../dashboard-v2/primitives';
 
 // Animated-video review studio. Video drafts are carousel_drafts rows with
 // type='video'; the curator (LM Scorer) suggests them and video-gen-v2 renders
@@ -89,6 +90,11 @@ export default function VideoStudioPanel() {
 
   return (
     <div className="space-y-3 p-1">
+      <PanelIntro
+        tourId="video"
+        purpose="Animated, on-brand videos that publish natively to LinkedIn and Reels."
+        how="Claude authors a per-topic spec; the render engine turns it into a vertical animated infographic you review and approve."
+      />
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <Video className="w-4 h-4" /> Animated videos

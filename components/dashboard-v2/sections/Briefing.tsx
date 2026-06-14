@@ -210,19 +210,21 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
 
   return (
     <>
-      <HeadRow
-        title={<>The Morning <em>Dispatch</em></>}
-        chip={healthChip}
-        meta={<>{todayStr}<br />{nowStr} {Intl.DateTimeFormat().resolvedOptions().timeZone}</>}
-        live
-      />
+      <div data-tour="briefing">
+        <HeadRow
+          title={<>The Morning <em>Dispatch</em></>}
+          chip={healthChip}
+          meta={<>{todayStr}<br />{nowStr} {Intl.DateTimeFormat().resolvedOptions().timeZone}</>}
+          live
+        />
 
-      <Pulse>
-        <PulseCell name="Workflows" meta={pulse.wf.meta} severity={pulse.wf.sev} onClick={() => onNavigate?.('ops', 'workflows')} />
-        <PulseCell name="Posting" meta={pulse.posting.meta} severity={pulse.posting.sev} onClick={() => onNavigate?.('content', 'pipeline')} />
-        <PulseCell name="Lead Magnets" meta={pulse.lm.meta} severity={pulse.lm.sev} onClick={() => onNavigate?.('content', 'leadmagnets')} />
-        <PulseCell name="Agent" meta={pulse.agent.meta} severity={pulse.agent.sev} onClick={() => onNavigate?.('agent')} />
-      </Pulse>
+        <Pulse>
+          <PulseCell name="Workflows" meta={pulse.wf.meta} severity={pulse.wf.sev} onClick={() => onNavigate?.('ops', 'workflows')} />
+          <PulseCell name="Posting" meta={pulse.posting.meta} severity={pulse.posting.sev} onClick={() => onNavigate?.('content', 'pipeline')} />
+          <PulseCell name="Lead Magnets" meta={pulse.lm.meta} severity={pulse.lm.sev} onClick={() => onNavigate?.('content', 'leadmagnets')} />
+          <PulseCell name="Agent" meta={pulse.agent.meta} severity={pulse.agent.sev} onClick={() => onNavigate?.('agent')} />
+        </Pulse>
+      </div>
 
       {actions.length > 0 ? (
         <>

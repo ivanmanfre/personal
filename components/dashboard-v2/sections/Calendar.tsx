@@ -11,6 +11,7 @@ import { buildCalendarItems } from './calendarItems';
 import { useLeadMagnets } from '../../../hooks/useLeadMagnets';
 import LeadMagnetEditor from '../../dashboard/LeadMagnetEditor';
 import ScheduledPostEditor from '../../dashboard/ScheduledPostEditor';
+import { PanelIntro } from '../primitives';
 
 /**
  * Unified content calendar — posts (carousel_drafts) + lead magnets
@@ -161,6 +162,11 @@ export function Calendar() {
 
   return (
     <div className="space-y-4">
+      <PanelIntro
+        tourId="calendar"
+        purpose="A publishing rhythm that runs itself."
+        how="Approved posts, carousels, and lead magnets schedule onto one calendar; drag to reschedule and the queue updates."
+      />
       <PostCalendarView items={items} onOpenItem={onOpenItem} onReschedule={onReschedule} />
 
       {/* Post editor sheet — only opens for kind='post'. */}

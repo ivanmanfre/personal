@@ -10,6 +10,7 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl, versionedAssetUrl } from '../../lib/driveThumb';
 import { statusLabel } from '../../lib/statusLabels';
+import { PanelIntro } from '../dashboard-v2/primitives';
 
 // Canonical LM formats — sourced from the curator + content pipeline.
 // Anything outside this set in lm_drafts_v2 is data pollution (newsletter
@@ -203,6 +204,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <PanelIntro
+        tourId="leadmagnets"
+        purpose="Turn attention into qualified leads — built and published automatically."
+        how="One idea becomes an interactive asset on a live hosted page, with gated CTAs that route signups by fit and a full launch kit (post, DM, email, cover)."
+      />
       <div className="flex items-center gap-2">
         <Magnet className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold text-zinc-100">Lead Magnet Studio</h2>
