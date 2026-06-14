@@ -13,7 +13,23 @@ export interface Opportunity {
   time_to_implement?: string;
 }
 
+export interface CallIntel {
+  archetype: 'intake_driven' | 'sales_demo_driven' | 'cs_retention_driven';
+  thesis: string;
+  volume_estimate: { value: string; basis?: string };
+  observable_signals: Array<{ label: string; detail: string }>;
+  leaking_signals: Array<{ title: string; detail: string }>;
+  system: { summary: string; capabilities: string[] };
+  sample_output: { kind: 'flagged_call_card' | 'weekly_digest'; title: string; items: string[] };
+  revenue_math: string;
+}
+
 export interface ReportJson {
+  // Offer routing (synced from the audit's matched_offer). call_intel is present only
+  // when matched_offer === 'call_intelligence' — it drives the call-intelligence report variant.
+  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
+  offer_angle?: string | null;
+  call_intel?: CallIntel | null;
   company_snapshot: {
     name: string;
     one_liner: string;
