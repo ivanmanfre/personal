@@ -77,13 +77,15 @@ const Label: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ childr
   </div>
 );
 
-// ─── RevealH2 — blur-in on scroll ────────────────────────────────────────────
+// ─── RevealH2 — clean rise on scroll ─────────────────────────────────────────
+// No blur (blur-on-every-headline was the generic-AI motion tell); a single
+// decisive translate-rise matches the hero's mask reveal in character.
 const RevealH2: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
   <motion.h2
-    initial={prefersReduced ? false : { opacity: 0, y: 22, filter: 'blur(8px)' }}
-    whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+    initial={prefersReduced ? false : { opacity: 0, y: 26 }}
+    whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, margin: '-60px' }}
-    transition={{ duration: 0.9, ease }}
+    transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
     style={style}
   >
     {children}
@@ -306,8 +308,8 @@ const ProblemSection: React.FC = () => {
                 ].map((item) => (
                   <div key={item.verb}>
                     <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>
-                    <div style={{ ...T.display('clamp(1.9rem,2.5vw,2.5rem)'), color: 'var(--color-accent-ink)', marginBottom: '8px' }}>{item.stat}</div>
-                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', color: '#5A5752', lineHeight: 1.55 }}>{item.line}</p>
+                    <div style={{ ...T.display('clamp(1.4rem,1.8vw,1.8rem)'), color: 'var(--color-accent-ink)', marginBottom: '7px' }}>{item.stat}</div>
+                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.55 }}>{item.line}</p>
                   </div>
                 ))}
               </div>
@@ -416,7 +418,6 @@ const BuildOutcomesSection: React.FC = () => {
               </div>
               <span style={{
                 fontFamily: '"Source Serif 4",serif',
-                fontStyle: 'italic',
                 fontSize: '13px',
                 color: '#5A5752',
               }} className="group-hover:text-[var(--color-accent)] transition-colors whitespace-nowrap">
@@ -562,7 +563,7 @@ const WorkSection: React.FC = () => {
       <div className="container mx-auto px-8 max-w-7xl">
         <motion.div {...inView} className="mb-12 lg:mb-20 max-w-4xl">
           <Label>05</Label>
-          <RevealH2 style={{ ...T.display('clamp(2.6rem,5vw,4.5rem)'), lineHeight: 1.02 }}>
+          <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), lineHeight: 1.02 }}>
             Diagnose first.{' '}
             Build second.
           </RevealH2>
@@ -609,7 +610,7 @@ const TestimonialsSection: React.FC = () => (
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16">
         <Label>04</Label>
-        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
+        <RevealH2 style={T.display('clamp(1.8rem,2.8vw,2.6rem)')}>
           100+ builds shipped.<br />In their words.
         </RevealH2>
       </motion.div>

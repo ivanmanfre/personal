@@ -26,7 +26,9 @@ const LandingHero: React.FC = () => {
   // Editorial line-mask reveal — display lines rise out of a clip mask, settle, stop.
   // Replaces the blur-on-every-element entrance with one decisive typographic move.
   const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
-    <span style={{ display: 'block', overflow: 'hidden' }}>
+    // paddingBottom + matching negative margin keeps the clip mask from cutting
+    // descenders (the 'g' in "being", 'y' in "your") while preserving line spacing.
+    <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.16em', marginBottom: '-0.16em' }}>
       <motion.span
         style={{ display: 'block' }}
         initial={reduced ? false : { y: '118%' }}
