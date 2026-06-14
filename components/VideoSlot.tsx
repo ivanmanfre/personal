@@ -18,7 +18,7 @@ export function VideoSlot({ src, poster, caption, ratio = '16 / 9' }: VideoSlotP
         {src ? (
           <video src={src} poster={poster} controls preload="metadata" className="h-full w-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center" role="img" aria-label="Video walkthrough — coming soon">
             <span className="flex h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: 'var(--color-accent-soft)', color: 'var(--color-accent-ink)' }}>
               <Play aria-hidden="true" size={22} />

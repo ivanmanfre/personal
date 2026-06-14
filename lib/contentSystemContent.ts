@@ -2,8 +2,8 @@
 // only place implementation sophistication appears (reason-to-believe).
 // HONESTY RULE: only claim live capabilities. Anything not fully live is marked.
 
-export interface Promise { headline: string; benefit: string; how: string; }
-export const PROMISES: Promise[] = [
+export interface ContentPromise { headline: string; benefit: string; how: string; }
+export const PROMISES: ContentPromise[] = [
   { headline: 'Never face a blank page', benefit: "It decides what to post — pulling ideas from across the web and your own calls, then ranking them by what'll actually land.", how: '6-source idea curator + nightly fit-scoring brain.' },
   { headline: 'It sounds like you — not AI', benefit: 'Trained on your voice and grounded in your real conversations, so every post reads like you wrote it on your best day.', how: 'Voice training + retrieval over your transcripts.' },
   { headline: 'It never ships slop', benefit: 'Every post is quality-checked against the tells that make content feel AI-written — and rewritten until it passes.', how: 'Deterministic quality gates + a 9-point review that self-rewrites.' },
