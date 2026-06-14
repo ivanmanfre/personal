@@ -7,8 +7,9 @@ import { getBookingQuarter } from '../lib/bookingConfig';
 // v2 (2026-05-24): v20-magazine-cover transformation
 //   - Sage sweep redrawn to match v20 (mostly rectangular highlighter, subtle imperfect edges, centered on letterforms)
 //   - Portrait pulled out of flex flow → absolutely positioned, truly bleeds off section right edge
-//   - Lede restored with italic + sage emphasis on "scale without scaling payroll"
 //   - Scroll parallax preserved via wrapper
+// v3 (2026-06-15): content-engine rebrand. Headline/lede/benefits repointed to
+//   the AI content system for agencies. Sage hero phrase = "$15k-$50k/mo of new pipeline".
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
@@ -142,10 +143,10 @@ const LandingHero: React.FC = () => {
                 style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                 aria-hidden="true"
               />
-              <span>Iván Manfredi · Agent-Ready Ops™</span>
+              <span>Iván Manfredi · For agencies</span>
             </motion.div>
 
-            {/* Headline — mixed-scale cover. 'bottleneck' is the hero word. */}
+            {/* Headline: mixed-scale cover. Sage line is the hero phrase. */}
             <h1
               className="mb-9"
               style={{
@@ -157,23 +158,22 @@ const LandingHero: React.FC = () => {
             >
               <Reveal delay={0.15}>
                 <span style={{ display: 'block', fontSize: 'clamp(1.9rem, 4vw, 3.25rem)', lineHeight: 1.05 }}>
-                  Stop being the
+                  Add
                 </span>
               </Reveal>
               <Reveal delay={0.3}>
                 <span
                   style={{
                     display: 'block',
-                    whiteSpace: 'nowrap',
                     color: '#2A8F65',
-                    fontSize: 'clamp(4.5rem, 17vw, 14rem)',
-                    lineHeight: 0.9,
-                    letterSpacing: '-0.045em',
+                    fontSize: 'clamp(3rem, 9vw, 7.5rem)',
+                    lineHeight: 0.95,
+                    letterSpacing: '-0.035em',
                     marginLeft: '-0.015em',
                     marginTop: '0.02em',
                   }}
                 >
-                  bottleneck
+                  $15k-$50k/mo of new pipeline
                 </span>
               </Reveal>
               <Reveal delay={0.46}>
@@ -189,7 +189,7 @@ const LandingHero: React.FC = () => {
                     padding: '0.04em 0.42em 0.2em',
                   }}
                 >
-                  in your own business.
+                  in 90 days.
                 </span>
               </Reveal>
             </h1>
@@ -209,9 +209,9 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
+                An AI content system that writes your posts, builds your lead magnets, and ships them daily in your voice.{' '}
                 <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
-                  Every build pays back inside 90 days, or I don't build it.
+                  You own the system, instead of renting an agency that posts for you.
                 </span>
               </motion.p>
 
@@ -222,7 +222,7 @@ const LandingHero: React.FC = () => {
                 transition={{ delay: 0.86, duration: 0.7, ease }}
                 className="mb-9 flex flex-col sm:flex-row items-start sm:items-center gap-y-2.5 sm:gap-0"
               >
-                {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b, i) => (
+                {['Daily content in your voice', 'A feed that brings you inbound', 'On-brand, every post'].map((b, i) => (
                   <li
                     key={b}
                     className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l sm:border-black/10'} ${i === 2 ? 'sm:pr-0' : ''}`}
