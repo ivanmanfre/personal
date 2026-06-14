@@ -2,29 +2,40 @@ import { useEffect } from 'react';
 
 const HILITE = 'dv-tour-target';
 
-// Highlights + scrolls to the element matching `selector` while the tour is on `selector`.
-// Retries briefly because the target may mount after a section/sub switch.
+// Highlights + scrolls to the element matching `selector` while the tour is on it.
+// Uses a MutationObserver so it still works when the target mounts late
+// (React.lazy panels, data-gated renders), with a safety timeout.
 export function useTourSpotlight(active: boolean, selector: string | undefined) {
   useEffect(() => {
     if (!active || !selector) return;
-    let raf = 0;
-    let tries = 0;
-    let current: HTMLElement | null = null;
 
-    const apply = () => {
+    let current: HTMLElement | null = null;
+    let observer: MutationObserver | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const tryApply = (): boolean => {
       const el = document.querySelector<HTMLElement>(selector);
-      if (el) {
-        current = el;
-        el.classList.add(HILITE);
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (tries++ < 30) raf = requestAnimationFrame(apply); // ~0.5s of retries
+      if (!el) return false;
+      current = el;
+      el.classList.add(HILITE);
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return true;
     };
-    apply();
+
+    if (!tryApply()) {
+      observer = new MutationObserver(() => {
+        if (tryApply()) {
+          observer?.disconnect();
+          observer = undefined;
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      timeoutId = setTimeout(() => observer?.disconnect(), 8000);
+    }
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (timeoutId) clearTimeout(timeoutId);
+      observer?.disconnect();
       current?.classList.remove(HILITE);
     };
   }, [active, selector]);

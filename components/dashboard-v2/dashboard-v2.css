@@ -953,8 +953,9 @@ body.dashboard-v2-active * {
   transition: outline-color var(--d-dur) var(--d-ease);
 }
 
-/* Tour trigger button in topbar */
+/* Tour trigger button — fixed bottom-left, always visible on all viewports */
 .dashboard-v2 .dv-tour-trigger {
+  position: fixed; left: 18px; bottom: 18px; z-index: 40;
   display: inline-flex; align-items: center; gap: 6px;
   font-size: var(--t-sm); padding: 5px 10px; border-radius: var(--d-r-sm);
   border: 1px solid var(--d-rule-strong); background: var(--d-ink-2); color: var(--d-paper); cursor: pointer;

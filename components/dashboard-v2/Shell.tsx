@@ -195,9 +195,6 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
               <span /><span /><span />
             </button>
             <div className="dv-topbar-brand">Ivan <em>System</em></div>
-            <div className="dv-topbar-right">
-              <TourTrigger />
-            </div>
           </header>
 
           {/* Notification bell — fixed top-right, layout-independent so it shows on
@@ -223,6 +220,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           </main>
         </div>
         <CommandPalette {...palette} />
+        <TourTrigger />
         <TourNarratorCard />
       </div>
     </TourProvider>
