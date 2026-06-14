@@ -988,6 +988,8 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
   const meta = CI_ARCHETYPE[ci.archetype] ?? CI_ARCHETYPE.intake_driven;
   const calendlyUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
   const hairline = 'var(--color-hairline)';
+  // Accent-ink (darker sage) for small text on paper — passes WCAG AA <19px where the brighter accent (3.6:1) fails.
+  const accentInk = 'var(--color-accent-ink)';
 
   return (
     <Section
@@ -1011,14 +1013,15 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
           {ci.volume_estimate.value}
         </p>
         {ci.volume_estimate.basis && (
-          <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+          <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(26,26,26,0.65)' }}>
             {ci.volume_estimate.basis}
           </p>
         )}
-        <div className="mt-8 grid gap-px sm:grid-cols-2" style={{ background: hairline, border: `1px solid ${hairline}` }}>
+        {/* Self-bordered cards (not a gap-px bg grid) so an odd count leaves clean blank space, not a gray cell. */}
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
           {ci.observable_signals.map((s, i) => (
-            <div key={i} className="p-5" style={{ background: 'var(--color-paper, #F7F4EF)' }}>
-              <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600 }}>
+            <div key={i} className="p-5" style={{ border: `1px solid ${hairline}` }}>
+              <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
                 {s.label}
               </p>
               <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
@@ -1036,7 +1039,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
           {ci.leaking_signals.map((l, i) => (
             <div key={i} className="flex gap-4 p-5" style={{ border: `1px solid ${hairline}` }}>
               <span aria-hidden style={{
-                fontFamily: MONO, fontSize: '13px', color: 'var(--color-accent)', fontWeight: 600,
+                fontFamily: MONO, fontSize: '13px', color: accentInk, fontWeight: 600,
                 lineHeight: 1.5, flexShrink: 0,
               }}>{String(i + 1).padStart(2, '0')}</span>
               <div>
@@ -1070,7 +1073,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
         {/* Sample output — faux product surface so they can picture the deliverable */}
         <div style={{ border: `1px solid ${hairline}`, background: 'var(--color-paper, #F7F4EF)' }}>
           <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${hairline}` }}>
-            <span aria-hidden style={{ height: 8, width: 8, borderRadius: 9999, background: 'var(--color-accent)' }} />
+            <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)' }} />
             <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
               {meta.sampleKicker}
             </p>
@@ -1082,7 +1085,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
             <ul className="mt-4 space-y-2.5">
               {ci.sample_output.items.map((it, i) => (
                 <li key={i} className="flex gap-2.5" style={{ fontFamily: MONO, fontSize: '13px', lineHeight: 1.5, color: '#3D3D3B' }}>
-                  <span aria-hidden style={{ color: 'var(--color-accent)', flexShrink: 0 }}>→</span>
+                  <span aria-hidden style={{ color: accentInk, flexShrink: 0 }}>→</span>
                   <span>{it}</span>
                 </li>
               ))}
@@ -1101,7 +1104,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
           className="inline-flex items-center gap-2 mt-6 group"
           style={{
             fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase',
-            color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'none',
+            color: accentInk, fontWeight: 600, textDecoration: 'none',
           }}
         >
           See what your calls are hiding
