@@ -40,9 +40,18 @@ Execute all phases; after EACH of A, B, C, review with screenshots and only adva
 
 ---
 
-## REMAINING WORK
+## REMAINING WORK — ALL COMPLETE ✅ (D commit 8ce802e · E commit 3dd4ec6 · F commit 041207d)
 
-### ⏳ Phase D — imagery + lift the weak surfaces toward the Calendar/Performance bar
+Verification screenshots: `docs/superpowers/verification/2026-06-14-dashboard-elevation/`.
+Full test suite 62/62 green; `npm run build` clean (only 2 pre-existing readonly-tuple tsc warnings in PostStudioPanel, not gated by build).
+
+- **Phase D done:** Posts + LM board cards now carry 16:9 thumbnails + format kickers; LM grid covers already present; Styles default-kit box → brand "rendered live" preview tile; Performance lost the redundant H1 (triple-nesting gone) and all-caps console headers → sentence-case product titles; Briefing scheduled-checks + Posts carousel-drafts loads degrade silently on the demo hero; `toastError` humanizes Failed-to-fetch + statement-timeout. Calendar already met the bar (no change).
+- **Phase E done:** tour rebuilt to 6 task-based steps (Pipeline→Create→Edit→Schedule→Lead magnet→Performance) via a new `tourBus`; Create opens the compose form, Edit opens the full editor sheet (scrim/spotlight suppressed, card shifted left); mount-race fixed so step 1 lands on Posts; step-5 blank gone; verified across all 6 steps on desktop + mobile.
+- **Phase F done:** `public/content-system-walkthrough.md` (spoken ~3-min script) + VideoSlot `scriptHref` "View script ↗" link wired from ContentSystemPage (served at `/content-system-walkthrough.md`).
+
+---
+
+### ✅ Phase D — imagery + lift the weak surfaces toward the Calendar/Performance bar
 1. **Imagery/thumbnails everywhere** the product is visual: Posts board cards (status stripe + format icon + thumbnail), Lead Magnet rows/cards (**cover thumbnail** from `cover_url`), Style cards (render an actual **sample slide preview** per style instead of the empty "No reference images" dashed box).
 2. **Performance de-jargon** (`PerformancePanel.tsx`): all-caps "BY CONTENT TYPE", "BAR WIDTH SHOWS AVG IMPRESSIONS PER POST", etc. → sentence-case human titles; drop the duplicate "Performance" H1 (triple "Content Studio ▸ Performance ▸ Post Performance ▸ Performance" nesting). Give charts more vertical room.
 3. **Briefing cleanup**: the scheduled-checks fetch fails locally and surfaces a raw **"TypeError: Failed to fetch"** toast + empty KPIs. Humanize/suppress the raw error toast (no stack-y text on a sales surface); confirm KPI queries degrade gracefully. (May be partly local-env; verify on the deployed site too.)
