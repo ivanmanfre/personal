@@ -9,7 +9,7 @@ export const PROMISES: ContentPromise[] = [
   { headline: 'It never ships slop', benefit: 'Every post is quality-checked against the tells that make content feel AI-written, then rewritten until it passes.', how: 'Deterministic quality gates + a 9-point review that self-rewrites.' },
   { headline: 'One idea becomes everything', benefit: 'A single idea turns into a post, a carousel (9 on-brand styles), a short video, and a lead magnet, all at once.', how: 'Multi-format engine with real-logo, on-brand rendering.' },
   { headline: 'Always first to the trend', benefit: "The moment a big AI story breaks, you've got an on-brand post ready while everyone else is still reading the news.", how: 'News radar scanning every 2h + an instant alert to you.' },
-  { headline: 'It runs, and learns', benefit: 'Publishes natively to LinkedIn, captures qualified leads through self-publishing lead magnets, and tracks what works.', how: 'Native publishing + 10 lead-magnet formats + a performance loop.' },
+  { headline: 'It ships, then tells you what works', benefit: 'Publishes natively to LinkedIn, captures qualified leads through self-publishing lead magnets, and tracks what works.', how: 'Native publishing + 10 lead-magnet formats + a performance loop.' },
 ];
 
 export interface Metric { value: string; label: string; }
@@ -26,7 +26,7 @@ export const LM_FORMATS: LmFormat[] = [
   { name: 'Calculator',              blurb: 'Live ROI / cost calculator tailored to your offer.' },
   { name: 'Guide',                   blurb: 'Deep, on-brand playbook with every promise delivered inline.' },
   { name: 'AI Kit',                  blurb: 'Ready-to-run prompts and agents, proof you actually build.' },
-  { name: 'n8n Workflow',            blurb: 'A real importable automation, not a screenshot.' },
+  { name: 'n8n Workflow',            blurb: 'A working automation they import and run.' },
   { name: 'Stack Picker',            blurb: "Guided tool selector for the reader's situation." },
   { name: 'Annotated Architecture',  blurb: 'A diagrammed system teardown they can copy.' },
   { name: 'Skill Pack',              blurb: 'Packaged capabilities the reader installs.' },

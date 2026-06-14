@@ -42,6 +42,7 @@ function BrowserFrame({ src, alt, caption, eager }: { src: string; alt: string; 
           src={src}
           alt={alt}
           loading={eager ? 'eager' : 'lazy'}
+          {...(eager ? { fetchPriority: 'high' as const } : {})}
           className="block w-full"
           onError={(e) => {
             const fig = e.currentTarget.closest('figure') as HTMLElement | null;
@@ -106,7 +107,7 @@ export default function ContentSystemPage() {
       <div className="container mx-auto max-w-5xl px-6 pt-32 pb-24">
 
         {/* 1 — HERO */}
-        <section className="mb-20">
+        <section className="mb-12 md:mb-20">
           {/* Label already applies marginBottom 1.75rem internally */}
           <Label>Content System</Label>
           <motion.h1
@@ -129,7 +130,7 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 2 — INTERFACE SHOWCASE (real dashboard screenshots) */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
           <Label>The interface</Label>
           <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
             Not a prompt box.{' '}
@@ -145,34 +146,36 @@ export default function ContentSystemPage() {
           <Reveal>
             <BrowserFrame
               eager
-              src="/content-system/ui/board.png"
+              src="/content-system/ui/board.webp"
               alt="The content pipeline board, a week of posts drafted and queued"
               caption="The pipeline · a week of posts, drafted and queued"
             />
           </Reveal>
           <div className="grid md:grid-cols-2 gap-5 mt-5">
             <Reveal i={0}>
-              <BrowserFrame src="/content-system/ui/editor.png" alt="The post editor" caption="Edit any draft · copy, image, timing" />
+              <BrowserFrame src="/content-system/ui/editor.webp" alt="The post editor: edit a draft's copy, image, and schedule" caption="Edit any draft · copy, image, timing" />
             </Reveal>
             <Reveal i={1}>
-              <BrowserFrame src="/content-system/ui/calendar.png" alt="The publishing calendar" caption="Calendar · it schedules itself" />
+              <BrowserFrame src="/content-system/ui/calendar.webp" alt="The publishing calendar with scheduled posts across the month" caption="Calendar · it schedules itself" />
             </Reveal>
             <Reveal i={2}>
-              <BrowserFrame src="/content-system/ui/performance.png" alt="The performance dashboard" caption="Performance · it learns what lands" />
+              <BrowserFrame src="/content-system/ui/performance.webp" alt="The performance dashboard: impressions and engagement per post" caption="Performance · it learns what lands" />
             </Reveal>
             <Reveal i={3}>
-              <BrowserFrame src="/content-system/ui/leadmagnets.png" alt="The lead magnet studio" caption="Lead magnets · built and published" />
+              <BrowserFrame src="/content-system/ui/leadmagnets.webp" alt="The lead-magnet studio with built, on-brand assets" caption="Lead magnets · built and published" />
             </Reveal>
           </div>
         </section>
 
         {/* 3 — WALKTHROUGH VIDEO SLOT (src passed when filmed) */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
+          <h2 className="sr-only">Watch the system run</h2>
           <VideoSlot caption="Watch the system run, 3 min" scriptHref="/content-system-walkthrough.md" />
         </section>
 
         {/* 3 — PROBLEM → FLIP */}
-        <section className="mb-24 max-w-3xl">
+        <section className="mb-16 md:mb-24 max-w-3xl">
+          <h2 className="sr-only">The problem this removes</h2>
           <p className="text-lg md:text-xl text-ink-soft leading-relaxed">
             Showing up daily is the whole game, and it's the thing that always slips. The blank
             page, the posts that sound like everyone else, the weeks you go quiet.{' '}
@@ -184,7 +187,7 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 4 — SIX PROMISES */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
           <RevealH2
             style={{ ...T.display('clamp(2rem,4vw,3rem)'), marginBottom: '2.5rem' }}
           >
@@ -218,7 +221,8 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 5 — METRICS STRIP */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
+          <h2 className="sr-only">By the numbers</h2>
           <div
             className="grid grid-cols-2 md:grid-cols-4 gap-6 border-y py-10"
             style={{ borderColor: 'var(--color-hairline)' }}
@@ -235,7 +239,7 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 6 — ONE IDEA, EVERYWHERE */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
           <RevealH2
             style={{ ...T.display('clamp(1.8rem,3.6vw,2.6rem)'), marginBottom: '1.5rem' }}
           >
@@ -265,7 +269,7 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 7 — LEAD MAGNETS */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
           <Label>Lead Magnets</Label>
           <RevealH2
             style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}
@@ -316,7 +320,7 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 8 — CLIENT CASE STUDIES (real operators + numbers) */}
-        <section className="mb-24">
+        <section className="mb-16 md:mb-24">
           <Label>Client results</Label>
           <RevealH2
             style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 2.5rem' }}
@@ -332,22 +336,22 @@ export default function ContentSystemPage() {
             <CaseStudy
               client="Kyle Hunt"
               role="Creative-video agency · founder"
-              src="/content-system/kyle-guides.png"
+              src="/content-system/kyle-guides.webp"
               alt="A live lead-magnet guide the system built for Kyle Hunt"
               summary="Kyle runs his content and lead magnets through the system. Every post and every guide is drafted in his voice and shipped on a live page, without him ever facing a blank page."
               metrics={[
-                { value: '100%', label: 'of his content, run by the system' },
-                { value: '~300', label: 'comments per lead-magnet post' },
                 { value: '30K', label: 'impressions per post' },
+                { value: '~300', label: 'comments on a lead-magnet post' },
+                { value: '100%', label: 'of his content, run by the system' },
               ]}
             />
             <CaseStudy
               flip
               client="Lemonade"
               role="Demand-gen studio"
-              src="/content-system/lemonade-thankyou.png"
+              src="/content-system/lemonade-thankyou.webp"
               alt="Lemonade's lead-capture page built by the system"
-              summary="Lemonade turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar."
+              summary="Lemonade points the lead-magnet engine at one job: booking fit calls. Gated assets on live pages qualify every signup and send the best straight to the calendar."
               metrics={[
                 { value: '5', label: 'new clients a month from the lead-magnet system' },
                 { value: 'Live', label: 'gated funnel, running on autopilot' },
@@ -363,9 +367,9 @@ export default function ContentSystemPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {(
                 [
-                  { src: '/content-system/lead-magnet.png', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment · scoring' },
-                  { src: '/content-system/calculator.png', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator · live page' },
-                  { src: '/content-system/lm-cover.jpg', alt: 'An auto-generated on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
+                  { src: '/content-system/lead-magnet.webp', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment · scoring' },
+                  { src: '/content-system/calculator.webp', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator · live page' },
+                  { src: '/content-system/lm-cover.webp', alt: 'An auto-generated on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
                 ] as { src: string; alt: string; cap: string }[]
               ).map((r) => (
                 <figure key={r.src} className="m-0">
@@ -395,10 +399,21 @@ export default function ContentSystemPage() {
               ))}
             </div>
           </div>
+
+          {/* Mid-page CTA at peak conviction (right after the proof). */}
+          <div className="mt-16 flex flex-wrap items-center justify-between gap-5 border-t border-b py-8" style={{ borderColor: 'var(--color-hairline)' }}>
+            <p className="text-lg md:text-xl text-ink max-w-xl leading-snug">
+              Want this running in your voice? Let&apos;s scope it on a quick call.
+            </p>
+            <MagneticCTA href="/start" fontSize="16px" px="px-7 py-3.5">
+              Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+            </MagneticCTA>
+          </div>
         </section>
 
         {/* 9 — SCOPE / NOT IN SCOPE */}
-        <section className="mb-24 grid md:grid-cols-2 gap-10">
+        <section className="mb-16 md:mb-24 grid md:grid-cols-2 gap-10">
+          <h2 className="sr-only">What's in and out of scope</h2>
           <div>
             <Label>What you get</Label>
             <ul className="mt-4 space-y-3">
