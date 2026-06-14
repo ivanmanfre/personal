@@ -7,6 +7,7 @@ import { useCarouselStyles, CarouselStyle } from '../../hooks/useCarouselStyles'
 import { useStylePrompts, StylePrompt } from '../../hooks/useStylePrompts';
 import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import { renderLightMarkdown } from '../../lib/lightMarkdown';
+import { PanelIntro } from '../dashboard-v2/primitives';
 
 /**
  * Style Gallery — overview of every visual style the system can render in.
@@ -133,6 +134,11 @@ const StyleGalleryPanel: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <PanelIntro
+        tourId="styles"
+        purpose="One idea, rendered into nine on-brand carousel styles and video."
+        how="Each style is a brand-locked layout kit; the system composes real logos and screenshots into slides, not text baked into images."
+      />
       {/* ─── Carousel — visual identity kits (Supabase) ─────────────────── */}
       <section>
         <div className="flex items-baseline justify-between gap-3 mb-3">

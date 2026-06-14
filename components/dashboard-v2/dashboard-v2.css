@@ -911,3 +911,102 @@ body.dashboard-v2-active * {
   .nb-button:active, .nb-item:active { transform: none; }
   .nb-group-actions, .nb-item-actions { transition: none; }
 }
+
+/* ── Guided Tour ─────────────────────────────────────────── */
+.dashboard-v2 .dv-tour-scrim {
+  position: fixed; inset: 0; z-index: 65;
+  background: rgba(0, 0, 0, 0.45);
+  animation: dv-fade 0.2s var(--d-ease);
+}
+.dashboard-v2 .dv-tour-card {
+  position: fixed; right: 24px; bottom: 24px; z-index: 67;
+  width: 340px; max-width: calc(100vw - 48px);
+  background: var(--d-ink-2);
+  border: 1px solid var(--d-rule-strong);
+  border-radius: var(--d-r);
+  box-shadow: var(--d-shadow-2), var(--d-edge-light);
+  padding: var(--sp-4);
+  animation: dv-tour-in 0.28s var(--d-ease-spring);
+}
+.dashboard-v2 .dv-tour-progress { font-size: var(--t-xs); color: var(--d-paper-dimmer); letter-spacing: .04em; }
+.dashboard-v2 .dv-tour-title { font-size: var(--t-lg); color: var(--d-paper); margin: 6px 0 4px; }
+.dashboard-v2 .dv-tour-body { font-size: var(--t-base); color: var(--d-paper-dim); line-height: 1.5; }
+.dashboard-v2 .dv-tour-actions { display: flex; align-items: center; justify-content: space-between; margin-top: var(--sp-4); }
+.dashboard-v2 .dv-tour-nav { display: flex; gap: var(--sp-2); }
+.dashboard-v2 .dv-tour-skip { background: none; border: none; color: var(--d-paper-dimmer); font-size: var(--t-sm); cursor: pointer; }
+.dashboard-v2 .dv-tour-btn {
+  font-size: var(--t-sm); padding: 6px 12px; border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-rule-strong); background: var(--d-ink-3); color: var(--d-paper); cursor: pointer;
+  transition: background var(--d-dur) var(--d-ease);
+}
+.dashboard-v2 .dv-tour-btn:hover { background: var(--d-surface-2); }
+.dashboard-v2 .dv-tour-btn--primary { background: var(--d-good); border-color: var(--d-good); color: #fff; }
+.dashboard-v2 .dv-tour-btn--primary:hover { background: var(--d-good-hi); }
+
+/* Spotlight: lift the active target above the scrim and ring it. */
+.dashboard-v2 .dv-tour-target {
+  position: relative; z-index: 66;
+  outline: 2px solid var(--d-good);
+  outline-offset: 4px;
+  border-radius: var(--d-r);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+  transition: outline-color var(--d-dur) var(--d-ease);
+}
+
+/* Tour trigger button — fixed bottom-left, always visible on all viewports */
+.dashboard-v2 .dv-tour-trigger {
+  position: fixed; left: 18px; bottom: 18px; z-index: 40;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--t-sm); padding: 5px 10px; border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-rule-strong); background: var(--d-ink-2); color: var(--d-paper); cursor: pointer;
+}
+.dashboard-v2 .dv-tour-trigger:hover { background: var(--d-surface-2); }
+.dashboard-v2 .dv-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
+
+@keyframes dv-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── PanelIntro ──────────────────────────────────────────── */
+.dashboard-v2 .dv-panel-intro {
+  display: flex; align-items: center; gap: 8px;
+  margin: 2px 0 var(--sp-4);
+  font-size: var(--t-base); color: var(--d-paper-dim);
+}
+.dashboard-v2 .dv-panel-intro-how { position: relative; display: inline-flex; }
+.dashboard-v2 .dv-panel-intro-q {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid var(--d-rule-strong); background: var(--d-ink-3);
+  color: var(--d-paper-dim); font-size: var(--t-xs); line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.dashboard-v2 .dv-panel-intro-q:hover { color: var(--d-paper); }
+.dashboard-v2 .dv-panel-intro-pop {
+  position: absolute; top: 24px; left: 0; z-index: 20; width: 280px;
+  background: var(--d-ink-2); border: 1px solid var(--d-rule-strong);
+  border-radius: var(--d-r-sm); box-shadow: var(--d-shadow-1);
+  padding: 10px 12px; font-size: var(--t-sm); color: var(--d-paper-dim); line-height: 1.5;
+}
+
+/* ── Lifecycle legend ────────────────────────────────────── */
+.dashboard-v2 .dv-lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--sp-4); }
+.dashboard-v2 .dv-lifecycle-arrow { color: var(--d-paper-dimmer); font-size: var(--t-sm); }
+.dashboard-v2 .dv-lifecycle-stage {
+  font-size: var(--t-xs); padding: 3px 8px; border-radius: var(--d-r-sm);
+  border: 1px solid var(--d-rule); background: var(--d-ink-3); color: var(--d-paper-dim);
+}
+.dashboard-v2 .dv-lifecycle-stage--good   { color: var(--d-good);   border-color: var(--d-good);   background: var(--d-good-bg); }
+.dashboard-v2 .dv-lifecycle-stage--warn   { color: var(--d-warn);   border-color: var(--d-warn);   background: var(--d-warn-bg); }
+.dashboard-v2 .dv-lifecycle-stage--accent { color: var(--d-accent); border-color: var(--d-accent); background: var(--d-accent-bg); }
+
+@keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Demo-path v1-panel consistency ──────────────────────── */
+/* Remap emerald-400 one-off accent toward the single sage token so the
+ * v1 panels share the same green as the v2 chrome. Scoped to the
+ * content-studio body wrapper to avoid touching v2 elements above.
+ * NOTE: .dv-section-h already uses var(--t-lg)/var(--d-paper)/weight-600
+ *   via the global rule at line 265 — no scoped override needed.
+ * NOTE: bg-emerald-500/10, rounded-xl radius, and bg-zinc-900/90 box-shadow
+ *   rules were dropped: bg-emerald-500/10 is absent from the four target
+ *   panels; rounded-xl and bg-zinc-900/90 appear on nested elements (icon
+ *   badges, filter pills, chart cards) making any broad selector unsafe. */
+.dashboard-v2 .dv-content-studio-body .text-emerald-400 { color: var(--d-good-hi); }

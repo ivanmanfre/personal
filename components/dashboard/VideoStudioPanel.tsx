@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Video, Loader2, RotateCcw, CheckCircle2, AlertCircle, Clock, Film, ChevronDown, ChevronRight } from 'lucide-react';
+import { Video, Loader2, RotateCcw, CheckCircle2, AlertCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { useContentLibrary } from '../../hooks/useContentLibrary';
 import { redoVideo, approveVideo } from '../../lib/studioActions';
 import { toastError, toastSuccess } from '../../lib/dashboardActions';
+import { PanelIntro } from '../dashboard-v2/primitives';
+import EmptyState from './shared/EmptyState';
 
 // Animated-video review studio. Video drafts are carousel_drafts rows with
 // type='video'; the curator (LM Scorer) suggests them and video-gen-v2 renders
@@ -76,19 +78,20 @@ export default function VideoStudioPanel() {
 
   if (videos.length === 0) {
     return (
-      <div className="p-10 text-center text-slate-400">
-        <Film className="w-10 h-10 mx-auto mb-3 opacity-40" />
-        <p className="font-medium text-slate-300">No animated videos yet</p>
-        <p className="text-sm mt-1 max-w-md mx-auto">
-          The curator flags a minority of flow-shaped topics as video. When you approve one in the Ideas queue,
-          it renders here for review.
-        </p>
-      </div>
+      <EmptyState
+        title="No videos in review"
+        description="When a post is a good fit for motion, an animated vertical video is generated and lands here for your approval."
+      />
     );
   }
 
   return (
     <div className="space-y-3 p-1">
+      <PanelIntro
+        tourId="video"
+        purpose="Animated, on-brand videos that publish natively to LinkedIn and Reels."
+        how="Claude authors a per-topic spec; the render engine turns it into a vertical animated infographic you review and approve."
+      />
       <div className="flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <Video className="w-4 h-4" /> Animated videos

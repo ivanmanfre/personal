@@ -10,6 +10,8 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl, versionedAssetUrl } from '../../lib/driveThumb';
 import { statusLabel } from '../../lib/statusLabels';
+import { PanelIntro } from '../dashboard-v2/primitives';
+import EmptyState from './shared/EmptyState';
 
 // Canonical LM formats — sourced from the curator + content pipeline.
 // Anything outside this set in lm_drafts_v2 is data pollution (newsletter
@@ -203,6 +205,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <PanelIntro
+        tourId="leadmagnets"
+        purpose="Turn attention into qualified leads — built and published automatically."
+        how="One idea becomes an interactive asset on a live hosted page, with gated CTAs that route signups by fit and a full launch kit (post, DM, email, cover)."
+      />
       <div className="flex items-center gap-2">
         <Magnet className="w-5 h-5 text-emerald-400" />
         <h2 className="text-lg font-semibold text-zinc-100">Lead Magnet Studio</h2>
@@ -347,13 +354,10 @@ const LeadMagnetStudioPanel: React.FC = () => {
           <div className="text-[13px] text-zinc-400 font-medium">Loading lead magnets…</div>
         </div>
       ) : drafts.length === 0 ? (
-        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 ring-1 ring-emerald-500/30 flex items-center justify-center mb-3">
-            <Magnet className="w-5 h-5 text-emerald-300" />
-          </div>
-          <div className="text-[13px] text-zinc-300 font-medium">No lead magnets yet</div>
-          <div className="text-[11.5px] text-zinc-500 mt-0.5">Click <span className="text-emerald-300">New lead magnet</span> above to draft one.</div>
-        </div>
+        <EmptyState
+          title="No lead magnets yet"
+          description="Pick a format and the system builds an interactive asset, publishes it to a live page, and writes the launch kit."
+        />
       ) : visible.length === 0 ? (
         <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">

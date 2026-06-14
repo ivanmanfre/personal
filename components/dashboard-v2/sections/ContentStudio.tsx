@@ -1,6 +1,7 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { HeadRow, SubTabs, SubTab } from '../primitives';
 import { InternalTabs } from '../../dashboard/InternalTabs';
+import { onNav } from '../lib/navBus';
 
 /**
  * Phase 2 — Content Studio.
@@ -92,6 +93,14 @@ export function ContentStudio() {
     setSub(s as SubKey);
     syncSubToUrl(s as SubKey);
   };
+
+  useEffect(() => {
+    return onNav(({ section, sub: nextSub }) => {
+      if (section === 'content' && nextSub) {
+        handleSub(nextSub);
+      }
+    });
+  }, []);
 
   const renderSub = () => {
     switch (sub) {

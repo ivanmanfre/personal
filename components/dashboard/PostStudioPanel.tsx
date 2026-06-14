@@ -10,6 +10,7 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
+import { PanelIntro, LifecycleLegend } from '../dashboard-v2/primitives';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -253,6 +254,12 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
 
   return (
     <div className="space-y-6">
+      <PanelIntro
+        tourId="posts"
+        purpose="Where every post is born, reviewed, and shipped — without you writing it."
+        how="Ideas arrive from a 6-source curator, are drafted in your trained voice, pass quality + lint gates, then schedule to LinkedIn automatically."
+      />
+      <LifecycleLegend />
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 ring-1 ring-emerald-500/20 flex items-center justify-center">
           <FileText className="w-4 h-4 text-emerald-400" />
@@ -404,7 +411,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       {/* Filters / sort — single muted line. Status + type pills are visually
           quiet (no high-contrast fill on non-active), keep more room for content. */}
       {drafts.length > 0 && (
-        <div className="space-y-1.5 text-[11.5px]">
+        <div className="space-y-1.5 text-[11.5px]" data-tour="post-lifecycle">
           {/* Topic search — slimmer than before */}
           <input
             type="text"

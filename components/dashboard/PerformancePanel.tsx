@@ -12,6 +12,7 @@ import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import { formatNum, formatDate } from './shared/utils';
+import { PanelIntro } from '../dashboard-v2/primitives';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
@@ -108,6 +109,11 @@ const PerformancePanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <PanelIntro
+        tourId="performance"
+        purpose="What actually landed — and what the system learns from it."
+        how="Daily LinkedIn metrics flow back in to inform which topics, hooks, and formats get posted next."
+      />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Performance</h1>
         <div className="flex items-center gap-2">

@@ -3,6 +3,9 @@ import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { NotificationBell } from './NotificationBell';
 import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
+import { TourProvider, useTour } from './tour/TourProvider';
+import { TourNarratorCard } from './tour/TourNarratorCard';
+import { onNav } from './lib/navBus';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
@@ -26,6 +29,15 @@ interface ShellProps {
   paletteItems?: PaletteItem[];
 }
 
+function TourTrigger() {
+  const { start } = useTour();
+  return (
+    <button type="button" className="dv-tour-trigger" onClick={start} aria-label="Start guided tour">
+      ▶ Tour
+    </button>
+  );
+}
+
 /**
  * Dashboard v2 Shell.
  * Owns: section state (URL-synced), keyboard shortcuts, command palette, sidebar nav.
@@ -37,6 +49,12 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     const params = new URLSearchParams(window.location.search);
     return resolveSection(params.get('section')) ?? 'briefing';
   });
+
+  // Nav bus — lets TourProvider (and any other caller) drive section changes
+  // without needing a direct reference to setActive.
+  useEffect(() => {
+    return onNav(({ section }) => setActive(section));
+  }, []);
 
   // Section nav is an instant swap (Linear/Vercel-style) — no view transition.
   // A cross-fade superimposed two lazy-loaded layouts (and snapshotted the
@@ -161,46 +179,50 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
   const renderer = sectionRenderers[active];
 
   return (
-    <div className="dashboard-v2">
-      <div className={`dashboard-v2-shell ${collapsed ? 'dashboard-v2-shell--rail' : ''}`}>
-        {/* Top bar — hosts the mobile hamburger + brand, and the notification
-            bell on the right (slim sticky bar on desktop, see dashboard-v2.css). */}
-        <header className="dv-topbar">
-          <button
-            type="button"
-            className="dv-hamburger"
-            aria-label="Open navigation"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen(true)}
-          >
-            <span /><span /><span />
-          </button>
-          <div className="dv-topbar-brand">Ivan <em>System</em></div>
-        </header>
+    <TourProvider>
+      <div className="dashboard-v2">
+        <div className={`dashboard-v2-shell ${collapsed ? 'dashboard-v2-shell--rail' : ''}`}>
+          {/* Top bar — hosts the mobile hamburger + brand, and the notification
+              bell on the right (slim sticky bar on desktop, see dashboard-v2.css). */}
+          <header className="dv-topbar">
+            <button
+              type="button"
+              className="dv-hamburger"
+              aria-label="Open navigation"
+              aria-expanded={navOpen}
+              onClick={() => setNavOpen(true)}
+            >
+              <span /><span /><span />
+            </button>
+            <div className="dv-topbar-brand">Ivan <em>System</em></div>
+          </header>
 
-        {/* Notification bell — fixed top-right, layout-independent so it shows on
-            every section/viewport without disturbing the shell's sidebar+main grid. */}
-        <NotificationBell />
+          {/* Notification bell — fixed top-right, layout-independent so it shows on
+              every section/viewport without disturbing the shell's sidebar+main grid. */}
+          <NotificationBell />
 
-        {/* Scrim behind the open drawer (mobile only) */}
-        <div
-          className={`dv-scrim ${navOpen ? 'dv-scrim--show' : ''}`}
-          onClick={() => setNavOpen(false)}
-          aria-hidden="true"
-        />
+          {/* Scrim behind the open drawer (mobile only) */}
+          <div
+            className={`dv-scrim ${navOpen ? 'dv-scrim--show' : ''}`}
+            onClick={() => setNavOpen(false)}
+            aria-hidden="true"
+          />
 
-        <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
-        <main className="dv-main">
-          <div className="dv-panel" key={`${active}:${navNonce}`}>
-            {renderer ? renderer() : (
-              <div style={{ padding: '4rem', color: 'var(--d-paper-dim)' }}>
-                Section <code>{active}</code> not yet implemented.
-              </div>
-            )}
-          </div>
-        </main>
+          <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+          <main className="dv-main">
+            <div className="dv-panel" key={`${active}:${navNonce}`}>
+              {renderer ? renderer() : (
+                <div style={{ padding: '4rem', color: 'var(--d-paper-dim)' }}>
+                  Section <code>{active}</code> not yet implemented.
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+        <CommandPalette {...palette} />
+        <TourTrigger />
+        <TourNarratorCard />
       </div>
-      <CommandPalette {...palette} />
-    </div>
+    </TourProvider>
   );
 }
