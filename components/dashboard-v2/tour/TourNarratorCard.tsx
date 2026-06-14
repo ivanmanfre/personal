@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTour } from './TourProvider';
 import { useTourSpotlight } from './useTourSpotlight';
 
 export function TourNarratorCard() {
   const { active, step, index, total, next, back, end } = useTour();
   useTourSpotlight(active, step?.target);
+
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') end(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [active, end]);
 
   if (!active || !step) return null;
   const isFirst = index === 0;
@@ -13,7 +20,7 @@ export function TourNarratorCard() {
   return (
     <>
       <div className="dv-tour-scrim" onClick={end} aria-hidden />
-      <aside className="dv-tour-card" role="dialog" aria-label="Guided tour">
+      <aside className="dv-tour-card" role="dialog" aria-modal="true" aria-label="Guided tour">
         <div className="dv-tour-progress">{index + 1} / {total}</div>
         <h3 className="dv-tour-title">{step.title}</h3>
         <p className="dv-tour-body">{step.body}</p>
