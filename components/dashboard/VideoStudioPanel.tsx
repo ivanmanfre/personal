@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Video, Loader2, RotateCcw, CheckCircle2, AlertCircle, Clock, Film, ChevronDown, ChevronRight } from 'lucide-react';
+import { Video, Loader2, RotateCcw, CheckCircle2, AlertCircle, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { useContentLibrary } from '../../hooks/useContentLibrary';
 import { redoVideo, approveVideo } from '../../lib/studioActions';
 import { toastError, toastSuccess } from '../../lib/dashboardActions';
