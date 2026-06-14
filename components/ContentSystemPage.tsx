@@ -26,7 +26,7 @@ function BrowserFrame({ src, alt, caption, eager }: { src: string; alt: string; 
   return (
     <figure className="m-0">
       <div
-        className="overflow-hidden rounded-xl border shadow-card-lift"
+        className="overflow-hidden rounded-none border shadow-card-lift"
         style={{ borderColor: 'var(--color-hairline-bold)', backgroundColor: '#0E0F12' }}
       >
         <div
@@ -73,7 +73,7 @@ function CaseStudy({ client, role, src, alt, summary, metrics, flip }: {
     <Reveal>
       <div ref={ref} className="grid lg:grid-cols-2 gap-8 lg:gap-14 items-center">
         <motion.div style={isLg && !prefersReduced ? { y: shotY } : undefined} className={flip ? 'lg:order-2' : ''}>
-          <BrowserFrame src={src} alt={alt} />
+          <BrowserFrame eager src={src} alt={alt} />
         </motion.div>
         <div className={flip ? 'lg:order-1' : ''}>
           <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">{role}</div>
@@ -176,7 +176,7 @@ export default function ContentSystemPage() {
           <p className="text-lg md:text-xl text-ink-soft leading-relaxed">
             Showing up daily is the whole game, and it's the thing that always slips. The blank
             page, the posts that sound like everyone else, the weeks you go quiet.{' '}
-            <span className="font-drama italic text-ink">
+            <span className="font-semibold text-ink">
               This removes the bottleneck entirely.
             </span>{' '}
             Not a tool you operate. A system that operates itself, in your voice.
@@ -191,7 +191,6 @@ export default function ContentSystemPage() {
             Why this isn&apos;t{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
               &ldquo;AI writes my posts.&rdquo;
-              <SageSweep delay={0.4} opacity={0.85} />
             </span>
           </RevealH2>
           <div className="grid md:grid-cols-2 gap-x-10 gap-y-10">
@@ -243,7 +242,6 @@ export default function ContentSystemPage() {
             One idea,{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
               everywhere.
-              <SageSweep delay={0.3} opacity={0.85} />
             </span>
           </RevealH2>
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-8">
@@ -254,7 +252,7 @@ export default function ContentSystemPage() {
             {ONE_IDEA_FORMATS.map((f) => (
               <span
                 key={f}
-                className="rounded-lg border px-4 py-2 text-sm text-ink"
+                className="border px-4 py-2 text-sm text-ink"
                 style={{
                   borderColor: 'var(--color-hairline-bold)',
                   backgroundColor: 'var(--color-paper-raise)',
@@ -275,7 +273,6 @@ export default function ContentSystemPage() {
             Turn attention into{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
               qualified leads.
-              <SageSweep delay={0.4} opacity={0.85} />
             </span>
           </RevealH2>
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
@@ -287,7 +284,7 @@ export default function ContentSystemPage() {
             {LM_FORMATS.map((f) => (
               <div
                 key={f.name}
-                className="rounded-xl border p-5"
+                className="border p-5"
                 style={{
                   borderColor: 'var(--color-hairline)',
                   backgroundColor: 'var(--color-paper-raise)',
@@ -335,9 +332,9 @@ export default function ContentSystemPage() {
             <CaseStudy
               client="Kyle Hunt"
               role="Creative-video agency · founder"
-              src="/content-system/kyle-content-system.png"
-              alt="Kyle Hunt's content engine running in the system"
-              summary="Kyle runs his entire content operation on the system. Every post and every lead magnet is drafted in his voice and shipped, without him ever facing a blank page."
+              src="/content-system/kyle-guides.png"
+              alt="A live lead-magnet guide the system built for Kyle Hunt"
+              summary="Kyle runs his content and lead magnets through the system. Every post and every guide is drafted in his voice and shipped on a live page, without him ever facing a blank page."
               metrics={[
                 { value: '100%', label: 'of his content, run by the system' },
                 { value: '~300', label: 'comments per lead-magnet post' },
@@ -373,7 +370,7 @@ export default function ContentSystemPage() {
               ).map((r) => (
                 <figure key={r.src} className="m-0">
                   <div
-                    className="overflow-hidden rounded-xl border"
+                    className="overflow-hidden rounded-none border"
                     style={{
                       borderColor: 'var(--color-hairline-bold)',
                       backgroundColor: 'var(--color-paper-sunk)',
@@ -410,7 +407,7 @@ export default function ContentSystemPage() {
                   key={s}
                   className="flex items-start gap-3 text-[15px] text-ink-soft leading-relaxed"
                 >
-                  <span className="text-accent-ink mt-1 shrink-0">✓</span>
+                  <span className="mt-1.5 shrink-0 inline-block h-2 w-2" style={{ backgroundColor: 'var(--color-accent)' }} aria-hidden="true" />
                   {s}
                 </li>
               ))}
@@ -424,7 +421,7 @@ export default function ContentSystemPage() {
                   key={s}
                   className="flex items-start gap-3 text-[15px] text-ink-mute leading-relaxed"
                 >
-                  <span className="font-mono text-ink-mute mt-0.5 shrink-0">✕</span>
+                  <span className="mt-1.5 shrink-0 inline-block h-2 w-2 border" style={{ borderColor: 'var(--color-hairline-bold)' }} aria-hidden="true" />
                   {s}
                 </li>
               ))}
@@ -434,7 +431,7 @@ export default function ContentSystemPage() {
 
         {/* 10 — PRICING + FINAL CTA */}
         <section
-          className="rounded-2xl border bg-black text-white p-10 md:p-16 text-center"
+          className="rounded-none border bg-black text-white p-10 md:p-16 text-center"
           style={{ borderColor: 'var(--color-hairline-bold)' }}
         >
           <p className="font-mono text-xs uppercase tracking-[0.1em] text-zinc-400">
