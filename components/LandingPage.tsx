@@ -323,9 +323,9 @@ const ProblemSection: React.FC = () => {
               <div className="grid grid-cols-2 gap-x-8 gap-y-10">
                 {[
                   { verb: 'Review', stat: '100%', line: 'of your sales calls graded, with at-risk accounts flagged the same hour.' },
-                  { verb: 'Cut', stat: '15+ hrs/wk', line: "of manual work off your team's plate, every single week." },
+                  { verb: 'Cut', stat: 'busywork', line: 'manual review, follow-up, and reporting, off your team for good.' },
                   { verb: 'Turn', stat: 'same-day', line: 'delivery on work that takes your team days right now.' },
-                  { verb: 'Grow', stat: '2–3x', line: 'more client capacity with the team you already have.' },
+                  { verb: 'Grow', stat: 'no new hires', line: 'take on more clients on the team you already have.' },
                 ].map((item) => (
                   <div key={item.verb}>
                     <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>

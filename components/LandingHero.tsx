@@ -188,25 +188,29 @@ const LandingHero: React.FC = () => {
               </span>
             </motion.p>
 
-            {/* Benefit row — square sage bullets, mono (brand vocabulary) */}
+            {/* Benefit row — refined mono spec line: one sage marker, hairline-divided facts */}
             <motion.ul
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.05, duration: 0.7, ease }}
-              className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-8"
+              className="mb-10 flex flex-col sm:flex-row items-center justify-center gap-y-2.5 sm:gap-0"
             >
-              {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b) => (
+              {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b, i) => (
                 <li
                   key={b}
-                  className="flex items-center gap-2.5"
+                  className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l sm:border-black/10'} ${i === 2 ? 'sm:pr-0' : ''}`}
                   style={{
                     fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '14px',
-                    letterSpacing: '0.02em',
+                    fontSize: '14.5px',
+                    letterSpacing: '0.03em',
                     color: '#2C3A31',
                   }}
                 >
-                  <span style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }} aria-hidden="true" />
+                  <span
+                    className={i === 0 ? '' : 'sm:hidden'}
+                    style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
                   {b}
                 </li>
               ))}
