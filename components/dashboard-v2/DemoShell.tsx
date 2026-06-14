@@ -26,16 +26,16 @@ import type { NavItem, SectionId } from './types';
 function ShellInner() {
   const { stats: checkStats } = useScheduledChecks();
   const navItems: NavItem[] = [
-    { id: 'briefing', name: 'Briefing', emphasis: 'Briefing', num: '⊙', group: 'briefing' },
+    { id: 'briefing', name: 'Briefing', emphasis: 'Briefing', group: 'briefing' },
     { id: 'content', name: 'Content Studio', num: '01', group: 'operate' },
     { id: 'reach', name: 'Reach & Pipeline', num: '02', group: 'operate' },
     { id: 'ops', name: 'Operations', num: '03', group: 'operate', ...(checkStats.due > 0 ? { badge: { count: checkStats.due, severity: 'bad' as const } } : {}) },
     { id: 'clients', name: 'Clients', num: '04', group: 'knowledge' },
     { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
-    { id: 'ideas', name: 'Ideas', num: '⌖', group: 'knowledge' },
+    { id: 'ideas', name: 'Ideas', num: '07', group: 'knowledge' },
     { id: 'system', name: 'System', num: '08', group: 'knowledge' },
-    { id: 'personal', name: 'Personal', num: '07', group: 'personal' },
+    { id: 'personal', name: 'Personal', num: '09', group: 'personal' },
   ];
 
   // Briefing's onNavigate signature includes optional sub-tab.
