@@ -975,6 +975,7 @@ body.dashboard-v2-active * {
   width: 18px; height: 18px; border-radius: 50%;
   border: 1px solid var(--d-rule-strong); background: var(--d-ink-3);
   color: var(--d-paper-dim); font-size: var(--t-xs); line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .dashboard-v2 .dv-panel-intro-q:hover { color: var(--d-paper); }
 .dashboard-v2 .dv-panel-intro-pop {
@@ -994,4 +995,5 @@ body.dashboard-v2-active * {
 .dashboard-v2 .dv-lifecycle-stage--good   { color: var(--d-good);   border-color: var(--d-good);   background: var(--d-good-bg); }
 .dashboard-v2 .dv-lifecycle-stage--warn   { color: var(--d-warn);   border-color: var(--d-warn);   background: var(--d-warn-bg); }
 .dashboard-v2 .dv-lifecycle-stage--accent { color: var(--d-accent); border-color: var(--d-accent); background: var(--d-accent-bg); }
+
 @keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

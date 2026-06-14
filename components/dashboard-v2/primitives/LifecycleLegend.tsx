@@ -7,7 +7,7 @@ export function LifecycleLegend() {
       {LIFECYCLE_STAGES.map((s, i) => (
         <React.Fragment key={s.key}>
           <span className={`dv-lifecycle-stage dv-lifecycle-stage--${s.severity}`}>{s.label}</span>
-          {i < LIFECYCLE_STAGES.length - 1 && <span className="dv-lifecycle-arrow" aria-hidden>→</span>}
+          {i < LIFECYCLE_STAGES.length - 1 && <span className="dv-lifecycle-arrow" aria-hidden="true">→</span>}
         </React.Fragment>
       ))}
     </div>
