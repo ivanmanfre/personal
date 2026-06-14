@@ -997,10 +997,10 @@ const LandingFooter: React.FC = () => {
           )}
         </div>
 
-        {/* Wordmark + socials */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12 pt-12 border-t" style={DIVIDER}>
+        {/* Wordmark + socials — oversized closing signature (footer finale) */}
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-8 mb-12 pt-12 border-t" style={DIVIDER}>
           <div className="text-center md:text-left">
-            <div style={{ ...T.display('clamp(1.8rem,2.4vw,2.4rem)'), fontStyle: 'normal', marginBottom: '4px' }}>
+            <div style={{ ...T.display('clamp(2.6rem,5vw,4.5rem)'), fontStyle: 'normal', lineHeight: 0.95, letterSpacing: '-0.02em', marginBottom: '8px' }}>
               Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
             </div>
             <p style={T.mono}>Agent-Ready Ops™</p>
@@ -1130,6 +1130,21 @@ const LandingPage: React.FC = () => {
         mouseY.set(e.clientY / window.innerHeight);
       }}
     >
+      {/* Page-wide paper grain — static material texture, very subtle (P5 floor) */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 30,
+          opacity: 0.04,
+          mixBlendMode: 'multiply',
+          backgroundImage:
+            'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22/></filter><rect width=%22160%22 height=%22160%22 filter=%22url(%23n)%22/></svg>")',
+          backgroundSize: '160px 160px',
+        }}
+      />
       {/* Left-edge scroll progress — sage line fills as you scroll */}
       <motion.div
         style={{
