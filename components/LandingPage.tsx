@@ -247,30 +247,36 @@ const useMediaQuery = (query: string): boolean => {
   return matches;
 };
 
-// ─── Credibility strip — above-the-fold proof, numeral lockups (§5f) ─────────
+// ─── Proof band (beat 2) — real receipts at display scale, full-bleed hairlines ──
+// NOTE: deliberately NO calculated figures here (e.g. the $146,870 is an example
+// OUTPUT of the §06 calculator, not a receipt — it stays in its own context).
+// Only vetted, defensible numbers live at the top of the page.
 const METRICS = [
-  { fig: '100+', label: 'Builds shipped' },
-  { fig: '90-day', label: 'Payback rule' },
-  { fig: '2–3x', label: 'More capacity' },
+  { fig: '100+', label: 'Builds shipped', receipt: 'Systems shipped and running in production.' },
+  { fig: '90-day', label: 'Payback rule', receipt: "Every build pays back inside it, or I don't build it." },
+  { fig: '2–3x', label: 'More capacity', receipt: 'More clients on the team you already have.' },
 ];
 
-const MetricStrip: React.FC = () => (
+const ProofBand: React.FC = () => (
   <section className="border-t border-b" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl">
+    <div className="container mx-auto px-8 max-w-7xl">
       <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-black/10">
         {METRICS.map((m, i) => (
           <motion.div
             key={m.label}
-            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            initial={prefersReduced ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.6, ease, delay: i * 0.08 }}
-            className="py-8 md:py-11 px-4 text-center"
+            transition={{ duration: 0.7, ease, delay: i * 0.1 }}
+            className="py-12 md:py-16 px-6 sm:px-9 first:sm:pl-0 last:sm:pr-0 text-left"
           >
-            <div style={{ ...T.display('clamp(1.9rem,3vw,2.7rem)'), color: 'var(--color-accent)', lineHeight: 1, marginBottom: '9px' }}>
+            <div style={{ ...T.display('clamp(3.5rem,7vw,6rem)'), color: 'var(--color-accent)', lineHeight: 0.92, letterSpacing: '-0.02em', marginBottom: '14px' }}>
               {m.fig}
             </div>
-            <div style={T.mono}>{m.label}</div>
+            <div style={{ ...T.mono, marginBottom: '10px' }}>{m.label}</div>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', color: '#5A5752', lineHeight: 1.5, maxWidth: '26ch' }}>
+              {m.receipt}
+            </p>
           </motion.div>
         ))}
       </div>
@@ -1146,7 +1152,7 @@ const LandingPage: React.FC = () => {
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
         <LandingHero />
-        <MetricStrip />
+        <ProofBand />
         <ProblemSection />
         <AgentReadySection />
         <BuildOutcomesSection />
