@@ -176,7 +176,7 @@ const StyleGalleryPanel: React.FC = () => {
       <section>
         <h2 className="dv-section-h">Carousel — layout archetypes</h2>
         <p className="text-[12px] text-[color:var(--d-paper-dimmer)] mt-0.5 mb-3">
-          Structural templates Claude composes per carousel. The author picks one per post; the kit above paints it. Source of truth = ClickUp Asset Styles.
+          Structural templates Claude composes per carousel. The author picks one per post; the kit above paints it.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {ASSET_STYLES.filter((s) => s.category === 'carousel').map((s) => (
@@ -262,7 +262,6 @@ const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt }> = ({
           <div className="text-[13.5px] font-semibold text-zinc-100 truncate">{style.name}</div>
           <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">
             {style.category === 'carousel' ? 'Carousel layout' : 'Single-image intent'}
-            {hasPrompt && <span className="text-zinc-600"> · {(prompt!.body.length / 1000).toFixed(1)}k chars</span>}
           </div>
         </div>
         <a
@@ -284,7 +283,6 @@ const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt }> = ({
             className="text-[11px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
           >
             {open ? '− hide prompt' : '+ show prompt'}
-            <span className="text-zinc-600 ml-1">(synced from ClickUp)</span>
           </button>
           {open && (
             <div className="mt-2 rounded-md border border-zinc-800/60 bg-zinc-950/50 px-3 py-2 max-h-[420px] overflow-y-auto">
@@ -365,7 +363,6 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
             className="text-[11px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
           >
             {briefOpen ? '− hide brief' : '+ show brief'}
-            <span className="text-zinc-600">· {style.brief.length} chars</span>
           </button>
           {briefOpen && (
             <p className="mt-1.5 text-[11.5px] leading-snug text-zinc-300 whitespace-pre-wrap">{style.brief}</p>

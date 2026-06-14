@@ -466,7 +466,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
                 className="rounded-md bg-zinc-900/40 ring-1 ring-inset ring-zinc-800/80 px-2 py-1 text-zinc-300 hover:ring-zinc-700 cursor-pointer transition-colors text-[11px]"
               >
-                <option value="auto">Sort: smart</option>
+                <option value="auto">Smart sort</option>
                 <option value="updated">Sort: updated</option>
                 <option value="scheduled">Sort: scheduled</option>
               </select>
@@ -478,7 +478,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
-                  {showDisqualified ? 'Hide disqualified' : `+${statusCounts.disqualified} hidden`}
+                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} more`}
                 </button>
               )}
             </span>
