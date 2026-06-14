@@ -47,6 +47,12 @@ const RAW_LABEL_MAP: Record<string, string> = {
   error: 'Error',
   // LM-only
   generating_assets: 'Generating resources',
+  // Legacy/stray DB values — not in the canonical status set, but can appear
+  // in lm_drafts_v2 rows that bypassed normalizeLmStatus (e.g. written by
+  // older n8n workflows). Map to canonical display labels so the UI never
+  // renders raw underscore values like "Lm Review".
+  lm_review: 'In review',
+  generating_content: 'Generating content',
   // Legacy/duplicate DB values — normalized away in useLeadMagnets, but kept
   // here so any raw leak still renders the canonical label.
   ready: 'Published',
