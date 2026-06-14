@@ -186,35 +186,6 @@ const REVIEWS: Review[] = [
   { text: "Very knowledgeable in n8n. Will be doing more projects with Ivan.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
 
-const ROW1 = [...REVIEWS, ...REVIEWS];
-const ROW2 = [...REVIEWS.slice(5), ...REVIEWS.slice(0, 5), ...REVIEWS.slice(5), ...REVIEWS.slice(0, 5)];
-
-const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
-  <motion.div
-    whileHover={{ y: -5, boxShadow: '0 16px 40px rgba(26,26,26,0.08)' }}
-    transition={{ duration: 0.22, ease: 'easeOut' }}
-    className="shrink-0 p-6 md:p-7 border cursor-default flex flex-col"
-    style={{ width: 'min(85vw, 400px)', minHeight: '272px', borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'var(--color-paper)' }}
-  >
-    <div style={{ ...T.mono, marginBottom: '10px' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.55, color: '#1A1A1A', flex: 1 }}>
-      "{r.text}"
-    </p>
-    <div style={{ marginTop: '14px' }}>
-      {r.author && (
-        <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3, marginBottom: '3px' }}>
-          {r.author}
-        </div>
-      )}
-      {r.role && (
-        <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752' }}>
-          {r.role}
-        </div>
-      )}
-    </div>
-  </motion.div>
-);
-
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
 // The hero ask and the calculator ask were ~5,000px apart (10 screens on
 // mobile) with the entire persuasion core between them and nothing to click.
@@ -529,9 +500,9 @@ const FUTURES = {
 const AgentReadySection: React.FC = () => (
   <section className="py-12 md:py-16 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-10 max-w-3xl">
+      <motion.div {...inView} className="mb-12 max-w-4xl">
         <Label>02</Label>
-        <RevealH2 style={{ ...T.display('clamp(2rem,3vw,2.8rem)'), marginBottom: 0 }}>
+        <RevealH2 style={{ ...T.display('clamp(2.5rem,4.6vw,4.25rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           Six months from now,{' '}
           one of two things is true.
         </RevealH2>
@@ -630,32 +601,62 @@ const WorkSection: React.FC = () => {
 };
 
 // ─── Section 4: Testimonials ─────────────────────────────────────────────────
+// §04 — de-boxed: one oversized named pull-quote leads, the rest support quietly.
+const TESTIMONIAL_LEAD = REVIEWS[7]; // Adeeb Mohammed — ex-Amazon · Meta
+const TESTIMONIAL_SUPPORT = [REVIEWS[3], REVIEWS[4], REVIEWS[2], REVIEWS[5], REVIEWS[1], REVIEWS[6]];
+
 const TestimonialsSection: React.FC = () => (
-  <section className="pt-12 md:pt-20 pb-12 md:pb-16 border-t overflow-hidden" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl mb-14">
-      <motion.div {...inView}>
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-12 md:mb-16">
         <Label>04</Label>
-        <RevealH2 style={T.display('clamp(2rem,3.5vw,3rem)')}>
+        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
           100+ builds shipped.<br />In their words.
         </RevealH2>
       </motion.div>
-    </div>
-    {/* CSS marquee (was framer tween): pauses on hover so quotes are actually
-        readable, and stops entirely under prefers-reduced-motion. Keyframes +
-        .marquee-* classes live in styles.css. */}
-    <div className="flex flex-col gap-5 pb-0">
-      {[{ row: ROW1, dur: 95, reverse: false }, { row: ROW2, dur: 115, reverse: true }].map(({ row, dur, reverse }, ri) => (
-        <div key={ri} className="relative marquee-row">
-          <div className="absolute inset-y-0 left-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to right, var(--color-paper), transparent)' }} />
-          <div className="absolute inset-y-0 right-0 w-20 z-10 pointer-events-none" style={{ background: 'linear-gradient(to left, var(--color-paper), transparent)' }} />
-          <div
-            className="flex gap-5 w-max px-5 marquee-track"
-            style={{ animationDuration: `${dur}s`, animationDirection: reverse ? 'reverse' : 'normal' }}
+
+      {/* Lead pull-quote — oversized, high-authority, named */}
+      <motion.figure {...inView} className="mb-16 md:mb-20 max-w-5xl">
+        <blockquote
+          style={{
+            ...T.display('clamp(2rem,4vw,3.6rem)'),
+            color: '#1A1A1A',
+            lineHeight: 1.12,
+            letterSpacing: '-0.015em',
+          }}
+        >
+          &ldquo;Very few things surprise me with AI.{' '}
+          <span style={{ color: 'var(--color-accent)' }}>Ivan did.</span>&rdquo;
+        </blockquote>
+        <figcaption className="mt-7 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+          <span style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '17px', color: '#1A1A1A' }}>
+            {TESTIMONIAL_LEAD.author}
+          </span>
+          <span style={{ ...T.mono, color: '#5A5752' }}>{TESTIMONIAL_LEAD.role}</span>
+        </figcaption>
+      </motion.figure>
+
+      {/* Supporting — de-boxed, hairline-topped columns */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-10">
+        {TESTIMONIAL_SUPPORT.map((r, i) => (
+          <motion.div
+            key={r.author}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.55, ease, delay: (i % 3) * 0.08 }}
+            className="pt-5 border-t"
+            style={{ borderColor: 'rgba(26,26,26,0.14)' }}
           >
-            {row.map((r, i) => <ReviewCard key={i} r={r} />)}
-          </div>
-        </div>
-      ))}
+            <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.55, color: '#1A1A1A', marginBottom: '16px' }}>
+              &ldquo;{r.text}&rdquo;
+            </p>
+            <div style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A' }}>{r.author}</div>
+            <div style={{ ...T.mono, fontSize: '12px', color: '#5A5752' }}>{r.role}</div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   </section>
 );
