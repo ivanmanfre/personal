@@ -39,6 +39,10 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   }, [go, state.index, total]);
   const end = useCallback(() => dispatch({ type: 'END' }), []);
 
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tour') === '1') start();
+  }, [start]);
+
   const value = useMemo<TourCtx>(() => ({
     active: state.active,
     index: state.index,

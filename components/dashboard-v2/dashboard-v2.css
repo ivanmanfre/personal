@@ -960,6 +960,7 @@ body.dashboard-v2-active * {
   border: 1px solid var(--d-rule-strong); background: var(--d-ink-2); color: var(--d-paper); cursor: pointer;
 }
 .dashboard-v2 .dv-tour-trigger:hover { background: var(--d-surface-2); }
+.dashboard-v2 .dv-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 
 @keyframes dv-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
