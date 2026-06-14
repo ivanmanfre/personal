@@ -20,7 +20,14 @@ export interface CallIntel {
   observable_signals: Array<{ label: string; detail: string }>;
   leaking_signals: Array<{ title: string; detail: string }>;
   system: { summary: string; capabilities: string[] };
-  sample_output: { kind: 'flagged_call_card' | 'weekly_digest'; title: string; items: string[] };
+  sample_output: {
+    kind: 'flagged_call_card' | 'weekly_digest';
+    title: string;
+    items: string[];
+    metrics?: { label: string; value: string; delta?: string | null }[];
+    reps?: { name: string; pct: number }[];
+    flags?: { tag: string; text: string }[];
+  };
   revenue_math: string;
 }
 
