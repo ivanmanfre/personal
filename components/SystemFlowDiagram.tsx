@@ -37,64 +37,64 @@ const STEPS: Record<string, StepDetail> = {
   brain: {
     kicker: 'The engine',
     title: 'Content Brain',
-    body: "It pulls ideas from your sales and partnership calls, the open web and Hacker News, your own past winners, and a news radar that scans every two hours. Then it scores every idea by how well it'll land with your buyers and picks the best. You never start from a blank page.",
+    body: 'It pulls ideas from your sales calls, the open web, Hacker News, your past winners, and a news radar that scans every two hours. Then it scores each idea for how well it fits your buyers and picks the best. No blank page to face.',
     bullets: ['Four idea sources, always on', 'Fit-scored nightly', 'Newsjack radar every 2h'],
   },
   ctx: {
     kicker: 'Pipeline · 1',
     title: 'Context retrieval',
-    body: 'It pulls the most relevant moments from your real calls and your strongest past posts, so the draft is grounded in things you have actually said — not generic AI filler.',
+    body: 'It pulls the most relevant moments from your real calls and your strongest past posts, so the draft is built on things you have actually said, not generic filler.',
   },
   fmt: {
     kicker: 'Pipeline · 2',
     title: 'Format routing',
-    body: 'It decides what the idea should become: a text post, a single image, a carousel in one of nine on-brand styles, or a full lead magnet — and routes it down the right track.',
+    body: 'It decides what the idea should become: a text post, a single image, a carousel in one of nine on-brand styles, or a full lead magnet, then sends it down the right track.',
   },
   hook: {
     kicker: 'Pipeline · 3',
     title: 'Hook generation',
-    body: 'It writes a batch of opening hooks and keeps the strongest one: the first line that stops the scroll. The whole post lives or dies on this, so it gets its own step.',
+    body: 'It writes a batch of opening lines and keeps the strongest one: the first line that decides whether anyone reads the rest. It earns its own step.',
   },
   write: {
     kicker: 'Pipeline · 4',
     title: 'Drafted in your voice',
-    body: 'Trained on your voice and grounded in your conversations, it writes the full post so it reads like you on your best day. You can tweak any word in the editor before it ships.',
-    shot: { src: '/content-system/ui/editor.webp', alt: 'The post editor — edit a draft’s copy, image, and schedule' },
+    body: 'Trained on your voice and built on your real conversations, it writes the full post so it sounds like you. You can edit any word before it ships.',
+    shot: { src: '/content-system/ui/editor.webp', alt: 'The post editor: edit a draft’s copy, image, and schedule' },
   },
   qa: {
     kicker: 'Pipeline · 5',
     title: 'Anti-AI-patterns QA',
-    body: 'A model QA agent scores the draft on nine dimensions — voice, specificity, structure, evidence, the tells that make content read as AI-written — and rewrites the weak spots until it clears the bar.',
+    body: 'A QA agent scores the draft on nine things: voice, specificity, structure, evidence, and the patterns that make writing feel machine-made. It rewrites the weak spots until the draft clears the bar.',
   },
   deslop: {
     kicker: 'Pipeline · 6',
     title: 'De-slop lint',
-    body: 'A deterministic linter then strips the residual AI tells the model can miss: stock phrases, hedges, em-dash tics and uniform rhythms. The last gate before anything reaches your eyes.',
+    body: 'A deterministic linter then strips the residual tells a model can miss: stock phrases, hedges, repetitive rhythms. The last gate before anything reaches you.',
   },
   approve: {
     kicker: 'Your only step',
     title: 'You approve in one tap',
-    body: 'Finished drafts queue on your board. Read it, tweak the copy, image or timing if you want, and tap approve. Once it is running, your daily lift is under ten minutes.',
+    body: 'Finished drafts queue on your board. Read one, adjust the copy, image or timing if you want, and approve. Once it is running, your daily lift is under ten minutes.',
     shot: { src: '/content-system/ui/board.webp', alt: 'The content board where finished drafts queue for one-tap approval' },
   },
   post: {
     kicker: 'Output',
     title: 'Published to LinkedIn',
-    body: 'It posts natively, on your schedule, with no copy-paste. The calendar fills itself and you can see everything that is queued to go out across the month at a glance.',
+    body: 'It posts natively, on your schedule, with no copy-paste. The calendar fills itself, so you can see everything queued for the month in one view.',
     shot: { src: '/content-system/ui/calendar.webp', alt: 'The publishing calendar with scheduled posts across the month' },
   },
   leadmagnet: {
     kicker: 'Output',
     title: 'A lead magnet that publishes itself',
-    body: 'From the same idea it builds an interactive asset and ships the whole funnel: a gated landing page, the resource page itself, an on-brand cover, and email capture that adds every signup to your list and routes best-fit leads to a call. No designer, no dev.',
-    bullets: ['Gated landing page', 'Resource page', 'On-brand cover', 'Email capture → your list'],
+    body: 'From the same idea it builds an interactive asset and ships the whole funnel: a gated landing page, the resource page itself, an on-brand cover, and email capture that adds every signup to your list and routes the best-fit leads to a call. No designer, no dev.',
+    bullets: ['Gated landing page', 'Resource page', 'On-brand cover', 'Email capture to your list'],
     shot: { src: '/content-system/ui/leadmagnets.webp', alt: 'The lead-magnet studio with built, on-brand assets' },
   },
   loop: {
     kicker: 'The loop',
     title: 'It learns what works',
-    body: 'Every post’s performance is tracked, and the top performers feed back into the Content Brain — so next week’s ideas are weighted toward what actually landed with your audience. The system gets sharper the longer it runs.',
-    shot: { src: '/content-system/ui/performance.webp', alt: 'The performance dashboard — impressions and engagement per post' },
+    body: 'Every post’s performance is tracked, and the top performers feed back into the Content Brain, so next week’s ideas lean toward what actually landed. The system sharpens the longer it runs.',
+    shot: { src: '/content-system/ui/performance.webp', alt: 'The performance dashboard: impressions and engagement per post' },
   },
 };
 
@@ -140,7 +140,7 @@ export const SystemFlowDiagram: React.FC = () => {
       className={`sfd-node ${active === id ? 'is-active' : ''}`}
       role="button"
       tabIndex={0}
-      aria-label={`${STEPS[id].title} — open detail`}
+      aria-label={`${STEPS[id].title}, open detail`}
       onClick={() => setActive(id)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(id); } }}
     >
@@ -174,7 +174,7 @@ export const SystemFlowDiagram: React.FC = () => {
           viewBox="0 26 1440 560"
           xmlns="http://www.w3.org/2000/svg"
           role="img"
-          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post in your voice, runs anti-AI-patterns QA and a de-slop lint; you approve in one tap — your only step; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
+          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a six-step pipeline drafts the post in your voice, runs anti-AI-patterns QA and a de-slop lint; you approve in one tap, your only step; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that fans into a landing page, resource page, cover, email capture and booked calls; top performers feed back into the brain."
         >
           <defs>
             <filter id="sfd-glow" x="-80%" y="-80%" width="260%" height="260%">
@@ -279,7 +279,7 @@ export const SystemFlowDiagram: React.FC = () => {
               <circle className="sfd-dlv-dot" cx="1166" cy="189" r="4.5" />
               <text className="sfd-dlv" x="1178" y="189">Published on your schedule</text>
               <circle className="sfd-dlv-dot" cx="1166" cy="221" r="4.5" />
-              <text className="sfd-dlv" x="1178" y="221">Native — no copy-paste</text>
+              <text className="sfd-dlv" x="1178" y="221">Native, no copy-paste</text>
               {lmDeliverables.map((dlv) => (
                 <g key={dlv.y}>
                   <circle className="sfd-dlv-dot" cx="1166" cy={dlv.y} r="4.5" />

@@ -2,12 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE } from './contentSystemContent';
 
 describe('content-system page content', () => {
-  it('has exactly six outcome promises, each with headline/benefit/how', () => {
-    expect(PROMISES).toHaveLength(6);
+  it('has four reframe pillars, each with headline + benefit', () => {
+    expect(PROMISES).toHaveLength(4);
     for (const p of PROMISES) {
       expect(p.headline.length).toBeGreaterThan(0);
       expect(p.benefit.length).toBeGreaterThan(0);
-      expect(p.how.length).toBeGreaterThan(0);
     }
   });
   it('has four buyer-facing metrics', () => {

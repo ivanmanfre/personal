@@ -226,7 +226,36 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
-        {/* 2 — INTERFACE SHOWCASE (real dashboard screenshots) */}
+        {/* 2 — REFRAME: why this isn't "AI writes my posts" */}
+        <section className="mb-16 md:mb-24">
+          <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), marginBottom: '1rem' }}>
+            Why this isn&apos;t{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              &ldquo;AI writes my posts.&rdquo;
+            </span>
+          </RevealH2>
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+            That means a prompt box and generic output. This is the opposite: a system that decides,
+            writes, checks and ships on its own, in your voice.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-x-12 gap-y-9">
+            {PROMISES.map((p, i) => (
+              <motion.div
+                key={p.headline}
+                initial={prefersReduced ? false : { opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.55, ease, delay: prefersReduced ? 0 : (i % 2) * 0.08 }}
+                className="border-l-2 border-accent pl-6"
+              >
+                <h3 className="font-drama italic text-2xl text-accent-ink leading-tight">{p.headline}</h3>
+                <p className="mt-2.5 text-[15px] text-ink-soft leading-relaxed">{p.benefit}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* 3 — INTERFACE SHOWCASE (real dashboard screenshots) */}
         <section className="mb-16 md:mb-24">
           <Label>The interface</Label>
           <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
@@ -276,40 +305,6 @@ export default function ContentSystemPage() {
             </span>{' '}
             Not a tool you operate. A system that operates itself, in your voice.
           </p>
-        </section>
-
-        {/* 4 — SIX PROMISES */}
-        <section className="mb-16 md:mb-24">
-          <RevealH2
-            style={{ ...T.display('clamp(2rem,4vw,3rem)'), marginBottom: '2.5rem' }}
-          >
-            Why this isn&apos;t{' '}
-            <span style={{ position: 'relative', display: 'inline-block' }}>
-              &ldquo;AI writes my posts.&rdquo;
-            </span>
-          </RevealH2>
-          <div className="grid md:grid-cols-2 gap-x-10 gap-y-10">
-            {PROMISES.map((p, i) => (
-              <motion.div
-                key={p.headline}
-                initial={prefersReduced ? false : { opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{
-                  duration: 0.55,
-                  ease,
-                  delay: prefersReduced ? 0 : (i % 2) * 0.08,
-                }}
-                className="border-l border-accent pl-6"
-              >
-                <h3 className="text-xl font-semibold tracking-tight">{p.headline}</h3>
-                <p className="mt-2 text-[15px] text-ink-soft leading-relaxed">{p.benefit}</p>
-                <p className="mt-3 font-mono text-xs uppercase tracking-[0.08em] text-ink-mute">
-                  How: {p.how}
-                </p>
-              </motion.div>
-            ))}
-          </div>
         </section>
 
         {/* 5 — METRICS STRIP */}
@@ -385,8 +380,8 @@ export default function ContentSystemPage() {
             ))}
           </div>
           <p className="text-sm text-ink-mute mb-14">
-            Every tile above is a real lead magnet the engine built and published — click to open
-            it full size. Skill packs, templates and more ship from the same pipeline.
+            Every tile above is a real lead magnet the engine built and published. Click any one to
+            open it full size. Skill packs, templates and more ship from the same pipeline.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {LM_PROMISES.map((p) => (
@@ -506,7 +501,7 @@ export default function ContentSystemPage() {
               Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
             <p className="text-sm text-zinc-400">
-              We&apos;ll scope it to your channels, formats and voice — you leave with a fixed
+              We&apos;ll scope it to your channels, formats and voice, and you leave with a fixed
               proposal, no obligation.
             </p>
           </div>
