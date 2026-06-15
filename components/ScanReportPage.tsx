@@ -1287,24 +1287,24 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
 // Premium editorial-cover hero for the call-intel pitch — lifts the landing-page craft:
 // texture (faint grid + drifting grain), status byline w/ live pulse, expanding sage rule,
 // editorial line-mask reveal, mixed-scale type (one viewport-scale hero word), mono spec row.
-const CI_HERO: Record<CallIntel['archetype'], { pre: string; hero: string; post: string; spec: string[] }> = {
+const CI_HERO: Record<CallIntel['archetype'], { pre: string; hero: string; sub: string; spec: string[] }> = {
   sales_demo_driven: {
-    pre: 'Every sales & demo call you run —',
-    hero: 'scored.',
-    post: "You close more of what you're already pitching.",
-    spec: ['Every call graded, not 1 in 20', 'Deal-killers surfaced weekly', "The best rep's playbook, made repeatable"],
+    pre: 'From the sales calls you already run —',
+    hero: 'close more.',
+    sub: 'More revenue from the same calls. No new leads. No bigger team.',
+    spec: ['More deals closed', 'Churn caught early', 'Reps coached to your best'],
   },
   cs_retention_driven: {
-    pre: 'Every customer call your team takes —',
-    hero: 'flagged.',
-    post: "Churn gets caught while the account's still saveable.",
-    spec: ['Every account call scored', 'At-risk flags by the next morning', 'Save-plays before the renewal, not after'],
+    pre: 'Before a customer churns —',
+    hero: 'catch it early.',
+    sub: 'Spot at-risk accounts in time to save them. No surprises at renewal.',
+    spec: ['Churn caught early', 'More renewals saved', 'Every account call reviewed'],
   },
   intake_driven: {
-    pre: 'Every intake call you take —',
-    hero: 'scored.',
-    post: 'More of the right cases actually sign.',
-    spec: ['Every intake graded', 'Drop-off reasons surfaced weekly', 'The best intake script, made repeatable'],
+    pre: 'From the intake calls you already take —',
+    hero: 'sign more.',
+    sub: 'More of the right cases say yes. Same calls, same team.',
+    spec: ['More cases signed', 'Fewer good leads lost', 'Intake coached to your best'],
   },
 };
 
@@ -1338,22 +1338,19 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
           <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {companyName}</span>
         </motion.div>
 
-        {/* mixed-scale headline — one viewport-scale hero word */}
-        <h1 className="mb-8" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
+        {/* benefit-led headline — leads with the outcome, not the mechanism */}
+        <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
           <Reveal delay={0.12}>
-            <span style={{ display: 'block', fontSize: 'clamp(1.55rem, 3.4vw, 2.7rem)', lineHeight: 1.08, color: '#3D3D3B' }}>{h.pre}</span>
+            <span style={{ display: 'block', fontSize: 'clamp(1.55rem, 3.4vw, 2.7rem)', lineHeight: 1.1, color: '#3D3D3B' }}>{h.pre}</span>
           </Reveal>
           <Reveal delay={0.26}>
-            <span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(4rem, 13.5vw, 8.5rem)', lineHeight: 0.9, letterSpacing: '-0.045em', marginTop: '0.04em', marginLeft: '-0.015em' }}>{h.hero}</span>
-          </Reveal>
-          <Reveal delay={0.42}>
-            <span style={{ display: 'inline-block', marginTop: '0.55rem', backgroundColor: '#1A1A1A', color: '#F7F4EF', fontStyle: 'italic', fontSize: 'clamp(1.2rem, 2.5vw, 2rem)', lineHeight: 1.16, padding: '0.05em 0.42em 0.2em' }}>{h.post}</span>
+            <span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.6rem, 12vw, 7.5rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span>
           </Reveal>
         </h1>
 
-        {/* lede — the personalized thesis */}
-        <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.82, duration: 0.9, ease: EASE }} className="max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '19px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          {ci.thesis}
+        {/* plain benefit subhead — bigger, short, simple */}
+        <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(19px, 2.4vw, 22px)', lineHeight: 1.5, color: '#3D3D3B' }}>
+          {h.sub}
         </motion.p>
 
         {/* mono spec row */}
@@ -1387,8 +1384,8 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   // The two distinct product surfaces — the system runs on two kinds of calls and they are
   // SEPARATE benefits (don't blend "close more" with "catch churn"). Lead with the prospect's
   // primary archetype.
-  const SURFACE_SALES = { tag: 'On your sales & demo calls', head: "Close more of what you're already pitching", body: 'Score every call, surface the objections that quietly sink deals, and coach each rep on what cost them. Founders close at one rate, juniors at another — the system shows you the gap and closes it.' };
-  const SURFACE_CHURN = { tag: 'On your customer & internal calls', head: "Catch churn while the account's still saveable", body: 'Score every check-in and support call, then flag at-risk accounts the morning the risk shows up — with the moment and the recording attached — instead of finding out after the renewal is already gone.' };
+  const SURFACE_SALES = { tag: 'Sales & demo calls', head: 'Close more of the deals you already pitch', body: 'We score every sales call and show you what loses deals. Then we coach each rep to close like your best one.' };
+  const SURFACE_CHURN = { tag: 'Customer & internal calls', head: 'Catch churn before the client walks', body: 'We score every customer call and flag at-risk accounts the next morning — early enough to save them.' };
   const surfaces = ci.archetype === 'cs_retention_driven' ? [SURFACE_CHURN, SURFACE_SALES] : [SURFACE_SALES, SURFACE_CHURN];
 
   // Verified receipts — real signals that prove the audit is grounded, beside the claim.
@@ -1436,8 +1433,8 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           </div>
           <ul className="space-y-2.5 lg:pt-1">
             {ci.observable_signals.map((s, i) => (
-              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
-                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.75em', flexShrink: 0 }} />
                 <span><b style={{ fontWeight: 600, color: '#1A1A1A' }}>{s.label}.</b> {s.detail}</span>
               </li>
             ))}
@@ -1475,8 +1472,8 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           {ci.leaking_signals.map((l, i) => (
             <div key={i}>
               <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk }}>{String(i + 1).padStart(2, '0')}</span>
-              <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.2vw, 1.45rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{l.detail}</p>
+              <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.4vw, 1.65rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</p>
+              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: '#3D3D3B' }}>{l.detail}</p>
             </div>
           ))}
         </div>
@@ -1490,15 +1487,14 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
               One system. <Italic>Two kinds of calls.</Italic>
             </h2>
-            <SerifBody className="mt-4">{ci.system.summary}</SerifBody>
-            <div className="mt-8 space-y-7">
+            <div className="mt-8 space-y-8">
               {surfaces.map((s, i) => (
                 <motion.div key={i}
                   initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.6, ease: EASE, delay: i * 0.08 }}
-                  style={{ borderTop: `1px solid ${hairline}`, paddingTop: '1.3rem' }}>
-                  <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{s.tag}</p>
-                  <p className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem, 2.2vw, 1.65rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{s.head}</p>
-                  <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
+                  style={{ borderTop: `1px solid ${hairline}`, paddingTop: '1.4rem' }}>
+                  <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{s.tag}</p>
+                  <p className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{s.head}</p>
+                  <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
                 </motion.div>
               ))}
             </div>
@@ -1515,8 +1511,8 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Who's building this</p>
         <div className="mb-12 max-w-2xl flex items-start gap-4">
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-12 h-12 object-cover shrink-0" style={{ borderRadius: 0 }} onError={fallbackOnError} />
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses — including call intelligence that lifts close rates and catches churn early. This is the same diagnostic he runs before every build.
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Call intelligence is one of them — and it already runs in production.
           </p>
         </div>
         {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
@@ -1524,8 +1520,8 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <h3 className="max-w-2xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
           Every sales call scored. <Italic>The close rate moved.</Italic>
         </h3>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          A sales team recording every call in Fireflies, but no consistent read on rep performance and no honest way to compare reps across different call types. We built a system that scores every finished call and coaches each rep on exactly what cost them the deal.
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>
+          A sales team recorded every call but only ever reviewed a handful. Now every call gets scored, and every rep gets coached on what lost the deal.
         </p>
 
         {/* benefit stat tiles — sales-side only (the churn/retention surface is its own feature
@@ -1551,26 +1547,21 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
                 {s.pre}<Counter value={Number(s.fig)} />{s.suf}
               </div>
               <p className="mt-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
-              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* the real product — dashboard + a scored call */}
-        <div className="mt-9 grid gap-4 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
-          <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE }}
-            style={{ border: `1px solid ${hairline}`, boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}>
-            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>Live performance dashboard</figcaption>
-          </motion.figure>
-          <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.12 }}
-            style={{ border: `1px solid ${hairline}` }}>
-            <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>A single scored call</figcaption>
-          </motion.figure>
-        </div>
+        {/* the real product — ONE clean dashboard (the dense scorecard screenshot read as messy, dropped) */}
+        <motion.figure className="mt-10 overflow-hidden"
+          initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
+          style={{ border: `1px solid ${hairline}`, boxShadow: '0 24px 60px rgba(26,26,26,0.12)' }}>
+          <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+            <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+            <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+          </div>
+          <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+        </motion.figure>
         <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
 
