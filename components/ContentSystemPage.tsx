@@ -21,44 +21,78 @@ function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?:
   );
 }
 
-/** A dark dashboard screenshot in a polished browser-window frame.
- *  `mobileSrc` swaps in a legible cropped variant below 768px. */
+/** Full-screen zoomable image overlay. Click image to toggle zoom; Esc / backdrop to close. */
+function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const [zoom, setZoom] = React.useState(false);
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 md:p-10"
+      role="dialog" aria-modal="true" aria-label={alt} onClick={onClose}
+    >
+      <button
+        type="button" onClick={onClose} aria-label="Close"
+        className="fixed top-5 right-6 z-[101] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white text-2xl leading-none hover:bg-white/20 transition-colors"
+      >×</button>
+      <div className="max-h-full max-w-full overflow-auto" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={src} alt={alt} onClick={() => setZoom((z) => !z)}
+          className={`block rounded-xl shadow-2xl transition-[width] duration-300 ${zoom ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+          style={{ width: zoom ? '165%' : '100%', maxWidth: zoom ? 'none' : '1200px' }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** A dark dashboard screenshot in a soft, floating browser-window frame.
+ *  Click to open a zoomable lightbox. `mobileSrc` swaps in a legible crop below 768px. */
 function BrowserFrame({ src, mobileSrc, alt, caption, eager }: { src: string; mobileSrc?: string; alt: string; caption?: string; eager?: boolean }) {
+  const [lb, setLb] = React.useState(false);
   return (
     <figure className="m-0">
-      <div
-        className="overflow-hidden rounded-none border shadow-card-lift"
-        style={{ borderColor: 'var(--color-hairline-bold)', backgroundColor: '#0E0F12' }}
+      <button
+        type="button" onClick={() => setLb(true)} aria-label={`Expand screenshot: ${alt}`}
+        className="group block w-full cursor-zoom-in"
       >
         <div
-          className="flex items-center gap-1.5 px-3.5 py-2.5 border-b"
-          style={{ borderColor: 'rgba(255,255,255,0.07)' }}
-          aria-hidden="true"
+          className="overflow-hidden rounded-xl border shadow-[0_24px_70px_-20px_rgba(0,0,0,0.35)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_34px_90px_-20px_rgba(0,0,0,0.5)]"
+          style={{ borderColor: 'var(--color-hairline-bold)', backgroundColor: '#0E0F12' }}
         >
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.20)' }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.14)' }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
+          <div
+            className="flex items-center gap-1.5 px-3.5 py-2.5 border-b"
+            style={{ borderColor: 'rgba(255,255,255,0.07)' }}
+            aria-hidden="true"
+          >
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.20)' }} />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.14)' }} />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
+            <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.12em] text-white/30 group-hover:text-white/50 transition-colors">click to expand</span>
+          </div>
+          <picture>
+            {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} />}
+            <img
+              src={src}
+              alt={alt}
+              loading={eager ? 'eager' : 'lazy'}
+              {...(eager ? { fetchPriority: 'high' as const } : {})}
+              className="block w-full"
+            />
+          </picture>
         </div>
-        <picture>
-          {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} />}
-          <img
-            src={src}
-            alt={alt}
-            loading={eager ? 'eager' : 'lazy'}
-            {...(eager ? { fetchPriority: 'high' as const } : {})}
-            className="block w-full"
-            onError={(e) => {
-              const fig = e.currentTarget.closest('figure') as HTMLElement | null;
-              if (fig) fig.style.display = 'none';
-            }}
-          />
-        </picture>
-      </div>
+      </button>
       {caption && (
         <figcaption className="mt-2.5 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
           {caption}
         </figcaption>
       )}
+      {lb && <Lightbox src={src} alt={alt} onClose={() => setLb(false)} />}
     </figure>
   );
 }
@@ -147,6 +181,11 @@ export default function ContentSystemPage() {
             <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Kyle Hunt</strong> · 30K impressions/post</span>
             <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Lemonade</strong> · 5 new clients/mo</span>
           </div>
+          {/* Hero video — the demonstrative payoff, front and center. */}
+          <div className="mt-10">
+            <h2 className="sr-only">Watch the system run</h2>
+            <VideoSlot caption="Watch the system run, 3 min" scriptHref="/content-system-walkthrough.md" />
+          </div>
         </section>
 
         {/* 2 — INTERFACE SHOWCASE (real dashboard screenshots) */}
@@ -186,12 +225,6 @@ export default function ContentSystemPage() {
               <BrowserFrame src="/content-system/ui/leadmagnets.webp" mobileSrc="/content-system/ui/leadmagnets-m.webp" alt="The lead-magnet studio with built, on-brand assets" caption="Lead magnets · built and published" />
             </Reveal>
           </div>
-        </section>
-
-        {/* 3 — WALKTHROUGH VIDEO SLOT (src passed when filmed) */}
-        <section className="mb-16 md:mb-24">
-          <h2 className="sr-only">Watch the system run</h2>
-          <VideoSlot caption="Watch the system run, 3 min" scriptHref="/content-system-walkthrough.md" />
         </section>
 
         {/* 3 — PROBLEM → FLIP */}
@@ -277,7 +310,7 @@ export default function ContentSystemPage() {
             {ONE_IDEA_FORMATS.map((f) => (
               <span
                 key={f}
-                className="border px-4 py-2 text-sm text-ink"
+                className="rounded-full border px-4 py-2 text-sm text-ink shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
                 style={{
                   borderColor: 'var(--color-hairline-bold)',
                   backgroundColor: 'var(--color-paper-raise)',
@@ -309,7 +342,7 @@ export default function ContentSystemPage() {
             {LM_FORMATS.map((f) => (
               <div
                 key={f.name}
-                className="border p-5"
+                className="rounded-2xl border p-5 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(0,0,0,0.10)]"
                 style={{
                   borderColor: 'var(--color-hairline)',
                   backgroundColor: 'var(--color-paper-raise)',
@@ -395,7 +428,7 @@ export default function ContentSystemPage() {
               ).map((r) => (
                 <figure key={r.src} className="m-0">
                   <div
-                    className="overflow-hidden rounded-none border"
+                    className="overflow-hidden rounded-2xl border shadow-[0_8px_30px_rgba(0,0,0,0.07)]"
                     style={{
                       borderColor: 'var(--color-hairline-bold)',
                       backgroundColor: 'var(--color-paper-sunk)',
@@ -465,15 +498,11 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
-        {/* 10 — PRICING + FINAL CTA */}
+        {/* 10 — FINAL CTA */}
         <section
-          className="rounded-none border bg-black text-white p-10 md:p-16 text-center"
-          style={{ borderColor: 'var(--color-hairline-bold)' }}
+          className="rounded-3xl bg-black text-white p-10 md:p-16 text-center shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)]"
         >
-          <p className="font-mono text-xs uppercase tracking-[0.1em] text-zinc-400">
-            Productized build · from $6k
-          </p>
-          <h2 className="mt-4 text-3xl md:text-4xl font-semibold tracking-tight">
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
             Ready to{' '}
             <span className="font-drama italic">stop writing posts?</span>
           </h2>
@@ -485,12 +514,6 @@ export default function ContentSystemPage() {
             <MagneticCTA href="/start" dark fontSize="18px" px="px-10 py-5">
               Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
-            <a
-              href="/assessment"
-              className="text-sm underline text-zinc-300 hover:text-white"
-            >
-              Or take the Agent-Ready assessment first
-            </a>
           </div>
         </section>
 

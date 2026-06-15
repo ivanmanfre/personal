@@ -14,7 +14,7 @@ export function VideoSlot({ src, poster, caption, ratio = '16 / 9', scriptHref }
   return (
     <figure className="my-4">
       <div
-        className="relative w-full overflow-hidden rounded-none border shadow-card-lift"
+        className="relative w-full overflow-hidden rounded-2xl border shadow-[0_24px_70px_-20px_rgba(0,0,0,0.3)]"
         style={{ aspectRatio: ratio, borderColor: 'var(--color-hairline-bold)', backgroundColor: 'var(--color-paper-sunk)' }}
       >
         {src ? (
