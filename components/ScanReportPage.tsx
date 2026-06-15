@@ -1181,9 +1181,10 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.8, ease: EASE }}
-      className="overflow-hidden"
+      className="overflow-hidden relative"
       style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
     >
+      <CILoadShimmer />
       {/* window titlebar */}
       <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
         <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
@@ -1476,11 +1477,11 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
         </motion.div>
       )}
 
-      <motion.p className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }}
+      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }}
         style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>
         There's a better way.
-      </motion.p>
-      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>And it already runs in production. Here's how it works.</p>
+      </motion.h2>
+      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>Here's how it works.</p>
 
       {receipts.length > 0 && (
         <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
@@ -1512,6 +1513,33 @@ const SF_OUT = [
 ];
 const SF_ENGINE = { label: 'Scoring engine', desc: 'Transcribes every call, scores it against your rubric, and routes the result to the right place. Nobody has to listen back.' };
 
+// MODULE-LEVEL so they keep a stable identity across re-renders — defining them inside the
+// component made every auto-cycle tick remount the whole SVG and replay the draw-on animations
+// (the "stuttering / refreshing"). Stable identity → state changes just update props, no remount.
+const SFConnector: React.FC<{ d: string; delay: number; active?: boolean; reduce: boolean; sage: string; hairline: string }> = ({ d, delay, active, reduce, sage, hairline }) => (
+  <g>
+    <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
+    <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
+      initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
+    {!reduce && (
+      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
+        animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
+    )}
+  </g>
+);
+const SFNode: React.FC<{ x: number; y: number; w: number; label: string; accent?: boolean; active?: boolean; delay: number; reduce: boolean; sage: string; hairline: string; onEnter?: () => void; onLeave?: () => void; onClick?: () => void }> = ({ x, y, w, label, accent, active, delay, reduce, sage, hairline, onEnter, onLeave, onClick }) => {
+  const c = accent ? CI_CORAL : sage;
+  return (
+    <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}
+      onMouseEnter={onEnter} onMouseLeave={onLeave} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+      {active && <rect x={x - 5} y={y - 27} width={w + 10} height={54} rx={16} fill="none" stroke={c} strokeWidth={1.5} strokeOpacity={0.55} />}
+      <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={active ? (accent ? 'rgba(168,84,57,0.08)' : 'rgba(42,143,101,0.09)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+      <circle cx={x + 18} cy={y} r={3} fill={c} />
+      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A', fontWeight: active ? 600 : 400 }}>{label}</text>
+    </motion.g>
+  );
+};
+
 function CallIntelSystemFlow() {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
@@ -1534,33 +1562,6 @@ function CallIntelSystemFlow() {
   const EX1 = 402, EW = 226, EX2 = 628, ECY = 188;
   const inPath = (cy: number) => `M196 ${cy} C 300 ${cy}, 360 ${ECY}, ${EX1} ${ECY}`;
   const outPath = (cy: number) => `M${EX2} ${ECY} C ${EX2 + 90} ${ECY}, 706 ${cy}, 786 ${cy}`;
-  const Connector = ({ d, delay, active }: { d: string; delay: number; active?: boolean }) => (
-    <g>
-      <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
-      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
-        initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
-      {!reduce && (
-        <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
-          animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
-      )}
-    </g>
-  );
-  const Node = ({ x, y, w, label, accent, glow, active, delay, onEnter, onClick }: { x: number; y: number; w: number; label: string; accent?: boolean; glow?: boolean; active?: boolean; delay: number; onEnter?: () => void; onClick?: () => void }) => {
-    const c = accent ? CI_CORAL : sage;
-    return (
-      <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}
-        onMouseEnter={onEnter} onMouseLeave={onClick ? () => setHover(null) : undefined} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
-        {active && <rect x={x - 4} y={y - 26} width={w + 8} height={52} rx={15} fill="none" stroke={c} strokeWidth={1.75} />}
-        {glow && !reduce && !active && (
-          <motion.rect x={x - 3} y={y - 25} width={w + 6} height={50} rx={14} fill="none" stroke={c} strokeWidth={1.25}
-            animate={{ strokeOpacity: [0, 0.4, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
-        )}
-        <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={active ? (accent ? 'rgba(168,84,57,0.07)' : 'rgba(42,143,101,0.08)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
-        <motion.circle cx={x + 18} cy={y} r={3} fill={c} animate={glow && !reduce && !active ? { opacity: [0.45, 1, 0.45] } : {}} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
-        <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A', fontWeight: active ? 600 : 400 }}>{label}</text>
-      </motion.g>
-    );
-  };
   const Panel = (
     <div className="mt-6 lg:mt-8 max-w-2xl mx-auto text-center px-4" style={{ minHeight: 92 }}>
       <AnimatePresence mode="wait">
@@ -1577,8 +1578,8 @@ function CallIntelSystemFlow() {
       {/* DESKTOP — full interactive SVG diagram */}
       <div className="hidden lg:block">
         <svg viewBox="0 0 1000 384" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="How the system works: calls flow into a scoring engine and out to four deliverables">
-          {inY.map((cy, i) => <Connector key={`ic${i}`} d={inPath(cy)} delay={0.1 + i * 0.08} />)}
-          {outY.map((cy, i) => <Connector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} active={activeOut === i} />)}
+          {inY.map((cy, i) => <SFConnector key={`ic${i}`} d={inPath(cy)} delay={0.1 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} />)}
+          {outY.map((cy, i) => <SFConnector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} active={activeOut === i} reduce={!!reduce} sage={sage} hairline={hairline} />)}
           {/* engine */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
             onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
@@ -1595,8 +1596,8 @@ function CallIntelSystemFlow() {
             <text x={EX1 + 24} y={ECY + 48} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.05em', fill: 'rgba(247,244,239,0.55)' }}>transcribe · score · route</text>
           </motion.g>
           {/* input + output nodes */}
-          {SF_IN.map((l, i) => <Node key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} />)}
-          {SF_OUT.map((o, i) => <Node key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={o.accent} glow active={activeOut === i} delay={0.7 + i * 0.08} onEnter={() => setHover(i)} onClick={() => goTo(o.anchor)} />)}
+          {SF_IN.map((l, i) => <SFNode key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} reduce={!!reduce} sage={sage} hairline={hairline} />)}
+          {SF_OUT.map((o, i) => <SFNode key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={(o as any).accent} active={activeOut === i} delay={0.7 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} onEnter={() => setHover(i)} onLeave={() => setHover(null)} onClick={() => goTo(o.anchor)} />)}
           {/* live counter */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
             <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
@@ -1644,14 +1645,29 @@ function CallIntelSystemFlow() {
 }
 
 // 1) Post-sales-call analysis — scorecard + what to improve (the SALES-call output).
+// One-time "interface loading" shimmer — a sage glint sweeps across a mock as it enters view,
+// then clears. Makes the cards read as live software fetching data.
+function CILoadShimmer() {
+  const reduce = useReducedMotion();
+  if (reduce) return null;
+  return (
+    <motion.div aria-hidden className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ borderRadius: CI_R }}
+      initial={{ opacity: 1 }} whileInView={{ opacity: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 1 }}>
+      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(42,143,101,0.12), rgba(255,255,255,0.55), rgba(42,143,101,0.12), transparent)' }}
+        initial={{ x: '-110%' }} whileInView={{ x: '210%' }} viewport={{ once: true }} transition={{ duration: 1.05, ease: 'easeInOut', delay: 0.05 }} />
+    </motion.div>
+  );
+}
+
 function CICallAnalysis() {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
   const accentInk = 'var(--color-accent-ink)';
   const dims = [{ label: 'Discovery', s: 8 }, { label: 'Objection handling', s: 5 }, { label: 'Next steps set', s: 9 }, { label: 'Pricing confidence', s: 6 }];
   return (
-    <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
+    <motion.div className="overflow-hidden h-full relative" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+      <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
         <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Call analysis</span>
@@ -1701,8 +1717,9 @@ function CIChurnAlert() {
   const hairline = 'var(--color-hairline)';
   const accentInk = 'var(--color-accent-ink)';
   return (
-    <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: 0.08 }}
+    <motion.div className="overflow-hidden h-full relative" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: 0.08 }}
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, borderLeft: `3px solid ${CI_CORAL}`, boxShadow: CI_SHADOW }}>
+      <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
         <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
         <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
@@ -1940,16 +1957,29 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           ))}
         </div>
 
-        {/* the real product — ONE clean dashboard (the dense scorecard screenshot read as messy, dropped) */}
-        <motion.figure className="mt-10 overflow-hidden"
-          initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
-          style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
-          <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
-            <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-            <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
-          </div>
-          <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-        </motion.figure>
+        {/* the real product — the dashboard (wide) + a single scored call (narrow companion) */}
+        <div className="mt-10 grid gap-4 lg:grid-cols-[1.62fr_0.38fr] lg:items-stretch">
+          <motion.figure className="overflow-hidden"
+            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
+            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+            </div>
+            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+          </motion.figure>
+          <motion.figure className="overflow-hidden flex flex-col"
+            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE, delay: 0.1 }}
+            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW }}>
+            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.85)' }}>A single scored call</span>
+            </div>
+            <div className="overflow-hidden flex-1" style={{ background: '#FFFFFF' }}>
+              <img src="/cases/provaltech-detail.png" alt="An individual scored call with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }} />
+            </div>
+          </motion.figure>
+        </div>
         <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
 
@@ -1989,6 +2019,23 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           </div>
         </motion.div>
       </section>
+
+      {/* FOOTER — closing context below the CTA */}
+      <footer style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-center gap-3">
+            <CIWaveform count={5} maxH={13} gap={2} barW={2} />
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</span>
+            <span aria-hidden style={{ color: 'rgba(26,26,26,0.25)' }}>·</span>
+            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Call Intelligence</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>Book a call</a>
+            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>ivanmanfredi.com</a>
+          </div>
+        </div>
+        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
+      </footer>
     </div>
   );
 }
