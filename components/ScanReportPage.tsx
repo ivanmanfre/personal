@@ -1300,24 +1300,42 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
   );
 };
 
+// Thematic animated audio-waveform — call intelligence reads as "live audio being scored".
+// Deterministic bar heights, gentle continuous scaleY loop. Used big in the hero + tiny inline.
+function CIWaveform({ count = 56, maxH = 56, gap = 3, barW = 2.5, className = '', barColor = 'var(--color-accent)' }: { count?: number; maxH?: number; gap?: number; barW?: number; className?: string; barColor?: string }) {
+  const reduce = useReducedMotion();
+  return (
+    <div className={`flex items-center ${className}`} aria-hidden style={{ gap }}>
+      {Array.from({ length: count }).map((_, i) => {
+        const base = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.45) + Math.sin(i * 0.3) * 0.4);
+        return (
+          <motion.span key={i} style={{ width: barW, borderRadius: barW, background: barColor, height: Math.max(5, base * maxH), transformOrigin: 'center', flexShrink: 0 }}
+            animate={reduce ? {} : { scaleY: [1, 0.32 + (i % 4) * 0.12, 0.88, 0.46, 1] }}
+            transition={{ duration: 1.6 + (i % 5) * 0.25, repeat: Infinity, ease: 'easeInOut', delay: (i % 9) * 0.1 }} />
+        );
+      })}
+    </div>
+  );
+}
+
 // Premium editorial-cover hero for the call-intel pitch — lifts the landing-page craft:
-// texture (faint grid + drifting grain), status byline w/ live pulse, expanding sage rule,
-// editorial line-mask reveal, mixed-scale type (one viewport-scale hero word), mono spec row.
+// texture (faint grid + drifting grain), live equalizer byline, expanding sage rule,
+// editorial line-mask reveal, mixed-scale type, animated waveform footer, mono spec row.
 const CI_HERO: Record<CallIntel['archetype'], { pre: string; hero: string; sub: string; spec: string[] }> = {
   sales_demo_driven: {
-    pre: 'From the sales calls you already run —',
+    pre: 'From the sales calls you already run,',
     hero: 'close more.',
     sub: 'More revenue from the same calls. No new leads. No bigger team.',
     spec: ['More deals closed', 'Churn caught early', 'Reps coached to your best'],
   },
   cs_retention_driven: {
-    pre: 'Before a customer churns —',
+    pre: 'Before a customer churns,',
     hero: 'catch it early.',
     sub: 'Spot at-risk accounts in time to save them. No surprises at renewal.',
     spec: ['Churn caught early', 'More renewals saved', 'Every account call reviewed'],
   },
   intake_driven: {
-    pre: 'From the intake calls you already take —',
+    pre: 'From the intake calls you already take,',
     hero: 'sign more.',
     sub: 'More of the right cases say yes. Same calls, same team.',
     spec: ['More cases signed', 'Fewer good leads lost', 'Intake coached to your best'],
@@ -1348,7 +1366,7 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
       <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-16 lg:pt-16 lg:pb-20">
         {/* status byline */}
         <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
-          <motion.span animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />
+          <CIWaveform count={5} maxH={13} gap={2} barW={2} className="mr-0.5" />
           <span>Call Intelligence · {meta.tag}</span>
           <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
           <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {companyName}</span>
@@ -1383,6 +1401,13 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
           <CIMagneticCTA href={bookUrl} label="See it on your calls" />
         </motion.div>
       </div>
+
+      {/* animated waveform footer — thematic "live audio" motion, faded at the edges */}
+      <motion.div initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 0.42 }} transition={{ delay: 0.6, duration: 1.2, ease: EASE }}
+        className="absolute left-0 right-0 bottom-0 pointer-events-none overflow-hidden flex justify-center z-0"
+        style={{ height: 64, WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)', maskImage: 'linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent)' }}>
+        <div className="absolute" style={{ bottom: 14 }}><CIWaveform count={96} maxH={44} gap={3} barW={2.5} /></div>
+      </motion.div>
     </section>
   );
 }
@@ -1394,11 +1419,11 @@ const CI_PAIN: Record<CallIntel['archetype'], string[]> = {
     'Some reps close them. Some don’t.',
     'And no one has time to listen back and find out why.',
     'So the same mistakes lose you deals, over and over.',
-    'Your best rep makes it look easy — but that never reaches the rest of the team.',
+    'Your best rep makes it look easy. The rest of the team never learns how.',
   ],
   cs_retention_driven: [
     'A few of those customers are quietly unhappy.',
-    'You won’t find out — until they don’t renew.',
+    'You won’t find out until they don’t renew.',
     'And by then, it’s too late to fix it.',
     'So good accounts walk, and you never saw it coming.',
   ],
@@ -1459,7 +1484,7 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
 
       {receipts.length > 0 && (
         <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
-          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess — pulled from {scan.domain ?? companyName} today</p>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
           <div className="flex flex-wrap gap-2.5">
             {receipts.map((r, i) => (
               <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
@@ -1500,13 +1525,20 @@ function CallIntelSystemFlow() {
       )}
     </g>
   );
-  const Node = ({ x, y, w, label, accent, delay }: { x: number; y: number; w: number; label: string; accent?: boolean; delay: number }) => (
-    <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}>
-      <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={CI_CARD} stroke={accent ? CI_CORAL : hairline} strokeWidth={1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
-      <circle cx={x + 18} cy={y} r={3} fill={accent ? CI_CORAL : sage} />
-      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A' }}>{label}</text>
-    </motion.g>
-  );
+  const Node = ({ x, y, w, label, accent, glow, delay }: { x: number; y: number; w: number; label: string; accent?: boolean; glow?: boolean; delay: number }) => {
+    const c = accent ? CI_CORAL : sage;
+    return (
+      <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}>
+        {glow && !reduce && (
+          <motion.rect x={x - 3} y={y - 25} width={w + 6} height={50} rx={14} fill="none" stroke={c} strokeWidth={1.25}
+            animate={{ strokeOpacity: [0, 0.45, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
+        )}
+        <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={CI_CARD} stroke={accent ? CI_CORAL : hairline} strokeWidth={1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+        <motion.circle cx={x + 18} cy={y} r={3} fill={c} animate={glow && !reduce ? { opacity: [0.45, 1, 0.45] } : {}} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
+        <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A' }}>{label}</text>
+      </motion.g>
+    );
+  };
   return (
     <div>
       {/* DESKTOP — full SVG diagram */}
@@ -1519,6 +1551,11 @@ function CallIntelSystemFlow() {
             <motion.rect x={EX1 - 8} y={ECY - 74} width={188} height={148} rx={20} fill="none" stroke={sage} strokeWidth={1}
               animate={reduce ? {} : { strokeOpacity: [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }} />
             <rect x={EX1} y={ECY - 66} width={172} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
+            {/* processing scan line — sweeps inside the engine */}
+            {!reduce && (
+              <motion.rect x={EX1 + 12} width={148} height={1.5} rx={1} fill={sage}
+                animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
+            )}
             <circle cx={EX1 + 22} cy={ECY - 40} r={3.5} fill={sage} />
             <text x={EX1 + 34} y={ECY - 40} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
             <text x={EX1 + 22} y={ECY + 2} style={{ fontFamily: SERIF, fontSize: 26, fill: '#F7F4EF' }}>Scoring</text>
@@ -1527,7 +1564,12 @@ function CallIntelSystemFlow() {
           </motion.g>
           {/* input + output nodes */}
           {SF_IN.map((l, i) => <Node key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} />)}
-          {SF_OUT.map((l, i) => <Node key={`out${i}`} x={780} y={outY[i]} w={196} label={l} accent={i === 1} delay={0.7 + i * 0.08} />)}
+          {SF_OUT.map((l, i) => <Node key={`out${i}`} x={780} y={outY[i]} w={196} label={l} accent={i === 1} glow delay={0.7 + i * 0.08} />)}
+          {/* live counter */}
+          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
+            <motion.circle cx={EX1 + 30} cy={20} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
+            <text x={EX1 + 40} y={20} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(26,26,26,0.5)' }}>LIVE · 1,240 calls scored this month</text>
+          </motion.g>
           <text x={24} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
           <text x={780} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
         </svg>
@@ -1600,12 +1642,12 @@ function CICallAnalysis() {
         </div>
         <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
           <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Flagged moment · 18:24</p>
-          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#1A1A1A' }}>"Is pricing per seat or per workspace?" — went unanswered for 40 seconds.</p>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#1A1A1A' }}>"Is pricing per seat or per workspace?" Went unanswered for 40 seconds.</p>
         </div>
         <div className="mt-4">
           <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What to improve</p>
           <ul className="mt-2 space-y-1.5">
-            {['Answer the pricing question head-on — don’t defer it.', 'Lock a next step on the call; this one ended with no date.'].map((t, i) => (
+            {['Answer the pricing question head-on. Don’t defer it.', 'Lock a next step on the call. This one ended with no date.'].map((t, i) => (
               <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
                 <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: 'var(--color-accent)', flexShrink: 0 }} /><span>{t}</span>
               </li>
@@ -1634,7 +1676,7 @@ function CIChurnAlert() {
       <div className="p-5 lg:p-6">
         <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What triggered it · QBR, today 9:12</p>
         <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem,2.4vw,1.6rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"We're re-evaluating vendors before the renewal."</p>
-        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>Said by their VP of Ops — the economic buyer on the account.</p>
+        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>Said by their VP of Ops, the economic buyer on the account.</p>
         <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
           <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Recommended save-play</p>
           <ul className="mt-2 space-y-1.5">
@@ -1689,6 +1731,44 @@ function CIControlPanel({ companyName }: { companyName: string }) {
   );
 }
 
+// Where the flags land — a Slack message mock (the churn alert pinged to your channel).
+function CISlackAlert() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const Btn = ({ t }: { t: string }) => (
+    <span className="inline-flex items-center px-3 py-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A', background: '#FFFFFF', border: '1px solid rgba(26,26,26,0.18)', borderRadius: 8 }}>{t}</span>
+  );
+  return (
+    <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
+      style={{ background: '#FFFFFF', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid rgba(26,26,26,0.08)' }}>
+        <span style={{ fontFamily: MONO, fontSize: '15px', color: 'rgba(26,26,26,0.35)' }}>#</span>
+        <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 700, color: '#1A1A1A' }}>customer-health</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)', border: `1px solid ${hairline}`, borderRadius: 6 }}>Slack</span>
+      </div>
+      <div className="flex gap-3.5 px-5 py-4">
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1A1A1A', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CIWaveform count={3} maxH={17} gap={2.5} barW={2.5} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 700, color: '#1A1A1A' }}>Call Intelligence</span>
+            <span className="px-1.5 py-0.5" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', background: 'rgba(26,26,26,0.05)', borderRadius: 4 }}>App</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>9:12 AM</span>
+          </div>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#1A1A1A' }}>
+            <span style={{ color: CI_CORAL, fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2"><Btn t="Open account" /><Btn t="See save-play" /></div>
+          <div className="mt-2.5 flex gap-1.5">
+            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#3D3D3B', background: 'rgba(42,143,101,0.08)', border: '1px solid rgba(42,143,101,0.2)', borderRadius: 10 }}>{r}</span>)}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
   if (!ci) return null;
@@ -1702,7 +1782,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   // SEPARATE benefits (don't blend "close more" with "catch churn"). Lead with the prospect's
   // primary archetype.
   const SURFACE_SALES = { tag: 'Sales & demo calls', head: 'Close more of the deals you already pitch', body: 'We score every sales call and show you what loses deals. Then we coach each rep to close like your best one.' };
-  const SURFACE_CHURN = { tag: 'Customer & internal calls', head: 'Catch churn before the client walks', body: 'We score every customer call and flag at-risk accounts the next morning — early enough to save them.' };
+  const SURFACE_CHURN = { tag: 'Customer & internal calls', head: 'Catch churn before the client walks', body: 'We score every customer call and flag at-risk accounts the next morning, early enough to save them.' };
   const surfaces = ci.archetype === 'cs_retention_driven' ? [SURFACE_CHURN, SURFACE_SALES] : [SURFACE_SALES, SURFACE_CHURN];
 
   // Verified receipts — real signals that prove the audit is grounded, beside the claim.
@@ -1744,7 +1824,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             Every call in. <Italic>The right output out.</Italic>
           </h2>
           <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
-            Every call your team runs flows through one scoring engine — and comes back as something you can act on.
+            Every call your team runs flows through one scoring engine, and comes back as something you can act on.
           </p>
         </div>
         <div className="mt-10 lg:mt-14"><CallIntelSystemFlow /></div>
@@ -1770,8 +1850,16 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             </div>
           ))}
         </div>
+        {/* and the urgent ones land where your team already works */}
+        <div className="mt-12 max-w-2xl mx-auto text-center">
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            And the urgent ones ping you <Italic>where you already work.</Italic>
+          </p>
+          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#5A5752' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
+        </div>
+        <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
         <div className="mt-14 max-w-3xl mx-auto">
-          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday — the weekly digest</p>
+          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday: the weekly digest</p>
           <CallIntelProductMock ci={ci} companyName={companyName} />
         </div>
         <div className="mt-14">
@@ -1786,7 +1874,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <div className="mb-12 max-w-2xl flex items-start gap-4">
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-14 h-14 object-cover shrink-0" style={{ borderRadius: 16, boxShadow: CI_SHADOW }} onError={fallbackOnError} />
           <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Call intelligence is one of them — and it already runs in production.
+            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Call intelligence is one of them, and it already runs in production.
           </p>
         </div>
         {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
@@ -1795,7 +1883,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
         </h3>
         <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          Same team. Same calls. We scored every one and coached each rep on what lost the deal — close rate moved 27%.
+          Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%.
         </p>
 
         {/* results stat tiles. ⚠️ PLACEHOLDER: '+$20K/mo' and '+27%' are placeholders — Ivan swaps
@@ -1831,7 +1919,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
             <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
           </div>
-          <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+          <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
         </motion.figure>
         <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
@@ -1845,11 +1933,11 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             See it running on <Italic>your</Italic> calls.
           </h2>
           <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B', maxWidth: '40ch' }}>
-            15 minutes. Bring a few of your real calls — I'll run them through the system live and show you what it scores, flags, and surfaces.
+            15 minutes. Bring a few of your real calls. I'll run them through the system live and show you what it scores, flags, and surfaces.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             <BookButton label="Book a call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck — a working demo.</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working demo.</span>
           </div>
         </motion.div>
       </section>
