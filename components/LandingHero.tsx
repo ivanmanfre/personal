@@ -176,57 +176,49 @@ const LandingHero: React.FC = () => {
               <span>Iván Manfredi · For agencies</span>
             </motion.div>
 
-            {/* Headline: mixed-scale cover. Sage line is the hero phrase. */}
+            {/* Headline: ONE coherent centered sentence at a single scale (the
+                mixed-scale "Add" / blown-up-figure cover only read right when it
+                was left-aligned; centered it orphaned "Add" on its own line).
+                The dollar figure keeps the hand-painted sage sweep (sage =
+                punctuation on the one load-bearing token); "in 90 days." stays
+                the inverted-box emphasis, sized to match the headline. */}
             <h1
-              className="mb-9"
+              className="mb-9 mx-auto"
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
                 color: '#1A1A1A',
                 letterSpacing: '-0.02em',
+                fontSize: 'clamp(2.3rem, 5.2vw, 4.3rem)',
+                lineHeight: 1.08,
               }}
             >
               <Reveal delay={0.15}>
-                <span style={{ display: 'block', fontSize: 'clamp(1.9rem, 4vw, 3.25rem)', lineHeight: 1.05 }}>
-                  Add
-                </span>
-              </Reveal>
-              {/* Pivot phrase: ROMAN ink (not sage fill). The dollar figure — the
-                  proof pivot — carries the hand-painted sage highlighter sweep, so
-                  sage stays punctuation on the single most important token. */}
-              <Reveal delay={0.3}>
-                <span
-                  style={{
-                    display: 'block',
-                    color: '#1A1A1A',
-                    fontSize: 'clamp(2.7rem, 8.2vw, 6.75rem)',
-                    lineHeight: 0.98,
-                    letterSpacing: '-0.035em',
-                    marginLeft: '-0.015em',
-                    marginTop: '0.04em',
-                  }}
-                >
+                {/* Explicit two-line block so the sentence never orphans a word:
+                    "Add $15k-$50k/mo" / "of new pipeline" */}
+                <span style={{ display: 'block', whiteSpace: 'nowrap' }}>
+                  Add{' '}
                   <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
                     $15k-$50k/mo
-                    <HeroSweep delay={0.6} />
-                  </span>{' '}
-                  of new pipeline
+                    <HeroSweep delay={0.55} />
+                  </span>
                 </span>
+                <span style={{ display: 'block' }}>of new pipeline</span>
               </Reveal>
-              <Reveal delay={0.46}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginTop: '0.5rem',
-                    backgroundColor: '#1A1A1A',
-                    color: '#F7F4EF',
-                    fontStyle: 'italic',
-                    fontSize: 'clamp(1.4rem, 3vw, 2.6rem)',
-                    lineHeight: 1.12,
-                    padding: '0.04em 0.42em 0.2em',
-                  }}
-                >
-                  in 90 days.
+              <Reveal delay={0.34}>
+                <span style={{ display: 'block', marginTop: '0.3em' }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#1A1A1A',
+                      color: '#F7F4EF',
+                      fontStyle: 'italic',
+                      lineHeight: 1.1,
+                      padding: '0.02em 0.34em 0.16em',
+                    }}
+                  >
+                    in 90 days.
+                  </span>
                 </span>
               </Reveal>
             </h1>
