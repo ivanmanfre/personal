@@ -21,8 +21,9 @@ function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?:
   );
 }
 
-/** A dark dashboard screenshot in a polished browser-window frame. */
-function BrowserFrame({ src, alt, caption, eager }: { src: string; alt: string; caption?: string; eager?: boolean }) {
+/** A dark dashboard screenshot in a polished browser-window frame.
+ *  `mobileSrc` swaps in a legible cropped variant below 768px. */
+function BrowserFrame({ src, mobileSrc, alt, caption, eager }: { src: string; mobileSrc?: string; alt: string; caption?: string; eager?: boolean }) {
   return (
     <figure className="m-0">
       <div
@@ -38,17 +39,20 @@ function BrowserFrame({ src, alt, caption, eager }: { src: string; alt: string; 
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.14)' }} />
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
         </div>
-        <img
-          src={src}
-          alt={alt}
-          loading={eager ? 'eager' : 'lazy'}
-          {...(eager ? { fetchPriority: 'high' as const } : {})}
-          className="block w-full"
-          onError={(e) => {
-            const fig = e.currentTarget.closest('figure') as HTMLElement | null;
-            if (fig) fig.style.display = 'none';
-          }}
-        />
+        <picture>
+          {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} />}
+          <img
+            src={src}
+            alt={alt}
+            loading={eager ? 'eager' : 'lazy'}
+            {...(eager ? { fetchPriority: 'high' as const } : {})}
+            className="block w-full"
+            onError={(e) => {
+              const fig = e.currentTarget.closest('figure') as HTMLElement | null;
+              if (fig) fig.style.display = 'none';
+            }}
+          />
+        </picture>
       </div>
       {caption && (
         <figcaption className="mt-2.5 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
@@ -102,6 +106,16 @@ export default function ContentSystemPage() {
     canonical: 'https://ivanmanfredi.com/content-system',
   });
 
+  // Sticky mobile CTA: slides in once the hero scrolls off (64% of mobile
+  // visitors never scroll far, so keep the ask persistent).
+  const [showSticky, setShowSticky] = React.useState(false);
+  React.useEffect(() => {
+    const onScroll = () => setShowSticky(window.scrollY > 700);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-paper">
       <div className="container mx-auto max-w-5xl px-6 pt-32 pb-24">
@@ -127,6 +141,12 @@ export default function ContentSystemPage() {
               Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
           </div>
+          {/* Trust proof at the fold (named, attributed). */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-2">
+            <span className="font-mono text-xs uppercase tracking-[0.12em] text-ink-mute">Running for</span>
+            <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Kyle Hunt</strong> · 30K impressions/post</span>
+            <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Lemonade</strong> · 5 new clients/mo</span>
+          </div>
         </section>
 
         {/* 2 — INTERFACE SHOWCASE (real dashboard screenshots) */}
@@ -147,22 +167,23 @@ export default function ContentSystemPage() {
             <BrowserFrame
               eager
               src="/content-system/ui/board.webp"
+              mobileSrc="/content-system/ui/board-m.webp"
               alt="The content pipeline board, a week of posts drafted and queued"
               caption="The pipeline · a week of posts, drafted and queued"
             />
           </Reveal>
           <div className="grid md:grid-cols-2 gap-5 mt-5">
             <Reveal i={0}>
-              <BrowserFrame src="/content-system/ui/editor.webp" alt="The post editor: edit a draft's copy, image, and schedule" caption="Edit any draft · copy, image, timing" />
+              <BrowserFrame src="/content-system/ui/editor.webp" mobileSrc="/content-system/ui/editor-m.webp" alt="The post editor: edit a draft's copy, image, and schedule" caption="Edit any draft · copy, image, timing" />
             </Reveal>
             <Reveal i={1}>
-              <BrowserFrame src="/content-system/ui/calendar.webp" alt="The publishing calendar with scheduled posts across the month" caption="Calendar · it schedules itself" />
+              <BrowserFrame src="/content-system/ui/calendar.webp" mobileSrc="/content-system/ui/calendar-m.webp" alt="The publishing calendar with scheduled posts across the month" caption="Calendar · it schedules itself" />
             </Reveal>
             <Reveal i={2}>
-              <BrowserFrame src="/content-system/ui/performance.webp" alt="The performance dashboard: impressions and engagement per post" caption="Performance · it learns what lands" />
+              <BrowserFrame src="/content-system/ui/performance.webp" mobileSrc="/content-system/ui/performance-m.webp" alt="The performance dashboard: impressions and engagement per post" caption="Performance · it learns what lands" />
             </Reveal>
             <Reveal i={3}>
-              <BrowserFrame src="/content-system/ui/leadmagnets.webp" alt="The lead-magnet studio with built, on-brand assets" caption="Lead magnets · built and published" />
+              <BrowserFrame src="/content-system/ui/leadmagnets.webp" mobileSrc="/content-system/ui/leadmagnets-m.webp" alt="The lead-magnet studio with built, on-brand assets" caption="Lead magnets · built and published" />
             </Reveal>
           </div>
         </section>
@@ -474,6 +495,17 @@ export default function ContentSystemPage() {
         </section>
 
       </div>
+
+      {/* Sticky mobile CTA */}
+      <a
+        href="/start"
+        className={`md:hidden fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-2 py-4 text-center shadow-[0_-6px_24px_rgba(0,0,0,0.18)] transition-transform duration-300 ${showSticky ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{ backgroundColor: '#1A1A1A', color: '#F7F4EF', fontFamily: '"Source Serif 4", Georgia, serif', fontStyle: 'italic', fontWeight: 600, fontSize: '16px' }}
+        tabIndex={showSticky ? 0 : -1}
+        aria-hidden={!showSticky}
+      >
+        Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+      </a>
     </div>
   );
 }

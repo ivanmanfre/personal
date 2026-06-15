@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -9,6 +9,11 @@ const NAV_LINKS = [
 ];
 
 const Navbar: React.FC = () => {
+  const location = useLocation();
+  // Conversion-focused landing pages run nav-less (no Work/Scorecard leaks);
+  // the only action is "Book a call".
+  const minimal = location.pathname.startsWith('/content-system');
+  const links = minimal ? [] : NAV_LINKS;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -49,7 +54,7 @@ const Navbar: React.FC = () => {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8" style={{ fontFamily: '"IBM Plex Mono", monospace', fontWeight: 500 }}>
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link key={link.name} to={link.href} className={`${linkBase} ${linkColor}`}>
               {link.name}
             </Link>
@@ -75,16 +80,29 @@ const Navbar: React.FC = () => {
           </a>
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          className="md:hidden p-2.5"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isMobileMenuOpen}
-          style={{ border: '1px solid rgba(26,26,26,0.18)', backgroundColor: 'var(--color-paper)' }}
-        >
-          {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
-        </button>
+        {/* Mobile: on nav-less landing pages show the CTA directly instead of a hamburger. */}
+        {minimal ? (
+          <a
+            href="/start"
+            className="md:hidden px-3.5 py-2"
+            style={{
+              fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 600, fontStyle: 'italic',
+              fontSize: '14px', backgroundColor: '#1A1A1A', color: '#F7F4EF', textTransform: 'none', letterSpacing: '0',
+            }}
+          >
+            Book a call
+          </a>
+        ) : (
+          <button
+            className="md:hidden p-2.5"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+            style={{ border: '1px solid rgba(26,26,26,0.18)', backgroundColor: 'var(--color-paper)' }}
+          >
+            {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
+          </button>
+        )}
       </div>
 
       {/* Mobile menu */}
@@ -102,7 +120,7 @@ const Navbar: React.FC = () => {
             }}
           >
             <div className="flex flex-col p-6 gap-1" style={{ fontFamily: '"IBM Plex Mono", monospace' }}>
-              {NAV_LINKS.map((link) => (
+              {links.map((link) => (
                 <Link
                   key={link.name}
                   to={link.href}
