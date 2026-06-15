@@ -44,7 +44,6 @@ export function HeroVideo({
           poster={poster}
           autoPlay={!prefersReduced}
           muted
-          loop
           playsInline
           preload="metadata"
           aria-label="Content System product demo"
