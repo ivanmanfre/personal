@@ -13,11 +13,13 @@ export const PROMISES: ContentPromise[] = [
 ];
 
 export interface Metric { value: string; label: string; }
+// Concrete engine specs (reason-to-believe), not client outcomes (those live in
+// the fold proof bar + case studies) and not pitch restatement.
 export const METRICS: Metric[] = [
-  { value: '5+',    label: 'posts a week, in your voice' },
-  { value: '0',     label: 'blank pages, ever' },
-  { value: '10',    label: 'lead-magnet formats that build themselves' },
-  { value: 'Hours', label: 'to ride a breaking trend, not days' },
+  { value: '6',  label: 'sources feeding the idea curator' },
+  { value: '9',  label: 'on-brand carousel styles' },
+  { value: '10', label: 'self-building lead-magnet formats' },
+  { value: '2h', label: 'news radar cadence for breaking trends' },
 ];
 
 export interface LmFormat { name: string; blurb: string; coming?: boolean; }
