@@ -13,6 +13,7 @@ import {
 import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
+import LiveEngineProof from './LiveEngineProof';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
@@ -225,9 +226,9 @@ const useMediaQuery = (query: string): boolean => {
 // OUTPUT of the §06 calculator, not a receipt — it stays in its own context).
 // Only vetted, defensible numbers live at the top of the page.
 const METRICS = [
-  { fig: '100+', label: 'Builds shipped', receipt: 'Systems shipped and running in production.' },
-  { fig: '90-day', label: 'Payback rule', receipt: "Every build pays back inside it, or I don't build it." },
-  { fig: '2–3x', label: 'More capacity', receipt: 'More clients on the team you already have.' },
+  { fig: '100+', label: 'Builds shipped', receipt: 'Systems shipped and running in production, including the one writing this feed.' },
+  { fig: 'Daily', label: 'Posts in your voice', receipt: 'Posts, carousels, video, and lead magnets, out every day without you touching them.' },
+  { fig: '~1 hr', label: 'Your week', receipt: 'You review and approve. The engine does the rest.' },
 ];
 
 const ProofBand: React.FC = () => (
@@ -257,70 +258,64 @@ const ProofBand: React.FC = () => (
   </section>
 );
 
-// ─── Section 2: Problem (with parallax depth, lg+ only) ──────────────────────
-const ProblemSection: React.FC = () => {
-  const sectionRef = useRef<HTMLElement>(null);
-  const isLg = useMediaQuery('(min-width: 1024px)');
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end start'],
-  });
-  const leftY = useTransform(scrollYProgress, [0, 1], [60, -60]);
-  const rightY = useTransform(scrollYProgress, [0, 1], [-30, 30]);
+// ─── Section 1: Problem — "Sound familiar?" ──────────────────────────────────
+const PROBLEM_LINES = [
+  'You know LinkedIn inbound works. But posting daily, on top of running the agency, never actually happens.',
+  "You tried a ghostwriter or an agency. The posts didn't sound like you, and the pipeline stayed flat.",
+  'A full-time content hire is $5k to $8k a month, and you still have to manage them.',
+  'So your own feed, the thing that should be selling your agency, sits quiet.',
+];
 
-  return (
-    <section ref={sectionRef} className="py-12 md:py-20 border-t relative" style={DIVIDER}>
-      <div className="container mx-auto px-8 max-w-6xl">
-        <div className="grid lg:grid-cols-[1fr_1px_1fr] items-start">
+const ProblemSection: React.FC = () => (
+  <section className="py-12 md:py-20 border-t relative" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-4xl">
+      <motion.div {...inView}>
+        <Label>01</Label>
+        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.75rem' }}>
+          <span style={{ position: 'relative', display: 'inline-block' }}>
+            Sound familiar?
+            <SageSweep delay={0.5} opacity={0.85} />
+          </span>
+        </RevealH2>
+      </motion.div>
 
-          <motion.div style={isLg ? { y: leftY } : undefined} className="pr-20">
-            <motion.div {...inView}>
-              <Label>01</Label>
-              <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.25rem' }}>
-                You're growing.<br />
-                <span style={{ position: 'relative', display: 'inline-block' }}>
-                  The margin isn't.
-                  <SageSweep delay={0.5} opacity={0.85} />
-                </span>
-              </RevealH2>
-              <p style={{ ...T.serif, maxWidth: '50ch' }}>
-                Every new client should widen your margin. Instead it means another
-                salary and more work routed through you, and the margin barely moves.
-                I build the AI systems that take that work off the payroll, so growth
-                adds margin instead of eating it.
-              </p>
-            </motion.div>
-          </motion.div>
-
-          <div className="hidden lg:block self-stretch" style={{ width: '1px', backgroundColor: 'rgba(26,26,26,0.1)' }} />
-
-          <motion.div style={isLg ? { y: rightY } : undefined} className="pl-20 pt-8 lg:pt-0">
-            <motion.div {...inView} transition={{ duration: 0.85, ease, delay: 0.15 }}>
-              <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '1.75rem' }}>
-                What you get
-              </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-10">
-                {[
-                  { verb: 'Review', stat: '100%', line: 'of your sales calls graded, with at-risk accounts flagged the same hour.' },
-                  { verb: 'Cut', stat: 'busywork', line: 'manual review, follow-up, and reporting, off your team for good.' },
-                  { verb: 'Turn', stat: 'same-day', line: 'delivery on work that takes your team days right now.' },
-                  { verb: 'Grow', stat: 'no new hires', line: 'take on more clients on the team you already have.' },
-                ].map((item) => (
-                  <div key={item.verb}>
-                    <div style={{ ...T.mono, marginBottom: '8px' }}>{item.verb}</div>
-                    <div style={{ ...T.display('clamp(1.4rem,1.8vw,1.8rem)'), color: 'var(--color-accent-ink)', marginBottom: '7px' }}>{item.stat}</div>
-                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14.5px', color: '#5A5752', lineHeight: 1.55 }}>{item.line}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-
-        </div>
+      <div className="flex flex-col">
+        {PROBLEM_LINES.map((line, i) => (
+          <motion.p
+            key={i}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, ease, delay: i * 0.08 }}
+            className="border-t py-5"
+            style={{ ...T.serif, maxWidth: '58ch', borderColor: 'rgba(26,26,26,0.12)' }}
+          >
+            {line}
+          </motion.p>
+        ))}
       </div>
-    </section>
-  );
-};
+
+      <motion.p
+        initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.6, ease, delay: 0.3 }}
+        className="mt-9"
+        style={{
+          fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+          fontWeight: 400,
+          fontSize: 'clamp(1.5rem,2.4vw,2.1rem)',
+          lineHeight: 1.2,
+          letterSpacing: '-0.02em',
+          color: '#1A1A1A',
+          maxWidth: '24ch',
+        }}
+      >
+        There's a better way: a content system you own that runs it for you.
+      </motion.p>
+    </div>
+  </section>
+);
 
 // ─── Section 4: What I build · Real outcomes ─────────────────────────────────
 const OUTCOMES = [
@@ -376,13 +371,13 @@ const BuildOutcomesSection: React.FC = () => {
     <div className="container mx-auto px-8 max-w-6xl">
 
       <motion.div {...inView} className="mb-16 max-w-2xl">
-        <Label>03</Label>
+        <Label>06</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
-          Recent builds,<br />
-          already in production.
+          The same hands<br />
+          built these.
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
-          The numbers above come from these. Click into any build for the full story.
+          The content engine is one of a hundred systems I have shipped and run myself. Here are a few more, all in production. Click into any build for the full story.
         </p>
       </motion.div>
 
@@ -488,12 +483,12 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
 // Six months from now — either/or split. FOMO via contrast, receipts only.
 const FUTURES = {
   without: {
-    label: 'WITHOUT THE SYSTEMS',
-    lines: ["It's 9am and 23 approvals are already waiting on you.", 'You hired another coordinator to keep pace, and now you manage them too.', 'Leads come in faster than you can follow up.', 'You worked more this year and the margin came in thinner.'],
+    label: 'WITHOUT THE ENGINE',
+    lines: ["It's been three weeks since your last post, and you keep meaning to fix that.", 'You paid a ghostwriter and the posts read like everyone else on LinkedIn.', 'Your feed is quiet, so the inbound calls are too.', 'You closed the year on referrals and luck, the same as last year.'],
   },
   with: {
-    label: 'WITH THEM',
-    lines: ['Approvals clear overnight. Nothing waits on you.', 'The weekly report wrote itself before you woke up.', 'Lead gen and outreach run on their own. The pipeline stays full.', 'Same payroll, two new clients live.'],
+    label: 'WITH IT',
+    lines: ['A post goes out every day, in your voice, without you lifting a finger.', 'A founder you never met books a call because your last post landed.', 'Lead magnets and carousels ship on their own. The pipeline stays full.', 'You own the system, so the inbound keeps coming whether I am around or not.'],
   },
 };
 
@@ -501,7 +496,7 @@ const AgentReadySection: React.FC = () => (
   <section className="py-12 md:py-16 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 max-w-4xl">
-        <Label>02</Label>
+        <Label>05</Label>
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.6vw,4.25rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           Six months from now,{' '}
           one of two things is true.
@@ -532,8 +527,190 @@ const AgentReadySection: React.FC = () => (
       </div>
 
       <MidCTA href="/scorecard" linkText="See where you're leaking. 2 minutes →">
-        Not ready for a call? Find out where the time and money go first.
+        Not ready for a call? Find out where your feed is leaking pipeline first.
       </MidCTA>
+    </div>
+  </section>
+);
+
+// ─── Comparison: Why not just hire a ghostwriter? ────────────────────────────
+const COMPARE_COLS = ['Your system', 'Ghostwriter', 'In-house hire', 'DIY'] as const;
+const COMPARE_ROWS: { label: string; cells: string[] }[] = [
+  { label: 'Who writes it', cells: ['An engine in your voice', 'One writer', 'One hire', 'You'] },
+  { label: 'Sounds like you', cells: ['Yes, anti-slop QA', 'Sometimes', 'Sometimes', 'Yes'] },
+  { label: 'Formats', cells: ['Posts, carousels, video, lead magnets', 'Posts', 'Posts', 'Whatever you manage'] },
+  { label: 'You own it after', cells: ["Yes, it's your system", 'No', 'No', 'Yes'] },
+  { label: 'Your time / week', cells: ['About 1 hr review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
+  { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
+];
+
+const ComparisonSection: React.FC = () => (
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-12 max-w-2xl">
+        <Label>03</Label>
+        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
+          Why not just hire<br />a ghostwriter?
+        </RevealH2>
+      </motion.div>
+
+      {/* Desktop / tablet: full table */}
+      <motion.div {...inView} className="hidden sm:block overflow-x-auto">
+        <table className="w-full border-collapse" style={{ minWidth: '720px' }}>
+          <thead>
+            <tr>
+              <th className="text-left align-bottom pb-4 pr-4" style={{ ...T.mono, width: '20%' }} />
+              {COMPARE_COLS.map((col, i) => (
+                <th
+                  key={col}
+                  className="text-left align-bottom pb-4 px-4 border-b-2"
+                  style={{
+                    fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+                    fontWeight: 400,
+                    fontSize: '17px',
+                    letterSpacing: '-0.01em',
+                    color: i === 0 ? 'var(--color-accent-ink)' : '#1A1A1A',
+                    borderColor: i === 0 ? 'var(--color-accent)' : 'rgba(26,26,26,0.18)',
+                  }}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {COMPARE_ROWS.map((row) => (
+              <tr key={row.label} className="border-b" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
+                <td className="py-4 pr-4 align-top" style={{ ...T.mono, letterSpacing: '0.12em', color: '#5A5752' }}>
+                  {row.label}
+                </td>
+                {row.cells.map((cell, i) => (
+                  <td
+                    key={i}
+                    className="py-4 px-4 align-top"
+                    style={{
+                      fontFamily: '"Source Serif 4",Georgia,serif',
+                      fontSize: '14.5px',
+                      lineHeight: 1.5,
+                      color: i === 0 ? '#1A1A1A' : '#5A5752',
+                      fontWeight: i === 0 ? 600 : 400,
+                      backgroundColor: i === 0 ? 'rgba(42,143,101,0.05)' : 'transparent',
+                    }}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </motion.div>
+
+      {/* Mobile: stacked cards, one per column */}
+      <div className="sm:hidden flex flex-col gap-8">
+        {COMPARE_COLS.map((col, ci) => (
+          <motion.div
+            key={col}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.55, ease, delay: ci * 0.06 }}
+            className="border-t pt-4"
+            style={{ borderColor: ci === 0 ? 'var(--color-accent)' : 'rgba(26,26,26,0.2)', borderTopWidth: '2px' }}
+          >
+            <div
+              style={{
+                fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+                fontWeight: 400,
+                fontSize: '20px',
+                color: ci === 0 ? 'var(--color-accent-ink)' : '#1A1A1A',
+                marginBottom: '12px',
+              }}
+            >
+              {col}
+            </div>
+            <div className="flex flex-col gap-3">
+              {COMPARE_ROWS.map((row) => (
+                <div key={row.label} className="flex justify-between gap-4">
+                  <span style={{ ...T.mono, color: '#5A5752', flexShrink: 0 }}>{row.label}</span>
+                  <span style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A', textAlign: 'right' }}>
+                    {row.cells[ci]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <MidCTA>Want to see what it would write for you?</MidCTA>
+    </div>
+  </section>
+);
+
+// ─── Qualification: This isn't for every agency ──────────────────────────────
+const QUALIFY = {
+  built: [
+    'Agencies doing $100k/mo or more, ready to scale.',
+    'Founders who want to own the system, not rent a content team forever.',
+    'Teams that can handle more inbound calls.',
+  ],
+  not: [
+    'Pre-revenue, or no clear offer yet.',
+    'Founders who want to write every post themselves.',
+    'Anyone chasing viral hacks with no strategy.',
+  ],
+};
+
+const QualificationSection: React.FC = () => (
+  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-12 max-w-2xl">
+        <Label>04</Label>
+        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
+          This isn't for<br />every agency.
+        </RevealH2>
+      </motion.div>
+
+      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
+        {[
+          { label: 'BUILT FOR', lines: QUALIFY.built, accent: true },
+          { label: 'NOT BUILT FOR', lines: QUALIFY.not, accent: false },
+        ].map((group, col) => (
+          <motion.div
+            key={group.label}
+            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6, ease, delay: col * 0.12 }}
+            className="border-t pt-5"
+            style={{ borderColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.25)', borderTopWidth: '2px' }}
+          >
+            <div style={{ ...T.mono, color: group.accent ? 'var(--color-accent-ink)' : '#5A5752', marginBottom: '18px' }}>
+              {group.label}
+            </div>
+            <div className="flex flex-col gap-4">
+              {group.lines.map((l) => (
+                <div key={l} className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      marginTop: '0.55em',
+                      width: '6px',
+                      height: '6px',
+                      flexShrink: 0,
+                      backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.3)',
+                    }}
+                  />
+                  <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.5, color: group.accent ? '#1A1A1A' : '#5A5752' }}>
+                    {l}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </div>
     </div>
   </section>
 );
@@ -562,7 +739,7 @@ const WorkSection: React.FC = () => {
     <section className="py-16 md:py-28 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-7xl">
         <motion.div {...inView} className="mb-12 lg:mb-20 max-w-4xl">
-          <Label>05</Label>
+          <Label>07</Label>
           <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), lineHeight: 1.02 }}>
             Diagnose first.{' '}
             Build second.
@@ -609,7 +786,7 @@ const TestimonialsSection: React.FC = () => (
   <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16">
-        <Label>04</Label>
+        <Label>02</Label>
         <RevealH2 style={T.display('clamp(1.8rem,2.8vw,2.6rem)')}>
           100+ builds shipped.<br />In their words.
         </RevealH2>
@@ -677,7 +854,7 @@ const PaybackSection: React.FC = () => {
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
-          <Label>06</Label>
+          <Label>08</Label>
           <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), marginBottom: '1.25rem' }}>
             The 90-Day<br />Payback Rule.
           </RevealH2>
@@ -715,7 +892,7 @@ const PaybackSection: React.FC = () => {
           <motion.div initial={prefersReduced ? false : { opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.85, ease }} className="flex flex-col gap-5">
 
             <div className="border p-8 md:p-10" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper)' }}>
-              <div style={{ ...T.mono, marginBottom: '14px' }}>Annual cost of this bottleneck</div>
+              <div style={{ ...T.mono, marginBottom: '14px' }}>Annual cost of the work you're doing by hand</div>
               <Counter value={yearly} prefix="$" style={{ ...T.display('clamp(3.4rem,6.5vw,6rem)'), lineHeight: 0.95, letterSpacing: '-0.02em' }} />
             </div>
 
@@ -783,7 +960,7 @@ const OFFER_BUILDS = [
     name: 'Fractional AI Partner',
     price: 'Build by build',
     cadence: 'No retainer',
-    desc: 'Most clients install one system, then the next, across the five that run a service business: Demand, Pipeline, Conversion, Delivery, Command. A partner who ships every month, no retainer.',
+    desc: 'Once the content engine is filling your pipeline, most agencies install the next system, then the next, across Demand, Pipeline, Conversion, Delivery, and Command. A partner who ships every month, no retainer.',
     href: '/fractional',
     cta: 'See how it works',
   },
@@ -793,7 +970,7 @@ const OfferSection: React.FC = () => (
   <section className="py-16 md:py-24 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label>07</Label>
+        <Label>09</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Pick the build that<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
@@ -845,7 +1022,7 @@ const OfferSection: React.FC = () => (
           <a href="/start" style={{ color: 'var(--color-accent-ink)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
             The call is for that too
           </a>
-          . I scope custom builds for service businesses every week.
+          . I scope custom builds for agencies every week.
         </p>
       </motion.div>
     </div>
@@ -880,7 +1057,7 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            08 / WORK WITH ME
+            10 / WORK WITH ME
           </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
             Iván Manfredi.<br />
@@ -890,9 +1067,9 @@ const FinalCTA: React.FC = () => (
             Everything I build, I build and run myself. The posts and the DM that found you
             came from{' '}
             <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
-              those same systems
+              the same content engine
             </a>
-            . Book the call and I'll show you where AI saves hours and adds margin in yours, even if we never work together.
+            . Book the call and I'll show you exactly what it would post for your agency, even if we never work together.
           </p>
           <div className="flex items-center">
             <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
@@ -943,7 +1120,7 @@ const LandingFooter: React.FC = () => {
         <div className="text-center mb-12 md:mb-20 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
           <p style={{ ...T.serif, fontSize: '16px', marginBottom: '1.5rem' }}>
-            What I built this week, and what it changed. Weekly, for service-business founders.
+            What I built this week, and what it changed. Weekly, for agency founders.
           </p>
 
           {status === 'success' ? (
@@ -1105,7 +1282,7 @@ const StickyCTA: React.FC = () => {
 const LandingPage: React.FC = () => {
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Iván Manfredi · Agent-Ready Ops';
+    document.title = 'Iván Manfredi · The AI Content Engine for Agencies';
     return () => { document.title = prev; };
   }, []);
 
@@ -1170,9 +1347,12 @@ const LandingPage: React.FC = () => {
         <LandingHero />
         <ProofBand />
         <ProblemSection />
+        <LiveEngineProof />
+        <TestimonialsSection />
+        <ComparisonSection />
+        <QualificationSection />
         <AgentReadySection />
         <BuildOutcomesSection />
-        <TestimonialsSection />
         <WorkSection />
         <PaybackSection />
         <OfferSection />
