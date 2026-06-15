@@ -105,7 +105,7 @@ const LandingHero: React.FC = () => {
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-6xl w-full">
+        <div className="container mx-auto px-8 max-w-7xl w-full">
           <div className="py-12 lg:py-0 text-center">
 
             {/* Byline */}
@@ -144,21 +144,24 @@ const LandingHero: React.FC = () => {
                 fontWeight: 400,
                 color: '#1A1A1A',
                 letterSpacing: '-0.025em',
-                fontSize: 'clamp(2.05rem, 6.7vw, 5.7rem)',
-                lineHeight: 1.03,
+                fontSize: 'clamp(2.05rem, 4.6vw, 3.95rem)',
+                lineHeight: 1.05,
               }}
             >
               <Reveal delay={0.15}>
-                {/* One flowing block — wraps wide across the column instead of
-                    stacking into a narrow centred tower (only the $ figure is
-                    kept unbreakable so the sweep never splits). */}
+                {/* Two unbreakable chunks with one break point between them: on a
+                    wide screen the whole phrase sits on ONE line; when it must
+                    wrap it breaks to "Add $15k-$50k/mo" / "of new pipeline" —
+                    two balanced lines, never a single orphaned word. */}
                 <span style={{ display: 'block' }}>
-                  Add{' '}
-                  <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
-                    $15k-$50k/mo
-                    <HeroSweep delay={0.55} />
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    Add{' '}
+                    <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                      $15k-$50k/mo
+                      <HeroSweep delay={0.55} />
+                    </span>
                   </span>{' '}
-                  of new pipeline
+                  <span style={{ whiteSpace: 'nowrap' }}>of new pipeline</span>
                 </span>
               </Reveal>
               <Reveal delay={0.34}>
