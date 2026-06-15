@@ -18,6 +18,7 @@ import Marquee from './Marquee';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
+import SystemFlowDiagram from './SystemFlowDiagram';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -409,34 +410,11 @@ const EngineSection: React.FC = () => (
         </p>
       </motion.div>
 
-      {/* The pipeline board — the system functioning, in the real product */}
+      {/* The interactive system map — the same one on /content-system. Click any
+          step to see it in the real product. */}
       <motion.div {...inView}>
-        <BrowserFrame
-          src="/content-system/ui/board.png"
-          alt="The content pipeline board: posts moving from idea to generating, review, approved, scheduled and published"
-          caption="The pipeline · a week of content, carried from idea to published"
-          priority
-        />
+        <SystemFlowDiagram />
       </motion.div>
-
-      {/* Supporting interface — approve, schedule, learn */}
-      <div className="grid md:grid-cols-3 gap-6 md:gap-7 mt-7 md:mt-10">
-        {[
-          { src: '/content-system/ui/editor.png', alt: 'The post editor', caption: 'You approve · edit any draft' },
-          { src: '/content-system/ui/calendar.png', alt: 'The publishing calendar', caption: 'It schedules itself' },
-          { src: '/content-system/ui/performance.png', alt: 'The performance dashboard', caption: 'It learns what lands' },
-        ].map((f, i) => (
-          <motion.div
-            key={f.src}
-            initial={prefersReduced ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.6, ease, delay: i * 0.1 }}
-          >
-            <BrowserFrame src={f.src} alt={f.alt} caption={f.caption} />
-          </motion.div>
-        ))}
-      </div>
 
       <MidCTA>Want to watch it run on your brand before you decide?</MidCTA>
     </div>
