@@ -1177,21 +1177,15 @@ const OfferSection: React.FC = () => (
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto' }}>
-          Grab a time below. I'll show you exactly what the engine would write for
+          Book the fit call. I'll show you exactly what the engine would write for
           your agency, in your voice, even if we never work together.
         </p>
+        <div className="flex justify-center">
+          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
+            Book your fit call <ArrowRight size={18} />
+          </MagneticCTA>
+        </div>
       </motion.div>
-
-      <motion.div {...inView}>
-        <CalendlyEmbed />
-      </motion.div>
-
-      <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', marginTop: '1.5rem', lineHeight: 1.6 }}>
-        Prefer email?{' '}
-        <a href="mailto:im@ivanmanfredi.com" style={{ color: 'var(--color-accent-ink)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
-          im@ivanmanfredi.com
-        </a>
-      </p>
     </div>
   </section>
 );
