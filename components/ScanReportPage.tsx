@@ -1149,6 +1149,7 @@ const CI_R = 22;                  // card radius
 const CI_R_SM = 13;               // button / chip / small radius
 const CI_SHADOW = '0 1px 2px rgba(26,26,26,0.04), 0 10px 28px rgba(26,26,26,0.06)';
 const CI_SHADOW_LG = '0 2px 6px rgba(26,26,26,0.05), 0 26px 64px rgba(26,26,26,0.11)';
+const CI_CORAL = '#A85439';       // risk / loss accent (brand coral) — used by churn alerts
 
 // The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
 // Count-up for a metric value string like "31%", "12", "$40k" — animates the numeric part.
@@ -1198,6 +1199,12 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
       <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
         {metrics ? (
           <>
+            {flags && flags[0] && (
+              <div className="flex items-start gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}`, background: 'rgba(42,143,101,0.05)' }}>
+                <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600, marginTop: 3, flexShrink: 0 }}>This week</span>
+                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A' }}>{flags[0].text}</span>
+              </div>
+            )}
             {/* metric tiles */}
             <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
               {metrics.map((m, i) => (
@@ -1467,6 +1474,221 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
   );
 }
 
+// ── THE WHOLE SYSTEM — animated SVG flow: calls converge into the scoring engine, fan out to
+// the four outputs. Sage signal paths draw on (pathLength), glowing pulses travel them
+// (strokeDashoffset, no SMIL/GSAP needed — the DrawSVG + MotionPath techniques, on-brand).
+const SF_IN = ['Sales call', 'Demo call', 'Customer call', 'Support call'];
+const SF_OUT = ['Call analysis', 'Churn alert', 'Weekly digest', 'Control panel'];
+
+function CallIntelSystemFlow() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const sage = 'var(--color-accent)';
+  const inY = [56, 144, 232, 320];
+  const outY = [50, 140, 232, 322];
+  const EX1 = 416, EX2 = 588, ECY = 188;
+  const inPath = (cy: number) => `M196 ${cy} C 308 ${cy}, 372 ${ECY}, ${EX1} ${ECY}`;
+  const outPath = (cy: number) => `M${EX2} ${ECY} C ${EX2 + 96} ${ECY}, 700 ${cy}, 780 ${cy}`;
+  const Connector = ({ d, delay }: { d: string; delay: number }) => (
+    <g>
+      <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
+      <motion.path d={d} fill="none" stroke={sage} strokeWidth={1.5} strokeOpacity={0.3}
+        initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
+      {!reduce && (
+        <motion.path d={d} fill="none" stroke={sage} strokeWidth={2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
+          animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
+      )}
+    </g>
+  );
+  const Node = ({ x, y, w, label, accent, delay }: { x: number; y: number; w: number; label: string; accent?: boolean; delay: number }) => (
+    <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}>
+      <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={CI_CARD} stroke={accent ? CI_CORAL : hairline} strokeWidth={1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+      <circle cx={x + 18} cy={y} r={3} fill={accent ? CI_CORAL : sage} />
+      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A' }}>{label}</text>
+    </motion.g>
+  );
+  return (
+    <div>
+      {/* DESKTOP — full SVG diagram */}
+      <div className="hidden lg:block">
+        <svg viewBox="0 0 1000 384" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="How the system works: calls flow into a scoring engine and out to four deliverables">
+          {inY.map((cy, i) => <Connector key={`ic${i}`} d={inPath(cy)} delay={0.1 + i * 0.08} />)}
+          {outY.map((cy, i) => <Connector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} />)}
+          {/* engine */}
+          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}>
+            <motion.rect x={EX1 - 8} y={ECY - 74} width={188} height={148} rx={20} fill="none" stroke={sage} strokeWidth={1}
+              animate={reduce ? {} : { strokeOpacity: [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }} />
+            <rect x={EX1} y={ECY - 66} width={172} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
+            <circle cx={EX1 + 22} cy={ECY - 40} r={3.5} fill={sage} />
+            <text x={EX1 + 34} y={ECY - 40} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
+            <text x={EX1 + 22} y={ECY + 2} style={{ fontFamily: SERIF, fontSize: 26, fill: '#F7F4EF' }}>Scoring</text>
+            <text x={EX1 + 22} y={ECY + 30} style={{ fontFamily: SERIF, fontSize: 26, fontStyle: 'italic', fill: sage }}>engine</text>
+            <text x={EX1 + 22} y={ECY + 56} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.1em', fill: 'rgba(247,244,239,0.5)' }}>transcribe · score · route</text>
+          </motion.g>
+          {/* input + output nodes */}
+          {SF_IN.map((l, i) => <Node key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} />)}
+          {SF_OUT.map((l, i) => <Node key={`out${i}`} x={780} y={outY[i]} w={196} label={l} accent={i === 1} delay={0.7 + i * 0.08} />)}
+          <text x={24} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
+          <text x={780} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
+        </svg>
+      </div>
+
+      {/* MOBILE — vertical flow */}
+      <div className="lg:hidden flex flex-col items-center">
+        <div className="w-full grid grid-cols-2 gap-2.5">
+          {SF_IN.map((l) => (
+            <div key={l} className="flex items-center gap-2 px-3.5 py-2.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <span style={{ width: 5, height: 5, borderRadius: 5, background: sage, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{l}</span>
+            </div>
+          ))}
+        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
+          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn' }} />}
+        </div>
+        <div className="w-full px-5 py-5 text-center" style={{ background: '#1A1A1A', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>The engine</p>
+          <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#F7F4EF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(247,244,239,0.5)', marginTop: 6 }}>transcribe · score · route</p>
+        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
+          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
+        </div>
+        <div className="w-full grid grid-cols-2 gap-2.5">
+          {SF_OUT.map((l, i) => (
+            <div key={l} className="flex items-center gap-2 px-3.5 py-2.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${i === 1 ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
+              <span style={{ width: 5, height: 5, borderRadius: 5, background: i === 1 ? CI_CORAL : sage, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{l}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 1) Post-sales-call analysis — scorecard + what to improve (the SALES-call output).
+function CICallAnalysis() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const dims = [{ label: 'Discovery', s: 8 }, { label: 'Objection handling', s: 5 }, { label: 'Next steps set', s: 9 }, { label: 'Pricing confidence', s: 6 }];
+  return (
+    <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
+      style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+      <div className="flex items-center justify-between gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Call analysis</span>
+        <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>Discovery · Acme Co · 32 min</span>
+      </div>
+      <div className="p-5 lg:p-6">
+        <div className="flex items-baseline gap-2">
+          <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.6rem,5vw,3.4rem)', lineHeight: 0.9, color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}><Counter value={78} /></span>
+          <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(26,26,26,0.5)' }}>/100</span>
+          <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>overall</span>
+        </div>
+        <div className="mt-5 space-y-3">
+          {dims.map((d, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span className="shrink-0" style={{ width: 132, fontFamily: BODY_SERIF, fontSize: '14px', color: '#3D3D3B' }}>{d.label}</span>
+              <div className="relative flex-1" style={{ height: 6, borderRadius: 3, background: 'rgba(26,26,26,0.07)' }}>
+                <motion.div initial={reduce ? false : { scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.2 + i * 0.08 }}
+                  style={{ position: 'absolute', inset: 0, transformOrigin: 'left', width: `${d.s * 10}%`, borderRadius: 3, background: d.s >= 7 ? 'var(--color-accent)' : d.s >= 5 ? '#B8862E' : CI_CORAL }} />
+              </div>
+              <span className="shrink-0 text-right" style={{ width: 34, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: '#1A1A1A' }}>{d.s}/10</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Flagged moment · 18:24</p>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#1A1A1A' }}>"Is pricing per seat or per workspace?" — went unanswered for 40 seconds.</p>
+        </div>
+        <div className="mt-4">
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What to improve</p>
+          <ul className="mt-2 space-y-1.5">
+            {['Answer the pricing question head-on — don’t defer it.', 'Lock a next step on the call; this one ended with no date.'].map((t, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: 'var(--color-accent)', flexShrink: 0 }} /><span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// 2) Churn alert — risk + save-play (the CUSTOMER-call output). Coral, urgent — deliberately
+// reads differently from the calm scorecard. The contrast IS the point.
+function CIChurnAlert() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  return (
+    <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: 0.08 }}
+      style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, borderLeft: `3px solid ${CI_CORAL}`, boxShadow: CI_SHADOW }}>
+      <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(168,84,57,0.09)' }}>High risk</span>
+      </div>
+      <div className="p-5 lg:p-6">
+        <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What triggered it · QBR, today 9:12</p>
+        <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem,2.4vw,1.6rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"We're re-evaluating vendors before the renewal."</p>
+        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>Said by their VP of Ops — the economic buyer on the account.</p>
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Recommended save-play</p>
+          <ul className="mt-2 space-y-1.5">
+            {['Get your founder on a call this week, before they shortlist.', 'Send the ROI recap built from their own usage data.'].map((t, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: CI_CORAL, flexShrink: 0 }} /><span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', color: 'rgba(26,26,26,0.5)' }}>Renewal in 38 days · flagged to you + CS lead</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// 3) Control panel — the cockpit (sources, calls tracked, alert routing, rubric).
+function CIControlPanel({ companyName }: { companyName: string }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const sage = 'var(--color-accent)';
+  const Block = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+  const Check = ({ t }: { t: string }) => (
+    <div className="flex items-center gap-2.5 py-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>
+      <span style={{ color: sage, fontSize: '13px' }}>✓</span>{t}
+    </div>
+  );
+  const Pill = ({ t }: { t: string }) => (
+    <span className="inline-flex px-2.5 py-1 m-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#3D3D3B', background: 'rgba(26,26,26,0.04)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>{t}</span>
+  );
+  return (
+    <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
+      style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: '#1A1A1A' }}>
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 7, background: sage, flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>Control panel · {companyName}</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.5)' }}>you set the rules</span>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7 p-6 lg:p-8" style={{ background: CI_CARD }}>
+        <Block label="Connected sources"><Check t="Fireflies" /><Check t="Zoom" /><Check t="Slack alerts" /></Block>
+        <Block label="Calls tracked"><div className="-m-0.5"><Pill t="Sales demos" /><Pill t="Discovery" /><Pill t="Customer QBRs" /><Pill t="Support" /></div></Block>
+        <Block label="Churn alerts go to"><Check t="You" /><Check t="CS lead" /><p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', color: '#5A5752' }}>Threshold: High risk and above</p></Block>
+        <Block label="Scoring rubric (editable)"><div className="-m-0.5"><Pill t="Discovery" /><Pill t="Objection handling" /><Pill t="Next steps" /><Pill t="Pricing" /></div></Block>
+      </div>
+    </motion.div>
+  );
+}
+
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
   if (!ci) return null;
@@ -1514,28 +1736,47 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
 
       <CallIntelPain ci={ci} companyName={companyName} receipts={receipts} scan={scan} />
 
-      {/* THE FIX — clear benefits: two surfaces as soft rounded cards + the weekly dashboard */}
+      {/* THE WHOLE SYSTEM — animated flow diagram */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-2xl">
-          <Kicker>Here's how it works</Kicker>
+          <Kicker>The whole system</Kicker>
           <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-            One system. <Italic>Two kinds of calls.</Italic>
+            Every call in. <Italic>The right output out.</Italic>
           </h2>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+            Every call your team runs flows through one scoring engine — and comes back as something you can act on.
+          </p>
         </div>
-        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <div className="mt-10 lg:mt-14"><CallIntelSystemFlow /></div>
+      </section>
+
+      {/* WHAT YOU GET — the four deliverables, up close */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-2xl">
+          <Kicker>What you get</Kicker>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            Two kinds of calls. <Italic>Two kinds of output.</Italic>
+          </h2>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+            One improves the next deal. One saves the account before it's gone.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-start">
           {surfaces.map((s, i) => (
-            <motion.div key={i}
-              initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: i * 0.1 }}
-              className="p-7 lg:p-9" style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
-              <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{s.tag}</p>
-              <p className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{s.head}</p>
-              <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
-            </motion.div>
+            <div key={i}>
+              <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
+              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{s.head}</p>
+              {s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}
+            </div>
           ))}
         </div>
-        <div className="mt-12 max-w-3xl mx-auto">
-          <p className="mb-3 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What lands in your inbox every week</p>
+        <div className="mt-14 max-w-3xl mx-auto">
+          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday — the weekly digest</p>
           <CallIntelProductMock ci={ci} companyName={companyName} />
+        </div>
+        <div className="mt-14">
+          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>You stay in control</p>
+          <CIControlPanel companyName={companyName} />
         </div>
       </section>
 
@@ -1549,24 +1790,21 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           </p>
         </div>
         {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
-        <h3 className="max-w-2xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-          Every sales call scored. <Italic>The close rate moved.</Italic>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
+        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
         </h3>
         <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          A sales team recorded every call but only ever reviewed a handful. Now every call gets scored, and every rep gets coached on what lost the deal.
+          Same team. Same calls. We scored every one and coached each rep on what lost the deal — close rate moved 27%.
         </p>
 
-        {/* benefit stat tiles — sales-side only (the churn/retention surface is its own feature
-            above; don't blend them). count-up on scroll.
-            ⚠️ PLACEHOLDER: the +27% close-rate tile is a placeholder — Ivan swaps the real
-            ProvalTech figure before sending. "20× more calls reviewed" (5%→100%) and "100% reps
-            coached" are real. */}
+        {/* results stat tiles. ⚠️ PLACEHOLDER: '+$20K/mo' and '+27%' are placeholders — Ivan swaps
+            the real ProvalTech figures before sending. '20× more calls reviewed' (5%→100%) is real. */}
         <div className="mt-9 grid grid-cols-1 sm:grid-cols-3 overflow-hidden" style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
           {[
+            { pre: '+$', fig: '20', suf: 'K', label: 'a month in new revenue', sub: 'from the calls they already ran', placeholder: true }, // PLACEHOLDER
             { pre: '+', fig: '27', suf: '%', label: 'close rate', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
             { pre: '', fig: '20', suf: '×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' }, // REAL
-            { pre: '', fig: '100', suf: '%', label: 'of reps coached', sub: 'after every customer call' }, // REAL
           ].map((s, i) => (
             <motion.div key={i}
               initial={reduce ? false : { opacity: 0, y: 16 }}
