@@ -333,7 +333,7 @@ export default function ContentSystemPage() {
         {/* 6 — HOW THE SYSTEM WORKS (one idea in, whole funnel out) */}
         {/* Full-bleed breakout so the diagram reads big on wide screens. */}
         <section className="mb-16 md:mb-24 relative left-1/2 -translate-x-1/2 w-screen px-5 sm:px-8">
-          <div className="mx-auto max-w-[1380px]">
+          <div className="mx-auto max-w-[1480px]">
             <Label>How it works</Label>
             <RevealH2
               style={{ ...T.display('clamp(2rem,4.4vw,3.4rem)'), margin: '1rem 0 1rem' }}
