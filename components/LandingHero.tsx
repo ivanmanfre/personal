@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { getBookingQuarter } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
@@ -98,50 +97,6 @@ const LandingHero: React.FC = () => {
         }}
       />
 
-      {/* Status strip */}
-      <motion.div
-        initial={{ y: -40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease }}
-        className="border-b px-8 py-3 flex items-center justify-between relative z-10"
-        style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '12px',
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'rgba(26,26,26,0.7)',
-          borderColor: 'rgba(26,26,26,0.1)',
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <motion.span
-            animate={{ opacity: [1, 0.2, 1] }}
-            transition={{ duration: 1.4, repeat: Infinity }}
-            style={{ width: '7px', height: '7px', backgroundColor: '#2A8F65', flexShrink: 0 }}
-            aria-hidden="true"
-          />
-          <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()}</span>
-        </div>
-      </motion.div>
-
-      {/* Expanding sage rule across top */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: 0.15, duration: 1.8, ease }}
-        style={{
-          position: 'absolute',
-          top: '3.5rem',
-          left: 0,
-          right: 0,
-          height: '1px',
-          backgroundColor: '#2A8F65',
-          transformOrigin: 'left',
-          opacity: 0.3,
-          zIndex: 5,
-        }}
-      />
-
       {/* Main content — EDITORIAL COVER, CENTERED axis (Ivan's call, W3.2): the
           type is still the visual, but the headline / lede / CTA stack on one
           centered column and vertically center in the fold, so the fold reads as
@@ -173,7 +128,7 @@ const LandingHero: React.FC = () => {
                 style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                 aria-hidden="true"
               />
-              <span>Iván Manfredi · For agencies</span>
+              <span>For agency owners and consultants</span>
             </motion.div>
 
             {/* Headline: ONE coherent centered sentence at a single scale (the
@@ -188,9 +143,9 @@ const LandingHero: React.FC = () => {
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
                 color: '#1A1A1A',
-                letterSpacing: '-0.02em',
-                fontSize: 'clamp(2.3rem, 5.2vw, 4.3rem)',
-                lineHeight: 1.08,
+                letterSpacing: '-0.025em',
+                fontSize: 'clamp(2.05rem, 6.7vw, 5.7rem)',
+                lineHeight: 1.03,
               }}
             >
               <Reveal delay={0.15}>

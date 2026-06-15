@@ -58,7 +58,7 @@ const T = {
     fontWeight: 400,
     fontSize: '18px',
     lineHeight: 1.7,
-    color: '#3D3D3B',
+    color: '#2E2D2A',
   } as React.CSSProperties,
   display: (size = 'clamp(2.4rem, 4vw, 3.8rem)'): React.CSSProperties => ({
     fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
@@ -323,7 +323,6 @@ const ProblemSection: React.FC = () => (
           Sound{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
             familiar?
-            <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
       </motion.div>
@@ -378,7 +377,6 @@ const EngineSection: React.FC = () => (
           One system,{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
             idea to booked call.
-            <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
@@ -930,7 +928,6 @@ const TestimonialsSection: React.FC = () => (
           Already running for{' '}
           <span style={{ position: 'relative', display: 'inline-block' }}>
             real operators.
-            <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
       </motion.div>
@@ -1121,7 +1118,6 @@ const OfferSection: React.FC = () => (
           See what it would{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
             post for you.
-            <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '46ch', marginLeft: 'auto', marginRight: 'auto' }}>
@@ -1141,55 +1137,115 @@ const OfferSection: React.FC = () => (
   </section>
 );
 
-// ─── Section 7: Final CTA — founder block ─────────────────────────────────────
-const FinalCTA: React.FC = () => (
-  <section className="border-t relative overflow-hidden" style={{ borderColor: 'rgba(247,244,239,0.12)', backgroundColor: '#1A1A1A' }}>
-    <div className="grid lg:grid-cols-[minmax(0,46%)_1fr]">
-      {/* Portrait — left, full-bleed, sage rule on right edge */}
-      <div className="relative" style={{ minHeight: '440px' }}>
+// ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
+const OPERATOR_POINTS = [
+  'You work with me directly. No overseas writers, no junior account manager, no agency layer.',
+  'My own LinkedIn runs on this exact engine, so you can watch it work before you ever pay.',
+  'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
+];
+
+const MeetOperator: React.FC = () => (
+  <section className="border-t" style={DIVIDER}>
+    <div className="grid lg:grid-cols-[minmax(0,42%)_1fr]">
+      {/* Large portrait */}
+      <div className="relative" style={{ minHeight: '460px' }}>
         <img
           src="/ivan-portrait.jpg"
           alt="Iván Manfredi"
-          className="absolute inset-0 w-full h-full object-cover portrait-editorial"
-          style={{ objectPosition: '50% 30%' }}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: '50% 24%' }}
         />
-        <div
-          className="hidden lg:block absolute top-0 right-0 h-full"
-          style={{ width: '2px', backgroundColor: '#2A8F65' }}
-          aria-hidden="true"
-        />
-        <div
-          className="lg:hidden absolute bottom-0 left-0 w-full"
-          style={{ height: '2px', backgroundColor: '#2A8F65' }}
-          aria-hidden="true"
-        />
+        <div className="hidden lg:block absolute top-0 right-0 h-full" style={{ width: '2px', backgroundColor: '#2A8F65' }} aria-hidden="true" />
+        <div className="lg:hidden absolute bottom-0 left-0 w-full" style={{ height: '2px', backgroundColor: '#2A8F65' }} aria-hidden="true" />
       </div>
 
-      {/* Copy — right */}
-      <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
-        <div className="max-w-xl">
-          <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
-            Iván Manfredi.<br />
-            <span style={{ color: 'var(--color-accent-light)' }}>I build it, and I run it.</span>
+      {/* Copy */}
+      <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-16 py-16 md:py-24">
+        <div className="max-w-2xl">
+          <div style={{ ...T.mono, marginBottom: '1.5rem' }}>Who builds it</div>
+          <RevealH2 style={{ ...T.display('clamp(2.3rem,3.8vw,3.6rem)'), lineHeight: 1.04, marginBottom: '1.5rem' }}>
+            You work with me.<br />Not a team.
           </RevealH2>
-          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
-            Everything I build, I build and run myself. The posts and the DM that found you
-            came from{' '}
-            <a href="/content-system" style={{ color: 'rgba(247,244,239,0.95)', textDecoration: 'underline', textUnderlineOffset: '3px', textDecorationColor: 'var(--color-accent)' }}>
-              the same content engine
-            </a>
-            . Book the call and I'll show you exactly what it would post for your agency, even if we never work together.
+          <p style={{ ...T.serif, fontSize: '18px', lineHeight: 1.65, color: '#3D3D3B', marginBottom: '2.25rem', maxWidth: '50ch' }}>
+            I'm Iván. Everything I build, I build and run myself. The posts and the
+            DM that reached you came from the same engine I'd install for you.
           </p>
-          <div className="flex items-center">
-            <MagneticCTA href="/start" variant="primary" dark fontSize="17px" px="px-8 py-4">
-              Book your fit call <ArrowRight size={18} />
-            </MagneticCTA>
+          <div className="flex flex-col gap-4 mb-10">
+            {OPERATOR_POINTS.map((pt) => (
+              <div key={pt} className="flex items-start gap-3.5">
+                <span aria-hidden="true" style={{ marginTop: '0.55em', width: '7px', height: '7px', flexShrink: 0, backgroundColor: 'var(--color-accent)' }} />
+                <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.55, color: '#2A2A28', maxWidth: '52ch' }}>{pt}</p>
+              </div>
+            ))}
           </div>
+          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
+            Book your fit call <ArrowRight size={18} />
+          </MagneticCTA>
         </div>
       </motion.div>
     </div>
   </section>
 );
+
+// ─── FAQ — accordion ─────────────────────────────────────────────────────────
+const FAQS = [
+  { q: 'Will it actually sound like me?', a: 'Yes. The engine is trained on your voice from a short intake, and every piece runs through an anti-slop QA pass before it ships. If it reads like AI, it does not go out.' },
+  { q: 'How long until it is live?', a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
+  { q: 'Do I own it?', a: 'Yes. The system, the content, and the data live in your own accounts. If we ever stop, it keeps running without me.' },
+  { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About an hour a week. The engine handles the rest.' },
+  { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a system you own that writes posts, builds lead magnets, and ships every format daily, in your voice, without you managing anyone.' },
+  { q: 'What if it is not a fit?', a: 'The fit call tells us fast. If it is not right for you, I will say so on the call. No pressure either way.' },
+];
+
+const FAQSection: React.FC = () => {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+      <div className="container mx-auto px-8 max-w-3xl">
+        <motion.div {...inView} className="mb-12 md:mb-16">
+          <RevealH2 style={{ ...T.display('clamp(2.2rem,3.8vw,3.4rem)'), lineHeight: 1.04 }}>
+            Questions, answered.
+          </RevealH2>
+        </motion.div>
+
+        <div>
+          {FAQS.map((f, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={f.q} className="border-t" style={{ borderColor: 'rgba(26,26,26,0.14)' }}>
+                <button
+                  type="button"
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="w-full flex items-start justify-between gap-6 py-6 text-left"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  aria-expanded={isOpen}
+                >
+                  <span style={{ fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif', fontSize: 'clamp(1.2rem,1.8vw,1.5rem)', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+                    {f.q}
+                  </span>
+                  <span aria-hidden="true" style={{ flexShrink: 0, marginTop: '0.35em', color: 'var(--color-accent-ink)', transition: 'transform 0.25s', transform: isOpen ? 'rotate(45deg)' : 'none', fontFamily: '"IBM Plex Mono",monospace', fontSize: '20px', lineHeight: 1 }}>
+                    +
+                  </span>
+                </button>
+                <motion.div
+                  initial={false}
+                  animate={{ height: isOpen ? 'auto' : 0, opacity: isOpen ? 1 : 0 }}
+                  transition={{ duration: 0.32, ease }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B', paddingBottom: '1.75rem', maxWidth: '60ch' }}>
+                    {f.a}
+                  </p>
+                </motion.div>
+              </div>
+            );
+          })}
+          <div className="border-t" style={{ borderColor: 'rgba(26,26,26,0.14)' }} />
+        </div>
+      </div>
+    </section>
+  );
+};
 
 // ─── Footer — newsletter, socials, links ─────────────────────────────────────
 const BEACON_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-beacon';
@@ -1469,8 +1525,9 @@ const LandingPage: React.FC = () => {
         <QualificationSection />
         <TestimonialsSection />
         <ReviewsMarquee />
+        <MeetOperator />
+        <FAQSection />
         <OfferSection />
-        <FinalCTA />
         <LandingFooter />
       </div>
       <StickyCTA />
