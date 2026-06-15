@@ -259,9 +259,9 @@ export default function ContentSystemPage() {
         <section className="mb-16 md:mb-24">
           <Label>The interface</Label>
           <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
-            Not a prompt box.{' '}
+            Your own{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
-              A real operating console.
+              AI content studio.
               <SageSweep delay={0.4} opacity={0.85} />
             </span>
           </RevealH2>
