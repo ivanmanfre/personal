@@ -105,7 +105,7 @@ const LandingHero: React.FC = () => {
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-5xl w-full">
+        <div className="container mx-auto px-8 max-w-6xl w-full">
           <div className="py-12 lg:py-0 text-center">
 
             {/* Byline */}
@@ -149,16 +149,17 @@ const LandingHero: React.FC = () => {
               }}
             >
               <Reveal delay={0.15}>
-                {/* Explicit two-line block so the sentence never orphans a word:
-                    "Add $15k-$50k/mo" / "of new pipeline" */}
-                <span style={{ display: 'block', whiteSpace: 'nowrap' }}>
+                {/* One flowing block — wraps wide across the column instead of
+                    stacking into a narrow centred tower (only the $ figure is
+                    kept unbreakable so the sweep never splits). */}
+                <span style={{ display: 'block' }}>
                   Add{' '}
                   <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
                     $15k-$50k/mo
                     <HeroSweep delay={0.55} />
-                  </span>
+                  </span>{' '}
+                  of new pipeline
                 </span>
-                <span style={{ display: 'block' }}>of new pipeline</span>
               </Reveal>
               <Reveal delay={0.34}>
                 <span style={{ display: 'block', marginTop: '0.3em' }}>
@@ -179,7 +180,7 @@ const LandingHero: React.FC = () => {
             </h1>
 
             {/* Lede + CTAs — centered column, right side no longer dead space */}
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-3xl mx-auto">
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

@@ -359,7 +359,7 @@ const ProblemSection: React.FC = () => (
           borderTopWidth: '2px',
         }}
       >
-        There's a better way: a content system you own that runs it for you.
+A content system you own, running your feed for you.
       </motion.p>
     </div>
   </section>
@@ -1129,9 +1129,6 @@ const OfferSection: React.FC = () => (
             Book your fit call <ArrowRight size={18} />
           </MagneticCTA>
         </div>
-        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', marginTop: '1.5rem', lineHeight: 1.6 }}>
-          Prefer to start paid? A content teardown runs $500-$1,000, credited toward the build.
-        </p>
       </motion.div>
     </div>
   </section>
@@ -1139,8 +1136,8 @@ const OfferSection: React.FC = () => (
 
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
-  'You work with me directly. No overseas writers, no junior account manager, no agency layer.',
-  'My own LinkedIn runs on this exact engine, so you can watch it work before you ever pay.',
+  'You work with me directly, the same person who builds and runs your engine. There is no agency layer in between.',
+  'My own LinkedIn runs on this exact engine, so you can watch it work in real time.',
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
 
@@ -1164,7 +1161,7 @@ const MeetOperator: React.FC = () => (
         <div className="max-w-2xl">
           <div style={{ ...T.mono, marginBottom: '1.5rem' }}>Who builds it</div>
           <RevealH2 style={{ ...T.display('clamp(2.3rem,3.8vw,3.6rem)'), lineHeight: 1.04, marginBottom: '1.5rem' }}>
-            You work with me.<br />Not a team.
+            You work with the<br />person who built it.
           </RevealH2>
           <p style={{ ...T.serif, fontSize: '18px', lineHeight: 1.65, color: '#3D3D3B', marginBottom: '2.25rem', maxWidth: '50ch' }}>
             I'm Iván. Everything I build, I build and run myself. The posts and the
@@ -1189,12 +1186,12 @@ const MeetOperator: React.FC = () => (
 
 // ─── FAQ — accordion ─────────────────────────────────────────────────────────
 const FAQS = [
-  { q: 'Will it actually sound like me?', a: 'Yes. The engine is trained on your voice from a short intake, and every piece runs through an anti-slop QA pass before it ships. If it reads like AI, it does not go out.' },
-  { q: 'How long until it is live?', a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
-  { q: 'Do I own it?', a: 'Yes. The system, the content, and the data live in your own accounts. If we ever stop, it keeps running without me.' },
+  { q: 'Will it actually sound like me?', a: "Yes. The engine is trained on your voice from a short intake, and every piece runs through an anti-slop QA pass before it ships. If it reads like AI, it doesn't go out." },
+  { q: "How long until it's live?", a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
+  { q: 'Do I own it?', a: "Yes. The system, the content, and the data live in your own accounts. If we ever stop, it keeps running without me." },
   { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About an hour a week. The engine handles the rest.' },
-  { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a system you own that writes posts, builds lead magnets, and ships every format daily, in your voice, without you managing anyone.' },
-  { q: 'What if it is not a fit?', a: 'The fit call tells us fast. If it is not right for you, I will say so on the call. No pressure either way.' },
+  { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a system you own that writes the posts, builds the lead magnets, and ships every format daily in your voice, with no one to manage.' },
+  { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },
 ];
 
 const FAQSection: React.FC = () => {
