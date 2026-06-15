@@ -142,23 +142,23 @@ const LandingHero: React.FC = () => {
         }}
       />
 
-      {/* Main content — EDITORIAL COVER: type is the visual. Mixed-scale headline
-          with 'bottleneck' blown to viewport scale and bleeding the right margin;
-          left-aligned magazine axis; lede/CTA held in a narrow column so the right
-          side stays active negative space. */}
+      {/* Main content — EDITORIAL COVER, CENTERED axis (Ivan's call, W3.2): the
+          type is still the visual, but the headline / lede / CTA stack on one
+          centered column and vertically center in the fold, so the fold reads as
+          a balanced composition instead of a top-left block with dead space. */}
       <motion.div
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
-        <div className="container mx-auto px-8 max-w-7xl w-full">
-          <div className="pt-10 lg:pt-0 text-left">
+        <div className="container mx-auto px-8 max-w-5xl w-full">
+          <div className="py-12 lg:py-0 text-center">
 
             {/* Byline */}
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6 }}
-              className="mb-7 flex items-center gap-3"
+              className="mb-7 flex items-center justify-center gap-3"
               style={{
                 fontFamily: '"IBM Plex Mono", monospace',
                 fontSize: '11px',
@@ -231,8 +231,8 @@ const LandingHero: React.FC = () => {
               </Reveal>
             </h1>
 
-            {/* Lede + CTAs held in a narrow left column — right side is active negative space */}
-            <div className="max-w-2xl">
+            {/* Lede + CTAs — centered column, right side no longer dead space */}
+            <div className="max-w-2xl mx-auto">
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -257,7 +257,7 @@ const LandingHero: React.FC = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.86, duration: 0.7, ease }}
-                className="mb-9 flex flex-col sm:flex-row items-start sm:items-center gap-y-2.5 sm:gap-0"
+                className="mb-9 flex flex-col sm:flex-row items-center justify-center gap-y-2.5 sm:gap-0"
               >
                 {['Daily content in your voice', 'A feed that brings you inbound', 'On-brand, every post'].map((b, i) => (
                   <li
@@ -285,7 +285,7 @@ const LandingHero: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.96, duration: 0.6, ease }}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                className="flex flex-col sm:flex-row items-center justify-center gap-3"
               >
                 <a
                   href="/start"

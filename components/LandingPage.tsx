@@ -17,6 +17,7 @@ import LiveEngineProof from './LiveEngineProof';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
+import EngineFlow from './landing/diagrams/EngineFlow';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -361,6 +362,38 @@ const ProblemSection: React.FC = () => (
   </section>
 );
 
+// ─── Section 02: How it works — the engine, animated (W3.6) ──────────────────
+// The showcase. The EngineFlow diagram does the demonstrating; the copy is one
+// scannable lede, not a wall. This replaces the old generic Diagnose/Design/
+// Build process block as the page's "how it works" beat.
+const EngineSection: React.FC = () => (
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-14 md:mb-20 max-w-3xl">
+        <SectionIntro num="02" kicker="HOW IT WORKS" />
+        <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
+          One system,{' '}
+          <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+            idea to booked call.
+            <SageSweep delay={0.5} opacity={0.85} />
+          </span>
+        </RevealH2>
+        <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '54ch' }}>
+          You record your voice once. From there the engine drafts, runs every
+          piece through an anti-slop QA pass so nothing reads like AI, and ships
+          every format daily. You review for about an hour a week.
+        </p>
+      </motion.div>
+
+      <motion.div {...inView}>
+        <EngineFlow />
+      </motion.div>
+
+      <MidCTA>Want to watch it run on your brand before you decide?</MidCTA>
+    </div>
+  </section>
+);
+
 // ─── Section 4: What I build · Real outcomes ─────────────────────────────────
 const OUTCOMES = [
   {
@@ -597,7 +630,7 @@ const ComparisonSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-16 max-w-2xl">
-        <SectionIntro num="03" kicker="THE COMPARISON" />
+        <SectionIntro num="04" kicker="THE COMPARISON" />
         <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
           Why not just hire<br />a ghostwriter?
         </RevealH2>
@@ -743,7 +776,7 @@ const QualificationSection: React.FC = () => (
           "built for" side, muted markers the "not". */}
       <div className="grid md:grid-cols-12 gap-x-12 gap-y-12">
         <motion.div {...inView} className="md:col-span-5">
-          <SectionIntro num="04" kicker="THE FIT" />
+          <SectionIntro num="05" kicker="THE FIT" />
           <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
             This isn't for<br />every agency.
           </RevealH2>
@@ -867,9 +900,9 @@ const TestimonialsSection: React.FC = () => (
   <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16">
-        <Label>02</Label>
+        <Label>06</Label>
         <RevealH2 style={T.display('clamp(1.8rem,2.8vw,2.6rem)')}>
-          100+ builds shipped.<br />In their words.
+          In their words.
         </RevealH2>
       </motion.div>
 
@@ -1022,19 +1055,19 @@ const OFFER_BUILDS = [
     name: 'Content System',
     price: 'Live in 30 days',
     cadence: 'Fixed price · scoped on the fit call',
-    desc: 'Lead magnets plus a content engine trained on your voice, filling your pipeline while you run the business.',
+    desc: 'A content engine trained on your voice plus the lead magnets it feeds, filling your pipeline while you run the business.',
     href: '/content-system',
     cta: 'Scope your build',
+    signature: true,
   },
   {
     id: '02',
     name: 'Call Intelligence',
     price: 'More closes, fewer churns',
     cadence: 'Fixed price · scoped on the fit call',
-    desc: "Win more of the deals you're already in. It scores every sales call, flags accounts about to churn, and shows you why deals slip.",
+    desc: "Once the feed is filling your pipeline: score every sales call, flag accounts about to churn, and see why deals slip.",
     href: '/call-intelligence',
     cta: 'See how it works',
-    signature: true,
   },
   {
     id: '03',
@@ -1051,7 +1084,7 @@ const OfferSection: React.FC = () => (
   <section className="py-16 md:py-24 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label>09</Label>
+        <Label>07</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           Pick the build that<br />
           <span style={{ position: 'relative', display: 'inline-block' }}>
@@ -1138,7 +1171,7 @@ const FinalCTA: React.FC = () => (
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
           <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            10 / WORK WITH ME
+            08 / WORK WITH ME
           </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
             Iván Manfredi.<br />
@@ -1425,17 +1458,21 @@ const LandingPage: React.FC = () => {
         style={{ background: spotlight, position: 'fixed', inset: 0, zIndex: 9999, opacity: pointerActive ? 1 : 0, transition: 'opacity 0.8s' }}
       />
       <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* W3.4 — focused content-engine narrative for a cold agency visitor:
+            hook → proof band → problem → how it works (the engine, animated) →
+            proof it runs (the live feed) → comparison → fit → social proof →
+            offer → close. Cut from Wave 2: the unrelated automation cases
+            (BuildOutcomes), the hours-saved calculator (Payback), the generic
+            Diagnose/Design/Build process (Work), and the twin future-pacing
+            beat (AgentReady). */}
         <LandingHero />
         <ProofBand />
         <ProblemSection />
+        <EngineSection />
         <LiveEngineProof />
-        <TestimonialsSection />
         <ComparisonSection />
         <QualificationSection />
-        <AgentReadySection />
-        <BuildOutcomesSection />
-        <WorkSection />
-        <PaybackSection />
+        <TestimonialsSection />
         <OfferSection />
         <FinalCTA />
         <LandingFooter />

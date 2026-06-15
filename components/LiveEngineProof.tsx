@@ -135,7 +135,7 @@ const LiveEngineProof: React.FC = () => {
                 flexShrink: 0,
               }}
             >
-              02
+              03
             </span>
             <span style={{ ...MONO, paddingLeft: '14px', borderLeft: '2px solid #2A8F65', lineHeight: 1.1 }}>
               LIVE FROM THE FEED
