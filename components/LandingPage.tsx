@@ -78,6 +78,42 @@ const Label: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ childr
   </div>
 );
 
+// ─── Numbered section intro (§4.5 + §4.4) ────────────────────────────────────
+// Sharp-cornered black mono pill ("01"/"02") sitting against a 2px sage left-rule
+// kicker. Replaces the bare floating "01" mono caption — gives every section a
+// consistent, ownable editorial entry that reads as punctuation, never a circle.
+const SectionIntro: React.FC<{ num: string; kicker: string }> = ({ num, kicker }) => (
+  <div className="flex items-center gap-4" style={{ marginBottom: '1.5rem' }}>
+    <span
+      style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: '12px',
+        fontWeight: 700,
+        letterSpacing: '0.16em',
+        color: '#F7F4EF',
+        backgroundColor: '#1A1A1A',
+        padding: '5px 9px',
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+    >
+      {num}
+    </span>
+    <span
+      style={{
+        ...T.mono,
+        fontSize: '11px',
+        color: '#5A5752',
+        paddingLeft: '14px',
+        borderLeft: '2px solid var(--color-accent)',
+        lineHeight: 1.1,
+      }}
+    >
+      {kicker}
+    </span>
+  </div>
+);
+
 // ─── RevealH2 — clean rise on scroll ─────────────────────────────────────────
 // No blur (blur-on-every-headline was the generic-AI motion tell); a single
 // decisive translate-rise matches the hero's mask reveal in character.
@@ -267,52 +303,60 @@ const PROBLEM_LINES = [
 ];
 
 const ProblemSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t relative" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-4xl">
-      <motion.div {...inView}>
-        <Label>01</Label>
-        <RevealH2 style={{ ...T.display('clamp(2.4rem,4vw,3.8rem)'), marginBottom: '1.75rem' }}>
-          <span style={{ position: 'relative', display: 'inline-block' }}>
-            Sound familiar?
-            <SageSweep delay={0.5} opacity={0.85} />
-          </span>
-        </RevealH2>
-      </motion.div>
+  <section className="py-24 md:py-32 border-t relative" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      {/* Asymmetric editorial grid: narrow intro rail on the left, the pain copy
+          held in an offset reading column on the right. Breaks the centered-list
+          feel that made 01 and 02 read as one endless run. */}
+      <div className="grid md:grid-cols-12 gap-x-12 gap-y-10">
+        <motion.div {...inView} className="md:col-span-5">
+          <SectionIntro num="01" kicker="THE PROBLEM" />
+          <RevealH2 style={{ ...T.display('clamp(2.6rem,4.4vw,4rem)'), marginBottom: 0, lineHeight: 1.02 }}>
+            Sound{' '}
+            <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+              familiar?
+              <SageSweep delay={0.5} opacity={0.85} />
+            </span>
+          </RevealH2>
+        </motion.div>
 
-      <div className="flex flex-col">
-        {PROBLEM_LINES.map((line, i) => (
+        <div className="md:col-span-7 md:col-start-6">
+          {PROBLEM_LINES.map((line, i) => (
+            <motion.p
+              key={i}
+              initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.6, ease, delay: i * 0.08 }}
+              className={`py-6 ${i === 0 ? '' : 'border-t'}`}
+              style={{ ...T.serif, fontSize: '19px', borderColor: 'rgba(26,26,26,0.1)' }}
+            >
+              {line}
+            </motion.p>
+          ))}
+
           <motion.p
-            key={i}
             initial={prefersReduced ? false : { opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.6, ease, delay: i * 0.08 }}
-            className="border-t py-5"
-            style={{ ...T.serif, maxWidth: '58ch', borderColor: 'rgba(26,26,26,0.12)' }}
+            transition={{ duration: 0.6, ease, delay: 0.3 }}
+            className="mt-10 pt-8 border-t"
+            style={{
+              fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
+              fontWeight: 400,
+              fontSize: 'clamp(1.6rem,2.6vw,2.3rem)',
+              lineHeight: 1.18,
+              letterSpacing: '-0.02em',
+              color: '#1A1A1A',
+              maxWidth: '26ch',
+              borderColor: 'var(--color-accent)',
+              borderTopWidth: '2px',
+            }}
           >
-            {line}
+            There's a better way: a content system you own that runs it for you.
           </motion.p>
-        ))}
+        </div>
       </div>
-
-      <motion.p
-        initial={prefersReduced ? false : { opacity: 0, y: 14 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-40px' }}
-        transition={{ duration: 0.6, ease, delay: 0.3 }}
-        className="mt-9"
-        style={{
-          fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-          fontWeight: 400,
-          fontSize: 'clamp(1.5rem,2.4vw,2.1rem)',
-          lineHeight: 1.2,
-          letterSpacing: '-0.02em',
-          color: '#1A1A1A',
-          maxWidth: '24ch',
-        }}
-      >
-        There's a better way: a content system you own that runs it for you.
-      </motion.p>
     </div>
   </section>
 );
@@ -460,9 +504,9 @@ const SageSweep: React.FC<{ delay?: number; opacity?: number }> = ({ delay = 0.5
       position: 'absolute',
       left: '-4%',
       right: '-4%',
-      top: '0.18em',
+      top: '0.30em',
       width: '108%',
-      height: '0.78em',
+      height: '0.72em',
       transformOrigin: 'left',
       zIndex: -1,
       overflow: 'visible',
@@ -493,17 +537,17 @@ const FUTURES = {
 };
 
 const AgentReadySection: React.FC = () => (
-  <section className="py-12 md:py-16 border-t" style={DIVIDER}>
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-12 max-w-4xl">
-        <Label>05</Label>
+      <motion.div {...inView} className="mb-16 max-w-4xl">
+        <SectionIntro num="05" kicker="WHAT CHANGES" />
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.6vw,4.25rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           Six months from now,{' '}
           one of two things is true.
         </RevealH2>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
+      <div className="grid md:grid-cols-2 gap-x-16 gap-y-12">
         {[FUTURES.without, FUTURES.with].map((f, col) => (
           <motion.div
             key={f.label}
@@ -511,10 +555,15 @@ const AgentReadySection: React.FC = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.6, ease, delay: col * 0.12 }}
-            className="border-t pt-5"
-            style={{ borderColor: col === 1 ? 'var(--color-accent)' : 'rgba(26,26,26,0.25)', borderTopWidth: '2px' }}
+            className="pt-6"
+            style={{ borderTop: col === 1 ? '2px solid var(--color-accent)' : '2px solid rgba(26,26,26,0.2)' }}
           >
-            <div style={{ ...T.mono, color: col === 1 ? 'var(--color-accent-ink)' : '#5A5752', marginBottom: '14px' }}>{f.label}</div>
+            <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+              {col === 1 && (
+                <span aria-hidden="true" style={{ width: '7px', height: '7px', backgroundColor: 'var(--color-accent)', flexShrink: 0 }} />
+              )}
+              <span style={{ ...T.mono, color: col === 1 ? 'var(--color-accent-ink)' : '#5A5752' }}>{f.label}</span>
+            </div>
             <div className="flex flex-col gap-3">
               {f.lines.map((l) => (
                 <p key={l} style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '18px', lineHeight: 1.45, color: col === 1 ? '#1A1A1A' : '#5A5752' }}>
@@ -545,56 +594,68 @@ const COMPARE_ROWS: { label: string; cells: string[] }[] = [
 ];
 
 const ComparisonSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-12 max-w-2xl">
-        <Label>03</Label>
-        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
+      <motion.div {...inView} className="mb-16 max-w-2xl">
+        <SectionIntro num="03" kicker="THE COMPARISON" />
+        <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
           Why not just hire<br />a ghostwriter?
         </RevealH2>
       </motion.div>
 
-      {/* Desktop / tablet: full table */}
+      {/* Desktop / tablet: editorial data table. Figures + headers + labels all
+          render IBM Plex Mono (§5c — data is the mono voice). The "Your system"
+          column is accented with a 2px sage top-rule + a square sage bullet on the
+          header, NOT a fill (sage is punctuation, never a background). */}
       <motion.div {...inView} className="hidden sm:block overflow-x-auto">
-        <table className="w-full border-collapse" style={{ minWidth: '720px' }}>
+        <table className="w-full border-collapse" style={{ minWidth: '760px' }}>
           <thead>
             <tr>
-              <th className="text-left align-bottom pb-4 pr-4" style={{ ...T.mono, width: '20%' }} />
+              <th className="text-left align-bottom pb-5 pr-6" style={{ width: '20%' }} />
               {COMPARE_COLS.map((col, i) => (
                 <th
                   key={col}
-                  className="text-left align-bottom pb-4 px-4 border-b-2"
+                  className="text-left align-bottom pb-5 px-6"
                   style={{
-                    fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-                    fontWeight: 400,
-                    fontSize: '17px',
-                    letterSpacing: '-0.01em',
+                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
                     color: i === 0 ? 'var(--color-accent-ink)' : '#1A1A1A',
-                    borderColor: i === 0 ? 'var(--color-accent)' : 'rgba(26,26,26,0.18)',
+                    borderBottom: i === 0 ? '2px solid var(--color-accent)' : '1px solid rgba(26,26,26,0.25)',
                   }}
                 >
-                  {col}
+                  <span className="inline-flex items-center gap-2">
+                    {i === 0 && (
+                      <span aria-hidden="true" style={{ width: '7px', height: '7px', backgroundColor: 'var(--color-accent)', flexShrink: 0 }} />
+                    )}
+                    {col}
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {COMPARE_ROWS.map((row) => (
-              <tr key={row.label} className="border-b" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
-                <td className="py-4 pr-4 align-top" style={{ ...T.mono, letterSpacing: '0.12em', color: '#5A5752' }}>
+              <tr key={row.label} className="border-b" style={{ borderColor: 'rgba(26,26,26,0.08)' }}>
+                <td
+                  className="py-5 pr-6 align-top"
+                  style={{ ...T.mono, fontSize: '11px', letterSpacing: '0.12em', color: '#5A5752' }}
+                >
                   {row.label}
                 </td>
                 {row.cells.map((cell, i) => (
                   <td
                     key={i}
-                    className="py-4 px-4 align-top"
+                    className="py-5 px-6 align-top"
                     style={{
-                      fontFamily: '"Source Serif 4",Georgia,serif',
-                      fontSize: '14.5px',
-                      lineHeight: 1.5,
-                      color: i === 0 ? '#1A1A1A' : '#5A5752',
+                      fontFamily: '"IBM Plex Mono", monospace',
+                      fontSize: '13px',
+                      lineHeight: 1.55,
+                      color: i === 0 ? '#1A1A1A' : '#7A766F',
                       fontWeight: i === 0 ? 600 : 400,
-                      backgroundColor: i === 0 ? 'rgba(42,143,101,0.05)' : 'transparent',
+                      borderLeft: i === 0 ? '2px solid var(--color-accent)' : 'none',
                     }}
                   >
                     {cell}
@@ -606,8 +667,9 @@ const ComparisonSection: React.FC = () => (
         </table>
       </motion.div>
 
-      {/* Mobile: stacked cards, one per column */}
-      <div className="sm:hidden flex flex-col gap-8">
+      {/* Mobile: stacked cards, one per column. First card (your system) lifted
+          with a soft shadow + sage top-rule for hierarchy; figures render mono. */}
+      <div className="sm:hidden flex flex-col gap-7">
         {COMPARE_COLS.map((col, ci) => (
           <motion.div
             key={col}
@@ -615,25 +677,35 @@ const ComparisonSection: React.FC = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
             transition={{ duration: 0.55, ease, delay: ci * 0.06 }}
-            className="border-t pt-4"
-            style={{ borderColor: ci === 0 ? 'var(--color-accent)' : 'rgba(26,26,26,0.2)', borderTopWidth: '2px' }}
+            className="pt-5 px-5 pb-6"
+            style={{
+              borderTop: ci === 0 ? '2px solid var(--color-accent)' : '2px solid rgba(26,26,26,0.2)',
+              backgroundColor: ci === 0 ? 'var(--color-paper-raise)' : 'transparent',
+              boxShadow: ci === 0 ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+            }}
           >
-            <div
-              style={{
-                fontFamily: '"DM Serif Display","Bodoni Moda",Georgia,serif',
-                fontWeight: 400,
-                fontSize: '20px',
-                color: ci === 0 ? 'var(--color-accent-ink)' : '#1A1A1A',
-                marginBottom: '12px',
-              }}
-            >
-              {col}
+            <div className="flex items-center gap-2" style={{ marginBottom: '14px' }}>
+              {ci === 0 && (
+                <span aria-hidden="true" style={{ width: '7px', height: '7px', backgroundColor: 'var(--color-accent)', flexShrink: 0 }} />
+              )}
+              <span
+                style={{
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: ci === 0 ? 'var(--color-accent-ink)' : '#1A1A1A',
+                }}
+              >
+                {col}
+              </span>
             </div>
             <div className="flex flex-col gap-3">
               {COMPARE_ROWS.map((row) => (
                 <div key={row.label} className="flex justify-between gap-4">
                   <span style={{ ...T.mono, color: '#5A5752', flexShrink: 0 }}>{row.label}</span>
-                  <span style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A', textAlign: 'right' }}>
+                  <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A', textAlign: 'right' }}>
                     {row.cells[ci]}
                   </span>
                 </div>
@@ -663,53 +735,62 @@ const QUALIFY = {
 };
 
 const QualificationSection: React.FC = () => (
-  <section className="py-12 md:py-20 border-t" style={DIVIDER}>
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-12 max-w-2xl">
-        <Label>04</Label>
-        <RevealH2 style={T.display('clamp(2.2rem,3.6vw,3.2rem)')}>
-          This isn't for<br />every agency.
-        </RevealH2>
-      </motion.div>
+      {/* Asymmetric: intro rail (left 5 cols) + the built-for / not-built-for
+          contrast offset to the right 7. The two columns are an editorial
+          contrast, not a symmetric card pair — sage square bullets carry the
+          "built for" side, muted markers the "not". */}
+      <div className="grid md:grid-cols-12 gap-x-12 gap-y-12">
+        <motion.div {...inView} className="md:col-span-5">
+          <SectionIntro num="04" kicker="THE FIT" />
+          <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
+            This isn't for<br />every agency.
+          </RevealH2>
+          <p style={{ ...T.serif, fontSize: '17px', marginTop: '1.5rem', maxWidth: '34ch' }}>
+            The engine pays back fastest for a specific kind of founder. Here is who it is, and who it isn't.
+          </p>
+        </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-x-16 gap-y-10">
-        {[
-          { label: 'BUILT FOR', lines: QUALIFY.built, accent: true },
-          { label: 'NOT BUILT FOR', lines: QUALIFY.not, accent: false },
-        ].map((group, col) => (
-          <motion.div
-            key={group.label}
-            initial={prefersReduced ? false : { opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, ease, delay: col * 0.12 }}
-            className="border-t pt-5"
-            style={{ borderColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.25)', borderTopWidth: '2px' }}
-          >
-            <div style={{ ...T.mono, color: group.accent ? 'var(--color-accent-ink)' : '#5A5752', marginBottom: '18px' }}>
-              {group.label}
-            </div>
-            <div className="flex flex-col gap-4">
-              {group.lines.map((l) => (
-                <div key={l} className="flex items-start gap-3">
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      marginTop: '0.55em',
-                      width: '6px',
-                      height: '6px',
-                      flexShrink: 0,
-                      backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.3)',
-                    }}
-                  />
-                  <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.5, color: group.accent ? '#1A1A1A' : '#5A5752' }}>
-                    {l}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
+        <div className="md:col-span-7 md:col-start-6 grid sm:grid-cols-2 gap-x-12 gap-y-12">
+          {[
+            { label: 'BUILT FOR', lines: QUALIFY.built, accent: true },
+            { label: 'NOT BUILT FOR', lines: QUALIFY.not, accent: false },
+          ].map((group, col) => (
+            <motion.div
+              key={group.label}
+              initial={prefersReduced ? false : { opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, ease, delay: col * 0.12 }}
+              className="pt-6"
+              style={{ borderTop: group.accent ? '2px solid var(--color-accent)' : '2px solid rgba(26,26,26,0.2)' }}
+            >
+              <div style={{ ...T.mono, color: group.accent ? 'var(--color-accent-ink)' : '#5A5752', marginBottom: '22px' }}>
+                {group.label}
+              </div>
+              <div className="flex flex-col gap-5">
+                {group.lines.map((l) => (
+                  <div key={l} className="flex items-start gap-3.5">
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        marginTop: '0.5em',
+                        width: '7px',
+                        height: '7px',
+                        flexShrink: 0,
+                        backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.28)',
+                      }}
+                    />
+                    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.5, color: group.accent ? '#1A1A1A' : '#7A766F' }}>
+                      {l}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   </section>

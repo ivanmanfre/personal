@@ -113,13 +113,34 @@ const LiveEngineProof: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-12 md:py-20 border-t" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
+    <section className="py-24 md:py-32 border-t" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
       <div className="container mx-auto px-8 max-w-6xl">
         <motion.div
           {...(prefersReduced ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.7, ease } })}
-          className="mb-12 max-w-2xl"
+          className="mb-16 max-w-2xl"
         >
-          <div style={{ ...MONO, marginBottom: '1.5rem' }}>Live from the feed</div>
+          {/* Numbered intro — sharp black mono pill + sage left-rule kicker, matching
+              the SectionIntro lockup used across the page for a consistent entry. */}
+          <div className="flex items-center gap-4" style={{ marginBottom: '1.5rem' }}>
+            <span
+              style={{
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.16em',
+                color: '#F7F4EF',
+                backgroundColor: '#1A1A1A',
+                padding: '5px 9px',
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+            >
+              02
+            </span>
+            <span style={{ ...MONO, paddingLeft: '14px', borderLeft: '2px solid #2A8F65', lineHeight: 1.1 }}>
+              LIVE FROM THE FEED
+            </span>
+          </div>
           <h2
             style={{
               fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
@@ -137,7 +158,7 @@ const LiveEngineProof: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-12">
           {cards.map((c, i) => (
             <motion.a
               key={c.id}

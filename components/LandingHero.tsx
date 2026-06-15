@@ -24,6 +24,36 @@ const LandingHero: React.FC = () => {
   const headlineOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.5]);
   const reduced = useReducedMotion();
 
+  // Hand-painted sage highlighter sweep — the §2/§4 emphasis move. Sits behind a
+  // ROMAN phrase (never fills it green). Scales to the wrapped phrase box.
+  const HeroSweep: React.FC<{ delay?: number }> = ({ delay = 0.55 }) => (
+    <motion.svg
+      initial={reduced ? false : { scaleX: 0, opacity: 0 }}
+      animate={{ scaleX: 1, opacity: 1 }}
+      transition={{ delay, duration: 0.9, ease }}
+      viewBox="0 0 400 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        left: '-2%',
+        right: '-2%',
+        top: '0.26em',
+        width: '104%',
+        height: '0.72em',
+        transformOrigin: 'left',
+        zIndex: -1,
+        overflow: 'visible',
+      }}
+    >
+      <path
+        d="M 5 16 Q 80 9 160 14 Q 250 19 320 11 Q 365 14 396 15 L 396 84 Q 360 89 300 83 Q 220 91 150 85 Q 75 90 5 83 Z"
+        fill="#2A8F65"
+        opacity={0.82}
+      />
+    </motion.svg>
+  );
+
   // Editorial line-mask reveal — display lines rise out of a clip mask, settle, stop.
   // Replaces the blur-on-every-element entrance with one decisive typographic move.
   const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
@@ -161,26 +191,33 @@ const LandingHero: React.FC = () => {
                   Add
                 </span>
               </Reveal>
+              {/* Pivot phrase: ROMAN ink (not sage fill). The dollar figure — the
+                  proof pivot — carries the hand-painted sage highlighter sweep, so
+                  sage stays punctuation on the single most important token. */}
               <Reveal delay={0.3}>
                 <span
                   style={{
                     display: 'block',
-                    color: '#2A8F65',
-                    fontSize: 'clamp(3rem, 9vw, 7.5rem)',
-                    lineHeight: 0.95,
+                    color: '#1A1A1A',
+                    fontSize: 'clamp(2.7rem, 8.2vw, 6.75rem)',
+                    lineHeight: 0.98,
                     letterSpacing: '-0.035em',
                     marginLeft: '-0.015em',
-                    marginTop: '0.02em',
+                    marginTop: '0.04em',
                   }}
                 >
-                  $15k-$50k/mo of new pipeline
+                  <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                    $15k-$50k/mo
+                    <HeroSweep delay={0.6} />
+                  </span>{' '}
+                  of new pipeline
                 </span>
               </Reveal>
               <Reveal delay={0.46}>
                 <span
                   style={{
                     display: 'inline-block',
-                    marginTop: '0.45rem',
+                    marginTop: '0.5rem',
                     backgroundColor: '#1A1A1A',
                     color: '#F7F4EF',
                     fontStyle: 'italic',
