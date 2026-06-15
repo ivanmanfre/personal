@@ -4,7 +4,8 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useMetadata } from '../hooks/useMetadata';
 import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
 import { VideoSlot } from './VideoSlot';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SYSTEM_FLOW, SCOPE } from '../lib/contentSystemContent';
+import { SystemFlowDiagram } from './SystemFlowDiagram';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE } from '../lib/contentSystemContent';
 
 /** Scroll-reveal wrapper with staggered delay. */
 function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?: number; className?: string }) {
@@ -305,25 +306,18 @@ export default function ContentSystemPage() {
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
             The same engine runs the entire loop, end to end. You only ever touch one step.
           </p>
-          <div className="grid gap-4 md:grid-cols-4">
-            {SYSTEM_FLOW.map((s, i) => (
-              <Reveal key={s.n} i={i}>
-                <div
-                  className="relative flex h-full flex-col rounded-2xl border p-6 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(0,0,0,0.10)]"
-                  style={{ borderColor: 'var(--color-hairline)', backgroundColor: 'var(--color-paper-raise)' }}
-                >
-                  <div className="font-drama italic text-4xl text-accent-ink leading-none">{s.n}</div>
-                  <h3 className="mt-4 text-lg font-semibold tracking-tight">{s.title}</h3>
-                  <p className="mt-2 text-[14px] text-ink-soft leading-relaxed">{s.body}</p>
-                  {i === 2 && (
-                    <span className="mt-3 inline-flex w-fit rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em]" style={{ backgroundColor: 'var(--color-accent-soft)', color: 'var(--color-accent-ink)' }}>
-                      your only step
-                    </span>
-                  )}
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal>
+            <div
+              className="rounded-3xl border p-5 sm:p-8 md:p-10 shadow-[0_24px_70px_-28px_rgba(0,0,0,0.22)]"
+              style={{ borderColor: 'var(--color-hairline)', backgroundColor: 'var(--color-paper-sunk)' }}
+            >
+              <SystemFlowDiagram />
+            </div>
+          </Reveal>
+          <p className="mt-6 max-w-2xl text-[15px] text-ink-mute leading-relaxed">
+            Hover any node to see what it does. Once it's running, your daily lift is under ten
+            minutes: read the draft, approve, done.
+          </p>
         </section>
 
         {/* 7 — LEAD MAGNETS */}
