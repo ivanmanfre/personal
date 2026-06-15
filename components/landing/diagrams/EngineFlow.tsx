@@ -3,103 +3,95 @@ import { motion, useInView } from 'framer-motion';
 import { DIAGRAM, prefersReducedMotion } from './tokens';
 
 // ─── EngineFlow — the system showcase ────────────────────────────────────────
-// A looping demonstration of how the content engine FUNCTIONS (W3.6). One sage
-// signal travels the pipeline; each node ticks to its done-state as the signal
-// passes; the multi-format stage fans out (posts / carousels / video / lead
-// magnets) then converges to publish → booked calls. Built in the brand diagram
-// language (§5d/§5e): sharp nodes, 1px ink stroke, paper fill, ONE lit sage
-// path, sage corner-square tick. No new dependency — SVG + framer-motion only,
-// so motion DEMONSTRATES the system instead of decorating it.
+// A looping demonstration of how the content engine ACTUALLY functions, mapped
+// 1:1 to the system's documented behaviour (ContentSystemPage): it "decides
+// what to post, writes it in your voice, refuses to ship AI slop, turns one
+// idea into every format, and publishes itself" — then everything lands on the
+// dashboard.
 //
-// prefers-reduced-motion (or non-interactive capture): renders the fully-ticked
-// done-state with every path drawn and no loop — the diagram still reads as a
-// complete system, it just doesn't animate.
+// Flow: IDEA ENGINE → fans one idea into POSTS / CAROUSELS / VIDEO / LEAD
+// MAGNETS → all converge through the ANTI-SLOP QA gate (the moat) → PUBLISH
+// DAILY → DASHBOARD (leads + pipeline). One sage signal travels it; each node
+// ticks to done-state as the signal passes.
+//
+// Built in the brand diagram language (§5d/§5e): sharp nodes, 1px ink stroke,
+// paper fill, ONE lit sage path, sage corner-square tick. SVG + framer-motion
+// only (no new dependency) so motion DEMONSTRATES the system. prefers-reduced-
+// motion / non-interactive capture renders the fully-ticked done-state, no loop.
 
-const NODE_H = 30;
+const NODE_H = 34;
 const CHAR_W = 11 * 0.68; // IBM Plex Mono advance @ 11px + tracking
-const PAD_X = 13;
-const w = (label: string) => Math.ceil(label.length * CHAR_W) + PAD_X * 2;
+const PAD_X = 14;
+const wd = (label: string) => Math.ceil(label.length * CHAR_W) + PAD_X * 2;
 
-type N = { id: string; label: string; x: number; cy: number; w: number; phase: number; signature?: boolean };
+type N = {
+  id: string;
+  label: string;
+  x: number;
+  cy: number;
+  w: number;
+  phase: number;       // node ticks when signal phase >= this
+  caption?: string;    // small mono sub-label under the node
+  signature?: boolean; // the anti-slop QA gate — the moat, drawn heavier
+};
+type Edge = { d: string; phase: number; delay?: number };
 
-// Phase timeline — the signal advances one phase at a time, lighting paths and
-// ticking nodes. Reset to -1 loops it.
-//  0 idea→generate · 1 generate→qa · 2 qa fans to 4 formats · 3 formats→publish
-//  4 publish→result
-const PHASES = 5;
+// Phase timeline: 0 idea→formats · 1 formats→QA · 2 QA→publish · 3 publish→dash
+const PHASES = 4;
 
-// ─── Desktop horizontal branch layout (viewBox 1040×230) ─────────────────────
-const SPINE_CY = 56;
-const dNode = (id: string, label: string, x: number, cy: number, phase: number, signature = false): N => ({ id, label, x, cy, w: w(label), phase, signature });
-
-const D_SPINE: N[] = [
-  dNode('idea', 'Idea engine', 0, SPINE_CY, 0),
-  dNode('gen', 'Generate', 175, SPINE_CY, 0),
-  dNode('qa', 'Anti-slop QA', 330, SPINE_CY, 1, true),
-];
-const FORMAT_CX = 600;
-const D_FORMATS: N[] = [
-  { id: 'posts', label: 'Posts', cy: 18, phase: 2, w: w('Posts'), x: FORMAT_CX - w('Posts') / 2 },
-  { id: 'car', label: 'Carousels', cy: 78, phase: 2, w: w('Carousels'), x: FORMAT_CX - w('Carousels') / 2 },
-  { id: 'vid', label: 'Video', cy: 138, phase: 2, w: w('Video'), x: FORMAT_CX - w('Video') / 2 },
-  { id: 'lm', label: 'Lead magnets', cy: 198, phase: 2, w: w('Lead magnets'), x: FORMAT_CX - w('Lead magnets') / 2 },
-];
-const D_PUBLISH = dNode('pub', 'Publish daily', 820, 108, 3);
-const D_RESULT = dNode('leads', 'Booked calls', 980, 108, 4);
-D_RESULT.x = 1040 - D_RESULT.w; // right-anchor inside viewBox
-
-const right = (n: N) => n.x + n.w;
-const left = (n: N) => n.x;
-
-// Smooth horizontal-ish bezier between two points (editorial S-curve, never a
-// right-angle — matches serpentineLayout's connector character).
-const curve = (x1: number, y1: number, x2: number, y2: number) => {
+// Smooth S-curve between two points (editorial, never a right angle).
+const hcurve = (x1: number, y1: number, x2: number, y2: number) => {
   const mx = (x1 + x2) / 2;
   return `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
 };
-
-type Edge = { d: string; phase: number; delay?: number };
-
-const D_EDGES: Edge[] = [
-  { d: curve(right(D_SPINE[0]), SPINE_CY, left(D_SPINE[1]), SPINE_CY), phase: 0 },
-  { d: curve(right(D_SPINE[1]), SPINE_CY, left(D_SPINE[2]), SPINE_CY), phase: 1 },
-  // fan-out from QA right edge to each format (staggered)
-  ...D_FORMATS.map((f, i): Edge => ({ d: curve(right(D_SPINE[2]), SPINE_CY, left(f), f.cy), phase: 2, delay: i * 0.08 })),
-  // converge from each format right edge to publish
-  ...D_FORMATS.map((f, i): Edge => ({ d: curve(right(f), f.cy, left(D_PUBLISH), D_PUBLISH.cy), phase: 3, delay: i * 0.08 })),
-  { d: curve(right(D_PUBLISH), D_PUBLISH.cy, left(D_RESULT), D_RESULT.cy), phase: 4 },
-];
-const D_NODES = [...D_SPINE, ...D_FORMATS, D_PUBLISH, D_RESULT];
-
-// ─── Mobile vertical layout (viewBox 360×620) ────────────────────────────────
-const M_CX = 70;
-const mNode = (id: string, label: string, cy: number, phase: number, signature = false): N => ({ id, label, x: M_CX, cy, w: w(label), phase, signature });
-const M_NODES: N[] = [
-  mNode('idea', 'Idea engine', 30, 0),
-  mNode('gen', 'Generate', 120, 0),
-  mNode('qa', 'Anti-slop QA', 210, 1, true),
-  // formats fan to the right column
-  { id: 'posts', label: 'Posts', x: 240, cy: 300, w: w('Posts'), phase: 2 },
-  { id: 'car', label: 'Carousels', x: 240, cy: 350, w: w('Carousels'), phase: 2 },
-  { id: 'vid', label: 'Video', x: 240, cy: 400, w: w('Video'), phase: 2 },
-  { id: 'lm', label: 'Lead magnets', x: 220, cy: 450, w: w('Lead magnets'), phase: 2 },
-  mNode('pub', 'Publish daily', 540, 3),
-  mNode('leads', 'Booked calls', 590, 4),
-];
-const mById = (id: string) => M_NODES.find((n) => n.id === id)!;
 const vcurve = (x1: number, y1: number, x2: number, y2: number) => {
   const my = (y1 + y2) / 2;
   return `M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`;
 };
-const M_EDGES: Edge[] = [
-  { d: vcurve(mById('idea').x + 20, mById('idea').cy + NODE_H / 2, mById('gen').x + 20, mById('gen').cy - NODE_H / 2), phase: 0 },
-  { d: vcurve(mById('gen').x + 20, mById('gen').cy + NODE_H / 2, mById('qa').x + 20, mById('qa').cy - NODE_H / 2), phase: 1 },
-  ...['posts', 'car', 'vid', 'lm'].map((id, i): Edge => ({ d: vcurve(mById('qa').x + 30, mById('qa').cy + NODE_H / 2, mById(id).x, mById(id).cy), phase: 2, delay: i * 0.08 })),
-  ...['posts', 'car', 'vid', 'lm'].map((id, i): Edge => ({ d: vcurve(mById(id).x, mById(id).cy, mById('pub').x + 30, mById('pub').cy - NODE_H / 2), phase: 3, delay: i * 0.08 })),
-  { d: vcurve(mById('pub').x + 20, mById('pub').cy + NODE_H / 2, mById('leads').x + 20, mById('leads').cy - NODE_H / 2), phase: 4 },
+const right = (n: N) => n.x + n.w;
+const left = (n: N) => n.x;
+
+// ─── Desktop horizontal layout (viewBox 1080×300) ────────────────────────────
+const SPINE = 140;
+const FCX = 405; // formats column centre
+const fmt = (id: string, label: string, cy: number): N => ({ id, label, w: wd(label), x: FCX - wd(label) / 2, cy, phase: 1 });
+
+const D_IDEA: N = { id: 'idea', label: 'Idea engine', w: wd('Idea engine'), x: 0, cy: SPINE, phase: 0, caption: 'decides what to post' };
+const D_FORMATS: N[] = [fmt('posts', 'Posts', 44), fmt('car', 'Carousels', 110), fmt('vid', 'Video', 176), fmt('lm', 'Lead magnets', 242)];
+const D_QA: N = { id: 'qa', label: 'Anti-slop QA', w: wd('Anti-slop QA'), x: 600, cy: SPINE, phase: 2, caption: 'refuses AI slop', signature: true };
+const D_PUB: N = { id: 'pub', label: 'Publish daily', w: wd('Publish daily'), x: 800, cy: SPINE, phase: 3, caption: 'schedules itself' };
+const D_DASH: N = { id: 'dash', label: 'Dashboard', w: wd('Dashboard'), x: 980, cy: SPINE, phase: 4, caption: 'leads + pipeline' };
+const D_NODES = [D_IDEA, ...D_FORMATS, D_QA, D_PUB, D_DASH];
+const D_EDGES: Edge[] = [
+  ...D_FORMATS.map((f, i): Edge => ({ d: hcurve(right(D_IDEA), SPINE, left(f), f.cy), phase: 0, delay: i * 0.07 })),
+  ...D_FORMATS.map((f, i): Edge => ({ d: hcurve(right(f), f.cy, left(D_QA), SPINE), phase: 1, delay: i * 0.07 })),
+  { d: hcurve(right(D_QA), SPINE, left(D_PUB), SPINE), phase: 2 },
+  { d: hcurve(right(D_PUB), SPINE, left(D_DASH), SPINE), phase: 3 },
 ];
 
-// ─── Node + edge renderers ───────────────────────────────────────────────────
+// ─── Mobile vertical layout (viewBox 360×760) ────────────────────────────────
+const MX = 64;
+const mn = (id: string, label: string, cy: number, phase: number, caption?: string, signature = false): N => ({ id, label, w: wd(label), x: MX, cy, phase, caption, signature });
+const M_IDEA = mn('idea', 'Idea engine', 34, 0, 'decides what to post');
+const M_FORMATS: N[] = [
+  { id: 'posts', label: 'Posts', w: wd('Posts'), x: 230, cy: 190, phase: 1 },
+  { id: 'car', label: 'Carousels', w: wd('Carousels'), x: 230, cy: 250, phase: 1 },
+  { id: 'vid', label: 'Video', w: wd('Video'), x: 230, cy: 310, phase: 1 },
+  { id: 'lm', label: 'Lead magnets', w: wd('Lead magnets'), x: 210, cy: 370, phase: 1 },
+];
+const M_QA = mn('qa', 'Anti-slop QA', 520, 2, 'refuses AI slop', true);
+const M_PUB = mn('pub', 'Publish daily', 620, 3, 'schedules itself');
+const M_DASH = mn('dash', 'Dashboard', 710, 4, 'leads + pipeline');
+const M_NODES = [M_IDEA, ...M_FORMATS, M_QA, M_PUB, M_DASH];
+const mc = (n: N) => n.cy; // centre y helper
+const M_EDGES: Edge[] = [
+  ...M_FORMATS.map((f, i): Edge => ({ d: vcurve(M_IDEA.x + 34, M_IDEA.cy + NODE_H / 2, f.x, mc(f)), phase: 0, delay: i * 0.07 })),
+  ...M_FORMATS.map((f, i): Edge => ({ d: vcurve(f.x, mc(f), M_QA.x + 34, M_QA.cy - NODE_H / 2), phase: 1, delay: i * 0.07 })),
+  { d: vcurve(M_QA.x + 30, M_QA.cy + NODE_H / 2, M_PUB.x + 30, M_PUB.cy - NODE_H / 2), phase: 2 },
+  { d: vcurve(M_PUB.x + 30, M_PUB.cy + NODE_H / 2, M_DASH.x + 30, M_DASH.cy - NODE_H / 2), phase: 3 },
+];
+
+// ─── Renderers ───────────────────────────────────────────────────────────────
 const FlowNode: React.FC<{ n: N; ticked: boolean }> = ({ n, ticked }) => {
   const innerW = n.w - PAD_X * 2;
   const natural = n.label.length * CHAR_W;
@@ -111,7 +103,7 @@ const FlowNode: React.FC<{ n: N; ticked: boolean }> = ({ n, ticked }) => {
         height={NODE_H}
         fill={DIAGRAM.paper}
         stroke={ticked ? DIAGRAM.inkDone : DIAGRAM.ink}
-        strokeWidth={n.signature ? 1.5 : DIAGRAM.nodeStroke}
+        strokeWidth={n.signature ? 1.75 : DIAGRAM.nodeStroke}
         style={{ transition: 'stroke 0.4s ease' }}
       />
       <text
@@ -140,6 +132,20 @@ const FlowNode: React.FC<{ n: N; ticked: boolean }> = ({ n, ticked }) => {
         transition={{ duration: 0.3, ease: [0.22, 0.84, 0.36, 1] }}
         style={{ transformOrigin: 'center' }}
       />
+      {n.caption && (
+        <text
+          x={n.w / 2}
+          y={NODE_H + 15}
+          textAnchor="middle"
+          fontFamily={DIAGRAM.font}
+          fontSize={9}
+          letterSpacing="0.05em"
+          fill={n.signature ? '#1F6B4B' : DIAGRAM.label}
+          style={{ opacity: 0.9 }}
+        >
+          {n.caption}
+        </text>
+      )}
     </g>
   );
 };
@@ -160,25 +166,22 @@ const FlowEdge: React.FC<{ edge: Edge; lit: boolean }> = ({ edge, lit }) => (
   </>
 );
 
-// ─── The looping phase machine ───────────────────────────────────────────────
+// ─── Looping phase machine ───────────────────────────────────────────────────
 const useEngineLoop = (active: boolean): number => {
   const reduced = prefersReducedMotion();
   const [phase, setPhase] = useState(reduced ? PHASES : -1);
   const timer = useRef<ReturnType<typeof setTimeout>>();
-
   useEffect(() => {
     if (reduced || !active) return;
     let p = -1;
     const tick = () => {
       p = p >= PHASES ? -1 : p + 1;
       setPhase(p);
-      // hold longer on the full-system frame before resetting
-      timer.current = setTimeout(tick, p >= PHASES ? 2000 : 760);
+      timer.current = setTimeout(tick, p >= PHASES ? 2100 : 820);
     };
-    timer.current = setTimeout(tick, 400);
+    timer.current = setTimeout(tick, 450);
     return () => clearTimeout(timer.current);
   }, [reduced, active]);
-
   return phase;
 };
 
@@ -188,7 +191,7 @@ const Diagram: React.FC<{ nodes: N[]; edges: Edge[]; viewBox: string; aspect: st
   const phase = useEngineLoop(inView);
   return (
     <div ref={ref} style={{ width: '100%' }}>
-      <svg viewBox={viewBox} width="100%" style={{ display: 'block', aspectRatio: aspect, overflow: 'visible' }} role="img" aria-label="How the engine works: idea engine, generate, anti-slop QA, then posts, carousels, video and lead magnets publish daily and bring booked calls.">
+      <svg viewBox={viewBox} width="100%" style={{ display: 'block', aspectRatio: aspect, overflow: 'visible' }} role="img" aria-label="How the engine works: the idea engine decides what to post, turns one idea into posts, carousels, video and lead magnets, runs every piece through an anti-slop QA gate, publishes daily, and tracks leads on your dashboard.">
         {edges.map((e, i) => (
           <FlowEdge key={i} edge={e} lit={phase >= e.phase} />
         ))}
@@ -202,13 +205,11 @@ const Diagram: React.FC<{ nodes: N[]; edges: Edge[]; viewBox: string; aspect: st
 
 const EngineFlow: React.FC = () => (
   <>
-    {/* Desktop / tablet */}
     <div className="hidden sm:block">
-      <Diagram nodes={D_NODES} edges={D_EDGES} viewBox="0 0 1040 230" aspect="1040 / 230" />
+      <Diagram nodes={D_NODES} edges={D_EDGES} viewBox="0 0 1080 300" aspect="1080 / 300" />
     </div>
-    {/* Mobile */}
     <div className="sm:hidden">
-      <Diagram nodes={M_NODES} edges={M_EDGES} viewBox="0 0 360 620" aspect="360 / 620" />
+      <Diagram nodes={M_NODES} edges={M_EDGES} viewBox="0 0 360 760" aspect="360 / 760" />
     </div>
   </>
 );

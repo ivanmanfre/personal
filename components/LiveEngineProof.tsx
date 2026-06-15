@@ -153,13 +153,13 @@ const LiveEngineProof: React.FC = () => {
           >
             This feed is the system, working.
           </h2>
-          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '16px', lineHeight: 1.7, color: '#3D3D3B', marginTop: '1.25rem' }}>
-            Recent posts running on the same engine you would own. Read a few. If the writing sounds like a person, that is the point.
+          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '16px', lineHeight: 1.6, color: '#3D3D3B', marginTop: '1.25rem', maxWidth: '44ch' }}>
+            Recent posts, on the same engine you'd own. If the writing sounds like a person, that's the point.
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-12">
-          {cards.map((c, i) => (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
+          {cards.slice(0, 3).map((c, i) => (
             <motion.a
               key={c.id}
               href={LINKEDIN_FEED}
@@ -190,7 +190,7 @@ const LiveEngineProof: React.FC = () => {
                   lineHeight: 1.6,
                   color: '#1A1A1A',
                   display: '-webkit-box',
-                  WebkitLineClamp: c.image ? 4 : 7,
+                  WebkitLineClamp: c.image ? 3 : 4,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                   flex: 1,
