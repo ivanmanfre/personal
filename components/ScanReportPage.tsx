@@ -1499,83 +1499,115 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
   );
 }
 
-// ── THE WHOLE SYSTEM — animated SVG flow: calls converge into the scoring engine, fan out to
-// the four outputs. Sage signal paths draw on (pathLength), glowing pulses travel them
-// (strokeDashoffset, no SMIL/GSAP needed — the DrawSVG + MotionPath techniques, on-brand).
+// ── THE WHOLE SYSTEM — INTERACTIVE animated SVG flow: calls converge into the scoring engine,
+// fan out to four outputs. Sage paths draw on (pathLength) + glowing pulses travel them
+// (strokeDashoffset). Outputs are hoverable (explanation panel) and clickable (jump to the mock);
+// when idle it auto-cycles a guided tour so there's always insightful movement.
 const SF_IN = ['Sales call', 'Demo call', 'Customer call', 'Support call'];
-const SF_OUT = ['Call analysis', 'Churn alert', 'Weekly digest', 'Control panel'];
+const SF_OUT = [
+  { label: 'Call analysis', anchor: 'ci-analysis', desc: 'Every sales call, scored on your rubric. The exact moments that cost you the deal, and what to coach next time.' },
+  { label: 'Churn alert', anchor: 'ci-alert', accent: true, desc: 'The moment a customer call signals risk, you get a flag with the quote and a save-play. Before the renewal, not after.' },
+  { label: 'Weekly digest', anchor: 'ci-digest', desc: "Monday morning: the week's pattern, your reps ranked, the accounts at risk. One scroll, no meeting." },
+  { label: 'Control panel', anchor: 'ci-control', desc: 'You set the rubric, the thresholds, and who gets pinged. The system runs the way you sell.' },
+];
+const SF_ENGINE = { label: 'Scoring engine', desc: 'Transcribes every call, scores it against your rubric, and routes the result to the right place. Nobody has to listen back.' };
 
 function CallIntelSystemFlow() {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
   const sage = 'var(--color-accent)';
+  const [hover, setHover] = useState<number | 'engine' | null>(null);
+  const [auto, setAuto] = useState(0);
+  useEffect(() => {
+    if (hover !== null || reduce) return;
+    const t = setInterval(() => setAuto((a) => (a + 1) % 4), 2800);
+    return () => clearInterval(t);
+  }, [hover, reduce]);
+  const activeOut = hover === 'engine' ? -1 : (hover ?? auto);
+  const info = hover === 'engine' ? SF_ENGINE : SF_OUT[(hover ?? auto) as number];
+  const infoAccent = hover !== 'engine' && (SF_OUT[(hover ?? auto) as number] as any).accent;
+  const goTo = (id: string) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
   const inY = [56, 144, 232, 320];
   const outY = [50, 140, 232, 322];
-  const EX1 = 416, EX2 = 588, ECY = 188;
-  const inPath = (cy: number) => `M196 ${cy} C 308 ${cy}, 372 ${ECY}, ${EX1} ${ECY}`;
-  const outPath = (cy: number) => `M${EX2} ${ECY} C ${EX2 + 96} ${ECY}, 700 ${cy}, 780 ${cy}`;
-  const Connector = ({ d, delay }: { d: string; delay: number }) => (
+  const EX1 = 402, EW = 226, EX2 = 628, ECY = 188;
+  const inPath = (cy: number) => `M196 ${cy} C 300 ${cy}, 360 ${ECY}, ${EX1} ${ECY}`;
+  const outPath = (cy: number) => `M${EX2} ${ECY} C ${EX2 + 90} ${ECY}, 706 ${cy}, 786 ${cy}`;
+  const Connector = ({ d, delay, active }: { d: string; delay: number; active?: boolean }) => (
     <g>
       <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
-      <motion.path d={d} fill="none" stroke={sage} strokeWidth={1.5} strokeOpacity={0.3}
+      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
         initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
       {!reduce && (
-        <motion.path d={d} fill="none" stroke={sage} strokeWidth={2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
-          animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
+        <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
+          animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
       )}
     </g>
   );
-  const Node = ({ x, y, w, label, accent, glow, delay }: { x: number; y: number; w: number; label: string; accent?: boolean; glow?: boolean; delay: number }) => {
+  const Node = ({ x, y, w, label, accent, glow, active, delay, onEnter, onClick }: { x: number; y: number; w: number; label: string; accent?: boolean; glow?: boolean; active?: boolean; delay: number; onEnter?: () => void; onClick?: () => void }) => {
     const c = accent ? CI_CORAL : sage;
     return (
-      <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}>
-        {glow && !reduce && (
+      <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}
+        onMouseEnter={onEnter} onMouseLeave={onClick ? () => setHover(null) : undefined} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+        {active && <rect x={x - 4} y={y - 26} width={w + 8} height={52} rx={15} fill="none" stroke={c} strokeWidth={1.75} />}
+        {glow && !reduce && !active && (
           <motion.rect x={x - 3} y={y - 25} width={w + 6} height={50} rx={14} fill="none" stroke={c} strokeWidth={1.25}
-            animate={{ strokeOpacity: [0, 0.45, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
+            animate={{ strokeOpacity: [0, 0.4, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
         )}
-        <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={CI_CARD} stroke={accent ? CI_CORAL : hairline} strokeWidth={1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
-        <motion.circle cx={x + 18} cy={y} r={3} fill={c} animate={glow && !reduce ? { opacity: [0.45, 1, 0.45] } : {}} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
-        <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A' }}>{label}</text>
+        <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={active ? (accent ? 'rgba(168,84,57,0.07)' : 'rgba(42,143,101,0.08)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+        <motion.circle cx={x + 18} cy={y} r={3} fill={c} animate={glow && !reduce && !active ? { opacity: [0.45, 1, 0.45] } : {}} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay: 1.4 + delay }} />
+        <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A', fontWeight: active ? 600 : 400 }}>{label}</text>
       </motion.g>
     );
   };
+  const Panel = (
+    <div className="mt-6 lg:mt-8 max-w-2xl mx-auto text-center px-4" style={{ minHeight: 92 }}>
+      <AnimatePresence mode="wait">
+        <motion.div key={hover === 'engine' ? 'engine' : (hover ?? auto)} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3, ease: EASE }}>
+          <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: infoAccent ? CI_CORAL : accentInk, fontWeight: 600 }}>{info.label}</p>
+          <p className="mt-2 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: '#3D3D3B', maxWidth: '46ch' }}>{info.desc}</p>
+        </motion.div>
+      </AnimatePresence>
+      <p className="mt-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.35)' }}>Hover to explore · click to jump to it</p>
+    </div>
+  );
   return (
     <div>
-      {/* DESKTOP — full SVG diagram */}
+      {/* DESKTOP — full interactive SVG diagram */}
       <div className="hidden lg:block">
         <svg viewBox="0 0 1000 384" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="How the system works: calls flow into a scoring engine and out to four deliverables">
           {inY.map((cy, i) => <Connector key={`ic${i}`} d={inPath(cy)} delay={0.1 + i * 0.08} />)}
-          {outY.map((cy, i) => <Connector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} />)}
+          {outY.map((cy, i) => <Connector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} active={activeOut === i} />)}
           {/* engine */}
-          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}>
-            <motion.rect x={EX1 - 8} y={ECY - 74} width={188} height={148} rx={20} fill="none" stroke={sage} strokeWidth={1}
-              animate={reduce ? {} : { strokeOpacity: [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }} />
-            <rect x={EX1} y={ECY - 66} width={172} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
-            {/* processing scan line — sweeps inside the engine */}
+          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
+            onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
+            <motion.rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={20} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1}
+              animate={reduce ? {} : { strokeOpacity: hover === 'engine' ? 0.6 : [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: hover === 'engine' ? 0 : Infinity, ease: 'easeInOut' }} />
+            <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
             {!reduce && (
-              <motion.rect x={EX1 + 12} width={148} height={1.5} rx={1} fill={sage}
+              <motion.rect x={EX1 + 12} width={EW - 24} height={1.5} rx={1} fill={sage}
                 animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
             )}
-            <circle cx={EX1 + 22} cy={ECY - 40} r={3.5} fill={sage} />
-            <text x={EX1 + 34} y={ECY - 40} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
-            <text x={EX1 + 22} y={ECY + 2} style={{ fontFamily: SERIF, fontSize: 26, fill: '#F7F4EF' }}>Scoring</text>
-            <text x={EX1 + 22} y={ECY + 30} style={{ fontFamily: SERIF, fontSize: 26, fontStyle: 'italic', fill: sage }}>engine</text>
-            <text x={EX1 + 22} y={ECY + 56} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.1em', fill: 'rgba(247,244,239,0.5)' }}>transcribe · score · route</text>
+            <circle cx={EX1 + 24} cy={ECY - 38} r={3.5} fill={sage} />
+            <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
+            <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#F7F4EF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
+            <text x={EX1 + 24} y={ECY + 48} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.05em', fill: 'rgba(247,244,239,0.55)' }}>transcribe · score · route</text>
           </motion.g>
           {/* input + output nodes */}
           {SF_IN.map((l, i) => <Node key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} />)}
-          {SF_OUT.map((l, i) => <Node key={`out${i}`} x={780} y={outY[i]} w={196} label={l} accent={i === 1} glow delay={0.7 + i * 0.08} />)}
+          {SF_OUT.map((o, i) => <Node key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={o.accent} glow active={activeOut === i} delay={0.7 + i * 0.08} onEnter={() => setHover(i)} onClick={() => goTo(o.anchor)} />)}
           {/* live counter */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
-            <motion.circle cx={EX1 + 30} cy={20} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
-            <text x={EX1 + 40} y={20} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(26,26,26,0.5)' }}>LIVE · 1,240 calls scored this month</text>
+            <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
+            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(26,26,26,0.5)' }}>LIVE · 1,240 calls scored this month</text>
           </motion.g>
-          <text x={24} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
-          <text x={780} y={364} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
+          <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
+          <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
         </svg>
       </div>
 
-      {/* MOBILE — vertical flow */}
+      {/* MOBILE — vertical flow, output chips tappable */}
       <div className="lg:hidden flex flex-col items-center">
         <div className="w-full grid grid-cols-2 gap-2.5">
           {SF_IN.map((l) => (
@@ -1597,14 +1629,16 @@ function CallIntelSystemFlow() {
           {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
         </div>
         <div className="w-full grid grid-cols-2 gap-2.5">
-          {SF_OUT.map((l, i) => (
-            <div key={l} className="flex items-center gap-2 px-3.5 py-2.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${i === 1 ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
-              <span style={{ width: 5, height: 5, borderRadius: 5, background: i === 1 ? CI_CORAL : sage, flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{l}</span>
-            </div>
+          {SF_OUT.map((o, i) => (
+            <button key={o.label} onClick={() => goTo(o.anchor)} className="flex items-center gap-2 px-3.5 py-2.5 text-left" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${o.accent ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
+              <span style={{ width: 5, height: 5, borderRadius: 5, background: o.accent ? CI_CORAL : sage, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{o.label}</span>
+            </button>
           ))}
         </div>
       </div>
+
+      {Panel}
     </div>
   );
 }
@@ -1618,9 +1652,10 @@ function CICallAnalysis() {
   return (
     <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-      <div className="flex items-center justify-between gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Call analysis</span>
-        <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>Discovery · Acme Co · 32 min</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>Discovery · Acme Co · 32 min</span>
       </div>
       <div className="p-5 lg:p-6">
         <div className="flex items-baseline gap-2">
@@ -1668,7 +1703,8 @@ function CIChurnAlert() {
   return (
     <motion.div className="overflow-hidden h-full" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: 0.08 }}
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, borderLeft: `3px solid ${CI_CORAL}`, boxShadow: CI_SHADOW }}>
-      <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
         <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
         <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(168,84,57,0.09)' }}>High risk</span>
@@ -1734,34 +1770,35 @@ function CIControlPanel({ companyName }: { companyName: string }) {
 // Where the flags land — a Slack message mock (the churn alert pinged to your channel).
 function CISlackAlert() {
   const reduce = useReducedMotion();
-  const hairline = 'var(--color-hairline)';
+  // Slack dark-mode palette
+  const BG = '#1A1D21', LINE = 'rgba(255,255,255,0.09)', TXT = '#E4E5E6', MUT = 'rgba(228,229,230,0.45)';
   const Btn = ({ t }: { t: string }) => (
-    <span className="inline-flex items-center px-3 py-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A', background: '#FFFFFF', border: '1px solid rgba(26,26,26,0.18)', borderRadius: 8 }}>{t}</span>
+    <span className="inline-flex items-center px-3 py-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: TXT, background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8 }}>{t}</span>
   );
   return (
     <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
-      style={{ background: '#FFFFFF', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid rgba(26,26,26,0.08)' }}>
-        <span style={{ fontFamily: MONO, fontSize: '15px', color: 'rgba(26,26,26,0.35)' }}>#</span>
-        <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 700, color: '#1A1A1A' }}>customer-health</span>
-        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)', border: `1px solid ${hairline}`, borderRadius: 6 }}>Slack</span>
+      style={{ background: BG, borderRadius: CI_R, border: `1px solid ${LINE}`, boxShadow: CI_SHADOW_LG }}>
+      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
+        <span style={{ fontFamily: MONO, fontSize: '15px', color: MUT }}>#</span>
+        <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>customer-health</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: MUT, border: `1px solid ${LINE}`, borderRadius: 6 }}>Slack</span>
       </div>
       <div className="flex gap-3.5 px-5 py-4">
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: '#1A1A1A', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(42,143,101,0.16)', border: '1px solid rgba(42,143,101,0.4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CIWaveform count={3} maxH={17} gap={2.5} barW={2.5} />
         </div>
         <div className="min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 700, color: '#1A1A1A' }}>Call Intelligence</span>
-            <span className="px-1.5 py-0.5" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)', background: 'rgba(26,26,26,0.05)', borderRadius: 4 }}>App</span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.4)' }}>9:12 AM</span>
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 700, color: '#FFFFFF' }}>Call Intelligence</span>
+            <span className="px-1.5 py-0.5" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: MUT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>App</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', color: MUT }}>9:12 AM</span>
           </div>
-          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#1A1A1A' }}>
-            <span style={{ color: CI_CORAL, fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: TXT }}>
+            <span style={{ color: '#E8836B', fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
           </p>
           <div className="mt-3 flex flex-wrap gap-2"><Btn t="Open account" /><Btn t="See save-play" /></div>
           <div className="mt-2.5 flex gap-1.5">
-            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#3D3D3B', background: 'rgba(42,143,101,0.08)', border: '1px solid rgba(42,143,101,0.2)', borderRadius: 10 }}>{r}</span>)}
+            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: TXT, background: 'rgba(42,143,101,0.14)', border: '1px solid rgba(42,143,101,0.32)', borderRadius: 10 }}>{r}</span>)}
           </div>
         </div>
       </div>
@@ -1841,12 +1878,12 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             One improves the next deal. One saves the account before it's gone.
           </p>
         </div>
-        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-start">
+        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-stretch">
           {surfaces.map((s, i) => (
-            <div key={i}>
+            <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="flex flex-col h-full scroll-mt-24">
               <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
-              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{s.head}</p>
-              {s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}
+              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A', minHeight: '2.3em' }}>{s.head}</p>
+              <div className="flex-1">{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
             </div>
           ))}
         </div>
@@ -1858,26 +1895,18 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#5A5752' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
         </div>
         <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
-        <div className="mt-14 max-w-3xl mx-auto">
+        <div id="ci-digest" className="mt-14 max-w-3xl mx-auto scroll-mt-24">
           <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday: the weekly digest</p>
           <CallIntelProductMock ci={ci} companyName={companyName} />
         </div>
-        <div className="mt-14">
+        <div id="ci-control" className="mt-14 scroll-mt-24">
           <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>You stay in control</p>
           <CIControlPanel companyName={companyName} />
         </div>
       </section>
 
-      {/* PROOF — who's building this + named client outcomes */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Who's building this</p>
-        <div className="mb-12 max-w-2xl flex items-start gap-4">
-          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-14 h-14 object-cover shrink-0" style={{ borderRadius: 16, boxShadow: CI_SHADOW }} onError={fallbackOnError} />
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Call intelligence is one of them, and it already runs in production.
-          </p>
-        </div>
-        {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
+      {/* CASE STUDY — the proof: a system we already shipped */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
         <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
           How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
@@ -1922,6 +1951,25 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
         </motion.figure>
         <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
+      </section>
+
+      {/* FOUNDER'S NOTE — the human close, right before the ask */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-3xl mx-auto">
+          <Kicker>Who's behind this</Kicker>
+          <div className="mt-7 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-start">
+            <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-cover shrink-0" style={{ borderRadius: 18, boxShadow: CI_SHADOW_LG }} onError={fallbackOnError} />
+            <div>
+              <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+                I'm Ivan. I build the systems agencies <Italic>promise and never ship.</Italic>
+              </p>
+              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#3D3D3B' }}>
+                Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
+              </p>
+              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · Agent-Ready Ops</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* CTA — soft rounded panel, centered */}
