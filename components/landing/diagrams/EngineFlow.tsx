@@ -2,204 +2,128 @@ import React, { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { DIAGRAM, prefersReducedMotion } from './tokens';
 
-// ─── EngineFlow v4 — the system as a live production line ─────────────────────
-// Bigger and more alive than a static node diagram: real content artifacts (a
-// post, a carousel, a video, a lead magnet) are produced by the engine and
-// travel the pipeline, each gets stamped by the ANTI-SLOP QA gate as it passes,
-// publishes, and the lead magnets feed a leads tray that fills. Drawn in SVG so
-// it scales crisply and stays in the brand diagram language (sharp shapes, 1px
-// ink, paper fill, sage as the one signal/accent).
+// ─── EngineFlow v5 — a readable MAP of how the system functions ──────────────
+// Grounded in Ivan's own walkthrough (public/content-system-walkthrough.md):
+// the system is a SELF-IMPROVING LOOP, not a linear pipeline. One idea →
+// written in your voice → anti-slop QA → you approve → it schedules itself →
+// publishes daily → lead magnets capture leads → and performance feeds back so
+// it learns what lands and gets sharper. The feedback loop is the whole point.
 //
-// prefers-reduced-motion / capture → a composed static frame (artifacts placed
-// along the line, QA-stamped, leads shown), no loop.
+// Design priority: CLARITY. A labelled process map with arrowheads (direction
+// is obvious), numbered stages, the format fan, the leads output, and a clearly
+// labelled return loop. A single sage dot circulates to show the flow; the map
+// is fully readable static (reduced-motion / capture).
 
-const ease = [0.22, 0.84, 0.36, 1] as const;
 const SAGE = DIAGRAM.sage;
 const INK = '#1A1A1A';
-const INK_SOFT = 'rgba(26,26,26,0.32)';
+const INK_SOFT = 'rgba(26,26,26,0.30)';
 const LABEL = '#5A5752';
 const FONT = '"IBM Plex Mono", monospace';
+const PAPER = '#F7F4EF';
 
-// pipeline geometry (viewBox 1200 × 470)
-const LANE = 232;          // baseline y
-const X_START = 312;       // artifacts spawn just after the engine
-const X_QA = 612;          // QA gate centre
-const X_END = 858;         // publish
-const TRAVEL = 4.2;        // seconds per artifact
-const STAGGER = 1.05;      // seconds between artifacts
-const QA_FRAC = (X_QA - X_START) / (X_END - X_START);
+const SPINE = 100;
+const BOX_H = 42;
 
-// ─── artifact glyphs (mini content, drawn in SVG) ────────────────────────────
-const ArtPost: React.FC = () => (
+type Stage = { n: string; x: number; w: number; label: string; caption: string; signature?: boolean };
+const STAGES: Stage[] = [
+  { n: '1', x: 16, w: 112, label: 'Idea engine', caption: 'decides what to post' },
+  { n: '2', x: 196, w: 104, label: 'Create', caption: 'written in your voice' },
+  { n: '3', x: 360, w: 120, label: 'Anti-slop QA', caption: 'voice-matched, no slop', signature: true },
+  { n: '4', x: 540, w: 116, label: 'You approve', caption: 'about 1 hr a week' },
+  { n: '5', x: 716, w: 96, label: 'Schedule', caption: 'fills the calendar' },
+  { n: '6', x: 872, w: 92, label: 'Publish', caption: 'daily, on LinkedIn' },
+];
+const cx = (s: Stage) => s.x + s.w / 2;
+const rightX = (s: Stage) => s.x + s.w;
+
+const FORMATS = ['Post', 'Carousel', 'Video', 'Lead magnet'];
+const CREATE = STAGES[1];
+const PUBLISH = STAGES[5];
+const IDEA = STAGES[0];
+
+// leads output (from the lead magnets the engine publishes)
+const LEADS = { x: PUBLISH.x - 6, w: 104, cy: 250, label: 'Leads', caption: 'captured + qualified' };
+
+// the circulating dot rides this loop: along the spine, then the return arc
+const LOOP_PATH = `M ${cx(IDEA)} ${SPINE} L ${cx(PUBLISH)} ${SPINE} C ${cx(PUBLISH) + 96} ${SPINE} ${cx(PUBLISH) + 96} 320 ${cx(PUBLISH)} 320 L ${cx(IDEA)} 320 C ${cx(IDEA) - 96} 320 ${cx(IDEA) - 96} ${SPINE} ${cx(IDEA)} ${SPINE}`;
+
+// arrow connector between two x positions on the spine
+const SpineArrow: React.FC<{ x1: number; x2: number }> = ({ x1, x2 }) => (
   <g>
-    <rect x={-46} y={-34} width={92} height={68} fill={DIAGRAM.paper} stroke={INK} strokeWidth={1.25} />
-    <circle cx={-30} cy={-18} r={7} fill="none" stroke={INK} strokeWidth={1.25} />
-    <rect x={-18} y={-22} width={50} height={3} fill={INK_SOFT} />
-    <rect x={-18} y={-14} width={34} height={3} fill={INK_SOFT} />
-    <rect x={-34} y={2} width={68} height={3} fill={INK_SOFT} />
-    <rect x={-34} y={10} width={60} height={3} fill={INK_SOFT} />
-    <rect x={-34} y={18} width={40} height={3} fill={SAGE} />
+    <line x1={x1} y1={SPINE} x2={x2 - 7} y2={SPINE} stroke={INK_SOFT} strokeWidth={1.25} />
+    <path d={`M ${x2 - 7} ${SPINE - 4} L ${x2} ${SPINE} L ${x2 - 7} ${SPINE + 4}`} fill="none" stroke={INK_SOFT} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
   </g>
 );
-const ArtCarousel: React.FC = () => (
+
+const StageBox: React.FC<{ s: Stage }> = ({ s }) => (
   <g>
-    <rect x={-38} y={-30} width={64} height={64} fill={DIAGRAM.paper} stroke={INK_SOFT} strokeWidth={1} />
-    <rect x={-46} y={-36} width={64} height={64} fill={DIAGRAM.paper} stroke={INK_SOFT} strokeWidth={1} />
-    <rect x={-54} y={-42} width={64} height={64} fill={DIAGRAM.paper} stroke={INK} strokeWidth={1.25} />
-    <rect x={-46} y={-30} width={48} height={4} fill={SAGE} />
-    <rect x={-46} y={-18} width={40} height={3} fill={INK_SOFT} />
-    <rect x={-46} y={6} width={30} height={3} fill={INK_SOFT} />
+    <rect x={s.x} y={SPINE - BOX_H / 2} width={s.w} height={BOX_H} fill={PAPER} stroke={s.signature ? INK : INK} strokeWidth={s.signature ? 1.75 : 1.25} />
+    {/* stage number — small sage mono tag, top-left */}
+    <text x={s.x + 8} y={SPINE - BOX_H / 2 - 7} fontFamily={FONT} fontSize={10} fontWeight={700} letterSpacing="0.1em" fill={SAGE}>{s.n}</text>
+    <text x={cx(s)} y={SPINE - 4} textAnchor="middle" fontFamily={FONT} fontSize={11.5} letterSpacing="0.05em" fill={INK}>{s.label.toUpperCase()}</text>
+    <text x={cx(s)} y={SPINE + 11} textAnchor="middle" fontFamily={FONT} fontSize={8.5} letterSpacing="0.03em" fill={s.signature ? '#1F6B4B' : LABEL}>{s.caption}</text>
   </g>
 );
-const ArtVideo: React.FC = () => (
-  <g>
-    <rect x={-48} y={-30} width={96} height={60} fill={DIAGRAM.paper} stroke={INK} strokeWidth={1.25} />
-    <path d="M -8 -10 L 12 0 L -8 10 Z" fill={SAGE} />
-    <rect x={-40} y={20} width={50} height={3} fill={INK_SOFT} />
-  </g>
-);
-const ArtLeadMagnet: React.FC = () => (
-  <g>
-    <rect x={-32} y={-38} width={64} height={76} fill={DIAGRAM.paper} stroke={INK} strokeWidth={1.25} />
-    <rect x={-22} y={-28} width={44} height={4} fill={INK} />
-    <rect x={-22} y={-16} width={44} height={3} fill={INK_SOFT} />
-    <rect x={-22} y={-8} width={36} height={3} fill={INK_SOFT} />
-    <rect x={-22} y={14} width={44} height={10} fill="none" stroke={SAGE} strokeWidth={1.5} />
-  </g>
-);
-const GLYPHS = [ArtPost, ArtCarousel, ArtVideo, ArtLeadMagnet];
-const GLYPH_LABEL = ['POST', 'CAROUSEL', 'VIDEO', 'LEAD MAGNET'];
-const LANES = [-2, -40, 40, -2]; // small vertical offset per artifact so overlaps read
-
-// sage QA check badge that rides on each artifact
-const Check: React.FC<{ on: boolean; loop: boolean; delay: number }> = ({ on, loop, delay }) => (
-  <motion.g
-    initial={false}
-    animate={loop ? { opacity: [0, 0, 1, 1, 0], scale: [0.5, 0.5, 1, 1, 1] } : { opacity: on ? 1 : 0, scale: on ? 1 : 0.5 }}
-    transition={loop ? { duration: TRAVEL, repeat: Infinity, delay, times: [0, QA_FRAC - 0.02, QA_FRAC + 0.04, 0.92, 1], ease: 'linear' } : { duration: 0 }}
-    style={{ transformOrigin: 'center' }}
-  >
-    <circle cx={40} cy={-40} r={11} fill={SAGE} />
-    <path d="M 35 -40 L 39 -36 L 46 -45" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-  </motion.g>
-);
-
-// one traveling artifact
-const Traveler: React.FC<{ i: number; loop: boolean }> = ({ i, loop }) => {
-  const Glyph = GLYPHS[i];
-  const y = LANE + LANES[i];
-  const delay = i * STAGGER;
-  if (!loop) {
-    // static composed frame: place the 4 artifacts across the line
-    const xs = [380, X_QA, 720, X_END - 20];
-    return (
-      <g transform={`translate(${xs[i]}, ${y})`}>
-        <Glyph />
-        {xs[i] >= X_QA && <Check on loop={false} delay={0} />}
-      </g>
-    );
-  }
-  return (
-    <motion.g
-      initial={false}
-      animate={{ x: [X_START, X_END], opacity: [0, 1, 1, 1, 0] }}
-      transition={{
-        x: { duration: TRAVEL, repeat: Infinity, delay, ease: 'linear' },
-        opacity: { duration: TRAVEL, repeat: Infinity, delay, times: [0, 0.08, 0.85, 0.93, 1], ease: 'linear' },
-      }}
-    >
-      {/* glyph drawn around (0,0); base lane y via inner translate, x driven by motion */}
-      <g transform={`translate(0, ${y})`}>
-        <Glyph />
-        <Check on loop={loop} delay={delay} />
-        <text x={0} y={56} textAnchor="middle" fontFamily={FONT} fontSize={9} letterSpacing="0.12em" fill={LABEL}>{GLYPH_LABEL[i]}</text>
-      </g>
-    </motion.g>
-  );
-};
-
-// labelled anchor box on the line
-const Anchor: React.FC<{ x: number; label: string; sub?: string; signature?: boolean }> = ({ x, label, sub, signature }) => {
-  const w = Math.ceil(label.length * 7.4) + 26;
-  return (
-    <g transform={`translate(${x - w / 2}, ${LANE - 17})`}>
-      <rect width={w} height={34} fill={DIAGRAM.paper} stroke={signature ? INK : INK} strokeWidth={signature ? 1.75 : 1.25} />
-      <text x={w / 2} y={17} dominantBaseline="central" textAnchor="middle" fontFamily={FONT} fontSize={11} letterSpacing="0.07em" fill={INK}>{label.toUpperCase()}</text>
-      {sub && <text x={w / 2} y={48} textAnchor="middle" fontFamily={FONT} fontSize={9} letterSpacing="0.05em" fill={signature ? '#1F6B4B' : LABEL}>{sub}</text>}
-    </g>
-  );
-};
-
-// voice waveform at the origin
-const Waveform: React.FC<{ loop: boolean }> = ({ loop }) => {
-  const bars = [10, 20, 32, 16, 26, 12, 22, 30, 14];
-  return (
-    <g transform={`translate(70, ${LANE})`}>
-      {bars.map((h, i) => (
-        <motion.rect
-          key={i}
-          x={i * 7 - 30}
-          width={3.5}
-          fill={SAGE}
-          initial={false}
-          animate={loop ? { height: [h * 0.4, h, h * 0.5, h * 0.9, h * 0.4], y: [-h * 0.2, -h / 2, -h * 0.25, -h * 0.45, -h * 0.2] } : { height: h, y: -h / 2 }}
-          transition={loop ? { duration: 1.4, repeat: Infinity, delay: i * 0.08, ease: 'easeInOut' } : { duration: 0 }}
-        />
-      ))}
-      <text x={5} y={42} textAnchor="middle" fontFamily={FONT} fontSize={9} letterSpacing="0.08em" fill={LABEL}>YOUR VOICE</text>
-    </g>
-  );
-};
-
-// leads tray that fills near the dashboard
-const LeadsTray: React.FC<{ loop: boolean }> = ({ loop }) => {
-  const dots = Array.from({ length: 8 }, (_, i) => ({ x: 1010 + (i % 4) * 22, y: LANE - 14 + Math.floor(i / 4) * 22 }));
-  return (
-    <g>
-      <text x={1043} y={LANE - 34} textAnchor="middle" fontFamily={FONT} fontSize={11} letterSpacing="0.07em" fill={INK}>LEADS</text>
-      {dots.map((d, i) => (
-        <motion.rect
-          key={i}
-          x={d.x}
-          y={d.y}
-          width={11}
-          height={11}
-          fill={SAGE}
-          initial={false}
-          animate={loop ? { opacity: [0, 0, 1, 1, 0] } : { opacity: 1 }}
-          transition={loop ? { duration: TRAVEL * 2, repeat: Infinity, delay: 1 + i * 0.34, times: [0, 0.2, 0.34, 0.9, 1], ease: 'linear' } : { duration: 0 }}
-        />
-      ))}
-      <text x={1043} y={LANE + 44} textAnchor="middle" fontFamily={FONT} fontSize={9} letterSpacing="0.05em" fill={LABEL}>captured</text>
-    </g>
-  );
-};
 
 const Scene: React.FC<{ loop: boolean }> = ({ loop }) => (
-  <svg viewBox="0 0 1200 470" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="The content engine as a production line: your voice feeds an idea engine that produces a post, a carousel, a video and a lead magnet; each travels the pipeline and is stamped by an anti-slop QA gate, publishes, and the lead magnets fill a leads tray on your dashboard.">
-    {/* baseline pipeline */}
-    <line x1={150} y1={LANE} x2={980} y2={LANE} stroke={DIAGRAM.connector} strokeWidth={1.25} />
-    <line x1={X_START} y1={LANE} x2={X_END} y2={LANE} stroke={SAGE} strokeWidth={1.5} opacity={0.4} />
+  <svg viewBox="0 0 1080 380" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="A map of how the content system works as a self-improving loop: an idea engine decides what to post, the system writes it in your voice as a post, carousel, video or lead magnet, runs it through an anti-slop QA pass, you approve it in about an hour a week, it schedules itself and publishes daily, the lead magnets capture and qualify leads, and real performance feeds back so the system learns what lands.">
+    {/* return loop (the self-improving feedback) — drawn distinctly, labelled */}
+    <path
+      d={`M ${cx(PUBLISH)} ${SPINE + BOX_H / 2} C ${cx(PUBLISH) + 96} ${SPINE + 60} ${cx(PUBLISH) + 96} 320 ${cx(PUBLISH)} 320 L ${cx(IDEA)} 320 C ${cx(IDEA) - 96} 320 ${cx(IDEA) - 96} ${SPINE + 30} ${cx(IDEA)} ${SPINE + BOX_H / 2 + 7}`}
+      fill="none"
+      stroke={SAGE}
+      strokeWidth={1.5}
+      strokeDasharray="2 5"
+      opacity={0.7}
+    />
+    {/* arrowhead into idea engine (bottom) */}
+    <path d={`M ${cx(IDEA) - 4} ${SPINE + BOX_H / 2 + 12} L ${cx(IDEA)} ${SPINE + BOX_H / 2 + 4} L ${cx(IDEA) + 4} ${SPINE + BOX_H / 2 + 12}`} fill="none" stroke={SAGE} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    <text x={(cx(IDEA) + cx(PUBLISH)) / 2} y={314} textAnchor="middle" fontFamily={FONT} fontSize={10} letterSpacing="0.14em" fill="#1F6B4B">
+      PERFORMANCE FEEDS BACK · IT LEARNS WHAT LANDS
+    </text>
 
-    {/* origin */}
-    <Waveform loop={loop} />
-    <Anchor x={232} label="Idea engine" sub="what to post" />
+    {/* spine connectors */}
+    {STAGES.slice(0, -1).map((s, i) => (<SpineArrow key={i} x1={rightX(s)} x2={STAGES[i + 1].x} />))}
 
-    {/* QA gate straddling the line — the moat */}
-    <Anchor x={X_QA} label="Anti-slop QA" sub="no AI slop" signature />
+    {/* format fan under CREATE */}
+    <line x1={cx(CREATE)} y1={SPINE + BOX_H / 2} x2={cx(CREATE)} y2={150} stroke={INK_SOFT} strokeWidth={1.25} />
+    {FORMATS.map((f, i) => {
+      const y = 150 + i * 30;
+      const w = Math.ceil(f.length * 6.6) + 18;
+      const x = cx(CREATE) - w / 2;
+      return (
+        <g key={f}>
+          {i === 0 && <line x1={cx(CREATE)} y1={150} x2={cx(CREATE)} y2={150 + 3 * 30} stroke={INK_SOFT} strokeWidth={1.25} />}
+          <rect x={x} y={y} width={w} height={22} fill={PAPER} stroke={INK_SOFT} strokeWidth={1} />
+          <text x={cx(CREATE)} y={y + 11} dominantBaseline="central" textAnchor="middle" fontFamily={FONT} fontSize={9.5} letterSpacing="0.04em" fill={INK}>{f.toUpperCase()}</text>
+        </g>
+      );
+    })}
 
-    {/* publish + calendar hint */}
-    <Anchor x={X_END + 36} label="Publish" sub="daily" />
-    {/* mini calendar dots above publish */}
-    {Array.from({ length: 6 }).map((_, i) => (
-      <motion.rect key={i} x={X_END + 10 + (i % 3) * 14} y={LANE - 70 + Math.floor(i / 3) * 14} width={9} height={9} fill={i === 4 ? SAGE : 'none'} stroke={SAGE} strokeWidth={1} opacity={0.55} />
-    ))}
+    {/* leads output from publish */}
+    <g>
+      <line x1={cx(PUBLISH)} y1={SPINE + BOX_H / 2} x2={LEADS.x + LEADS.w / 2} y2={LEADS.cy - 11 - 7} stroke={INK_SOFT} strokeWidth={1.25} />
+      <path d={`M ${LEADS.x + LEADS.w / 2 - 4} ${LEADS.cy - 11 - 14} L ${LEADS.x + LEADS.w / 2} ${LEADS.cy - 11 - 6} L ${LEADS.x + LEADS.w / 2 + 4} ${LEADS.cy - 11 - 14}`} fill="none" stroke={INK_SOFT} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
+      <rect x={LEADS.x} y={LEADS.cy - 16} width={LEADS.w} height={32} fill={PAPER} stroke={INK} strokeWidth={1.25} />
+      <text x={LEADS.x + LEADS.w / 2} y={LEADS.cy - 1} textAnchor="middle" fontFamily={FONT} fontSize={11} letterSpacing="0.05em" fill={INK}>{LEADS.label.toUpperCase()}</text>
+      <text x={LEADS.x + LEADS.w / 2} y={LEADS.cy + 13} textAnchor="middle" fontFamily={FONT} fontSize={8} letterSpacing="0.03em" fill={LABEL}>{LEADS.caption}</text>
+    </g>
 
-    {/* leads */}
-    <LeadsTray loop={loop} />
+    {/* stage boxes (drawn last so they sit above connectors) */}
+    {STAGES.map((s) => (<StageBox key={s.n} s={s} />))}
 
-    {/* traveling artifacts (drawn last so they ride above the line) */}
-    {GLYPHS.map((_, i) => (<Traveler key={i} i={i} loop={loop} />))}
+    {/* circulating signal dot */}
+    {loop && (
+      <motion.rect
+        width={9}
+        height={9}
+        fill={SAGE}
+        style={{ offsetPath: `path("${LOOP_PATH}")`, offsetRotate: '0deg' }}
+        initial={{ offsetDistance: '0%' }}
+        animate={{ offsetDistance: '100%' }}
+        transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+      />
+    )}
   </svg>
 );
 
@@ -210,8 +134,8 @@ const EngineFlow: React.FC = () => {
   const loop = !reduced && inView;
   return (
     <div ref={ref} className="w-full overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-      {/* min-width keeps the line legible on phones; the container scrolls x */}
-      <div style={{ minWidth: 720 }}>
+      {/* min-width keeps the map legible on phones; the container scrolls x */}
+      <div style={{ minWidth: 760 }}>
         <Scene loop={loop} />
       </div>
     </div>

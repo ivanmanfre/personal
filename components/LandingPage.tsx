@@ -380,11 +380,11 @@ const EngineSection: React.FC = () => (
           </span>
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
-          You record your voice once. The engine decides what to post, turns one
-          idea into a post, a carousel, a video, and a lead magnet, runs every
-          piece through an anti-slop QA pass, schedules it, and publishes daily.
-          The lead magnets pull in leads, and it all lands on one dashboard. You
-          just review, about an hour a week.
+          You record your voice once. The engine decides what to post, writes it
+          in your voice across every format, and runs each piece through an
+          anti-slop QA pass. You approve, about an hour a week. Then it schedules
+          and publishes daily, the lead magnets pull in leads, and real
+          performance feeds back so it sharpens what it posts next.
         </p>
       </motion.div>
 
