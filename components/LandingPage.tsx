@@ -14,6 +14,7 @@ import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import LiveEngineProof from './LiveEngineProof';
+import Marquee from './Marquee';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
@@ -318,7 +319,6 @@ const ProblemSection: React.FC = () => (
         hairline-separated list, the turn at the bottom. */}
     <div className="container mx-auto px-8 max-w-3xl">
       <motion.div {...inView}>
-        <SectionIntro num="01" kicker="THE PROBLEM" />
         <RevealH2 style={{ ...T.display('clamp(2.6rem,4.4vw,4rem)'), marginBottom: '2.5rem', lineHeight: 1.02 }}>
           Sound{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
@@ -374,7 +374,6 @@ const EngineSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-14 md:mb-20 max-w-3xl">
-        <SectionIntro num="02" kicker="HOW IT WORKS" />
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           One system,{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
@@ -382,10 +381,12 @@ const EngineSection: React.FC = () => (
             <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
-        <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '52ch' }}>
+        <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
           You record your voice once. The engine decides what to post, turns one
-          idea into every format, refuses to ship anything that reads like AI,
-          and publishes daily. You just review, about an hour a week.
+          idea into a post, a carousel, a video, and a lead magnet, runs every
+          piece through an anti-slop QA pass, schedules it, and publishes daily.
+          The lead magnets pull in leads, and it all lands on one dashboard. You
+          just review, about an hour a week.
         </p>
       </motion.div>
 
@@ -452,7 +453,6 @@ const BuildOutcomesSection: React.FC = () => {
     <div className="container mx-auto px-8 max-w-6xl">
 
       <motion.div {...inView} className="mb-16 max-w-2xl">
-        <Label>06</Label>
         <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
           The same hands<br />
           built these.
@@ -577,7 +577,6 @@ const AgentReadySection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-16 max-w-4xl">
-        <SectionIntro num="05" kicker="WHAT CHANGES" />
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.6vw,4.25rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           Six months from now,{' '}
           one of two things is true.
@@ -634,7 +633,6 @@ const ComparisonSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-16 max-w-2xl">
-        <SectionIntro num="04" kicker="THE COMPARISON" />
         <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
           Why not just hire<br />a ghostwriter?
         </RevealH2>
@@ -780,7 +778,6 @@ const QualificationSection: React.FC = () => (
           "built for" side, muted markers the "not". */}
       <div className="grid md:grid-cols-12 gap-x-12 gap-y-12">
         <motion.div {...inView} className="md:col-span-5">
-          <SectionIntro num="05" kicker="THE FIT" />
           <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
             This isn't for<br />every agency.
           </RevealH2>
@@ -857,7 +854,6 @@ const WorkSection: React.FC = () => {
     <section className="py-16 md:py-28 border-t" style={DIVIDER}>
       <div className="container mx-auto px-8 max-w-7xl">
         <motion.div {...inView} className="mb-12 lg:mb-20 max-w-4xl">
-          <Label>07</Label>
           <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), lineHeight: 1.02 }}>
             Diagnose first.{' '}
             Build second.
@@ -903,6 +899,8 @@ const ENGINE_CASES = [
   {
     client: 'Kyle Hunt',
     role: 'Creative-video agency · founder',
+    img: '/content-system/kyle-content-system.png',
+    alt: "Kyle Hunt's content engine running in the dashboard",
     summary: 'Runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.',
     metrics: [
       { v: '100%', l: 'of his content, run by the system' },
@@ -913,6 +911,9 @@ const ENGINE_CASES = [
   {
     client: 'Lemonade',
     role: 'Demand-gen studio',
+    img: '/content-system/lemonade-thankyou.png',
+    alt: "Lemonade's lead-capture page built by the system",
+    flip: true,
     summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
     metrics: [
       { v: '5', l: 'new clients a month from the system' },
@@ -925,7 +926,6 @@ const TestimonialsSection: React.FC = () => (
   <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label>06</Label>
         <RevealH2 style={{ ...T.display('clamp(2rem,3.4vw,3rem)'), lineHeight: 1.04 }}>
           Already running for{' '}
           <span style={{ position: 'relative', display: 'inline-block' }}>
@@ -935,54 +935,87 @@ const TestimonialsSection: React.FC = () => (
         </RevealH2>
       </motion.div>
 
-      <div className="flex flex-col gap-14 md:gap-16">
+      <div className="flex flex-col gap-16 md:gap-24">
         {ENGINE_CASES.map((c, ci) => (
           <motion.div
             key={c.client}
             initial={prefersReduced ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
-            transition={{ duration: 0.65, ease, delay: ci * 0.1 }}
-            className="grid md:grid-cols-12 gap-x-12 gap-y-7 border-t pt-8"
-            style={{ borderColor: 'rgba(26,26,26,0.16)' }}
+            transition={{ duration: 0.65, ease }}
+            className="grid md:grid-cols-12 gap-x-12 gap-y-8 items-center"
           >
-            <div className="md:col-span-5">
+            {/* Screenshot of the real work — sharp editorial frame */}
+            <div className={`md:col-span-6 ${c.flip ? 'md:order-2 md:col-start-7' : ''}`}>
+              <div
+                className="overflow-hidden border"
+                style={{ borderColor: 'rgba(26,26,26,0.14)', aspectRatio: '16 / 10', backgroundColor: 'var(--color-paper-raise)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              >
+                <img src={c.img} alt={c.alt} loading="lazy" className="w-full h-full object-cover object-top" />
+              </div>
+            </div>
+
+            <div className={`md:col-span-6 ${c.flip ? 'md:order-1 md:col-start-1' : ''}`}>
               <div style={{ ...T.display('1.9rem'), lineHeight: 1, marginBottom: '6px' }}>{c.client}</div>
               <div style={{ ...T.mono, marginBottom: '1.25rem' }}>{c.role}</div>
-              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.6, color: '#3D3D3B' }}>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.6, color: '#3D3D3B', marginBottom: '1.75rem', maxWidth: '42ch' }}>
                 {c.summary}
               </p>
-            </div>
-            <div className="md:col-span-7 md:col-start-6 grid grid-cols-3 gap-x-6 self-center">
-              {c.metrics.map((m) => (
-                <div key={m.l}>
-                  <div style={{ ...T.display('clamp(1.9rem,2.6vw,2.6rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '10px' }}>
-                    {m.v}
+              <div className="grid grid-cols-3 gap-x-5 pt-6 border-t" style={{ borderColor: 'rgba(26,26,26,0.14)' }}>
+                {c.metrics.map((m) => (
+                  <div key={m.l}>
+                    <div style={{ ...T.display('clamp(1.7rem,2.2vw,2.3rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+                      {m.v}
+                    </div>
+                    <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '13px', color: '#5A5752', lineHeight: 1.4, maxWidth: '18ch' }}>
+                      {m.l}
+                    </div>
                   </div>
-                  <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '13.5px', color: '#5A5752', lineHeight: 1.45, maxWidth: '20ch' }}>
-                    {m.l}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
-
-      {/* One supporting quote — broader work, kept honest */}
-      <motion.figure {...inView} className="mt-16 md:mt-20 pt-8 border-t max-w-3xl" style={{ borderColor: 'rgba(26,26,26,0.16)' }}>
-        <blockquote style={{ ...T.display('clamp(1.5rem,2.6vw,2.1rem)'), color: '#1A1A1A', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
-          &ldquo;Very few things surprise me with AI.{' '}
-          <span style={{ color: 'var(--color-accent)' }}>Ivan did.</span>&rdquo;
-        </blockquote>
-        <figcaption className="mt-5 flex items-baseline gap-x-3 gap-y-1 flex-wrap">
-          <span style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '16px', color: '#1A1A1A' }}>{REVIEWS[7].author}</span>
-          <span style={{ ...T.mono, color: '#5A5752' }}>{REVIEWS[7].role}</span>
-        </figcaption>
-      </motion.figure>
     </div>
   </section>
 );
+
+// ─── Scrolling reviews marquee — the broader book of work, kept moving ───────
+const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
+  <div
+    className="flex flex-col shrink-0 mx-4 p-6 border whitespace-normal"
+    style={{ width: '340px', borderColor: 'rgba(26,26,26,0.14)', backgroundColor: 'var(--color-paper)' }}
+  >
+    <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
+    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#1A1A1A', marginBottom: '16px', flex: 1 }}>
+      &ldquo;{r.text}&rdquo;
+    </p>
+    <div style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A' }}>{r.author}</div>
+    <div style={{ ...T.mono, fontSize: '11px', color: '#5A5752' }}>{r.role}</div>
+  </div>
+);
+
+const ReviewsMarquee: React.FC = () => {
+  const half = Math.ceil(REVIEWS.length / 2);
+  const rowA = REVIEWS.slice(0, half);
+  const rowB = REVIEWS.slice(half);
+  return (
+    <section className="py-14 md:py-20 border-t overflow-hidden" style={DIVIDER}>
+      <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
+        <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
+      </div>
+      <div className="flex flex-col gap-5">
+        <Marquee speed={70} direction="left">
+          {rowA.map((r) => <ReviewCard key={r.author} r={r} />)}
+        </Marquee>
+        <Marquee speed={85} direction="right">
+          {rowB.map((r) => <ReviewCard key={r.author} r={r} />)}
+        </Marquee>
+      </div>
+    </section>
+  );
+};
 
 // ─── Section 5: 90-Day Payback ───────────────────────────────────────────────
 const PaybackSection: React.FC = () => {
@@ -1000,7 +1033,6 @@ const PaybackSection: React.FC = () => {
       <div className="container mx-auto px-8 max-w-6xl">
 
         <motion.div {...inView} className="mb-16">
-          <Label>08</Label>
           <RevealH2 style={{ ...T.display('clamp(2.8rem,5.5vw,5rem)'), marginBottom: '1.25rem' }}>
             The 90-Day<br />Payback Rule.
           </RevealH2>
@@ -1080,97 +1112,29 @@ const PaybackSection: React.FC = () => {
   );
 };
 
-// ─── Section 6: The Offer ─────────────────────────────────────────────────────
-// The content-engine offer ladder (narrow door): low-commitment front door →
-// the core install → optional ongoing. No broader builds on the cold page.
-const OFFER_BUILDS = [
-  {
-    id: '01',
-    name: 'Content Teardown',
-    price: '$500-$1,000',
-    cadence: 'Credited toward the install',
-    desc: 'A teardown of your current content and demand, plus a sample of what your engine would ship in your voice. The low-commitment way in.',
-    href: '/start',
-    cta: 'Book a teardown',
-  },
-  {
-    id: '02',
-    name: 'The Content Engine',
-    price: 'Live in 30 days',
-    cadence: 'Fixed price · scoped on the call',
-    desc: 'The full system: it writes your posts, builds your lead magnets, runs the anti-slop QA, and publishes daily in your voice. You own it.',
-    href: '/content-system',
-    cta: 'Scope your build',
-    signature: true,
-  },
-  {
-    id: '03',
-    name: 'Care & Run',
-    price: 'After the install',
-    cadence: 'Optional · scoped to volume',
-    desc: 'Keeps the engine running, monitored, and improving as the data comes in. You own the system; this keeps it sharp.',
-    href: '/start',
-    cta: 'See how it works',
-  },
-];
-
+// ─── Section: The ask — single booking CTA, no option cards ──────────────────
 const OfferSection: React.FC = () => (
-  <section className="py-16 md:py-24 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
-        <Label>07</Label>
-        <RevealH2 style={T.display('clamp(2.4rem,4vw,3.8rem)')}>
-          Pick where<br />
-          <span style={{ position: 'relative', display: 'inline-block' }}>
-            you start.
-            <SageSweep delay={0.6} opacity={0.85} />
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-3xl text-center">
+      <motion.div {...inView}>
+        <RevealH2 style={{ ...T.display('clamp(2.4rem,4.4vw,4rem)'), lineHeight: 1.04, marginBottom: '1.5rem' }}>
+          See what it would{' '}
+          <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+            post for you.
+            <SageSweep delay={0.5} opacity={0.85} />
           </span>
         </RevealH2>
-      </motion.div>
-
-      <div className="grid md:grid-cols-3 gap-5">
-        {OFFER_BUILDS.map((b, i) => (
-          <motion.a
-            key={b.id}
-            href={b.href}
-            initial={prefersReduced ? false : { opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-40px' }}
-            transition={{ duration: 0.7, ease, delay: i * 0.08 }}
-            className="group flex flex-col p-8 md:p-9 border"
-            style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: 'var(--color-paper)', position: 'relative' }}
-          >
-            {b.signature && (
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', backgroundColor: 'var(--color-accent)' }} />
-            )}
-            <div className="flex items-center justify-between mb-6">
-              <span style={{ ...T.mono, marginBottom: 0 }}>{b.id}</span>
-              {b.signature && (
-                <span style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: 0 }}>Signature</span>
-              )}
-            </div>
-            <h3 style={{ ...T.display('1.7rem'), marginBottom: '1rem' }}>{b.name}</h3>
-            <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '20px', color: 'var(--color-accent-ink)', letterSpacing: '-0.01em', marginBottom: '0.4rem' }}>{b.price}</div>
-            <div style={{ ...T.mono, marginBottom: '1.5rem' }}>{b.cadence}</div>
-            <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '15px', lineHeight: 1.6, color: '#5A5752', marginBottom: '1.75rem', flex: 1 }}>{b.desc}</p>
-            <div className="flex items-center gap-2" style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '14px', color: 'var(--color-accent-ink)' }}>
-              {b.cta}
-              <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-            </div>
-          </motion.a>
-        ))}
-      </div>
-
-      <motion.div {...inView} className="mt-12 flex flex-col items-center gap-6">
-        <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
-          Book your fit call <ArrowRight size={18} />
-        </MagneticCTA>
-        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14.5px', color: '#5A5752', textAlign: 'center', maxWidth: '520px', lineHeight: 1.6 }}>
-          Not sure where to start?{' '}
-          <a href="/start" style={{ color: 'var(--color-accent-ink)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
-            The fit call sorts it
-          </a>
-          , no pressure.
+        <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '46ch', marginLeft: 'auto', marginRight: 'auto' }}>
+          Book the fit call. I'll show you exactly what the engine would write for
+          your agency, in your voice, even if we never work together.
+        </p>
+        <div className="flex justify-center">
+          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
+            Book your fit call <ArrowRight size={18} />
+          </MagneticCTA>
+        </div>
+        <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', marginTop: '1.5rem', lineHeight: 1.6 }}>
+          Prefer to start paid? A content teardown runs $500-$1,000, credited toward the build.
         </p>
       </motion.div>
     </div>
@@ -1204,12 +1168,9 @@ const FinalCTA: React.FC = () => (
       {/* Copy — right */}
       <motion.div {...inView} className="flex flex-col justify-center px-8 md:px-14 py-14 md:py-20">
         <div className="max-w-xl">
-          <div style={{ ...T.mono, color: 'var(--color-accent-light)', marginBottom: '1.75rem' }}>
-            08 / WORK WITH ME
-          </div>
           <RevealH2 style={{ ...T.display('clamp(2.1rem,3.4vw,3.4rem)'), color: '#F7F4EF', marginBottom: '1.5rem', lineHeight: 1.08 }}>
             Iván Manfredi.<br />
-            <span style={{ color: 'var(--color-accent-light)' }}>100+ builds, in production.</span>
+            <span style={{ color: 'var(--color-accent-light)' }}>I build it, and I run it.</span>
           </RevealH2>
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontWeight: 400, fontSize: '17px', lineHeight: 1.65, color: 'rgba(247,244,239,0.72)', marginBottom: '2.25rem', maxWidth: '480px' }}>
             Everything I build, I build and run myself. The posts and the DM that found you
@@ -1507,6 +1468,7 @@ const LandingPage: React.FC = () => {
         <ComparisonSection />
         <QualificationSection />
         <TestimonialsSection />
+        <ReviewsMarquee />
         <OfferSection />
         <FinalCTA />
         <LandingFooter />

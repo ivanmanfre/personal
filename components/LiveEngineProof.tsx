@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Repeat2, Send, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-// ─── Live-proof band ─────────────────────────────────────────────────────────
-// Shows recent real posts from the content engine. The quality of the feed is
-// the proof, so there are no "made by AI" labels anywhere. Pulls the latest
-// posted rows from scheduled_posts; degrades to static placeholders if Supabase
-// returns nothing (offline, RLS, empty table) so the section never crashes or
-// renders blank.
+// ─── Live-proof band — content SAMPLES, shown the way they ship ──────────────
+// Not a wall of text linking to a profile. Three real outputs of the engine,
+// shown visually: a LinkedIn post rendered as it appears in-feed (text pulled
+// live from the latest posted row, so it's genuinely current), a carousel, and
+// a lead magnet. The quality of the work is the proof — no "made by AI" labels.
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
-const LINKEDIN_FEED = 'https://www.linkedin.com/in/iv%C3%A1n-manfredi-120841202/recent-activity/all/';
 
 const prefersReduced =
   typeof window !== 'undefined' &&
@@ -25,58 +23,107 @@ const MONO: React.CSSProperties = {
   textTransform: 'uppercase',
   color: '#5A5752',
 };
+// Authentic LinkedIn chrome reads in a neutral system sans (it's a faithful
+// preview of the platform, not a brand surface — see ascension-audit arbitration).
+const LI_SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-type ProofCard = {
-  id: string;
-  text: string;
-  format: string;
-  image: string | null;
-};
+const reveal = prefersReduced
+  ? {}
+  : { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.7, ease } };
 
-const FORMAT_LABEL: Record<string, string> = {
-  text: 'Post',
-  single_image: 'Image post',
-  image: 'Image post',
-  carousel: 'Carousel',
-  video: 'Video',
-};
+// Static fallback post — a real shipped post, so the preview is never empty.
+const FALLBACK_POST =
+  'An ops lead forwarded me a quote for an "AI agent" to run their client onboarding last week. Here is what was actually under the hood, and why it would have broken in a month.';
 
-// Static fallback — real shipped posts, so the section is never empty.
-const FALLBACK: ProofCard[] = [
-  {
-    id: 'fb-1',
-    text: '"Is this better than what I already have?" That is what I ask before every system goes live. If the answer is no, it does not ship.',
-    format: 'text',
-    image: null,
-  },
-  {
-    id: 'fb-2',
-    text: 'An ops lead forwarded me a quote for an "AI agent" to run their client onboarding last week. Here is what was actually under the hood, and why it would have broken in a month.',
-    format: 'text',
-    image: null,
-  },
-  {
-    id: 'fb-3',
-    text: 'I kept wishing this existed, so I built it for my own agency work, then realized every operator I talk to needs the same thing.',
-    format: 'single_image',
-    image: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg',
-  },
-  {
-    id: 'fb-4',
-    text: '"No one is getting AI. It is like 1 percent, and they are just using ChatGPT." A guy who runs environmental field crews told me that, and he is mostly right.',
-    format: 'single_image',
-    image: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/post-stills/library/IMG_4492.jpg',
-  },
-];
+// ─── A faithful LinkedIn post preview ────────────────────────────────────────
+const LinkedInPost: React.FC<{ text: string; image: string | null }> = ({ text, image }) => (
+  <div
+    style={{
+      fontFamily: LI_SANS,
+      backgroundColor: '#fff',
+      borderRadius: '10px',
+      border: '1px solid rgba(0,0,0,0.10)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+      overflow: 'hidden',
+    }}
+  >
+    <div style={{ padding: '16px 16px 0' }}>
+      {/* author row */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+        <img src="/ivan-portrait-400.webp" alt="" style={{ width: '48px', height: '48px', borderRadius: '9999px', objectFit: 'cover', flexShrink: 0 }} />
+        <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(0,0,0,0.9)' }}>
+            Iván Manfredi <span style={{ fontWeight: 400, color: 'rgba(0,0,0,0.55)' }}>· 1st</span>
+          </div>
+          <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.6)' }}>AI content systems for agencies</div>
+          <div style={{ fontSize: '12px', color: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            2h · <Globe size={12} aria-hidden />
+          </div>
+        </div>
+      </div>
+      {/* body */}
+      <p
+        style={{
+          fontSize: '14px',
+          lineHeight: 1.45,
+          color: 'rgba(0,0,0,0.9)',
+          margin: '12px 0 14px',
+          display: '-webkit-box',
+          WebkitLineClamp: image ? 4 : 8,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {text}
+      </p>
+    </div>
+    {image && (
+      <div style={{ width: '100%', aspectRatio: '1.91 / 1', backgroundColor: '#f3f2ef', overflow: 'hidden' }}>
+        <img src={image} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+    )}
+    {/* reaction + action chrome */}
+    <div style={{ padding: '8px 16px 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingBottom: '8px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+        <span style={{ display: 'inline-flex' }}>
+          <span style={{ width: '18px', height: '18px', borderRadius: '9999px', background: '#378fe9', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ThumbsUp size={10} color="#fff" fill="#fff" />
+          </span>
+          <span style={{ width: '18px', height: '18px', borderRadius: '9999px', background: '#df704d', marginLeft: '-5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>❤</span>
+          <span style={{ width: '18px', height: '18px', borderRadius: '9999px', background: '#f5bb5c', marginLeft: '-5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px' }}>💡</span>
+        </span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0 8px' }}>
+        {[
+          { Icon: ThumbsUp, label: 'Like' },
+          { Icon: MessageSquare, label: 'Comment' },
+          { Icon: Repeat2, label: 'Repost' },
+          { Icon: Send, label: 'Send' },
+        ].map(({ Icon, label }) => (
+          <span key={label} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: 'rgba(0,0,0,0.6)' }}>
+            <Icon size={16} aria-hidden /> {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
-const cleanText = (raw: string): string => {
-  // Strip surrounding quotes-only artifacts and collapse whitespace for the
-  // card preview; the full post lives on LinkedIn.
-  return raw.replace(/\s+/g, ' ').trim();
-};
+// ─── A framed sample (carousel / lead magnet) ────────────────────────────────
+const SampleFrame: React.FC<{ label: string; src: string; alt: string; ratio?: string }> = ({ label, src, alt, ratio = '4 / 3' }) => (
+  <div className="flex flex-col">
+    <div style={{ ...MONO, marginBottom: '12px' }}>{label}</div>
+    <div
+      className="overflow-hidden border"
+      style={{ borderColor: 'rgba(26,26,26,0.14)', aspectRatio: ratio, backgroundColor: 'var(--color-paper-raise)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+    >
+      <img src={src} alt={alt} loading="lazy" className="w-full h-full object-cover object-top" />
+    </div>
+  </div>
+);
 
 const LiveEngineProof: React.FC = () => {
-  const [cards, setCards] = useState<ProofCard[]>(FALLBACK);
+  const [post, setPost] = useState<{ text: string; image: string | null }>({ text: FALLBACK_POST, image: null });
 
   useEffect(() => {
     let active = true;
@@ -84,29 +131,22 @@ const LiveEngineProof: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('scheduled_posts')
-          .select('id, post_text, post_format, media_urls, posted_at')
+          .select('post_text, media_urls, posted_at')
           .eq('status', 'posted')
           .eq('platform', 'linkedin')
           .not('post_text', 'is', null)
           .order('posted_at', { ascending: false })
-          .limit(8);
-
-        if (!active) return;
-        if (error || !data || data.length === 0) return; // keep fallback
-
-        const mapped: ProofCard[] = data
-          .filter((row: any) => row.post_text && row.post_text.trim().length > 30)
-          .slice(0, 4)
-          .map((row: any) => ({
-            id: row.id,
-            text: cleanText(row.post_text),
-            format: row.post_format || 'text',
+          .limit(6);
+        if (!active || error || !data) return;
+        const row = data.find((r: any) => r.post_text && r.post_text.trim().length > 60);
+        if (row) {
+          setPost({
+            text: row.post_text.replace(/\s+/g, ' ').trim(),
             image: Array.isArray(row.media_urls) && row.media_urls.length > 0 ? row.media_urls[0] : null,
-          }));
-
-        if (mapped.length >= 3) setCards(mapped);
+          });
+        }
       } catch {
-        // network/RLS failure — keep the static fallback, never crash
+        // keep fallback
       }
     })();
     return () => { active = false; };
@@ -115,107 +155,40 @@ const LiveEngineProof: React.FC = () => {
   return (
     <section className="py-24 md:py-32 border-t" style={{ borderColor: 'rgba(26,26,26,0.1)' }}>
       <div className="container mx-auto px-8 max-w-6xl">
-        <motion.div
-          {...(prefersReduced ? {} : { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.7, ease } })}
-          className="mb-16 max-w-2xl"
-        >
-          {/* Numbered intro — sharp black mono pill + sage left-rule kicker, matching
-              the SectionIntro lockup used across the page for a consistent entry. */}
-          <div className="flex items-center gap-4" style={{ marginBottom: '1.5rem' }}>
-            <span
-              style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: '12px',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
-                color: '#F7F4EF',
-                backgroundColor: '#1A1A1A',
-                padding: '5px 9px',
-                lineHeight: 1,
-                flexShrink: 0,
-              }}
-            >
-              03
-            </span>
-            <span style={{ ...MONO, paddingLeft: '14px', borderLeft: '2px solid #2A8F65', lineHeight: 1.1 }}>
-              LIVE FROM THE FEED
-            </span>
-          </div>
+        <motion.div {...reveal} className="mb-12 md:mb-16 max-w-2xl">
           <h2
             style={{
               fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
               fontWeight: 400,
-              fontSize: 'clamp(2rem,3.4vw,3rem)',
-              lineHeight: 1.08,
+              fontSize: 'clamp(2.2rem,3.6vw,3.2rem)',
+              lineHeight: 1.06,
               letterSpacing: '-0.02em',
               color: '#1A1A1A',
             }}
           >
             This feed is the system, working.
           </h2>
-          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '16px', lineHeight: 1.6, color: '#3D3D3B', marginTop: '1.25rem', maxWidth: '44ch' }}>
-            Recent posts, on the same engine you'd own. If the writing sounds like a person, that's the point.
+          <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B', marginTop: '1.25rem', maxWidth: '46ch' }}>
+            A post, a carousel, a lead magnet, all from the same engine, all in one voice. If it reads like a person, that's the point.
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12">
-          {cards.slice(0, 3).map((c, i) => (
-            <motion.a
-              key={c.id}
-              href={LINKEDIN_FEED}
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={prefersReduced ? false : { opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.6, ease, delay: (i % 4) * 0.08 }}
-              className="group flex flex-col border-t pt-5"
-              style={{ borderColor: 'rgba(26,26,26,0.16)' }}
-            >
-              <div style={{ ...MONO, marginBottom: '14px' }}>{FORMAT_LABEL[c.format] || 'Post'}</div>
-              {c.image && (
-                <div className="mb-4 overflow-hidden" style={{ aspectRatio: '4 / 3', backgroundColor: 'rgba(26,26,26,0.04)' }}>
-                  <img
-                    src={c.image}
-                    alt=""
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                </div>
-              )}
-              <p
-                style={{
-                  fontFamily: '"Source Serif 4", Georgia, serif',
-                  fontSize: '15px',
-                  lineHeight: 1.6,
-                  color: '#1A1A1A',
-                  display: '-webkit-box',
-                  WebkitLineClamp: c.image ? 3 : 4,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  flex: 1,
-                }}
-              >
-                {c.text}
-              </p>
-            </motion.a>
-          ))}
-        </div>
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+          {/* The post — shown the way it lands on LinkedIn */}
+          <motion.div {...reveal} className="lg:col-span-6">
+            <div style={{ ...MONO, marginBottom: '12px' }}>Post · on LinkedIn</div>
+            <LinkedInPost text={post.text} image={post.image} />
+          </motion.div>
 
-        <motion.div
-          {...(prefersReduced ? {} : { initial: { opacity: 0, y: 16 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-40px' }, transition: { duration: 0.6, ease } })}
-          className="mt-12"
-        >
-          <a
-            href={LINKEDIN_FEED}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 transition-colors"
-            style={{ fontFamily: '"Source Serif 4", serif', fontWeight: 600, fontSize: '15px', color: 'var(--color-accent-ink)' }}
+          {/* Carousel + lead magnet, stacked */}
+          <motion.div
+            {...(prefersReduced ? {} : { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.7, ease, delay: 0.12 } })}
+            className="lg:col-span-6 grid sm:grid-cols-2 gap-8"
           >
-            See the live feed <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
-          </a>
-        </motion.div>
+            <SampleFrame label="Carousel" src="https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg" alt="A branded carousel slide produced by the engine" ratio="4 / 5" />
+            <SampleFrame label="Lead magnet" src="/content-system/lead-magnet.png" alt="A live interactive lead magnet built by the engine" ratio="4 / 5" />
+          </motion.div>
+        </div>
       </div>
     </section>
   );
