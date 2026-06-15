@@ -391,7 +391,7 @@ const BrowserFrame: React.FC<{ src: string; alt: string; caption?: string; prior
 // carries content from idea to published; the editor is where you approve; the
 // calendar schedules itself; performance closes the learning loop.
 const EngineSection: React.FC = () => (
-  <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
+  <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-3xl">
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
@@ -1044,7 +1044,7 @@ const ReviewsMarquee: React.FC = () => {
   const rowA = REVIEWS.slice(0, half);
   const rowB = REVIEWS.slice(half);
   return (
-    <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
+    <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
       <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
         <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
       </div>
@@ -1243,11 +1243,11 @@ const FAQS = [
 const FAQSection: React.FC = () => {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
+    <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
       <div className="container mx-auto px-8 max-w-3xl">
         <motion.div {...inView} className="mb-12 md:mb-16">
           <RevealH2 style={{ ...T.display('clamp(2.2rem,3.8vw,3.4rem)'), lineHeight: 1.04 }}>
-            Questions, answered.
+            Frequent questions.
           </RevealH2>
         </motion.div>
 
