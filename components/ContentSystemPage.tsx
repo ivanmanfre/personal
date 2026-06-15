@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useMetadata } from '../hooks/useMetadata';
 import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
-import { VideoSlot } from './VideoSlot';
+import { DemoReel } from './DemoReel';
 import { SystemFlowDiagram } from './SystemFlowDiagram';
 import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE } from '../lib/contentSystemContent';
 
@@ -219,10 +219,10 @@ export default function ContentSystemPage() {
             <span className="font-mono text-xs uppercase tracking-[0.12em] text-ink-mute">Running for</span>
             <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">20+ agency founders and operators</strong></span>
           </div>
-          {/* Hero video — the demonstrative payoff, front and center. */}
-          <div className="mt-10">
+          {/* Hero demo reel — autoplaying product walkthrough, the demonstrative payoff. */}
+          <div className="mt-12">
             <h2 className="sr-only">Watch the system run</h2>
-            <VideoSlot caption="Watch the system run, 3 min" scriptHref="/content-system-walkthrough.md" />
+            <DemoReel />
           </div>
         </section>
 
