@@ -1134,9 +1134,41 @@ const PaybackSection: React.FC = () => {
 };
 
 // ─── Section: The ask — single booking CTA, no option cards ──────────────────
+// ─── Calendly inline embed — branded (paper bg, sage primary), SPA-safe ──────
+const CALENDLY_URL = 'https://calendly.com/im-ivanmanfredi/30min?hide_gdpr_banner=1&background_color=f7f4ef&text_color=1a1a1a&primary_color=2a8f65';
+
+const CalendlyEmbed: React.FC = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const SRC = 'https://assets.calendly.com/assets/external/widget.js';
+    const init = () => {
+      const C = (window as unknown as { Calendly?: { initInlineWidget: (o: { url: string; parentElement: HTMLElement }) => void } }).Calendly;
+      if (C && ref.current) {
+        ref.current.innerHTML = '';
+        C.initInlineWidget({ url: CALENDLY_URL, parentElement: ref.current });
+      }
+    };
+    if (!document.querySelector(`script[src="${SRC}"]`)) {
+      const s = document.createElement('script');
+      s.src = SRC;
+      s.async = true;
+      s.onload = init;
+      document.body.appendChild(s);
+    } else {
+      init();
+    }
+  }, []);
+  return (
+    <div
+      ref={ref}
+      style={{ minWidth: '320px', height: '720px', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(26,26,26,0.10)', boxShadow: '0 12px 40px rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper)' }}
+    />
+  );
+};
+
 const OfferSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
-    <div className="container mx-auto px-8 max-w-3xl text-center">
+    <div className="container mx-auto px-8 max-w-4xl text-center">
       <motion.div {...inView}>
         <RevealH2 style={{ ...T.display('clamp(2.4rem,4.4vw,4rem)'), lineHeight: 1.04, marginBottom: '1.5rem' }}>
           See what it would{' '}
@@ -1144,16 +1176,22 @@ const OfferSection: React.FC = () => (
             post for you.
           </span>
         </RevealH2>
-        <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '46ch', marginLeft: 'auto', marginRight: 'auto' }}>
-          Book the fit call. I'll show you exactly what the engine would write for
+        <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto' }}>
+          Grab a time below. I'll show you exactly what the engine would write for
           your agency, in your voice, even if we never work together.
         </p>
-        <div className="flex justify-center">
-          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
-            Book your fit call <ArrowRight size={18} />
-          </MagneticCTA>
-        </div>
       </motion.div>
+
+      <motion.div {...inView}>
+        <CalendlyEmbed />
+      </motion.div>
+
+      <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '14px', color: '#5A5752', marginTop: '1.5rem', lineHeight: 1.6 }}>
+        Prefer email?{' '}
+        <a href="mailto:im@ivanmanfredi.com" style={{ color: 'var(--color-accent-ink)', textDecoration: 'underline', textDecorationColor: 'var(--color-accent)', textUnderlineOffset: '3px' }}>
+          im@ivanmanfredi.com
+        </a>
+      </p>
     </div>
   </section>
 );
@@ -1188,8 +1226,9 @@ const MeetOperator: React.FC = () => (
             You work with the<br />person who built it.
           </RevealH2>
           <p style={{ ...T.serif, fontSize: '18px', lineHeight: 1.65, color: '#3D3D3B', marginBottom: '2.25rem', maxWidth: '50ch' }}>
-            I'm Iván. Everything I build, I build and run myself. The posts and the
-            DM that reached you came from the same engine I'd install for you.
+            I'm Iván. I've shipped 100+ AI systems for agencies and service
+            businesses, and I run my own LinkedIn on the same content engine I'd
+            install for you.
           </p>
           <div className="flex flex-col gap-4 mb-10">
             {OPERATOR_POINTS.map((pt) => (
