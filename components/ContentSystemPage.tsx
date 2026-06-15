@@ -98,6 +98,44 @@ function BrowserFrame({ src, mobileSrc, alt, caption, eager }: { src: string; mo
   );
 }
 
+/** A lead-magnet format tile: uniform-cropped real screenshot + name + blurb,
+ *  click to expand the full page in a lightbox. Same size regardless of source. */
+function FormatCard({ name, blurb, shot, alt, eager }: { name: string; blurb: string; shot: string; alt: string; eager?: boolean }) {
+  const [lb, setLb] = React.useState(false);
+  return (
+    <figure className="m-0 group">
+      <button
+        type="button" onClick={() => setLb(true)} aria-label={`Expand ${name} sample`}
+        className="block w-full cursor-zoom-in text-left"
+      >
+        <div
+          className="overflow-hidden rounded-xl border shadow-[0_14px_44px_-18px_rgba(0,0,0,0.3)] transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_22px_60px_-18px_rgba(0,0,0,0.42)]"
+          style={{ borderColor: 'var(--color-hairline-bold)', backgroundColor: '#0E0F12' }}
+        >
+          <div className="flex items-center gap-1.5 px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }} aria-hidden="true">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.14)' }} />
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.12em] text-white/30 group-hover:text-white/55 transition-colors">click to expand</span>
+          </div>
+          <div className="overflow-hidden" style={{ aspectRatio: '16 / 10' }}>
+            <img
+              src={shot} alt={alt} loading={eager ? 'eager' : 'lazy'}
+              className="block h-full w-full object-cover object-top"
+              onError={(e) => { const fig = e.currentTarget.closest('figure') as HTMLElement | null; if (fig) fig.style.display = 'none'; }}
+            />
+          </div>
+        </div>
+        <figcaption className="mt-3">
+          <span className="text-[15px] font-semibold tracking-tight">{name}</span>
+          <span className="block mt-0.5 text-sm text-ink-soft leading-relaxed">{blurb}</span>
+        </figcaption>
+      </button>
+      {lb && <Lightbox src={shot} alt={alt} onClose={() => setLb(false)} />}
+    </figure>
+  );
+}
+
 interface CaseMetric { value: string; label: string; }
 /** Client case-study row: framed screenshot + name + summary + big metrics. */
 function CaseStudy({ client, role, src, alt, summary, metrics, flip }: {
@@ -152,7 +190,7 @@ export default function ContentSystemPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-paper overflow-x-clip">
       <div className="container mx-auto max-w-5xl px-6 pt-32 pb-24">
 
         {/* 1 — HERO */}
@@ -293,31 +331,34 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 6 — HOW THE SYSTEM WORKS (one idea in, whole funnel out) */}
-        <section className="mb-16 md:mb-24">
-          <Label>How it works</Label>
-          <RevealH2
-            style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}
-          >
-            One idea in.{' '}
-            <span style={{ position: 'relative', display: 'inline-block' }}>
-              Your whole funnel out.
-            </span>
-          </RevealH2>
-          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
-            The same engine runs the entire loop, end to end. You only ever touch one step.
-          </p>
-          <Reveal>
-            <div
-              className="rounded-3xl border p-5 sm:p-8 md:p-10 shadow-[0_24px_70px_-28px_rgba(0,0,0,0.22)]"
-              style={{ borderColor: 'var(--color-hairline)', backgroundColor: 'var(--color-paper-sunk)' }}
+        {/* Full-bleed breakout so the diagram reads big on wide screens. */}
+        <section className="mb-16 md:mb-24 relative left-1/2 -translate-x-1/2 w-screen px-5 sm:px-8">
+          <div className="mx-auto max-w-[1380px]">
+            <Label>How it works</Label>
+            <RevealH2
+              style={{ ...T.display('clamp(2rem,4.4vw,3.4rem)'), margin: '1rem 0 1rem' }}
             >
-              <SystemFlowDiagram />
-            </div>
-          </Reveal>
-          <p className="mt-6 max-w-2xl text-[15px] text-ink-mute leading-relaxed">
-            Click any step to see it running in the real product. Once it's live, your daily lift is
-            under ten minutes: read the draft, approve, done.
-          </p>
+              One idea in.{' '}
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                Your whole funnel out.
+              </span>
+            </RevealH2>
+            <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+              The same engine runs the entire loop, end to end. You only ever touch one step.
+            </p>
+            <Reveal>
+              <div
+                className="rounded-3xl border p-4 sm:p-6 md:p-8 shadow-[0_30px_90px_-30px_rgba(0,0,0,0.28)]"
+                style={{ borderColor: 'var(--color-hairline)', backgroundColor: 'var(--color-paper-sunk)' }}
+              >
+                <SystemFlowDiagram />
+              </div>
+            </Reveal>
+            <p className="mt-6 max-w-2xl text-[15px] text-ink-mute leading-relaxed">
+              Click any step to see it running in the real product. Once it's live, your daily lift
+              is under ten minutes: read the draft, approve, done.
+            </p>
+          </div>
         </section>
 
         {/* 7 — LEAD MAGNETS */}
@@ -336,42 +377,17 @@ export default function ContentSystemPage() {
             hosted page, adds every signup to your email list, and routes the best by fit. You wake
             up to booked calls and a growing list, not busywork.
           </p>
-          {/* Real published lead magnets — masonry gallery, click to expand */}
-          <div className="[column-fill:_balance] columns-1 sm:columns-2 lg:columns-3 gap-4 mb-6">
-            {(
-              [
-                { src: '/content-system/kyle-guides.webp', alt: 'A live Guide lead magnet the engine published on a hosted page', cap: 'Guide · live hosted page' },
-                { src: '/content-system/lm/assessment.webp', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment' },
-                { src: '/content-system/calculator.webp', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator' },
-                { src: '/content-system/lm/assessment-scoring.webp', alt: 'The scored result screen of an interactive assessment', cap: 'Scored result + emailed report' },
-                { src: '/content-system/lemonade-thankyou.webp', alt: 'A branded capture and thank-you page built by the engine', cap: 'Capture + thank-you page' },
-                { src: '/content-system/lm-cover.webp', alt: 'An auto-generated, on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
-              ] as { src: string; alt: string; cap: string }[]
-            ).map((r, i) => (
-              <div key={r.src} className="mb-4 break-inside-avoid">
-                <BrowserFrame src={r.src} alt={r.alt} caption={r.cap} eager={i === 0} />
-              </div>
+          {/* Every format = a real, currently-live lead magnet. Uniform tiles,
+              click any to expand the full page. */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+            {LM_FORMATS.map((f, i) => (
+              <FormatCard key={f.name} {...f} eager={i === 0} />
             ))}
           </div>
-          {/* Full format list — every asset the engine can build */}
-          <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-5">
-            Every format the engine builds
-          </div>
-          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-0 mb-14">
-            {LM_FORMATS.map((f) => (
-              <div
-                key={f.name}
-                className="flex items-baseline gap-3 py-3 border-t"
-                style={{ borderColor: 'var(--color-hairline)' }}
-              >
-                <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-[1px]" style={{ backgroundColor: 'var(--color-accent)' }} />
-                <div>
-                  <span className="text-[15px] font-semibold tracking-tight">{f.name}</span>
-                  <span className="text-sm text-ink-soft leading-relaxed"> — {f.blurb}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-ink-mute mb-14">
+            Every tile above is a real lead magnet the engine built and published — click to open
+            it full size. Skill packs, templates and more ship from the same pipeline.
+          </p>
           <div className="grid md:grid-cols-3 gap-8">
             {LM_PROMISES.map((p) => (
               <div key={p.headline} className="border-l border-accent pl-6">
@@ -473,18 +489,26 @@ export default function ContentSystemPage() {
         <section
           className="rounded-3xl bg-black text-white p-10 md:p-16 text-center shadow-[0_30px_80px_-24px_rgba(0,0,0,0.45)]"
         >
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
-            Ready to{' '}
-            <span className="font-drama italic">stop writing posts?</span>
+          <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-emerald-300/80 mb-5">
+            The outcome
+          </div>
+          <h2 className="mx-auto max-w-3xl text-3xl md:text-5xl font-semibold tracking-tight leading-[1.08]">
+            Make your content a{' '}
+            <span className="font-drama italic">lead and revenue engine.</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-zinc-300 leading-relaxed">
-            Book a 20-minute look. We&apos;ll scope it to your channels, formats, and voice, and
-            you&apos;ll get a fixed proposal, no obligation.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-300 leading-relaxed">
+            Five posts a week in your voice, lead magnets that capture and qualify every signup, and
+            the best-fit buyers sent straight to your calendar. Content that builds pipeline, not
+            just likes.
           </p>
-          <div className="mt-8 flex flex-col items-center gap-4">
+          <div className="mt-9 flex flex-col items-center gap-4">
             <MagneticCTA href="/start" dark fontSize="18px" px="px-10 py-5">
               Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
+            <p className="text-sm text-zinc-400">
+              We&apos;ll scope it to your channels, formats and voice — you leave with a fixed
+              proposal, no obligation.
+            </p>
           </div>
         </section>
 

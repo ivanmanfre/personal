@@ -22,17 +22,17 @@ export const METRICS: Metric[] = [
   { value: '2h', label: 'news radar cadence for breaking trends' },
 ];
 
-export interface LmFormat { name: string; blurb: string; coming?: boolean; }
+// Each format shows a REAL, currently-live lead magnet the engine published,
+// scraped from resources.ivanmanfredi.com. Only live formats are listed here
+// (honesty rule). Breadth beyond these is acknowledged in copy, not faked.
+export interface LmFormat { name: string; blurb: string; shot: string; alt: string; }
 export const LM_FORMATS: LmFormat[] = [
-  { name: 'Interactive Assessment',  blurb: 'Scored quiz that qualifies the reader and books the right next step.' },
-  { name: 'Calculator',              blurb: 'Live ROI / cost calculator tailored to your offer.' },
-  { name: 'Guide',                   blurb: 'Deep, on-brand playbook with every promise delivered inline.' },
-  { name: 'AI Kit',                  blurb: 'Ready-to-run prompts and agents, proof you actually build.' },
-  { name: 'n8n Workflow',            blurb: 'A working automation they import and run.' },
-  { name: 'Annotated Architecture',  blurb: 'A diagrammed system teardown they can copy.' },
-  { name: 'Skill Pack',              blurb: 'Packaged capabilities the reader installs.' },
-  { name: 'Checklist',               blurb: 'The fast-win format: instant, shareable.' },
-  { name: 'Live AI Walkthrough',     blurb: "Runs on the reader's own input, live." },
+  { name: 'Interactive Assessment', blurb: 'A scored quiz that qualifies the reader and books the right next step.', shot: '/content-system/lm/assessment-live.webp', alt: 'A live interactive assessment lead magnet, on-brand and scored' },
+  { name: 'Calculator',             blurb: 'A live ROI or capacity calculator tailored to your offer.', shot: '/content-system/lm/calculator-live.webp', alt: 'A live capacity calculator lead magnet' },
+  { name: 'Guide',                  blurb: 'A deep, on-brand playbook with every promise delivered inline.', shot: '/content-system/lm/guide.webp', alt: 'A live, published Guide lead magnet on a hosted page' },
+  { name: 'AI Kit',                 blurb: 'Ready-to-run prompts and agents, proof you actually build.', shot: '/content-system/lm/ai-kit.webp', alt: 'A live AI Kit lead magnet with ready-to-run prompts' },
+  { name: 'n8n Workflow',           blurb: 'A working automation the reader imports and runs.', shot: '/content-system/lm/n8n.webp', alt: 'A live n8n workflow lead magnet, importable and ready to run' },
+  { name: 'Checklist',              blurb: 'The fast-win format: an interactive, shareable checklist.', shot: '/content-system/lm/checklist.webp', alt: 'A live interactive checklist lead magnet' },
 ];
 
 export interface LmPromise { headline: string; benefit: string; how: string; }
