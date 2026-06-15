@@ -18,7 +18,6 @@ import Marquee from './Marquee';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
-import EngineFlow from './landing/diagrams/EngineFlow';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -365,14 +364,36 @@ A content system you own, running your feed for you.
   </section>
 );
 
-// ─── Section 02: How it works — the engine, animated (W3.6) ──────────────────
-// The showcase. The EngineFlow diagram does the demonstrating; the copy is one
-// scannable lede, not a wall. This replaces the old generic Diagnose/Design/
-// Build process block as the page's "how it works" beat.
+// ─── Browser-window frame — shows the REAL product (warm, modern, concrete) ──
+// Mirrors the content-system page: dark app window, rounded, soft lift. Real
+// dashboard screenshots read as a living product, not an abstract flowchart.
+const BrowserFrame: React.FC<{ src: string; alt: string; caption?: string; priority?: boolean }> = ({ src, alt, caption, priority }) => (
+  <figure className="m-0">
+    <div
+      className="overflow-hidden"
+      style={{ borderRadius: '12px', border: '1px solid rgba(26,26,26,0.12)', backgroundColor: '#161616', boxShadow: '0 12px 40px rgba(26,26,26,0.16)' }}
+    >
+      <div className="flex items-center gap-2 px-4" style={{ height: '34px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        {['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.15)', 'rgba(255,255,255,0.10)'].map((c, i) => (
+          <span key={i} style={{ width: '10px', height: '10px', borderRadius: '9999px', backgroundColor: c }} />
+        ))}
+      </div>
+      <img src={src} alt={alt} loading={priority ? 'eager' : 'lazy'} className="w-full block" />
+    </div>
+    {caption && (
+      <figcaption style={{ ...T.mono, marginTop: '14px', textAlign: 'center', color: '#5A5752' }}>{caption}</figcaption>
+    )}
+  </figure>
+);
+
+// ─── Section 02: How it works — the REAL interface (not an abstract diagram) ─
+// The system functioning, shown as the actual dashboard: the pipeline board
+// carries content from idea to published; the editor is where you approve; the
+// calendar schedules itself; performance closes the learning loop.
 const EngineSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-14 md:mb-20 max-w-3xl">
+      <motion.div {...inView} className="mb-12 md:mb-16 max-w-3xl">
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
           One system,{' '}
           <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
@@ -388,9 +409,34 @@ const EngineSection: React.FC = () => (
         </p>
       </motion.div>
 
+      {/* The pipeline board — the system functioning, in the real product */}
       <motion.div {...inView}>
-        <EngineFlow />
+        <BrowserFrame
+          src="/content-system/ui/board.png"
+          alt="The content pipeline board: posts moving from idea to generating, review, approved, scheduled and published"
+          caption="The pipeline · a week of content, carried from idea to published"
+          priority
+        />
       </motion.div>
+
+      {/* Supporting interface — approve, schedule, learn */}
+      <div className="grid md:grid-cols-3 gap-6 md:gap-7 mt-7 md:mt-10">
+        {[
+          { src: '/content-system/ui/editor.png', alt: 'The post editor', caption: 'You approve · edit any draft' },
+          { src: '/content-system/ui/calendar.png', alt: 'The publishing calendar', caption: 'It schedules itself' },
+          { src: '/content-system/ui/performance.png', alt: 'The performance dashboard', caption: 'It learns what lands' },
+        ].map((f, i) => (
+          <motion.div
+            key={f.src}
+            initial={prefersReduced ? false : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.6, ease, delay: i * 0.1 }}
+          >
+            <BrowserFrame src={f.src} alt={f.alt} caption={f.caption} />
+          </motion.div>
+        ))}
+      </div>
 
       <MidCTA>Want to watch it run on your brand before you decide?</MidCTA>
     </div>

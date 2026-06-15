@@ -144,8 +144,8 @@ const LandingHero: React.FC = () => {
                 fontWeight: 400,
                 color: '#1A1A1A',
                 letterSpacing: '-0.025em',
-                fontSize: 'clamp(2.05rem, 4.6vw, 3.95rem)',
-                lineHeight: 1.05,
+                fontSize: 'clamp(2.2rem, 6vw, 5.4rem)',
+                lineHeight: 1.02,
               }}
             >
               <Reveal delay={0.15}>
