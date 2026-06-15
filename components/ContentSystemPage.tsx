@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useMetadata } from '../hooks/useMetadata';
 import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
 import { VideoSlot } from './VideoSlot';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, ONE_IDEA_FORMATS, SCOPE } from '../lib/contentSystemContent';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SYSTEM_FLOW, SCOPE } from '../lib/contentSystemContent';
 
 /** Scroll-reveal wrapper with staggered delay. */
 function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?: number; className?: string }) {
@@ -166,7 +166,7 @@ export default function ContentSystemPage() {
             <span className="font-drama italic">every day</span>, without writing a word.
           </motion.h1>
           <p className="mt-6 max-w-2xl text-xl text-ink-soft leading-relaxed">
-            Five posts a week, carousels, lead magnets, even video, all in your voice and all on
+            Five posts a week, plus carousels and lead magnets, all in your voice and all on
             autopilot. You approve. It does the rest.
           </p>
           <div className="mt-8">
@@ -175,11 +175,10 @@ export default function ContentSystemPage() {
               Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
           </div>
-          {/* Trust proof at the fold (named, attributed). */}
-          <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-2">
+          {/* Trust proof at the fold. */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="font-mono text-xs uppercase tracking-[0.12em] text-ink-mute">Running for</span>
-            <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Kyle Hunt</strong> · 30K impressions/post</span>
-            <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">Lemonade</strong> · 5 new clients/mo</span>
+            <span className="text-[15px] text-ink-soft"><strong className="text-ink font-semibold">20+ agency founders and operators</strong></span>
           </div>
           {/* Hero video — the demonstrative payoff, front and center. */}
           <div className="mt-10">
@@ -292,32 +291,37 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
-        {/* 6 — ONE IDEA, EVERYWHERE */}
+        {/* 6 — HOW THE SYSTEM WORKS (one idea in, whole funnel out) */}
         <section className="mb-16 md:mb-24">
+          <Label>How it works</Label>
           <RevealH2
-            style={{ ...T.display('clamp(1.8rem,3.6vw,2.6rem)'), marginBottom: '1.5rem' }}
+            style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}
           >
-            One idea,{' '}
+            One idea in.{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
-              everywhere.
+              Your whole funnel out.
             </span>
           </RevealH2>
-          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-8">
-            A single approved idea fans out into every format you&apos;d ever post, each one
-            on-brand, each one in your voice.
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+            The same engine runs the entire loop, end to end. You only ever touch one step.
           </p>
-          <div className="flex flex-wrap gap-3">
-            {ONE_IDEA_FORMATS.map((f) => (
-              <span
-                key={f}
-                className="rounded-full border px-4 py-2 text-sm text-ink shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
-                style={{
-                  borderColor: 'var(--color-hairline-bold)',
-                  backgroundColor: 'var(--color-paper-raise)',
-                }}
-              >
-                {f}
-              </span>
+          <div className="grid gap-4 md:grid-cols-4">
+            {SYSTEM_FLOW.map((s, i) => (
+              <Reveal key={s.n} i={i}>
+                <div
+                  className="relative flex h-full flex-col rounded-2xl border p-6 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(0,0,0,0.10)]"
+                  style={{ borderColor: 'var(--color-hairline)', backgroundColor: 'var(--color-paper-raise)' }}
+                >
+                  <div className="font-drama italic text-4xl text-accent-ink leading-none">{s.n}</div>
+                  <h3 className="mt-4 text-lg font-semibold tracking-tight">{s.title}</h3>
+                  <p className="mt-2 text-[14px] text-ink-soft leading-relaxed">{s.body}</p>
+                  {i === 2 && (
+                    <span className="mt-3 inline-flex w-fit rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em]" style={{ backgroundColor: 'var(--color-accent-soft)', color: 'var(--color-accent-ink)' }}>
+                      your only step
+                    </span>
+                  )}
+                </div>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -335,8 +339,8 @@ export default function ContentSystemPage() {
           </RevealH2>
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
             From one idea, the system builds an interactive lead magnet, publishes it as a live
-            hosted page, and routes every signup by how good a fit they are. You wake up to booked
-            calls, not busywork.
+            hosted page, adds every signup to your email list, and routes the best by fit. You wake
+            up to booked calls and a growing list, not busywork.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
             {LM_FORMATS.map((f) => (
