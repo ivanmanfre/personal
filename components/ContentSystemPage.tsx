@@ -315,8 +315,8 @@ export default function ContentSystemPage() {
             </div>
           </Reveal>
           <p className="mt-6 max-w-2xl text-[15px] text-ink-mute leading-relaxed">
-            Hover any node to see what it does. Once it's running, your daily lift is under ten
-            minutes: read the draft, approve, done.
+            Click any step to see it running in the real product. Once it's live, your daily lift is
+            under ten minutes: read the draft, approve, done.
           </p>
         </section>
 
@@ -336,25 +336,39 @@ export default function ContentSystemPage() {
             hosted page, adds every signup to your email list, and routes the best by fit. You wake
             up to booked calls and a growing list, not busywork.
           </p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+          {/* Real published lead magnets — masonry gallery, click to expand */}
+          <div className="[column-fill:_balance] columns-1 sm:columns-2 lg:columns-3 gap-4 mb-6">
+            {(
+              [
+                { src: '/content-system/kyle-guides.webp', alt: 'A live Guide lead magnet the engine published on a hosted page', cap: 'Guide · live hosted page' },
+                { src: '/content-system/lm/assessment.webp', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment' },
+                { src: '/content-system/calculator.webp', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator' },
+                { src: '/content-system/lm/assessment-scoring.webp', alt: 'The scored result screen of an interactive assessment', cap: 'Scored result + emailed report' },
+                { src: '/content-system/lemonade-thankyou.webp', alt: 'A branded capture and thank-you page built by the engine', cap: 'Capture + thank-you page' },
+                { src: '/content-system/lm-cover.webp', alt: 'An auto-generated, on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
+              ] as { src: string; alt: string; cap: string }[]
+            ).map((r, i) => (
+              <div key={r.src} className="mb-4 break-inside-avoid">
+                <BrowserFrame src={r.src} alt={r.alt} caption={r.cap} eager={i === 0} />
+              </div>
+            ))}
+          </div>
+          {/* Full format list — every asset the engine can build */}
+          <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-5">
+            Every format the engine builds
+          </div>
+          <div className="grid sm:grid-cols-2 gap-x-10 gap-y-0 mb-14">
             {LM_FORMATS.map((f) => (
               <div
                 key={f.name}
-                className="rounded-2xl border p-5 shadow-[0_6px_24px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_44px_rgba(0,0,0,0.10)]"
-                style={{
-                  borderColor: 'var(--color-hairline)',
-                  backgroundColor: 'var(--color-paper-raise)',
-                }}
+                className="flex items-baseline gap-3 py-3 border-t"
+                style={{ borderColor: 'var(--color-hairline)' }}
               >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[15px] font-semibold tracking-tight">{f.name}</h3>
-                  {f.coming && (
-                    <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-mute">
-                      coming
-                    </span>
-                  )}
+                <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-[1px]" style={{ backgroundColor: 'var(--color-accent)' }} />
+                <div>
+                  <span className="text-[15px] font-semibold tracking-tight">{f.name}</span>
+                  <span className="text-sm text-ink-soft leading-relaxed"> — {f.blurb}</span>
                 </div>
-                <p className="mt-1.5 text-sm text-ink-soft leading-relaxed">{f.blurb}</p>
               </div>
             ))}
           </div>
@@ -409,47 +423,6 @@ export default function ContentSystemPage() {
                 { value: 'Live', label: 'gated funnel, running on autopilot' },
               ]}
             />
-          </div>
-
-          {/* Supplementary: live output straight from the engine */}
-          <div className="mt-20">
-            <div className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute mb-5">
-              Also live, straight from the engine
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(
-                [
-                  { src: '/content-system/lead-magnet.webp', alt: 'A live interactive assessment lead magnet', cap: 'Interactive assessment · scoring' },
-                  { src: '/content-system/calculator.webp', alt: 'A live ROI calculator lead magnet', cap: 'ROI calculator · live page' },
-                  { src: '/content-system/lm-cover.webp', alt: 'An auto-generated on-brand lead-magnet cover', cap: 'On-brand cover · auto-made' },
-                ] as { src: string; alt: string; cap: string }[]
-              ).map((r) => (
-                <figure key={r.src} className="m-0">
-                  <div
-                    className="overflow-hidden rounded-2xl border shadow-[0_8px_30px_rgba(0,0,0,0.07)]"
-                    style={{
-                      borderColor: 'var(--color-hairline-bold)',
-                      backgroundColor: 'var(--color-paper-sunk)',
-                      aspectRatio: '4 / 5',
-                    }}
-                  >
-                    <img
-                      src={r.src}
-                      alt={r.alt}
-                      loading="lazy"
-                      className="h-full w-full object-cover object-top"
-                      onError={(e) => {
-                        const fig = e.currentTarget.closest('figure') as HTMLElement | null;
-                        if (fig) fig.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  <figcaption className="mt-2 text-center font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">
-                    {r.cap}
-                  </figcaption>
-                </figure>
-              ))}
-            </div>
           </div>
 
           {/* Mid-page CTA at peak conviction (right after the proof). */}

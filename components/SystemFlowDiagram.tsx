@@ -1,35 +1,100 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { prefersReduced } from './editorial';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SystemFlowDiagram — the "how it works" hero diagram for /content-system.
+// SystemFlowDiagram — the interactive "how it works" diagram for /content-system.
 //
-// One idea flows left → right through the whole engine: sources feed the Content
-// Brain, a short pipeline drafts + de-slops it in your voice, you approve in one
-// tap (the only human step), and it splits into a scheduled LinkedIn post and a
-// self-publishing lead magnet that captures every signup to your email list.
+// One idea flows left → right through the whole production engine: four sources
+// feed the Content Brain, a five-step pipeline drafts + de-slops it in your
+// voice, you approve in one tap (the only human step), and it splits into a
+// scheduled LinkedIn post and a self-publishing lead magnet — then the top
+// performers loop back into the Brain so next week is weighted to what landed.
 //
-// Built to out-class the Interlude proposal's dark looping SVG with three moves:
-//   1. Wires DRAW THEMSELVES on scroll-into-view (framer-motion pathLength).
-//   2. Glowing "idea" PARTICLES travel each wire continuously (SMIL animateMotion
-//      + <mpath> — rock-solid cross-browser, no JS RAF loop).
-//   3. Rendered in this page's cream/sage editorial palette, not transplanted dark.
-// Honours prefers-reduced-motion: fully drawn, no motion.
+// Beats the Interlude proposal's dark looping SVG:
+//   1. Wires self-draw on scroll-into-view (framer-motion pathLength).
+//   2. Glowing "idea" particles travel each wire (SMIL animateMotion + <mpath>).
+//   3. CLICK any step → it lifts, the rest dims, and a detail card opens with a
+//      real screenshot from the live product (board, editor, calendar, etc.).
+//   4. Rendered in this page's cream/sage editorial palette, not transplanted dark.
+// Honours prefers-reduced-motion: fully drawn, no motion. Keyboard accessible.
 // Brand source of truth: ~/.claude/memory/global/brand-visual-system.md
 // ─────────────────────────────────────────────────────────────────────────────
 
 const R = prefersReduced;
 
-// One connector wire: soft underglow + a thin line that draws itself in-view, and
-// (unless reduced-motion) a glowing particle that travels it on a loop.
-const Wire: React.FC<{
-  id: string;
-  d: string;
-  delay?: number;
-  dur?: number;
-  pDelay?: number;
-}> = ({ id, d, delay = 0, dur = 2.6, pDelay = 0 }) => (
+type StepDetail = {
+  kicker: string;
+  title: string;
+  body: string;
+  bullets?: string[];
+  shot?: { src: string; alt: string };
+};
+
+const STEPS: Record<string, StepDetail> = {
+  brain: {
+    kicker: 'The engine',
+    title: 'Content Brain',
+    body: "It pulls ideas from your sales and partnership calls, the open web and Hacker News, your own past winners, and a news radar that scans every two hours. Then it scores every idea by how well it'll land with your buyers and picks the best. You never start from a blank page.",
+    bullets: ['Four idea sources, always on', 'Fit-scored nightly', 'Newsjack radar every 2h'],
+  },
+  ctx: {
+    kicker: 'Pipeline · 1',
+    title: 'Context retrieval',
+    body: 'It pulls the most relevant moments from your real calls and your strongest past posts, so the draft is grounded in things you have actually said — not generic AI filler.',
+  },
+  fmt: {
+    kicker: 'Pipeline · 2',
+    title: 'Format routing',
+    body: 'It decides what the idea should become: a text post, a single image, a carousel in one of nine on-brand styles, or a full lead magnet — and routes it down the right track.',
+  },
+  hook: {
+    kicker: 'Pipeline · 3',
+    title: 'Hook generation',
+    body: 'It writes a batch of opening hooks and keeps the strongest one: the first line that stops the scroll. The whole post lives or dies on this, so it gets its own step.',
+  },
+  write: {
+    kicker: 'Pipeline · 4',
+    title: 'Drafted in your voice',
+    body: 'Trained on your voice and grounded in your conversations, it writes the full post so it reads like you on your best day. You can tweak any word in the editor before it ships.',
+    shot: { src: '/content-system/ui/editor.webp', alt: 'The post editor — edit a draft’s copy, image, and schedule' },
+  },
+  qa: {
+    kicker: 'Pipeline · 5',
+    title: 'Anti-slop gate',
+    body: 'A nine-point review checks the draft against the structural tells that make content read as AI-written, and rewrites until it passes. Slop physically cannot reach your feed.',
+  },
+  approve: {
+    kicker: 'Your only step',
+    title: 'You approve in one tap',
+    body: 'Finished drafts queue on your board. Read it, tweak the copy, image or timing if you want, and tap approve. Once it is running, your daily lift is under ten minutes.',
+    shot: { src: '/content-system/ui/board.webp', alt: 'The content board where finished drafts queue for one-tap approval' },
+  },
+  post: {
+    kicker: 'Output',
+    title: 'Published to LinkedIn',
+    body: 'It posts natively, on your schedule, with no copy-paste. The calendar fills itself and you can see everything that is queued to go out across the month at a glance.',
+    shot: { src: '/content-system/ui/calendar.webp', alt: 'The publishing calendar with scheduled posts across the month' },
+  },
+  leadmagnet: {
+    kicker: 'Output',
+    title: 'A lead magnet that publishes itself',
+    body: 'From the same idea it builds an interactive asset, ships it on a live hosted page at your domain, adds every signup to your email list, and routes the best-fit leads straight to a call. No designer, no dev.',
+    shot: { src: '/content-system/ui/leadmagnets.webp', alt: 'The lead-magnet studio with built, on-brand assets' },
+  },
+  loop: {
+    kicker: 'The loop',
+    title: 'It learns what works',
+    body: 'Every post’s performance is tracked, and the top performers feed back into the Content Brain — so next week’s ideas are weighted toward what actually landed with your audience. The system gets sharper the longer it runs.',
+    shot: { src: '/content-system/ui/performance.webp', alt: 'The performance dashboard — impressions and engagement per post' },
+  },
+};
+
+// One connector wire: soft underglow + a thin self-drawing line + a travelling particle.
+const Wire: React.FC<{ id: string; d: string; delay?: number; dur?: number; pDelay?: number }> = ({
+  id, d, delay = 0, dur = 2.6, pDelay = 0,
+}) => (
   <>
     <path className="sfd-underglow" d={d} />
     <motion.path
@@ -37,12 +102,12 @@ const Wire: React.FC<{
       className="sfd-wire"
       d={d}
       initial={R ? false : { pathLength: 0, opacity: 0 }}
-      whileInView={R ? undefined : { pathLength: 1, opacity: 1 }}
+      whileInView={R ? undefined : { pathLength: 1, opacity: 0.9 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.9, delay, ease: [0.22, 0.84, 0.36, 1] }}
     />
     {!R && (
-      <circle className="sfd-particle" r={3.4}>
+      <circle className="sfd-particle" r={3.6}>
         <animateMotion dur={`${dur}s`} begin={`${1 + pDelay}s`} repeatCount="indefinite" rotate="auto">
           <mpath href={`#${id}`} />
         </animateMotion>
@@ -51,237 +116,305 @@ const Wire: React.FC<{
   </>
 );
 
-// A staged fade/scale-in wrapper for a node group.
-const Node: React.FC<{ delay?: number; children: React.ReactNode }> = ({ delay = 0, children }) => (
-  <motion.g
-    className="sfd-node"
-    initial={R ? false : { opacity: 0, scale: 0.7 }}
-    whileInView={R ? undefined : { opacity: 1, scale: 1 }}
-    viewport={{ once: true, margin: '-60px' }}
-    transition={{ duration: 0.5, delay, ease: [0.22, 0.84, 0.36, 1] }}
-    style={{ transformBox: 'fill-box', transformOrigin: 'center' } as React.CSSProperties}
-  >
-    {children}
-  </motion.g>
-);
-
 export const SystemFlowDiagram: React.FC = () => {
+  const [active, setActive] = useState<string | null>(null);
+  const d = active ? STEPS[active] : null;
+
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setActive(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active]);
+
+  // Clickable node wrapper — keyboard accessible, toggles the detail card.
+  const Pick: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
+    <g
+      className={`sfd-node ${active === id ? 'is-active' : ''}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${STEPS[id].title} — open detail`}
+      onClick={() => setActive(id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(id); }
+      }}
+    >
+      {children}
+    </g>
+  );
+
+  const beads = [
+    { id: 'ctx', x: 404, n: '1', cap: 'CONTEXT' },
+    { id: 'fmt', x: 470, n: '2', cap: 'FORMAT' },
+    { id: 'hook', x: 536, n: '3', cap: 'HOOK' },
+    { id: 'write', x: 602, n: '4', cap: 'WRITE' },
+    { id: 'qa', x: 668, n: '5', cap: 'DE-SLOP' },
+  ];
+
   return (
-    <div className="sfd-wrap">
+    <div className={`sfd-root ${active ? 'has-active' : ''}`}>
       <style>{CSS}</style>
-      <svg
-        className="sfd"
-        viewBox="0 0 1240 470"
-        xmlns="http://www.w3.org/2000/svg"
-        role="img"
-        aria-label="How it works: your calls, the web and past winners feed the Content Brain; a pipeline drafts the post in your voice and strips AI tells; you approve in one tap — your only step; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that adds every signup to your email list and books calls."
-      >
-        <defs>
-          <filter id="sfd-glow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="2.4" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id="sfd-soft" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" />
-          </filter>
-        </defs>
+      <div className="sfd-wrap">
+        <svg
+          className="sfd"
+          viewBox="0 0 1340 540"
+          xmlns="http://www.w3.org/2000/svg"
+          role="img"
+          aria-label="How it works: your calls, the web, past winners and a news radar feed the Content Brain; a five-step pipeline drafts the post in your voice and strips AI tells; you approve in one tap — your only step; then it ships a scheduled LinkedIn post and a self-publishing lead magnet that adds every signup to your email list and books calls; top performers feed back into the brain."
+        >
+          <defs>
+            <filter id="sfd-glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.6" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+            <filter id="sfd-soft" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4.5" />
+            </filter>
+          </defs>
 
-        {/* Ghost stage numerals — editorial depth behind the flow */}
-        <text className="sfd-ghost" x="150" y="70">01</text>
-        <text className="sfd-ghost" x="484" y="70">02</text>
-        <text className="sfd-ghost" x="680" y="70">03</text>
-        <text className="sfd-ghost" x="940" y="70">04</text>
+          <motion.g
+            initial={R ? false : { opacity: 0 }}
+            whileInView={R ? undefined : { opacity: 1 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.6 }}
+          >
+            {/* ── Feedback loop (behind everything) ─────────────────── */}
+            <path className="sfd-loopwire" id="sfd-loop" d="M922,128 C 780,40 470,40 320,200" />
+            {!R && (
+              <circle className="sfd-particle sfd-particle-loop" r={3.4}>
+                <animateMotion dur="4.6s" begin="1.4s" repeatCount="indefinite" rotate="auto">
+                  <mpath href="#sfd-loop" />
+                </animateMotion>
+              </circle>
+            )}
+            <path className="sfd-loop-arrow" d="M320,200 l11,-3 l-2,11 z" />
 
-        {/* ── Wires (drawn behind nodes) ───────────────────────────── */}
-        <Wire id="sfd-c1" d="M66,112 C 168,112 198,222 268,231" delay={0.05} dur={2.9} pDelay={0} />
-        <Wire id="sfd-c2" d="M66,235 H 268" delay={0.12} dur={2.6} pDelay={0.5} />
-        <Wire id="sfd-c3" d="M66,358 C 168,358 198,249 268,239" delay={0.19} dur={2.9} pDelay={1} />
-        <Wire id="sfd-spine" d="M332,235 H 656" delay={0.45} dur={3.1} pDelay={0.3} />
-        <Wire id="sfd-cli" d="M704,235 C 772,235 792,160 858,155" delay={0.8} dur={2.4} pDelay={0.2} />
-        <Wire id="sfd-clm" d="M704,235 C 772,235 792,318 858,333" delay={0.8} dur={2.4} pDelay={0.9} />
+            {/* ── Wires ─────────────────────────────────────────────── */}
+            <Wire id="sfd-c1" d="M64,104 C 180,104 210,210 286,224" delay={0.05} dur={2.9} pDelay={0} />
+            <Wire id="sfd-c2" d="M64,188 C 180,188 220,216 286,228" delay={0.1} dur={2.7} pDelay={0.4} />
+            <Wire id="sfd-c3" d="M64,272 C 180,272 220,246 286,232" delay={0.15} dur={2.7} pDelay={0.8} />
+            <Wire id="sfd-c4" d="M64,356 C 180,356 210,252 286,236" delay={0.2} dur={2.9} pDelay={1.2} />
+            <Wire id="sfd-spine" d="M339,230 H 724" delay={0.5} dur={3.2} pDelay={0.3} />
+            <Wire id="sfd-cli" d="M772,230 C 840,230 862,158 900,152" delay={0.85} dur={2.4} pDelay={0.2} />
+            <Wire id="sfd-clm" d="M772,230 C 840,230 862,316 900,332" delay={0.85} dur={2.4} pDelay={1.0} />
 
-        {/* Delivery fans (static dashed, ambient flow) */}
-        <path className="sfd-fan" d="M896,155 H 982" />
-        <path className="sfd-fan" d="M896,333 C 944,333 956,298 982,298" />
-        <path className="sfd-fan" d="M896,333 H 982" />
-        <path className="sfd-fan" d="M896,333 C 944,333 956,368 982,368" />
+            {/* Delivery fans */}
+            <path className="sfd-fan" d="M944,152 H 1040" />
+            <path className="sfd-fan" d="M944,332 C 992,332 1004,296 1040,296" />
+            <path className="sfd-fan" d="M944,332 H 1040" />
+            <path className="sfd-fan" d="M944,332 C 992,332 1004,368 1040,368" />
 
-        {/* ── Sources ──────────────────────────────────────────────── */}
-        <Node delay={0}>
-          <g>
-            <circle className="sfd-src r1" cx="66" cy="112" r="5" />
-            <text className="sfd-src-lbl" x="82" y="116">Your calls</text>
-          </g>
-          <g>
-            <circle className="sfd-src r2" cx="66" cy="235" r="5" />
-            <text className="sfd-src-lbl" x="82" y="239">The web</text>
-          </g>
-          <g>
-            <circle className="sfd-src r3" cx="66" cy="358" r="5" />
-            <text className="sfd-src-lbl" x="82" y="362">Past winners</text>
-          </g>
-        </Node>
+            {/* Loop label */}
+            <text className="sfd-loop-lbl" x="600" y="36">Top performers feed back in</text>
 
-        {/* ── Content Brain ────────────────────────────────────────── */}
-        <g className="sfd-nodewrap" tabIndex={0}>
-          <Node delay={0.3}>
-            {!R && <circle className="sfd-ring p1" cx="300" cy="235" r="30" />}
-            {!R && <circle className="sfd-ring p2" cx="300" cy="235" r="30" />}
-            <circle className="sfd-core" cx="300" cy="235" r="22" />
-            <circle className="sfd-core-dot" cx="300" cy="235" r="4.5" />
-            <text className="sfd-stg" x="300" y="291">CONTENT BRAIN</text>
-            <g className="sfd-detail">
-              <rect x="198" y="300" width="204" height="54" rx="4" />
-              <text className="sfd-dt-t" x="210" y="320">SCORES EVERY IDEA</text>
-              <text className="sfd-dt-b" x="210" y="338">Ranks topics by what will</text>
-              <text className="sfd-dt-b" x="210" y="352">actually land with your buyers.</text>
+            {/* ── Sources ───────────────────────────────────────────── */}
+            <g>
+              <circle className="sfd-src r1" cx="64" cy="104" r="5.5" />
+              <text className="sfd-src-lbl" x="80" y="109">Your calls</text>
+              <circle className="sfd-src r2" cx="64" cy="188" r="5.5" />
+              <text className="sfd-src-lbl" x="80" y="193">The web &amp; HN</text>
+              <circle className="sfd-src r3" cx="64" cy="272" r="5.5" />
+              <text className="sfd-src-lbl" x="80" y="277">Past winners</text>
+              <circle className="sfd-src r4" cx="64" cy="356" r="5.5" />
+              <text className="sfd-src-lbl" x="80" y="361">News radar · 2h</text>
             </g>
-          </Node>
-        </g>
 
-        {/* ── Pipeline beads ───────────────────────────────────────── */}
-        {[
-          { x: 412, n: '1', cap: 'DRAFT', t: 'WRITES THE DRAFT', b: 'Hook + body, end to end.' },
-          { x: 484, n: '2', cap: 'VOICE', t: 'IN YOUR VOICE', b: 'Grounded in your real calls.' },
-          { x: 556, n: '3', cap: 'DE-SLOP', t: 'STRIPS AI TELLS', b: 'Rewrites until it reads human.' },
-        ].map((bd, i) => (
-          <g className="sfd-nodewrap" tabIndex={0} key={bd.cap}>
-            <Node delay={0.5 + i * 0.12}>
-              <circle className="sfd-bead" cx={bd.x} cy="235" r="15" />
-              <text className="sfd-num" x={bd.x} y="235">{bd.n}</text>
-              <text className="sfd-cap" x={bd.x} y="266">{bd.cap}</text>
-              <g className="sfd-detail">
-                <rect x={bd.x - 95} y="158" width="190" height="50" rx="4" />
-                <line className="sfd-dconn" x1={bd.x} y1="208" x2={bd.x} y2="220" />
-                <text className="sfd-dt-t" x={bd.x - 83} y="178">{bd.t}</text>
-                <text className="sfd-dt-b" x={bd.x - 83} y="196">{bd.b}</text>
-              </g>
-            </Node>
-          </g>
-        ))}
+            {/* ── Content Brain ─────────────────────────────────────── */}
+            <Pick id="brain">
+              {!R && <circle className="sfd-ring p1" cx="312" cy="230" r="34" />}
+              {!R && <circle className="sfd-ring p2" cx="312" cy="230" r="34" />}
+              <circle className="sfd-core" cx="312" cy="230" r="26" />
+              <circle className="sfd-core-dot" cx="312" cy="230" r="5" />
+              <text className="sfd-stg" x="312" y="290">CONTENT BRAIN</text>
+            </Pick>
 
-        {/* ── Approve gate — the only human step ────────────────────── */}
-        <g className="sfd-nodewrap" tabIndex={0}>
-          <Node delay={0.95}>
-            <rect className="sfd-onlypill" x="619" y="168" width="122" height="20" rx="10" />
-            <text className="sfd-onlypill-t" x="680" y="181">YOUR ONLY STEP</text>
-            <path className="sfd-gate" d="M656,235 L680,211 L704,235 L680,259 Z" />
-            <path className="sfd-check" d="M669,236 l7,8 l13,-16" />
-            <text className="sfd-stg sfd-stg-em" x="680" y="291">YOU APPROVE</text>
-            <g className="sfd-detail">
-              <rect x="584" y="300" width="192" height="54" rx="4" />
-              <text className="sfd-dt-t" x="596" y="320">ONE TAP</text>
-              <text className="sfd-dt-b" x="596" y="338">Read it, tweak copy or timing,</text>
-              <text className="sfd-dt-b" x="596" y="352">approve. Under 10 min a day.</text>
+            {/* ── Pipeline beads ────────────────────────────────────── */}
+            {beads.map((b) => (
+              <Pick id={b.id} key={b.id}>
+                <circle className="sfd-bead" cx={b.x} cy="230" r="17" />
+                <text className="sfd-num" x={b.x} y="230">{b.n}</text>
+                <text className="sfd-cap" x={b.x} y="263">{b.cap}</text>
+              </Pick>
+            ))}
+
+            {/* ── Approve gate ──────────────────────────────────────── */}
+            <Pick id="approve">
+              <rect className="sfd-onlypill" x="688" y="160" width="120" height="20" rx="10" />
+              <text className="sfd-onlypill-t" x="748" y="173">YOUR ONLY STEP</text>
+              <path className="sfd-gate" d="M724,230 L748,202 L772,230 L748,258 Z" />
+              <path className="sfd-check" d="M737,231 l7,8 l13,-16" />
+              <text className="sfd-stg sfd-stg-em" x="748" y="290">YOU APPROVE</text>
+            </Pick>
+
+            {/* ── Outputs ───────────────────────────────────────────── */}
+            <Pick id="post">
+              <rect className="sfd-out" x="900" y="130" width="44" height="44" rx="11" />
+              <path className="sfd-out-i" d="M912,158 v-10 M912,143 v-0.5 M922,158 v-7 M932,158 v-12" />
+              <text className="sfd-out-lbl" x="922" y="192">LINKEDIN POST</text>
+            </Pick>
+            <Pick id="leadmagnet">
+              <rect className="sfd-out" x="900" y="310" width="44" height="44" rx="11" />
+              <path className="sfd-out-i" d="M912,323 h20 M912,330 h20 M912,337 h13" />
+              <text className="sfd-out-lbl" x="922" y="372">LEAD MAGNET</text>
+            </Pick>
+
+            {/* ── Deliverables ──────────────────────────────────────── */}
+            <g>
+              <circle className="sfd-dlv-dot" cx="1046" cy="152" r="4" />
+              <text className="sfd-dlv" x="1058" y="152">Posts on your schedule</text>
+              <circle className="sfd-dlv-dot" cx="1046" cy="296" r="4" />
+              <text className="sfd-dlv" x="1058" y="296">Live landing page</text>
+              <circle className="sfd-dlv-dot" cx="1046" cy="332" r="4" />
+              <text className="sfd-dlv" x="1058" y="332">Every signup to your list</text>
+              <circle className="sfd-dlv-dot" cx="1046" cy="368" r="4" />
+              <text className="sfd-dlv" x="1058" y="368">Best-fit calls booked</text>
             </g>
-          </Node>
-        </g>
+          </motion.g>
+        </svg>
+      </div>
+      <p className="sfd-hint">Click any step to see it in the real product</p>
 
-        {/* ── Outputs ──────────────────────────────────────────────── */}
-        <g className="sfd-nodewrap" tabIndex={0}>
-          <Node delay={1.05}>
-            <rect className="sfd-out" x="858" y="136" width="38" height="38" rx="9" />
-            <path className="sfd-out-i" d="M870,150 v10 M870,146 v0.5 M877,160 v-6 a0 0 0 0 1 0 0 M884,160 v-6" transform="translate(-1,-1)" />
-            <text className="sfd-out-lbl" x="877" y="190">LINKEDIN POST</text>
-          </Node>
-          <Node delay={1.12}>
-            <rect className="sfd-out" x="858" y="314" width="38" height="38" rx="9" />
-            <path className="sfd-out-i" d="M870,325 h14 M870,331 h14 M870,337 h9" />
-            <text className="sfd-out-lbl" x="877" y="368">LEAD MAGNET</text>
-          </Node>
-        </g>
-
-        {/* ── Deliverables ─────────────────────────────────────────── */}
-        <Node delay={1.25}>
-          <circle className="sfd-dlv-dot" cx="988" cy="155" r="4" />
-          <text className="sfd-dlv" x="1000" y="155">Posts on your schedule</text>
-          <circle className="sfd-dlv-dot" cx="988" cy="298" r="4" />
-          <text className="sfd-dlv" x="1000" y="298">Live landing page</text>
-          <circle className="sfd-dlv-dot" cx="988" cy="333" r="4" />
-          <text className="sfd-dlv" x="1000" y="333">Every signup to your list</text>
-          <circle className="sfd-dlv-dot" cx="988" cy="368" r="4" />
-          <text className="sfd-dlv" x="1000" y="368">Best-fit calls booked</text>
-        </Node>
-      </svg>
-      <p className="sfd-hint">Swipe to follow the flow →</p>
+      {/* ── Detail card ─────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {d && (
+          <motion.div
+            className="sfd-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setActive(null)}
+          >
+            <motion.div
+              className={`sfd-card ${d.shot ? 'has-shot' : ''}`}
+              initial={R ? false : { opacity: 0, scale: 0.92, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={R ? undefined : { opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.28, ease: [0.22, 0.84, 0.36, 1] }}
+              role="dialog"
+              aria-label={d.title}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="sfd-card-x" onClick={() => setActive(null)} aria-label="Close">
+                <X size={18} />
+              </button>
+              <div className="sfd-card-text">
+                <div className="sfd-card-kicker">{d.kicker}</div>
+                <h4 className="sfd-card-title">{d.title}</h4>
+                <p className="sfd-card-body">{d.body}</p>
+                {d.bullets && (
+                  <ul className="sfd-card-bul">
+                    {d.bullets.map((b) => <li key={b}>{b}</li>)}
+                  </ul>
+                )}
+              </div>
+              {d.shot && (
+                <div className="sfd-card-shot">
+                  <div className="sfd-card-chrome" aria-hidden="true">
+                    <span /><span /><span />
+                  </div>
+                  <img src={d.shot.src} alt={d.shot.alt} loading="lazy" />
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 const CSS = `
+.sfd-root{position:relative}
 .sfd-wrap{width:100%;overflow-x:auto;overflow-y:hidden;position:relative;-webkit-overflow-scrolling:touch}
-.sfd{display:block;width:100%;min-width:760px;height:auto}
+.sfd{display:block;width:100%;min-width:880px;height:auto}
 .sfd text{fill:var(--color-ink-soft)}
-.sfd-hint{display:none}
+.sfd-hint{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-ink);margin:18px 0 0;text-align:center}
 @media(max-width:820px){
   .sfd-wrap::after{content:'';position:absolute;top:0;right:0;width:42px;height:100%;background:linear-gradient(to right,rgba(247,244,239,0),var(--color-paper-sunk) 84%);pointer-events:none}
-  .sfd-hint{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent-ink);margin:14px 0 0;text-align:center}
 }
 
 /* Wires */
 .sfd-underglow{fill:none;stroke:var(--color-accent);stroke-width:6;opacity:.08;filter:url(#sfd-soft);stroke-linecap:round}
-.sfd-wire{fill:none;stroke:var(--color-accent);stroke-width:1.6;opacity:.85;stroke-linecap:round}
+.sfd-wire{fill:none;stroke:var(--color-accent);stroke-width:1.7;opacity:.9;stroke-linecap:round}
 .sfd-fan{fill:none;stroke:var(--color-accent);stroke-width:1;opacity:.32;stroke-dasharray:3 7;animation:sfd-flow 1.5s linear infinite}
 @keyframes sfd-flow{to{stroke-dashoffset:-10}}
 .sfd-particle{fill:#2FA876;filter:url(#sfd-glow)}
+.sfd-particle-loop{fill:#5FB98A;opacity:.85}
 
-/* Ghost numerals */
-.sfd-ghost{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:64px;fill:rgba(42,143,101,.09);text-anchor:middle;pointer-events:none;user-select:none}
+/* Feedback loop */
+.sfd-loopwire{fill:none;stroke:var(--color-accent);stroke-width:1.2;opacity:.4;stroke-dasharray:5 6;animation:sfd-flow-slow 1.6s linear infinite}
+@keyframes sfd-flow-slow{to{stroke-dashoffset:-11}}
+.sfd-loop-arrow{fill:var(--color-accent);opacity:.7}
+.sfd-loop-lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;fill:var(--color-accent-ink);text-anchor:middle;opacity:.85}
 
 /* Sources */
 .sfd-src{fill:var(--color-accent)}
 .sfd-src.r1{animation:sfd-pulse 2.6s ease-in-out infinite}
-.sfd-src.r2{animation:sfd-pulse 2.6s ease-in-out .8s infinite}
-.sfd-src.r3{animation:sfd-pulse 2.6s ease-in-out 1.6s infinite}
+.sfd-src.r2{animation:sfd-pulse 2.6s ease-in-out .7s infinite}
+.sfd-src.r3{animation:sfd-pulse 2.6s ease-in-out 1.3s infinite}
+.sfd-src.r4{animation:sfd-pulse 2.6s ease-in-out 1.9s infinite}
 @keyframes sfd-pulse{0%,100%{opacity:.45}50%{opacity:1}}
-.sfd-src-lbl{font-family:"Source Serif 4",Georgia,serif;font-style:italic;font-size:17px;fill:var(--color-ink-soft)}
+.sfd-src-lbl{font-family:"Source Serif 4",Georgia,serif;font-style:italic;font-size:18px;fill:var(--color-ink-soft)}
+
+/* Clickable nodes + active/dim state */
+.sfd-node{cursor:pointer;outline:none}
+.sfd-root.has-active .sfd-node:not(.is-active){opacity:.22;transition:opacity .3s}
+.sfd-node{transition:opacity .3s}
 
 /* Content Brain */
 .sfd-ring{fill:none;stroke:var(--color-accent);stroke-width:1.2;transform-box:fill-box;transform-origin:center}
 .sfd-ring.p1{animation:sfd-ping 3.4s ease-out infinite}
 .sfd-ring.p2{animation:sfd-ping 3.4s ease-out 1.7s infinite}
 @keyframes sfd-ping{0%{transform:scale(.5);opacity:.5}80%{opacity:0}100%{transform:scale(1.3);opacity:0}}
-.sfd-core{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:1.6}
+.sfd-core{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:1.8}
+.sfd-node:hover .sfd-core,.sfd-node:focus-visible .sfd-core,.sfd-node.is-active .sfd-core{filter:url(#sfd-glow);stroke-width:2.4}
 .sfd-core-dot{fill:var(--color-accent);animation:sfd-pulse 2.2s ease-in-out infinite}
 
 /* Stage labels */
-.sfd-stg{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;letter-spacing:.16em;fill:var(--color-ink);text-anchor:middle}
+.sfd-stg{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:700;letter-spacing:.16em;fill:var(--color-ink);text-anchor:middle}
 .sfd-stg-em{fill:var(--color-accent-ink)}
 
 /* Pipeline beads */
-.sfd-bead{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:1.4;transform-box:fill-box;transform-origin:center;transition:transform .25s cubic-bezier(.22,.84,.36,1),filter .25s}
-.sfd-nodewrap:hover .sfd-bead,.sfd-nodewrap:focus .sfd-bead{transform:scale(1.18);filter:url(#sfd-glow)}
-.sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:20px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
-.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.08em;fill:var(--color-ink-mute);text-anchor:middle}
+.sfd-bead{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:1.5}
+.sfd-node:hover .sfd-bead,.sfd-node:focus-visible .sfd-bead,.sfd-node.is-active .sfd-bead{filter:url(#sfd-glow);stroke-width:2.2}
+.sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:22px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.08em;fill:var(--color-ink-mute);text-anchor:middle}
 
 /* Approve gate */
-.sfd-gate{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:1.6;transform-box:fill-box;transform-origin:center;transition:transform .25s,filter .25s}
-.sfd-nodewrap:hover .sfd-gate,.sfd-nodewrap:focus .sfd-gate{transform:scale(1.1);filter:url(#sfd-glow)}
-.sfd-check{stroke:var(--color-accent-ink);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.sfd-onlypill{fill:var(--color-accent);}
+.sfd-gate{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:1.8}
+.sfd-node:hover .sfd-gate,.sfd-node:focus-visible .sfd-gate,.sfd-node.is-active .sfd-gate{filter:url(#sfd-glow);stroke-width:2.4}
+.sfd-check{stroke:var(--color-accent-ink);stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.sfd-onlypill{fill:var(--color-accent)}
 .sfd-onlypill-t{font-family:"IBM Plex Mono",monospace;font-size:8.5px;font-weight:700;letter-spacing:.14em;fill:#fff;text-anchor:middle}
 
 /* Outputs */
-.sfd-out{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:1.4;transform-box:fill-box;transform-origin:center;transition:transform .25s,filter .25s}
-.sfd-nodewrap:hover .sfd-out,.sfd-nodewrap:focus .sfd-out{transform:scale(1.08);filter:url(#sfd-glow)}
-.sfd-out-i{stroke:var(--color-accent-ink);stroke-width:1.5;fill:none;stroke-linecap:round}
-.sfd-out-lbl{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:700;letter-spacing:.1em;fill:var(--color-ink);text-anchor:middle}
+.sfd-out{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:1.6}
+.sfd-node:hover .sfd-out,.sfd-node:focus-visible .sfd-out,.sfd-node.is-active .sfd-out{filter:url(#sfd-glow);stroke-width:2.2}
+.sfd-out-i{stroke:var(--color-accent-ink);stroke-width:1.7;fill:none;stroke-linecap:round}
+.sfd-out-lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.1em;fill:var(--color-ink);text-anchor:middle}
 
 /* Deliverables */
 .sfd-dlv-dot{fill:var(--color-accent)}
-.sfd-dlv{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;letter-spacing:.03em;fill:var(--color-ink-soft);text-anchor:start;dominant-baseline:central}
+.sfd-dlv{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;letter-spacing:.03em;fill:var(--color-ink-soft);text-anchor:start;dominant-baseline:central}
 
-/* Hover detail cards */
-.sfd-detail{opacity:0;transition:opacity .25s ease;pointer-events:none}
-.sfd-nodewrap:hover .sfd-detail,.sfd-nodewrap:focus .sfd-detail{opacity:1}
-.sfd-nodewrap{cursor:default;outline:none}
-.sfd-detail rect{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:1;filter:drop-shadow(0 8px 20px rgba(0,0,0,.12))}
-.sfd-dconn{stroke:var(--color-accent);stroke-width:1.2;opacity:.6}
-.sfd-dt-t{font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.1em;fill:var(--color-accent-ink)}
-.sfd-dt-b{font-family:"Source Serif 4",Georgia,serif;font-size:12px;fill:var(--color-ink-soft)}
+/* Detail card overlay */
+.sfd-overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(31,30,28,.34);backdrop-filter:blur(3px);border-radius:inherit}
+.sfd-card{position:relative;width:100%;max-width:560px;background:var(--color-paper-raise);border:1px solid var(--color-hairline-bold);border-radius:20px;box-shadow:0 30px 80px -24px rgba(0,0,0,.4);padding:26px 26px 24px;max-height:88%;overflow-y:auto}
+.sfd-card.has-shot{max-width:920px;display:grid;grid-template-columns:1fr 1.15fr;gap:26px;align-items:center}
+@media(max-width:760px){.sfd-card.has-shot{grid-template-columns:1fr;gap:18px;max-width:560px}.sfd-card.has-shot .sfd-card-shot{order:-1}}
+.sfd-card-x{position:absolute;top:12px;right:12px;z-index:2;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;border:1px solid var(--color-hairline);background:var(--color-paper);color:var(--color-ink-soft);cursor:pointer;transition:background .2s,color .2s}
+.sfd-card-x:hover{background:var(--color-paper-sunk);color:var(--color-ink)}
+.sfd-card-kicker{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent-ink);margin-bottom:10px}
+.sfd-card-title{font-family:"DM Serif Display",Georgia,serif;font-size:27px;line-height:1.1;letter-spacing:-.01em;color:#1A1A1A;margin:0 0 12px}
+.sfd-card-body{font-family:"Source Serif 4",Georgia,serif;font-size:15.5px;line-height:1.65;color:var(--color-ink-soft);margin:0}
+.sfd-card-bul{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:8px}
+.sfd-card-bul li{position:relative;padding-left:18px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.02em;color:var(--color-ink-mute);text-transform:uppercase}
+.sfd-card-bul li::before{content:'';position:absolute;left:0;top:6px;width:7px;height:7px;background:var(--color-accent);border-radius:1px}
+.sfd-card-shot{border-radius:12px;overflow:hidden;border:1px solid var(--color-hairline-bold);background:#0E0F12;box-shadow:0 18px 50px -18px rgba(0,0,0,.5)}
+.sfd-card-chrome{display:flex;gap:6px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sfd-card-chrome span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18)}
+.sfd-card-shot img{display:block;width:100%}
 `;
 
 export default SystemFlowDiagram;
