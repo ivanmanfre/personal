@@ -391,7 +391,7 @@ const BrowserFrame: React.FC<{ src: string; alt: string; caption?: string; prior
 // carries content from idea to published; the editor is where you approve; the
 // calendar schedules itself; performance closes the learning loop.
 const EngineSection: React.FC = () => (
-  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+  <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-12 md:mb-16 max-w-3xl">
         <RevealH2 style={{ ...T.display('clamp(2.5rem,4.4vw,4rem)'), lineHeight: 1.02, marginBottom: 0 }}>
@@ -992,7 +992,7 @@ const TestimonialsSection: React.FC = () => (
             <div className={`md:col-span-6 ${c.flip ? 'md:order-2 md:col-start-7' : ''}`}>
               <div
                 className="overflow-hidden border"
-                style={{ borderColor: 'rgba(26,26,26,0.14)', aspectRatio: '16 / 10', backgroundColor: 'var(--color-paper-raise)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                style={{ borderColor: 'rgba(26,26,26,0.10)', aspectRatio: '16 / 10', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(26,26,26,0.10)' }}
               >
                 <img src={c.img} alt={c.alt} loading="lazy" className="w-full h-full object-cover object-top" />
               </div>
@@ -1028,7 +1028,7 @@ const TestimonialsSection: React.FC = () => (
 const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   <div
     className="flex flex-col shrink-0 mx-4 p-6 border whitespace-normal"
-    style={{ width: '340px', borderColor: 'rgba(26,26,26,0.14)', backgroundColor: 'var(--color-paper)' }}
+    style={{ width: '340px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
   >
     <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
     <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#1A1A1A', marginBottom: '16px', flex: 1 }}>
@@ -1044,7 +1044,7 @@ const ReviewsMarquee: React.FC = () => {
   const rowA = REVIEWS.slice(0, half);
   const rowB = REVIEWS.slice(half);
   return (
-    <section className="py-14 md:py-20 border-t overflow-hidden" style={DIVIDER}>
+    <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
       <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
         <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
       </div>
@@ -1243,7 +1243,7 @@ const FAQS = [
 const FAQSection: React.FC = () => {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+    <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: 'var(--color-paper-sunk)' }}>
       <div className="container mx-auto px-8 max-w-3xl">
         <motion.div {...inView} className="mb-12 md:mb-16">
           <RevealH2 style={{ ...T.display('clamp(2.2rem,3.8vw,3.4rem)'), lineHeight: 1.04 }}>
