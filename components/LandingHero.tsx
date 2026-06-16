@@ -136,7 +136,7 @@ const LandingHero: React.FC = () => {
                 style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                 aria-hidden="true"
               />
-              <span>For agency owners and consultants</span>
+              <span>For agency owners</span>
             </motion.div>
 
             {/* Headline: ONE coherent centered sentence at a single scale (the

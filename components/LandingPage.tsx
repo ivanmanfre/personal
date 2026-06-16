@@ -19,6 +19,7 @@ import Marquee from './Marquee';
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
 import SystemFlowDiagram from './SystemFlowDiagram';
+import { PROMISES } from '../lib/contentSystemContent';
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const ease = [0.22, 0.84, 0.36, 1] as const;
@@ -417,6 +418,44 @@ const EngineSection: React.FC = () => (
       </motion.div>
 
       <MidCTA>Want to watch it run on your brand before you decide?</MidCTA>
+    </div>
+  </section>
+);
+
+// ─── Why this isn't generic AI — the six promises (ported from /content-system) ──
+// Kills the cold objection ("isn't this just AI slop?"). Each promise carries
+// its mechanism, which proves it's a real engineered system, not a prompt.
+const PromisesSection: React.FC = () => (
+  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-6xl">
+      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+        <RevealH2 style={{ ...T.display('clamp(2.2rem,3.8vw,3.4rem)'), lineHeight: 1.04 }}>
+          This isn&rsquo;t &ldquo;AI writes my posts.&rdquo;
+        </RevealH2>
+        <p style={{ ...T.serif, fontSize: '17px', marginTop: '1.25rem', maxWidth: '48ch' }}>
+          Six things the engine does that a prompt box and a ghostwriter can&rsquo;t.
+        </p>
+      </motion.div>
+
+      <div className="grid md:grid-cols-2 gap-x-12 gap-y-11">
+        {PROMISES.map((p, i) => (
+          <motion.div
+            key={p.headline}
+            initial={prefersReduced ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.55, ease, delay: (i % 2) * 0.08 }}
+            className="pl-6"
+            style={{ borderLeft: '2px solid var(--color-accent)' }}
+          >
+            <h3 style={{ ...T.display('1.4rem'), lineHeight: 1.12, marginBottom: '0.55rem' }}>{p.headline}</h3>
+            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.6, color: '#3D3D3B' }}>{p.benefit}</p>
+            <p style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '11px', letterSpacing: '0.01em', lineHeight: 1.5, marginTop: '0.85rem', color: 'var(--color-accent-ink)' }}>
+              How: {p.how}
+            </p>
+          </motion.div>
+        ))}
+      </div>
     </div>
   </section>
 );
@@ -1609,6 +1648,7 @@ const LandingPage: React.FC = () => {
         <ProofBand />
         <ProblemSection />
         <EngineSection />
+        <PromisesSection />
         <LiveEngineProof />
         <ComparisonSection />
         <QualificationSection />
