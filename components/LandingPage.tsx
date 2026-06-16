@@ -969,8 +969,8 @@ const ENGINE_CASES = [
   {
     client: 'Lemonade',
     role: 'Demand-gen studio',
-    img: '/content-system/ui/leadmagnets.webp',
-    alt: "Lemonade's lead-magnet studio running in the system",
+    img: '/content-system/lemonade-thankyou.webp',
+    alt: "Lemonade's lead-capture page built by the system",
     flip: true,
     summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
     metrics: [
