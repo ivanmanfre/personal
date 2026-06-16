@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown } from 'lucide-react';
+import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo, publishPostNow } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError } from '../../lib/dashboardActions';
@@ -712,6 +712,21 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       {isScheduled
                         ? (when ? 'Update' : 'Reschedule · auto-slot')
                         : (when ? 'Approve & schedule' : 'Approve · auto-slot')}
+                    </Button>
+                    {/* Post now — publish to LinkedIn immediately, skipping the
+                        schedule/queue. Fires the publisher's on-demand webhook;
+                        server-side guard refuses an already-posted draft. */}
+                    <Button
+                      variant="secondary"
+                      disabled={!!busy}
+                      title="Publish to LinkedIn right now — skips the schedule"
+                      onClick={() => {
+                        if (!confirm('Publish this post to LinkedIn right now?\n\nIt goes out immediately and can’t be undone.')) return;
+                        run('post now', () => publishPostNow(draft.id), 'Posting to LinkedIn now — live in ~30s');
+                      }}
+                    >
+                      {busy === 'post now' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      {busy === 'post now' ? 'Posting…' : 'Post now'}
                     </Button>
                   </>
                 );
