@@ -264,9 +264,9 @@ const useMediaQuery = (query: string): boolean => {
 // OUTPUT of the §06 calculator, not a receipt — it stays in its own context).
 // Only vetted, defensible numbers live at the top of the page.
 const METRICS = [
-  { fig: '100+', label: 'Builds shipped', receipt: 'Systems running in production, including the one writing this feed.' },
+  { fig: '100+', label: 'Systems built', receipt: 'Designed and run by me, including the engine behind my own LinkedIn.' },
   { fig: '5+', unit: '/wk', label: 'Posts in your voice', receipt: 'Posts, carousels, video, and lead magnets, out without you touching them.' },
-  { fig: '~1', unit: 'hr', label: 'Your week', receipt: 'You review and approve. The engine does the rest.' },
+  { fig: '~1', unit: 'hr', label: 'Your time', receipt: 'You review and approve. The engine does the rest.' },
 ];
 
 // Compact credential strip — refined, not gigantic. Figures sit at a calm
@@ -1023,9 +1023,11 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
 );
 
 const ReviewsMarquee: React.FC = () => {
-  const half = Math.ceil(REVIEWS.length / 2);
-  const rowA = REVIEWS.slice(0, half);
-  const rowB = REVIEWS.slice(half);
+  // Use the shorter quotes so they fit the fixed card height without ellipsis.
+  const short = REVIEWS.filter((r) => r.text.length <= 130);
+  const half = Math.ceil(short.length / 2);
+  const rowA = short.slice(0, half);
+  const rowB = short.slice(half);
   return (
     <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
       <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
@@ -1278,6 +1280,7 @@ const FAQS = [
   { q: 'Will it actually sound like me?', a: "Yes. The engine is trained on your voice from a short intake, and every piece runs through an anti-slop QA pass before it ships. If it reads like AI, it doesn't go out." },
   { q: "How long until it's live?", a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
   { q: 'Do I own it?', a: "Yes. The system, the content, and the data live in your own accounts. If we ever stop, it keeps running without me." },
+  { q: 'What does it cost?', a: "A fixed price for the build, scoped to your channels and content volume on the fit call, then an optional monthly to keep it running and improving. No surprise retainers, and you own the system either way." },
   { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About an hour a week. The engine handles the rest.' },
   { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a system you own that writes the posts, builds the lead magnets, and ships every format daily in your voice, with no one to manage.' },
   { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },

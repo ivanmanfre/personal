@@ -117,7 +117,7 @@ const SampleFrame: React.FC<{ label: string; src: string; alt: string; ratio?: s
       className="overflow-hidden border"
       style={{ borderColor: 'rgba(26,26,26,0.10)', aspectRatio: ratio, backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(26,26,26,0.10)' }}
     >
-      <img src={src} alt={alt} loading="lazy" className="w-full h-full object-contain" />
+      <img src={src} alt={alt} loading="lazy" className="w-full h-full object-cover object-top" />
     </div>
   </div>
 );

@@ -81,7 +81,7 @@ const LandingHero: React.FC = () => {
         className="absolute inset-0 pointer-events-none z-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(26,26,26,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.035) 1px, transparent 1px)',
+            'linear-gradient(rgba(26,26,26,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.022) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />
