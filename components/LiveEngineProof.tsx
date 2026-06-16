@@ -178,7 +178,7 @@ const LiveEngineProof: React.FC = () => {
         {/* The system running: kinetic product ad → static samples below */}
         <motion.div {...reveal} className="mb-16 md:mb-20">
           <div style={{ ...MONO, marginBottom: '12px' }}>The system running</div>
-          <HeroVideo />
+          <HeroVideo autoplay={false} />
         </motion.div>
 
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-start">

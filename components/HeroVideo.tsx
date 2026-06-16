@@ -11,11 +11,13 @@ import { prefersReduced } from './editorial';
 export function HeroVideo({
   src = '/content-system/content-system-ad.mp4',
   poster = '/content-system/content-system-ad-poster.webp',
-}: { src?: string; poster?: string }) {
+  autoplay = true,
+}: { src?: string; poster?: string; autoplay?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const auto = autoplay && !prefersReduced;
   const [muted, setMuted] = useState(true);
-  const [started, setStarted] = useState(!prefersReduced);
-  const [playing, setPlaying] = useState(!prefersReduced);
+  const [started, setStarted] = useState(auto);
+  const [playing, setPlaying] = useState(auto);
 
   const toggleMute = () => {
     const v = ref.current;
@@ -50,7 +52,7 @@ export function HeroVideo({
           className="block w-full"
           src={src}
           poster={poster}
-          autoPlay={!prefersReduced}
+          autoPlay={auto}
           muted
           playsInline
           preload="metadata"
