@@ -631,7 +631,7 @@ const FUTURES = {
   },
 };
 
-const AgentReadySection: React.FC = () => (
+const BeforeAfterSection: React.FC = () => (
   <section className="py-24 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
       <motion.div {...inView} className="mb-16 max-w-4xl">
@@ -641,7 +641,26 @@ const AgentReadySection: React.FC = () => (
         </RevealH2>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-x-16 gap-y-12">
+      <div className="relative grid md:grid-cols-2 gap-x-16 gap-y-12">
+        {/* Center spine (md+): a hairline that fills sage top-to-bottom on scroll,
+            the pivot between the two futures. Sage square nodes cap each end.
+            Reduced motion: the fill is shown statically. */}
+        <div
+          aria-hidden="true"
+          className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2"
+          style={{ width: '2px', backgroundColor: 'rgba(26,26,26,0.12)' }}
+        >
+          <motion.div
+            initial={prefersReduced ? false : { scaleY: 0 }}
+            whileInView={{ scaleY: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 1.1, ease }}
+            style={{ width: '100%', height: '100%', backgroundColor: 'var(--color-accent)', transformOrigin: 'top' }}
+          />
+          <span className="absolute left-1/2 -translate-x-1/2" style={{ top: '-4px', width: '9px', height: '9px', backgroundColor: 'var(--color-accent)' }} />
+          <span className="absolute left-1/2 -translate-x-1/2" style={{ bottom: '-4px', width: '9px', height: '9px', backgroundColor: 'var(--color-accent)' }} />
+        </div>
+
         {[FUTURES.without, FUTURES.with].map((f, col) => (
           <motion.div
             key={f.label}
@@ -813,6 +832,93 @@ const ComparisonSection: React.FC = () => (
   </section>
 );
 
+// ─── ROI calculator — your current content cost, in your own numbers ─────────
+// The "drag your real numbers" mechanic (Salesforge), re-skinned editorial: mono
+// figures, sage square slider thumbs, no SaaS gauge. We never put OUR price on a
+// cold surface (the offer is the free fit call) — the number that lands is THEIR
+// current burn, computed live.
+const fmtInt = (n: number) => Math.round(n).toLocaleString('en-US');
+
+const CostSlider: React.FC<{
+  label: string; value: number; min: number; max: number; step: number;
+  prefix?: string; suffix?: string; onChange: (v: number) => void;
+}> = ({ label, value, min, max, step, prefix = '', suffix = '', onChange }) => (
+  <div>
+    <div className="flex items-baseline justify-between" style={{ marginBottom: '10px' }}>
+      <span style={{ ...T.mono, fontSize: '11px', color: '#5A5752' }}>{label}</span>
+      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
+        {prefix}{fmtInt(value)}{suffix}
+      </span>
+    </div>
+    <input
+      type="range" min={min} max={max} step={step} value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      aria-label={label}
+      className="w-full cursor-pointer"
+      style={{ accentColor: 'var(--color-accent)' }}
+    />
+  </div>
+);
+
+const ROICalculator: React.FC = () => {
+  const [retainer, setRetainer] = useState(2000); // $/mo to a writer or agency
+  const [hours, setHours] = useState(8);           // hrs/week you or your team spend
+  const [rate, setRate] = useState(100);           // $/hr that time is worth
+
+  const monthly = retainer + Math.round(hours * 4.33 * rate);
+  const annual = monthly * 12;
+  const hoursYear = Math.round(hours * 52);
+
+  return (
+    <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
+      <div className="container mx-auto px-8 max-w-6xl">
+        <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+          <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
+            What does your content<br />cost you right now?
+          </RevealH2>
+          <p style={{ ...T.serif, fontSize: '17px', marginTop: '1.5rem', maxWidth: '48ch' }}>
+            You are already paying for content, in retainers or in hours. Move the sliders to see your real number.
+          </p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-12 gap-x-12 gap-y-10 items-center">
+          {/* inputs */}
+          <motion.div {...inView} className="md:col-span-6 flex flex-col gap-8">
+            <CostSlider label="Writer / agency retainer" prefix="$" suffix="/mo" value={retainer} min={0} max={8000} step={100} onChange={setRetainer} />
+            <CostSlider label="Hours you or your team spend" suffix=" hrs/wk" value={hours} min={0} max={25} step={1} onChange={setHours} />
+            <CostSlider label="What an hour of that time is worth" prefix="$" suffix="/hr" value={rate} min={25} max={400} step={5} onChange={setRate} />
+          </motion.div>
+
+          {/* result */}
+          <motion.div {...inView} className="md:col-span-6 md:col-start-7">
+            <div className="border" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(26,26,26,0.10)', padding: '32px' }}>
+              <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '14px' }}>Your content spend, today</div>
+              <div style={{ ...T.display('clamp(3rem,6vw,4.5rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                ${fmtInt(monthly)}<span style={{ fontSize: '0.34em', color: '#5A5752' }}> /mo</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6" style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid rgba(26,26,26,0.14)' }}>
+                <div>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A' }}>${fmtInt(annual)}</div>
+                  <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginTop: '4px' }}>a year</div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A' }}>{fmtInt(hoursYear)} hrs</div>
+                  <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginTop: '4px' }}>of your year</div>
+                </div>
+              </div>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B', marginTop: '24px' }}>
+                The engine does more, posts, carousels, video, and lead magnets, daily and in your voice, for about an hour a week of your time.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        <MidCTA>That is your number. Let's see what the engine does with it.</MidCTA>
+      </div>
+    </section>
+  );
+};
+
 // ─── Qualification: This isn't for every agency ──────────────────────────────
 const QUALIFY = {
   built: [
@@ -844,7 +950,9 @@ const QualificationSection: React.FC = () => (
           </p>
         </motion.div>
 
-        <div className="md:col-span-7 md:col-start-6 grid sm:grid-cols-2 gap-x-12 gap-y-12">
+        <div className="md:col-span-7 md:col-start-6 relative grid sm:grid-cols-2 gap-x-12 gap-y-12">
+          {/* center hairline — the fit / not-fit seam (sm+) */}
+          <div aria-hidden="true" className="hidden sm:block absolute top-1 bottom-1 left-1/2 -translate-x-1/2" style={{ width: '1px', backgroundColor: 'rgba(26,26,26,0.12)' }} />
           {[
             { label: 'BUILT FOR', lines: QUALIFY.built, accent: true },
             { label: 'NOT BUILT FOR', lines: QUALIFY.not, accent: false },
@@ -866,13 +974,11 @@ const QualificationSection: React.FC = () => (
                   <div key={l} className="flex items-start gap-3.5">
                     <span
                       aria-hidden="true"
-                      style={{
-                        marginTop: '0.62em',
-                        width: '16px',
-                        height: '2px',
-                        flexShrink: 0,
-                        backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.3)',
-                      }}
+                      style={
+                        group.accent
+                          ? { marginTop: '0.5em', width: '9px', height: '9px', flexShrink: 0, backgroundColor: 'var(--color-accent)' }
+                          : { marginTop: '0.62em', width: '14px', height: '2px', flexShrink: 0, backgroundColor: 'rgba(26,26,26,0.3)' }
+                      }
                     />
                     <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.5, color: group.accent ? '#1A1A1A' : '#7A766F' }}>
                       {l}
@@ -956,7 +1062,7 @@ const WorkSection: React.FC = () => {
 const ENGINE_CASES = [
   {
     client: 'Agency Operators',
-    role: 'Creative-video agency',
+    role: 'Fractional COO · ops coach',
     img: '/content-system/kyle-guides.webp',
     alt: "Agency Operators' lead magnets, built and published by the system",
     summary: 'Runs its entire content operation on the system. Every post and lead magnet is drafted in the founder’s voice and shipped, without anyone facing a blank page.',
@@ -1263,7 +1369,7 @@ const OfferSection: React.FC = () => (
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
   'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, and lead magnets, all QA’d before they go out.',
-  "It's the same system already running for agencies like Agency Operators and Lemonade, not a demo.",
+  "It's the same system already running for operators like Agency Operators and Lemonade, not a demo.",
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
 
@@ -1648,6 +1754,8 @@ const LandingPage: React.FC = () => {
         <PromisesSection />
         <LiveEngineProof />
         <ComparisonSection />
+        <ROICalculator />
+        <BeforeAfterSection />
         <QualificationSection />
         <TestimonialsSection />
         <ReviewsMarquee />

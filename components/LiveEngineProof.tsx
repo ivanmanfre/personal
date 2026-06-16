@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { HeroVideo } from './HeroVideo';
 
 // ─── Live-proof band — content SAMPLES, shown the way they ship ──────────────
 // Not a wall of text linking to a profile. Three real outputs of the engine,
@@ -172,6 +173,12 @@ const LiveEngineProof: React.FC = () => {
           <p style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: '17px', lineHeight: 1.6, color: '#3D3D3B', marginTop: '1.25rem', maxWidth: '46ch' }}>
             A post, a carousel, a lead magnet, all from the same engine, all in one voice. If it reads like a person, that's the point.
           </p>
+        </motion.div>
+
+        {/* The system running: kinetic product ad → static samples below */}
+        <motion.div {...reveal} className="mb-16 md:mb-20">
+          <div style={{ ...MONO, marginBottom: '12px' }}>The system running</div>
+          <HeroVideo />
         </motion.div>
 
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-start">
