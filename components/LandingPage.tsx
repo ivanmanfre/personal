@@ -433,7 +433,7 @@ const PromisesSection: React.FC = () => (
           This isn&rsquo;t &ldquo;AI writes my posts.&rdquo;
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '17px', marginTop: '1.25rem', maxWidth: '48ch' }}>
-          Six things the engine does that a prompt box and a ghostwriter can&rsquo;t.
+          What the engine does that a prompt box and a ghostwriter can&rsquo;t.
         </p>
       </motion.div>
 
@@ -450,9 +450,6 @@ const PromisesSection: React.FC = () => (
           >
             <h3 style={{ ...T.display('1.4rem'), lineHeight: 1.12, marginBottom: '0.55rem' }}>{p.headline}</h3>
             <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15.5px', lineHeight: 1.6, color: '#3D3D3B' }}>{p.benefit}</p>
-            <p style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '11px', letterSpacing: '0.01em', lineHeight: 1.5, marginTop: '0.85rem', color: 'var(--color-accent-ink)' }}>
-              How: {p.how}
-            </p>
           </motion.div>
         ))}
       </div>
@@ -958,11 +955,11 @@ const WorkSection: React.FC = () => {
 // their real numbers, then one supporting quote for broader credibility.
 const ENGINE_CASES = [
   {
-    client: 'Kyle Hunt',
-    role: 'Creative-video agency · founder',
-    img: '/content-system/kyle-content-system.png',
-    alt: "Kyle Hunt's content engine running in the dashboard",
-    summary: 'Runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.',
+    client: 'Agency Operators',
+    role: 'Creative-video agency',
+    img: '/content-system/kyle-guides.webp',
+    alt: "Agency Operators' lead magnets, built and published by the system",
+    summary: 'Runs its entire content operation on the system. Every post and lead magnet is drafted in the founder’s voice and shipped, without anyone facing a blank page.',
     metrics: [
       { v: '100%', l: 'of his content, run by the system' },
       { v: '~300', l: 'comments per lead-magnet post' },
@@ -972,7 +969,7 @@ const ENGINE_CASES = [
   {
     client: 'Lemonade',
     role: 'Demand-gen studio',
-    img: '/content-system/ui/leadmagnets.png',
+    img: '/content-system/ui/leadmagnets.webp',
     alt: "Lemonade's lead-magnet studio running in the system",
     flip: true,
     summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
@@ -1045,7 +1042,7 @@ const TestimonialsSection: React.FC = () => (
 const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   <div
     className="flex flex-col shrink-0 mx-4 p-6 border whitespace-normal"
-    style={{ width: '340px', height: '210px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
+    style={{ width: '340px', minHeight: '188px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
   >
     <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
     <p
@@ -1240,7 +1237,7 @@ const OfferSection: React.FC = () => (
           {[
             { src: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/post-stills/library/IMG_4492.jpg', alt: 'A recent post graphic from the engine' },
             { src: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg', alt: 'A recent carousel from the engine' },
-            { src: '/content-system/lead-magnet.png', alt: 'A lead magnet built by the engine' },
+            { src: '/content-system/lead-magnet.webp', alt: 'A lead magnet built by the engine' },
           ].map((s) => (
             <div
               key={s.src}
@@ -1266,7 +1263,7 @@ const OfferSection: React.FC = () => (
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
   'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, and lead magnets, all QA’d before they go out.',
-  "It's the same system already running for agencies like Kyle Hunt and Lemonade, not a demo.",
+  "It's the same system already running for agencies like Agency Operators and Lemonade, not a demo.",
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
 

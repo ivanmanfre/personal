@@ -68,8 +68,9 @@ const LinkedInPost: React.FC<{ text: string; image: string | null }> = ({ text, 
           lineHeight: 1.45,
           color: 'rgba(0,0,0,0.9)',
           margin: '12px 0 14px',
+          whiteSpace: 'pre-wrap',
           display: '-webkit-box',
-          WebkitLineClamp: image ? 4 : 8,
+          WebkitLineClamp: image ? 6 : 10,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
         }}
@@ -141,7 +142,7 @@ const LiveEngineProof: React.FC = () => {
         const row = data.find((r: any) => r.post_text && r.post_text.trim().length > 60);
         if (row) {
           setPost({
-            text: row.post_text.replace(/\s+/g, ' ').trim(),
+            text: row.post_text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim(),
             image: Array.isArray(row.media_urls) && row.media_urls.length > 0 ? row.media_urls[0] : null,
           });
         }
@@ -186,7 +187,7 @@ const LiveEngineProof: React.FC = () => {
             className="lg:col-span-6 grid sm:grid-cols-2 gap-8"
           >
             <SampleFrame label="Carousel" src="https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg" alt="A branded carousel slide produced by the engine" ratio="4 / 5" />
-            <SampleFrame label="Lead magnet" src="/content-system/lead-magnet.png" alt="A live interactive lead magnet built by the engine" ratio="4 / 5" />
+            <SampleFrame label="Lead magnet" src="/content-system/lead-magnet.webp" alt="A live interactive lead magnet built by the engine" ratio="4 / 5" />
           </motion.div>
         </div>
       </div>
