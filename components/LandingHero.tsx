@@ -37,9 +37,9 @@ const LandingHero: React.FC = () => {
         position: 'absolute',
         left: '-2%',
         right: '-2%',
-        top: '0.26em',
+        top: '0.20em',
         width: '104%',
-        height: '0.72em',
+        height: '0.92em',
         transformOrigin: 'left',
         zIndex: -1,
         overflow: 'visible',
@@ -222,7 +222,7 @@ const LandingHero: React.FC = () => {
                     }}
                   >
                     <span
-                      className={i === 0 ? '' : 'sm:hidden'}
+                      className="sm:hidden"
                       style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                       aria-hidden="true"
                     />

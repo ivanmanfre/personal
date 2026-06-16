@@ -384,7 +384,7 @@ const CSS = `
 .sfd-bead{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:2.2;filter:url(#sfd-shadow)}
 .sfd-node:hover .sfd-bead,.sfd-node:focus-visible .sfd-bead,.sfd-node.is-active .sfd-bead{filter:url(#sfd-glow);stroke-width:2.8}
 .sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:30px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
-.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.08em;fill:var(--color-ink-mute);text-anchor:middle}
+.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.05em;fill:var(--color-ink);text-anchor:middle}
 
 /* Approve gate + single attention pulse */
 .sfd-gate{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:2.6;filter:url(#sfd-shadow)}

@@ -285,12 +285,12 @@ const ProofBand: React.FC = () => (
             transition={{ duration: 0.6, ease, delay: i * 0.09 }}
             className="py-9 md:py-11 px-6 sm:px-9 first:sm:pl-0 last:sm:pr-0 text-left"
           >
-            <div className="flex items-baseline gap-1" style={{ marginBottom: '12px' }}>
+            <div className="flex items-baseline gap-0.5" style={{ marginBottom: '12px' }}>
               <span style={{ ...T.display('clamp(1.9rem,2.6vw,2.6rem)'), color: '#1A1A1A', lineHeight: 1, letterSpacing: '-0.02em' }}>
                 {m.fig}
               </span>
               {m.unit && (
-                <span style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '15px', color: '#5A5752', letterSpacing: '0.02em' }}>{m.unit}</span>
+                <span style={{ ...T.display('1.35rem'), color: '#5A5752', lineHeight: 1, letterSpacing: '-0.01em' }}>{m.unit}</span>
               )}
             </div>
             <div style={{ ...T.mono, marginBottom: '8px', color: 'var(--color-accent-ink)' }}>{m.label}</div>
@@ -1006,10 +1006,15 @@ const TestimonialsSection: React.FC = () => (
 const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   <div
     className="flex flex-col shrink-0 mx-4 p-6 border whitespace-normal"
-    style={{ width: '340px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
+    style={{ width: '340px', height: '210px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
   >
     <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
-    <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#1A1A1A', marginBottom: '16px', flex: 1 }}>
+    <p
+      style={{
+        fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A', marginBottom: '14px', flex: 1,
+        display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+      }}
+    >
       &ldquo;{r.text}&rdquo;
     </p>
     <div style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A' }}>{r.author}</div>
@@ -1176,15 +1181,42 @@ const OfferSection: React.FC = () => (
             post for you.
           </span>
         </RevealH2>
-        <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.5rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto' }}>
+        <p style={{ ...T.serif, fontSize: '18px', marginBottom: '2.25rem', maxWidth: '48ch', marginLeft: 'auto', marginRight: 'auto' }}>
           Book the fit call. I'll show you exactly what the engine would write for
           your agency, in your voice, even if we never work together.
         </p>
-        <div className="flex justify-center">
-          <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
-            Book your fit call <ArrowRight size={18} />
-          </MagneticCTA>
+      </motion.div>
+
+      {/* A glance at real output — fulfils the "see what it would post" promise */}
+      <motion.div
+        initial={prefersReduced ? false : { opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.6, ease }}
+        className="max-w-2xl mx-auto mb-4"
+      >
+        <div className="grid grid-cols-3 gap-4 md:gap-5">
+          {[
+            { src: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/post-stills/library/IMG_4492.jpg', alt: 'A recent post graphic from the engine' },
+            { src: 'https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg', alt: 'A recent carousel from the engine' },
+            { src: '/content-system/lead-magnet.png', alt: 'A lead magnet built by the engine' },
+          ].map((s) => (
+            <div
+              key={s.src}
+              className="overflow-hidden border"
+              style={{ aspectRatio: '4 / 5', borderRadius: '12px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', boxShadow: '0 8px 24px rgba(26,26,26,0.08)' }}
+            >
+              <img src={s.src} alt={s.alt} loading="lazy" className="w-full h-full object-cover object-top" />
+            </div>
+          ))}
         </div>
+        <div style={{ ...T.mono, marginTop: '14px', color: '#5A5752' }}>Real output, in your voice</div>
+      </motion.div>
+
+      <motion.div {...inView} className="flex justify-center mt-9">
+        <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
+          Book your fit call <ArrowRight size={18} />
+        </MagneticCTA>
       </motion.div>
     </div>
   </section>
@@ -1192,7 +1224,7 @@ const OfferSection: React.FC = () => (
 
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
-  'You work with me directly, the same person who builds and runs your engine. There is no agency layer in between.',
+  'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, and lead magnets, all QA’d before they go out.',
   'My own LinkedIn runs on this exact engine, so you can watch it work in real time.',
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
@@ -1255,7 +1287,7 @@ const FAQSection: React.FC = () => {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <section className="py-24 md:py-32 border-t" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
-      <div className="container mx-auto px-8 max-w-3xl">
+      <div className="container mx-auto px-8 max-w-2xl">
         <motion.div {...inView} className="mb-12 md:mb-16">
           <RevealH2 style={{ ...T.display('clamp(2.2rem,3.8vw,3.4rem)'), lineHeight: 1.04 }}>
             Frequent questions.
@@ -1270,7 +1302,7 @@ const FAQSection: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="w-full flex items-start justify-between gap-6 py-6 text-left"
+                  className="w-full flex items-start justify-between gap-6 py-8 text-left"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                   aria-expanded={isOpen}
                 >
