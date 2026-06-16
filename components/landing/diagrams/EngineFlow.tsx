@@ -66,7 +66,7 @@ const StageBox: React.FC<{ s: Stage }> = ({ s }) => (
 );
 
 const Scene: React.FC<{ loop: boolean }> = ({ loop }) => (
-  <svg viewBox="0 0 1080 380" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="A map of how the content system works as a self-improving loop: an idea engine decides what to post, the system writes it in your voice as a post, carousel, video or lead magnet, runs it through an anti-slop QA pass, you approve it in about an hour a week, it schedules itself and publishes daily, the lead magnets capture and qualify leads, and real performance feeds back so the system learns what lands.">
+  <svg viewBox="0 0 1080 380" width="100%" style={{ display: 'block', overflow: 'visible' }} role="img" aria-label="A map of how the content system works as a self-improving loop: an idea engine decides what to post, the system writes it in your voice as a post, carousel, video or lead magnet, runs it through an anti-slop QA pass, you approve it in about 15 minutes a week, it schedules itself and publishes daily, the lead magnets capture and qualify leads, and real performance feeds back so the system learns what lands.">
     {/* return loop (the self-improving feedback) — drawn distinctly, labelled */}
     <path
       d={`M ${cx(PUBLISH)} ${SPINE + BOX_H / 2} C ${cx(PUBLISH) + 96} ${SPINE + 60} ${cx(PUBLISH) + 96} 320 ${cx(PUBLISH)} 320 L ${cx(IDEA)} 320 C ${cx(IDEA) - 96} 320 ${cx(IDEA) - 96} ${SPINE + 30} ${cx(IDEA)} ${SPINE + BOX_H / 2 + 7}`}

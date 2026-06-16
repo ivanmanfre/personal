@@ -405,7 +405,7 @@ const EngineSection: React.FC = () => (
         <p style={{ ...T.serif, fontSize: '18px', marginTop: '1.5rem', maxWidth: '56ch' }}>
           You record your voice once. The engine decides what to post, writes it
           in your voice across every format, and runs each piece through an
-          anti-slop QA pass. You approve, about an hour a week. Then it schedules
+          anti-slop QA pass. You approve, about 15 minutes a week. Then it schedules
           and publishes daily, the lead magnets pull in leads, and real
           performance feeds back so it sharpens what it posts next.
         </p>
@@ -702,7 +702,7 @@ const COMPARE_ROWS: { label: string; cells: string[] }[] = [
   { label: 'Sounds like you', cells: ['Yes, anti-slop QA', 'Sometimes', 'Sometimes', 'Yes'] },
   { label: 'Formats', cells: ['Posts, carousels, video, lead magnets', 'Posts', 'Posts', 'Whatever you manage'] },
   { label: 'You own it after', cells: ["Yes, it's your system", 'No', 'No', 'Yes'] },
-  { label: 'Your time / week', cells: ['About 1 hr review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
+  { label: 'Your time / week', cells: ['About 15 min review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
   { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
 ];
 
@@ -907,7 +907,7 @@ const ROICalculator: React.FC = () => {
                 </div>
               </div>
               <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B', marginTop: '24px' }}>
-                The engine does more, posts, carousels, video, and lead magnets, daily and in your voice, for about an hour a week of your time.
+                The engine does more, posts, carousels, video, and lead magnets, daily and in your voice, for about 15 minutes a week of your time.
               </p>
             </div>
           </motion.div>
@@ -1423,7 +1423,7 @@ const FAQS = [
   { q: "How long until it's live?", a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
   { q: 'Do I own it?', a: "Yes. The system, the content, and the data live in your own accounts. If we ever stop, it keeps running without me." },
   { q: 'What does it cost?', a: "A fixed price for the build, scoped to your channels and content volume on the fit call, then an optional monthly to keep it running and improving. No surprise retainers, and you own the system either way." },
-  { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About an hour a week. The engine handles the rest.' },
+  { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About 15 minutes a week. The engine handles the rest.' },
   { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a system you own that writes the posts, builds the lead magnets, and ships every format daily in your voice, with no one to manage.' },
   { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },
 ];
