@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Volume2, VolumeX, Play } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { prefersReduced } from './editorial';
 
 /**
@@ -15,6 +15,7 @@ export function HeroVideo({
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [started, setStarted] = useState(!prefersReduced);
+  const [playing, setPlaying] = useState(!prefersReduced);
 
   const toggleMute = () => {
     const v = ref.current;
@@ -22,6 +23,13 @@ export function HeroVideo({
     v.muted = !v.muted;
     setMuted(v.muted);
     if (v.paused) v.play().catch(() => {});
+  };
+
+  const togglePlay = () => {
+    const v = ref.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
   };
 
   const start = () => {
@@ -47,6 +55,8 @@ export function HeroVideo({
           playsInline
           preload="metadata"
           aria-label="Content System product demo"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
         />
 
         {/* Reduced-motion / not-started: poster play button */}
@@ -58,6 +68,19 @@ export function HeroVideo({
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg">
               <Play size={26} className="ml-1" aria-hidden="true" />
             </span>
+          </button>
+        )}
+
+        {/* Play / pause control */}
+        {started && (
+          <button
+            type="button" onClick={togglePlay}
+            aria-label={playing ? 'Pause' : 'Play'}
+            className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium backdrop-blur transition-colors"
+            style={{ backgroundColor: 'rgba(10,13,11,0.6)', color: '#F3F0E9', border: '1px solid rgba(255,255,255,0.15)' }}
+          >
+            {playing ? <Pause size={15} aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
+            {playing ? 'Pause' : 'Play'}
           </button>
         )}
 
