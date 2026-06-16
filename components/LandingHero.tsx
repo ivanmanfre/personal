@@ -12,8 +12,16 @@ import { ArrowRight } from 'lucide-react';
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
+// Play the hero entrance ONCE per page load. React.StrictMode double-mounts in
+// dev (and an SPA back-navigation remounts), which would otherwise replay the
+// entrance and read as a stutter/repeat. After the first mount this flag is set,
+// so any remount renders the hero at its final state with no entrance.
+let heroEntrancePlayed = false;
+
 const LandingHero: React.FC = () => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const skip = heroEntrancePlayed;
+  React.useEffect(() => { heroEntrancePlayed = true; }, []);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end start'],
@@ -27,7 +35,7 @@ const LandingHero: React.FC = () => {
   // ROMAN phrase (never fills it green). Scales to the wrapped phrase box.
   const HeroSweep: React.FC<{ delay?: number }> = ({ delay = 0.55 }) => (
     <motion.svg
-      initial={reduced ? false : { scaleX: 0, opacity: 0 }}
+      initial={reduced || skip ? false : { scaleX: 0, opacity: 0 }}
       animate={{ scaleX: 1, opacity: 1 }}
       transition={{ delay, duration: 0.9, ease }}
       viewBox="0 0 400 100"
@@ -61,7 +69,7 @@ const LandingHero: React.FC = () => {
     <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.16em', marginBottom: '-0.16em' }}>
       <motion.span
         style={{ display: 'block' }}
-        initial={reduced ? false : { y: '118%' }}
+        initial={reduced || skip ? false : { y: '118%' }}
         animate={{ y: 0 }}
         transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
       >
@@ -110,7 +118,7 @@ const LandingHero: React.FC = () => {
 
             {/* Byline */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={skip ? false : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6 }}
               className="mb-7 flex items-center justify-center gap-3"
@@ -185,7 +193,7 @@ const LandingHero: React.FC = () => {
             {/* Lede + CTAs — centered column, right side no longer dead space */}
             <div className="max-w-3xl mx-auto">
               <motion.p
-                initial={{ opacity: 0 }}
+                initial={skip ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75, duration: 0.9, ease }}
                 className="mb-7"
@@ -205,7 +213,7 @@ const LandingHero: React.FC = () => {
 
               {/* Benefit row — mono spec line */}
               <motion.ul
-                initial={{ opacity: 0, y: 16 }}
+                initial={skip ? false : { opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.86, duration: 0.7, ease }}
                 className="mb-9 flex flex-col sm:flex-row items-center justify-center gap-y-2.5 sm:gap-0"
@@ -233,7 +241,7 @@ const LandingHero: React.FC = () => {
 
               {/* CTAs */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={skip ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.96, duration: 0.6, ease }}
                 className="flex flex-col sm:flex-row items-center justify-center gap-3"
