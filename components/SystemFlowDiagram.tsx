@@ -59,7 +59,7 @@ const STEPS: Record<string, StepDetail> = {
     kicker: 'Pipeline · 4',
     title: 'Drafted in your voice',
     body: 'Trained on your voice and built on your real conversations, it writes the full post so it sounds like you. You can edit any word before it ships.',
-    shot: { src: '/content-system/ui/editor.png', alt: 'The post editor: edit a draft’s copy, image, and schedule' },
+    shot: { src: '/content-system/ui/editor.webp', alt: 'The post editor: edit a draft’s copy, image, and schedule' },
   },
   qa: {
     kicker: 'Pipeline · 5',
@@ -75,26 +75,26 @@ const STEPS: Record<string, StepDetail> = {
     kicker: 'Your only step',
     title: 'You approve in one tap',
     body: 'Finished drafts queue on your board. Read one, adjust the copy, image or timing if you want, and approve. Once it is running, your daily lift is under ten minutes.',
-    shot: { src: '/content-system/ui/board.png', alt: 'The content board where finished drafts queue for one-tap approval' },
+    shot: { src: '/content-system/ui/board.webp', alt: 'The content board where finished drafts queue for one-tap approval' },
   },
   post: {
     kicker: 'Output',
     title: 'Published to LinkedIn',
     body: 'It posts natively, on your schedule, with no copy-paste. The calendar fills itself, so you can see everything queued for the month in one view.',
-    shot: { src: '/content-system/ui/calendar.png', alt: 'The publishing calendar with scheduled posts across the month' },
+    shot: { src: '/content-system/ui/calendar.webp', alt: 'The publishing calendar with scheduled posts across the month' },
   },
   leadmagnet: {
     kicker: 'Output',
     title: 'A lead magnet that publishes itself',
     body: 'From the same idea it builds an interactive asset and ships the whole funnel: a gated landing page, the resource page itself, an on-brand cover, and email capture that adds every signup to your list and routes the best-fit leads to a call. No designer, no dev.',
     bullets: ['Gated landing page', 'Resource page', 'On-brand cover', 'Email capture to your list'],
-    shot: { src: '/content-system/ui/leadmagnets.png', alt: 'The lead-magnet studio with built, on-brand assets' },
+    shot: { src: '/content-system/ui/leadmagnets.webp', alt: 'The lead-magnet studio with built, on-brand assets' },
   },
   loop: {
     kicker: 'The loop',
     title: 'It learns what works',
     body: 'Every post’s performance is tracked, and the top performers feed back into the Content Brain, so next week’s ideas lean toward what actually landed. The system sharpens the longer it runs.',
-    shot: { src: '/content-system/ui/performance.png', alt: 'The performance dashboard: impressions and engagement per post' },
+    shot: { src: '/content-system/ui/performance.webp', alt: 'The performance dashboard: impressions and engagement per post' },
   },
 };
 
@@ -384,7 +384,7 @@ const CSS = `
 .sfd-bead{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:2.2;filter:url(#sfd-shadow)}
 .sfd-node:hover .sfd-bead,.sfd-node:focus-visible .sfd-bead,.sfd-node.is-active .sfd-bead{filter:url(#sfd-glow);stroke-width:2.8}
 .sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:30px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
-.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:700;letter-spacing:.05em;fill:var(--color-ink);text-anchor:middle}
+.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.08em;fill:var(--color-ink-mute);text-anchor:middle}
 
 /* Approve gate + single attention pulse */
 .sfd-gate{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:2.6;filter:url(#sfd-shadow)}

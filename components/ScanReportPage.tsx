@@ -8,8 +8,10 @@ import {
 import { useScan } from '../hooks/useScan';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
-import type { ReportJson, AdCreative, Opportunity, CallIntel, Scan } from '../lib/scanTypes';
+import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
+import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
+import SystemFlowDiagram from './SystemFlowDiagram';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -281,19 +283,35 @@ const useMediaQuery = (query: string): boolean => {
 const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
   const [displayed, setDisplayed] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
   const reduceMotion = useReducedMotion();
+  const done = useRef(false);
 
+  // Plain rect-based trigger. framer-motion's useInView margin proved flaky on narrow
+  // viewports here (counters stuck at 0 on mobile) — a direct getBoundingClientRect + scroll
+  // check fires reliably on every device and never leaves the number stranded at 0.
   useEffect(() => {
-    if (!isInView) return;
     if (reduceMotion) { setDisplayed(value); return; }
-    const controls = animate(0, value, {
-      duration: 1.2,
-      ease: EASE as unknown as [number, number, number, number],
-      onUpdate: (v) => setDisplayed(Math.round(v)),
-    });
-    return () => controls.stop();
-  }, [value, isInView, reduceMotion]);
+    const el = ref.current;
+    if (!el) return;
+    let controls: ReturnType<typeof animate> | undefined;
+    const run = () => {
+      if (done.current) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.top < vh * 0.92 && r.bottom > 0) {
+        done.current = true;
+        window.removeEventListener('scroll', run);
+        controls = animate(0, value, {
+          duration: 1.2,
+          ease: EASE as unknown as [number, number, number, number],
+          onUpdate: (v) => setDisplayed(Math.round(v)),
+        });
+      }
+    };
+    run();
+    window.addEventListener('scroll', run, { passive: true });
+    return () => { window.removeEventListener('scroll', run); controls?.stop(); };
+  }, [value, reduceMotion]);
 
   return <span ref={ref} style={style}>{displayed}</span>;
 };
@@ -1126,6 +1144,15 @@ const CI_META: Record<CallIntel['archetype'], { tag: string; hiding: string; rev
   cs_retention_driven: { tag: 'Accounts', hiding: 'Where the churn is hiding',          review: 'Weekly account review' },
 };
 
+// Softened-brand tokens for the call-intel pitch page (Ivan, 2026-06-15: warmer, rounded, soft
+// 3D depth — keeps the serif/paper/sage editorial DNA but rounds corners + adds smooth shadows).
+const CI_CARD = '#FCFBF7';        // lifts gently off the paper bg
+const CI_R = 22;                  // card radius
+const CI_R_SM = 13;               // button / chip / small radius
+const CI_SHADOW = '0 1px 2px rgba(26,26,26,0.04), 0 10px 28px rgba(26,26,26,0.06)';
+const CI_SHADOW_LG = '0 2px 6px rgba(26,26,26,0.05), 0 26px 64px rgba(26,26,26,0.11)';
+const CI_CORAL = '#A85439';       // risk / loss accent (brand coral) — used by churn alerts
+
 // The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
 // Count-up for a metric value string like "31%", "12", "$40k" — animates the numeric part.
 const CICountMetric: React.FC<{ value: string; style?: React.CSSProperties }> = ({ value, style }) => {
@@ -1156,8 +1183,10 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.8, ease: EASE }}
-      style={{ border: `1px solid ${hairline}`, boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}
+      className="overflow-hidden relative"
+      style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
     >
+      <CILoadShimmer />
       {/* window titlebar */}
       <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
         <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
@@ -1173,6 +1202,12 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
       <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
         {metrics ? (
           <>
+            {flags && flags[0] && (
+              <div className="flex items-start gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}`, background: 'rgba(42,143,101,0.05)' }}>
+                <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600, marginTop: 3, flexShrink: 0 }}>This week</span>
+                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A' }}>{flags[0].text}</span>
+              </div>
+            )}
             {/* metric tiles */}
             <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
               {metrics.map((m, i) => (
@@ -1221,7 +1256,7 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
                       transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
                       className="flex items-start gap-3 pt-3"
                     >
-                      <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}` }}>{f.tag}</span>
+                      <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 8, background: 'rgba(42,143,101,0.06)' }}>{f.tag}</span>
                       <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.text}</span>
                     </motion.div>
                   ))}
@@ -1260,13 +1295,550 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
       onMouseMove={(e) => { if (reduce || !ref.current) return; const r = ref.current.getBoundingClientRect(); x.set((e.clientX - r.left - r.width / 2) * 0.25); y.set((e.clientY - r.top - r.height / 2) * 0.25); }}
       onMouseLeave={() => { x.set(0); y.set(0); }}>
       <motion.a href={href} target="_blank" rel="noopener noreferrer" className="group"
-        style={{ x: sx, y: sy, fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 16px' : '15px 28px', minHeight: small ? 40 : 54, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        style={{ x: sx, y: sy, fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16.5px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 18px' : '16px 30px', minHeight: small ? 42 : 56, borderRadius: small ? 11 : 14, boxShadow: small ? 'none' : '0 2px 6px rgba(26,26,26,0.12), 0 12px 28px rgba(26,26,26,0.16)', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
         {label}
-        <ArrowRight size={small ? 14 : 16} className="transition-transform group-hover:translate-x-1" />
+        <ArrowRight size={small ? 14 : 17} className="transition-transform group-hover:translate-x-1" />
       </motion.a>
     </div>
   );
 };
+
+// Thematic animated audio-waveform — call intelligence reads as "live audio being scored".
+// Deterministic bar heights, gentle continuous scaleY loop. Used big in the hero + tiny inline.
+function CIWaveform({ count = 56, maxH = 56, gap = 3, barW = 2.5, className = '', barColor = 'var(--color-accent)' }: { count?: number; maxH?: number; gap?: number; barW?: number; className?: string; barColor?: string }) {
+  const reduce = useReducedMotion();
+  return (
+    <div className={`flex items-center ${className}`} aria-hidden style={{ gap }}>
+      {Array.from({ length: count }).map((_, i) => {
+        const base = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.45) + Math.sin(i * 0.3) * 0.4);
+        return (
+          <motion.span key={i} style={{ width: barW, borderRadius: barW, background: barColor, height: Math.max(5, base * maxH), transformOrigin: 'center', flexShrink: 0 }}
+            animate={reduce ? {} : { scaleY: [1, 0.32 + (i % 4) * 0.12, 0.88, 0.46, 1] }}
+            transition={{ duration: 1.6 + (i % 5) * 0.25, repeat: Infinity, ease: 'easeInOut', delay: (i % 9) * 0.1 }} />
+        );
+      })}
+    </div>
+  );
+}
+
+// Premium editorial-cover hero for the call-intel pitch — lifts the landing-page craft:
+// texture (faint grid + drifting grain), live equalizer byline, expanding sage rule,
+// editorial line-mask reveal, mixed-scale type, animated waveform footer, mono spec row.
+const CI_HERO: Record<CallIntel['archetype'], { pre: string; hero: string; sub: string; spec: string[] }> = {
+  sales_demo_driven: {
+    pre: 'From the sales calls you already run,',
+    hero: 'close more.',
+    sub: 'More revenue from the same calls. No new leads. No bigger team.',
+    spec: ['More deals closed', 'Churn caught early', 'Reps coached to your best'],
+  },
+  cs_retention_driven: {
+    pre: 'Before a customer churns,',
+    hero: 'catch it early.',
+    sub: 'Spot at-risk accounts in time to save them. No surprises at renewal.',
+    spec: ['Churn caught early', 'More renewals saved', 'Every account call reviewed'],
+  },
+  intake_driven: {
+    pre: 'From the intake calls you already take,',
+    hero: 'sign more.',
+    sub: 'More of the right cases say yes. Same calls, same team.',
+    spec: ['More cases signed', 'Fewer good leads lost', 'Intake coached to your best'],
+  },
+};
+
+function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; companyName: string; meta: { tag: string }; bookUrl: string }) {
+  const reduce = useReducedMotion();
+  const h = CI_HERO[ci.archetype] ?? CI_HERO.sales_demo_driven;
+  const hairline = 'var(--color-hairline)';
+  // Editorial line-mask reveal — lines rise out of a clip mask, settle, stop.
+  const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+    <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.18em', marginBottom: '-0.18em' }}>
+      <motion.span style={{ display: 'block' }} initial={reduce ? false : { y: '120%' }} animate={{ y: 0 }} transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>
+        {children}
+      </motion.span>
+    </span>
+  );
+  return (
+    <section className="relative bg-paper overflow-hidden" style={{ borderBottom: `1px solid ${hairline}` }}>
+      {/* faint editorial grid */}
+      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      {/* slow drifting paper grain */}
+      <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
+      {/* expanding sage rule across top */}
+      <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
+
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.22fr_0.78fr] lg:gap-12 lg:items-center">
+        <div>
+          {/* status byline */}
+          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
+            <CIWaveform count={5} maxH={13} gap={2} barW={2} className="mr-0.5" />
+            <span>Call Intelligence · {meta.tag}</span>
+            <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
+            <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {companyName}</span>
+          </motion.div>
+
+          {/* benefit-led headline — leads with the outcome, not the mechanism */}
+          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
+            <Reveal delay={0.12}>
+              <span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#3D3D3B' }}>{h.pre}</span>
+            </Reveal>
+            <Reveal delay={0.26}>
+              <span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.4rem, 8.5vw, 6.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span>
+            </Reveal>
+          </h1>
+
+          {/* plain benefit subhead — bigger, short, simple */}
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#3D3D3B' }}>
+            {h.sub}
+          </motion.p>
+
+          {/* mono spec row */}
+          <motion.ul initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.92, duration: 0.7, ease: EASE }} className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-0">
+            {h.spec.map((s, i) => (
+              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#2C3A31', borderColor: hairline }}>
+                <span className={i === 0 ? '' : 'sm:hidden'} style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />
+                {s}
+              </li>
+            ))}
+          </motion.ul>
+
+          <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9">
+            <CIMagneticCTA href={bookUrl} label="See it on your calls" />
+          </motion.div>
+        </div>
+
+        {/* RIGHT — a "live call" panel: the waveform moved here as an intentional thematic visual */}
+        <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
+          <div className="px-6 py-7" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center justify-between mb-6" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
+              <span className="flex items-center gap-2">
+                <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
+                Live call
+              </span>
+              <span style={{ color: 'rgba(26,26,26,0.4)' }}>scoring</span>
+            </div>
+            <div className="flex items-center justify-center" style={{ height: 90 }}>
+              <CIWaveform count={32} maxH={78} gap={4} barW={3} />
+            </div>
+            <div className="mt-6 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
+              <span>0:42 / 0:42</span>
+              <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>analyzing…</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// "Sound familiar?" — the pain/agitation story beat (starborn-style). Short plain lines, one
+// idea each, building to "There's a better way." Replaces the dense analytical audit sections.
+const CI_PAIN: Record<CallIntel['archetype'], string[]> = {
+  sales_demo_driven: [
+    'Some reps close them. Some don’t.',
+    'And no one has time to listen back and find out why.',
+    'So the same mistakes lose you deals, over and over.',
+    'Your best rep makes it look easy. The rest of the team never learns how.',
+  ],
+  cs_retention_driven: [
+    'A few of those customers are quietly unhappy.',
+    'You won’t find out until they don’t renew.',
+    'And by then, it’s too late to fix it.',
+    'So good accounts walk, and you never saw it coming.',
+  ],
+  intake_driven: [
+    'Some become clients. Most don’t.',
+    'And no one reviews the calls to see what went wrong.',
+    'So good leads slip away, every single week.',
+    'And the ones who would have signed never get a second look.',
+  ],
+};
+
+function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; companyName: string; receipts: { label: string; value: string }[]; scan: Scan }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const painLines = CI_PAIN[ci.archetype] ?? CI_PAIN.sales_demo_driven;
+  const volumeClean = (ci.volume_estimate?.value || '').replace(/^~\s*/, '').replace(/\s*\/\s*(month|mo)\b/i, '').trim();
+  const opener = ci.archetype === 'cs_retention_driven' ? `${companyName} is on customer calls all week.`
+    : ci.archetype === 'intake_driven' ? `${companyName} takes intake calls all day.`
+    : `${companyName} runs ${volumeClean || 'sales calls'} a month.`;
+  const leaks = (ci.leaking_signals ?? []).slice(0, 3);
+  return (
+    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
+      <Kicker>Sound familiar?</Kicker>
+      <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }}
+        style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+        {opener}
+      </motion.p>
+      <div className="mt-6 space-y-4">
+        {painLines.map((l, i) => (
+          <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }}
+            style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>
+            {l}
+          </motion.p>
+        ))}
+      </div>
+
+      {leaks.length > 0 && (
+        <motion.div className="mt-12 p-7 lg:p-8" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
+          style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>On {companyName}'s calls, three things stood out</p>
+          <ul className="mt-5 space-y-4">
+            {leaks.map((l, i) => (
+              <li key={i} className="flex gap-4 items-baseline">
+                <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
+                <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
+
+      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }}
+        style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>
+        There's a better way.
+      </motion.h2>
+      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>Here's how it works.</p>
+
+      {receipts.length > 0 && (
+        <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
+          <div className="flex flex-wrap gap-2.5">
+            {receipts.map((r, i) => (
+              <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── THE WHOLE SYSTEM — INTERACTIVE animated SVG flow: calls converge into the scoring engine,
+// fan out to four outputs. Sage paths draw on (pathLength) + glowing pulses travel them
+// (strokeDashoffset). Outputs are hoverable (explanation panel) and clickable (jump to the mock);
+// when idle it auto-cycles a guided tour so there's always insightful movement.
+const SF_IN = ['Sales call', 'Demo call', 'Customer call', 'Support call'];
+const SF_OUT = [
+  { label: 'Call analysis', anchor: 'ci-analysis', desc: 'Every sales call, scored on your rubric. The exact moments that cost you the deal, and what to coach next time.' },
+  { label: 'Churn alert', anchor: 'ci-alert', accent: true, desc: 'The moment a customer call signals risk, you get a flag with the quote and a save-play. Before the renewal, not after.' },
+  { label: 'Weekly digest', anchor: 'ci-digest', desc: "Monday morning: the week's pattern, your reps ranked, the accounts at risk. One scroll, no meeting." },
+  { label: 'Control panel', anchor: 'ci-control', desc: 'You set the rubric, the thresholds, and who gets pinged. The system runs the way you sell.' },
+];
+const SF_ENGINE = { label: 'Scoring engine', desc: 'Transcribes every call, scores it against your rubric, and routes the result to the right place. Nobody has to listen back.' };
+
+// MODULE-LEVEL so they keep a stable identity across re-renders — defining them inside the
+// component made every auto-cycle tick remount the whole SVG and replay the draw-on animations
+// (the "stuttering / refreshing"). Stable identity → state changes just update props, no remount.
+const SFConnector: React.FC<{ d: string; delay: number; active?: boolean; reduce: boolean; sage: string; hairline: string }> = ({ d, delay, active, reduce, sage, hairline }) => (
+  <g>
+    <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
+    <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
+      initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
+    {!reduce && (
+      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
+        animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
+    )}
+  </g>
+);
+const SFNode: React.FC<{ x: number; y: number; w: number; label: string; accent?: boolean; active?: boolean; delay: number; reduce: boolean; sage: string; hairline: string; onEnter?: () => void; onLeave?: () => void; onClick?: () => void }> = ({ x, y, w, label, accent, active, delay, reduce, sage, hairline, onEnter, onLeave, onClick }) => {
+  const c = accent ? CI_CORAL : sage;
+  return (
+    <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}
+      onMouseEnter={onEnter} onMouseLeave={onLeave} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+      {active && <rect x={x - 5} y={y - 27} width={w + 10} height={54} rx={16} fill="none" stroke={c} strokeWidth={1.5} strokeOpacity={0.55} />}
+      <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={active ? (accent ? 'rgba(168,84,57,0.08)' : 'rgba(42,143,101,0.09)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+      <circle cx={x + 18} cy={y} r={3} fill={c} />
+      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A', fontWeight: active ? 600 : 400 }}>{label}</text>
+    </motion.g>
+  );
+};
+
+function CallIntelSystemFlow() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const sage = 'var(--color-accent)';
+  const [hover, setHover] = useState<number | 'engine' | null>(null);
+  const [auto, setAuto] = useState(0);
+  useEffect(() => {
+    if (hover !== null || reduce) return;
+    const t = setInterval(() => setAuto((a) => (a + 1) % 4), 2800);
+    return () => clearInterval(t);
+  }, [hover, reduce]);
+  const activeOut = hover === 'engine' ? -1 : (hover ?? auto);
+  const info = hover === 'engine' ? SF_ENGINE : SF_OUT[(hover ?? auto) as number];
+  const infoAccent = hover !== 'engine' && (SF_OUT[(hover ?? auto) as number] as any).accent;
+  const goTo = (id: string) => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+
+  const inY = [56, 144, 232, 320];
+  const outY = [50, 140, 232, 322];
+  const EX1 = 402, EW = 226, EX2 = 628, ECY = 188;
+  const inPath = (cy: number) => `M196 ${cy} C 300 ${cy}, 360 ${ECY}, ${EX1} ${ECY}`;
+  const outPath = (cy: number) => `M${EX2} ${ECY} C ${EX2 + 90} ${ECY}, 706 ${cy}, 786 ${cy}`;
+  const Panel = (
+    <div className="mt-6 lg:mt-8 max-w-2xl mx-auto text-center px-4" style={{ minHeight: 92 }}>
+      <AnimatePresence mode="wait">
+        <motion.div key={hover === 'engine' ? 'engine' : (hover ?? auto)} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3, ease: EASE }}>
+          <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: infoAccent ? CI_CORAL : accentInk, fontWeight: 600 }}>{info.label}</p>
+          <p className="mt-2 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: '#3D3D3B', maxWidth: '46ch' }}>{info.desc}</p>
+        </motion.div>
+      </AnimatePresence>
+      <p className="mt-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.35)' }}>Hover to explore · click to jump to it</p>
+    </div>
+  );
+  return (
+    <div>
+      {/* DESKTOP — full interactive SVG diagram */}
+      <div className="hidden lg:block">
+        <svg viewBox="0 0 1000 384" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="How the system works: calls flow into a scoring engine and out to four deliverables">
+          {inY.map((cy, i) => <SFConnector key={`ic${i}`} d={inPath(cy)} delay={0.1 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} />)}
+          {outY.map((cy, i) => <SFConnector key={`oc${i}`} d={outPath(cy)} delay={0.5 + i * 0.08} active={activeOut === i} reduce={!!reduce} sage={sage} hairline={hairline} />)}
+          {/* engine */}
+          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
+            onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
+            <motion.rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={20} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1}
+              animate={reduce ? {} : { strokeOpacity: hover === 'engine' ? 0.6 : [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: hover === 'engine' ? 0 : Infinity, ease: 'easeInOut' }} />
+            <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
+            {!reduce && (
+              <motion.rect x={EX1 + 12} width={EW - 24} height={1.5} rx={1} fill={sage}
+                animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
+            )}
+            <circle cx={EX1 + 24} cy={ECY - 38} r={3.5} fill={sage} />
+            <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
+            <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#F7F4EF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
+            <text x={EX1 + 24} y={ECY + 48} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.05em', fill: 'rgba(247,244,239,0.55)' }}>transcribe · score · route</text>
+          </motion.g>
+          {/* input + output nodes */}
+          {SF_IN.map((l, i) => <SFNode key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} reduce={!!reduce} sage={sage} hairline={hairline} />)}
+          {SF_OUT.map((o, i) => <SFNode key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={(o as any).accent} active={activeOut === i} delay={0.7 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} onEnter={() => setHover(i)} onLeave={() => setHover(null)} onClick={() => goTo(o.anchor)} />)}
+          {/* live counter */}
+          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
+            <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
+            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(26,26,26,0.5)' }}>LIVE · 1,240 calls scored this month</text>
+          </motion.g>
+          <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
+          <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
+        </svg>
+      </div>
+
+      {/* MOBILE — vertical flow, output chips tappable */}
+      <div className="lg:hidden flex flex-col items-center">
+        <div className="w-full grid grid-cols-2 gap-2.5">
+          {SF_IN.map((l) => (
+            <div key={l} className="flex items-center gap-2 px-3.5 py-2.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <span style={{ width: 5, height: 5, borderRadius: 5, background: sage, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{l}</span>
+            </div>
+          ))}
+        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
+          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn' }} />}
+        </div>
+        <div className="w-full px-5 py-5 text-center" style={{ background: '#1A1A1A', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>The engine</p>
+          <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#F7F4EF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(247,244,239,0.5)', marginTop: 6 }}>transcribe · score · route</p>
+        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
+          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
+        </div>
+        <div className="w-full grid grid-cols-2 gap-2.5">
+          {SF_OUT.map((o, i) => (
+            <button key={o.label} onClick={() => goTo(o.anchor)} className="flex items-center gap-2 px-3.5 py-2.5 text-left" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${o.accent ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
+              <span style={{ width: 5, height: 5, borderRadius: 5, background: o.accent ? CI_CORAL : sage, flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {Panel}
+    </div>
+  );
+}
+
+// 1) Post-sales-call analysis — scorecard + what to improve (the SALES-call output).
+// One-time "interface loading" shimmer — a sage glint sweeps across a mock as it enters view,
+// then clears. Makes the cards read as live software fetching data.
+function CILoadShimmer() {
+  const reduce = useReducedMotion();
+  if (reduce) return null;
+  return (
+    <motion.div aria-hidden className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ borderRadius: CI_R }}
+      initial={{ opacity: 1 }} whileInView={{ opacity: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 1 }}>
+      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(42,143,101,0.12), rgba(255,255,255,0.55), rgba(42,143,101,0.12), transparent)' }}
+        initial={{ x: '-110%' }} whileInView={{ x: '210%' }} viewport={{ once: true }} transition={{ duration: 1.05, ease: 'easeInOut', delay: 0.05 }} />
+    </motion.div>
+  );
+}
+
+function CICallAnalysis() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const dims = [{ label: 'Discovery', s: 8 }, { label: 'Objection handling', s: 5 }, { label: 'Next steps set', s: 9 }, { label: 'Pricing confidence', s: 6 }];
+  return (
+    <motion.div className="overflow-hidden h-full relative" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
+      style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+      <CILoadShimmer />
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Call analysis</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>Discovery · Acme Co · 32 min</span>
+      </div>
+      <div className="p-5 lg:p-6">
+        <div className="flex items-baseline gap-2">
+          <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.6rem,5vw,3.4rem)', lineHeight: 0.9, color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}><Counter value={78} /></span>
+          <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(26,26,26,0.5)' }}>/100</span>
+          <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>overall</span>
+        </div>
+        <div className="mt-5 space-y-3">
+          {dims.map((d, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span className="shrink-0" style={{ width: 132, fontFamily: BODY_SERIF, fontSize: '14px', color: '#3D3D3B' }}>{d.label}</span>
+              <div className="relative flex-1" style={{ height: 6, borderRadius: 3, background: 'rgba(26,26,26,0.07)' }}>
+                <motion.div initial={reduce ? false : { scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.2 + i * 0.08 }}
+                  style={{ position: 'absolute', inset: 0, transformOrigin: 'left', width: `${d.s * 10}%`, borderRadius: 3, background: d.s >= 7 ? 'var(--color-accent)' : d.s >= 5 ? '#B8862E' : CI_CORAL }} />
+              </div>
+              <span className="shrink-0 text-right" style={{ width: 34, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: '#1A1A1A' }}>{d.s}/10</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Flagged moment · 18:24</p>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#1A1A1A' }}>"Is pricing per seat or per workspace?" Went unanswered for 40 seconds.</p>
+        </div>
+        <div className="mt-4">
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What to improve</p>
+          <ul className="mt-2 space-y-1.5">
+            {['Answer the pricing question head-on. Don’t defer it.', 'Lock a next step on the call. This one ended with no date.'].map((t, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: 'var(--color-accent)', flexShrink: 0 }} /><span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// 2) Churn alert — risk + save-play (the CUSTOMER-call output). Coral, urgent — deliberately
+// reads differently from the calm scorecard. The contrast IS the point.
+function CIChurnAlert() {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  return (
+    <motion.div className="overflow-hidden h-full relative" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE, delay: 0.08 }}
+      style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, borderLeft: `3px solid ${CI_CORAL}`, boxShadow: CI_SHADOW }}>
+      <CILoadShimmer />
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
+        <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(168,84,57,0.09)' }}>High risk</span>
+      </div>
+      <div className="p-5 lg:p-6">
+        <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What triggered it · QBR, today 9:12</p>
+        <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem,2.4vw,1.6rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"We're re-evaluating vendors before the renewal."</p>
+        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>Said by their VP of Ops, the economic buyer on the account.</p>
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Recommended save-play</p>
+          <ul className="mt-2 space-y-1.5">
+            {['Get your founder on a call this week, before they shortlist.', 'Send the ROI recap built from their own usage data.'].map((t, i) => (
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+                <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: CI_CORAL, flexShrink: 0 }} /><span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', color: 'rgba(26,26,26,0.5)' }}>Renewal in 38 days · flagged to you + CS lead</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// 3) Control panel — the cockpit (sources, calls tracked, alert routing, rubric).
+function CIControlPanel({ companyName }: { companyName: string }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const sage = 'var(--color-accent)';
+  const Block = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+  const Check = ({ t }: { t: string }) => (
+    <div className="flex items-center gap-2.5 py-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>
+      <span style={{ color: sage, fontSize: '13px' }}>✓</span>{t}
+    </div>
+  );
+  const Pill = ({ t }: { t: string }) => (
+    <span className="inline-flex px-2.5 py-1 m-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#3D3D3B', background: 'rgba(26,26,26,0.04)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>{t}</span>
+  );
+  return (
+    <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
+      style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: '#1A1A1A' }}>
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 7, background: sage, flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>Control panel · {companyName}</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.5)' }}>you set the rules</span>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7 p-6 lg:p-8" style={{ background: CI_CARD }}>
+        <Block label="Connected sources"><Check t="Fireflies" /><Check t="Zoom" /><Check t="Slack alerts" /></Block>
+        <Block label="Calls tracked"><div className="-m-0.5"><Pill t="Sales demos" /><Pill t="Discovery" /><Pill t="Customer QBRs" /><Pill t="Support" /></div></Block>
+        <Block label="Churn alerts go to"><Check t="You" /><Check t="CS lead" /><p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', color: '#5A5752' }}>Threshold: High risk and above</p></Block>
+        <Block label="Scoring rubric (editable)"><div className="-m-0.5"><Pill t="Discovery" /><Pill t="Objection handling" /><Pill t="Next steps" /><Pill t="Pricing" /></div></Block>
+      </div>
+    </motion.div>
+  );
+}
+
+// Where the flags land — a Slack message mock (the churn alert pinged to your channel).
+function CISlackAlert() {
+  const reduce = useReducedMotion();
+  // Slack dark-mode palette
+  const BG = '#1A1D21', LINE = 'rgba(255,255,255,0.09)', TXT = '#E4E5E6', MUT = 'rgba(228,229,230,0.45)';
+  const Btn = ({ t }: { t: string }) => (
+    <span className="inline-flex items-center px-3 py-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: TXT, background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8 }}>{t}</span>
+  );
+  return (
+    <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.65, ease: EASE }}
+      style={{ background: BG, borderRadius: CI_R, border: `1px solid ${LINE}`, boxShadow: CI_SHADOW_LG }}>
+      <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: `1px solid ${LINE}` }}>
+        <span style={{ fontFamily: MONO, fontSize: '15px', color: MUT }}>#</span>
+        <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>customer-health</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: MUT, border: `1px solid ${LINE}`, borderRadius: 6 }}>Slack</span>
+      </div>
+      <div className="flex gap-3.5 px-5 py-4">
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(42,143,101,0.16)', border: '1px solid rgba(42,143,101,0.4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CIWaveform count={3} maxH={17} gap={2.5} barW={2.5} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 700, color: '#FFFFFF' }}>Call Intelligence</span>
+            <span className="px-1.5 py-0.5" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: MUT, background: 'rgba(255,255,255,0.06)', borderRadius: 4 }}>App</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', color: MUT }}>9:12 AM</span>
+          </div>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: TXT }}>
+            <span style={{ color: '#E8836B', fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2"><Btn t="Open account" /><Btn t="See save-play" /></div>
+          <div className="mt-2.5 flex gap-1.5">
+            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: TXT, background: 'rgba(42,143,101,0.14)', border: '1px solid rgba(42,143,101,0.32)', borderRadius: 10 }}>{r}</span>)}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
@@ -1276,8 +1848,13 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   const accentInk = 'var(--color-accent-ink)';
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('call intelligence')}`;
   const reduce = useReducedMotion();
-  const logo = report.logo_url || scan.logo_url;
-  const screenshot = report.homepage_screenshot_url || scan.report_json?.homepage_screenshot_url;
+
+  // The two distinct product surfaces — the system runs on two kinds of calls and they are
+  // SEPARATE benefits (don't blend "close more" with "catch churn"). Lead with the prospect's
+  // primary archetype.
+  const SURFACE_SALES = { tag: 'Sales & demo calls', head: 'Close more of the deals you already pitch', body: 'We score every sales call and show you what loses deals. Then we coach each rep to close like your best one.' };
+  const SURFACE_CHURN = { tag: 'Customer & internal calls', head: 'Catch churn before the client walks', body: 'We score every customer call and flag at-risk accounts the next morning, early enough to save them.' };
+  const surfaces = ci.archetype === 'cs_retention_driven' ? [SURFACE_CHURN, SURFACE_SALES] : [SURFACE_SALES, SURFACE_CHURN];
 
   // Verified receipts — real signals that prove the audit is grounded, beside the claim.
   const receipts: { label: string; value: string }[] = [];
@@ -1306,180 +1883,605 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         </div>
       </header>
 
-      {/* HERO — outcome + the homepage screenshot as proof we audited THEIR site */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 pt-14 pb-14 lg:pt-20 lg:pb-16">
-        <div className="flex items-center gap-3 mb-7">
-          {logo && <img src={logo} alt="" className="h-8 w-8 object-contain" style={{ filter: 'grayscale(1)', opacity: 0.85 }} />}
-          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
-            Call Intelligence · {meta.tag}
-          </span>
+      <CallIntelHero ci={ci} companyName={companyName} meta={meta} bookUrl={bookUrl} />
+
+      <CallIntelPain ci={ci} companyName={companyName} receipts={receipts} scan={scan} />
+
+      {/* THE WHOLE SYSTEM — animated flow diagram */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-2xl">
+          <Kicker>The whole system</Kicker>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            Every call in. <Italic>The right output out.</Italic>
+          </h2>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+            Every call your team runs flows through one scoring engine, and comes back as something you can act on.
+          </p>
         </div>
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE }}
-          >
-            <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.05, letterSpacing: '-0.025em', color: '#1A1A1A' }}>
-              {ci.thesis}
-            </h1>
-            <div className="mt-9"><BookButton label="See it on your calls" /></div>
-          </motion.div>
-          {screenshot && (
-            <motion.figure
-              initial={reduce ? false : { opacity: 0, scale: 0.97, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.9, ease: EASE, delay: 0.15 }}
-            >
-              <p className="mb-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
-                {scan.domain ?? companyName} · captured today
-              </p>
-              <div className="overflow-hidden" style={{ border: `1px solid ${hairline}`, maxHeight: 360, background: '#EFEAE2', boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}>
-                <img src={screenshot} alt={`${companyName} homepage`} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-              </div>
-            </motion.figure>
-          )}
-        </div>
+        <div className="mt-10 lg:mt-14"><CallIntelSystemFlow /></div>
       </section>
 
-      {/* WHAT WE CAN SEE — volume + interpreted signals + verified receipts */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:items-end lg:gap-14">
-          <div>
-            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>What we can see</p>
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', lineHeight: 0.95, letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 8 }}>
-              {ci.volume_estimate.value}
-            </p>
-          </div>
-          <ul className="space-y-2.5 lg:pb-2">
-            {ci.observable_signals.map((s, i) => (
-              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
-                <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
-                <span><b style={{ fontWeight: 600, color: '#1A1A1A' }}>{s.label}.</b> {s.detail}</span>
-              </li>
-            ))}
-          </ul>
+      {/* WHAT YOU GET — the four deliverables, up close */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-2xl">
+          <Kicker>What you get</Kicker>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            Two kinds of calls. <Italic>Two kinds of output.</Italic>
+          </h2>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+            One improves the next deal. One saves the account before it's gone.
+          </p>
         </div>
-        {receipts.length > 0 && (
-          <div className="mt-10 flex flex-wrap gap-2.5">
-            {receipts.map((r, i) => (
-              <span key={i} className="inline-flex items-baseline gap-2 px-3 py-2" style={{ border: `1px solid ${hairline}` }}>
-                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
-              </span>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* WHERE THE CLOSE-RATE / CHURN IS HIDING */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <Kicker>{meta.hiding}</Kicker>
-        <div className="mt-8 grid gap-x-10 gap-y-9 sm:grid-cols-3">
-          {ci.leaking_signals.map((l, i) => (
-            <div key={i}>
-              <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk }}>{String(i + 1).padStart(2, '0')}</span>
-              <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.2vw, 1.45rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{l.detail}</p>
+        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-stretch">
+          {surfaces.map((s, i) => (
+            <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="flex flex-col h-full scroll-mt-24">
+              <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
+              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A', minHeight: '2.3em' }}>{s.head}</p>
+              <div className="flex-1">{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
             </div>
           ))}
         </div>
-      </section>
-
-      {/* THE SYSTEM — product mock centerpiece */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <Kicker>The system</Kicker>
-            <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-              Every call scored. <Italic>The pattern surfaced.</Italic>
-            </h2>
-            <SerifBody className="mt-4">{ci.system.summary}</SerifBody>
-            <ul className="mt-5 space-y-2.5">
-              {ci.system.capabilities.map((c, i) => (
-                <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>
-                  <span aria-hidden style={{ display: 'inline-block', height: 1, width: 14, background: 'var(--color-accent)', marginTop: '0.65em', flexShrink: 0 }} />
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* and the urgent ones land where your team already works */}
+        <div className="mt-12 max-w-2xl mx-auto text-center">
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            And the urgent ones ping you <Italic>where you already work.</Italic>
+          </p>
+          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#5A5752' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
+        </div>
+        <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
+        <div id="ci-digest" className="mt-14 max-w-3xl mx-auto scroll-mt-24">
+          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday: the weekly digest</p>
           <CallIntelProductMock ci={ci} companyName={companyName} />
         </div>
+        <div id="ci-control" className="mt-14 scroll-mt-24">
+          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>You stay in control</p>
+          <CIControlPanel companyName={companyName} />
+        </div>
+
+        {/* MORE — extra capabilities, scannable, no heavy mocks */}
+        <div className="mt-16">
+          <p className="mb-7 text-center" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            And it catches more than <Italic>you'd think.</Italic>
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { t: 'Rep performance', d: 'See who is improving and who is stalling, week over week.' },
+              { t: 'Coverage gaps', d: 'Get flagged when calls or follow-ups slip through the cracks.' },
+              { t: 'Objection library', d: 'The objections killing your deals, ranked by how often they land.' },
+              { t: 'Competitor mentions', d: 'Know every time a prospect names a rival on a call.' },
+              { t: 'Talk-time ratio', d: 'Catch reps talking when they should be listening.' },
+              { t: 'New-rep ramp', d: 'Watch how fast new hires get to your best rep’s bar.' },
+            ].map((f, i) => (
+              <motion.div key={f.t}
+                initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: (i % 3) * 0.07 }}
+                className="p-5 lg:p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+                <div className="flex items-center gap-2.5">
+                  <span aria-hidden style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.2rem', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{f.t}</span>
+                </div>
+                <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.d}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* PROOF — who's building this + named client outcomes */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-14 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Who's building this</p>
-        <div className="mb-12 max-w-2xl flex items-start gap-4">
-          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-12 h-12 object-cover shrink-0" style={{ borderRadius: 0 }} onError={fallbackOnError} />
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-            <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses — including call intelligence that lifts close rates and catches churn early. This is the same diagnostic he runs before every build.
-          </p>
-        </div>
-        {/* REAL call-intelligence build — the strongest proof: a system we already shipped */}
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running · ProvalTech</p>
-        <h3 className="max-w-2xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-          AI call auditing, at <Italic>100% coverage.</Italic>
+      {/* CASE STUDY — the proof: a system we already shipped */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
+        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
         </h3>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
-          A sales team recording every call in Fireflies, but no consistent read on rep performance and no fast path when a deal went sideways. We built a system that scores every finished call, coaches each rep, and escalates real risk by the next morning.
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>
+          Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%.
         </p>
 
-        {/* benefit stat tiles — quantified outcome, count-up on scroll */}
-        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: `1px solid ${hairline}`, borderBottom: `1px solid ${hairline}` }}>
+        {/* results stat tiles. ⚠️ PLACEHOLDER: '+$20K/mo' and '+27%' are placeholders — Ivan swaps
+            the real ProvalTech figures before sending. '20× more calls reviewed' (5%→100%) is real. */}
+        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3 overflow-hidden" style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
           {[
-            { fig: '100', suf: '%', label: 'of calls graded', sub: 'up from 5% sampled by hand' },
-            { fig: null, txt: 'Next AM', label: 'risk escalated', sub: 'was days, sometimes never' },
-            { fig: '100', suf: '%', label: 'of reps coached', sub: 'after every customer call' },
+            { pre: '+$', fig: '20', suf: 'K', label: 'a month in new revenue', sub: 'from the calls they already ran', placeholder: true }, // PLACEHOLDER
+            { pre: '+', fig: '27', suf: '%', label: 'close rate', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
+            { pre: '', fig: '20', suf: '×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' }, // REAL
           ].map((s, i) => (
             <motion.div key={i}
               initial={reduce ? false : { opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.7, ease: EASE, delay: i * 0.1 }}
-              className="py-7 sm:px-7 first:sm:pl-0"
-              style={{ borderLeft: i ? `1px solid ${hairline}` : undefined }}
+              className={`px-7 py-8 ${i ? 'border-t sm:border-t-0 sm:border-l' : ''}`}
+              style={{ borderColor: hairline }}
             >
-              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.4rem, 4.5vw, 3.4rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
-                {s.fig ? <><Counter value={Number(s.fig)} />{s.suf}</> : s.txt}
+              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.6rem, 4.8vw, 3.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
+                {s.pre}<Counter value={Number(s.fig)} />{s.suf}
               </div>
-              <p className="mt-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
-              <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
+              <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* the real product — dashboard + a scored call */}
-        <div className="mt-9 grid gap-4 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
+        {/* the real product — the dashboard (wide) + a single scored call (narrow companion) */}
+        <div className="mt-10 grid gap-4 lg:grid-cols-[1.62fr_0.38fr] lg:items-stretch">
           <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE }}
-            style={{ border: `1px solid ${hairline}`, boxShadow: '0 18px 50px rgba(26,26,26,0.10)' }}>
-            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard — per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>Live performance dashboard</figcaption>
+            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
+            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+            </div>
+            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
           </motion.figure>
-          <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.12 }}
-            style={{ border: `1px solid ${hairline}` }}>
-            <img src="/cases/provaltech-detail.png" alt="Individual call scorecard with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-            <figcaption className="px-4 py-2.5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', borderTop: `1px solid ${hairline}` }}>A single scored call</figcaption>
+          <motion.figure className="overflow-hidden flex flex-col"
+            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE, delay: 0.1 }}
+            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW }}>
+            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.85)' }}>A single scored call</span>
+            </div>
+            <div className="overflow-hidden flex-1" style={{ background: '#FFFFFF' }}>
+              <img src="/cases/provaltech-detail.png" alt="An individual scored call with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }} />
+            </div>
           </motion.figure>
         </div>
         <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
 
-      {/* CTA — book a call (no $2k assessment) */}
+      {/* REVIEWS — real client testimonials (from the landing page), softened-card styled */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A', maxWidth: '20ch' }}>
-          {ci.revenue_math}
-        </h2>
-        <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <BookButton label="Book a call" />
-          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: 'rgba(26,26,26,0.6)', fontStyle: 'italic' }}>
-            15 minutes. I'll show you the system running on calls like yours.
-          </span>
+        <div className="max-w-2xl mb-10">
+          <Kicker>What they say</Kicker>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+            The kind of work people <Italic>rehire for.</Italic>
+          </h2>
+        </div>
+        {/* lead quote */}
+        <motion.figure initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
+          className="p-7 lg:p-10 mb-4" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+          <blockquote style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', lineHeight: 1.22, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            “As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.”
+          </blockquote>
+          <figcaption className="mt-6 flex items-baseline gap-3 flex-wrap">
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '16px', fontWeight: 600, color: '#1A1A1A' }}>Adeeb Mohammed</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752' }}>Software Engineer · ex-Amazon · Meta</span>
+          </figcaption>
+        </motion.figure>
+        {/* supporting quotes */}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { q: 'Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.', a: 'Camille Haas', r: 'Head of Operations' },
+            { q: 'His solutions helped uncover opportunities we were missing, directly impacting our bottom line.', a: 'Rodrigo Ibañez', r: 'Managing Director' },
+            { q: 'You see how he uses AI and immediately feel like you’ve been doing things the hard way. Walked away with a completely different approach.', a: 'Cristian Trif', r: 'Salesforce Consultant · 9 yrs' },
+          ].map((t, i) => (
+            <motion.figure key={t.a}
+              initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: i * 0.08 }}
+              className="p-6 flex flex-col" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <blockquote className="flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#3D3D3B' }}>“{t.q}”</blockquote>
+              <figcaption className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
+                <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 600, color: '#1A1A1A' }}>{t.a}</p>
+                <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
+              </figcaption>
+            </motion.figure>
+          ))}
         </div>
       </section>
+
+      {/* FOUNDER'S NOTE — the human close, right before the ask */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-3xl mx-auto">
+          <Kicker>Who's behind this</Kicker>
+          <div className="mt-7 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-start">
+            <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-cover shrink-0" style={{ borderRadius: 18, boxShadow: CI_SHADOW_LG }} onError={fallbackOnError} />
+            <div>
+              <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+                I'm Ivan. I build the systems agencies <Italic>promise and never ship.</Italic>
+              </p>
+              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#3D3D3B' }}>
+                Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
+              </p>
+              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · Agent-Ready Ops</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA — soft rounded panel, centered */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
+        <motion.div className="px-7 py-14 lg:px-14 lg:py-20 text-center"
+          initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
+          style={{ background: CI_CARD, borderRadius: 30, boxShadow: CI_SHADOW_LG, border: `1px solid ${hairline}` }}>
+          <h2 className="mx-auto" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#1A1A1A', maxWidth: '16ch' }}>
+            See it running on <Italic>your</Italic> calls.
+          </h2>
+          <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B', maxWidth: '40ch' }}>
+            15 minutes. Bring a few of your real calls. I'll run them through the system live and show you what it scores, flags, and surfaces.
+          </p>
+          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <BookButton label="Book a call" />
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working demo.</span>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* FOOTER — closing context below the CTA */}
+      <footer style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-center gap-3">
+            <CIWaveform count={5} maxH={13} gap={2} barW={2} />
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</span>
+            <span aria-hidden style={{ color: 'rgba(26,26,26,0.25)' }}>·</span>
+            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Call Intelligence</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>Book a call</a>
+            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>ivanmanfredi.com</a>
+          </div>
+        </div>
+        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
+      </footer>
+    </div>
+  );
+}
+
+// ── CONTENT SYSTEM REPORT ─────────────────────────────────────────────────────
+// Rendered IN PLACE OF the generic report when matched_offer === 'content_system'.
+// Bundled offer = organic content engine + lead-magnet capture. A personalized pitch:
+// benefit hero -> "Sound familiar?" (their organic gap) -> the fix (the engine) ->
+// one idea everywhere -> a content-week mock -> lead magnets -> real proof -> reviews ->
+// founder note -> book. Reuses the call-intel design tokens + the landing content modules.
+const CS_HERO: Record<ContentSystem['archetype'], { tag: string; pre: string; hero: string; sub: string; spec: string[] }> = {
+  silent_founder: { tag: 'Organic',  pre: 'From the audience you already earned,', hero: 'be heard.',     sub: 'Five posts a week in your voice, without writing a word. The followers you worked for finally hear from you, every day.', spec: ['5+ posts a week', 'In your voice', 'You just approve'] },
+  inconsistent:   { tag: 'Cadence',  pre: 'Instead of posting in bursts then going quiet,', hero: 'show up daily.', sub: 'A steady voice every day, on autopilot. No more silent weeks, no more starting from zero.', spec: ['5+ posts a week', 'In your voice', 'You just approve'] },
+  no_capture:     { tag: 'Capture',  pre: 'From the readers you already reach,', hero: 'make leads.',     sub: 'Turn attention into booked calls. Lead magnets that build themselves, publish themselves, and qualify every signup.', spec: ['Self-building lead magnets', 'Every signup scored', 'Booked calls, not busywork'] },
+  invisible:      { tag: 'Presence', pre: 'Starting from quiet on LinkedIn,', hero: 'own your space.',    sub: 'Become the sharpest voice in your niche, every day, without writing a word.', spec: ['5+ posts a week', 'In your voice', 'You just approve'] },
+};
+const CS_PAIN: Record<ContentSystem['archetype'], string[]> = {
+  silent_founder: ["You've built a real audience.", 'But weeks go by with nothing from you.', 'Every quiet week, they forget you a little.', 'And the competitor who posts every day stays top of mind.'],
+  inconsistent:   ['You post when you find the time.', 'Then a busy week hits and you go quiet.', 'The momentum you built resets to zero.', 'And starting over every month is exhausting.'],
+  no_capture:     ['People read your posts and scroll on.', 'No email, no booking, no way to follow up.', 'You reach hundreds and hear back from none of them.', 'All that attention, and nothing to show for it.'],
+  invisible:      ['Your buyers are on LinkedIn every day.', "They're following someone in your space. Just not you.", 'Right now you are invisible where it counts.', 'And the gap grows wider every week you wait.'],
+};
+
+function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; who: string; companyName: string; meta: { tag: string }; bookUrl: string }) {
+  const reduce = useReducedMotion();
+  const h = CS_HERO[cs.archetype] ?? CS_HERO.silent_founder;
+  const hairline = 'var(--color-hairline)';
+  const queue = (cs.sample_output?.posts ?? [
+    { format: 'Post', hook: 'The one thing nobody tells you about…' },
+    { format: 'Carousel', hook: 'A 6-step teardown of…' },
+    { format: 'Lead magnet', hook: 'The interactive assessment that…' },
+  ]).slice(0, 3);
+  const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+    <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.18em', marginBottom: '-0.18em' }}>
+      <motion.span style={{ display: 'block' }} initial={reduce ? false : { y: '120%' }} animate={{ y: 0 }} transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>{children}</motion.span>
+    </span>
+  );
+  return (
+    <section className="relative bg-paper overflow-hidden" style={{ borderBottom: `1px solid ${hairline}` }}>
+      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
+      <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.22fr_0.78fr] lg:gap-12 lg:items-center">
+        <div>
+          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
+            <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
+            <span>Content System · {meta.tag}</span>
+            <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
+            <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {who}{companyName && who !== companyName ? `, founder of ${companyName}` : ''}</span>
+          </motion.div>
+          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
+            <Reveal delay={0.12}><span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#3D3D3B' }}>{h.pre}</span></Reveal>
+            <Reveal delay={0.26}><span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.4rem, 8.5vw, 6.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span></Reveal>
+          </h1>
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#3D3D3B' }}>{h.sub}</motion.p>
+          <motion.ul initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.92, duration: 0.7, ease: EASE }} className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-0">
+            {h.spec.map((s, i) => (
+              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#2C3A31', borderColor: hairline }}>
+                <span className={i === 0 ? '' : 'sm:hidden'} style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />{s}
+              </li>
+            ))}
+          </motion.ul>
+          <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book a 20-min look" /></motion.div>
+        </div>
+        {/* RIGHT — a "this week" content queue: the thematic visual (drafts assembling) */}
+        <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
+          <div className="px-6 py-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center justify-between mb-5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
+              <span className="flex items-center gap-2">
+                <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
+                This week
+              </span>
+              <span style={{ color: 'rgba(26,26,26,0.4)' }}>drafting</span>
+            </div>
+            <div className="space-y-2.5">
+              {queue.map((q, i) => (
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-start gap-3 px-3.5 py-3" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
+                  <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '3px 6px', flexShrink: 0, marginTop: 1 }}>{q.format}</span>
+                  <span style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#3D3D3B' }}>{q.hook}</span>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-5 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
+              <span>5 drafted / 5</span>
+              <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>in your voice</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; who: string; companyName: string; receipts: { label: string; value: string }[]; scan: Scan }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const painLines = CS_PAIN[cs.archetype] ?? CS_PAIN.silent_founder;
+  const aud = (cs.audience_estimate?.value || '').trim();
+  const opener = aud ? `${who}, you've built ${aud}.` : `${who}, you've built a real audience.`;
+  const leaks = (cs.leaking_signals ?? []).slice(0, 3);
+  return (
+    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
+      <Kicker>Sound familiar?</Kicker>
+      <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{opener}</motion.p>
+      <div className="mt-6 space-y-4">
+        {painLines.map((l, i) => (
+          <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>{l}</motion.p>
+        ))}
+      </div>
+      {leaks.length > 0 && (
+        <motion.div className="mt-12 p-7 lg:p-8" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }} style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
+          <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Looking at your LinkedIn, three things stood out</p>
+          <ul className="mt-5 space-y-4">
+            {leaks.map((l, i) => (
+              <li key={i} className="flex gap-4 items-baseline">
+                <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
+                <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
+      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>There's a better way.</motion.h2>
+      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>Here's how it works.</p>
+      {receipts.length > 0 && (
+        <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
+          <div className="flex flex-wrap gap-2.5">
+            {receipts.map((r, i) => (
+              <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
+                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
+  const cs = report.content_system;
+  if (!cs) return null;
+  const meta = CS_HERO[cs.archetype] ?? CS_HERO.silent_founder;
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const reduce = useReducedMotion();
+  // Founder-first: this offer runs on the founder's personal brand, so address them by name.
+  const founder = cs.founder;
+  const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || companyName;
+  const founderFull = founder?.name || companyName;
+  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('content system')}`;
+  const BookButton = ({ label, small }: { label: string; small?: boolean }) => <CIMagneticCTA href={bookUrl} label={label} small={small} />;
+
+  // Verified receipts — real organic signals that prove we looked at THEM.
+  const receipts: { label: string; value: string }[] = [];
+  const ls = report.linkedin_summary;
+  if (ls?.followers) receipts.push({ label: 'Audience', value: `${ls.followers.toLocaleString()} followers` });
+  if (ls?.posts_30d != null) receipts.push({ label: 'Cadence', value: `${ls.posts_30d} posts in 30 days` });
+  else if (ls?.last_post_days != null) receipts.push({ label: 'Last post', value: `${ls.last_post_days} days ago` });
+  const tools = (report.tech_stack_assessment?.confirmed_tools ?? []).slice(0, 3);
+  if (tools.length) receipts.push({ label: 'Verified stack', value: tools.join(' · ') });
+
+  const mock = cs.sample_output;
+  const mockMetrics = (mock?.metrics ?? []).slice(0, 3);
+  const mockPosts = (mock?.posts ?? []).slice(0, 5);
+
+  const cases = [
+    { client: 'Kyle Hunt', role: 'Creative-video agency · founder', src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system", summary: 'Kyle runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.', metrics: [{ value: '100%', label: 'of his content, run by the system' }, { value: '~300', label: 'comments per lead-magnet post' }, { value: '30K', label: 'impressions per post' }] },
+    { client: 'Lemonade', role: 'Demand-gen studio', src: '/content-system/lemonade-thankyou.webp', alt: "Lemonade's lead-capture page built by the system", summary: 'Lemonade turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.', metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }], flip: true },
+  ];
+  const REVIEWS = [
+    { q: 'Ivan is one of those rare builders who actually ships. The system runs exactly as promised and the output sounds like me, not a robot.', n: 'Adeeb Mohammed', r: 'Software Engineer · ex-Amazon · Meta' },
+    { q: 'He turned our content into a real pipeline. The lead magnets alone book us calls every week.', n: 'Camille Haas', r: 'Founder' },
+    { q: 'Fast, clear, and genuinely good taste. The work looks premium and it just works.', n: 'Rodrigo Ibañez', r: 'Agency owner' },
+    { q: 'We went from posting sometimes to showing up every day, in our voice. Game changer.', n: 'Cristian Trif', r: 'Operator' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-paper text-ink">
+      <ScrollProgress />
+      <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+          <Link to="/" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Content System · {founderFull}</span>
+          <BookButton label="Book a look" small />
+        </div>
+      </header>
+
+      <CSHero cs={cs} who={who} companyName={companyName} meta={meta} bookUrl={bookUrl} />
+      <CSPain cs={cs} who={who} companyName={companyName} receipts={receipts} scan={scan} />
+
+      {/* THE FIX — the engine, as soft benefit cards (the 6 promises) */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>The system</Kicker>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          Not <Italic>"AI writes my posts."</Italic> A system that runs your whole presence.
+        </h2>
+        {cs.system?.summary && <SerifBody className="mt-4 max-w-2xl">{cs.system.summary}</SerifBody>}
+        <div className="mt-10 grid md:grid-cols-2 gap-5">
+          {PROMISES.map((p, i) => (
+            <motion.div key={p.headline} initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.55, ease: EASE, delay: (i % 2) * 0.08 }}
+              className="p-6 lg:p-7" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)', lineHeight: 1.12, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{p.headline}</h3>
+              <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ONE IDEA IN -> WHOLE FUNNEL OUT — the interactive fan-out animation from the landing */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>One idea in. <Italic>Your whole funnel out.</Italic></h2>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>The same engine runs the entire loop, end to end. You only ever touch one step. Click any one to see it running in the real product.</p>
+        <motion.div className="mt-10 p-4 sm:p-6 md:p-8" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
+          style={{ borderRadius: 28, border: `1px solid ${hairline}`, background: 'var(--color-paper-sunk, #EFEAE2)', boxShadow: CI_SHADOW_LG }}>
+          <SystemFlowDiagram />
+        </motion.div>
+        {/* content-week mock */}
+        {(mockPosts.length > 0 || mockMetrics.length > 0) && (
+          <motion.div className="mt-12 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>{companyName} · {mock?.title || 'This week'}</span>
+            </div>
+            <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+              {mockMetrics.length > 0 && (
+                <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
+                  {mockMetrics.map((m, i) => (
+                    <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
+                      <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
+                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
+                      {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {mockPosts.length > 0 && (
+                <div className="px-5 lg:px-6 py-5 space-y-px">
+                  {mockPosts.map((p, i) => (
+                    <motion.div key={i} initial={reduce ? false : { opacity: 0, x: -8 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.15 + i * 0.07 }} className="flex items-start gap-3.5 py-3" style={{ borderTop: i ? `1px solid ${hairline}` : 'none' }}>
+                      <span className="shrink-0" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, padding: '4px 7px' }}>{p.format}</span>
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.45, color: '#3D3D3B' }}>{p.hook}</span>
+                      <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-ink)' }}>queued</span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </section>
+
+      {/* LEAD MAGNETS */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>Lead magnets</Kicker>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Turn attention into <Italic>qualified leads.</Italic></h2>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are.</p>
+        <div className="mt-9 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {LM_FORMATS.map((f) => (
+            <div key={f.name} className="p-5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>{f.name}</h3>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.blurb}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-10 grid md:grid-cols-3 gap-8">
+          {LM_PROMISES.map((p) => (
+            <div key={p.headline} className="pl-5" style={{ borderLeft: '2px solid var(--color-accent)' }}>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.25rem', lineHeight: 1.12, color: '#1A1A1A' }}>{p.headline}</h3>
+              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* PROOF — real client case studies */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
+        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
+        <div className="mt-12 space-y-16">
+          {cases.map((c) => (
+            <motion.div key={c.client} initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.7, ease: EASE }} className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <figure className={`m-0 overflow-hidden ${c.flip ? 'lg:order-2' : ''}`} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+                <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#1A1A1A' }}>
+                  <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>{c.client}</span>
+                </div>
+                <img src={c.src} alt={c.alt} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
+              </figure>
+              <div className={c.flip ? 'lg:order-1' : ''}>
+                <div style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{c.role}</div>
+                <h3 className="mt-1.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', letterSpacing: '-0.02em', color: '#1A1A1A' }}>{c.client}</h3>
+                <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>{c.summary}</p>
+                <div className="mt-7 flex flex-wrap gap-x-10 gap-y-6">
+                  {c.metrics.map((m) => (
+                    <div key={m.label}>
+                      <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
+                      <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* REVIEWS */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>The kind of work people rehire for</Kicker>
+        <div className="mt-8 p-8 lg:p-10" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+          <p style={{ fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(1.4rem, 2.8vw, 2rem)', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"{REVIEWS[0].q}"</p>
+          <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>{REVIEWS[0].n}</p>
+          <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{REVIEWS[0].r}</p>
+        </div>
+        <div className="mt-5 grid md:grid-cols-3 gap-5">
+          {REVIEWS.slice(1).map((t) => (
+            <div key={t.n} className="p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#3D3D3B' }}>"{t.q}"</p>
+              <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', fontWeight: 600, color: '#1A1A1A' }}>{t.n}</p>
+              <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FOUNDER NOTE */}
+      <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="flex items-start gap-5">
+          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 16, flexShrink: 0 }} />
+          <div>
+            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', lineHeight: 1.15, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Ivan. I build the content systems agencies <Italic>promise and never ship.</Italic></h2>
+            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>I'll build yours, train it on your voice and your real work, and show you a week of drafts before you commit to anything. No deck. A working system.</p>
+            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · Agent-Ready Ops</p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
+        <div className="p-10 lg:p-16 text-center" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+          <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Be the sharpest voice in your space. <Italic>Without writing a word.</Italic></h2>
+          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>Book a 20-minute look. We'll scope it to your channels, formats, and voice, and you'll get a fixed proposal.</p>
+          <div className="mt-8 flex flex-col items-center gap-3.5">
+            <BookButton label="Book a 20-min look" />
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working system.</span>
+          </div>
+        </div>
+      </section>
+
+      <footer style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-4">
+          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginLeft: 8 }}>Content System</span></span>
+          <span className="flex items-center gap-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em' }}>
+            <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a look</a>
+            <a href="https://ivanmanfredi.com" style={{ color: 'rgba(26,26,26,0.55)' }}>ivanmanfredi.com</a>
+          </span>
+        </div>
+        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {founderFull} · This page was built from a live scan of your presence.</p>
+      </footer>
     </div>
   );
 }
@@ -3033,6 +4035,12 @@ const ScanReportPage: React.FC = () => {
   // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
   if (report.matched_offer === 'call_intelligence' && report.call_intel) {
     return <CallIntelReport report={report} scan={scan} companyName={companyName} />;
+  }
+
+  // Content-system prospects (organic content engine + lead-magnet capture, one bundled offer)
+  // get a dedicated personalized pitch instead of the generic AI Opportunity Scan report.
+  if (report.matched_offer === 'content_system' && report.content_system) {
+    return <ContentSystemReport report={report} scan={scan} companyName={companyName} />;
   }
 
   return (

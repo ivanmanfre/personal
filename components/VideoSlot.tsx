@@ -14,18 +14,18 @@ export function VideoSlot({ src, poster, caption, ratio = '16 / 9', scriptHref }
   return (
     <figure className="my-4">
       <div
-        className="relative w-full overflow-hidden rounded-2xl border shadow-card-lift"
+        className="relative w-full overflow-hidden rounded-2xl border shadow-[0_24px_70px_-20px_rgba(0,0,0,0.3)]"
         style={{ aspectRatio: ratio, borderColor: 'var(--color-hairline-bold)', backgroundColor: 'var(--color-paper-sunk)' }}
       >
         {src ? (
           <video src={src} poster={poster} controls preload="metadata" className="h-full w-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center" role="img" aria-label="Video walkthrough — coming soon">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center" role="img" aria-label="Video walkthrough, coming soon">
             <span className="flex h-14 w-14 items-center justify-center rounded-full"
               style={{ backgroundColor: 'var(--color-accent-soft)', color: 'var(--color-accent-ink)' }}>
               <Play aria-hidden="true" size={22} />
             </span>
-            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">Walkthrough — coming</span>
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-ink-mute">Walkthrough coming soon</span>
             {scriptHref && (
               <a
                 href={scriptHref}
