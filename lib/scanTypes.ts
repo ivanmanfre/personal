@@ -31,12 +31,39 @@ export interface CallIntel {
   revenue_math: string;
 }
 
+// Emitted only when matched_offer === 'content_system' — drives the content-system
+// (organic content engine + lead-magnet capture) report variant. Mirrors CallIntel:
+// the audit reasons about THIS prospect's organic content gap and frames it as a leak.
+export interface ContentSystem {
+  // The dominant gap the audit picks for this prospect:
+  //  silent_founder — has audience/title but rarely posts (leaking attention)
+  //  inconsistent   — posts in bursts then goes quiet (no momentum)
+  //  no_capture     — posts but nothing converts readers to leads (leaking demand)
+  //  invisible      — barely on LinkedIn / no owned attention at all
+  archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible';
+  // The content engine + lead magnets run off the FOUNDER's personal brand (this offer only
+  // routes when the prospect is the owner/founder), so the page speaks to them personally.
+  founder?: { name: string; first_name?: string; headline?: string } | null;
+  thesis: string;
+  audience_estimate: { value: string; basis?: string };
+  observable_signals: Array<{ label: string; detail: string }>;
+  leaking_signals: Array<{ title: string; detail: string }>;
+  system: { summary: string; capabilities: string[] };
+  sample_output?: {
+    title: string;
+    posts?: { format: string; hook: string }[];
+    metrics?: { label: string; value: string; delta?: string | null }[];
+  };
+  revenue_math?: string;
+}
+
 export interface ReportJson {
-  // Offer routing (synced from the audit's matched_offer). call_intel is present only
-  // when matched_offer === 'call_intelligence' — it drives the call-intelligence report variant.
+  // Offer routing (synced from the audit's matched_offer). call_intel / content_system are
+  // present only for their matching offer and drive the corresponding report variant.
   matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
   offer_angle?: string | null;
   call_intel?: CallIntel | null;
+  content_system?: ContentSystem | null;
   company_snapshot: {
     name: string;
     one_liner: string;
