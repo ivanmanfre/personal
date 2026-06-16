@@ -1,19 +1,27 @@
 import React from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { getBookingQuarter } from '../lib/bookingConfig';
 
 // Production hero for /landing — no font picker, no right rail.
 // v2 (2026-05-24): v20-magazine-cover transformation
 //   - Sage sweep redrawn to match v20 (mostly rectangular highlighter, subtle imperfect edges, centered on letterforms)
 //   - Portrait pulled out of flex flow → absolutely positioned, truly bleeds off section right edge
-//   - Lede restored with italic + sage emphasis on "scale without scaling payroll"
 //   - Scroll parallax preserved via wrapper
+// v3 (2026-06-15): content-engine rebrand. Headline/lede/benefits repointed to
+//   the AI content system for agencies. Sage hero phrase = "$15k-$50k/mo of new pipeline".
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
+// Play the hero entrance ONCE per page load. React.StrictMode double-mounts in
+// dev (and an SPA back-navigation remounts), which would otherwise replay the
+// entrance and read as a stutter/repeat. After the first mount this flag is set,
+// so any remount renders the hero at its final state with no entrance.
+let heroEntrancePlayed = false;
+
 const LandingHero: React.FC = () => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const skip = heroEntrancePlayed;
+  React.useEffect(() => { heroEntrancePlayed = true; }, []);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end start'],
@@ -23,6 +31,36 @@ const LandingHero: React.FC = () => {
   const headlineOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.5]);
   const reduced = useReducedMotion();
 
+  // Hand-painted sage highlighter sweep — the §2/§4 emphasis move. Sits behind a
+  // ROMAN phrase (never fills it green). Scales to the wrapped phrase box.
+  const HeroSweep: React.FC<{ delay?: number }> = ({ delay = 0.55 }) => (
+    <motion.svg
+      initial={reduced || skip ? false : { scaleX: 0, opacity: 0 }}
+      animate={{ scaleX: 1, opacity: 1 }}
+      transition={{ delay, duration: 0.9, ease }}
+      viewBox="0 0 400 100"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        left: '-2%',
+        right: '-2%',
+        top: '0.20em',
+        width: '104%',
+        height: '0.92em',
+        transformOrigin: 'left',
+        zIndex: -1,
+        overflow: 'visible',
+      }}
+    >
+      <path
+        d="M 5 16 Q 80 9 160 14 Q 250 19 320 11 Q 365 14 396 15 L 396 84 Q 360 89 300 83 Q 220 91 150 85 Q 75 90 5 83 Z"
+        fill="#2A8F65"
+        opacity={0.5}
+      />
+    </motion.svg>
+  );
+
   // Editorial line-mask reveal — display lines rise out of a clip mask, settle, stop.
   // Replaces the blur-on-every-element entrance with one decisive typographic move.
   const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
@@ -31,7 +69,7 @@ const LandingHero: React.FC = () => {
     <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.16em', marginBottom: '-0.16em' }}>
       <motion.span
         style={{ display: 'block' }}
-        initial={reduced ? false : { y: '118%' }}
+        initial={reduced || skip ? false : { y: '118%' }}
         animate={{ y: 0 }}
         transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
       >
@@ -51,7 +89,7 @@ const LandingHero: React.FC = () => {
         className="absolute inset-0 pointer-events-none z-0"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(26,26,26,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.035) 1px, transparent 1px)',
+            'linear-gradient(rgba(26,26,26,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.022) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
         }}
       />
@@ -67,67 +105,23 @@ const LandingHero: React.FC = () => {
         }}
       />
 
-      {/* Status strip */}
-      <motion.div
-        initial={{ y: -40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease }}
-        className="border-b px-8 py-3 flex items-center justify-between relative z-10"
-        style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '12px',
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color: 'rgba(26,26,26,0.7)',
-          borderColor: 'rgba(26,26,26,0.1)',
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <motion.span
-            animate={{ opacity: [1, 0.2, 1] }}
-            transition={{ duration: 1.4, repeat: Infinity }}
-            style={{ width: '7px', height: '7px', backgroundColor: '#2A8F65', flexShrink: 0 }}
-            aria-hidden="true"
-          />
-          <span style={{ color: '#1F6B4B' }}>Booking {getBookingQuarter()}</span>
-        </div>
-      </motion.div>
-
-      {/* Expanding sage rule across top */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: 0.15, duration: 1.8, ease }}
-        style={{
-          position: 'absolute',
-          top: '3.5rem',
-          left: 0,
-          right: 0,
-          height: '1px',
-          backgroundColor: '#2A8F65',
-          transformOrigin: 'left',
-          opacity: 0.3,
-          zIndex: 5,
-        }}
-      />
-
-      {/* Main content — EDITORIAL COVER: type is the visual. Mixed-scale headline
-          with 'bottleneck' blown to viewport scale and bleeding the right margin;
-          left-aligned magazine axis; lede/CTA held in a narrow column so the right
-          side stays active negative space. */}
+      {/* Main content — EDITORIAL COVER, CENTERED axis (Ivan's call, W3.2): the
+          type is still the visual, but the headline / lede / CTA stack on one
+          centered column and vertically center in the fold, so the fold reads as
+          a balanced composition instead of a top-left block with dead space. */}
       <motion.div
         style={{ y: headlineY, opacity: headlineOpacity }}
         className="flex-1 flex flex-col justify-center relative z-10"
       >
         <div className="container mx-auto px-8 max-w-7xl w-full">
-          <div className="pt-10 lg:pt-0 text-left">
+          <div className="py-12 lg:py-0 text-center">
 
             {/* Byline */}
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={skip ? false : { opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.6 }}
-              className="mb-7 flex items-center gap-3"
+              className="mb-7 flex items-center justify-center gap-3"
               style={{
                 fontFamily: '"IBM Plex Mono", monospace',
                 fontSize: '11px',
@@ -142,62 +136,64 @@ const LandingHero: React.FC = () => {
                 style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                 aria-hidden="true"
               />
-              <span>Iván Manfredi · Agent-Ready Ops™</span>
+              <span>For agency owners</span>
             </motion.div>
 
-            {/* Headline — mixed-scale cover. 'bottleneck' is the hero word. */}
+            {/* Headline: ONE coherent centered sentence at a single scale (the
+                mixed-scale "Add" / blown-up-figure cover only read right when it
+                was left-aligned; centered it orphaned "Add" on its own line).
+                The dollar figure keeps the hand-painted sage sweep (sage =
+                punctuation on the one load-bearing token); "in 90 days." stays
+                the inverted-box emphasis, sized to match the headline. */}
             <h1
-              className="mb-9"
+              className="mb-9 mx-auto"
               style={{
                 fontFamily: '"DM Serif Display", "Bodoni Moda", Georgia, serif',
                 fontWeight: 400,
                 color: '#1A1A1A',
-                letterSpacing: '-0.02em',
+                letterSpacing: '-0.025em',
+                fontSize: 'clamp(2.2rem, 6vw, 5.4rem)',
+                lineHeight: 1.02,
               }}
             >
               <Reveal delay={0.15}>
-                <span style={{ display: 'block', fontSize: 'clamp(1.9rem, 4vw, 3.25rem)', lineHeight: 1.05 }}>
-                  Stop being the
+                {/* Two unbreakable chunks with one break point between them: on a
+                    wide screen the whole phrase sits on ONE line; when it must
+                    wrap it breaks to "Add $15k-$50k/mo" / "of new pipeline" —
+                    two balanced lines, never a single orphaned word. */}
+                <span style={{ display: 'block' }}>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    Add{' '}
+                    <span style={{ position: 'relative', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                      $15k-$50k/mo
+                      <HeroSweep delay={0.55} />
+                    </span>
+                  </span>{' '}
+                  <span style={{ whiteSpace: 'nowrap' }}>of new pipeline</span>
                 </span>
               </Reveal>
-              <Reveal delay={0.3}>
-                <span
-                  style={{
-                    display: 'block',
-                    whiteSpace: 'nowrap',
-                    color: '#2A8F65',
-                    fontSize: 'clamp(4.5rem, 17vw, 14rem)',
-                    lineHeight: 0.9,
-                    letterSpacing: '-0.045em',
-                    marginLeft: '-0.015em',
-                    marginTop: '0.02em',
-                  }}
-                >
-                  bottleneck
-                </span>
-              </Reveal>
-              <Reveal delay={0.46}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginTop: '0.45rem',
-                    backgroundColor: '#1A1A1A',
-                    color: '#F7F4EF',
-                    fontStyle: 'italic',
-                    fontSize: 'clamp(1.4rem, 3vw, 2.6rem)',
-                    lineHeight: 1.12,
-                    padding: '0.04em 0.42em 0.2em',
-                  }}
-                >
-                  in your own business.
+              <Reveal delay={0.34}>
+                <span style={{ display: 'block', marginTop: '0.3em' }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#1A1A1A',
+                      color: '#F7F4EF',
+                      fontStyle: 'italic',
+                      lineHeight: 1.1,
+                      padding: '0.02em 0.34em 0.16em',
+                    }}
+                  >
+                    in 90 days.
+                  </span>
                 </span>
               </Reveal>
             </h1>
 
-            {/* Lede + CTAs held in a narrow left column — right side is active negative space */}
-            <div className="max-w-2xl">
+            {/* Lede + CTAs — centered column, right side no longer dead space */}
+            <div className="max-w-3xl mx-auto">
               <motion.p
-                initial={{ opacity: 0 }}
+                initial={skip ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.75, duration: 0.9, ease }}
                 className="mb-7"
@@ -209,20 +205,20 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                AI systems that do the work you keep hiring people to do. Take on 2–3x more clients on the same payroll.{' '}
+                An AI content system that writes your posts, builds your lead magnets, and ships them daily in your voice.{' '}
                 <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
-                  Every build pays back inside 90 days, or I don't build it.
+                  You own the system, instead of renting an agency that posts for you.
                 </span>
               </motion.p>
 
               {/* Benefit row — mono spec line */}
               <motion.ul
-                initial={{ opacity: 0, y: 16 }}
+                initial={skip ? false : { opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.86, duration: 0.7, ease }}
-                className="mb-9 flex flex-col sm:flex-row items-start sm:items-center gap-y-2.5 sm:gap-0"
+                className="mb-9 flex flex-col sm:flex-row items-center justify-center gap-y-2.5 sm:gap-0"
               >
-                {['Every lead followed up in minutes', 'Churn flagged before the client walks', 'More clients on the team you have'].map((b, i) => (
+                {['Daily content in your voice', 'A feed that brings you inbound', 'On-brand, every post'].map((b, i) => (
                   <li
                     key={b}
                     className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l sm:border-black/10'} ${i === 2 ? 'sm:pr-0' : ''}`}
@@ -234,7 +230,7 @@ const LandingHero: React.FC = () => {
                     }}
                   >
                     <span
-                      className={i === 0 ? '' : 'sm:hidden'}
+                      className="sm:hidden"
                       style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                       aria-hidden="true"
                     />
@@ -245,10 +241,10 @@ const LandingHero: React.FC = () => {
 
               {/* CTAs */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={skip ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.96, duration: 0.6, ease }}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
+                className="flex flex-col sm:flex-row items-center justify-center gap-3"
               >
                 <a
                   href="/start"

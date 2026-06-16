@@ -245,6 +245,28 @@ export async function scheduleCarousel(draft_id: string, scheduled_at: string) {
   return { ok: true, draft_id, scheduled_at };
 }
 
+// Publish a post to LinkedIn RIGHT NOW, skipping the schedule. Fires the
+// on-demand entry on the Scheduled Post Publisher (n8n wf 0Ym6bP7gEmskPJZn):
+// the webhook (re)queues this draft's scheduled_posts row as due-now and runs
+// the SAME proven publish pipeline as scheduled posts. scheduled_posts is RLS
+// SELECT-only for the anon key, so the requeue must happen server-side (service
+// role inside n8n) — hence a webhook, not a direct Supabase write.
+// Guarded server-side: an already-posted/posting draft is refused (no double
+// post). The webhook is "onReceived" → returns immediately; the publish runs
+// async (~10-30s) and realtime flips the draft to 'published' with the URN.
+const PUBLISH_NOW_WEBHOOK = import.meta.env.VITE_PUBLISH_NOW_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/publish-now';
+const PUBLISH_NOW_SECRET = import.meta.env.VITE_PUBLISH_NOW_SECRET || 'pn-1ee9c4f2a7';
+
+export async function publishPostNow(draft_id: string) {
+  const res = await fetch(PUBLISH_NOW_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ draft_id, secret: PUBLISH_NOW_SECRET }),
+  });
+  if (!res.ok) throw new Error(`publish now failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json().catch(() => ({ ok: true }));
+}
+
 // === Animated videos (video-gen-v2 webhook + ivan-flow-video engine) ===
 // The engine renders async: video-gen-v2 returns immediately, the engine renders
 // in the background (~150s) and PATCHes carousel_drafts {video_url, video_status:'review'}.

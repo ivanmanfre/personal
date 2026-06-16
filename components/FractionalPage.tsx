@@ -3,24 +3,23 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Check } from 'lucide-react';
 import { useMetadata } from '../hooks/useMetadata';
 
-const builds = [
-  {
-    name: 'Content System',
-    tag: 'The growth engine',
-    description:
-      'Lead magnet engine plus post engine, trained on your voice. Drafting daily by day 14, fully live by day 30. You self-edit everything through an in-browser editor, so there is no dependency on me for text changes.',
-    bestFor: '"Not enough leads."',
-    href: '/lead-magnet-system',
-    highlighted: false,
-  },
+const primaryBuild = {
+  name: 'The Content Engine',
+  tag: 'The engine',
+  description:
+    'An engine trained on your voice that writes your posts, builds your lead magnets, ships daily, all QA\'d so nothing reads like AI.',
+  bestFor: 'You need agency-grade content daily.',
+  href: '/content-system',
+};
+
+const nextBuilds = [
   {
     name: 'Call Intelligence',
-    tag: 'Signature',
+    tag: 'Once the engine runs',
     description:
       'Every sales and client call scored, deal risks flagged, churn signals caught before they become churn. Scoped to your call stack on the fit call.',
     bestFor: '"Leads come in but don\'t close, or don\'t stick."',
     href: '/call-intelligence',
-    highlighted: true,
   },
   {
     name: 'Something else',
@@ -29,14 +28,13 @@ const builds = [
       'AI is wide, and most businesses need something that is not on a menu. On the fit call we break your idea into systems and you leave with a scope and a number. If it is genuinely experimental, it gets a one-week prototype first so neither of us bets a full build on a guess.',
     bestFor: '"I know what I want built" or "I just know I need AI."',
     href: '/start',
-    highlighted: false,
   },
 ];
 
 const systems = [
-  { name: 'Demand', role: 'Creates attention and inbound.', livesHere: 'Content System', isProduct: true },
+  { name: 'Demand / Content', role: 'Creates attention and inbound. This is where the engine lives, and where you start.', livesHere: 'The Content Engine', isProduct: true },
   { name: 'Pipeline', role: 'Captures, qualifies and routes every lead.', livesHere: 'Lead magnets · outreach', isProduct: false },
-  { name: 'Conversion', role: 'Wins the deals you are already in.', livesHere: 'Call Intelligence', isProduct: true },
+  { name: 'Conversion', role: 'Wins the deals you are already in.', livesHere: 'Call Intelligence', isProduct: false },
   { name: 'Delivery', role: 'Runs the repeatable work behind the service.', livesHere: 'Scoped to you', isProduct: false },
   { name: 'Command', role: 'Watches all of it and shows you what is happening.', livesHere: 'Dashboards · alerts', isProduct: false },
 ];
@@ -134,7 +132,7 @@ const FractionalPage: React.FC = () => {
   useMetadata({
     title: 'How I Work | Manfredi',
     description:
-      'AI growth and retention systems for service businesses. Built in 30-day fixed-scope, fixed-price builds. You own everything. Optional Care Plan keeps it all alive.',
+      'The AI content engine for agencies. Installed in a 90-day build, then run for you. Fixed scope, fixed price, you own everything. Optional Care Plan keeps it all alive.',
     canonical: 'https://ivanmanfredi.com/fractional',
   });
 
@@ -150,7 +148,7 @@ const FractionalPage: React.FC = () => {
             className="mb-6"
           >
             <span className="inline-block text-xs uppercase tracking-[0.1em] font-medium text-ink-soft border border-[color:var(--color-hairline-bold)] rounded px-2 py-1">
-              AI systems · built in 30-day builds
+              The content engine · for agencies
             </span>
           </motion.div>
 
@@ -160,8 +158,8 @@ const FractionalPage: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter mb-6 max-w-4xl"
           >
-            Systems built in <span className="font-drama italic">30 days.</span><br />
-            A partner that compounds.
+            The AI <span className="font-drama italic">content engine</span> for agencies.<br />
+            Installed in a 90-day build, then run for you.
           </motion.h1>
 
           <motion.p
@@ -190,10 +188,10 @@ const FractionalPage: React.FC = () => {
             className="mb-20"
           >
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">
-              Every service business runs on <span className="font-drama italic">five systems.</span>
+              Where the engine fits, and <span className="font-drama italic">what comes after.</span>
             </h2>
             <p className="text-ink-soft mb-10 max-w-2xl leading-relaxed">
-              I build the AI version of each, one at a time, and you own every one. You start where it hurts most, usually Demand or Conversion, and the system you install starts feeding the next.
+              Every agency runs on five systems. You start with Demand, where the content engine lives, and the engine starts feeding the rest. I build the AI version of each, one at a time, and you own every one.
             </p>
 
             <div className="space-y-5 mb-8">
@@ -217,11 +215,11 @@ const FractionalPage: React.FC = () => {
             </div>
 
             <p className="text-ink-soft leading-relaxed max-w-2xl mb-6">
-              Each one feeds the next. Demand fills the pipeline, a clean pipeline sharpens conversion, and Command finally lets you see the bottleneck after this one. The roadmap you get after your first build is exactly that: the next system worth installing.
+              Each one feeds the next. The content engine fills Demand, a full pipeline sharpens conversion, and Command finally lets you see the next bottleneck. The roadmap you get after your first build is exactly that: the next system worth installing.
             </p>
 
             <p className="text-sm text-ink-mute leading-relaxed max-w-2xl border-l-2 border-zinc-300 pl-4">
-              Two of these, Demand and Conversion, I have productized because every business needs them. The rest get shaped to your business on the call. Most businesses run beautifully on two or three, not five.
+              The content engine is the one I lead with, because every agency needs it. The rest get shaped to your business on the call. Most agencies run beautifully on two or three, not five.
             </p>
           </motion.div>
 
@@ -236,51 +234,84 @@ const FractionalPage: React.FC = () => {
               What I build
             </h2>
             <p className="text-ink-soft mb-10 max-w-2xl">
-              The two systems I have productized, plus the one that covers everything else. The fit call decides which you start with and what it costs, in one conversation.
+              One build leads: the content engine. The fit call decides how it gets scoped to your agency and what it costs, in one conversation.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-20">
-            {builds.map((build) => (
-              <motion.div
-                key={build.name}
-                initial={{ y: 30 }}
-                whileInView={{ y: 0 }}
-                viewport={{ once: true }}
-                className={`flex flex-col p-7 border shadow-card ${
-                  build.highlighted
-                    ? 'bg-black text-white border-black'
-                    : 'bg-paper text-black border-zinc-300'
-                }`}
-              >
-                <span className={`font-mono text-xs uppercase tracking-widest mb-3 block ${build.highlighted ? 'text-accent' : 'text-ink-mute'}`}>
-                  {build.tag}
-                </span>
-                <h3 className={`text-xl font-semibold tracking-tight mb-3 ${build.highlighted ? 'text-white' : ''}`}>
-                  {build.name}
-                </h3>
-                <p className={`text-sm leading-relaxed mb-5 flex-1 ${build.highlighted ? 'text-zinc-300' : 'text-ink-soft'}`}>
-                  {build.description}
-                </p>
-                <div className={`text-xs italic mb-5 pt-4 border-t ${build.highlighted ? 'border-zinc-700 text-zinc-400' : 'border-zinc-200 text-ink-mute'}`}>
-                  <span className={`font-mono not-italic uppercase tracking-widest text-[10px] block mb-1 ${build.highlighted ? 'text-zinc-500' : 'text-ink-mute'}`}>
-                    Best for
-                  </span>
-                  {build.bestFor}
-                </div>
-                <a
-                  href={build.href}
-                  className={`w-full text-center px-5 py-2.5 border font-bold tracking-wide text-xs transition-colors ${
-                    build.highlighted
-                      ? 'bg-accent text-black border-accent hover:bg-paper'
-                      : 'bg-paper text-black border-black hover:bg-black hover:text-white'
-                  }`}
+          {/* PRIMARY BUILD — the content engine */}
+          <motion.div
+            initial={{ y: 30 }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true }}
+            className="flex flex-col p-8 md:p-10 border border-black bg-black text-white shadow-card mb-12"
+          >
+            <span className="font-mono text-xs uppercase tracking-widest mb-3 block text-accent">
+              {primaryBuild.tag}
+            </span>
+            <h3 className="text-2xl md:text-3xl font-semibold tracking-tight mb-4 text-white">
+              {primaryBuild.name}
+            </h3>
+            <p className="text-base leading-relaxed mb-6 max-w-2xl text-zinc-300">
+              {primaryBuild.description}
+            </p>
+            <div className="text-sm italic mb-6 pt-4 border-t border-zinc-700 text-zinc-400 max-w-2xl">
+              <span className="font-mono not-italic uppercase tracking-widest text-[10px] block mb-1 text-zinc-500">
+                Best for
+              </span>
+              {primaryBuild.bestFor}
+            </div>
+            <a
+              href={primaryBuild.href}
+              className="self-start text-center px-7 py-3 border font-bold tracking-wide text-sm transition-colors bg-accent text-black border-accent hover:bg-paper"
+            >
+              See the content engine
+            </a>
+          </motion.div>
+
+          {/* WHAT WE BUILD NEXT — demoted, post-trust */}
+          <motion.div
+            initial={{ y: 10 }}
+            whileInView={{ y: 0 }}
+            viewport={{ once: true }}
+            className="mb-20"
+          >
+            <h3 className="text-lg md:text-xl font-semibold tracking-tight mb-2">
+              What we build next, once the engine is running
+            </h3>
+            <p className="text-sm text-ink-mute mb-7 max-w-2xl leading-relaxed">
+              These come up after the engine is live and earning attention. Not co-equal day-one offers, just the systems most agencies reach for next.
+            </p>
+            <div className="grid md:grid-cols-2 gap-5">
+              {nextBuilds.map((build) => (
+                <div
+                  key={build.name}
+                  className="flex flex-col p-6 border border-zinc-300 bg-paper text-black"
                 >
-                  {build.name === 'Something else' ? 'Bring it to the call' : 'Learn more'}
-                </a>
-              </motion.div>
-            ))}
-          </div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest mb-2 block text-ink-mute">
+                    {build.tag}
+                  </span>
+                  <h4 className="text-lg font-semibold tracking-tight mb-2">
+                    {build.name}
+                  </h4>
+                  <p className="text-sm leading-relaxed mb-4 flex-1 text-ink-soft">
+                    {build.description}
+                  </p>
+                  <div className="text-xs italic mb-4 pt-3 border-t border-zinc-200 text-ink-mute">
+                    <span className="font-mono not-italic uppercase tracking-widest text-[10px] block mb-1 text-ink-mute">
+                      Best for
+                    </span>
+                    {build.bestFor}
+                  </div>
+                  <a
+                    href={build.href}
+                    className="self-start text-center px-5 py-2 border font-bold tracking-wide text-xs transition-colors bg-paper text-black border-black hover:bg-black hover:text-white"
+                  >
+                    {build.name === 'Something else' ? 'Bring it to the call' : 'Learn more'}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
           {/* HOW A BUILD WORKS */}
           <motion.div
