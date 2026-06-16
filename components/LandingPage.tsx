@@ -1413,7 +1413,7 @@ const LandingFooter: React.FC = () => {
         <div className="text-center mb-12 md:mb-14 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
           <p style={{ ...T.serif, fontSize: '16px', marginBottom: '1.5rem' }}>
-            What I built this week, and what it changed. Weekly, for agency founders.
+            What I built this week, and what it changed. Weekly, for agency owners.
           </p>
 
           {status === 'success' ? (
