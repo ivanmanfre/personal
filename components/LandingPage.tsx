@@ -831,11 +831,11 @@ const QualificationSection: React.FC = () => (
                     <span
                       aria-hidden="true"
                       style={{
-                        marginTop: '0.5em',
-                        width: '7px',
-                        height: '7px',
+                        marginTop: '0.62em',
+                        width: '16px',
+                        height: '2px',
                         flexShrink: 0,
-                        backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.28)',
+                        backgroundColor: group.accent ? 'var(--color-accent)' : 'rgba(26,26,26,0.3)',
                       }}
                     />
                     <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '17px', lineHeight: 1.5, color: group.accent ? '#1A1A1A' : '#7A766F' }}>
@@ -933,8 +933,8 @@ const ENGINE_CASES = [
   {
     client: 'Lemonade',
     role: 'Demand-gen studio',
-    img: '/content-system/lemonade-thankyou.png',
-    alt: "Lemonade's lead-capture page built by the system",
+    img: '/content-system/ui/leadmagnets.png',
+    alt: "Lemonade's lead-magnet studio running in the system",
     flip: true,
     summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
     metrics: [
@@ -1012,7 +1012,7 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
     <p
       style={{
         fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A', marginBottom: '14px', flex: 1,
-        display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
       }}
     >
       &ldquo;{r.text}&rdquo;
@@ -1225,7 +1225,7 @@ const OfferSection: React.FC = () => (
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
   'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, and lead magnets, all QA’d before they go out.',
-  'My own LinkedIn runs on this exact engine, so you can watch it work in real time.',
+  "It's the same system already running for agencies like Kyle Hunt and Lemonade, not a demo.",
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
 
@@ -1259,7 +1259,7 @@ const MeetOperator: React.FC = () => (
           <div className="flex flex-col gap-4 mb-10">
             {OPERATOR_POINTS.map((pt) => (
               <div key={pt} className="flex items-start gap-3.5">
-                <span aria-hidden="true" style={{ marginTop: '0.55em', width: '7px', height: '7px', flexShrink: 0, backgroundColor: 'var(--color-accent)' }} />
+                <span aria-hidden="true" style={{ marginTop: '0.62em', width: '16px', height: '2px', flexShrink: 0, backgroundColor: 'var(--color-accent)' }} />
                 <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.55, color: '#2A2A28', maxWidth: '52ch' }}>{pt}</p>
               </div>
             ))}
@@ -1368,7 +1368,7 @@ const LandingFooter: React.FC = () => {
       <div className="container mx-auto px-8 max-w-5xl">
 
         {/* Newsletter */}
-        <div className="text-center mb-12 md:mb-20 max-w-xl mx-auto">
+        <div className="text-center mb-12 md:mb-14 max-w-xl mx-auto">
           <Label>The Agent-Ready Letter</Label>
           <p style={{ ...T.serif, fontSize: '16px', marginBottom: '1.5rem' }}>
             What I built this week, and what it changed. Weekly, for agency founders.
@@ -1382,7 +1382,7 @@ const LandingFooter: React.FC = () => {
               </span>
             </div>
           ) : (
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row sm:items-stretch gap-2 max-w-md mx-auto">
               <input
                 type="email"
                 value={email}
@@ -1394,8 +1394,8 @@ const LandingFooter: React.FC = () => {
                 style={{
                   fontFamily: '"Source Serif 4",serif',
                   fontSize: '15px',
-                  border: '1px solid rgba(26,26,26,0.18)',
-                  backgroundColor: 'var(--color-paper)',
+                  border: '1px solid rgba(26,26,26,0.32)',
+                  backgroundColor: 'var(--color-paper-raise)',
                   color: '#1A1A1A',
                   outline: 'none',
                 }}
@@ -1406,7 +1406,7 @@ const LandingFooter: React.FC = () => {
                 className="px-6 py-3"
                 style={{
                   fontFamily: '"Source Serif 4",serif',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   fontSize: '15px',
                   backgroundColor: '#1A1A1A',
                   color: '#F7F4EF',

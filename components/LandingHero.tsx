@@ -48,7 +48,7 @@ const LandingHero: React.FC = () => {
       <path
         d="M 5 16 Q 80 9 160 14 Q 250 19 320 11 Q 365 14 396 15 L 396 84 Q 360 89 300 83 Q 220 91 150 85 Q 75 90 5 83 Z"
         fill="#2A8F65"
-        opacity={0.82}
+        opacity={0.5}
       />
     </motion.svg>
   );
