@@ -54,6 +54,7 @@ const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
+const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
 
 function App() {
   const location = useLocation();
@@ -212,6 +213,7 @@ function App() {
           <Route path="/podcast" element={<PodcastPage />} />
           <Route path="/store" element={<StorePage />} />
           <Route path="/store/:slug" element={<ProductDetail />} />
+          <Route path="/dev/linkedin-feed" element={<Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: 'var(--color-paper)' }} />}><LinkedInFeedMockupPreview /></Suspense>} />
         </Routes>
       </main>
 
