@@ -1,6 +1,7 @@
 // components/ui/LinkedInFeedMockup.tsx
 import React from 'react';
 import LinkedInPostPreview from './LinkedInPostPreview';
+import LinkedInDocumentCard from './LinkedInDocumentCard';
 import { normalizeFeedSpec, type FeedSpec, type RenderMode } from '../../lib/linkedinFeedSpec';
 
 interface Props {
@@ -33,7 +34,13 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
           stats={{ reactions: post.reactions, comments: post.comments }}
         />
       ))}
-      {/* LM document card (full mode) wired in Task 4 */}
+      {feed.lmCard && (
+        <LinkedInDocumentCard
+          profile={profile}
+          card={feed.lmCard}
+          caption={`New — I put together "${feed.lmCard.title}", the playbook behind these posts. Comment "guide" and I'll send it over.`}
+        />
+      )}
     </div>
   );
 };
