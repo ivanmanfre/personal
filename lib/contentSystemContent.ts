@@ -41,7 +41,7 @@ export const LM_PROMISES: LmPromise[] = [
   { headline: 'It launches the whole campaign', benefit: 'Each magnet ships with its launch post, DM, email sequence, and cover — written and scheduled in one pass.', how: 'One run produces the asset + the full distribution kit.' },
 ];
 
-export const ONE_IDEA_FORMATS: string[] = ['Text post', 'Single image', 'Carousel (9 styles)', 'Short video', 'Lead magnet', 'IG caption', 'Newsletter'];
+export const ONE_IDEA_FORMATS: string[] = ['Post', 'Carousel', 'Image', 'Lead Magnet'];
 
 export const SCOPE: { inScope: string[]; notInScope: string[] } = {
   inScope: [
