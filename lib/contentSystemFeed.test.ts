@@ -49,6 +49,20 @@ const csWithLmNoPagesField: ContentSystem = {
   },
 };
 
+// A scan whose posts include a dedicated 'Lead magnet' post (the common shape).
+const csWithLmPost: ContentSystem = {
+  ...cs,
+  sample_output: {
+    title: 'This week',
+    posts: [
+      { format: 'Post', hook: 'h1', body: 'Body one.' },
+      { format: 'Lead magnet', hook: 'Grab the playbook.', body: 'LM post body.' },
+      { format: 'Newsletter', hook: 'h3', body: 'Body three.' },
+    ],
+    lm: { title: 'The Playbook', cover_url: 'https://cdn.example.com/lm.jpg', pages: 8 },
+  },
+};
+
 describe('buildFeedSpecFromContentSystem', () => {
   it('maps posts to text posts, using body when present', () => {
     const spec = buildFeedSpecFromContentSystem(cs, { companyName: 'Acme' });
@@ -103,5 +117,24 @@ describe('buildFeedSpecFromContentSystem', () => {
   it('leaves lmCard undefined when cs.sample_output.lm is absent', () => {
     const spec = buildFeedSpecFromContentSystem(cs);
     expect(spec.lmCard).toBeUndefined();
+  });
+
+  it('drops the lead-magnet post from the feed when the LM card is present (no duplicate)', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithLmPost);
+    expect(spec.lmCard?.coverUrl).toBe('https://cdn.example.com/lm.jpg');
+    expect(spec.posts).toHaveLength(2);
+    expect(spec.posts.map((p) => p.body)).toEqual(['Body one.', 'Body three.']);
+    expect(spec.posts.some((p) => p.body === 'LM post body.')).toBe(false);
+  });
+
+  it('keeps the lead-magnet post as text when there is no LM card', () => {
+    const noCard: ContentSystem = {
+      ...csWithLmPost,
+      sample_output: { ...csWithLmPost.sample_output!, lm: undefined },
+    };
+    const spec = buildFeedSpecFromContentSystem(noCard);
+    expect(spec.lmCard).toBeUndefined();
+    expect(spec.posts).toHaveLength(3);
+    expect(spec.posts.some((p) => p.body === 'LM post body.')).toBe(true);
   });
 });
