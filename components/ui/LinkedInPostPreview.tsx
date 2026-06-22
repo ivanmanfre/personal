@@ -70,6 +70,8 @@ interface Props {
   showFold?: boolean;
   /** Optional fake stats to demo the strip. */
   stats?: { reactions?: number; comments?: number };
+  /** When true, renders a smaller condensed card suitable for a 2-column grid. */
+  compact?: boolean;
 }
 
 const LinkedInPostPreview: React.FC<Props> = ({
@@ -80,13 +82,67 @@ const LinkedInPostPreview: React.FC<Props> = ({
   mediaUrl,
   showFold = true,
   stats,
+  compact = false,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const truncate = showFold && text.length > FOLD_AT && !expanded;
+  // Compact cards are always clamped via CSS — skip the JS fold logic.
+  const truncate = !compact && showFold && text.length > FOLD_AT && !expanded;
   const visibleText = truncate ? text.slice(0, FOLD_AT).trimEnd() : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));
+
+  if (compact) {
+    return (
+      <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full">
+        {/* Compact header */}
+        <div className="flex items-start gap-2 px-3 py-2">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={author}
+              className="w-9 h-9 rounded-full object-cover bg-zinc-200 shrink-0"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-zinc-200 shrink-0" aria-hidden />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold leading-tight text-[#0a66c2] truncate">{author}</div>
+            <div className="text-[11px] text-[#666] leading-tight mt-0.5 truncate">{headline}</div>
+          </div>
+        </div>
+
+        {/* Compact caption — clamped to 6 lines */}
+        <div className="px-3 pb-2">
+          <div
+            className="text-[13px] text-[#1d2226] leading-snug"
+            style={{ display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
+            {paragraphs.map((para, pi) => (
+              <p key={pi} className={pi > 0 ? 'mt-2' : ''}>
+                {para.split('\n').map((line, li, arr) => (
+                  <React.Fragment key={li}>
+                    {tokenize(line)}
+                    {li < arr.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </p>
+            ))}
+          </div>
+        </div>
+
+        {/* Compact reaction strip */}
+        <div className="px-3 pt-1 pb-1.5 text-[11px] text-[#666] flex items-center gap-1 border-t border-[#dce6f1]">
+          <span className="inline-flex -space-x-1">
+            <span className="w-3.5 h-3.5 rounded-full bg-[#0a66c2] flex items-center justify-center ring-1 ring-white text-white text-[8px]">👍</span>
+          </span>
+          <span className="ml-1">{reactionCount.toLocaleString()}</span>
+          <span className="ml-auto">{commentCount} comments</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
