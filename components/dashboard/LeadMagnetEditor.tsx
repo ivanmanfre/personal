@@ -36,6 +36,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // stable — version it by updatedAt so a fresh render actually refetches
   // instead of showing the browser-cached old cover.
   const coverSrc = versionedAssetUrl(draft.coverUrl, draft.updatedAt);
+  const videoSrc = versionedAssetUrl(draft.videoUrl, draft.updatedAt);
   // LM upstream-source resolver — uses spec.source_candidate_id when present,
   // OR falls back to draft.source (Client Calls / Web Research / Competitor / Manual).
   const upstream = useUpstreamSource({ source_candidate_id: spec.source_candidate_id, source: draft.source });
@@ -128,7 +129,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               <Textarea value={postBody} onChange={(e) => setPostBody(e.target.value)} rows={6} className="text-[13.5px] leading-relaxed font-sans" />
             ) : (
               <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
-                <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} />
+                <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} videoUrl={videoSrc} />
               </div>
             )}
           </div>
@@ -198,7 +199,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   label: 'Preview',
                   render: () => (
                     <div className="rounded-md bg-zinc-950/60 border border-zinc-800/60 p-3">
-                      <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} />
+                      <LinkedInPostPreview text={postBody} mediaUrl={coverSrc} videoUrl={videoSrc} />
                     </div>
                   ),
                 },

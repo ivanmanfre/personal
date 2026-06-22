@@ -66,6 +66,8 @@ interface Props {
   avatarUrl?: string;
   /** Optional preview media (image URL). For carousel, pass slide-1 thumbnail. */
   mediaUrl?: string | null;
+  /** Optional video URL. When set, the media slot renders a player (cover = poster). */
+  videoUrl?: string | null;
   /** When false, don't show the LinkedIn truncation fold. */
   showFold?: boolean;
   /** Optional fake stats to demo the strip. */
@@ -80,6 +82,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
   headline = 'Agent-Ready Ops · AI systems for $1-10M service firms',
   avatarUrl = '/ivan-portrait.jpg',
   mediaUrl,
+  videoUrl,
   showFold = true,
   stats,
   compact = false,
@@ -201,12 +204,22 @@ const LinkedInPostPreview: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Media slot */}
-      {mediaUrl && (
+      {/* Media slot — video player when a videoUrl is present, else image */}
+      {videoUrl ? (
+        <div className="border-y border-[#dce6f1] bg-black">
+          <video
+            src={videoUrl}
+            poster={mediaUrl || undefined}
+            controls
+            playsInline
+            className="w-full max-h-[480px] object-contain bg-black"
+          />
+        </div>
+      ) : mediaUrl ? (
         <div className="border-y border-[#dce6f1] bg-[#f9fafb]">
           <img src={mediaUrl} alt="Post media" className="w-full max-h-[480px] object-contain" loading="lazy" />
         </div>
-      )}
+      ) : null}
 
       {/* Reaction count strip */}
       <div className="px-4 pt-3 pb-2 text-[12px] text-[#666] flex items-center gap-1">
