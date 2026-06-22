@@ -9,6 +9,8 @@ interface Props {
   /** 'tease' (reply: posts only) or 'full' (call: posts + LM card). Default 'tease'. */
   mode?: RenderMode;
   className?: string;
+  /** Forwarded to each post; false shows full copy (no LinkedIn truncation fold). Default true. */
+  showFold?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * prospect's profile into each. Pure presentation — feed it a spec, it renders.
  * The feed mimics LinkedIn's neutral UI on purpose; the surrounding page supplies Ivan's brand frame.
  */
-const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '' }) => {
+const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', showFold = true }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
@@ -31,6 +33,7 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
           headline={profile.headline}
           avatarUrl={profile.avatarUrl}
           mediaUrl={post.type === 'image' ? post.imageUrl : null}
+          showFold={showFold}
           stats={{ reactions: post.reactions, comments: post.comments }}
         />
       ))}
