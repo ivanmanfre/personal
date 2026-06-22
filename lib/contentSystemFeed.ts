@@ -13,7 +13,15 @@ export function buildFeedSpecFromContentSystem(
   const headline =
     cs.founder?.headline?.trim() || cs.audience_estimate?.value?.trim() || 'Founder';
 
+  const lm = cs.sample_output?.lm;
+  const lmCard: LmCardSpec | undefined = lm?.cover_url
+    ? { coverUrl: lm.cover_url, title: lm.title, pages: lm.pages }
+    : undefined;
+
   const posts: FeedPostSpec[] = (cs.sample_output?.posts ?? [])
+    // The lead-magnet post is shown as the LM document card, not also as a text
+    // post — drop it from the feed when the card is present (else the LM shows twice).
+    .filter((p) => !(lmCard && /lead.?magnet/i.test(p.format || '')))
     .slice(0, max)
     .map((p): FeedPostSpec | null => {
       const body = (p.body && p.body.trim()) || (p.hook && p.hook.trim()) || '';
@@ -22,11 +30,6 @@ export function buildFeedSpecFromContentSystem(
       return { type: 'text', body };
     })
     .filter((p): p is FeedPostSpec => p !== null);
-
-  const lm = cs.sample_output?.lm;
-  const lmCard: LmCardSpec | undefined = lm?.cover_url
-    ? { coverUrl: lm.cover_url, title: lm.title, pages: lm.pages }
-    : undefined;
 
   return { profile: { name, headline, avatarUrl: '' }, posts, ...(lmCard ? { lmCard } : {}) };
 }
