@@ -92,12 +92,16 @@ const LinkedInPostPreview: React.FC<Props> = ({
     <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
       {/* Header */}
       <div className="flex items-start gap-2 px-4 py-3">
-        <img
-          src={avatarUrl}
-          alt={author}
-          className="w-12 h-12 rounded-full object-cover bg-zinc-200 shrink-0"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-        />
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={author}
+            className="w-12 h-12 rounded-full object-cover bg-zinc-200 shrink-0"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+          />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-zinc-200 shrink-0" aria-hidden />
+        )}
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-semibold leading-tight text-[#0a66c2] hover:underline cursor-pointer truncate">{author}</div>
           <div className="text-[12px] text-[#666] leading-tight mt-0.5 truncate">{headline}</div>
