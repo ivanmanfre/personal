@@ -21,6 +21,15 @@ const METRIC_COLORS: Record<Metric, string> = { impressions: '#3b82f6', likes: '
 const METRIC_LABELS: Record<Metric, string> = { impressions: 'Impressions', likes: 'Likes', comments: 'Comments' };
 const TYPE_COLORS = ['#3b82f6', '#ec4899', '#f59e0b', '#8b5cf6', '#10b981'];
 
+// Friendly labels for the content pillars (taxonomy keys → the post-v14 strategy names).
+const PILLAR_LABELS: Record<string, string> = {
+  translator: 'Agency Diagnostic',
+  methodology: 'Build-in-public',
+  teardown: 'Anti-slop',
+  case_study: 'Case study',
+  personal: 'Owner-POV',
+};
+
 const tooltipStyle = {
   backgroundColor: '#18181b',
   border: '1px solid rgba(63, 63, 70, 0.6)',
@@ -97,6 +106,27 @@ const PerformancePanel: React.FC = () => {
       .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
       .sort((a, b) => b.avgImpressions - a.avgImpressions);
   }, [posts]);
+  // Which content PILLAR lands — only pipeline-generated posts carry a pillar (matched from
+  // carousel_drafts via own_posts.pillar, refreshed nightly). Manual/lifestyle posts are null.
+  const pillarData = useMemo(() => {
+    const m: Record<string, { count: number; impressions: number; eng: number; imprForRate: number }> = {};
+    posts.forEach((p) => {
+      if (!p.pillar) return;
+      if (!m[p.pillar]) m[p.pillar] = { count: 0, impressions: 0, eng: 0, imprForRate: 0 };
+      m[p.pillar].count++;
+      m[p.pillar].impressions += p.impressions;
+      m[p.pillar].eng += p.likes + p.comments + p.shares;
+      if (p.impressions > 0) m[p.pillar].imprForRate += p.impressions;
+    });
+    return Object.entries(m)
+      .map(([name, d]) => ({
+        name, label: PILLAR_LABELS[name] || name, count: d.count,
+        avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
+        engRate: d.imprForRate > 0 ? +((d.eng / d.imprForRate) * 100).toFixed(2) : 0,
+      }))
+      .sort((a, b) => b.avgImpressions - a.avgImpressions);
+  }, [posts]);
+
   const benchmarkData = useMemo(() => {
     const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
     return [
@@ -221,6 +251,29 @@ const PerformancePanel: React.FC = () => {
               ) : <p className="text-zinc-600 text-sm">No competitor data</p>}
             </div>
           </div>
+
+          {/* Which pillar lands (new: post-v14 strategy view) */}
+          {pillarData.length > 0 && (
+            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-1">Which pillars land <span className="font-normal text-zinc-500">· bar = avg impressions · pipeline-generated posts only</span></h3>
+              <div className="space-y-2 mt-3">
+                {pillarData.map((t) => {
+                  const maxImp = pillarData[0].avgImpressions || 1;
+                  return (
+                    <div key={t.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-zinc-300">{t.label}</span>
+                        <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp · {t.engRate}% eng</span>
+                      </div>
+                      <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

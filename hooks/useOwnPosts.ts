@@ -16,6 +16,7 @@ function mapPost(row: any): OwnPost {
     linkedinUrl: row.linkedin_url || '',
     topicCategory: row.topic_category,
     hookPattern: row.hook_pattern,
+    pillar: row.pillar ?? null,
   };
 }
 
@@ -29,7 +30,7 @@ export function useOwnPosts(days: number = 30) {
       const since = new Date(Date.now() - days * 86400000).toISOString();
       const { data } = await supabase
         .from('own_posts')
-        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern')
+        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar')
         .gte('posted_at', since)
         .order('posted_at', { ascending: false });
       setPosts((data || []).map(mapPost));

@@ -10,6 +10,7 @@ export interface OwnPost {
   linkedinUrl: string;
   topicCategory: string | null;
   hookPattern: string | null;
+  pillar: string | null;
 }
 
 export interface WorkflowStat {
