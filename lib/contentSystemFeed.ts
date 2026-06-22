@@ -1,7 +1,7 @@
 // Pure mapper: a scan's content_system payload -> a FeedSpec for LinkedInFeedMockup.
-// MVP renders every sample post as a TEXT post (the proof is the copy in the founder's voice).
+// Routes by format: posts with image_url become image posts, others remain text posts.
 // Body falls back to the hook so the feed still renders before n8n body-generation ships.
-import type { FeedSpec, FeedPostSpec } from './linkedinFeedSpec';
+import type { FeedSpec, FeedPostSpec, LmCardSpec } from './linkedinFeedSpec';
 import type { ContentSystem } from './scanTypes';
 
 export function buildFeedSpecFromContentSystem(
@@ -18,9 +18,15 @@ export function buildFeedSpecFromContentSystem(
     .map((p): FeedPostSpec | null => {
       const body = (p.body && p.body.trim()) || (p.hook && p.hook.trim()) || '';
       if (!body) return null;
+      if (p.image_url) return { type: 'image', body, imageUrl: p.image_url };
       return { type: 'text', body };
     })
     .filter((p): p is FeedPostSpec => p !== null);
 
-  return { profile: { name, headline, avatarUrl: '' }, posts };
+  const lm = cs.sample_output?.lm;
+  const lmCard: LmCardSpec | undefined = lm?.cover_url
+    ? { coverUrl: lm.cover_url, title: lm.title, pages: lm.pages }
+    : undefined;
+
+  return { profile: { name, headline, avatarUrl: '' }, posts, ...(lmCard ? { lmCard } : {}) };
 }
