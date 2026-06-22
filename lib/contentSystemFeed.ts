@@ -26,8 +26,9 @@ export function buildFeedSpecFromContentSystem(
     .map((p): FeedPostSpec | null => {
       const body = (p.body && p.body.trim()) || (p.hook && p.hook.trim()) || '';
       if (!body) return null;
-      if (p.image_url) return { type: 'image', body, imageUrl: p.image_url };
-      return { type: 'text', body };
+      if (Array.isArray(p.image_urls) && p.image_urls.length >= 2) return { type: 'carousel', body, slides: p.image_urls } as FeedPostSpec;
+      if (p.image_url) return { type: 'image', body, imageUrl: p.image_url } as FeedPostSpec;
+      return { type: 'text', body } as FeedPostSpec;
     })
     .filter((p): p is FeedPostSpec => p !== null);
 

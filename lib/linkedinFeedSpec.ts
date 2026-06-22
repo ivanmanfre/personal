@@ -21,7 +21,15 @@ export interface ImagePostSpec {
   comments?: number;
 }
 
-export type FeedPostSpec = TextPostSpec | ImagePostSpec;
+export interface CarouselPostSpec {
+  type: 'carousel';
+  body: string;
+  slides: string[];
+  reactions?: number;
+  comments?: number;
+}
+
+export type FeedPostSpec = TextPostSpec | ImagePostSpec | CarouselPostSpec;
 
 export interface LmCardSpec {
   coverUrl: string;
@@ -72,6 +80,9 @@ export function normalizeFeedSpec(spec: FeedSpec, mode: RenderMode = 'tease'): N
     }
     if (post.type === 'image' && !post.imageUrl) {
       throw new Error('normalizeFeedSpec: image posts need an imageUrl');
+    }
+    if (post.type === 'carousel' && (!Array.isArray(post.slides) || post.slides.length === 0)) {
+      throw new Error('normalizeFeedSpec: carousel posts need at least one slide');
     }
   }
 

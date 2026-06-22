@@ -1,6 +1,7 @@
 // components/ui/LinkedInFeedMockup.tsx
 import React from 'react';
 import LinkedInPostPreview from './LinkedInPostPreview';
+import LinkedInCarouselCard from './LinkedInCarouselCard';
 import LinkedInDocumentCard from './LinkedInDocumentCard';
 import { normalizeFeedSpec, type FeedSpec, type RenderMode } from '../../lib/linkedinFeedSpec';
 
@@ -23,24 +24,40 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
-  const mediaPosts = posts.filter((p) => p.type === 'image');
+  const mediaPosts = posts.filter((p) => p.type === 'image' || p.type === 'carousel');
   const textPosts = posts.filter((p) => p.type === 'text');
 
   return (
     <div className={`flex flex-col items-center gap-3 w-full ${className}`}>
       {/* Full-width image/carousel posts */}
-      {mediaPosts.map((post, i) => (
-        <LinkedInPostPreview
-          key={`media-${i}`}
-          text={post.body}
-          author={profile.name}
-          headline={profile.headline}
-          avatarUrl={profile.avatarUrl}
-          mediaUrl={post.type === 'image' ? post.imageUrl : null}
-          showFold={showFold}
-          stats={{ reactions: post.reactions, comments: post.comments }}
-        />
-      ))}
+      {mediaPosts.map((post, i) => {
+        if (post.type === 'carousel') {
+          return (
+            <LinkedInCarouselCard
+              key={`media-${i}`}
+              text={post.body}
+              slides={post.slides}
+              author={profile.name}
+              headline={profile.headline}
+              avatarUrl={profile.avatarUrl}
+              showFold={showFold}
+              stats={{ reactions: post.reactions, comments: post.comments }}
+            />
+          );
+        }
+        return (
+          <LinkedInPostPreview
+            key={`media-${i}`}
+            text={post.body}
+            author={profile.name}
+            headline={profile.headline}
+            avatarUrl={profile.avatarUrl}
+            mediaUrl={post.imageUrl}
+            showFold={showFold}
+            stats={{ reactions: post.reactions, comments: post.comments }}
+          />
+        );
+      })}
 
       {/* Compact 2-column grid for text-only posts */}
       {textPosts.length > 0 && (

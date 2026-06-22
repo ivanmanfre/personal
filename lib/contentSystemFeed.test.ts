@@ -137,4 +137,23 @@ describe('buildFeedSpecFromContentSystem', () => {
     expect(spec.posts).toHaveLength(3);
     expect(spec.posts.some((p) => p.body === 'LM post body.')).toBe(true);
   });
+
+  it('maps a post with image_urls (>=2) to a carousel post', () => {
+    const csWithCarousel: ContentSystem = {
+      ...cs,
+      sample_output: {
+        title: 'This week',
+        posts: [
+          { format: 'Carousel', hook: 'Three slides.', body: 'Carousel body.', image_urls: ['a', 'b', 'c'] },
+        ],
+      },
+    };
+    const spec = buildFeedSpecFromContentSystem(csWithCarousel);
+    expect(spec.posts[0]).toMatchObject({ type: 'carousel', slides: ['a', 'b', 'c'] });
+  });
+
+  it('maps a post with only image_url (no image_urls) to an image post', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithImage);
+    expect(spec.posts[1]).toMatchObject({ type: 'image', imageUrl: 'https://cdn.example.com/img.jpg' });
+  });
 });
