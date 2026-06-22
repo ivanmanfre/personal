@@ -51,8 +51,9 @@ export interface ContentSystem {
   system: { summary: string; capabilities: string[] };
   sample_output?: {
     title: string;
-    posts?: { format: string; hook: string; body?: string }[];
+    posts?: { format: string; hook: string; body?: string; image_url?: string; image_kind?: 'brand' | 'carousel' }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
+    lm?: { title: string; cover_url: string; pages?: number };
   };
   revenue_math?: string;
 }
