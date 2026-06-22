@@ -12,6 +12,8 @@ import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Sca
 import { gradeColor } from '../lib/scanApi';
 import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import SystemFlowDiagram from './SystemFlowDiagram';
+import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
+import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -2286,7 +2288,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
   const mock = cs.sample_output;
   const mockMetrics = (mock?.metrics ?? []).slice(0, 3);
-  const mockPosts = (mock?.posts ?? []).slice(0, 5);
+  const feedSpec = buildFeedSpecFromContentSystem(cs, { companyName });
 
   const cases = [
     { client: 'Kyle Hunt', role: 'Creative-video agency · founder', src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system", summary: 'Kyle runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.', metrics: [{ value: '100%', label: 'of his content, run by the system' }, { value: '~300', label: 'comments per lead-magnet post' }, { value: '30K', label: 'impressions per post' }] },
@@ -2340,7 +2342,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SystemFlowDiagram />
         </motion.div>
         {/* content-week mock */}
-        {(mockPosts.length > 0 || mockMetrics.length > 0) && (
+        {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
           <motion.div className="mt-12 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
             <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
@@ -2358,15 +2360,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   ))}
                 </div>
               )}
-              {mockPosts.length > 0 && (
-                <div className="px-5 lg:px-6 py-5 space-y-px">
-                  {mockPosts.map((p, i) => (
-                    <motion.div key={i} initial={reduce ? false : { opacity: 0, x: -8 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.15 + i * 0.07 }} className="flex items-start gap-3.5 py-3" style={{ borderTop: i ? `1px solid ${hairline}` : 'none' }}>
-                      <span className="shrink-0" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, padding: '4px 7px' }}>{p.format}</span>
-                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.45, color: '#3D3D3B' }}>{p.hook}</span>
-                      <span className="ml-auto shrink-0" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-ink)' }}>queued</span>
-                    </motion.div>
-                  ))}
+              {feedSpec.posts.length > 0 && (
+                <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
+                  <LinkedInFeedMockup spec={feedSpec} mode="tease" showFold={false} />
                 </div>
               )}
             </div>
