@@ -2362,7 +2362,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
               {feedSpec.posts.length > 0 && (
                 <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="tease" showFold={false} />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} />
                 </div>
               )}
             </div>
