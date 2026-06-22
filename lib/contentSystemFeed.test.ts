@@ -21,6 +21,34 @@ const cs: ContentSystem = {
   },
 };
 
+const csWithImage: ContentSystem = {
+  ...cs,
+  sample_output: {
+    title: 'This week',
+    posts: [
+      { format: 'Post', hook: 'Three cash-flow mistakes.', body: 'Full body one.\n\nSecond paragraph.' },
+      { format: 'Image', hook: 'A brand moment.', body: 'Image post body.', image_url: 'https://cdn.example.com/img.jpg', image_kind: 'brand' },
+    ],
+    metrics: [{ label: 'posts a week', value: '5' }],
+  },
+};
+
+const csWithLm: ContentSystem = {
+  ...cs,
+  sample_output: {
+    ...cs.sample_output!,
+    lm: { title: 'AI Ops Playbook', cover_url: 'https://cdn.example.com/cover.jpg', pages: 12 },
+  },
+};
+
+const csWithLmNoPagesField: ContentSystem = {
+  ...cs,
+  sample_output: {
+    ...cs.sample_output!,
+    lm: { title: 'AI Ops Playbook', cover_url: 'https://cdn.example.com/cover.jpg' },
+  },
+};
+
 describe('buildFeedSpecFromContentSystem', () => {
   it('maps posts to text posts, using body when present', () => {
     const spec = buildFeedSpecFromContentSystem(cs, { companyName: 'Acme' });
@@ -50,5 +78,30 @@ describe('buildFeedSpecFromContentSystem', () => {
   it('returns empty posts when there are none', () => {
     const spec = buildFeedSpecFromContentSystem({ ...cs, sample_output: { title: 'x', posts: [] } });
     expect(spec.posts).toEqual([]);
+  });
+
+  it('maps a post with image_url to an image post', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithImage);
+    expect(spec.posts[1]).toMatchObject({ type: 'image', body: 'Image post body.', imageUrl: 'https://cdn.example.com/img.jpg' });
+  });
+
+  it('maps a post without image_url to a text post', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithImage);
+    expect(spec.posts[0]).toMatchObject({ type: 'text', body: 'Full body one.\n\nSecond paragraph.' });
+  });
+
+  it('sets lmCard when cs.sample_output.lm has a cover_url', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithLm);
+    expect(spec.lmCard).toEqual({ coverUrl: 'https://cdn.example.com/cover.jpg', title: 'AI Ops Playbook', pages: 12 });
+  });
+
+  it('passes lm.pages through as undefined when not provided', () => {
+    const spec = buildFeedSpecFromContentSystem(csWithLmNoPagesField);
+    expect(spec.lmCard).toEqual({ coverUrl: 'https://cdn.example.com/cover.jpg', title: 'AI Ops Playbook', pages: undefined });
+  });
+
+  it('leaves lmCard undefined when cs.sample_output.lm is absent', () => {
+    const spec = buildFeedSpecFromContentSystem(cs);
+    expect(spec.lmCard).toBeUndefined();
   });
 });
