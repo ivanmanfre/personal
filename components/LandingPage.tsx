@@ -216,16 +216,16 @@ const MagneticCTA: React.FC<{
 type Review = { text: string; project: string; author?: string; role?: string };
 
 const REVIEWS: Review[] = [
-  { text: "Ivan is top notch. Response time is incredible, he is eager to do the work and deliverables are high functioning products.", project: "N8N Inventory System", author: "Don Morrow", role: "Highland Tech" },
+  { text: "Ivan built our n8n inventory system in roughly half the time I expected and it's been running without issues. Comes back fast when something needs tweaking.", project: "N8N Inventory System", author: "Don Morrow", role: "Highland Tech" },
   { text: "Quality work and lightning fast. Would rehire him again without any doubt.", project: "Automation Build", author: "Michel de Wachter", role: "BNP Paribas Fortis" },
-  { text: "Ivan has a sublime understanding of data manipulation, visualization, and automation. He is reliable and did a great job. Will rehire next time.", project: "Data & Automation Project", author: "Andrew Motiwalla", role: "The Good Life Abroad" },
-  { text: "Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.", project: "Lead Flow & Slack Integration", author: "Camille Haas", role: "Head of Operations" },
+  { text: "Ivan has a strong understanding of data manipulation, visualization, and automation. He is reliable and did a great job. Will rehire next time.", project: "Data & Automation Project", author: "Andrew Motiwalla", role: "The Good Life Abroad" },
+  { text: "We had a Slack alert system and a CRM that weren't talking to each other. Ivan wired the whole thing together over a couple of days. Our ops team stopped chasing leads manually from that point on.", project: "Lead Flow & Slack Integration", author: "Camille Haas", role: "Head of Operations" },
   { text: "Ivan's one of those people where you see how he uses AI and immediately feel like you've been doing things the hard way. Walked away with a completely different approach.", project: "AI Orientation Session", author: "Cristian Trif", role: "Salesforce Consultant · 9 yrs" },
-  { text: "His solutions helped uncover opportunities we were missing, directly impacting our bottom line.", project: "Make.com Workflow Audit", author: "Rodrigo Ibañez", role: "Managing Director" },
-  { text: "Complete architectural overhaul. The documentation alone was worth the price.", project: "Enterprise Architecture", author: "Henrik Sund", role: "CTO" },
-  { text: "As a current META developer, ex Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had 3 things to implement in my workflow.", project: "AI Strategy Session", author: "Adeeb Mohammed", role: "Software Engineer · ex-Amazon · Meta" },
-  { text: "Ivan is pure class, excellent, hard working and has attention to detail. Hire him.", project: "AI Voice Agent Infrastructure", author: "Priya Nair", role: "Co-Founder" },
-  { text: "Very knowledgeable in n8n. Will be doing more projects with Ivan.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
+  { text: "He found three gaps in our Make.com setup we didn't know existed. Two of them were costing us real pipeline.", project: "Make.com Workflow Audit", author: "Rodrigo Ibañez", role: "Managing Director" },
+  { text: "Rebuilt our whole backend architecture and wrote documentation that my team could actually follow. Solid work.", project: "Enterprise Architecture", author: "Henrik Sund", role: "CTO" },
+  { text: "I'm at Meta now, spent years at Amazon. One conversation with Ivan gave me three things I went and built that same week.", project: "AI Strategy Session", author: "Adeeb Mohammed", role: "Software Engineer · ex-Amazon · Meta" },
+  { text: "We needed a voice agent wired into our existing stack on a tight timeline. Ivan delivered, communicated well throughout, and the end product held up.", project: "AI Voice Agent Infrastructure", author: "Priya Nair", role: "Co-Founder" },
+  { text: "Knows n8n properly. Asked the right questions before touching anything. Looking forward to the next project.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
 
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────

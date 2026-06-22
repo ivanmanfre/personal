@@ -1,20 +1,5 @@
 import React, { useState } from 'react';
-import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
-
-/**
- * Pixel-accurate LinkedIn feed post preview. Renders the actual LinkedIn UI
- * around the caption text — profile header, "see more" fold, reaction strip,
- * action bar — so the editor preview reads like the published post will.
- *
- * Differences from a raw text preview:
- *   - White card with LinkedIn-blue accents
- *   - Avatar + name + headline + post timestamp + "Edited" badge
- *   - Caption rendered with LinkedIn's exact line-height + 14px size
- *   - Truncates at the 210-char fold with a real "…see more" button (toggles)
- *   - Inline media slot (carousel cover / single image)
- *   - Reaction count strip with the 👍 emoji + visible likes/comments counts
- *   - Like / Comment / Repost / Send action bar
- */
+import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
@@ -46,11 +31,11 @@ function tokenize(line: string): React.ReactNode[] {
   matches.sort((a, b) => a.i - b.i);
   const out: React.ReactNode[] = [];
   let cursor = 0;
-  for (const m of matches) {
-    if (m.i < cursor) continue;
-    if (m.i > cursor) out.push(line.slice(cursor, m.i));
-    out.push(m.node);
-    cursor = m.end;
+  for (const match of matches) {
+    if (match.i < cursor) continue;
+    if (match.i > cursor) out.push(line.slice(cursor, match.i));
+    out.push(match.node);
+    cursor = match.end;
   }
   if (cursor < line.length) out.push(line.slice(cursor));
   return out;
@@ -58,91 +43,40 @@ function tokenize(line: string): React.ReactNode[] {
 
 interface Props {
   text: string;
-  /** Display name. Default 'Iván Manfredi'. */
+  slides: string[];
   author?: string;
-  /** Sub-title (job line). */
   headline?: string;
-  /** Avatar image url. */
   avatarUrl?: string;
-  /** Optional preview media (image URL). For carousel, pass slide-1 thumbnail. */
-  mediaUrl?: string | null;
-  /** When false, don't show the LinkedIn truncation fold. */
   showFold?: boolean;
-  /** Optional fake stats to demo the strip. */
   stats?: { reactions?: number; comments?: number };
-  /** When true, renders a smaller condensed card suitable for a 2-column grid. */
-  compact?: boolean;
 }
 
-const LinkedInPostPreview: React.FC<Props> = ({
+/**
+ * LinkedIn post card with a swipeable carousel media area.
+ * Identical chrome to LinkedInPostPreview (header + caption + reaction strip + action bar),
+ * but the media slot renders one slide at a time with prev/next chevron overlays and page dots.
+ */
+const LinkedInCarouselCard: React.FC<Props> = ({
   text,
+  slides,
   author = 'Iván Manfredi',
   headline = 'Agent-Ready Ops · AI systems for $1-10M service firms',
   avatarUrl = '/ivan-portrait.jpg',
-  mediaUrl,
   showFold = true,
   stats,
-  compact = false,
 }) => {
+  const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  // Compact cards are always clamped via CSS — skip the JS fold logic.
-  const truncate = !compact && showFold && text.length > FOLD_AT && !expanded;
+
+  const total = slides.length;
+  const truncate = showFold && text.length > FOLD_AT && !expanded;
   const visibleText = truncate ? text.slice(0, FOLD_AT).trimEnd() : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));
 
-  if (compact) {
-    return (
-      <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full">
-        {/* Compact header */}
-        <div className="flex items-start gap-2 px-3 py-2">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={author}
-              className="w-9 h-9 rounded-full object-cover bg-zinc-200 shrink-0"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-zinc-200 shrink-0" aria-hidden />
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold leading-tight text-[#0a66c2] truncate">{author}</div>
-            <div className="text-[11px] text-[#666] leading-tight mt-0.5 truncate">{headline}</div>
-          </div>
-        </div>
-
-        {/* Compact caption — clamped to 6 lines */}
-        <div className="px-3 pb-2">
-          <div
-            className="text-[13px] text-[#1d2226] leading-snug"
-            style={{ display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-          >
-            {paragraphs.map((para, pi) => (
-              <p key={pi} className={pi > 0 ? 'mt-2' : ''}>
-                {para.split('\n').map((line, li, arr) => (
-                  <React.Fragment key={li}>
-                    {tokenize(line)}
-                    {li < arr.length - 1 && <br />}
-                  </React.Fragment>
-                ))}
-              </p>
-            ))}
-          </div>
-        </div>
-
-        {/* Compact reaction strip */}
-        <div className="px-3 pt-1 pb-1.5 text-[11px] text-[#666] flex items-center gap-1 border-t border-[#dce6f1]">
-          <span className="inline-flex -space-x-1">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#0a66c2] flex items-center justify-center ring-1 ring-white text-white text-[8px]">👍</span>
-          </span>
-          <span className="ml-1">{reactionCount.toLocaleString()}</span>
-          <span className="ml-auto">{commentCount} comments</span>
-        </div>
-      </div>
-    );
-  }
+  const prev = () => setIndex((i) => Math.max(0, i - 1));
+  const next = () => setIndex((i) => Math.min(total - 1, i + 1));
 
   return (
     <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
@@ -201,10 +135,63 @@ const LinkedInPostPreview: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Media slot */}
-      {mediaUrl && (
-        <div className="border-y border-[#dce6f1] bg-[#f9fafb]">
-          <img src={mediaUrl} alt="Post media" className="w-full max-h-[480px] object-contain" loading="lazy" />
+      {/* Carousel media area */}
+      {total > 0 && (
+        <div className="border-y border-[#dce6f1] bg-[#f0f2f5] relative">
+          {/* Slide image — 4:5 portrait aspect */}
+          <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
+            <img
+              src={slides[index]}
+              alt={`Slide ${index + 1} of ${total}`}
+              className="absolute inset-0 w-full h-full object-contain"
+              loading="lazy"
+            />
+
+            {/* Slide counter badge */}
+            <div className="absolute top-2 right-2 bg-black/50 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
+              {index + 1} / {total}
+            </div>
+
+            {/* Left arrow */}
+            {index > 0 && (
+              <button
+                onClick={prev}
+                aria-label="Previous slide"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#1d2226] hover:bg-white transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Right arrow */}
+            {index < total - 1 && (
+              <button
+                onClick={next}
+                aria-label="Next slide"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-[#1d2226] hover:bg-white transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Page dots */}
+          {total > 1 && (
+            <div className="flex items-center justify-center gap-1.5 py-2">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIndex(i)}
+                  aria-label={`Go to slide ${i + 1}`}
+                  className={`rounded-full transition-all ${
+                    i === index
+                      ? 'w-2 h-2 bg-[#0a66c2]'
+                      : 'w-1.5 h-1.5 bg-[#b0b8c1] hover:bg-[#666]'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -240,4 +227,4 @@ const LinkedInPostPreview: React.FC<Props> = ({
   );
 };
 
-export default LinkedInPostPreview;
+export default LinkedInCarouselCard;
