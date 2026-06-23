@@ -2449,8 +2449,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <div className="flex items-start gap-5">
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 16, flexShrink: 0 }} />
           <div>
-            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', lineHeight: 1.15, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Ivan. I build the content systems agencies <Italic>promise and never ship.</Italic></h2>
-            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>I'll build yours, train it on your voice and your real work, and show you a week of drafts before you commit to anything. No deck. A working system.</p>
+            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', lineHeight: 1.15, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I build <Italic>content engines that run themselves.</Italic></h2>
+            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>I've built 100+ AI systems for agencies and service businesses, and I run my own LinkedIn on the same engine I'd install for you. I'll train yours on your voice and your real work, then show you a week of drafts before you commit to anything.</p>
             <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · Agent-Ready Ops</p>
           </div>
         </div>
