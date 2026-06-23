@@ -36,6 +36,7 @@ function mapProspect(r: any): OutreachProspect {
     department: r.department,
     title: r.title,
     emailIcebreaker: r.email_icebreaker,
+    emailDescriptor: r.email_descriptor,
     followerCount: r.follower_count,
     employeeCount: r.employee_count,
     foundedYear: r.founded_year,

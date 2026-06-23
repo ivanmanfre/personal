@@ -7,10 +7,11 @@ import type { OutreachProspect } from '../../../../types/dashboard';
 // LinkedIn-active stages: these leads are already being worked on LinkedIn, so they stay OUT
 // of the cold-email cohort. A lead is never touched on both channels (the dedup decision).
 const LINKEDIN_ACTIVE = new Set(['connected', 'dm_sent', 'replied', 'engaged']);
-const CSV_COLS = ['first_name', 'company_name', 'email', 'icebreaker', 'link'] as const;
-// Cold email 1 links to one shared content-engine page (same for everyone). The rich per-lead
-// /scan/ page is reserved for replies, where its Apify cost is justified by real intent.
-const CTA_LINK = 'https://ivanmanfredi.com/content-system';
+// The pitch is one Smartlead template (DM-voiced, same offer for everyone). The only per-lead
+// fields are the merge tags: first_name, company, and `descriptor` (a plain, true phrase for what
+// they do, e.g. "an SEO and GEO shop"). No manufactured per-lead "icebreaker" — that read as AI.
+// Touch 1 carries no link; the personalized /scan/ page is delivered on reply.
+const CSV_COLS = ['first_name', 'company_name', 'descriptor', 'email'] as const;
 
 // Owner gate: the content_system offer trains on the buyer's own voice and runs their personal
 // LinkedIn, so it only lands with the person who IS the brand — founder/owner/CEO/president, or a
@@ -51,14 +52,13 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
     () => cohort.map((p) => ({
       first_name: (p.name || '').trim().split(/\s+/)[0] || '',
       company_name: p.company || '',
+      descriptor: p.emailDescriptor || '', // plain phrase for what they do, e.g. "an SEO and GEO shop"
       email: p.email || '',
-      icebreaker: p.emailIcebreaker || '', // personalized opener, generated from the lead's own data
-      link: CTA_LINK,                       // shared content-engine page; scan page deferred to reply
     })),
     [cohort],
   );
 
-  const readyCount = useMemo(() => rows.filter((r) => r.icebreaker).length, [rows]);
+  const readyCount = useMemo(() => rows.filter((r) => r.descriptor).length, [rows]);
 
   const download = () => {
     const lines = [CSV_COLS.join(',')];
@@ -109,12 +109,11 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
           <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
             ICP-qualified owners and founders with a work email, not already active on LinkedIn, so the
             same person never gets hit on both channels. Owner-gated because the offer trains on the
-            buyer's own voice. Each row ships with a personalized icebreaker. Export and import into Smartlead.
+            buyer's own voice. The pitch is one Smartlead template; these are the merge fields. Export and import.
           </p>
           <p className="text-xs text-zinc-500">
             Columns: {CSV_COLS.join(', ')}. <span className="text-zinc-400">{readyCount}/{rows.length}</span> have
-            an icebreaker. The link is the shared content-engine page; the personalized scan page is generated
-            when a lead replies.
+            a descriptor. Touch 1 carries no link; the personalized scan page is delivered when a lead replies.
           </p>
         </div>
       </PanelCard>
@@ -136,7 +135,7 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
                   <th className="py-2 px-4 font-medium">Email</th>
                   <th className="py-2 px-4 font-medium">ICP</th>
                   <th className="py-2 px-4 font-medium">Followers</th>
-                  <th className="py-2 px-4 font-medium min-w-[24rem]">Icebreaker</th>
+                  <th className="py-2 px-4 font-medium min-w-[18rem]">Descriptor (running ___)</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,7 +152,7 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
                       {p.followerCount != null ? p.followerCount.toLocaleString() : '—'}
                     </td>
                     <td className="py-2 px-4 text-xs text-zinc-400 leading-relaxed">
-                      {p.emailIcebreaker || <span className="text-zinc-600 italic">no icebreaker</span>}
+                      {p.emailDescriptor || <span className="text-zinc-600 italic">no descriptor</span>}
                     </td>
                   </tr>
                 ))}
