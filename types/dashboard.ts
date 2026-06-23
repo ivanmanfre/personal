@@ -407,6 +407,8 @@ export interface OutreachProspect {
   seniority: string | null;
   department: string | null;
   title: string | null;
+  emailIcebreaker: string | null;
+  followerCount: number | null;
   employeeCount: string | null;
   foundedYear: number | null;
   companyDomain: string | null;

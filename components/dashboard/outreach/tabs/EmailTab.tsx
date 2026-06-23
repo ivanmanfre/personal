@@ -7,7 +7,10 @@ import type { OutreachProspect } from '../../../../types/dashboard';
 // LinkedIn-active stages: these leads are already being worked on LinkedIn, so they stay OUT
 // of the cold-email cohort. A lead is never touched on both channels (the dedup decision).
 const LINKEDIN_ACTIVE = new Set(['connected', 'dm_sent', 'replied', 'engaged']);
-const CSV_COLS = ['first_name', 'company_name', 'email', 'icebreaker', 'scan_link'] as const;
+const CSV_COLS = ['first_name', 'company_name', 'email', 'icebreaker', 'link'] as const;
+// Cold email 1 links to one shared content-engine page (same for everyone). The rich per-lead
+// /scan/ page is reserved for replies, where its Apify cost is justified by real intent.
+const CTA_LINK = 'https://ivanmanfredi.com/content-system';
 
 // Owner gate: the content_system offer trains on the buyer's own voice and runs their personal
 // LinkedIn, so it only lands with the person who IS the brand — founder/owner/CEO/president, or a
@@ -49,11 +52,13 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
       first_name: (p.name || '').trim().split(/\s+/)[0] || '',
       company_name: p.company || '',
       email: p.email || '',
-      icebreaker: '', // fills from the scan's dm_opener once the lead is scanned
-      scan_link: '',  // fills with /scan/{slug} once the lead is scanned
+      icebreaker: p.emailIcebreaker || '', // personalized opener, generated from the lead's own data
+      link: CTA_LINK,                       // shared content-engine page; scan page deferred to reply
     })),
     [cohort],
   );
+
+  const readyCount = useMemo(() => rows.filter((r) => r.icebreaker).length, [rows]);
 
   const download = () => {
     const lines = [CSV_COLS.join(',')];
@@ -104,10 +109,12 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
           <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
             ICP-qualified owners and founders with a work email, not already active on LinkedIn, so the
             same person never gets hit on both channels. Owner-gated because the offer trains on the
-            buyer's own voice. Export the CSV and import it into Smartlead.
+            buyer's own voice. Each row ships with a personalized icebreaker. Export and import into Smartlead.
           </p>
           <p className="text-xs text-zinc-500">
-            Columns: {CSV_COLS.join(', ')}. The icebreaker and scan_link fill in once a lead is scanned.
+            Columns: {CSV_COLS.join(', ')}. <span className="text-zinc-400">{readyCount}/{rows.length}</span> have
+            an icebreaker. The link is the shared content-engine page; the personalized scan page is generated
+            when a lead replies.
           </p>
         </div>
       </PanelCard>
@@ -125,22 +132,29 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
               <thead>
                 <tr className="text-left text-zinc-500 border-b border-zinc-800">
                   <th className="py-2 px-4 font-medium">Name</th>
-                  <th className="py-2 px-4 font-medium">Title</th>
                   <th className="py-2 px-4 font-medium">Company</th>
                   <th className="py-2 px-4 font-medium">Email</th>
                   <th className="py-2 px-4 font-medium">ICP</th>
-                  <th className="py-2 px-4 font-medium">Stage</th>
+                  <th className="py-2 px-4 font-medium">Followers</th>
+                  <th className="py-2 px-4 font-medium min-w-[24rem]">Icebreaker</th>
                 </tr>
               </thead>
               <tbody>
                 {cohort.slice(0, 300).map((p) => (
-                  <tr key={p.id} className="border-b border-zinc-900/80 text-zinc-300">
-                    <td className="py-2 px-4 whitespace-nowrap">{p.name}</td>
-                    <td className="py-2 px-4 whitespace-nowrap text-xs text-zinc-400">{p.title || ''}</td>
+                  <tr key={p.id} className="border-b border-zinc-900/80 text-zinc-300 align-top">
+                    <td className="py-2 px-4 whitespace-nowrap">
+                      <div>{p.name}</div>
+                      <div className="text-xs text-zinc-500">{p.title || ''}</div>
+                    </td>
                     <td className="py-2 px-4 whitespace-nowrap text-zinc-400">{p.company}</td>
                     <td className="py-2 px-4 whitespace-nowrap font-mono text-xs">{p.email}</td>
                     <td className="py-2 px-4 whitespace-nowrap text-xs text-zinc-500">{p.icpScore ?? ''}</td>
-                    <td className="py-2 px-4 whitespace-nowrap text-xs text-zinc-500">{p.stage}</td>
+                    <td className={`py-2 px-4 whitespace-nowrap text-xs ${(p.followerCount ?? 0) < 1000 ? 'text-amber-500/80' : 'text-zinc-500'}`}>
+                      {p.followerCount != null ? p.followerCount.toLocaleString() : '—'}
+                    </td>
+                    <td className="py-2 px-4 text-xs text-zinc-400 leading-relaxed">
+                      {p.emailIcebreaker || <span className="text-zinc-600 italic">no icebreaker</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
