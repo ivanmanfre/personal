@@ -31,11 +31,10 @@ const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
 const StyleGalleryPanel = lazy(() => import('../../dashboard/StyleGalleryPanel'));
 const PromptLibraryPanel = lazy(() => import('../../dashboard/PromptLibraryPanel'));
-// Ideas = the curator-scored content angles (lm_idea_candidates). It is the
-// FIRST stage of the Content Studio pipeline: Ideas → approve → Posts (draft)
-// → Generating → Review → Published. Same panel the standalone Ideas section
-// uses (contentType="post"); surfaced here so ideas live where the work happens.
-const LmIdeasPanel = lazy(() => import('../../dashboard/LmIdeasPanel'));
+// Steal = operator/sales tactics mined from Kyle's coaching calls (was the
+// standalone Ideas › Steal lane). Relocated here when the Ideas section was
+// retired; content ideas now live as the Idea STAGE on the Posts board.
+const StealBox = lazy(() => import('./StealBox').then((m) => ({ default: m.StealBox })));
 const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: m.Calendar })));
 
 // IA reorg 2026-06-01: collapse 10 sub-tabs → 6. Pipeline (kanban) removed —
@@ -43,10 +42,9 @@ const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: 
 // houses both Post Performance + Site Audience via internal tabs. Video now
 // houses Recordings/Video Pipeline/Call Clips via internal tabs. Old `sub` values
 // are remapped to the new tabs on URL load so existing deeplinks keep working.
-type SubKey = 'ideas' | 'posts' | 'leadmagnets' | 'styles' | 'prompts' | 'calendar' | 'performance' | 'video' | 'newsletter' | 'strategy';
+type SubKey = 'posts' | 'leadmagnets' | 'styles' | 'prompts' | 'calendar' | 'performance' | 'video' | 'newsletter' | 'strategy' | 'steal';
 
 const SUB_LABELS: Record<SubKey, string> = {
-  ideas: 'Ideas',
   posts: 'Posts',
   leadmagnets: 'Lead Magnets',
   styles: 'Styles',
@@ -56,13 +54,15 @@ const SUB_LABELS: Record<SubKey, string> = {
   video: 'Video & Clips',
   newsletter: 'Newsletter',
   strategy: 'Strategy',
+  steal: 'Steal',
 };
 
-const SUB_ORDER: SubKey[] = ['ideas', 'posts', 'leadmagnets', 'styles', 'prompts', 'calendar', 'performance', 'video', 'newsletter', 'strategy'];
+const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'styles', 'prompts', 'calendar', 'performance', 'video', 'newsletter', 'strategy', 'steal'];
 
 // Map legacy ?sub= values to the new tab they live under.
 const LEGACY_SUB_REMAP: Record<string, SubKey> = {
   pipeline: 'posts',         // kanban now lives inside Posts (Board view)
+  ideas: 'posts',            // content ideas are now the Idea STAGE on the Posts board
   audience: 'performance',   // folded into Performance internal tabs
   recordings: 'video',
   clips: 'video',
@@ -110,8 +110,8 @@ export function ContentStudio() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'ideas':       return <LmIdeasPanel contentType="post" />;
       case 'posts':       return <PostStudioPanel />;
+      case 'steal':       return <StealBox />;
       case 'leadmagnets': return <LeadMagnetStudioPanel />;
       case 'styles':      return <StyleGalleryPanel />;
       case 'prompts':     return <PromptLibraryPanel />;

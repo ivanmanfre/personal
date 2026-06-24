@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, Columns3, List as ListIcon } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
+import { useIdeaCandidates } from '../../hooks/useIdeaCandidates';
+import { decideIdea } from '../../lib/ideaProjection';
+import IdeaDetail from './IdeaDetail';
 import { generatePostContent, buildCarousel, regenerateDraft } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
 import { supabase } from '../../lib/supabase';
@@ -65,7 +68,16 @@ interface PostStudioPanelProps {
 }
 
 const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title = 'Posts' }) => {
-  const { drafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
+  const { drafts: realDrafts, loading, refresh, applyOptimistic, applyOptimisticMany, applyOptimisticDelete } = useContentLibrary();
+  // Curator-scored ideas, projected onto the board's Idea stage. They live as
+  // status='idea' rows alongside the real drafts so the pipeline reads
+  // Idea → Generating → Review → … → Published in one board. Only the full
+  // (unrestricted) Posts board surfaces ideas.
+  const { ideas, refreshIdeas, removeIdea } = useIdeaCandidates();
+  const drafts = React.useMemo(
+    () => (restrictTypes ? realDrafts : [...ideas, ...realDrafts]),
+    [ideas, realDrafts, restrictTypes],
+  );
   const [type, setType] = useState<PostType>('text');
   const [topic, setTopic] = useState('');
   const [details, setDetails] = useState('');
@@ -329,7 +341,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               title="Board view — kanban by status"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
           </div>
-          <button onClick={refresh} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
+          <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {generatingCount > 0 && (
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-refresh-pulse" />
@@ -608,6 +620,21 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           pinnedStatuses={['idea', 'generating', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
+            // Idea-stage rows aren't carousel_drafts — route their status moves
+            // through the curator decide path. Forward (anything but 'idea') =
+            // approve & generate; 'disqualified' = reject.
+            if (id.startsWith('idea:')) {
+              const cid = id.slice(5);
+              if (next === 'idea') return;
+              const decision = next === 'disqualified' ? 'reject' : 'approve';
+              try {
+                await decideIdea(cid, decision);
+                removeIdea(cid);
+                refresh();
+                toast.success(decision === 'approve' ? 'Approved — generating' : 'Rejected');
+              } catch (err) { toastError('idea ' + decision, err); }
+              return;
+            }
             const cur = drafts.find((d) => d.id === id);
             // ClickUp parity: flipping a row BACK to 'idea' triggers a real
             // regeneration via the right pipeline for the row's type. Mirrors
@@ -667,6 +694,18 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             }
           }}
           onBulkAction={async (action, ids) => {
+            // Peel off idea-stage rows — they reject via the curator, not a
+            // carousel_drafts delete/disqualify.
+            const ideaIds = ids.filter((i) => i.startsWith('idea:'));
+            ids = ids.filter((i) => !i.startsWith('idea:'));
+            if (ideaIds.length) {
+              await Promise.allSettled(ideaIds.map(async (i) => {
+                const cid = i.slice(5);
+                await decideIdea(cid, 'reject');
+                removeIdea(cid);
+              }));
+              if (!ids.length) { toast.success(`Removed ${ideaIds.length} idea${ideaIds.length === 1 ? '' : 's'}`); return; }
+            }
             try {
               if (action === 'disqualify') {
                 applyOptimisticMany(ids, { status: 'disqualified' });
@@ -739,9 +778,18 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
         open={!!open}
         onClose={() => setOpenId(null)}
         size="full"
-        title={open ? <span className="truncate">{open.title}</span> : ''}
+        title={open ? <span className="truncate">{open.isIdea ? 'Idea' : open.title}</span> : ''}
       >
-        {open && <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
+        {open && (open.isIdea
+          ? (
+            <IdeaDetail
+              draft={open}
+              onClose={() => setOpenId(null)}
+              onDecided={(cid) => { removeIdea(cid); refresh(); }}
+            />
+          )
+          : <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />
+        )}
       </Sheet>
     </div>
   );

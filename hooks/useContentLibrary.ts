@@ -35,6 +35,20 @@ export interface CarouselDraft {
   videoStatus: string | null;      // queued | generating | review | approved | failed
   videoStyle: string | null;       // serpentine-flow | product-ui-showcase | before-after
   videoFeedback: string | null;
+  // === Idea-stage projection (optional) ===
+  // Present only on rows projected from lm_idea_candidates onto the board's
+  // Idea stage (see lib/ideaProjection.ts). Real carousel_drafts rows leave
+  // these undefined. They drive the idea detail panel + Approve/Reject/Defer.
+  isIdea?: boolean;
+  ideaCandidateId?: string;
+  ideaScores?: { composite: number | null; icp: number | null; virality: number | null; gap: number | null };
+  ideaWhy?: string | null;
+  ideaAssessment?: string | null;
+  ideaStrength?: string | null;
+  ideaSource?: string;
+  ideaFormat?: string | null;
+  ideaLadder?: string | null;
+  ideaEvidence?: Array<{ quote?: string; persona?: string; source?: string }>;
 }
 
 const SELECT_COLS = 'id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description, video_url, video_spec, video_status, video_style, video_feedback';

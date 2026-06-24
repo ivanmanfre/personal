@@ -11,7 +11,6 @@ import { Operations } from './sections/Operations';
 import { Clients } from './sections/Clients';
 import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
-import { Ideas } from './sections/Ideas';
 import { SystemOverview } from './sections/SystemOverview';
 import { Personal } from './sections/Personal';
 import { useScheduledChecks } from '../../hooks/useScheduledChecks';
@@ -33,9 +32,8 @@ function ShellInner() {
     { id: 'clients', name: 'Clients', num: '04', group: 'knowledge' },
     { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
-    { id: 'ideas', name: 'Ideas', num: '07', group: 'knowledge' },
-    { id: 'system', name: 'System', num: '08', group: 'knowledge' },
-    { id: 'personal', name: 'Personal', num: '09', group: 'personal' },
+    { id: 'system', name: 'System', num: '07', group: 'knowledge' },
+    { id: 'personal', name: 'Personal', num: '08', group: 'personal' },
   ];
 
   // Briefing's onNavigate signature includes optional sub-tab.
@@ -59,7 +57,6 @@ function ShellInner() {
     clients: () => <Clients />,
     knowledge: () => <Knowledge />,
     agent: () => <Agent />,
-    ideas: () => <Ideas />,
     system: () => <SystemOverview />,
     personal: () => <Personal />,
   };

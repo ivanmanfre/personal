@@ -10,12 +10,14 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'ideas', 'system', 'personal',
+  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'system', 'personal',
 ];
 
-// Legacy slug remap: ?section=steal (the old standalone panel) now lives at
-// ?section=ideas&sub=steal. Old links keep working.
-const LEGACY_SECTION_REMAP: Record<string, SectionId> = { steal: 'ideas' };
+// Legacy slug remap: the standalone Ideas section was retired — content ideas
+// are now the Idea STAGE on the Posts board, and the Steal lane moved to
+// Content Studio › Steal. Old ?section=ideas / ?section=steal links land on
+// Content Studio (sub=steal is preserved by ContentStudio's own remap).
+const LEGACY_SECTION_REMAP: Record<string, SectionId> = { ideas: 'content', steal: 'content' };
 
 function resolveSection(raw: string | null): SectionId | null {
   if (!raw) return null;
