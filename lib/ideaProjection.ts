@@ -53,13 +53,25 @@ export const SOURCE_LABEL: Record<string, string> = {
   x_search: 'X / search',
 };
 
-// format_recommendation → board post type (for the type filter + kicker).
-export function ideaPostType(fmt?: string | null): 'text' | 'single_image' | 'carousel' | 'video' {
-  const f = (fmt || '').toLowerCase();
+// format_recommendation → board post type. Returns null when the scorer left no
+// recommendation — we DON'T fake 'text' (the format is decided at generation),
+// so the board shows "—" rather than a misleading Text label.
+export function ideaPostType(fmt?: string | null): 'text' | 'single_image' | 'carousel' | 'video' | null {
+  const f = (fmt || '').toLowerCase().trim();
+  if (!f) return null;
   if (f.includes('carousel')) return 'carousel';
   if (f.includes('video')) return 'video';
   if (f.includes('img') || f.includes('image') || f.includes('single')) return 'single_image';
   return 'text';
+}
+
+// composite_score → a plain-language strength band for the at-a-glance column.
+// Bands set from the live reviewing distribution (median ~55, max ~70).
+export function strengthBand(composite?: number | null): 'High' | 'Mid' | 'Low' | null {
+  if (composite == null) return null;
+  if (composite >= 58) return 'High';
+  if (composite >= 48) return 'Mid';
+  return 'Low';
 }
 
 function evidenceList(ev: any): Array<{ quote?: string; persona?: string; source?: string }> {
@@ -95,7 +107,7 @@ export function assembleIdeaDescription(c: IdeaCandidate): string {
     });
   }
   const sig = [
-    c.composite_score != null ? `Composite ${c.composite_score}/30` : null,
+    c.composite_score != null ? `${strengthBand(c.composite_score)} (${c.composite_score})` : null,
     c.icp_fit_score != null ? `ICP ${c.icp_fit_score}/10` : null,
     c.virality_score != null ? `Viral ${c.virality_score}/10` : null,
     c.gap_score != null ? `Gap ${c.gap_score}/10` : null,
@@ -129,7 +141,9 @@ export function candidateToIdeaDraft(c: IdeaCandidate): CarouselDraft {
     scheduledAt: null,
     updatedAt: c.ingested_at,
     agentLog: [],
-    topicStrength: c.composite_score != null ? `${c.composite_score}/30` : null,
+    // At-a-glance Strength reads Low/Mid/High; the raw composite stays in
+    // ideaScores for the detail panel.
+    topicStrength: strengthBand(c.composite_score),
     renderEngine: null,
     sourcePostId: null,
     slides: [],

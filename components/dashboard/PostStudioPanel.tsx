@@ -598,14 +598,17 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               excerpt: genHint || (d.postBody ? postExcerpt(d) : undefined),
               status: d.status,
               thumbUrl: driveThumbUrl(imageThumb, 96),
-              kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : 'TXT',
-              date: formatScheduled(d.scheduledAt) || undefined,
+              kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : d.type === 'text' ? 'TXT' : (d.isIdea ? '—' : 'TXT'),
+              // Idea rows have no schedule — the Date column shows when the idea
+              // was created (ingested) instead of a "set date" picker.
+              date: d.isIdea ? (formatScheduled(d.updatedAt) || undefined) : (formatScheduled(d.scheduledAt) || undefined),
               dateSort: d.scheduledAt ? new Date(d.scheduledAt).getTime() : new Date(d.updatedAt).getTime(),
               pillar: tax.pillar,
               hookType: tax.hook_type,
               valueTier: tax.value_tier,
               source: tax.source,
-              formatLabel: d.type || undefined,
+              // Don't fake a format when the curator left none — show "—".
+              formatLabel: d.type || (d.isIdea ? '—' : undefined),
               topicStrength: d.topicStrength || undefined,
             };
           })}

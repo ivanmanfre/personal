@@ -48,11 +48,11 @@ export default function IdeaDetail({
 
   return (
     <div className="p-5 space-y-5 text-zinc-200 max-w-3xl">
-      {/* Header: score + source */}
+      {/* Header: strength band + score breakdown + source */}
       <div className="flex items-center gap-3 flex-wrap text-[12px]">
-        {s?.composite != null && (
+        {draft.topicStrength && (
           <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 ring-1 ring-inset ring-emerald-500/30 px-2.5 py-1 text-emerald-200 font-semibold">
-            {s.composite}/30
+            {draft.topicStrength}{s?.composite != null && <span className="text-emerald-300/60 font-normal">· {s.composite}</span>}
           </span>
         )}
         {s && (s.icp != null || s.virality != null || s.gap != null) && (
