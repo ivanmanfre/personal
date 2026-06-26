@@ -495,7 +495,7 @@ const WorkflowsPanel: React.FC = () => {
 
       {/* ── Latest Errors (Ivan System) ── */}
       {ivanErrors.length > 0 && (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+        <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
           <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-zinc-500" />
             <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1">Latest Errors</h2>

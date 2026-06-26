@@ -20,7 +20,7 @@ export const UpworkFunnel: React.FC<Props> = ({ stats }) => {
   const max = Math.max(...values, 1);
 
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+    <div className="panel-surface shadow-sm shadow-black/10 p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Pipeline Funnel</span>
         <span className="text-[10px] text-zinc-600">

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, ExternalLink, CheckCircle2, Target, Star } from 'lucide-react';
+import { Users, ExternalLink, CheckCircle2, Target, Star, AlertTriangle } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -30,7 +30,7 @@ const funnelColors: Record<string, string> = {
 const LeadsPanel: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const { leads, statusCounts, icpDistribution, loading, refresh, updateStatus } = useLeads(filter);
+  const { leads, statusCounts, icpDistribution, loading, error, refresh, updateStatus } = useLeads(filter);
   const { lastRefreshed } = useAutoRefresh(refresh, { realtimeTables: ['leads'] });
   const { navigateToTab } = useDashboard();
 
@@ -46,6 +46,23 @@ const LeadsPanel: React.FC = () => {
   }, [leads, search]);
 
   if (loading) return <LoadingSkeleton cards={4} rows={6} />;
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
+        <EmptyState
+          icon={<AlertTriangle className="w-10 h-10" />}
+          title="Couldn't load leads"
+          description={error}
+          action={{ label: 'Retry', onClick: refresh }}
+        />
+      </div>
+    );
+  }
 
   if (leads.length === 0 && filter === 'all') {
     return (
@@ -84,7 +101,7 @@ const LeadsPanel: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Funnel */}
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+        <div className="panel-surface p-5 shadow-sm shadow-black/10">
           <h2 className="text-sm font-bold text-zinc-300 mb-4">Lead Funnel</h2>
           <div className="space-y-1">
             {funnelStages.map((stage, i) => {
@@ -117,7 +134,7 @@ const LeadsPanel: React.FC = () => {
         </div>
 
         {/* ICP Distribution */}
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 lg:col-span-2 shadow-sm shadow-black/10">
+        <div className="panel-surface p-5 lg:col-span-2 shadow-sm shadow-black/10">
           <h2 className="text-sm font-bold text-zinc-300 mb-4">ICP Score Distribution</h2>
           <div className="flex items-end gap-4 h-32">
             {([
@@ -163,7 +180,7 @@ const LeadsPanel: React.FC = () => {
 
       {/* Leads - cards on mobile, table on md+ */}
       {filteredLeads.length === 0 ? (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-8 text-zinc-500 text-center text-sm">No leads match filter</div>
+        <div className="panel-surface p-8 text-zinc-500 text-center text-sm">No leads match filter</div>
       ) : (
         <>
           {/* Mobile cards */}
@@ -205,7 +222,7 @@ const LeadsPanel: React.FC = () => {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10">
+          <div className="hidden md:block panel-surface overflow-hidden shadow-sm shadow-black/10">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

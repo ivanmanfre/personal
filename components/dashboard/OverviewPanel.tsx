@@ -175,7 +175,7 @@ const OverviewPanel: React.FC = () => {
       <AnimateIn delay={120}>
         <button
           onClick={() => navigateToTab('system-map')}
-          className="w-full bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-3 hover:bg-zinc-900 hover:border-zinc-700/60 transition-all duration-200 group cursor-pointer text-left"
+          className="w-full panel-surface shadow-sm shadow-black/10 p-3 hover:bg-zinc-900 hover:border-zinc-700/60 transition-all duration-200 group cursor-pointer text-left"
         >
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">

@@ -190,7 +190,7 @@ const LetterPanel: React.FC = () => {
             />
           </div>
 
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+          <div className="panel-surface p-5 shadow-sm shadow-black/10">
             <h2 className="text-sm font-bold text-zinc-300 mb-4">Sequences</h2>
             {data.performance.length === 0 ? (
               <p className="text-xs text-zinc-500">No sequence data yet.</p>
@@ -229,7 +229,7 @@ const LetterPanel: React.FC = () => {
           </div>
 
           {/* Weekly issues — broadcast emails to the full list */}
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+          <div className="panel-surface p-5 shadow-sm shadow-black/10">
             <div className="flex items-center justify-between mb-4 gap-3">
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-bold text-zinc-300">Weekly issues · broadcasts</h2>
@@ -293,7 +293,7 @@ const LetterPanel: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+            <div className="panel-surface p-5 shadow-sm shadow-black/10">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-sm font-bold text-zinc-300">Sequence queue · drip emails</h2>
@@ -345,7 +345,7 @@ const LetterPanel: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+            <div className="panel-surface p-5 shadow-sm shadow-black/10">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-bold text-zinc-300">Recent events</h2>
                 <span className="text-[11px] text-zinc-500">{data.events.length}</span>
@@ -374,7 +374,7 @@ const LetterPanel: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+          <div className="panel-surface p-5 shadow-sm shadow-black/10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-zinc-300">Subscribers</h2>
               <span className="text-[11px] text-zinc-500">{data.subscribers.length} shown</span>
@@ -419,7 +419,7 @@ const LetterPanel: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-5 shadow-sm shadow-black/10">
+          <div className="panel-surface p-5 shadow-sm shadow-black/10">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-zinc-300">Form captures</h2>
               <span className="text-[11px] text-zinc-500">{data.captures.length} recent</span>

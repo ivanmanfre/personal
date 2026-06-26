@@ -149,7 +149,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Auto-refresh interval */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-zinc-500" />
           <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Auto-Refresh Interval</h2>
@@ -165,7 +165,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Display Timezone (auto-detected) */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Globe className="w-3.5 h-3.5 text-zinc-500" />
           <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Display Timezone</h2>
@@ -181,7 +181,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Upwork Local Submission */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Cpu className="w-3.5 h-3.5 text-zinc-500" />
           <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Upwork Local Submission</h2>
@@ -196,7 +196,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Slack Notifications */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="w-3.5 h-3.5 text-zinc-500" />
@@ -306,7 +306,7 @@ const SettingsPanel: React.FC = () => {
       </div>
 
       {/* System Info */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
           <Database className="w-3.5 h-3.5 text-zinc-500" />
           <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">System Info</h2>

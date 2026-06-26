@@ -98,7 +98,7 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
       </div>
 
       {/* Cross-feed funnel — source-attributed */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+      <div className="panel-surface shadow-sm shadow-black/10 p-4">
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">All-Feeds Funnel</span>
           <span className="text-[10px] text-zinc-600">{totalActive} in pipeline → {wvc.coldReplied + wvc.warmReplied} replied</span>
@@ -169,7 +169,7 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
       </div>
 
       {/* Conversion by source — per-feed bars */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+      <div className="panel-surface shadow-sm shadow-black/10 p-4">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-zinc-500" />
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Conversion by Source</span>
@@ -212,7 +212,7 @@ const WarmColdCard: React.FC<{
   const max = Math.max(warmRate, coldRate, 1);
   const delta = warmSignal && coldSignal ? Math.round((warmRate - coldRate) * 10) / 10 : null;
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+    <div className="panel-surface shadow-sm shadow-black/10 p-4">
       <div className="flex items-baseline justify-between mb-3">
         <div>
           <span className="text-sm font-semibold text-zinc-200">{title}</span>

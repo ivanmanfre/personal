@@ -79,7 +79,7 @@ const DetailSection: React.FC<{
 }> = ({ title, icon, badge, defaultOpen = false, children }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden">
+    <div className="panel-surface overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800/30 transition-colors"
@@ -222,7 +222,7 @@ const AgentPanel: React.FC = () => {
       </div>
 
       {/* Chat Container */}
-      <div className="relative bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-lg shadow-black/10">
+      <div className="relative panel-surface overflow-hidden shadow-lg shadow-black/10">
         {/* Chat Header */}
         <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center justify-between">
           <div className="flex items-center gap-2.5">

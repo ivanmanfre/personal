@@ -404,7 +404,7 @@ export default function UsagePanel() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+    <div className="panel-surface shadow-sm shadow-black/10 p-4">
       {children}
     </div>
   );
@@ -426,7 +426,7 @@ function SectionHeader({ title, subtitle, icon }: { title: string; subtitle?: st
 
 function Stat({ label, value, accent, sub, icon }: { label: string; value: string; accent: string; sub?: string; icon?: React.ReactNode }) {
   return (
-    <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-3 shadow-sm shadow-black/10">
+    <div className="panel-surface p-3 shadow-sm shadow-black/10">
       <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-zinc-500">
         {icon}
         <span>{label}</span>

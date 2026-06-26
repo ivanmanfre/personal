@@ -601,7 +601,7 @@ const RecordingDetailView: React.FC<DetailProps> = ({ recording: rec, onClose, o
   }, [rec.processedPath, rec.originalPath]);
 
   return (
-    <div className="mb-6 bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden">
+    <div className="mb-6 panel-surface overflow-hidden">
       {/* Video Player */}
       <div className="relative bg-black aspect-video">
         {videoUrl ? (

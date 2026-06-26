@@ -40,9 +40,11 @@ export function useCompetitors() {
   const [posts, setPosts] = useState<CompetitorPost[]>([]);
   const [patterns, setPatterns] = useState<CompetitorPattern[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
     const [postsRes, patternsRes] = await Promise.all([
       supabase
@@ -55,9 +57,12 @@ export function useCompetitors() {
         .select('id, competitor_name, post_count, patterns_json, pattern_text')
         .order('post_count', { ascending: false }),
     ]);
+    if (postsRes.error) throw postsRes.error;
+    if (patternsRes.error) throw patternsRes.error;
     setPosts((postsRes.data || []).map(mapPost));
     setPatterns((patternsRes.data || []).map(mapPattern));
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load competitors');
       toastError('load competitors', err);
     } finally {
       setLoading(false);
@@ -93,5 +98,5 @@ export function useCompetitors() {
     }
   };
 
-  return { posts, patterns, competitorStats, opportunities, loading, refresh: fetch, markOpportunityActioned };
+  return { posts, patterns, competitorStats, opportunities, loading, error, refresh: fetch, markOpportunityActioned };
 }

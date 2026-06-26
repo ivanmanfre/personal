@@ -21,7 +21,7 @@ const accentMap: Record<string, string> = {
 };
 
 const PanelCard: React.FC<Props> = ({ title, icon, badge, headerRight, children, className = '', scrollable = false, accent }) => (
-  <div className={`group/panel relative bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden shadow-sm shadow-black/10 hover:border-zinc-700/60 transition-colors duration-300 ${className}`}>
+  <div className={`group/panel relative panel-surface overflow-hidden shadow-sm shadow-black/10 hover:border-zinc-700/60 transition-colors duration-300 ${className}`}>
     {/* Top accent gradient line */}
     {accent && accentMap[accent] && (
       <div className={`absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r ${accentMap[accent]} opacity-60`} />

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2 } from 'lucide-react';
+import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2, AlertTriangle } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, PieChart, Pie, Cell, LabelList,
@@ -11,6 +11,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
+import EmptyState from './shared/EmptyState';
 import { formatNum, formatDate } from './shared/utils';
 import { PanelIntro } from '../dashboard-v2/primitives';
 
@@ -44,13 +45,14 @@ const PerformancePanel: React.FC = () => {
   const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
   const { userTimezone } = useDashboard();
 
-  const { posts, stats, loading: postsLoading, refresh: refreshPosts } = useOwnPosts(days);
-  const { competitorStats, loading: compLoading, refresh: refreshComp } = useCompetitors();
+  const { posts, stats, loading: postsLoading, error: postsError, refresh: refreshPosts } = useOwnPosts(days);
+  const { competitorStats, loading: compLoading, error: compError, refresh: refreshComp } = useCompetitors();
 
   const refreshAll = async () => { await Promise.all([refreshPosts(), refreshComp()]); };
   const { lastRefreshed } = useAutoRefresh(refreshAll, { realtimeTables: ['own_posts'] });
 
   const loading = postsLoading || compLoading;
+  const error = postsError || compError;
 
   const chartData = useMemo(() => [...posts].reverse().map((p) => ({
     date: formatDate(p.postedAt, { month: 'short', day: 'numeric' }, userTimezone),
@@ -137,6 +139,23 @@ const PerformancePanel: React.FC = () => {
 
   if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Performance</h1>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refreshAll} />
+        </div>
+        <EmptyState
+          icon={<AlertTriangle className="w-10 h-10" />}
+          title="Couldn't load performance data"
+          description={error}
+          action={{ label: 'Retry', onClick: refreshAll }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PanelIntro
@@ -174,11 +193,11 @@ const PerformancePanel: React.FC = () => {
       </div>
 
       {posts.length === 0 ? (
-        <div className="h-72 bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 flex items-center justify-center text-zinc-600">No data for this period</div>
+        <div className="h-72 panel-surface shadow-sm shadow-black/10 flex items-center justify-center text-zinc-600">No data for this period</div>
       ) : (
         <>
           {/* Area chart */}
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4 pt-5">
+          <div className="panel-surface shadow-sm shadow-black/10 p-4 pt-5">
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chartData}>
                 <defs>
@@ -198,7 +217,7 @@ const PerformancePanel: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Content type breakdown */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">By content type</h3>
               {typeData.length > 0 ? (
                 <div className="flex items-center gap-6">
@@ -222,7 +241,7 @@ const PerformancePanel: React.FC = () => {
             </div>
 
             {/* Competitor benchmark */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">How you compare <span className="font-normal text-zinc-500">· avg likes per post</span></h3>
               {benchmarkData.length > 1 ? (
                 <ResponsiveContainer width="100%" height={Math.max(160, benchmarkData.length * 26)}>
@@ -254,7 +273,7 @@ const PerformancePanel: React.FC = () => {
 
           {/* Which pillar lands (new: post-v14 strategy view) */}
           {pillarData.length > 0 && (
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-1">Which pillars land <span className="font-normal text-zinc-500">· bar = avg impressions · pipeline-generated posts only</span></h3>
               <div className="space-y-2 mt-3">
                 {pillarData.map((t) => {
@@ -277,7 +296,7 @@ const PerformancePanel: React.FC = () => {
 
           {/* Topic & Hook breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which topics land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
               {topicData.length > 0 ? (
                 <div className="space-y-2">
@@ -299,7 +318,7 @@ const PerformancePanel: React.FC = () => {
               ) : <p className="text-zinc-600 text-sm">No topic data</p>}
             </div>
 
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which hooks land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
               {hookData.length > 0 ? (
                 <div className="space-y-2">
@@ -323,7 +342,7 @@ const PerformancePanel: React.FC = () => {
           </div>
 
           {/* Top posts */}
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+          <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
               <FileText className="w-3.5 h-3.5 text-zinc-500" />
               <h3 className="text-[13px] font-semibold text-zinc-200">Top posts <span className="font-normal text-zinc-500">· by {METRIC_LABELS[metric].toLowerCase()}</span></h3>

@@ -349,7 +349,7 @@ const OutreachPanel: React.FC = () => {
           icon={<Target className="w-10 h-10" />}
         />
       ) : filtered.length === 0 ? (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-8 text-zinc-500 text-center text-sm">
+        <div className="panel-surface p-8 text-zinc-500 text-center text-sm">
           No prospects match filter
         </div>
       ) : (
@@ -402,7 +402,7 @@ const OutreachPanel: React.FC = () => {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block bg-zinc-900/90 border border-zinc-800/60 rounded-2xl overflow-hidden">
+          <div className="hidden md:block panel-surface overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800/40 bg-zinc-800/20">

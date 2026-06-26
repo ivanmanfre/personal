@@ -146,7 +146,7 @@ const CompetitorIntelPanel: React.FC = () => {
       {tab === 'opportunities' && (
         <div className="space-y-3">
           {opportunities.length === 0 ? (
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-8 text-center text-zinc-500 text-sm">No active opportunities</div>
+            <div className="panel-surface p-8 text-center text-zinc-500 text-sm">No active opportunities</div>
           ) : (
             opportunities.map((p) => (
               <div key={p.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-xl p-4 hover:border-amber-500/20 transition-all group">
@@ -263,7 +263,7 @@ const CompetitorIntelPanel: React.FC = () => {
 
           {/* Per-competitor pattern summaries */}
           {patterns.filter((p) => p.patternText).map((p) => (
-            <div key={p.id} className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-4 lg:col-span-2">
+            <div key={p.id} className="panel-surface p-4 lg:col-span-2">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-sm font-semibold text-zinc-200">{p.competitorName}</span>
                 <span className="text-[11px] text-zinc-500 bg-zinc-800/60 px-1.5 py-0.5 rounded">{p.postCount} posts analyzed</span>
@@ -277,7 +277,7 @@ const CompetitorIntelPanel: React.FC = () => {
       {/* Posts - cards on mobile, table on md+ */}
       {tab === 'posts' && (
         displayPosts.length === 0 ? (
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl p-10 text-zinc-600 text-center text-sm">No posts found</div>
+          <div className="panel-surface p-10 text-zinc-600 text-center text-sm">No posts found</div>
         ) : (
           <>
             {/* Mobile cards */}
@@ -302,7 +302,7 @@ const CompetitorIntelPanel: React.FC = () => {
             </div>
 
             {/* Desktop table */}
-            <div className="hidden md:block bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+            <div className="hidden md:block panel-surface shadow-sm shadow-black/10 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>

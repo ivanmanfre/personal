@@ -383,7 +383,7 @@ const UpworkPanel: React.FC = () => {
       </div>
 
       {/* Jobs list */}
-      <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+      <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
         {filteredJobs.length === 0 ? (
           <p className="px-4 py-8 text-zinc-500 text-center text-sm">No jobs match this filter</p>
         ) : (

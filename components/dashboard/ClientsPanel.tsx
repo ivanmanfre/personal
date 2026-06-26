@@ -87,7 +87,7 @@ const ClientsPanel: React.FC = () => {
       </div>
 
       {clients.length === 0 ? (
-        <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-12 text-center">
+        <div className="panel-surface shadow-sm shadow-black/10 p-12 text-center">
           <Server className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
           <p className="text-sm text-zinc-500 mb-1">No clients registered</p>
           <p className="text-[11px] text-zinc-600">Send a WhatsApp message to n8nClaw: &quot;register client [name] [n8n-url] [api-key]&quot;</p>
@@ -135,7 +135,7 @@ const ClientsPanel: React.FC = () => {
 
           {/* Recent Errors */}
           {errors.length > 0 && (
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 overflow-hidden">
+            <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
               <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
                 <Shield className="w-3.5 h-3.5 text-zinc-500" />
                 <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] flex-1">Recent Errors Across All Clients</h2>

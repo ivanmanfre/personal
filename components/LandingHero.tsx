@@ -94,11 +94,10 @@ const LandingHero: React.FC = () => {
         }}
       />
 
-      {/* Slow drifting paper grain */}
-      <motion.div
+      {/* Static paper grain — drift loop removed (motion economy: one demonstrative
+          loop per viewport; the grain drift had no demonstrative job). */}
+      <div
         className="absolute inset-0 pointer-events-none opacity-25 z-0"
-        animate={{ backgroundPosition: ['0px 0px', '120px 120px'] }}
-        transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
         style={{
           backgroundImage:
             'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")',
@@ -131,8 +130,8 @@ const LandingHero: React.FC = () => {
               }}
             >
               <motion.span
-                animate={{ opacity: [1, 0.3, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                animate={reduced ? undefined : { opacity: [1, 0.3, 1] }}
+                transition={reduced ? undefined : { duration: 2, repeat: Infinity }}
                 style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
                 aria-hidden="true"
               />

@@ -20,16 +20,20 @@ function mapLead(row: any): Lead {
 export function useLeads(statusFilter?: string) {
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [mutating, setMutating] = useState<Set<string>>(new Set());
   const startMutating = (id: string) => setMutating((s) => new Set(s).add(id));
   const stopMutating = (id: string) => setMutating((s) => { const n = new Set(s); n.delete(id); return n; });
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
+      const { data, error: qErr } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(200);
+      if (qErr) throw qErr;
       setAllLeads((data || []).map(mapLead));
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load leads');
       toastError('load leads', err);
     } finally {
       setLoading(false);
@@ -80,5 +84,5 @@ export function useLeads(statusFilter?: string) {
     }
   }, [allLeads]);
 
-  return { leads, statusCounts, icpDistribution, loading, mutating, refresh: fetch, updateStatus };
+  return { leads, statusCounts, icpDistribution, loading, error, mutating, refresh: fetch, updateStatus };
 }

@@ -227,6 +227,18 @@ body.hide-site-footer .site-footer {
   }
 }
 
+/* Canonical dashboard panel surface — single source of truth for the card chrome
+   that ~18 panels previously hand-rolled as `bg-zinc-900/90 border border-zinc-800/60
+   rounded-2xl`. Values are byte-identical to that string (zinc-900/90 bg, zinc-800/60
+   1px border, 1rem radius) so adopting it changes nothing visually; it just gives one
+   place to tune. Per-panel extras (shadow, overflow, hover:border) stay as utilities;
+   hover:border-* still wins via its higher (pseudo-class) specificity. */
+.panel-surface {
+  background-color: rgb(24 24 27 / 0.9);
+  border: 1px solid rgb(39 39 42 / 0.6);
+  border-radius: 1rem;
+}
+
 /* Branded range slider — replaces the OS-blue native control on the ROI
    calculator. Sage thumb, paper-tone track, hairline border. */
 input[type='range'].stat-slider {

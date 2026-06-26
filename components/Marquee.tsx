@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface MarqueeProps {
   children: React.ReactNode;
@@ -14,6 +14,17 @@ const Marquee: React.FC<MarqueeProps> = ({
   speed = 40,
   className = ''
 }) => {
+  const reduced = useReducedMotion();
+
+  // Honor prefers-reduced-motion: render one static copy, no scroll loop.
+  if (reduced) {
+    return (
+      <div className={`overflow-hidden whitespace-nowrap flex w-full ${className}`}>
+        <div className="flex shrink-0 min-w-full items-center justify-around">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div className={`overflow-hidden whitespace-nowrap flex w-full ${className}`}>
       <motion.div

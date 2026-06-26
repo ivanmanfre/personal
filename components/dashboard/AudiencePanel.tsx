@@ -127,7 +127,7 @@ const AudiencePanel: React.FC = () => {
           </div>
 
           {/* Time-series chart */}
-          <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4 pt-5">
+          <div className="panel-surface shadow-sm shadow-black/10 p-4 pt-5">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Last 30 days</h3>
               <span className="text-[11px] text-zinc-500">Visitors (emerald) · Views (blue)</span>
@@ -156,7 +156,7 @@ const AudiencePanel: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Top paths */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4 flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5" /> Top pages · 30d
               </h3>
@@ -177,7 +177,7 @@ const AudiencePanel: React.FC = () => {
             </div>
 
             {/* Top referrers */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4 flex items-center gap-2">
                 <Link2 className="w-3.5 h-3.5" /> Top referrers · 30d
               </h3>
@@ -200,7 +200,7 @@ const AudiencePanel: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Device split */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4 flex items-center gap-2">
                 <Smartphone className="w-3.5 h-3.5" /> Devices · 30d
               </h3>
@@ -233,7 +233,7 @@ const AudiencePanel: React.FC = () => {
             </div>
 
             {/* UTM campaigns */}
-            <div className="bg-zinc-900/90 border border-zinc-800/60 rounded-2xl shadow-sm shadow-black/10 p-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em] mb-4">UTM campaigns · 30d</h3>
               {data.topUtm.length === 0 ? (
                 <p className="text-zinc-600 text-sm">Tag links with <code className="text-zinc-400">?utm_source=…</code> to see campaign performance here.</p>

@@ -23,18 +23,22 @@ function mapPost(row: any): OwnPost {
 export function useOwnPosts(days: number = 30) {
   const [posts, setPosts] = useState<OwnPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const since = new Date(Date.now() - days * 86400000).toISOString();
-      const { data } = await supabase
+      const { data, error: qErr } = await supabase
         .from('own_posts')
         .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar')
         .gte('posted_at', since)
         .order('posted_at', { ascending: false });
+      if (qErr) throw qErr;
       setPosts((data || []).map(mapPost));
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load posts');
       toastError('load posts', err);
     } finally {
       setLoading(false);
@@ -55,6 +59,7 @@ export function useOwnPosts(days: number = 30) {
   return {
     posts,
     loading,
+    error,
     refresh: fetch,
     stats: { totalImpressions, totalLikes, totalComments, totalShares, avgImpressions, engagementRate, count: posts.length },
   };
