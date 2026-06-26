@@ -193,7 +193,7 @@ const LiveEngineProof: React.FC = () => {
             {...(prefersReduced ? {} : { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.7, ease, delay: 0.12 } })}
             className="lg:col-span-6 grid sm:grid-cols-2 gap-8"
           >
-            <SampleFrame label="Carousel" src="https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg" alt="A branded carousel slide produced by the engine" ratio="4 / 5" />
+            <SampleFrame label="Carousel" src="https://bjbvqvzbzczjbatgmccb.supabase.co/storage/v1/object/public/lm-og/claude-agency-ops-square-clean.jpg" alt="A branded carousel slide produced by the engine" ratio="1 / 1" />
             <SampleFrame label="Lead magnet" src="/content-system/lead-magnet.webp" alt="A live interactive lead magnet built by the engine" ratio="4 / 5" />
           </motion.div>
         </div>

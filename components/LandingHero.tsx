@@ -258,7 +258,7 @@ const LandingHero: React.FC = () => {
                     color: '#F7F4EF',
                   }}
                 >
-                  Book your fit call <ArrowRight size={19} />
+                  Book the free fit call <ArrowRight size={19} />
                 </a>
                 <a
                   href="/scorecard"

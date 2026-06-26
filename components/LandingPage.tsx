@@ -815,9 +815,9 @@ const ComparisonSection: React.FC = () => (
             </div>
             <div className="flex flex-col gap-3">
               {COMPARE_ROWS.map((row) => (
-                <div key={row.label} className="flex justify-between gap-4">
-                  <span style={{ ...T.mono, color: '#5A5752', flexShrink: 0 }}>{row.label}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A', textAlign: 'right' }}>
+                <div key={row.label} className="flex flex-col gap-1">
+                  <span style={{ ...T.mono, color: '#5A5752' }}>{row.label}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A' }}>
                     {row.cells[ci]}
                   </span>
                 </div>
@@ -1148,7 +1148,7 @@ const TestimonialsSection: React.FC = () => (
 const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   <div
     className="flex flex-col shrink-0 mx-4 p-6 border whitespace-normal"
-    style={{ width: '340px', minHeight: '188px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
+    style={{ width: '340px', height: '204px', borderColor: 'rgba(26,26,26,0.10)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 4px 16px rgba(26,26,26,0.05)' }}
   >
     <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
     <p
