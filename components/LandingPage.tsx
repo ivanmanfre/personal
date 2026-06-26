@@ -1152,13 +1152,13 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
     <div style={{ ...T.mono, marginBottom: '12px', color: '#5A5752' }}>{r.project}</div>
     <p
       style={{
-        fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A', marginBottom: '14px', flex: 1,
+        fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A', marginBottom: '14px',
         display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
       }}
     >
       &ldquo;{r.text}&rdquo;
     </p>
-    <div style={{ fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A' }}>{r.author}</div>
+    <div style={{ marginTop: 'auto', fontFamily: '"Source Serif 4",serif', fontWeight: 600, fontSize: '14px', color: '#1A1A1A' }}>{r.author}</div>
     <div style={{ ...T.mono, fontSize: '11px', color: '#5A5752' }}>{r.role}</div>
   </div>
 );
