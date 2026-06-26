@@ -420,6 +420,7 @@ export interface OutreachProspect {
   email: string | null;
   phone: string | null;
   emailStatus: string | null;
+  emailVerification: string | null;
   city: string | null;
   state: string | null;
   country: string | null;

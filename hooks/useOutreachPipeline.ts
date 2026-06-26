@@ -48,6 +48,7 @@ function mapProspect(r: any): OutreachProspect {
     email: r.email,
     phone: r.phone,
     emailStatus: r.email_status,
+    emailVerification: r.email_verification,
     city: r.city,
     state: r.state,
     country: r.country,

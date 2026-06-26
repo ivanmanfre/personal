@@ -12,6 +12,10 @@ const LINKEDIN_ACTIVE = new Set(['connected', 'dm_sent', 'replied', 'engaged']);
 // they do, e.g. "an SEO and GEO shop"). No manufactured per-lead "icebreaker" — that read as AI.
 // Touch 1 carries no link; the personalized /scan/ page is delivered on reply.
 const CSV_COLS = ['first_name', 'company_name', 'descriptor', 'email'] as const;
+// Only deliverable emails ship. `deliverable` = MillionVerifier quality=good; `catch_all_valid` =
+// caught by the CatchAllVerifier fallback. Everything else (undeliverable/risky/unknown) and the
+// not-yet-verified (null) are held back to protect sender reputation.
+const DELIVERABLE = new Set(['deliverable', 'catch_all_valid']);
 
 // Owner gate: the content_system offer trains on the buyer's own voice and runs their personal
 // LinkedIn, so it only lands with the person who IS the brand — founder/owner/CEO/president, or a
@@ -41,12 +45,20 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
 
   // Cold-email cohort: a work email, ICP-qualified, an owner/founder (the offer needs the person
   // whose voice gets trained), and not already active on LinkedIn.
-  const cohort = useMemo(
+  const eligible = useMemo(
     () => prospects
-      .filter((p) => p.email && (p.icpScore ?? 0) >= 7 && isOwner(p.title) && !LINKEDIN_ACTIVE.has(p.stage) && !p.blacklisted)
-      .sort((a, b) => (b.icpScore ?? 0) - (a.icpScore ?? 0)),
+      .filter((p) => p.email && (p.icpScore ?? 0) >= 7 && isOwner(p.title) && !LINKEDIN_ACTIVE.has(p.stage) && !p.blacklisted),
     [prospects],
   );
+  // Export cohort = eligible AND verified deliverable. Held back: pending (not yet verified) and dropped (undeliverable/risky).
+  const cohort = useMemo(
+    () => eligible
+      .filter((p) => DELIVERABLE.has(p.emailVerification ?? ''))
+      .sort((a, b) => (b.icpScore ?? 0) - (a.icpScore ?? 0)),
+    [eligible],
+  );
+  const pendingCount = useMemo(() => eligible.filter((p) => !p.emailVerification).length, [eligible]);
+  const droppedCount = useMemo(() => eligible.filter((p) => p.emailVerification && !DELIVERABLE.has(p.emailVerification)).length, [eligible]);
 
   const rows = useMemo(
     () => cohort.map((p) => ({
@@ -107,13 +119,18 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
       <PanelCard title="Cold email cohort" icon={<Mail className="w-4 h-4" />} headerRight={actions} accent="emerald">
         <div className="p-4 space-y-2">
           <p className="text-sm text-zinc-400 max-w-2xl leading-relaxed">
-            ICP-qualified owners and founders with a work email, not already active on LinkedIn, so the
-            same person never gets hit on both channels. Owner-gated because the offer trains on the
-            buyer's own voice. The pitch is one Smartlead template; these are the merge fields. Export and import.
+            ICP-qualified owners and founders with a verified-deliverable work email, not already active on
+            LinkedIn, so the same person never gets hit on both channels. Owner-gated because the offer trains
+            on the buyer's own voice. The pitch is one Smartlead template; these are the merge fields. Export and import.
           </p>
           <p className="text-xs text-zinc-500">
             Columns: {CSV_COLS.join(', ')}. <span className="text-zinc-400">{readyCount}/{rows.length}</span> have
             a descriptor. Touch 1 carries no link; the personalized scan page is delivered when a lead replies.
+          </p>
+          <p className="text-xs text-zinc-500">
+            Deliverability: <span className="text-emerald-400">{cohort.length} verified</span>
+            {pendingCount > 0 && <> · <span className="text-amber-500/80">{pendingCount} pending</span></>}
+            {droppedCount > 0 && <> · <span className="text-zinc-600">{droppedCount} undeliverable/risky held back</span></>}
           </p>
         </div>
       </PanelCard>
