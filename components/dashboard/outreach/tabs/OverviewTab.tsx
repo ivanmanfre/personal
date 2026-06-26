@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Radio, Briefcase, Flame, Snowflake, TrendingUp } from 'lucide-react';
 import StatCard from '../../shared/StatCard';
+import { NextUpCard } from '../NextUpCard';
 import type { OutreachProspect, FeedRollupRow, OutreachFeed } from '../../../../types/dashboard';
 import {
   FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BADGE, FEED_BAR, FEED_TEXT,
@@ -14,6 +15,9 @@ interface Props {
   bandsTotal: number;
   bandsHot: number;
   onPickFeed?: (feed: OutreachFeed) => void;
+  onOpenProspect: (p: OutreachProspect) => void;
+  onArchiveProspect: (id: string, reason?: string) => void;
+  onResolveReply: (id: string) => void;
 }
 
 const feedIcon: Record<OutreachFeed, React.ReactNode> = {
@@ -40,7 +44,7 @@ const FUNNEL_STAGES: { key: keyof FeedRollupRow; label: string }[] = [
   { key: 'replied', label: 'Replied' },
 ];
 
-export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal, bandsHot, onPickFeed }) => {
+export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal, bandsHot, onPickFeed, onOpenProspect, onArchiveProspect, onResolveReply }) => {
   const rows = useMemo(() => feedRollup(prospects, hotDomains), [prospects, hotDomains]);
   const byFeed = useMemo(() => {
     const m = new Map<OutreachFeed, FeedRollupRow>();
@@ -67,6 +71,14 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
 
   return (
     <div className="space-y-4">
+      {/* Pinned "who's next and when" command queue */}
+      <NextUpCard
+        prospects={prospects}
+        onOpen={onOpenProspect}
+        onArchive={onArchiveProspect}
+        onResolve={onResolveReply}
+      />
+
       {/* Headline stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Active Pipeline" value={totalActive} icon={<Users className="w-5 h-5" />} color="text-zinc-300" subValue="across all feeds" />

@@ -1371,6 +1371,9 @@ const OutreachPanel: React.FC = () => {
       bandsTotal={feeds.bands.total}
       bandsHot={feeds.bands.hot}
       onPickFeed={(f) => { setFeedFilter(f); changeTab('pipeline'); }}
+      onOpenProspect={setSelectedProspect}
+      onArchiveProspect={archiveProspect}
+      onResolveReply={toggleNeedsReply}
     />
   );
 
