@@ -14,7 +14,6 @@ import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import LiveEngineProof from './LiveEngineProof';
-import Marquee from './Marquee';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
@@ -1164,24 +1163,40 @@ const ReviewCard: React.FC<{ r: Review }> = ({ r }) => (
   </div>
 );
 
+// Seamless belt: a w-max track holding the row's cards duplicated once, sliding
+// x 0 → -50% (or the reverse) so the second copy lands exactly where the first
+// started — no min-w-full/justify-around stretching, no sparse gaps. Cards keep
+// their natural 340px width and 16px margins, so the spacing stays even across
+// the loop seam. Long quotes are handled by the card's 3-line clamp, so every
+// review can ride the belt (no length filter starving the rows).
+const ReviewRow: React.FC<{ items: Review[]; direction: 'left' | 'right'; duration: number }> = ({ items, direction, duration }) => {
+  const doubled = [...items, ...items];
+  return (
+    <div className="flex w-full overflow-hidden">
+      <motion.div
+        className="flex w-max shrink-0"
+        initial={{ x: direction === 'left' ? '0%' : '-50%' }}
+        animate={{ x: direction === 'left' ? '-50%' : '0%' }}
+        transition={{ duration, repeat: Infinity, ease: 'linear' }}
+      >
+        {doubled.map((r, i) => <ReviewCard key={`${r.author}-${i}`} r={r} />)}
+      </motion.div>
+    </div>
+  );
+};
+
 const ReviewsMarquee: React.FC = () => {
-  // Use the shorter quotes so they fit the fixed card height without ellipsis.
-  const short = REVIEWS.filter((r) => r.text.length <= 130);
-  const half = Math.ceil(short.length / 2);
-  const rowA = short.slice(0, half);
-  const rowB = short.slice(half);
+  const half = Math.ceil(REVIEWS.length / 2);
+  const rowA = REVIEWS.slice(0, half);
+  const rowB = REVIEWS.slice(half);
   return (
     <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
       <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
         <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
       </div>
       <div className="flex flex-col gap-5">
-        <Marquee speed={70} direction="left">
-          {rowA.map((r) => <ReviewCard key={r.author} r={r} />)}
-        </Marquee>
-        <Marquee speed={85} direction="right">
-          {rowB.map((r) => <ReviewCard key={r.author} r={r} />)}
-        </Marquee>
+        <ReviewRow items={rowA} direction="left" duration={55} />
+        <ReviewRow items={rowB} direction="right" duration={60} />
       </div>
     </section>
   );
