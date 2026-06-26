@@ -351,7 +351,14 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 </span>
               </div>
             </div>
-            {postMode === 'edit' ? (
+            {draft.status === 'generating' && !postBody.trim() ? (
+              // Mid-generation: the image renders first and the caption lands a
+              // few minutes later (brand-newsjack/single_image especially), so a
+              // blank surface reads as broken. Show the in-progress state instead.
+              <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-sm text-zinc-500 italic">
+                Writing caption… the image renders first, the copy lands a few minutes later.
+              </div>
+            ) : postMode === 'edit' ? (
               <Textarea
                 value={postBody}
                 onChange={(e) => setPostBody(e.target.value)}
