@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { prefersReduced } from './editorial';
+
+gsap.registerPlugin(ScrollTrigger);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SystemFlowDiagram — the interactive "how it works" diagram for /content-system.
@@ -126,6 +130,7 @@ const Wire: React.FC<{ id: string; d: string; delay?: number; particle?: boolean
 
 export const SystemFlowDiagram: React.FC = () => {
   const [active, setActive] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const d = active ? STEPS[active] : null;
 
   useEffect(() => {
@@ -135,9 +140,60 @@ export const SystemFlowDiagram: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [active]);
 
+  // ── Cinematic "power-on": the diagram boots up left→right as the idea flows.
+  // Autoplay ONCE on enter — NO pin, NO scrub (pinned scroll-jacked and read as
+  // "stuck"; Ivan 2026-06-11, see ProcessAssembly). Desktop-only; reduced-motion
+  // and mobile keep the fully-lit static diagram (today's behaviour) untouched.
+  useEffect(() => {
+    if (R || !rootRef.current) return;
+    const root = rootRef.current;
+    const mm = gsap.matchMedia();
+    let cancelled = false;
+
+    mm.add('(min-width: 1024px)', () => {
+      const igniters = Array.from(root.querySelectorAll('[data-sfd-ignite]')) as SVGGElement[];
+      const ticks = Array.from(root.querySelectorAll('[data-sfd-tick]')) as SVGRectElement[];
+      const pulse = root.querySelector('[data-sfd-pulse]') as SVGPathElement | null;
+      if (!igniters.length) return;
+
+      // start dimmed ("powered off"); ticks hidden until each node lands.
+      gsap.set(igniters, { opacity: 0.16 });
+      gsap.set(ticks, { opacity: 0, transformOrigin: 'center', scale: 0.4 });
+
+      const tl = gsap.timeline({ paused: true, defaults: { ease: 'power1.out' } });
+      // wave of ignition, in DOM/flow order (sources → brain → pipeline → gate → outputs)
+      tl.to(igniters, { opacity: 1, duration: 0.45, stagger: 0.16 }, 0);
+      tl.to(ticks, { opacity: 1, scale: 1, duration: 0.3, stagger: 0.16, ease: 'back.out(2.4)' }, 0.5);
+
+      // one sage signal-pulse rides the spine, in sync with the wave
+      if (pulse) {
+        const len = pulse.getTotalLength();
+        gsap.set(pulse, { strokeDasharray: `20 ${len}`, strokeDashoffset: 20, opacity: 1 });
+        tl.to(pulse, { strokeDashoffset: -len, duration: 1.15, ease: 'none', repeat: 2 }, 0.4);
+        tl.to(pulse, { opacity: 0, duration: 0.4 }, '>-0.15');
+      }
+
+      tl.timeScale(0.9);
+      const onFonts = () => { if (!cancelled) ScrollTrigger.refresh(); };
+      document.fonts.ready.then(onFonts);
+
+      const st = ScrollTrigger.create({
+        trigger: root,
+        start: 'top 72%',
+        once: true,
+        onEnter: () => tl.play(),
+      });
+
+      return () => { st.kill(); tl.kill(); };
+    });
+
+    return () => { cancelled = true; mm.revert(); };
+  }, []);
+
   const Pick: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
     <g
       className={`sfd-node ${active === id ? 'is-active' : ''}`}
+      data-sfd-ignite=""
       role="button"
       tabIndex={0}
       aria-label={`${STEPS[id].title}, open detail`}
@@ -149,12 +205,12 @@ export const SystemFlowDiagram: React.FC = () => {
   );
 
   const beads = [
-    { id: 'ctx', x: 470, n: '1', cap: 'CONTEXT' },
+    { id: 'ctx', x: 464, n: '1', cap: 'CONTEXT' },
     { id: 'fmt', x: 540, n: '2', cap: 'FORMAT' },
-    { id: 'hook', x: 610, n: '3', cap: 'HOOK' },
-    { id: 'write', x: 680, n: '4', cap: 'WRITE' },
-    { id: 'qa', x: 750, n: '5', cap: 'QA' },
-    { id: 'deslop', x: 820, n: '6', cap: 'DE-SLOP' },
+    { id: 'hook', x: 616, n: '3', cap: 'HOOK' },
+    { id: 'write', x: 692, n: '4', cap: 'WRITE' },
+    { id: 'qa', x: 768, n: '5', cap: 'QA' },
+    { id: 'deslop', x: 844, n: '6', cap: 'DE-SLOP' },
   ];
 
   const lmDeliverables = [
@@ -166,7 +222,7 @@ export const SystemFlowDiagram: React.FC = () => {
   ];
 
   return (
-    <div className={`sfd-root ${active ? 'has-active' : ''}`}>
+    <div ref={rootRef} className={`sfd-root ${active ? 'has-active' : ''}`}>
       <style>{CSS}</style>
       <div className="sfd-wrap">
         <svg
@@ -187,6 +243,23 @@ export const SystemFlowDiagram: React.FC = () => {
             <filter id="sfd-shadow" x="-60%" y="-60%" width="220%" height="220%">
               <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#1A1A1A" floodOpacity="0.16" />
             </filter>
+            {/* structural canvas: faint blueprint grid, radial-faded so it never reaches the edges */}
+            <pattern id="sfd-grid" width="38" height="38" patternUnits="userSpaceOnUse">
+              <path d="M38 0 H0 V38" fill="none" stroke="#1A1A1A" strokeWidth="0.6" />
+            </pattern>
+            <radialGradient id="sfd-fade" cx="42%" cy="50%" r="58%">
+              <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+              <stop offset="62%" stopColor="#fff" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+            </radialGradient>
+            <mask id="sfd-gridmask">
+              <rect x="0" y="26" width="1440" height="560" fill="url(#sfd-fade)" />
+            </mask>
+            {/* soft focal plate behind the brain — gives the hub depth without glow */}
+            <radialGradient id="sfd-focal" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fff" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
           <motion.g
@@ -195,6 +268,10 @@ export const SystemFlowDiagram: React.FC = () => {
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.6 }}
           >
+            {/* ── Structural canvas (behind everything) ─────────────── */}
+            <rect className="sfd-grid" x="0" y="26" width="1440" height="560" fill="url(#sfd-grid)" mask="url(#sfd-gridmask)" />
+            <ellipse className="sfd-focal" cx="340" cy="320" rx="300" ry="230" fill="url(#sfd-focal)" />
+
             {/* ── Feedback loop (behind everything) ─────────────────── */}
             <path className="sfd-loopwire" id="sfd-loop" d="M1080,178 C 880,76 540,76 340,284" />
             {!R && (
@@ -216,6 +293,9 @@ export const SystemFlowDiagram: React.FC = () => {
             <Wire id="sfd-cli" d="M970,320 C 1024,320 1040,212 1053,205" delay={0.85} particle dur={4.4} pDelay={0.6} />
             <Wire id="sfd-clm" d="M970,320 C 1024,320 1040,462 1053,470" delay={0.85} particle dur={4.4} pDelay={1.4} />
 
+            {/* Cinematic signal-pulse: one sage dash rides the spine as the engine boots */}
+            {!R && <path className="sfd-signalpulse" data-sfd-pulse d="M340,320 H 902" />}
+
             {/* LinkedIn delivery fans (static) */}
             <path className="sfd-fan" d="M1107,205 C 1136,205 1144,189 1162,189" />
             <path className="sfd-fan" d="M1107,205 C 1136,205 1144,221 1162,221" />
@@ -225,7 +305,7 @@ export const SystemFlowDiagram: React.FC = () => {
             ))}
 
             {/* ── Sources (labels left of dots, clear of wires) ─────── */}
-            <g>
+            <g data-sfd-ignite="">
               <text className="sfd-src-lbl" x="192" y="145">Your calls</text>
               <circle className="sfd-src" cx="210" cy="140" r="7" />
               <text className="sfd-src-lbl" x="192" y="275">The web &amp; HN</text>
@@ -238,17 +318,21 @@ export const SystemFlowDiagram: React.FC = () => {
 
             {/* ── Content Brain ─────────────────────────────────────── */}
             <Pick id="brain">
-              <circle className="sfd-core" cx="340" cy="320" r="36" />
-              <circle className="sfd-core-dot" cx="340" cy="320" r="6.5" />
-              <text className="sfd-stg" x="340" y="384">CONTENT BRAIN</text>
+              <circle className="sfd-ring sfd-ring-2" cx="340" cy="320" r="72" />
+              <circle className="sfd-ring sfd-ring-1" cx="340" cy="320" r="58" />
+              <circle className="sfd-core" cx="340" cy="320" r="44" />
+              <circle className="sfd-core-dot" cx="340" cy="320" r="7.5" />
+              <rect className="sfd-tick" data-sfd-tick x="372" y="284" width="6" height="6" />
+              <text className="sfd-stg" x="340" y="398">CONTENT BRAIN</text>
             </Pick>
 
             {/* ── Pipeline beads ────────────────────────────────────── */}
             {beads.map((b) => (
               <Pick id={b.id} key={b.id}>
-                <circle className="sfd-bead" cx={b.x} cy="320" r="25" />
-                <text className="sfd-num" x={b.x} y="320">{b.n}</text>
-                <text className="sfd-cap" x={b.x} y="361">{b.cap}</text>
+                <rect className="sfd-step" x={b.x - 32} y="283" width="64" height="74" />
+                <text className="sfd-num" x={b.x} y="316">{b.n}</text>
+                <rect className="sfd-tick" data-sfd-tick x={b.x + 23} y="289" width="6" height="6" />
+                <text className="sfd-cap" x={b.x} y="343">{b.cap}</text>
               </Pick>
             ))}
 
@@ -256,26 +340,28 @@ export const SystemFlowDiagram: React.FC = () => {
             <Pick id="approve">
               <rect className="sfd-onlypill" x="874" y="240" width="124" height="24" rx="12" />
               <text className="sfd-onlypill-t" x="936" y="255">YOUR ONLY STEP</text>
-              {!R && <path className="sfd-gate-pulse" d="M902,320 L936,282 L970,320 L936,358 Z" />}
-              <path className="sfd-gate" d="M902,320 L936,282 L970,320 L936,358 Z" />
-              <path className="sfd-check" d="M922,321 l9,10 l16,-20" />
-              <text className="sfd-stg sfd-stg-em" x="936" y="388">YOU APPROVE</text>
+              {!R && <path className="sfd-gate-pulse" d="M894,320 L936,274 L978,320 L936,366 Z" />}
+              <path className="sfd-gate" d="M894,320 L936,274 L978,320 L936,366 Z" />
+              <path className="sfd-check" d="M921,321 l10,11 l18,-22" />
+              <text className="sfd-stg sfd-stg-em" x="936" y="398">YOU APPROVE</text>
             </Pick>
 
             {/* ── Outputs ───────────────────────────────────────────── */}
             <Pick id="post">
-              <rect className="sfd-out" x="1053" y="178" width="54" height="54" rx="13" />
+              <rect className="sfd-out" x="1048" y="173" width="64" height="64" rx="3" />
               <path className="sfd-out-i" d="M1068,214 v-13 M1068,195 v-1 M1080,214 v-9 M1092,214 v-15" />
-              <text className="sfd-out-lbl" x="1080" y="252">LINKEDIN POST</text>
+              <rect className="sfd-tick" data-sfd-tick x="1104" y="170" width="6" height="6" />
+              <text className="sfd-out-lbl" x="1080" y="256">LINKEDIN POST</text>
             </Pick>
             <Pick id="leadmagnet">
-              <rect className="sfd-out" x="1053" y="443" width="54" height="54" rx="13" />
+              <rect className="sfd-out" x="1048" y="438" width="64" height="64" rx="3" />
               <path className="sfd-out-i" d="M1067,459 h26 M1067,469 h26 M1067,479 h16" />
-              <text className="sfd-out-lbl" x="1080" y="517">LEAD MAGNET</text>
+              <rect className="sfd-tick" data-sfd-tick x="1104" y="434" width="6" height="6" />
+              <text className="sfd-out-lbl" x="1080" y="522">LEAD MAGNET</text>
             </Pick>
 
             {/* ── Deliverables ──────────────────────────────────────── */}
-            <g>
+            <g data-sfd-ignite="">
               <circle className="sfd-dlv-dot" cx="1166" cy="189" r="4.5" />
               <text className="sfd-dlv" x="1178" y="189">Published on your schedule</text>
               <circle className="sfd-dlv-dot" cx="1166" cy="221" r="4.5" />
@@ -355,6 +441,18 @@ const CSS = `
 .sfd-wire{fill:none;stroke:var(--color-accent);stroke-width:2.4;opacity:.9;stroke-linecap:round}
 .sfd-fan{fill:none;stroke:var(--color-accent);stroke-width:1.4;opacity:.3;stroke-linecap:round}
 .sfd-particle{fill:#2FA876;filter:url(#sfd-glow)}
+
+/* Cinematic boot: signal-pulse riding the spine + done-state ticks */
+.sfd-signalpulse{fill:none;stroke:var(--color-accent);stroke-width:3.2;stroke-linecap:round;opacity:0;filter:url(#sfd-glow)}
+.sfd-tick{fill:var(--color-accent)}
+
+/* Structural canvas + hub depth (the "advanced" styling layer) */
+.sfd-grid{opacity:.05}
+.sfd-focal{opacity:.9}
+.sfd-ring{fill:none;stroke:var(--color-accent);stroke-linecap:round}
+.sfd-ring-1{stroke-width:1.1;opacity:.34}
+.sfd-ring-2{stroke-width:1;opacity:.16;stroke-dasharray:3 7}
+.sfd-node:hover .sfd-ring-1,.sfd-node.is-active .sfd-ring-1{opacity:.6}
 .sfd-particle-loop{fill:#5FB98A;opacity:.8}
 
 /* Feedback loop */
@@ -380,11 +478,11 @@ const CSS = `
 .sfd-stg{font-family:"IBM Plex Mono",monospace;font-size:14.5px;font-weight:700;letter-spacing:.16em;fill:var(--color-ink);text-anchor:middle}
 .sfd-stg-em{fill:var(--color-accent-ink)}
 
-/* Pipeline beads (no wave — calm) */
-.sfd-bead{fill:var(--color-paper-raise);stroke:var(--color-accent);stroke-width:2.2;filter:url(#sfd-shadow)}
-.sfd-node:hover .sfd-bead,.sfd-node:focus-visible .sfd-bead,.sfd-node.is-active .sfd-bead{filter:url(#sfd-glow);stroke-width:2.8}
-.sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:30px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
-.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.08em;fill:var(--color-ink-mute);text-anchor:middle}
+/* Pipeline steps — substantial sharp-cornered cards (brand §5d: rect nodes, never circles) */
+.sfd-step{fill:var(--color-paper-raise);stroke:var(--color-hairline-bold);stroke-width:1.4;filter:url(#sfd-shadow)}
+.sfd-node:hover .sfd-step,.sfd-node:focus-visible .sfd-step,.sfd-node.is-active .sfd-step{stroke:var(--color-accent);stroke-width:1.8;filter:url(#sfd-glow)}
+.sfd-num{font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:36px;fill:var(--color-accent-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.sfd-cap{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:700;letter-spacing:.06em;fill:var(--color-ink-mute);text-anchor:middle}
 
 /* Approve gate + single attention pulse */
 .sfd-gate{fill:var(--color-accent-soft);stroke:var(--color-accent);stroke-width:2.6;filter:url(#sfd-shadow)}
