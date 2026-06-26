@@ -66,6 +66,9 @@ function useCountUp(target: number, duration = 600): number {
     const from = prevTarget.current === target ? 0 : prevTarget.current;
     prevTarget.current = target;
     if (target === 0) { setCurrent(0); return; }
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setCurrent(target); return;
+    }
 
     const start = performance.now();
     let raf: number;

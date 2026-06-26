@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, ExternalLink } from 'lucide-react';
+import { Users, ExternalLink, CheckCircle2, Target, Star } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import { useDashboard } from '../../contexts/DashboardContext';
@@ -77,9 +77,9 @@ const LeadsPanel: React.FC = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Leads" value={totalLeads} icon={<Users className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Qualified" value={statusCounts['qualified'] || 0} icon={<span className="text-sm">✅</span>} color="text-emerald-400" />
-        <StatCard label="Converted" value={statusCounts['converted'] || 0} icon={<span className="text-sm">🎯</span>} color="text-purple-400" />
-        <StatCard label="High ICP" value={icpDistribution.high} icon={<span className="text-sm">⭐</span>} color="text-amber-400" subValue={`${icpDistribution.medium} medium`} />
+        <StatCard label="Qualified" value={statusCounts['qualified'] || 0} icon={<CheckCircle2 className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Converted" value={statusCounts['converted'] || 0} icon={<Target className="w-5 h-5" />} color="text-purple-400" />
+        <StatCard label="High ICP" value={icpDistribution.high} icon={<Star className="w-5 h-5" />} color="text-amber-400" subValue={`${icpDistribution.medium} medium`} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -185,7 +185,8 @@ const LeadsPanel: React.FC = () => {
                   <select
                     value={lead.status || 'unknown'}
                     onChange={(e) => updateStatus(lead.id, e.target.value)}
-                    className={`px-2 py-1 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
+                    aria-label={`Status for ${lead.name || 'lead'}`}
+                    className={`px-2 py-2 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
                   >
                     {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
                       <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>
@@ -228,7 +229,8 @@ const LeadsPanel: React.FC = () => {
                         <select
                           value={lead.status || 'unknown'}
                           onChange={(e) => updateStatus(lead.id, e.target.value)}
-                          className={`px-2 py-0.5 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-zinc-600 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
+                          aria-label={`Status for ${lead.name || 'lead'}`}
+                          className={`px-2 py-2 rounded text-xs font-medium border bg-transparent cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 ${statusColors[lead.status || 'unknown'] || statusColors.unknown}`}
                         >
                           {['new', 'qualified', 'contacted', 'converted', 'lost'].map((s) => (
                             <option key={s} value={s} className="bg-zinc-900 text-zinc-300">{s}</option>

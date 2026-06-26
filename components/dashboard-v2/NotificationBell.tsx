@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Bell, BellOff } from 'lucide-react';
 import { usePendingActions, type Severity, type PendingItem } from '../../hooks/usePendingActions';
 import { timeAgo, resolveActionFor } from '../../lib/pendingActions';
 import { navigateToDeeplink } from '../../lib/deeplink';
@@ -87,7 +88,7 @@ export function NotificationBell() {
                       {groupUnread && (
                         <button type="button" className="nb-gbtn" title="Mark group seen" onClick={() => markSeen(groupKeys)}>✓</button>
                       )}
-                      <button type="button" className="nb-gbtn" title="Mute this category" onClick={() => muteCategory(g.category)}>🔇</button>
+                      <button type="button" className="nb-gbtn" title="Mute this category" aria-label="Mute this category" onClick={() => muteCategory(g.category)}><BellOff className="w-3.5 h-3.5" /></button>
                     </span>
                   </div>
                   {g.items.slice(0, 3).map((it) => {
@@ -137,7 +138,7 @@ export function NotificationBell() {
               {showMuted && mutedCategories.map((c) => (
                 <div key={c} className="nb-muted-row">
                   <span>{CATEGORY_LABEL[c] ?? c}</span>
-                  <button type="button" className="nb-gbtn" title="Unmute" onClick={() => unmuteCategory(c)}>🔔</button>
+                  <button type="button" className="nb-gbtn" title="Unmute" aria-label="Unmute" onClick={() => unmuteCategory(c)}><Bell className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
             </div>

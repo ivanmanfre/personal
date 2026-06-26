@@ -214,6 +214,19 @@ body.hide-site-footer .site-footer {
   .pivot-highlight em::after { animation: none !important; transform: scaleX(1) !important; }
 }
 
+/* Global reduced-motion guard — honor the OS setting site-wide (dashboard count-ups,
+   shimmer, refresh-pulse, ping, intake-wave, card entrances). Complete entrance
+   animations instantly so opacity:0 keyframes reach their visible end state rather
+   than stranding, and halt infinite/decorative loops after one near-instant cycle. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Branded range slider — replaces the OS-blue native control on the ROI
    calculator. Sage thumb, paper-tone track, hairline border. */
 input[type='range'].stat-slider {
