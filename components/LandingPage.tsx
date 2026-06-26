@@ -844,9 +844,9 @@ const CostSlider: React.FC<{
   prefix?: string; suffix?: string; onChange: (v: number) => void;
 }> = ({ label, value, min, max, step, prefix = '', suffix = '', onChange }) => (
   <div>
-    <div className="flex items-baseline justify-between" style={{ marginBottom: '10px' }}>
-      <span style={{ ...T.mono, fontSize: '11px', color: '#5A5752' }}>{label}</span>
-      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
+    <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: '10px' }}>
+      <span style={{ ...T.mono, fontSize: '11px', color: '#5A5752', minWidth: 0 }}>{label}</span>
+      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '15px', fontWeight: 600, color: '#1A1A1A', flexShrink: 0, whiteSpace: 'nowrap' }}>
         {prefix}{fmtInt(value)}{suffix}
       </span>
     </div>
@@ -1359,7 +1359,7 @@ const OfferSection: React.FC = () => (
 
       <motion.div {...inView} className="flex justify-center mt-9">
         <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
-          Book your fit call <ArrowRight size={18} />
+          Book the free fit call <ArrowRight size={18} />
         </MagneticCTA>
       </motion.div>
     </div>
@@ -1409,7 +1409,7 @@ const MeetOperator: React.FC = () => (
             ))}
           </div>
           <MagneticCTA href="/start" variant="primary" fontSize="17px" px="px-9 py-4">
-            Book your fit call <ArrowRight size={18} />
+            Book the free fit call <ArrowRight size={18} />
           </MagneticCTA>
         </div>
       </motion.div>
@@ -1670,7 +1670,7 @@ const StickyCTA: React.FC = () => {
       }}
       aria-hidden={!show}
     >
-      Book the fit call <ArrowRight size={16} />
+      Book the free fit call <ArrowRight size={16} />
     </motion.a>
   );
 };
