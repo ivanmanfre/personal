@@ -13,6 +13,7 @@ import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
 import { SystemOverview } from './sections/SystemOverview';
 import { Personal } from './sections/Personal';
+import { StealBox } from './sections/StealBox';
 import { useScheduledChecks } from '../../hooks/useScheduledChecks';
 import type { NavItem, SectionId } from './types';
 
@@ -32,8 +33,9 @@ function ShellInner() {
     { id: 'clients', name: 'Clients', num: '04', group: 'knowledge' },
     { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
-    { id: 'system', name: 'System', num: '07', group: 'knowledge' },
-    { id: 'personal', name: 'Personal', num: '08', group: 'personal' },
+    { id: 'opsideas', name: 'Ops Ideas', num: '07', group: 'knowledge' },
+    { id: 'system', name: 'System', num: '08', group: 'knowledge' },
+    { id: 'personal', name: 'Personal', num: '09', group: 'personal' },
   ];
 
   // Briefing's onNavigate signature includes optional sub-tab.
@@ -57,6 +59,7 @@ function ShellInner() {
     clients: () => <Clients />,
     knowledge: () => <Knowledge />,
     agent: () => <Agent />,
+    opsideas: () => <StealBox />,
     system: () => <SystemOverview />,
     personal: () => <Personal />,
   };

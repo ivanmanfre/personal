@@ -12,6 +12,7 @@ export type SectionId =
   | 'knowledge'
   | 'agent'
   | 'ideas'
+  | 'opsideas'
   | 'system'
   | 'personal';
 

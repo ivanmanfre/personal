@@ -23,14 +23,14 @@ function prettyCallType(t: string | null): string {
 }
 
 const Loading = () => (
-  <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading steal box…</div>
+  <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading ops ideas…</div>
 );
 
 function Empty({ hint }: { hint?: string }) {
   return (
     <div className="dv-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
       <div style={{ fontSize: 22, marginBottom: 8 }}>🛠️</div>
-      <h3 style={{ fontSize: 15, marginBottom: 6 }}>No steal tactics yet</h3>
+      <h3 style={{ fontSize: 15, marginBottom: 6 }}>No ops ideas yet</h3>
       <p style={{ fontSize: 13, color: 'var(--d-paper-dim)', margin: 0 }}>
         {hint || 'Tactics surface here as the Kyle-call extractor finds them.'}
       </p>
@@ -46,7 +46,7 @@ function StealTile({ card }: { card: StealCard }) {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
       >
         <span style={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: 11, color: 'var(--d-good)' }}>
-          Kyle · steal
+          Kyle · ops
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--d-paper-dim)' }}>
           {typeof card.signal_score === 'number' && (
@@ -177,7 +177,7 @@ export function StealBox() {
         <Empty hint="Run migrations/kyle_steal_box_view.sql in Supabase to provision the safe view." />
       ) : error ? (
         <div className="dv-card" style={{ color: 'var(--d-bad)', fontSize: 13 }}>
-          Couldn't load steal box: {error}{' '}
+          Couldn't load ops ideas: {error}{' '}
           <button onClick={refresh} style={{ marginLeft: 8, color: 'var(--d-good)', background: 'none', border: 'none', cursor: 'pointer' }}>
             retry
           </button>
