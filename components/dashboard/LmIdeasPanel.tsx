@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 const FEED_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-feed';
 const DECIDE_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-decide';
 const ANGLES_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/idea-angles';
-const REST_BASE = 'https://bjbvqvzbzczjbatgmccb.supabase.co/rest/v1';
 const ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 type Candidate = {
@@ -213,37 +212,12 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
     }
   }, [busyId, reasonInput, editTopic, reload]);
 
-  // Pick one of the 3 generated angles: PATCH it onto the candidate's post_angle
-  // (the approve→Promoter→post-gen path reads post_angle off the row), then fire
-  // the existing approve flow which promotes + generates with that angle.
-  const pickAngle = useCallback(async (c: Candidate, angle: string) => {
-    if (busyId) return;
-    setBusyId(c.id);
-    try {
-      const res = await fetch(`${REST_BASE}/lm_idea_candidates?id=eq.${c.id}`, {
-        method: 'PATCH',
-        headers: {
-          apikey: ANON_KEY,
-          Authorization: 'Bearer ' + ANON_KEY,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
-        },
-        body: JSON.stringify({ post_angle: angle }),
-      });
-      if (!res.ok) throw new Error('set_angle ' + res.status);
-    } catch (e: any) {
-      setError(e?.message || 'set_angle_failed');
-      setBusyId(null);
-      return;
-    }
-    // decide() manages its own busyId; clear ours so it can take over.
-    setBusyId(null);
-    await decide(c, 'approve');
-  }, [busyId, decide]);
-
   // Call the on-demand angle generator. No `custom` → generates 3 angles + PATCHes
-  // angle_options, then reload so they render. With `custom` → sets post_angle, then
-  // promote+generate with that custom angle.
+  // angle_options, then reload so they render. With `custom` → the edge fn sets
+  // post_angle server-side (service role), then we promote+generate with it.
+  // Picking one of the 3 rendered angles routes through here too (custom = that
+  // angle's text): no client-side table write, the approve→Promoter→post-gen path
+  // reads post_angle off the row the edge fn just set.
   const regenAngles = useCallback(async (c: Candidate, custom?: string) => {
     if (angleBusy) return;
     setAngleBusy(c.id);
@@ -436,8 +410,8 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
                     {c.angle_options.map((a) => (
                       <button
                         key={a.key}
-                        disabled={busyId === c.id}
-                        onClick={(e) => { e.stopPropagation(); pickAngle(c, a.angle); }}
+                        disabled={busyId === c.id || angleBusy === c.id}
+                        onClick={(e) => { e.stopPropagation(); regenAngles(c, a.angle); }}
                         style={{ textAlign: 'left', padding: '8px 10px', border: '1px solid #333', background: 'rgba(0,0,0,0.3)', color: 'var(--d-paper)', borderRadius: 6, cursor: 'pointer' }}
                       >
                         <div style={{ fontWeight: 600, fontSize: 12 }}>{a.label}</div>
