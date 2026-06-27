@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const FEED_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-feed';
 const DECIDE_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-decide';
+const ANGLES_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/idea-angles';
+const REST_BASE = 'https://bjbvqvzbzczjbatgmccb.supabase.co/rest/v1';
 const ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
 
 type Candidate = {
@@ -20,6 +22,8 @@ type Candidate = {
   status: string;
   promoted_clickup_task_id?: string | null;
   archived_reason?: string | null;
+  angle_options?: { key: string; label: string; angle: string }[] | null;
+  post_angle?: string | null;
   ingested_at: string;
 };
 
@@ -111,6 +115,7 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
   const [reasonInput, setReasonInput] = useState<Record<string, string>>({});
   const [editTopic, setEditTopic] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [angleBusy, setAngleBusy] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [filterSource, setFilterSource] = useState<'all' | string>('all');
@@ -207,6 +212,59 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
       setBusyId(null);
     }
   }, [busyId, reasonInput, editTopic, reload]);
+
+  // Pick one of the 3 generated angles: PATCH it onto the candidate's post_angle
+  // (the approve→Promoter→post-gen path reads post_angle off the row), then fire
+  // the existing approve flow which promotes + generates with that angle.
+  const pickAngle = useCallback(async (c: Candidate, angle: string) => {
+    if (busyId) return;
+    setBusyId(c.id);
+    try {
+      const res = await fetch(`${REST_BASE}/lm_idea_candidates?id=eq.${c.id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: ANON_KEY,
+          Authorization: 'Bearer ' + ANON_KEY,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ post_angle: angle }),
+      });
+      if (!res.ok) throw new Error('set_angle ' + res.status);
+    } catch (e: any) {
+      setError(e?.message || 'set_angle_failed');
+      setBusyId(null);
+      return;
+    }
+    // decide() manages its own busyId; clear ours so it can take over.
+    setBusyId(null);
+    await decide(c, 'approve');
+  }, [busyId, decide]);
+
+  // Call the on-demand angle generator. No `custom` → generates 3 angles + PATCHes
+  // angle_options, then reload so they render. With `custom` → sets post_angle, then
+  // promote+generate with that custom angle.
+  const regenAngles = useCallback(async (c: Candidate, custom?: string) => {
+    if (angleBusy) return;
+    setAngleBusy(c.id);
+    try {
+      const res = await fetch(ANGLES_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ANON_KEY },
+        body: JSON.stringify({ candidate_id: c.id, ...(custom ? { custom } : {}) }),
+      });
+      if (!res.ok) throw new Error('angles ' + res.status);
+      if (custom) {
+        await decide(c, 'approve');
+      } else {
+        await reload();
+      }
+    } catch (e: any) {
+      setError(e?.message || 'angles_failed');
+    } finally {
+      setAngleBusy(null);
+    }
+  }, [angleBusy, decide, reload]);
 
   // Keyboard shortcuts — scoped to the panel container (only fire when focus is
   // within the panel or no other interactive element captures the key).
@@ -371,6 +429,38 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
                     {JSON.stringify(c.evidence, null, 2)}
                   </pre>
                 </details>
+
+                {Array.isArray(c.angle_options) && c.angle_options.length === 3 ? (
+                  <div style={{ marginBottom: 10, display: 'grid', gap: 6 }}>
+                    <div style={{ fontSize: 11, color: 'var(--d-paper-dim)', fontWeight: 600 }}>Pick an angle → generates the post</div>
+                    {c.angle_options.map((a) => (
+                      <button
+                        key={a.key}
+                        disabled={busyId === c.id}
+                        onClick={(e) => { e.stopPropagation(); pickAngle(c, a.angle); }}
+                        style={{ textAlign: 'left', padding: '8px 10px', border: '1px solid #333', background: 'rgba(0,0,0,0.3)', color: 'var(--d-paper)', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: 12 }}>{a.label}</div>
+                        <div style={{ fontSize: 11, color: 'var(--d-paper-dim)', marginTop: 2 }}>{a.angle}</div>
+                      </button>
+                    ))}
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button disabled={angleBusy === c.id} onClick={(e) => { e.stopPropagation(); regenAngles(c); }}
+                        style={{ fontSize: 11, color: 'var(--d-paper-dim)', background: 'transparent', border: '1px solid #333', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>
+                        {angleBusy === c.id ? '…' : '↻ Regenerate'}
+                      </button>
+                      <button disabled={angleBusy === c.id} onClick={(e) => { e.stopPropagation(); const t = window.prompt('Your angle:'); if (t && t.trim()) regenAngles(c, t.trim()); }}
+                        style={{ fontSize: 11, color: 'var(--d-paper-dim)', background: 'transparent', border: '1px solid #333', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>
+                        ✎ Write my own
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button disabled={angleBusy === c.id} onClick={(e) => { e.stopPropagation(); regenAngles(c); }}
+                    style={{ marginBottom: 10, fontSize: 12, color: 'var(--d-paper-dim)', background: 'transparent', border: '1px solid #333', borderRadius: 6, padding: '6px 10px', cursor: 'pointer' }}>
+                    {angleBusy === c.id ? 'Generating angles…' : 'Generate 3 angles'}
+                  </button>
+                )}
 
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button disabled={busyId === c.id} onClick={(e) => { e.stopPropagation(); decide(c, 'approve'); }}
