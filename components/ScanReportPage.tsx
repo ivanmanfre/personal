@@ -10,7 +10,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
+import { PROMISES, METRICS, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import SystemFlowDiagram from './SystemFlowDiagram';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
@@ -2505,9 +2505,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
           <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a lead magnet, ready for you to approve. Tap the lead magnet to look inside.</p>
           <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: CI_CARD, borderBottom: `1px solid ${hairline}` }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>{companyName} · {mock?.title || 'This week'}</span>
+              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.68)' }}>{companyName} · {mock?.title || 'This week'}</span>
             </div>
             <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
               {mockMetrics.length > 0 && (
@@ -2556,11 +2556,25 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {/* ONE IDEA IN -> WHOLE FUNNEL OUT — the interactive fan-out animation from the landing */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>One idea in. <Italic>Your whole funnel out.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>The same engine runs the entire loop, end to end. You only ever touch one step. Click any one to see it running in the real product.</p>
-        <motion.div className="mt-10 p-4 sm:p-6 md:p-8" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>The same engine runs the entire loop, end to end. You only ever touch one step.</p>
+        {/* desktop: the interactive fan-out diagram (its reveal is gated to >=1024px) */}
+        <motion.div className="mt-10 p-4 sm:p-6 md:p-8 hidden lg:block" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
           style={{ borderRadius: 28, border: `1px solid ${hairline}`, background: 'var(--color-paper-sunk, #EFEAE2)', boxShadow: CI_SHADOW_LG }}>
           <SystemFlowDiagram />
         </motion.div>
+        {/* mobile: clean stacked steps (the diagram does not reveal below lg) */}
+        <div className="mt-9 lg:hidden grid gap-3">
+          {SYSTEM_FLOW.map((s, i) => (
+            <motion.div key={s.n} initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.45, ease: EASE, delay: i * 0.06 }}
+              className="flex gap-3.5 p-4" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
+              <span aria-hidden style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1, color: 'var(--color-accent)', flexShrink: 0, minWidth: 30 }}>{s.n}</span>
+              <div>
+                <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.25, color: '#1A1A1A' }}>{s.title}</h3>
+                <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </section>
 
       {/* LEAD MAGNETS */}
