@@ -33,7 +33,7 @@ const STATUS_META: Record<string, { dot: string; label: string; pill?: string }>
   approved:      { dot: 'bg-emerald-500',  label: 'text-emerald-700',        pill: 'bg-emerald-50 text-emerald-700' },
   scheduled:     { dot: 'bg-violet-500',   label: 'text-violet-700',         pill: 'bg-violet-50 text-violet-700' },
   published:     { dot: 'bg-slate-400',    label: 'text-[var(--ds-dim)]',    pill: 'bg-slate-100 text-slate-500' },
-  disqualified:  { dot: 'bg-slate-300',    label: 'text-[var(--ds-faint)]',  pill: 'bg-slate-50 text-slate-400' },
+  disqualified:  { dot: 'bg-slate-300',    label: 'text-[var(--ds-faint)]',  pill: 'bg-slate-50 text-slate-600' },
   error:         { dot: 'bg-red-500',      label: 'text-red-700',            pill: 'bg-red-50 text-red-700' },
 };
 
