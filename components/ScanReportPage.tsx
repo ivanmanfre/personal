@@ -10,7 +10,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
-import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import SystemFlowDiagram from './SystemFlowDiagram';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
@@ -2263,6 +2263,134 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   );
 }
 
+// The content-system product cockpit — an animated "software" surface showing the
+// engine running THIS founder's own content through the pipeline. Mirrors the
+// CallIntelProductMock grammar (titlebar, counter tiles, animated rows, activity feed).
+function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; companyName: string }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  const accentInk = 'var(--color-accent-ink)';
+  const founder = (cs.founder?.first_name || (cs.founder?.name || '').split(' ')[0] || companyName).trim();
+
+  const STAGES = ['Idea', 'Draft', 'Voice', 'QA', 'Scheduled'];
+  const clip = (s: string) => { const t = (s || '').replace(/\s+/g, ' ').trim(); return t.length > 48 ? t.slice(0, 46) + '…' : t; };
+  const stagePlan = [4, 3, 1]; // varied stages so the board reads as "in motion"
+  const rows: { label: string; kind: string; stage: number }[] = [];
+  (cs.sample_output?.posts ?? []).slice(0, 3).forEach((p, i) => {
+    const kind = (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '')
+      ? 'Carousel' : (p.image_url ? 'Image' : 'Post');
+    rows.push({ label: clip(p.hook || p.format || 'Post'), kind, stage: stagePlan[i] ?? 2 });
+  });
+  const lm = cs.sample_output?.lm;
+  if (lm?.title) rows.push({ label: clip(lm.title), kind: 'Lead magnet', stage: 4 });
+
+  const tiles = METRICS.slice(0, 4); // honest engine specs, not invented client numbers
+  const modules = ['Ideas', 'Posts', 'Lead magnets', 'Outreach', 'Calendar'];
+  const activity = [
+    { tag: 'Voice', text: `Drafted in ${founder}'s voice, grounded in real calls and past winners.` },
+    { tag: 'QA', text: 'Cleared the nine-point quality agent and lint. Zero AI tells.' },
+    { tag: 'Funnel', text: 'Lead magnet built and published to a live page, capturing emails.' },
+  ];
+
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.8, ease: EASE }}
+      className="overflow-hidden relative"
+      style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
+    >
+      <CILoadShimmer />
+      {/* window titlebar */}
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+        <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
+          {companyName} · Content System
+        </span>
+        <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+          <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ height: 6, width: 6, background: 'var(--color-accent)' }} />
+          Live
+        </span>
+      </div>
+
+      {/* module nav — sells "runs your whole presence" */}
+      <div className="flex items-center gap-2 px-3.5 py-2.5 overflow-x-auto" style={{ borderBottom: `1px solid ${hairline}`, background: CI_CARD }}>
+        {modules.map((m, i) => (
+          <span key={m} className="shrink-0 px-2.5 py-1" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, borderRadius: 7, color: i === 1 ? '#F7F4EF' : 'rgba(26,26,26,0.5)', background: i === 1 ? 'var(--color-accent)' : 'transparent', border: i === 1 ? 'none' : `1px solid ${hairline}` }}>{m}</span>
+        ))}
+      </div>
+
+      <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+        {/* engine-spec tiles */}
+        <div className="grid grid-cols-2 sm:grid-cols-4" style={{ borderBottom: `1px solid ${hairline}` }}>
+          {tiles.map((m, i) => (
+            <div key={i} className="px-5 py-5" style={{ borderLeft: i % 4 ? `1px solid ${hairline}` : 'none', borderTop: i >= 2 ? `1px solid ${hairline}` : 'none' }}>
+              <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.7rem, 2.7vw, 2.4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
+              <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)', lineHeight: 1.45 }}>{m.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="px-5 lg:px-6 py-6 space-y-6">
+          {/* pipeline board — the prospect's own content, mid-flight */}
+          {rows.length > 0 && (
+            <div>
+              <p className="mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>This week, in the pipeline</p>
+              <div>
+                {rows.map((r, ri) => (
+                  <motion.div
+                    key={ri}
+                    initial={reduce ? false : { opacity: 0, x: -8 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, margin: '-30px' }}
+                    transition={{ duration: 0.5, ease: EASE, delay: 0.1 + ri * 0.08 }}
+                    className="flex items-center gap-3 flex-wrap py-2.5"
+                    style={{ borderTop: ri ? `1px solid ${hairline}` : 'none' }}
+                  >
+                    <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 7, background: 'rgba(42,143,101,0.06)' }}>{r.kind}</span>
+                    <span className="min-w-0 flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A' }}>{r.label}</span>
+                    <span className="flex items-center gap-1" aria-hidden>
+                      {STAGES.map((_, si) => (
+                        <motion.span
+                          key={si}
+                          initial={reduce ? false : { opacity: 0.2, scaleY: 0.55 }}
+                          whileInView={{ opacity: si <= r.stage ? 1 : 0.22, scaleY: 1 }}
+                          viewport={{ once: true, margin: '-30px' }}
+                          transition={{ duration: 0.35, ease: EASE, delay: 0.2 + ri * 0.08 + si * 0.05 }}
+                          style={{ height: 6, width: 16, borderRadius: 2, background: si <= r.stage ? 'var(--color-accent)' : 'rgba(26,26,26,0.1)' }}
+                        />
+                      ))}
+                    </span>
+                    <span className="shrink-0 text-right" style={{ width: 78, fontFamily: MONO, fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, color: r.stage >= 4 ? accentInk : 'rgba(26,26,26,0.6)' }}>{STAGES[r.stage]}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* live activity feed */}
+          <div className="space-y-px" style={{ borderTop: `1px solid ${hairline}` }}>
+            {activity.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={reduce ? false : { opacity: 0, x: -8 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: '-30px' }}
+                transition={{ duration: 0.5, ease: EASE, delay: 0.25 + i * 0.08 }}
+                className="flex items-start gap-3 pt-3"
+              >
+                <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 8, background: 'rgba(42,143,101,0.06)' }}>{f.tag}</span>
+                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.text}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const cs = report.content_system;
   if (!cs) return null;
@@ -2315,19 +2443,23 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <CSHero cs={cs} who={who} companyName={companyName} meta={meta} bookUrl={bookUrl} />
       <CSPain cs={cs} who={who} companyName={companyName} receipts={receipts} scan={scan} />
 
-      {/* THE FIX — the engine, as soft benefit cards (the 6 promises) */}
+      {/* THE FIX — the engine, as a live, animated product cockpit */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>The system</Kicker>
         <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
           Not <Italic>"AI writes my posts."</Italic> A system that runs your whole presence.
         </h2>
         {cs.system?.summary && <SerifBody className="mt-4 max-w-2xl">{cs.system.summary}</SerifBody>}
-        <div className="mt-10 grid md:grid-cols-2 gap-5">
+        <div className="mt-10">
+          <ContentSystemDashboardMock cs={cs} companyName={companyName} />
+        </div>
+        {/* the four reframe promises, compact under the cockpit */}
+        <div className="mt-9 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-7 gap-y-6">
           {PROMISES.map((p, i) => (
-            <motion.div key={p.headline} initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.55, ease: EASE, delay: (i % 2) * 0.08 }}
-              className="p-6 lg:p-7" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.5rem)', lineHeight: 1.12, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{p.headline}</h3>
-              <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
+            <motion.div key={p.headline} initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.5, ease: EASE, delay: (i % 4) * 0.07 }}
+              className="pl-4" style={{ borderLeft: '2px solid var(--color-accent)' }}>
+              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.2, color: '#1A1A1A' }}>{p.headline}</h3>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
             </motion.div>
           ))}
         </div>
