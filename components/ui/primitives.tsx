@@ -57,8 +57,8 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
   };
   const variants: Record<BtnVariant, string> = {
     primary:   'bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:from-emerald-600 active:to-emerald-700 text-white shadow-md shadow-emerald-900/30 ring-1 ring-emerald-400/30',
-    secondary: 'bg-zinc-800/70 hover:bg-zinc-700/80 active:bg-zinc-800 text-zinc-200 ring-1 ring-zinc-700/60 shadow-sm',
-    ghost:     'bg-transparent hover:bg-zinc-800/60 text-zinc-300',
+    secondary: 'bg-[var(--ds-line)] hover:bg-black/[.06] active:bg-black/[.09] text-[var(--ds-ink)] ring-1 ring-[var(--ds-line)] shadow-sm',
+    ghost:     'bg-transparent hover:bg-black/[.03] text-[var(--ds-dim)]',
     danger:    'bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-md shadow-red-900/30 ring-1 ring-red-400/30',
   };
   return (
@@ -102,7 +102,7 @@ export const Badge: React.FC<React.HTMLAttributes<HTMLSpanElement> & {
 };
 
 // ─── Input + Textarea ────────────────────────────────────────────────────────
-const fieldBase = 'w-full rounded-lg bg-zinc-950/60 ring-1 ring-inset ring-zinc-800/80 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 transition-all duration-150 focus:outline-none focus:ring-emerald-500/40 focus:bg-zinc-950';
+const fieldBase = 'w-full rounded-lg bg-[var(--ds-bg)] ring-1 ring-inset ring-[var(--ds-line)] px-3 py-2 text-sm text-[var(--ds-ink)] placeholder-zinc-400 transition-all duration-150 focus:outline-none focus:ring-emerald-500/40 focus:bg-white';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...rest }, ref) => <input ref={ref} className={cn(fieldBase, className)} {...rest} />
