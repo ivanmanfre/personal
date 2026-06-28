@@ -56,21 +56,21 @@ export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, size = 'lg',
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-            className={`fixed right-0 top-0 bottom-0 z-50 w-full ${WIDTHS[size]} bg-zinc-950 border-l border-zinc-800/80 shadow-[-12px_0_40px_rgba(0,0,0,0.4)] flex flex-col`}
+            className={`fixed right-0 top-0 bottom-0 z-50 w-full ${WIDTHS[size]} bg-[var(--ds-card)] border-l border-[var(--ds-line)] shadow-[-12px_0_40px_rgba(0,0,0,0.12)] flex flex-col`}
           >
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/80 shrink-0">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--ds-line)] bg-[var(--ds-card)] shrink-0">
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="p-1.5 rounded-md text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ds-card)]"
                 title="Close (Esc)"
               >
                 <X className="w-4 h-4" />
               </button>
-              {title && <div className="text-sm font-medium text-zinc-100 truncate flex-1">{title}</div>}
+              {title && <div className="text-sm font-medium text-[var(--ds-ink)] truncate flex-1">{title}</div>}
             </div>
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
+            <div className="flex-1 overflow-y-auto px-4 py-4 bg-[var(--ds-bg)]">{children}</div>
           </motion.div>
         </>
       )}

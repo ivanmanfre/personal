@@ -24,15 +24,15 @@ export const InternalTabs: React.FC<{ tabs: Tab[]; storageKey?: string }> = ({ t
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-1 border-b border-zinc-800">
+      <div className="flex items-center gap-1 border-b border-[var(--ds-line)]">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setActive(t.key)}
-            className={`px-3 py-1.5 text-[12.5px] transition-colors border-b-2 -mb-px ${
+            className={`px-3 py-1.5 text-[12.5px] transition-colors border-b-2 -mb-px focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-1 ${
               t.key === active
-                ? 'border-emerald-500 text-zinc-100'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                ? 'border-indigo-500 text-[var(--ds-ink)]'
+                : 'border-transparent text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'
             }`}
           >
             {t.label}
