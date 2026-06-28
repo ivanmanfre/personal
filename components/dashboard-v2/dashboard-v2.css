@@ -15,11 +15,14 @@
  * Public site sets body { background: #F7F4EF; font-family: 'Source Serif 4' }
  * which leaks into v2 around panel gutters. Force warm-dark + Inter when v2 active.
  */
-body.dashboard-v2-active {
+/* NOTE: body.dashboard-v2-active is no longer applied — the active body class
+ * is now dashboard-v2-light (light theme) or has no suffix (dark). These rules
+ * are retargeted to .dashboard-v2-light so font overrides still apply. */
+body.dashboard-v2-light {
   font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif !important;
   -webkit-font-smoothing: antialiased !important;
 }
-body.dashboard-v2-active * {
+body.dashboard-v2-light * {
   /* Inputs and elements that explicitly set font-family will still win;
      this only affects elements that inherit. */
 }

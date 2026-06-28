@@ -21,8 +21,51 @@ body.dashboard-v2-light {
 @keyframes ds-fadein{to{opacity:1}}
 @keyframes ds-pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* Light mode overrides — page background, container background, and text */
+/* ── Bridge: remap ALL dark --d-* vars to light equivalents ──
+ * Unconverted tabs (Clients, Reach, System, Knowledge, etc.) still consume
+ * var(--d-*) tokens defined in the .dashboard-v2 block (dark palette).
+ * By redefining every --d-* here, those consumers render legibly on light
+ * without touching any TSX/component code.
+ */
 body.dashboard-v2-light .dashboard-v2 {
+  /* Backgrounds — light surfaces */
+  --d-ink:      #f6f7f9;    /* page bg (was darkest bg) */
+  --d-ink-2:    #ffffff;    /* card / panel surface */
+  --d-ink-3:    #f1f1f5;    /* inputs, raised controls */
+  --d-surface:  #ffffff;    /* card tier alias */
+  --d-surface-2:#f6f7f9;    /* hover / nested rows */
+
+  /* Text — dark on light */
+  --d-paper:       #0f172a;  /* primary text */
+  --d-paper-dim:   #64748b;  /* secondary text */
+  --d-paper-dimmer:#94a3b8;  /* tertiary / quiet meta */
+
+  /* Borders */
+  --d-rule:        #e9e9ee;               /* internal dividers */
+  --d-rule-strong: #d8d8df;              /* card / container borders */
+
+  /* Semantic colours — adjusted for light contrast */
+  --d-good:        #059669;
+  --d-good-hi:     #047857;
+  --d-warn:        #d97706;
+  --d-bad:         #dc2626;
+  --d-bad-txt:     #dc2626;
+  --d-accent:      #4f46e5;
+  --d-agent:       #7c3aed;
+
+  /* Semantic tinted bgs — very light washes */
+  --d-good-bg:    rgba(5, 150, 105, 0.08);
+  --d-warn-bg:    rgba(217, 119, 6, 0.08);
+  --d-bad-bg:     rgba(220, 38, 38, 0.08);
+  --d-accent-bg:  rgba(79, 70, 229, 0.08);
+  --d-agent-bg:   rgba(124, 58, 237, 0.08);
+
+  /* Depth — lighter shadows for light theme */
+  --d-shadow-1: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -2px rgba(15,23,42,0.08);
+  --d-shadow-2: 0 8px 24px -6px rgba(15,23,42,0.12), 0 2px 6px -2px rgba(15,23,42,0.06);
+  --d-edge-light: inset 0 1px 0 rgba(255,255,255,0.6);
+
+  /* Base styles */
   background: var(--ds-bg) !important;
   color: var(--ds-ink) !important;
 }
@@ -389,4 +432,65 @@ body.dashboard-v2-light .nb-button:hover {
 body.dashboard-v2-light .dv-field-label {
   font-size: 12px !important;
   color: var(--ds-dim) !important;
+}
+
+/* ── Hardcoded-dark class overrides for unconverted panels ──
+ * panel-surface (styles.css) and bg-zinc-900/80 overrides (dashboard-v2.css)
+ * use literal dark rgba values instead of --d-* tokens. Re-override to light.
+ */
+body.dashboard-v2-light .panel-surface {
+  background-color: #ffffff !important;
+  border-color: var(--ds-line) !important;
+}
+/* Override the rgba values set by dashboard-v2.css's Tailwind bridge for zinc variants */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-950 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900 { background-color: var(--ds-card) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-700 { background-color: #f1f1f5 !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/50,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/60,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(241,241,245,0.85) !important; }
+/* Borders */
+body.dashboard-v2-light .dashboard-v2 .border-zinc-950 { border-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-900 { border-color: var(--ds-line) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-800 { border-color: var(--ds-line) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-700 { border-color: #d8d8df !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-700\/60,
+body.dashboard-v2-light .dashboard-v2 .border-zinc-800\/60 { border-color: rgba(217,217,223,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .divide-zinc-800 > * + *,
+body.dashboard-v2-light .dashboard-v2 .divide-zinc-700 > * + * { border-color: var(--ds-line) !important; }
+/* Text — zinc grays → light-theme text values */
+body.dashboard-v2-light .dashboard-v2 .text-zinc-50,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-100,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-200,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-300 { color: var(--ds-ink) !important; }
+body.dashboard-v2-light .dashboard-v2 .text-zinc-400 { color: var(--ds-dim) !important; }
+body.dashboard-v2-light .dashboard-v2 .text-zinc-500,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-600 { color: var(--ds-faint) !important; }
+/* Hover states in v1 panels */
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-700:hover { background-color: #f1f1f5 !important; }
+/* Inline dark bg variants used in ClientsPanel */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/20 { background-color: rgba(241,241,245,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/30 { background-color: rgba(241,241,245,0.7) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/40 { background-color: rgba(233,233,238,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/60 { background-color: rgba(217,217,223,0.6) !important; }
+/* Inputs */
+body.dashboard-v2-light .dashboard-v2 input.bg-zinc-900,
+body.dashboard-v2-light .dashboard-v2 input.bg-zinc-800,
+body.dashboard-v2-light .dashboard-v2 textarea.bg-zinc-900,
+body.dashboard-v2-light .dashboard-v2 textarea.bg-zinc-800,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 input::placeholder,
+body.dashboard-v2-light .dashboard-v2 textarea::placeholder { color: var(--ds-faint) !important; }
+/* Native controls — select + checkbox */
+body.dashboard-v2-light .dashboard-v2 select {
+  background-color: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dashboard-v2 input[type="checkbox"] {
+  background: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
 }
