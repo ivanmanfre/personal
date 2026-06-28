@@ -265,7 +265,7 @@ const useMediaQuery = (query: string): boolean => {
 // Only vetted, defensible numbers live at the top of the page.
 const METRICS = [
   { fig: '100+', label: 'Systems built', receipt: 'Designed and run by me, including the engine behind my own LinkedIn.' },
-  { fig: '5+', unit: '/wk', label: 'Posts in your voice', receipt: 'Posts, carousels, video, and lead magnets, out without you touching them.' },
+  { fig: '5+', unit: '/wk', label: 'Posts in your voice', receipt: 'Posts, carousels, video, lead magnets, and a weekly newsletter, out without you touching them.' },
   { fig: '~1', unit: 'hr', label: 'Your time', receipt: 'You review and approve. The engine does the rest.' },
 ];
 
@@ -699,7 +699,7 @@ const COMPARE_COLS = ['Your system', 'Ghostwriter', 'In-house hire', 'DIY'] as c
 const COMPARE_ROWS: { label: string; cells: string[] }[] = [
   { label: 'Who writes it', cells: ['An engine in your voice', 'One writer', 'One hire', 'You'] },
   { label: 'Sounds like you', cells: ['Yes, anti-slop QA', 'Sometimes', 'Sometimes', 'Yes'] },
-  { label: 'Formats', cells: ['Posts, carousels, video, lead magnets', 'Posts', 'Posts', 'Whatever you manage'] },
+  { label: 'Formats', cells: ['Posts, carousels, video, lead magnets, newsletter', 'Posts', 'Posts', 'Whatever you manage'] },
   { label: 'You own it after', cells: ["Yes, it's your system", 'No', 'No', 'Yes'] },
   { label: 'Your time / week', cells: ['About 15 min review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
   { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
@@ -906,7 +906,7 @@ const ROICalculator: React.FC = () => {
                 </div>
               </div>
               <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B', marginTop: '24px' }}>
-                The engine does more, posts, carousels, video, and lead magnets, daily and in your voice, for about 15 minutes a week of your time.
+                The engine does more, posts, carousels, video, lead magnets, and a weekly newsletter, daily and in your voice, for about 15 minutes a week of your time.
               </p>
             </div>
           </motion.div>
@@ -1383,7 +1383,7 @@ const OfferSection: React.FC = () => (
 
 // ─── Meet the operator — trust section, big portrait, solo-ownership framing ──
 const OPERATOR_POINTS = [
-  'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, and lead magnets, all QA’d before they go out.',
+  'Your engine is trained on your voice and ships 5+ posts a week, plus carousels, video, lead magnets, and a weekly newsletter, all QA’d before they go out.',
   "It's the same system already running for operators like Agency Operators and Lemonade, not a demo.",
   'You own the system at the end. It lives in your accounts and keeps running, with or without me.',
 ];
