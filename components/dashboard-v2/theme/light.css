@@ -1,0 +1,21 @@
+/* components/dashboard-v2/theme/light.css */
+body.dashboard-v2-light {
+  --ds-bg:#f6f7f9; --ds-card:#ffffff; --ds-line:#e9e9ee;
+  --ds-ink:#0f172a; --ds-dim:#64748b; --ds-faint:#94a3b8;
+  --ds-accent:#4f46e5; --ds-accent-hover:#6366f1;
+  --ds-ok:#059669; --ds-warn:#d97706; --ds-info:#2563eb; --ds-violet:#7c3aed;
+  --ds-shadow-sm:0 1px 2px rgba(15,23,42,.04);
+  --ds-shadow-card:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18);
+  --ds-radius:14px;
+  background:var(--ds-bg) !important; color:var(--ds-ink) !important;
+  font-family:'Inter',system-ui,-apple-system,sans-serif !important;
+}
+@media (prefers-reduced-motion: reduce){
+  body.dashboard-v2-light *{animation-duration:.001ms !important;animation-iteration-count:1 !important}
+}
+
+@keyframes ds-draw{to{stroke-dashoffset:0}}
+@keyframes ds-ring{to{stroke-dashoffset:var(--off)}}
+@keyframes ds-rowin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ds-fill{to{width:var(--w)}}
+@keyframes ds-fadein{to{opacity:1}}
