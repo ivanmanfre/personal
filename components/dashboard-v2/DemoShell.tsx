@@ -70,15 +70,15 @@ function ShellInner() {
 export default function DemoShell() {
   useEffect(() => {
     registerServiceWorker();
-    // Force body to use v2 ink bg + Inter (overrides public-site cream/serif)
-    document.body.classList.add('dashboard-v2-active');
+    // Force body to use v2 light theme + Inter (overrides public-site cream/serif)
+    document.body.classList.add('dashboard-v2-light');
     // If we landed here via /dashboard?tab=foo, rewrite to v2 equivalent
     import('../../lib/dashboardUrlMigration').then(({ migrateV1Url }) => {
       if (migrateV1Url()) {
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     });
-    return () => { document.body.classList.remove('dashboard-v2-active'); };
+    return () => { document.body.classList.remove('dashboard-v2-light'); };
   }, []);
   return (
     <DashboardProvider>
