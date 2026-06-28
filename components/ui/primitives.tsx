@@ -120,7 +120,7 @@ export const FieldLabel: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> =
 }) => (
   <label
     className={cn(
-      'block text-[10.5px] uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-1.5',
+      'block text-xs uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-1.5',
       className,
     )}
     {...rest}

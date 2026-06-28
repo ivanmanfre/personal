@@ -64,23 +64,23 @@ const AGENT_ICON: Record<string, React.ComponentType<{ className?: string }>> = 
 };
 
 const AGENT_TINT: Record<string, string> = {
-  'Ivan':                  'text-emerald-200 bg-emerald-500/15 border-emerald-500/30 font-semibold',
-  'Editorial Agent':       'text-violet-300 bg-violet-500/10 border-violet-500/20',
-  'LM Editorial Agent':    'text-violet-300 bg-violet-500/10 border-violet-500/20',
-  'Hook Agent':            'text-sky-300 bg-sky-500/10 border-sky-500/20',
-  'Content Agent':         'text-zinc-200 bg-zinc-800/50 border-zinc-700/40',
-  'Carousel Structurer':   'text-zinc-200 bg-zinc-800/50 border-zinc-700/40',
-  'Carousel Content Agent':'text-zinc-200 bg-zinc-800/50 border-zinc-700/40',
-  'QA Agent':              'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  'LM QA Agent':           'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  'Carousel QA':           'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  'QA HALT':               'text-red-300 bg-red-500/10 border-red-500/20',
-  'Carousel QA Gate HALT': 'text-red-300 bg-red-500/10 border-red-500/20',
-  'LM Cover Copy Agent':   'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-  'Image Generation':      'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-  'IG Caption Generator':  'text-pink-300 bg-pink-500/10 border-pink-500/20',
-  'Scheduling Agent':      'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  'Publisher':             'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  'Ivan':                  'text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold',
+  'Editorial Agent':       'text-violet-700 bg-violet-50 border-violet-200',
+  'LM Editorial Agent':    'text-violet-700 bg-violet-50 border-violet-200',
+  'Hook Agent':            'text-sky-700 bg-sky-50 border-sky-200',
+  'Content Agent':         'text-slate-700 bg-slate-50 border-slate-200',
+  'Carousel Structurer':   'text-slate-700 bg-slate-50 border-slate-200',
+  'Carousel Content Agent':'text-slate-700 bg-slate-50 border-slate-200',
+  'QA Agent':              'text-amber-700 bg-amber-50 border-amber-200',
+  'LM QA Agent':           'text-amber-700 bg-amber-50 border-amber-200',
+  'Carousel QA':           'text-amber-700 bg-amber-50 border-amber-200',
+  'QA HALT':               'text-red-700 bg-red-50 border-red-200',
+  'Carousel QA Gate HALT': 'text-red-700 bg-red-50 border-red-200',
+  'LM Cover Copy Agent':   'text-emerald-700 bg-emerald-50 border-emerald-200',
+  'Image Generation':      'text-emerald-700 bg-emerald-50 border-emerald-200',
+  'IG Caption Generator':  'text-pink-700 bg-pink-50 border-pink-200',
+  'Scheduling Agent':      'text-cyan-700 bg-cyan-50 border-cyan-200',
+  'Publisher':             'text-emerald-700 bg-emerald-50 border-emerald-200',
 };
 
 function relTime(iso: string | null): string {
@@ -166,7 +166,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
   }
 
   const composer = canCompose && (
-    <div className="border-t border-zinc-800/60 px-3 py-2 bg-zinc-900/40">
+    <div className="border-t border-[var(--ds-line)] px-3 py-2 bg-[var(--ds-bg)]">
       <div className="flex items-start gap-2">
         <textarea
           value={noteText}
@@ -174,12 +174,12 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
           onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) postNote(); }}
           placeholder="Add a note for future-you (⌘+Enter to post)…"
           rows={2}
-          className="flex-1 rounded-md bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 text-[12px] text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-emerald-700/60 resize-none"
+          className="flex-1 rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2.5 py-1.5 text-xs text-[var(--ds-ink)] placeholder-[var(--ds-dim)] focus:outline-none focus:border-[var(--ds-accent)] resize-none"
         />
         <button
           onClick={postNote}
           disabled={posting || !noteText.trim()}
-          className="inline-flex items-center gap-1 rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed px-2.5 py-1.5 text-xs font-medium text-white"
+          className="inline-flex items-center gap-1 rounded-md bg-[var(--ds-accent)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed px-2.5 py-1.5 text-xs font-medium text-white"
         >
           {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           Post
@@ -190,8 +190,8 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
 
   if (sorted.length === 0) {
     return (
-      <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
-        <div className="px-3 py-2 text-xs text-zinc-500 italic">
+      <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)]">
+        <div className="px-3 py-2 text-xs text-[var(--ds-dim)] italic">
           No agent activity yet — entries will appear here as the generation chain runs.
         </div>
         {composer}
@@ -200,39 +200,39 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
   }
 
   return (
-    <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+    <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)]">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--ds-ink)] hover:bg-black/[.03]"
       >
-        <Sparkles className="w-3.5 h-3.5 text-purple-400/70" />
+        <Sparkles className="w-3.5 h-3.5 text-violet-500" />
         Agent activity
-        <span className="text-[11px] text-zinc-500">· {sorted.length} entr{sorted.length === 1 ? 'y' : 'ies'}</span>
-        <span className="ml-auto text-zinc-500">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+        <span className="text-xs text-[var(--ds-dim)]">· {sorted.length} entr{sorted.length === 1 ? 'y' : 'ies'}</span>
+        <span className="ml-auto text-[var(--ds-dim)]">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
       </button>
       {open && (
-        <div className="border-t border-zinc-800/60 divide-y divide-zinc-800/30 max-h-[60vh] overflow-y-auto">
+        <div className="border-t border-[var(--ds-line)] divide-y divide-[var(--ds-line)] max-h-[60vh] overflow-y-auto">
           {sorted.map((e, i) => {
             const Icon = AGENT_ICON[e.agent] || MessageSquareDashed;
-            const tint = AGENT_TINT[e.agent] || 'text-zinc-300 bg-zinc-800/40 border-zinc-700/30';
+            const tint = AGENT_TINT[e.agent] || 'text-slate-700 bg-slate-50 border-slate-200';
             const expanded = bodyOpen[i] ?? false;
             const display = humanizeBody(e.body || '');
             const preview = display.replace(/\s+/g, ' ').slice(0, 140);
             const truncated = display.length > 140;
             return (
-              <div key={i} className={`px-3 py-1.5 hover:bg-zinc-800/20 transition-colors ${newKeys.has(`${e.ts}|${e.agent}`) ? 'animate-log-pulse' : ''}`}>
-                <div className="flex items-center gap-2 flex-wrap text-[11px]">
+              <div key={i} className={`px-3 py-1.5 hover:bg-black/[.02] transition-colors ${newKeys.has(`${e.ts}|${e.agent}`) ? 'animate-log-pulse' : ''}`}>
+                <div className="flex items-center gap-2 flex-wrap text-xs">
                   <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${tint}`}>
                     <Icon className="w-3 h-3" /> {e.agent}
                   </span>
-                  <span className="text-zinc-500 font-mono tabular-nums text-[10.5px]">{relTime(e.ts)}</span>
+                  <span className="text-[var(--ds-dim)] font-mono tabular-nums text-xs">{relTime(e.ts)}</span>
                   {e.source === 'clickup_backfill' && (
-                    <span className="text-[9.5px] text-zinc-700 uppercase tracking-wider">backfill</span>
+                    <span className="text-xs text-[var(--ds-faint)] uppercase tracking-wider">backfill</span>
                   )}
                   {truncated && (
                     <button
                       onClick={() => setBodyOpen((s) => ({ ...s, [i]: !s[i] }))}
-                      className="ml-auto text-[10.5px] text-zinc-500 hover:text-zinc-300 px-1.5 py-0.5 rounded hover:bg-zinc-800/60 transition-colors"
+                      className="ml-auto text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] px-1.5 py-0.5 rounded hover:bg-black/[.03] transition-colors"
                     >
                       {expanded ? 'collapse' : 'expand'}
                     </button>
@@ -241,10 +241,10 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
                 <div className="mt-1">
                   {expanded || !truncated ? (
                     renderMarkdown
-                      ? <div className="text-[12px] text-zinc-300 leading-snug pl-1 border-l-2 border-zinc-800/60 ml-0.5 pl-2">{renderLightMarkdown(display || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}</div>
-                      : <pre className="whitespace-pre-wrap text-[12px] text-zinc-300 leading-snug font-sans pl-2 border-l-2 border-zinc-800/60">{display || '(empty)'}</pre>
+                      ? <div className="text-xs text-[var(--ds-ink)] leading-snug pl-2 border-l-2 border-[var(--ds-line)]">{renderLightMarkdown(display || '(empty)', { textClass: 'text-xs text-[var(--ds-ink)] leading-snug' })}</div>
+                      : <pre className="whitespace-pre-wrap text-xs text-[var(--ds-ink)] leading-snug font-sans pl-2 border-l-2 border-[var(--ds-line)]">{display || '(empty)'}</pre>
                   ) : (
-                    <p className="text-[11.5px] text-zinc-500 line-clamp-1 pl-1">{preview}{truncated ? '…' : ''}</p>
+                    <p className="text-xs text-[var(--ds-dim)] line-clamp-1 pl-1">{preview}{truncated ? '…' : ''}</p>
                   )}
                 </div>
               </div>
