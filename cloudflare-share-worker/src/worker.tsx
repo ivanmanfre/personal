@@ -12,6 +12,14 @@ import monoFont from './fonts/ibm-plex-mono-500.ttf';
 interface Env {
   SUPABASE_URL: string;
   SITE_URL: string;
+  SUPABASE_ANON_KEY: string;
+}
+
+interface ScanShare {
+  slug: string;
+  company: string;
+  founderName: string;
+  founderFirst: string;
 }
 
 interface ScorecardResult {
@@ -310,10 +318,150 @@ async function renderOgPng(result: ScorecardResult): Promise<Uint8Array> {
   return resvg.render().asPng();
 }
 
+// ---- Content-system scan share ------------------------------------------------
+async function fetchScan(env: Env, slug: string): Promise<ScanShare | null> {
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/scans?company_slug=eq.${encodeURIComponent(slug)}&status=eq.complete&matched_offer=eq.content_system&select=company_name,report_json`,
+    { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}` } }
+  );
+  if (!res.ok) return null;
+  const rows = (await res.json()) as any[];
+  if (!Array.isArray(rows) || !rows.length) return null;
+  const row = rows[0];
+  const cs = row?.report_json?.content_system || {};
+  const founderName = (cs.founder?.name || '').trim();
+  const founderFirst = (cs.founder?.first_name || founderName.split(' ')[0] || '').trim();
+  return { slug, company: (row.company_name || cs.founder?.name || 'your brand').trim(), founderName, founderFirst };
+}
+
+function renderScanShareHtml(env: Env, scan: ScanShare, requestUrl: string): string {
+  const ogImage = `${requestUrl}/og.png`;
+  const title = `A content system for ${scan.company}`;
+  const voice = scan.founderFirst ? `in ${scan.founderFirst}'s voice` : 'in your voice';
+  const description = `A week of LinkedIn posts and a lead magnet, ${voice}, ready to approve.`;
+  const targetUrl = `${env.SITE_URL}/scan/${scan.slug}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="${escapeHtml(description)}" />
+  <link rel="canonical" href="${targetUrl}" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${ogImage}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${targetUrl}" />
+  <meta property="og:site_name" content="Iván Manfredi" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${ogImage}" />
+
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F7F4EF; color: #1A1A1A; margin: 0; padding: 48px; }
+    .wrap { max-width: 540px; margin: 0 auto; }
+    a { color: #4C6E3D; }
+    .label { font-family: 'Courier New', monospace; text-transform: uppercase; font-size: 11px; letter-spacing: 0.18em; color: #888; }
+    .h { font-family: Georgia, serif; font-style: italic; font-size: 44px; line-height: 1.05; margin: 16px 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="label">Content System</p>
+    <p class="h">${escapeHtml(title)}</p>
+    <p>${escapeHtml(description)}</p>
+    <p>Opening <a href="${targetUrl}">${targetUrl}</a>…</p>
+  </div>
+  <script>
+    (function () {
+      var target = ${JSON.stringify(targetUrl)};
+      setTimeout(function () { window.location.replace(target); }, 50);
+    })();
+  </script>
+</body>
+</html>`;
+}
+
+async function renderScanOgPng(scan: ScanShare): Promise<Uint8Array> {
+  await ensureWasm();
+  const fonts = FONTS;
+  const voice = scan.founderFirst ? `in ${scan.founderFirst}'s voice` : 'in your voice';
+
+  const tree = h(
+    'div',
+    {
+      style: {
+        width: '1200px', height: '630px', background: '#F7F4EF',
+        paddingTop: '64px', paddingBottom: '64px', paddingLeft: '80px', paddingRight: '80px',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        fontFamily: 'IBM Plex Mono', color: '#1A1A1A',
+      },
+    },
+    h(
+      'div',
+      { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+      h('span', { style: { fontFamily: 'IBM Plex Mono', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '3.5px', color: '#888' } }, 'Content System'),
+      h('span', { style: { fontFamily: 'DM Serif Display', fontStyle: 'italic', fontSize: '36px', color: '#1A1A1A' } }, 'Manfredi')
+    ),
+    h(
+      'div',
+      { style: { display: 'flex', flexDirection: 'column', flex: '1', justifyContent: 'center' } },
+      h('span', { style: { fontFamily: 'IBM Plex Mono', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '3px', color: '#4C6E3D', marginBottom: '18px' } }, 'A content system for'),
+      h('span', { style: { fontFamily: 'DM Serif Display', fontStyle: 'italic', fontSize: '92px', lineHeight: '0.98', color: '#1A1A1A', maxWidth: '1040px' } }, scan.company),
+      h('span', { style: { fontFamily: 'IBM Plex Mono', fontSize: '22px', lineHeight: '1.4', color: '#555', marginTop: '26px', maxWidth: '900px' } }, `A week of posts and a lead magnet, ${voice}.`)
+    ),
+    h(
+      'div',
+      { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '24px', borderTop: '1px solid rgba(26,26,26,0.15)' } },
+      h('span', { style: { fontFamily: 'IBM Plex Mono', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '2.5px', color: '#666' } }, 'ivanmanfredi.com'),
+      h('span', { style: { fontFamily: 'IBM Plex Mono', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '2.5px', color: '#666' } }, scan.founderName ? `Prepared for ${scan.founderName}` : 'Built from your presence')
+    )
+  );
+
+  const svg = await satori(tree, {
+    width: 1200, height: 630,
+    fonts: [
+      { name: 'IBM Plex Mono', data: fonts.mono, weight: 500, style: 'normal' },
+      { name: 'DM Serif Display', data: fonts.serif, weight: 400, style: 'italic' },
+    ],
+  });
+  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
+  return resvg.render().asPng();
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Match /scan/:slug and /scan/:slug/og.png (content-system share)
+    const scanMatch = path.match(/^\/scan\/([a-z0-9][a-z0-9-]{0,90})(\/og\.png)?\/?$/i);
+    if (scanMatch) {
+      const slug = scanMatch[1];
+      const wantsImg = !!scanMatch[2];
+      const scan = await fetchScan(env, slug);
+      if (!scan) return new Response('Scan not found', { status: 404 });
+      if (wantsImg) {
+        try {
+          const png = await renderScanOgPng(scan);
+          return new Response(png, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } });
+        } catch (err) {
+          console.error('scan OG render failed', err);
+          return new Response('Render failed', { status: 500 });
+        }
+      }
+      const reqUrl = `${url.protocol}//${url.host}${url.pathname.replace(/\/$/, '')}`;
+      return new Response(renderScanShareHtml(env, scan, reqUrl), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300, s-maxage=300' },
+      });
+    }
 
     // Match /scorecard/:id and /scorecard/:id/og.png
     const match = path.match(/^\/scorecard\/([0-9a-f-]{36})(\/og\.png)?\/?$/i);

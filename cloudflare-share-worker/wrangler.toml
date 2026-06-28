@@ -17,6 +17,8 @@ workers_dev = true
 [vars]
 SUPABASE_URL = "https://bjbvqvzbzczjbatgmccb.supabase.co"
 SITE_URL = "https://ivanmanfredi.com"
+# Public anon key (RLS-limited; same key shipped in the frontend bundle)
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqYnZxdnpiemN6amJhdGdtY2NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgzMDUwODAsImV4cCI6MjA4Mzg4MTA4MH0.yqghcn-Rw5dIFadLhvUASIeUARPvu_CyPOGayI8KyTI"
 
 # Bundle TTFs and Wasm as binary modules
 [[rules]]
