@@ -24,17 +24,17 @@ const TYPE_LABELS: Record<PostType, string> = {
   carousel: 'Carousel',
 };
 
-// Status -> { dot color, text class } — colored dot in front of label is the scan anchor
-const STATUS_META: Record<string, { dot: string; label: string }> = {
-  draft:         { dot: 'bg-zinc-500',   label: 'text-zinc-300' },
-  idea:          { dot: 'bg-zinc-400',   label: 'text-zinc-300' },
-  generating:    { dot: 'bg-sky-400',    label: 'text-sky-300' },
-  review:        { dot: 'bg-amber-400',  label: 'text-amber-300' },
-  approved:      { dot: 'bg-emerald-400',label: 'text-emerald-300' },
-  scheduled:     { dot: 'bg-sky-400',    label: 'text-sky-300' },
-  published:     { dot: 'bg-zinc-500',   label: 'text-zinc-400' },
-  disqualified:  { dot: 'bg-zinc-600',   label: 'text-zinc-500' },
-  error:         { dot: 'bg-red-500',    label: 'text-red-400' },
+// Status -> { dot color, text class, pill bg+text } — for light theme
+const STATUS_META: Record<string, { dot: string; label: string; pill?: string }> = {
+  draft:         { dot: 'bg-slate-400',    label: 'text-[var(--ds-dim)]',   pill: 'bg-slate-100 text-slate-600' },
+  idea:          { dot: 'bg-blue-400',     label: 'text-blue-700',           pill: 'bg-blue-50 text-blue-700' },
+  generating:    { dot: 'bg-sky-500',      label: 'text-sky-700',            pill: 'bg-sky-50 text-sky-700' },
+  review:        { dot: 'bg-amber-400',    label: 'text-amber-700',          pill: 'bg-amber-50 text-amber-700' },
+  approved:      { dot: 'bg-emerald-500',  label: 'text-emerald-700',        pill: 'bg-emerald-50 text-emerald-700' },
+  scheduled:     { dot: 'bg-violet-500',   label: 'text-violet-700',         pill: 'bg-violet-50 text-violet-700' },
+  published:     { dot: 'bg-slate-400',    label: 'text-[var(--ds-dim)]',    pill: 'bg-slate-100 text-slate-500' },
+  disqualified:  { dot: 'bg-slate-300',    label: 'text-[var(--ds-faint)]',  pill: 'bg-slate-50 text-slate-400' },
+  error:         { dot: 'bg-red-500',      label: 'text-red-700',            pill: 'bg-red-50 text-red-700' },
 };
 
 // STATUS_ORDER comes from lib/statusLabels.ts so it stays in sync with labels.
@@ -331,32 +331,32 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     <div className="space-y-6">
       <LifecycleLegend />
       <div className="flex items-center gap-3" data-tour="posts">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 ring-1 ring-emerald-500/20 flex items-center justify-center">
-          <FileText className="w-4 h-4 text-emerald-400" />
+        <div className="w-9 h-9 rounded-xl bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] flex items-center justify-center">
+          <FileText className="w-4 h-4 text-[var(--ds-accent)]" />
         </div>
         <div>
           <h2 className="dv-section-h flex items-center gap-2">
             {title}
-            <span className="rounded-full bg-zinc-800/70 px-2 py-0.5 text-[11px] font-medium text-zinc-400 tabular-nums leading-none">{drafts.length}</span>
+            <span className="rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] px-2 py-0.5 text-[12px] font-medium text-[var(--ds-dim)] tabular-nums leading-none">{drafts.length}</span>
           </h2>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
-          <div className="inline-flex rounded-lg bg-zinc-900/60 ring-1 ring-zinc-800/80 p-0.5">
+          <div className="inline-flex rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] p-0.5">
             <button
               onClick={() => setView('list')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
               title="List view — ClickUp-style table grouped by status (all columns, horizontal scroll)"
             ><ListIcon className="w-3.5 h-3.5" /> List</button>
             <button
               onClick={() => setView('board')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
               title="Board view — kanban by status"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
           </div>
-          <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-2 text-zinc-400 hover:text-zinc-200" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
+          <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-2 text-[var(--ds-dim)] hover:text-[var(--ds-ink)]" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {generatingCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-400 animate-refresh-pulse" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 animate-refresh-pulse" />
             )}
           </button>
         </div>
@@ -370,16 +370,16 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           role="alert"
           aria-live="assertive"
           aria-atomic="true"
-          className="rounded-xl ring-1 ring-amber-500/30 bg-gradient-to-r from-amber-950/40 to-amber-950/20 px-4 py-2.5 shadow-lg shadow-amber-950/10"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm"
         >
           <button
             onClick={() => setShowStuckList((v) => !v)}
-            className="w-full flex items-center gap-2 text-left text-[12.5px] text-amber-200"
+            className="w-full flex items-center gap-2 text-left text-[13px] text-amber-800"
           >
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
             <span className="font-medium">{stuckScheduled.length} scheduled posts past due with no LinkedIn URN</span>
-            <span className="text-amber-400/70">— publisher likely failed, please triage</span>
-            <span className="ml-auto text-amber-300/70">{showStuckList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
+            <span className="text-amber-600">— publisher likely failed, please triage</span>
+            <span className="ml-auto text-amber-500">{showStuckList ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}</span>
           </button>
           {showStuckList && (
             <div className="mt-2 space-y-1 max-h-[200px] overflow-y-auto">
@@ -387,15 +387,15 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   key={d.id}
                   onClick={() => setOpenId(d.id)}
-                  className="w-full flex items-center gap-2 text-left text-[11.5px] text-amber-100 hover:text-white hover:bg-amber-950/30 rounded px-1 py-0.5"
+                  className="w-full flex items-center gap-2 text-left text-[12px] text-amber-900 hover:text-amber-950 hover:bg-amber-100 rounded px-1 py-0.5"
                 >
-                  <span className="text-amber-400/70 tabular-nums text-[10.5px] shrink-0">
+                  <span className="text-amber-600 tabular-nums text-[12px] shrink-0">
                     {new Date(d.scheduledAt!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                   <span className="truncate">{d.title || d.topic || '(untitled)'}</span>
                 </button>
               ))}
-              <div className="pt-1 flex items-center gap-3 text-[11px] text-amber-300/80">
+              <div className="pt-1 flex items-center gap-3 text-[12px] text-amber-700">
                 <button
                   onClick={async () => {
                     if (!confirm(`Mark all ${stuckScheduled.length} stuck posts as disqualified? They didn't publish to LinkedIn.`)) return;
@@ -409,9 +409,9 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                       await refresh();
                     } catch (err) { toastError('bulk disqualify stuck', err); }
                   }}
-                  className="rounded px-2 py-0.5 bg-amber-900/40 hover:bg-amber-900/60"
+                  className="rounded px-2 py-0.5 bg-amber-100 border border-amber-200 hover:bg-amber-200"
                 >Disqualify all</button>
-                <span className="text-amber-300/50">Or open each to re-publish manually.</span>
+                <span className="text-amber-500">Or open each to re-publish manually.</span>
               </div>
             </div>
           )}
@@ -419,19 +419,19 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       )}
 
       {/* New post — collapsed by default. Polished container with subtle gradient. */}
-      <div data-tour="new-post" className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/50 to-zinc-950/30 overflow-hidden shadow-lg shadow-black/10">
+      <div data-tour="new-post" className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] overflow-hidden shadow-sm">
         <button
           onClick={() => setFormOpen((v) => !v)}
-          className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] font-medium text-zinc-200 hover:bg-zinc-900/40 transition-colors group"
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-[var(--ds-ink)] hover:bg-[#fafafc] transition-colors group"
         >
-          <span className="w-6 h-6 rounded-md bg-emerald-500/15 ring-1 ring-emerald-500/30 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
-            <Plus className="w-3.5 h-3.5 text-emerald-300" />
+          <span className="w-6 h-6 rounded-md bg-[var(--ds-accent)]/10 border border-[var(--ds-accent)]/20 flex items-center justify-center group-hover:bg-[var(--ds-accent)]/15 transition-colors">
+            <Plus className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
           </span>
           New post
-          <span className="ml-auto text-zinc-500 transition-transform">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+          <span className="ml-auto text-[var(--ds-faint)] transition-transform">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
         </button>
         {formOpen && (
-          <div className="px-4 pb-4 space-y-4 border-t border-zinc-800/60 pt-4">
+          <div className="px-4 pb-4 space-y-4 border-t border-[var(--ds-line)] pt-4">
             <div>
               <div className="dv-field-label">Format</div>
               <div className="flex items-center gap-1.5">
@@ -439,7 +439,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   <button
                     key={t}
                     onClick={() => setType(t)}
-                    className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' : 'bg-zinc-900/40 text-zinc-400 ring-1 ring-inset ring-zinc-800/80 hover:text-zinc-200 hover:ring-zinc-700'}`}
+                    className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/30 shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-inset ring-[var(--ds-line)] hover:text-[var(--ds-ink)] hover:ring-[#cbd5e1]'}`}
                   >{TYPE_LABELS[t]}</button>
                 ))}
               </div>
@@ -450,37 +450,37 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder={type === 'carousel' ? 'e.g. Why hiring more people made your firm slower' : "e.g. Stop hiring to fix a process you haven't automated yet"}
-                className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
               />
-              <p className="mt-1.5 text-[11px] text-zinc-600">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
+              <p className="mt-1.5 text-[12px] text-[var(--ds-faint)]">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
             </div>
             {type === 'carousel' ? (
               <div>
-                <div className="dv-field-label">Key points <span className="normal-case font-normal text-zinc-600">· optional, one per line</span></div>
+                <div className="dv-field-label">Key points <span className="normal-case font-normal text-[var(--ds-faint)]">· optional, one per line</span></div>
                 <textarea
                   value={keyPoints}
                   onChange={(e) => setKeyPoints(e.target.value)}
                   placeholder="One point per line"
                   rows={3}
-                  className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                  className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
                 />
               </div>
             ) : (
               <div>
-                <div className="dv-field-label">Direction <span className="normal-case font-normal text-zinc-600">· optional</span></div>
+                <div className="dv-field-label">Direction <span className="normal-case font-normal text-[var(--ds-faint)]">· optional</span></div>
                 <textarea
                   value={details}
                   onChange={(e) => setDetails(e.target.value)}
                   placeholder="Any angle, tone, or detail to steer it"
                   rows={2}
-                  className="w-full rounded-lg bg-zinc-950/60 ring-1 ring-zinc-800/80 px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                  className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
                 />
               </div>
             )}
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400/30 transition-all"
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {buttonLabel}
@@ -492,60 +492,63 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       {/* Filters / sort — single muted line. Status + type pills are visually
           quiet (no high-contrast fill on non-active), keep more room for content. */}
       {drafts.length > 0 && (
-        <div className="space-y-1.5 text-[11.5px]" data-tour="post-lifecycle">
+        <div className="space-y-1.5 text-[12px]" data-tour="post-lifecycle">
           {/* Topic search — slimmer than before */}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by topic or body…"
-            className="w-full rounded bg-zinc-950 border border-zinc-800 px-2.5 py-1 text-[12.5px] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
+            className="w-full rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-2.5 py-1 text-[13px] text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/20"
           />
-          {/* Status + Type + Sort all on one line. Inactive pills are bare text with a
-              dot; active pill gets the emerald fill. Disqualified moved to a footer toggle. */}
-          <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-zinc-400">
+          {/* Status + Type + Sort all on one line. Tinted pills per status color. */}
+          <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-[var(--ds-dim)]">
             {(['all', ...visibleStatuses] as const).filter((s) => s !== 'disqualified').map((s) => {
               const count = statusCounts[s] || 0;
               const isPinned = s !== 'all' && PINNED_STATUSES.has(s);
               const isCritical = s === 'error' && count > 0;
               const isActive = statusFilter === s;
-              const dot = s === 'all' ? null : STATUS_META[s]?.dot;
+              const meta = s === 'all' ? null : STATUS_META[s];
+              const dot = meta?.dot;
+              const pillClass = meta?.pill;
               return (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
-                    isActive ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10' :
-                    isCritical ? 'text-red-300 hover:bg-red-500/10 hover:ring-1 hover:ring-inset hover:ring-red-500/30' :
-                    isPinned && count === 0 ? 'text-zinc-600 hover:text-zinc-400' :
-                    'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 hover:ring-1 hover:ring-inset hover:ring-zinc-700/60'
+                    isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
+                    isActive && s === 'all' ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/20 shadow-sm font-medium' :
+                    isCritical ? 'text-red-600 hover:bg-red-50' :
+                    isPinned && count === 0 ? 'text-[var(--ds-faint)] hover:text-[var(--ds-dim)]' :
+                    'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
                   }`}
                 >
-                  {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-300' : dot}`} />}
+                  {dot && <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />}
                   <span className="leading-none">{s === 'all' ? 'All' : statusLabel(s)}</span>
-                  {count > 0 && <span className={`tabular-nums text-[10.5px] leading-none ${isActive ? 'opacity-80' : 'opacity-60'}`}>{count}</span>}
+                  {count > 0 && <span className={`tabular-nums text-[12px] leading-none opacity-70`}>{count}</span>}
                 </button>
               );
             })}
-            <span className="text-zinc-700 mx-1.5 h-4 w-px bg-zinc-800/80" />
+            <span className="mx-1.5 h-4 w-px bg-[var(--ds-line)]" />
             {(['all', 'text', 'single_image', 'carousel'] as const).filter((t) => t === 'all' || typeCounts[t]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
-                  typeFilter === t ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-500/40 shadow-sm shadow-emerald-500/10'
-                                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 hover:ring-1 hover:ring-inset hover:ring-zinc-700/60'
+                  typeFilter === t
+                    ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/20 shadow-sm font-medium'
+                    : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
                 }`}
               >
                 <span className="leading-none">{t === 'all' ? 'All' : t === 'single_image' ? 'Single image' : t === 'carousel' ? 'Carousel' : 'Text'}</span>
-                {(typeCounts[t] || 0) > 0 && t !== 'all' && <span className={`tabular-nums text-[10.5px] leading-none ${typeFilter === t ? 'opacity-80' : 'opacity-60'}`}>{typeCounts[t] || 0}</span>}
+                {(typeCounts[t] || 0) > 0 && t !== 'all' && <span className="tabular-nums text-[12px] leading-none opacity-70">{typeCounts[t] || 0}</span>}
               </button>
             ))}
-            <span className="ml-auto inline-flex items-center gap-1.5 text-zinc-500">
+            <span className="ml-auto inline-flex items-center gap-1.5 text-[var(--ds-dim)]">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="rounded-md bg-zinc-900/40 ring-1 ring-inset ring-zinc-800/80 px-2 py-1 text-zinc-300 hover:ring-zinc-700 cursor-pointer transition-colors text-[11px]"
+                className="rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2 py-1 text-[var(--ds-dim)] hover:border-[#cbd5e1] cursor-pointer transition-colors text-[12px]"
               >
                 <option value="auto">Smart sort</option>
                 <option value="updated">Sort: updated</option>
@@ -554,8 +557,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
-                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[11px] ${
-                    showDisqualified ? 'text-zinc-200 bg-zinc-800/80 ring-1 ring-inset ring-zinc-700' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/40'
+                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] ${
+                    showDisqualified ? 'text-[var(--ds-ink)] bg-[var(--ds-bg)] border border-[var(--ds-line)]' : 'text-[var(--ds-faint)] hover:text-[var(--ds-dim)] hover:bg-black/[.03]'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
@@ -570,24 +573,24 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       {/* Library — filtered. Empty states use a polished card layout that
           matches the list container instead of bare text. */}
       {loading && drafts.length === 0 ? (
-        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
-          <div className="text-[13px] text-zinc-400 font-medium">Loading posts…</div>
+        <div className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] px-6 py-12 text-center shadow-sm">
+          <div className="text-[13px] text-[var(--ds-dim)] font-medium">Loading posts…</div>
         </div>
       ) : drafts.length === 0 ? (
-        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 ring-1 ring-emerald-500/30 flex items-center justify-center mb-3">
-            <Plus className="w-5 h-5 text-emerald-300" />
+        <div className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ds-accent)]/8 border border-[var(--ds-accent)]/20 flex items-center justify-center mb-3">
+            <Plus className="w-5 h-5 text-[var(--ds-accent)]" />
           </div>
-          <div className="text-[13px] text-zinc-300 font-medium">No posts yet</div>
-          <div className="text-[11.5px] text-zinc-500 mt-0.5">Click <span className="text-emerald-300">New post</span> above to draft one.</div>
+          <div className="text-[13px] text-[var(--ds-ink)] font-medium">No posts yet</div>
+          <div className="text-[12px] text-[var(--ds-dim)] mt-0.5">Click <span className="text-[var(--ds-accent)] font-medium">New post</span> above to draft one.</div>
         </div>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 px-6 py-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">
-            <RefreshCw className="w-5 h-5 text-zinc-500" />
+        <div className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] px-6 py-12 text-center shadow-sm">
+          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] flex items-center justify-center mb-3">
+            <RefreshCw className="w-5 h-5 text-[var(--ds-faint)]" />
           </div>
-          <div className="text-[13px] text-zinc-300 font-medium">No posts match the current filter</div>
-          <div className="text-[11.5px] text-zinc-500 mt-0.5">Try clearing the filters above.</div>
+          <div className="text-[13px] text-[var(--ds-ink)] font-medium">No posts match the current filter</div>
+          <div className="text-[12px] text-[var(--ds-dim)] mt-0.5">Try clearing the filters above.</div>
         </div>
       ) : view === 'list' ? (
         <StudioListView
@@ -745,15 +748,15 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             const col = visible.filter((d) => d.status === status);
             const meta = STATUS_META[status] || STATUS_META.draft;
             return (
-              <div key={status} className="flex-none w-[160px] snap-start rounded-md border border-zinc-800 bg-zinc-950/40 flex flex-col max-h-[75vh]">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur">
+              <div key={status} className="flex-none w-[160px] snap-start rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)] flex flex-col max-h-[75vh] shadow-sm">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-[var(--ds-line)] sticky top-0 bg-[var(--ds-card)] backdrop-blur">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[10.5px] font-medium uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
-                  <span className="ml-auto text-[10px] text-zinc-500 font-mono">{col.length}</span>
+                  <span className={`text-[12px] font-medium uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
+                  <span className="ml-auto text-[12px] text-[var(--ds-faint)] font-mono">{col.length}</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
                   {col.length === 0 ? (
-                    <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
+                    <div className="text-[12px] text-[var(--ds-faint)] italic py-1.5 text-center">—</div>
                   ) : col.map((d: CarouselDraft) => {
                     const sched = formatScheduled(d.scheduledAt);
                     const thumb = driveThumbUrl((d.imageUrls && d.imageUrls[0]) || null, 200);
@@ -762,18 +765,18 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                       <button
                         key={d.id}
                         onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
+                        className="w-full text-left rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[#cbd5e1] hover:bg-[#fafafc] transition overflow-hidden shadow-sm"
                       >
                         {thumb && (
-                          <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
+                          <div className="aspect-[16/9] bg-[var(--ds-bg)] overflow-hidden">
                             <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
                           </div>
                         )}
                         <div className="px-1.5 py-1.5">
-                          <div className="text-[8.5px] uppercase tracking-wider text-zinc-500 mb-0.5">{kicker}</div>
-                          <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{d.title || d.topic || 'Untitled'}</div>
+                          <div className="text-[12px] uppercase tracking-wider text-[var(--ds-faint)] mb-0.5">{kicker}</div>
+                          <div className="text-[13px] text-[var(--ds-ink)] line-clamp-3 leading-tight">{d.title || d.topic || 'Untitled'}</div>
                           {sched && (
-                            <div className="mt-1 flex items-center gap-1 text-[9.5px] text-zinc-500">
+                            <div className="mt-1 flex items-center gap-1 text-[12px] text-[var(--ds-faint)]">
                               <Calendar className="w-2.5 h-2.5" /> {sched}
                             </div>
                           )}

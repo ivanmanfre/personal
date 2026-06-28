@@ -384,3 +384,9 @@ body.dashboard-v2-light .nb-button {
 body.dashboard-v2-light .nb-button:hover {
   background: rgba(15,23,42,0.10) !important;
 }
+
+/* Field labels — raise to 12px min in light theme */
+body.dashboard-v2-light .dv-field-label {
+  font-size: 12px !important;
+  color: var(--ds-dim) !important;
+}
