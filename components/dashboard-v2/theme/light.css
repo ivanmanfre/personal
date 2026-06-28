@@ -19,3 +19,16 @@ body.dashboard-v2-light {
 @keyframes ds-rowin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes ds-fill{to{width:var(--w)}}
 @keyframes ds-fadein{to{opacity:1}}
+
+/* Light mode overrides — page background, container background, and text */
+body.dashboard-v2-light .dashboard-v2 {
+  background: var(--ds-bg) !important;
+  color: var(--ds-ink) !important;
+}
+
+/* Briefing section — raise primitive sub-12px text to 12px minimum */
+body.dashboard-v2-light .dv-pulse-cell-meta { font-size: 12px; }
+body.dashboard-v2-light .dv-client-row-status { font-size: 12px; }
+body.dashboard-v2-light .dv-client-row-action { font-size: 12px; }
+body.dashboard-v2-light .ds-pill,
+body.dashboard-v2-light .dv-pill { font-size: 12px; }
