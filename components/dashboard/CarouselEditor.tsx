@@ -585,8 +585,11 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   }).eq('id', draft.id);
                   if (upErr) throw upErr;
                   if (draft.type === 'carousel') {
-                    const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
-                    return buildCarousel({ carousel_id: carouselId, topic: draft.topic || draft.title || '', key_points: [] });
+                    // Use the draft's real uuid — NOT a throwaway `studio-<rand>` id.
+                    // The carousel sub-workflow looks this up against carousel_drafts.id
+                    // (a uuid column); a studio- id fails with "invalid input syntax for
+                    // type uuid" and the carousel silently never generates.
+                    return buildCarousel({ carousel_id: draft.id, draft_id: draft.id, topic: draft.topic || draft.title || '', key_points: [] });
                   }
                   return generatePostContent({
                     draft_id: draft.id,

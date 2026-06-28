@@ -212,14 +212,26 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     setCreating(true);
     try {
       if (type === 'carousel') {
-        const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
+        // Persist a real carousel_drafts row FIRST and use its uuid as the
+        // draft_id — same pattern as text/image below. Previously this fired
+        // the webhook with a throwaway `studio-<rand>` id, which the carousel
+        // sub-workflow then looked up against carousel_drafts.id (a uuid column)
+        // → "invalid input syntax for type uuid" and the carousel never built.
+        const { data, error } = await supabase
+          .from('carousel_drafts')
+          .insert({ topic: topic.trim(), type: 'carousel', status: 'generating' })
+          .select('id')
+          .single();
+        if (error) throw error;
+        const draftId = data.id as string;
         const r = await buildCarousel({
-          carousel_id: carouselId,
+          carousel_id: draftId,
+          draft_id: draftId,
           topic: topic.trim(),
           key_points: keyPoints.split('\n').map((s) => s.trim()).filter(Boolean),
         });
         toast.success(`Built — ${r.verdict} (${r.attempts} attempt${r.attempts > 1 ? 's' : ''})`);
-        if (r.draft_id) setOpenId(r.draft_id);
+        setOpenId(draftId);
       } else {
         const { data, error } = await supabase
           .from('carousel_drafts')
