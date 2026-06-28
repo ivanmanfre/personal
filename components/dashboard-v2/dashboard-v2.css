@@ -16,12 +16,8 @@
  * which leaks into v2 around panel gutters. Force warm-dark + Inter when v2 active.
  */
 body.dashboard-v2-active {
-  /* Subtle radial lift at top-left (behind brand + masthead) so the board reads
-   * as a designed surface, not flat near-black. Cool-neutral charcoal base. */
-  background: radial-gradient(1150px 640px at 15% -10%, #1B1F28 0%, #0E0F12 56%), radial-gradient(125% 135% at 50% -8%, transparent 58%, rgba(0,0,0,0.5) 100%) !important;
-  background-attachment: fixed !important;
   font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif !important;
-  color: #ededf0;
+  -webkit-font-smoothing: antialiased !important;
 }
 body.dashboard-v2-active * {
   /* Inputs and elements that explicitly set font-family will still win;

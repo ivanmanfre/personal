@@ -214,7 +214,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           <main className="dv-main">
             <div className="dv-panel" key={`${active}:${navNonce}`}>
               {renderer ? renderer() : (
-                <div style={{ padding: '4rem', color: 'var(--d-paper-dim)' }}>
+                <div style={{ padding: '4rem', color: 'var(--ds-dim)' }}>
                   Section <code>{active}</code> not yet implemented.
                 </div>
               )}
