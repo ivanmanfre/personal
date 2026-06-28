@@ -19,7 +19,7 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { padded?: bo
 }) => (
   <div
     className={cn(
-      'rounded-xl ring-1 ring-zinc-800/60 bg-gradient-to-b from-zinc-900/40 to-zinc-950/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_4px_12px_rgba(0,0,0,0.2)]',
+      'rounded-xl ring-1 ring-[var(--ds-line)] bg-[var(--ds-card)] shadow-sm',
       padded && 'p-3.5',
       className,
     )}
@@ -32,7 +32,7 @@ export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { padded?: bo
 export const CardLabel: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, children, ...rest }) => (
   <div
     className={cn(
-      'text-[10px] uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-2',
+      'text-[10px] uppercase tracking-[0.08em] text-[var(--ds-dim)] font-semibold mb-2',
       className,
     )}
     {...rest}
@@ -50,13 +50,13 @@ export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
   size?: BtnSize;
   block?: boolean;
 }>(({ className, variant = 'secondary', size = 'md', block, children, ...rest }, ref) => {
-  const base = 'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:opacity-40 disabled:cursor-not-allowed';
+  const base = 'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ds-card)] disabled:opacity-40 disabled:cursor-not-allowed';
   const sizes: Record<BtnSize, string> = {
     sm: 'px-2.5 py-1 text-xs',
     md: 'px-3 py-2 text-sm',
   };
   const variants: Record<BtnVariant, string> = {
-    primary:   'bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:from-emerald-600 active:to-emerald-700 text-white shadow-md shadow-emerald-900/30 ring-1 ring-emerald-400/30',
+    primary:   'bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] active:brightness-95 text-white shadow-sm ring-1 ring-[var(--ds-accent)]/30',
     secondary: 'bg-[var(--ds-line)] hover:bg-black/[.06] active:bg-black/[.09] text-[var(--ds-ink)] ring-1 ring-[var(--ds-line)] shadow-sm',
     ghost:     'bg-transparent hover:bg-black/[.03] text-[var(--ds-dim)]',
     danger:    'bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-md shadow-red-900/30 ring-1 ring-red-400/30',
@@ -81,12 +81,12 @@ export const Badge: React.FC<React.HTMLAttributes<HTMLSpanElement> & {
   size?: 'sm' | 'md';
 }> = ({ tone = 'neutral', size = 'sm', className, children, ...rest }) => {
   const tones: Record<BadgeTone, string> = {
-    neutral: 'bg-zinc-800/70 text-zinc-300 border-zinc-700/50',
-    sage:    'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-    sky:     'bg-sky-500/10 text-sky-300 border-sky-500/30',
-    amber:   'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    red:     'bg-red-500/10 text-red-300 border-red-500/30',
-    violet:  'bg-violet-500/10 text-violet-300 border-violet-500/30',
+    neutral: 'bg-[var(--ds-bg)] text-[var(--ds-dim)] border-[var(--ds-line)]',
+    sage:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+    sky:     'bg-sky-50 text-sky-700 border-sky-200',
+    amber:   'bg-amber-50 text-amber-700 border-amber-200',
+    red:     'bg-red-50 text-red-700 border-red-200',
+    violet:  'bg-violet-50 text-violet-700 border-violet-200',
   };
   const sizes = size === 'sm'
     ? 'px-1.5 py-0.5 text-[10.5px] uppercase tracking-wider font-medium'
@@ -102,7 +102,7 @@ export const Badge: React.FC<React.HTMLAttributes<HTMLSpanElement> & {
 };
 
 // ─── Input + Textarea ────────────────────────────────────────────────────────
-const fieldBase = 'w-full rounded-lg bg-[var(--ds-bg)] ring-1 ring-inset ring-[var(--ds-line)] px-3 py-2 text-sm text-[var(--ds-ink)] placeholder-zinc-400 transition-all duration-150 focus:outline-none focus:ring-emerald-500/40 focus:bg-white';
+const fieldBase = 'w-full rounded-lg bg-[var(--ds-bg)] ring-1 ring-inset ring-[var(--ds-line)] px-3 py-2 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-dim)] transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-400/60 focus:bg-white';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...rest }, ref) => <input ref={ref} className={cn(fieldBase, className)} {...rest} />
@@ -120,7 +120,7 @@ export const FieldLabel: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> =
 }) => (
   <label
     className={cn(
-      'block text-xs uppercase tracking-[0.08em] text-zinc-500 font-semibold mb-1.5',
+      'block text-xs uppercase tracking-[0.08em] text-[var(--ds-dim)] font-semibold mb-1.5',
       className,
     )}
     {...rest}
@@ -136,17 +136,17 @@ export const EmptyState: React.FC<{
   description?: string;
   action?: React.ReactNode;
 }> = ({ icon, title, description, action }) => (
-  <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-8 text-center">
-    {icon && <div className="flex justify-center mb-2 text-zinc-600">{icon}</div>}
-    {title && <div className="text-sm text-zinc-300 font-medium">{title}</div>}
-    {description && <div className="mt-1 text-xs text-zinc-500 max-w-xs mx-auto leading-snug">{description}</div>}
+  <div className="rounded-md border border-dashed border-[var(--ds-line)] bg-[var(--ds-bg)] px-4 py-8 text-center">
+    {icon && <div className="flex justify-center mb-2 text-[var(--ds-dim)]">{icon}</div>}
+    {title && <div className="text-sm text-[var(--ds-ink)] font-medium">{title}</div>}
+    {description && <div className="mt-1 text-xs text-[var(--ds-dim)] max-w-xs mx-auto leading-snug">{description}</div>}
     {action && <div className="mt-3">{action}</div>}
   </div>
 );
 
 // ─── Divider ─────────────────────────────────────────────────────────────────
 export const Divider: React.FC<{ className?: string }> = ({ className }) => (
-  <div className={cn('h-px bg-zinc-800/70', className)} />
+  <div className={cn('h-px bg-[var(--ds-line)]', className)} />
 );
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
@@ -155,9 +155,9 @@ export const Divider: React.FC<{ className?: string }> = ({ className }) => (
 export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className, ...rest }) => (
   <div
     className={cn(
-      'relative overflow-hidden rounded-md bg-zinc-800/50',
+      'relative overflow-hidden rounded-md bg-[var(--ds-line)]',
       'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.6s_infinite]',
-      'before:bg-gradient-to-r before:from-transparent before:via-zinc-700/40 before:to-transparent',
+      'before:bg-gradient-to-r before:from-transparent before:via-black/5 before:to-transparent',
       className,
     )}
     {...rest}
@@ -166,7 +166,7 @@ export const Skeleton: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ class
 
 /** Studio list skeleton row — placeholder with thumb + title bar + meta bars matching list layout. */
 export const ListRowSkeleton: React.FC = () => (
-  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-zinc-800/30">
+  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--ds-line)]">
     <Skeleton className="w-8 h-8 shrink-0 rounded-lg" />
     <div className="flex-1 min-w-0 space-y-1.5">
       <Skeleton className="h-3 w-3/5" />
