@@ -1,0 +1,153 @@
+<!doctype html><html lang="en"><head><meta charset="utf8"><title>Content Studio — Light Premium + Data-Viz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
+:root{--bg:#f6f7f9;--card:#fff;--bd:#e9e9ee;--ink:#0f172a;--dim:#64748b;--faint:#94a3b8;--ind:#4f46e5;--ind2:#6366f1;--gd:#059669;--am:#d97706;--bl:#2563eb;--vi:#7c3aed}
+body{background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
+/* sidebar */
+.side{width:236px;flex:none;background:#fff;border-right:1px solid var(--bd);padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+.brand{display:flex;align-items:center;gap:9px;padding:6px 8px 18px}
+.logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px}
+.brand b{font-size:15px;font-weight:700}.brand span{color:var(--dim);font-weight:500}
+.ng{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);padding:14px 9px 6px;font-weight:600}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13.5px;color:#475569;font-weight:500;cursor:pointer;transition:background .15s,color .15s}
+.ni:hover{background:#f1f1f5;color:var(--ink)}
+.ni .ic{width:16px;height:16px;border-radius:5px;background:#cbd5e1;flex:none}
+.ni.on{background:#eef0fe;color:var(--ind);font-weight:600}
+.ni.on .ic{background:var(--ind)}
+.ni .nn{margin-left:auto;font-size:11px;color:var(--faint)}
+/* main */
+.main{flex:1;padding:26px 30px 50px;overflow:auto;position:relative}
+.top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.sub{color:var(--dim);font-size:13.5px;margin-top:4px;display:flex;align-items:center;gap:8px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--gd);background:#ecfdf5;border:1px solid #a7f3d0;padding:3px 9px;border-radius:20px}
+.lv{width:7px;height:7px;border-radius:50%;background:var(--gd);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.cta{display:inline-flex;align-items:center;gap:7px;background:var(--ind);color:#fff;font-size:13.5px;font-weight:600;padding:10px 17px;border-radius:10px;cursor:pointer;box-shadow:0 1px 2px rgba(79,70,229,.3),0 6px 16px -6px rgba(79,70,229,.5);transition:transform .15s,box-shadow .15s}
+.cta:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(79,70,229,.35),0 10px 22px -6px rgba(79,70,229,.55)}
+.replay{position:absolute;top:26px;right:30px;font-size:11.5px;color:var(--dim);background:#fff;border:1px solid var(--bd);border-radius:8px;padding:6px 11px;cursor:pointer}
+.replay:hover{color:var(--ink);border-color:#cbd5e1}
+/* kpi row */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18);transition:transform .16s,box-shadow .16s}
+.card:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(15,23,42,.05),0 16px 32px -16px rgba(15,23,42,.22)}
+.kpi{padding:16px 17px 14px;position:relative}
+.kl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:600}
+.kv{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-top:8px;line-height:1}
+.trend{font-size:11.5px;font-weight:600;margin-top:7px;display:inline-flex;gap:4px;align-items:center}
+.up{color:var(--gd)}.flat{color:var(--faint)}
+.spark{position:absolute;right:14px;bottom:14px;width:74px;height:30px}
+.spark path{fill:none;stroke-width:2;stroke-linecap:round;stroke-dasharray:300;stroke-dashoffset:300;animation:draw 1.4s ease .3s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.ringwrap{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:60px;height:60px}
+.ring circle{fill:none;stroke-width:7}
+.ring .bgc{stroke:#eef0f3}
+.ring .fg{stroke:var(--gd);stroke-linecap:round;stroke-dasharray:163;stroke-dashoffset:163;transform:rotate(-90deg);transform-origin:50% 50%;animation:ring 1.4s cubic-bezier(.3,.8,.3,1) .3s forwards}
+@keyframes ring{to{stroke-dashoffset:5}}
+.rc{position:absolute;right:30px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:var(--gd)}
+/* mid charts */
+.mid{display:grid;grid-template-columns:1.7fr 1fr;gap:14px;margin-bottom:14px}
+.ch{padding:18px 20px}
+.chh{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cht{font-size:14px;font-weight:600}
+.chm{font-size:12px;color:var(--gd);font-weight:600}
+.area{width:100%;height:150px;margin-top:6px;overflow:visible}
+.area .ln{fill:none;stroke:var(--ind);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:900;stroke-dashoffset:900;animation:draw 1.8s ease .3s forwards}
+.area .fl{opacity:0;animation:fade 1s ease 1s forwards}
+@keyframes fade{to{opacity:1}}
+.lg{display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--dim)}
+.lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+/* by format bars */
+.bar{display:flex;align-items:center;gap:10px;margin:11px 0;font-size:12.5px}
+.bar .bn{width:64px;color:var(--dim)}
+.bar .bt{flex:1;height:8px;background:#f1f1f5;border-radius:5px;overflow:hidden}
+.bar .bt>i{display:block;height:100%;width:0;border-radius:5px;animation:fill 1.2s cubic-bezier(.3,.8,.3,1) .4s forwards}
+@keyframes fill{to{width:var(--w)}}
+.bar .bv{width:30px;text-align:right;color:var(--faint);font-size:11.5px}
+/* pipeline list */
+.lh{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 6px}
+.r{display:flex;align-items:center;gap:14px;padding:13px 20px;border-top:1px solid #f1f1f4}
+.r:hover{background:#fafafc}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.rt{flex:1;font-size:13.5px;color:#1e293b;font-weight:500}
+.pill{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px}
+.p-idea{color:var(--bl);background:#eff6ff}.p-rev{color:var(--am);background:#fffbeb}.p-app{color:var(--gd);background:#ecfdf5}
+.fmt{font-size:12px;color:var(--dim);min-width:62px}
+.age{font-size:12px;color:var(--faint);min-width:26px;text-align:right}
+.rsp{width:54px;height:22px}
+.rsp path{fill:none;stroke-width:1.8;stroke-dasharray:120;stroke-dashoffset:120;animation:draw 1.2s ease .6s forwards}
+@keyframes rowin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style></head>
+<body>
+<aside class="side">
+  <div class="brand"><div class="logo">IS</div><div><b>Ivan</b> <span>System</span></div></div>
+  <div class="ng">Briefing</div>
+  <div class="ni"><span class="ic"></span>Morning Dispatch</div>
+  <div class="ng">Operate</div>
+  <div class="ni on"><span class="ic"></span>Content Studio<span class="nn">194</span></div>
+  <div class="ni"><span class="ic"></span>Reach &amp; Pipeline<span class="nn">403</span></div>
+  <div class="ni"><span class="ic"></span>Operations</div>
+  <div class="ng">Knowledge</div>
+  <div class="ni"><span class="ic"></span>Clients</div>
+  <div class="ni"><span class="ic"></span>Knowledge</div>
+  <div class="ni"><span class="ic"></span>Agent</div>
+  <div class="ni"><span class="ic"></span>System</div>
+</aside>
+<main class="main">
+  <button class="replay" onclick="replay()">↻ replay</button>
+  <div class="top">
+    <div><h1>Content Studio</h1><div class="sub"><span class="live"><span class="lv"></span>Live</span> 194 posts moving through the pipeline</div></div>
+    <div class="cta">+ New post</div>
+  </div>
+
+  <div class="kpis">
+    <div class="card kpi"><div class="kl">Workflows</div><div class="kv mono" data-count="155">0</div><div class="trend up">▲ +12% <span style="color:var(--faint);font-weight:500">7d</span></div>
+      <svg class="spark" viewBox="0 0 74 30"><path style="stroke:var(--gd)" d="M0,24 L12,22 L24,25 L36,16 L48,18 L60,9 L74,11"/></svg></div>
+    <div class="card kpi"><div class="kl">In queue</div><div class="kv mono" data-count="4">0</div><div class="trend flat">— steady</div>
+      <svg class="spark" viewBox="0 0 74 30"><path style="stroke:#94a3b8" d="M0,16 L12,17 L24,15 L36,16 L48,16 L60,15 L74,16"/></svg></div>
+    <div class="card kpi"><div class="kl">Prospects</div><div class="kv mono" data-count="403">0</div><div class="trend up">▲ +8% <span style="color:var(--faint);font-weight:500">7d</span></div>
+      <svg class="spark" viewBox="0 0 74 30"><path style="stroke:var(--bl)" d="M0,26 L12,22 L24,23 L36,17 L48,14 L60,10 L74,6"/></svg></div>
+    <div class="card kpi"><div class="kl">Pipeline health</div><div class="kv mono" data-count="97">0</div>
+      <svg class="ringwrap ring" viewBox="0 0 60 60"><circle class="bgc" cx="30" cy="30" r="26"/><circle class="fg" cx="30" cy="30" r="26"/></svg></div>
+  </div>
+
+  <div class="mid">
+    <div class="card ch">
+      <div class="chh"><div class="cht">Output over 14 days</div><div class="chm">▲ 34% vs prev</div></div>
+      <svg class="area" viewBox="0 0 560 150" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4f46e5" stop-opacity=".22"/><stop offset="1" stop-color="#4f46e5" stop-opacity="0"/></linearGradient></defs>
+        <path class="fl" fill="url(#g)" d="M0,120 L40,110 L80,116 L120,92 L160,100 L200,78 L240,84 L280,60 L320,68 L360,44 L400,52 L440,32 L480,40 L520,20 L560,26 L560,150 L0,150 Z"/>
+        <path class="ln" d="M0,120 L40,110 L80,116 L120,92 L160,100 L200,78 L240,84 L280,60 L320,68 L360,44 L400,52 L440,32 L480,40 L520,20 L560,26"/>
+      </svg>
+      <div class="lg"><span><i style="background:#4f46e5"></i>Published</span><span><i style="background:#a5b4fc"></i>Drafted</span><span><i style="background:#cbd5e1"></i>Scheduled</span></div>
+    </div>
+    <div class="card ch">
+      <div class="chh"><div class="cht">By format</div><div class="chm" style="color:var(--faint);font-weight:500">194 total</div></div>
+      <div style="margin-top:10px">
+        <div class="bar"><span class="bn">Text</span><span class="bt"><i style="--w:88%;background:var(--ind)"></i></span><span class="bv mono">123</span></div>
+        <div class="bar"><span class="bn">Single image</span><span class="bt"><i style="--w:46%;background:var(--bl)"></i></span><span class="bv mono">59</span></div>
+        <div class="bar"><span class="bn">Carousel</span><span class="bt"><i style="--w:14%;background:var(--vi)"></i></span><span class="bv mono">12</span></div>
+        <div class="bar"><span class="bn">Video</span><span class="bt"><i style="--w:7%;background:var(--am)"></i></span><span class="bv mono">8</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="lh"><div class="cht">Pipeline</div><div style="font-size:12px;color:var(--faint)">3 in motion · updated just now</div></div>
+    <div class="r" data-row><span class="dot" style="background:var(--bl)"></span><div class="rt">Everyone feared AI taking over; the real danger is AI serving just the few</div><svg class="rsp" viewBox="0 0 54 22"><path style="stroke:#93c5fd" d="M0,14 L13,12 L27,15 L40,8 L54,10"/></svg><span class="pill p-idea">Idea</span><span class="fmt">Text</span><span class="age mono">5h</span></div>
+    <div class="r" data-row><span class="dot" style="background:var(--am)"></span><div class="rt">The difference between a problem AI solves and one only process solves</div><svg class="rsp" viewBox="0 0 54 22"><path style="stroke:#fcd34d" d="M0,10 L13,13 L27,9 L40,12 L54,8"/></svg><span class="pill p-rev">Review</span><span class="fmt">Text</span><span class="age mono">3d</span></div>
+    <div class="r" data-row><span class="dot" style="background:var(--gd)"></span><div class="rt">Every repetitive task in your agency can be automated and still bleed margin</div><svg class="rsp" viewBox="0 0 54 22"><path style="stroke:#6ee7b7" d="M0,16 L13,11 L27,12 L40,6 L54,7"/></svg><span class="pill p-app">Approved</span><span class="fmt">Carousel</span><span class="age mono">1d</span></div>
+  </div>
+</main>
+<script>
+function easeOut(t){return 1-Math.pow(1-t,3)}
+function runCount(r){r.querySelectorAll('[data-count]').forEach(el=>{const t=+el.dataset.count,d=1200,s=performance.now();(function f(n){let p=Math.min(1,(n-s)/d);el.textContent=Math.round(easeOut(p)*t).toLocaleString();if(p<1)requestAnimationFrame(f)})(s)})}
+function runStagger(r){r.querySelectorAll('[data-row]').forEach((el,i)=>{el.style.animation='none';el.offsetHeight;el.style.animation='rowin .5s cubic-bezier(.2,.7,.2,1) both';el.style.animationDelay=(i*90)+'ms'})}
+function redraw(){document.querySelectorAll('.spark path,.area .ln,.area .fl,.ring .fg,.bar i,.rsp path').forEach(el=>{el.style.animation='none';el.offsetHeight;el.style.animation=''})}
+function replay(){redraw();runCount(document);runStagger(document)}
+addEventListener('load',()=>{runCount(document);runStagger(document)})
+</script>
+</body></html>
