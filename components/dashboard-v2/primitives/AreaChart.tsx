@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 
 interface AreaChartProps {
   points: number[];
@@ -27,8 +27,21 @@ export function AreaChart({ points, stroke, fillId, height = 150 }: AreaChartPro
     linePath +
     ` L${coords[coords.length - 1].x.toFixed(1)},${height} L0,${height} Z`;
 
-  // Approximate stroke-dasharray length for draw animation
-  const totalLen = 900;
+  const lineRef = useRef<SVGPathElement>(null);
+
+  useLayoutEffect(() => {
+    const el = lineRef.current;
+    if (!el) return;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const len = el.getTotalLength();
+    el.style.strokeDasharray = String(len);
+    if (reduce) {
+      el.style.strokeDashoffset = '0';
+    } else {
+      el.style.strokeDashoffset = String(len);
+      requestAnimationFrame(() => { el.style.animation = 'ds-draw 1.8s ease .3s forwards'; });
+    }
+  }, [linePath]);
 
   return (
     <svg
@@ -50,18 +63,14 @@ export function AreaChart({ points, stroke, fillId, height = 150 }: AreaChartPro
         fill={`url(#${fillId})`}
         style={{ opacity: 0, animation: 'ds-fadein 1s ease 1s forwards' }}
       />
-      {/* line draws on mount */}
+      {/* line draws on mount — dash values set by useLayoutEffect */}
       <path
+        ref={lineRef}
         d={linePath}
         fill="none"
         stroke={stroke}
         strokeWidth={2.5}
         strokeLinecap="round"
-        style={{
-          strokeDasharray: totalLen,
-          strokeDashoffset: totalLen,
-          animation: `ds-draw 1.8s ease .3s forwards`,
-        }}
       />
     </svg>
   );
