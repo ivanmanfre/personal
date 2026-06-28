@@ -310,7 +310,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             agent rail spans both cols on row 2 (audit rank 10, the :nth-child(3) trick).
             Stops Approve from being 2 viewports below the fold on iPad.
           - lg (≥1024): 3-column ClickUp layout with sticky rail. */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:nth-child(3)]:col-span-2 ${logCollapsed ? 'lg:grid-cols-[1.2fr_1.4fr]' : 'lg:grid-cols-[1.2fr_1.4fr_320px] lg:[&>*:nth-child(3)]:col-span-1'}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:nth-child(3)]:col-span-2 ${logCollapsed ? 'lg:grid-cols-[1.2fr_1.4fr_auto]' : 'lg:grid-cols-[1.2fr_1.4fr_320px] lg:[&>*:nth-child(3)]:col-span-1'}`}>
         {/* LEFT COLUMN — context first (source), then copy editing */}
         <div className="space-y-4 min-w-0">
           {/* Source briefing on top — the raw material that fed generation. */}
@@ -543,13 +543,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         </div>
 
         {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed), collapsible */}
-        <div className={`min-w-0 ${logCollapsed ? 'hidden lg:block' : ''}`}>
+        <div className="min-w-0">
           <div className="lg:sticky lg:top-2">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--ds-dim)]">Activity</span>
               <button
                 onClick={() => setLogCollapsed((v) => !v)}
-                className="text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] flex items-center gap-1 transition-colors"
+                className="text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] flex items-center gap-1 transition-colors min-h-[32px] min-w-[32px] justify-end"
                 title={logCollapsed ? 'Show activity log' : 'Hide activity log'}
               >
                 {logCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
