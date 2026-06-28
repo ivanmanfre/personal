@@ -8,10 +8,9 @@ import { useLeads } from '../../../hooks/useLeads';
 import { supabase } from '../../../lib/supabase';
 import { dashboardAction } from '../../../lib/dashboardActions';
 import {
-  HeadRow, Pulse, PulseCell, SectionLabel, ActionGrid, ActionCard,
-  KpiRow, KpiTile, RowList, Row, ClientRow, Marginalia,
+  Pulse, PulseCell, SectionLabel, ActionGrid,
+  RowList, ClientRow, Marginalia,
 } from '../primitives';
-import { KpiCard } from '../primitives/KpiCard';
 import { Sparkline } from '../primitives/Sparkline';
 import { AreaChart } from '../primitives/AreaChart';
 import { useCountUp } from '../primitives/useCountUp';
@@ -22,6 +21,8 @@ import type { Severity, SectionId } from '../types';
  * Composes existing hooks: zero new data sources. All writes documented in
  * INVENTORY.md still flow through the original components when drilled-into.
  */
+
+const prefersReducedMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Safely extract a human-readable message from a value that may be a raw
@@ -96,7 +97,7 @@ function FormatBar({ label, count, total, color }: { label: string; count: numbe
             width: `${pct}%`,
             borderRadius: '5px',
             background: color,
-            transition: 'width 1.2s cubic-bezier(.3,.8,.3,1) .4s',
+            ...(prefersReducedMotion ? {} : { transition: 'width 1.2s cubic-bezier(.3,.8,.3,1) .4s' }),
           }}
         />
       </span>
@@ -323,13 +324,29 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
   // Area chart: 14-day post output (derived from pending + posted approximation)
   // TODO: real series from a time-bucketed query. Stub a flat series based on queue.
   const areaPoints = useMemo(() => {
+    // TODO real series — flat placeholder until time-bucketed query is wired
     const base = Math.max(queueDepth, 1);
-    return [
-      base * 0.4, base * 0.5, base * 0.45, base * 0.65, base * 0.7,
-      base * 0.6, base * 0.8, base * 0.75, base * 0.9, base * 0.85,
-      base * 1.0, base * 0.95, base * 1.1, base,
-    ]; // TODO real series
+    return Array(14).fill(base) as number[];
   }, [queueDepth]);
+
+  // Count-up display values for KPI numbers
+  const displayQueue = useCountUp(queueDepth);
+  const displayNeedDm = useCountUp(needDmCount);
+  const displayLeads = useCountUp(leads.length);
+  const displayOpenErrors = useCountUp(openErrors);
+  const displayTotalProspects = useCountUp(totalProspects);
+  const displayHealthScore = useCountUp(healthScore);
+
+  const kpiCardStyle: React.CSSProperties = {
+    background: 'var(--ds-card)',
+    border: '1px solid var(--ds-line)',
+    borderRadius: 'var(--ds-radius)',
+    boxShadow: 'var(--ds-shadow-card)',
+    padding: '16px 17px 14px',
+    position: 'relative',
+    cursor: 'pointer',
+    transition: 'transform .16s, box-shadow .16s',
+  };
 
   return (
     <>
@@ -387,12 +404,12 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
                     borderRadius: '50%',
                     background: 'var(--ds-ok)',
                     display: 'inline-block',
-                    animation: 'ds-fadein 2s ease-in-out infinite alternate',
+                    animation: prefersReducedMotion ? 'none' : 'ds-pulse 2s ease-in-out infinite',
                   }}
                 />
                 Live
               </span>
-              {todayStr} · {nowStr} {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              {todayStr} · {nowStr} {userTz}
             </div>
           </div>
           {/* Health chip as a right-aligned badge */}
@@ -513,16 +530,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
       >
         {/* Card 1: Workflows active — sparkline */}
         <div
-          style={{
-            background: 'var(--ds-card)',
-            border: '1px solid var(--ds-line)',
-            borderRadius: 'var(--ds-radius)',
-            boxShadow: 'var(--ds-shadow-card)',
-            padding: '16px 17px 14px',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'transform .16s, box-shadow .16s',
-          }}
+          style={kpiCardStyle}
           onClick={() => onNavigate?.('content', 'pipeline')}
           role="button"
           tabIndex={0}
@@ -531,7 +539,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
             Posts in queue
           </div>
           <div style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-ink)' }}>
-            {queueDepth}
+            {displayQueue}
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
             {nextPostDate ? `Next ${nextPostDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no upcoming'}
@@ -543,16 +551,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
 
         {/* Card 2: Need DM — sparkline */}
         <div
-          style={{
-            background: 'var(--ds-card)',
-            border: '1px solid var(--ds-line)',
-            borderRadius: 'var(--ds-radius)',
-            boxShadow: 'var(--ds-shadow-card)',
-            padding: '16px 17px 14px',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'transform .16s, box-shadow .16s',
-          }}
+          style={kpiCardStyle}
           onClick={() => onNavigate?.('reach', 'outreach')}
           role="button"
           tabIndex={0}
@@ -565,7 +564,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
             fontVariantNumeric: 'tabular-nums',
             color: needDmCount > 0 ? 'var(--ds-warn)' : 'var(--ds-ink)',
           }}>
-            {needDmCount}
+            {displayNeedDm}
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
             connected, not messaged
@@ -577,16 +576,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
 
         {/* Card 3: Leads 7d — sparkline */}
         <div
-          style={{
-            background: 'var(--ds-card)',
-            border: '1px solid var(--ds-line)',
-            borderRadius: 'var(--ds-radius)',
-            boxShadow: 'var(--ds-shadow-card)',
-            padding: '16px 17px 14px',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'transform .16s, box-shadow .16s',
-          }}
+          style={kpiCardStyle}
           onClick={() => onNavigate?.('reach', 'leads')}
           role="button"
           tabIndex={0}
@@ -599,7 +589,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
             fontVariantNumeric: 'tabular-nums',
             color: leads.length === 0 ? 'var(--ds-warn)' : 'var(--ds-ok)',
           }}>
-            {leads.length}
+            {displayLeads}
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: leads.length === 0 ? 'var(--ds-warn)' : 'var(--ds-faint)' }}>
             {leads.length === 0 ? 'pipeline silent' : 'captured'}
@@ -608,16 +598,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
 
         {/* Card 4: Health score — Ring */}
         <div
-          style={{
-            background: 'var(--ds-card)',
-            border: '1px solid var(--ds-line)',
-            borderRadius: 'var(--ds-radius)',
-            boxShadow: 'var(--ds-shadow-card)',
-            padding: '16px 17px 14px',
-            position: 'relative',
-            cursor: 'pointer',
-            transition: 'transform .16s, box-shadow .16s',
-          }}
+          style={kpiCardStyle}
           onClick={() => onNavigate?.('clients')}
           role="button"
           tabIndex={0}
@@ -630,7 +611,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
             fontVariantNumeric: 'tabular-nums',
             color: openErrors > 0 ? 'var(--ds-warn)' : 'var(--ds-ok)',
           }}>
-            {openErrors > 0 ? openErrors : healthScore + '%'}
+            {openErrors > 0 ? displayOpenErrors : displayHealthScore + '%'}
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
             {openErrors > 0 ? `open error${openErrors !== 1 ? 's' : ''} · ${unhealthyClients.length} client${unhealthyClients.length !== 1 ? 's' : ''}` : 'across ' + unhealthyClients.length + ' clients'}
@@ -649,7 +630,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
                 style={{
                   strokeDasharray: 163,
                   strokeDashoffset: 163 - (healthScore / 100) * 163,
-                  transition: 'stroke-dashoffset 1.4s cubic-bezier(.3,.8,.3,1) .3s',
+                  ...(prefersReducedMotion ? {} : { transition: 'stroke-dashoffset 1.4s cubic-bezier(.3,.8,.3,1) .3s' }),
                 }}
               />
             </svg>
@@ -847,7 +828,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
             Total prospects
           </div>
           <div style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-ink)' }}>
-            {totalProspects}
+            {displayTotalProspects}
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
             {orStats.activeCampaigns} active campaign{orStats.activeCampaigns !== 1 ? 's' : ''}

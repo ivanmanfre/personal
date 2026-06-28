@@ -17,10 +17,10 @@ const toneStyles: Record<Tone, React.CSSProperties> = {
 export function Pill({ tone, children }: PillProps) {
   return (
     <span
+      className="ds-pill"
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        fontSize: '11.5px',
         fontWeight: 600,
         padding: '3px 10px',
         borderRadius: '20px',
