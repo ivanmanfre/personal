@@ -62,7 +62,7 @@ export const Sheet: React.FC<SheetProps> = ({ open, onClose, title, size = 'lg',
             <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--ds-line)] bg-[var(--ds-card)] shrink-0">
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ds-card)]"
+                className="p-2 rounded-md text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ds-card)]"
                 title="Close (Esc)"
               >
                 <X className="w-4 h-4" />

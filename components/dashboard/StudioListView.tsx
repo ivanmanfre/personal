@@ -467,24 +467,30 @@ export function StudioListView({
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.14, ease: 'easeOut' }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: 'easeOut', delay: Math.min(i * 0.03, 0.3) }}
         onClick={() => onOpen(r.id)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
+        aria-label={`Open ${r.title || 'post'}`}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
         className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[#fafafc] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
-          <input
-            type="checkbox"
-            checked={selected.has(r.id)}
-            onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
+          <label
+            className="flex items-center justify-center w-8 h-8 cursor-pointer shrink-0"
             onClick={(e) => e.stopPropagation()}
-            className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
-          />
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(r.id)}
+              onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+            />
+          </label>
         )}
         {cols.map((c) => {
           const cls = `${colClass(c.visible)} items-center min-w-0`;
