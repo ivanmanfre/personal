@@ -92,7 +92,7 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
         <span className="dv-brand-logo" aria-hidden="true">
           <svg viewBox="0 0 32 32" width="28" height="28">
             <rect width="32" height="32" rx="7" fill="var(--d-good)" />
-            <path d="M7 22 V10 H10.5 L16 18 L21.5 10 H25 V22 H22 V14.5 L17 21.5 H15 L10 14.5 V22 Z" fill="var(--d-ink)" />
+            <path d="M7 22 V10 H10.5 L16 18 L21.5 10 H25 V22 H22 V14.5 L17 21.5 H15 L10 14.5 V22 Z" fill="#fff" />
           </svg>
         </span>
         <div className="dv-brand-text">
