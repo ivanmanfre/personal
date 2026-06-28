@@ -32,5 +32,6 @@ export function buildFeedSpecFromContentSystem(
     })
     .filter((p): p is FeedPostSpec => p !== null);
 
-  return { profile: { name, headline, avatarUrl: '' }, posts, ...(lmCard ? { lmCard } : {}) };
+  const avatarUrl = cs.founder?.avatar_url?.trim() || '';
+  return { profile: { name, headline, avatarUrl }, posts, ...(lmCard ? { lmCard } : {}) };
 }

@@ -12,6 +12,8 @@ interface Props {
   className?: string;
   /** Forwarded to each post; false shows full copy (no LinkedIn truncation fold). Default true. */
   showFold?: boolean;
+  /** When set, the LM document card becomes clickable and calls this (opens an in-page preview). */
+  onLmClick?: () => void;
 }
 
 /**
@@ -20,7 +22,7 @@ interface Props {
  * prospect's profile into each. Pure presentation — feed it a spec, it renders.
  * The feed mimics LinkedIn's neutral UI on purpose; the surrounding page supplies Ivan's brand frame.
  */
-const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', showFold = true }) => {
+const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', showFold = true, onLmClick }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
@@ -84,6 +86,7 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
           profile={profile}
           card={feed.lmCard}
           caption={`New — I put together "${feed.lmCard.title}", the playbook behind these posts. Comment "guide" and I'll send it over.`}
+          onCardClick={onLmClick}
         />
       )}
     </div>

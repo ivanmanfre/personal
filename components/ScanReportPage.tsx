@@ -2263,6 +2263,60 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   );
 }
 
+// In-page preview of the prospect's lead magnet. The LM card in the feed opens this:
+// the real cover next to what's inside (the actual prompts), so it reads as a finished
+// resource without leaving the page. Not a live external link by design.
+function LmPreviewModal({ lm, who, bookUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] }; who: string; bookUrl: string; onClose: () => void }) {
+  const reduce = useReducedMotion();
+  const hairline = 'var(--color-hairline)';
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  const items = lm.whats_inside ?? [];
+  return (
+    <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+      style={{ background: 'rgba(20,18,15,0.55)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Lead magnet preview">
+      <motion.div className="relative w-full max-w-3xl overflow-auto" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
+        style={{ maxHeight: '88vh', background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }} onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(26,26,26,0.06)' }}>
+          <XCircle className="w-5 h-5" style={{ color: '#1A1A1A' }} />
+        </button>
+        <div className="grid md:grid-cols-2">
+          <div className="p-5 sm:p-6 flex items-center justify-center" style={{ background: '#1A1A1A' }}>
+            <img src={lm.cover_url} alt={lm.title} className="w-full h-auto" style={{ borderRadius: CI_R_SM, maxHeight: '64vh', objectFit: 'contain' }} />
+          </div>
+          <div className="p-6 sm:p-7">
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>Lead magnet · preview</p>
+            <h3 className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{lm.title}</h3>
+            {lm.promise && <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{lm.promise}</p>}
+            {items.length > 0 && (
+              <>
+                <p className="mt-6 mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What's inside</p>
+                <ul>
+                  {items.map((it, i) => (
+                    <li key={i} className="flex gap-3" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.7rem' : 0, marginTop: i ? '0.7rem' : 0 }}>
+                      <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: 'var(--color-accent-ink)', lineHeight: 1.5, flexShrink: 0, minWidth: 18 }}>{String(i + 1).padStart(2, '0')}</span>
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="mt-6" style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)' }}>
+              The system builds this as an interactive page on your domain and captures every email, {who}.
+            </p>
+            <div className="mt-5"><CIMagneticCTA href={bookUrl} label="See the live version" small /></div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // The content-system product cockpit — an animated "software" surface showing the
 // engine running THIS founder's own content through the pipeline. Mirrors the
 // CallIntelProductMock grammar (titlebar, counter tiles, animated rows, activity feed).
@@ -2398,6 +2452,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const hairline = 'var(--color-hairline)';
   const accentInk = 'var(--color-accent-ink)';
   const reduce = useReducedMotion();
+  const [lmOpen, setLmOpen] = useState(false);
   // Founder-first: this offer runs on the founder's personal brand, so address them by name.
   const founder = cs.founder;
   const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || companyName;
@@ -2443,6 +2498,39 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <CSHero cs={cs} who={who} companyName={companyName} meta={meta} bookUrl={bookUrl} />
       <CSPain cs={cs} who={who} companyName={companyName} receipts={receipts} scan={scan} />
 
+      {/* THE PAYOFF — the prospect's own branded week, surfaced high for engagement */}
+      {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
+        <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+          <Kicker>Your week</Kicker>
+          <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
+          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a lead magnet, ready for you to approve. Tap the lead magnet to look inside.</p>
+          <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>{companyName} · {mock?.title || 'This week'}</span>
+            </div>
+            <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+              {mockMetrics.length > 0 && (
+                <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
+                  {mockMetrics.map((m, i) => (
+                    <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
+                      <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
+                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
+                      {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {feedSpec.posts.length > 0 && (
+                <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} onLmClick={() => setLmOpen(true)} />
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </section>
+      )}
+
       {/* THE FIX — the engine, as a live, animated product cockpit */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>The system</Kicker>
@@ -2473,33 +2561,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           style={{ borderRadius: 28, border: `1px solid ${hairline}`, background: 'var(--color-paper-sunk, #EFEAE2)', boxShadow: CI_SHADOW_LG }}>
           <SystemFlowDiagram />
         </motion.div>
-        {/* content-week mock */}
-        {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
-          <motion.div className="mt-12 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
-              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>{companyName} · {mock?.title || 'This week'}</span>
-            </div>
-            <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
-              {mockMetrics.length > 0 && (
-                <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
-                  {mockMetrics.map((m, i) => (
-                    <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
-                      <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
-                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
-                      {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {feedSpec.posts.length > 0 && (
-                <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} />
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
       </section>
 
       {/* LEAD MAGNETS */}
@@ -2610,6 +2671,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         </div>
         <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {founderFull} · This page was built from a live scan of your presence.</p>
       </footer>
+
+      <AnimatePresence>
+        {lmOpen && cs.sample_output?.lm && (
+          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} onClose={() => setLmOpen(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
