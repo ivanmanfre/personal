@@ -453,6 +453,10 @@ body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/50,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/60,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(241,241,245,0.85) !important; }
+/* Opacity-variant dark bgs that slip past the solid-class bridge (funnel track, modal sticky header) */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/95,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/90 { background-color: rgba(255,255,255,0.95) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-950\/70 { background-color: var(--ds-bg) !important; }
 /* Borders */
 body.dashboard-v2-light .dashboard-v2 .border-zinc-950 { border-color: var(--ds-bg) !important; }
 body.dashboard-v2-light .dashboard-v2 .border-zinc-900 { border-color: var(--ds-line) !important; }

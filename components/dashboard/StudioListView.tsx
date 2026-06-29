@@ -62,8 +62,8 @@ function formatSmartDate(ms: number | undefined, hasRow = true): { text: string;
   const absD = Math.abs(diffMs) / 86_400_000;
   if (diffMs > 0) {
     // future
-    if (absHr < 24) return { text: `in ${Math.round(absHr)}h`, tint: 'text-amber-600' };
-    if (absD < 7) return { text: `in ${Math.round(absD)}d`, tint: 'text-emerald-600' };
+    if (absHr < 24) return { text: `in ${Math.round(absHr)}h`, tint: 'text-amber-700' };
+    if (absD < 7) return { text: `in ${Math.round(absD)}d`, tint: 'text-emerald-700' };
     return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-[var(--ds-dim)]' };
   } else {
     // past

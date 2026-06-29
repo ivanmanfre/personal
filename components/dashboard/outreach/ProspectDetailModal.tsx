@@ -127,7 +127,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-zinc-900/95 backdrop-blur-sm border-b border-zinc-800/60 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-zinc-800/60 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {prospect.profilePhotoUrl ? (
               <img src={prospect.profilePhotoUrl} alt="" className="w-10 h-10 rounded-full" />
@@ -137,7 +137,7 @@ export const ProspectDetailModal: React.FC<Props> = ({
               </div>
             )}
             <div>
-              <h2 className="text-lg font-semibold text-white">{prospect.name}</h2>
+              <h2 className="text-lg font-semibold text-[var(--ds-ink)]">{prospect.name}</h2>
               <p className="text-sm text-zinc-400">{prospect.headline || prospect.company || ''}</p>
             </div>
           </div>

@@ -514,7 +514,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   onClick={() => setStatusFilter(s)}
                   className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
                     isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
-                    isActive && s === 'all' ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/20 shadow-sm font-medium' :
+                    isActive && s === 'all' ? 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 shadow-sm font-medium' :
                     isCritical ? 'text-red-600 hover:bg-red-50' :
                     isPinned && count === 0 ? 'text-[var(--ds-dim)] opacity-60 hover:opacity-100' :
                     'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
@@ -533,7 +533,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onClick={() => setTypeFilter(t)}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
                   typeFilter === t
-                    ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/20 shadow-sm font-medium'
+                    ? 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 shadow-sm font-medium'
                     : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
                 }`}
               >

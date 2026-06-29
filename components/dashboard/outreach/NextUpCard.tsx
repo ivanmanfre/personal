@@ -90,7 +90,7 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, on
                     >
                       <span className="text-xs font-medium text-zinc-200 group-hover/row:text-emerald-300 transition-colors">{p.name}</span>
                       {p.company && <span className="text-[10px] text-zinc-500 ml-1.5 truncate">{p.company}</span>}
-                      <span className={`text-[10px] ml-1.5 ${stale ? 'text-red-400/80' : 'text-zinc-500'}`}>
+                      <span className={`text-[10px] ml-1.5 ${stale ? 'text-red-600' : 'text-zinc-500'}`}>
                         {p.lastReplyAt ? `replied ${timeAgo(p.lastReplyAt)}` : 'awaiting'}
                       </span>
                     </button>
@@ -147,7 +147,7 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, on
                   <span className="text-zinc-300 truncate">{p.name}</span>
                   {p.company && <span className="text-zinc-500 truncate">{p.company}</span>}
                   {p.icpScore != null && (
-                    <span className="ml-auto text-[10px] text-emerald-400/80 font-mono shrink-0">ICP {p.icpScore}</span>
+                    <span className="ml-auto text-[10px] text-emerald-700 font-mono shrink-0">ICP {p.icpScore}</span>
                   )}
                 </div>
               ))}

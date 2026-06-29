@@ -165,7 +165,7 @@ export const OverviewTab: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       {/* KPI row — light tiles, since CAMPAIGN_START */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <LightKpiTile
           label="Active Pipeline"
           value={totalActive}
@@ -218,7 +218,7 @@ export const OverviewTab: React.FC<Props> = ({
             {FEED_ORDER.map((f) => (
               <div key={f} className="flex items-center gap-1">
                 <span className={`w-2 h-2 rounded-sm bg-gradient-to-t ${FEED_BAR[f]}`} />
-                <span className={`text-[9px] ${FEED_TEXT[f]}`}>{FEED_LABELS[f]}</span>
+                <span className={`text-[11px] font-medium ${FEED_TEXT[f]}`}>{FEED_LABELS[f]}</span>
               </div>
             ))}
           </div>
@@ -231,12 +231,12 @@ export const OverviewTab: React.FC<Props> = ({
             return (
               <div key={String(s.key)} className="flex items-center gap-3">
                 <span className="text-[10px] text-zinc-500 w-24 shrink-0 text-right">{s.label}</span>
-                <div className="flex-1 h-7 bg-zinc-950/70 ring-1 ring-inset ring-zinc-800/60 rounded-lg overflow-hidden relative">
+                <div className="flex-1 h-7 bg-[var(--ds-bg)] ring-1 ring-inset ring-[var(--ds-line)] rounded-lg overflow-hidden relative">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${widthPct}%` }}
                     transition={{ type: 'spring', stiffness: 220, damping: 28, delay: i * 0.06 }}
-                    className="h-full flex rounded-lg overflow-hidden divide-x divide-zinc-950/40"
+                    className="h-full flex rounded-lg overflow-hidden divide-x divide-white/40"
                   >
                     {s.segments.filter((seg) => seg.value > 0).map((seg) => {
                       const segPct = s.total > 0 ? (seg.value / s.total) * 100 : 0;
@@ -251,9 +251,9 @@ export const OverviewTab: React.FC<Props> = ({
                       );
                     })}
                   </motion.div>
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-zinc-100 tabular-nums pointer-events-none drop-shadow">{s.total}</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[var(--ds-ink)] tabular-nums pointer-events-none">{s.total}</span>
                 </div>
-                <span className={`text-[10px] w-12 shrink-0 ${conv == null ? 'text-transparent' : conv >= 50 ? 'text-emerald-400/80' : conv >= 20 ? 'text-amber-400/80' : 'text-red-400/80'}`}>
+                <span className={`text-[10px] font-medium w-12 shrink-0 ${conv == null ? 'text-transparent' : conv >= 50 ? 'text-emerald-700' : conv >= 20 ? 'text-amber-700' : 'text-red-700'}`}>
                   {conv == null ? '—' : `${conv}%`}
                 </span>
               </div>
