@@ -492,17 +492,17 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       {/* Filters / sort — single muted line. Status + type pills are visually
           quiet (no high-contrast fill on non-active), keep more room for content. */}
       {drafts.length > 0 && (
-        <div className="space-y-1.5 text-[12px]" data-tour="post-lifecycle">
+        <div className="space-y-2 text-[12px]" data-tour="post-lifecycle">
           {/* Topic search — slimmer than before */}
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by topic or body…"
-            className="w-full rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-2.5 py-1 text-[13px] text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/20"
+            className="w-full rounded-lg bg-[var(--ds-card)] border border-[var(--ds-line)] px-3 py-2 text-[13px] text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/20"
           />
           {/* Status + Type + Sort all on one line. Tinted pills per status color. */}
-          <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-[var(--ds-dim)]">
+          <div className="flex items-center gap-x-1.5 gap-y-1.5 flex-wrap text-[var(--ds-dim)]">
             {(['all', ...visibleStatuses] as const).filter((s) => s !== 'disqualified').map((s) => {
               const count = statusCounts[s] || 0;
               const isPinned = s !== 'all' && PINNED_STATUSES.has(s);
@@ -519,7 +519,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                     isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
                     isActive && s === 'all' ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/20 shadow-sm font-medium' :
                     isCritical ? 'text-red-600 hover:bg-red-50' :
-                    isPinned && count === 0 ? 'text-[var(--ds-faint)] hover:text-[var(--ds-dim)]' :
+                    isPinned && count === 0 ? 'text-[var(--ds-dim)] opacity-60 hover:opacity-100' :
                     'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
                   }`}
                 >
@@ -558,7 +558,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
                   className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] ${
-                    showDisqualified ? 'text-[var(--ds-ink)] bg-[var(--ds-bg)] border border-[var(--ds-line)]' : 'text-[var(--ds-faint)] hover:text-[var(--ds-dim)] hover:bg-black/[.03]'
+                    showDisqualified ? 'text-[var(--ds-ink)] bg-[var(--ds-bg)] border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-dim)] hover:bg-black/[.03]'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
@@ -743,15 +743,15 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           }}
         />
       ) : view === 'board' ? (
-        <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
+        <div className="flex gap-4 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
           {visibleStatuses.map((status) => {
             const col = visible.filter((d) => d.status === status);
             const meta = STATUS_META[status] || STATUS_META.draft;
             return (
-              <div key={status} className="flex-none w-[160px] snap-start rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)] flex flex-col max-h-[75vh] shadow-sm">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-[var(--ds-line)] sticky top-0 bg-[var(--ds-card)] backdrop-blur">
+              <div key={status} className="flex-none w-[200px] snap-start rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] flex flex-col max-h-[75vh] shadow-sm">
+                <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-[var(--ds-line)] sticky top-0 bg-[var(--ds-card)] backdrop-blur">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[12px] font-medium uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
+                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
                   <span className="ml-auto text-[12px] text-[var(--ds-faint)] font-mono">{col.length}</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
@@ -765,16 +765,16 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                       <button
                         key={d.id}
                         onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[#cbd5e1] hover:bg-[#fafafc] transition overflow-hidden shadow-sm"
+                        className="w-full text-left rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[var(--ds-accent)]/30 hover:bg-[#fafafe] hover:shadow-md transition-all overflow-hidden shadow-sm"
                       >
                         {thumb && (
                           <div className="aspect-[16/9] bg-[var(--ds-bg)] overflow-hidden">
                             <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
                           </div>
                         )}
-                        <div className="px-1.5 py-1.5">
-                          <div className="text-[12px] uppercase tracking-wider text-[var(--ds-faint)] mb-0.5">{kicker}</div>
-                          <div className="text-[13px] text-[var(--ds-ink)] line-clamp-3 leading-tight">{d.title || d.topic || 'Untitled'}</div>
+                        <div className="px-3 py-3">
+                          <div className="text-[10px] uppercase tracking-widest text-[var(--ds-faint)] mb-1 font-semibold">{kicker}</div>
+                          <div className="text-[14px] text-[var(--ds-ink)] line-clamp-3 leading-snug font-medium">{d.title || d.topic || 'Untitled'}</div>
                           {sched && (
                             <div className="mt-1 flex items-center gap-1 text-[12px] text-[var(--ds-faint)]">
                               <Calendar className="w-2.5 h-2.5" /> {sched}

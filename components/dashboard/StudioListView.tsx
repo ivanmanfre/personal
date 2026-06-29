@@ -322,7 +322,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-4 py-2 bg-[var(--ds-bg)] border-b border-[var(--ds-line)] text-[12px] text-[var(--ds-faint)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
+        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[var(--ds-bg)] border-b border-[var(--ds-line)] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -411,16 +411,16 @@ export function StudioListView({
               const meta = statusMeta[status] || { dot: 'bg-slate-400', label: 'text-[var(--ds-dim)]' };
               const isCollapsed = collapsed.has(status);
               return (
-                <div key={status} className="border-b border-[var(--ds-line)] last:border-b-0">
+                <div key={status} className="border-t border-[var(--ds-line)] border-b border-[var(--ds-line)] last:border-b-0">
                   <button
                     onClick={() => toggleGroup(status)}
-                    className="w-full flex items-center gap-2 px-4 py-2 transition-all text-left bg-[var(--ds-bg)] hover:bg-[#f1f1f5]"
+                    className="w-full flex items-center gap-2 px-4 py-3 transition-all text-left bg-[var(--ds-bg)] hover:bg-[#f1f1f5]"
                   >
                     {isCollapsed
                       ? <ChevronRight className="w-3.5 h-3.5 text-[var(--ds-faint)] transition-transform" />
                       : <ChevronDown className="w-3.5 h-3.5 text-[var(--ds-dim)] transition-transform" />}
                     <span className={`inline-block w-2 h-2 rounded-full ring-2 ring-current/10 ${meta.dot}`} />
-                    <span className="dv-section-h" style={{ fontSize: 'var(--t-base)' }}>{statusLabel(status)}</span>
+                    <span className="text-[13px] font-semibold text-[var(--ds-ink)]">{statusLabel(status)}</span>
                     <span className="dv-editorial-num text-[length:var(--t-sm)] ml-0.5">{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
@@ -473,7 +473,7 @@ export function StudioListView({
         tabIndex={0}
         aria-label={`Open ${r.title || 'post'}`}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
-        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[#fafafc] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[#fafafc] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -504,7 +504,7 @@ export function StudioListView({
                     onClick={r.thumbUrl ? (e) => { e.stopPropagation(); setPreviewRow(r); } : undefined}
                     disabled={!r.thumbUrl}
                     title={r.thumbUrl ? 'Click to preview media' : undefined}
-                    className={`w-8 h-8 rounded-lg overflow-hidden bg-[var(--ds-bg)] border border-[var(--ds-line)] flex items-center justify-center shrink-0 ${r.thumbUrl ? 'hover:border-[var(--ds-accent)]/40 hover:scale-105 transition-all cursor-zoom-in' : ''}`}
+                    className={`w-9 h-9 rounded-lg overflow-hidden bg-[var(--ds-bg)] border border-[var(--ds-line)] flex items-center justify-center shrink-0 ${r.thumbUrl ? 'hover:border-[var(--ds-accent)]/40 hover:scale-105 transition-all cursor-zoom-in' : ''}`}
                   >
                     {r.thumbUrl ? (
                       <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
@@ -527,8 +527,8 @@ export function StudioListView({
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className={`${dense ? 'text-[12px]' : 'text-[13px]'} text-[var(--ds-ink)] truncate font-medium tracking-tight`}>{r.title || '(untitled)'}</div>
-                  {r.excerpt && !dense && <div className="text-[12px] text-[var(--ds-dim)] truncate mt-0.5">{r.excerpt}</div>}
+                  <div className={`${dense ? 'text-[12px]' : 'text-[14px]'} text-[var(--ds-ink)] truncate font-medium`}>{r.title || '(untitled)'}</div>
+                  {r.excerpt && !dense && <div className="text-[12px] text-[var(--ds-faint)] truncate mt-0.5">{r.excerpt}</div>}
                 </div>
               </div>
             );
@@ -579,8 +579,10 @@ export function StudioListView({
                     aria-live="polite"
                     aria-label={`Status: ${statusLabel(r.status)}`}
                   >
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
-                    <span className={`text-[12px] ${meta.label} truncate font-medium`}>{statusLabel(r.status)}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${(meta as any).pill || 'bg-slate-100 text-slate-600'} border-current/10`}>
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
+                      {statusLabel(r.status)}
+                    </span>
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -594,7 +596,7 @@ export function StudioListView({
             if (!t) return <div key={c.key} className={cls} />;
             return (
               <div key={c.key} className={cls}>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[12px] font-medium ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded border text-[12px] font-medium ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
               </div>
             );
           }
