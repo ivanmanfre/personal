@@ -6,6 +6,7 @@ import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
 import { TourProvider, useTour } from './tour/TourProvider';
 import { TourNarratorCard } from './tour/TourNarratorCard';
 import { onNav } from './lib/navBus';
+import { LiveStatus } from './live/LiveStatus';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
@@ -223,6 +224,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
         </div>
         <CommandPalette {...palette} />
         <TourTrigger />
+        <LiveStatus />
         <TourNarratorCard />
       </div>
     </TourProvider>

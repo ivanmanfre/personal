@@ -15,6 +15,7 @@ import { SystemOverview } from './sections/SystemOverview';
 import { Personal } from './sections/Personal';
 import { StealBox } from './sections/StealBox';
 import { useScheduledChecks } from '../../hooks/useScheduledChecks';
+import { LiveProvider } from './live/LiveProvider';
 import type { NavItem, SectionId } from './types';
 
 /**
@@ -95,7 +96,9 @@ export default function DemoShell() {
           },
         }}
       />
-      <ShellInner />
+      <LiveProvider>
+        <ShellInner />
+      </LiveProvider>
       <PwaInstall />
     </DashboardProvider>
   );
