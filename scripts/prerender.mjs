@@ -68,6 +68,39 @@ const ROUTES = [
   '/scan/tk-douglass-9b',
 ];
 
+// Dynamically add every promoted hypertarget scan (asset_ready / approved / sent) so each
+// generated scan's clean /scan/:slug link returns 200 + per-scan OG and unfurls on LinkedIn —
+// no manual ROUTES edit per prospect. Falls back to the static list if Supabase is unreachable.
+async function fetchScanSlugs() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    console.warn('[prerender] no Supabase env — skipping dynamic scan enumeration');
+    return [];
+  }
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/hypertarget_corpus?stage=in.(asset_ready,approved,sent)&company_slug=not.is.null&select=company_slug`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    if (!res.ok) {
+      console.warn(`[prerender] scan enum HTTP ${res.status} — using static routes only`);
+      return [];
+    }
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.map((r) => r.company_slug).filter(Boolean) : [];
+  } catch (e) {
+    console.warn('[prerender] scan enum failed:', e.message);
+    return [];
+  }
+}
+
+for (const slug of await fetchScanSlugs()) {
+  const r = `/scan/${slug}`;
+  if (!ROUTES.includes(r)) ROUTES.push(r);
+}
+console.log(`[prerender] scan routes:`, ROUTES.filter((r) => r.startsWith('/scan/')).join(', '));
+
 const PORT = 4178;
 const BASE = `http://${HOST}:${PORT}`;
 

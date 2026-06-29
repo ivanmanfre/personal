@@ -240,6 +240,7 @@ export interface Scan {
   top_gap_summary: string | null;
   report_url: string | null;
   report_json: ReportJson | null;
+  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
 }
 
 export interface ProspectToken {

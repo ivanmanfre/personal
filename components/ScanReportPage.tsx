@@ -4289,15 +4289,21 @@ const ScanReportPage: React.FC = () => {
     ? rawName.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
     : rawName;
 
+  // Route by offer. Trust the scans.matched_offer COLUMN as a fallback when report_json
+  // doesn't carry matched_offer (pipeline-built scans set the column, not the json field) —
+  // otherwise a content_system scan falls through to the audit layout and crashes on a
+  // missing automation_grade.
+  const offer = report.matched_offer ?? scan.matched_offer;
+
   // Call-intelligence prospects get a dedicated, cut-down pitch page (no automation
   // score, no $2k assessment) instead of the generic AI Opportunity Scan report.
-  if (report.matched_offer === 'call_intelligence' && report.call_intel) {
+  if (offer === 'call_intelligence' && report.call_intel) {
     return <CallIntelReport report={report} scan={scan} companyName={companyName} />;
   }
 
   // Content-system prospects (organic content engine + lead-magnet capture, one bundled offer)
   // get a dedicated personalized pitch instead of the generic AI Opportunity Scan report.
-  if (report.matched_offer === 'content_system' && report.content_system) {
+  if (offer === 'content_system' && report.content_system) {
     return <ContentSystemReport report={report} scan={scan} companyName={companyName} />;
   }
 
