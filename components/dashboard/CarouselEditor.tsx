@@ -95,7 +95,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [logCollapsed, setLogCollapsed] = useState(false);
+  const [logCollapsed, setLogCollapsed] = useState(true);
   const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow picking the same file again later
@@ -310,7 +310,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             agent rail spans both cols on row 2 (audit rank 10, the :nth-child(3) trick).
             Stops Approve from being 2 viewports below the fold on iPad.
           - lg (≥1024): 3-column ClickUp layout with sticky rail. */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:nth-child(3)]:col-span-2 ${logCollapsed ? 'lg:grid-cols-[1.2fr_1.4fr_auto]' : 'lg:grid-cols-[1.2fr_1.4fr_320px] lg:[&>*:nth-child(3)]:col-span-1'}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:nth-child(3)]:col-span-2 ${logCollapsed ? 'lg:grid-cols-[1fr_1.3fr_auto] lg:[&>*:nth-child(3)]:col-span-1' : 'lg:grid-cols-[1fr_1.1fr_300px] lg:[&>*:nth-child(3)]:col-span-1'}`}>
         {/* LEFT COLUMN — context first (source), then copy editing */}
         <div className="space-y-4 min-w-0">
           {/* Source briefing on top — the raw material that fed generation. */}
@@ -334,8 +334,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               FieldLabel that read as secondary; the audit's F-pattern fix
               promotes it visually so the eye lands here first. */}
           <Card className="border-l-[3px] border-l-[var(--ds-accent)]">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="dv-section-h">LinkedIn caption</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[13px] font-semibold text-[var(--ds-ink)]">LinkedIn caption</h3>
               <div className="inline-flex items-center gap-2">
                 <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
                   <button
@@ -360,12 +360,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 Writing caption… the image renders first, the copy lands a few minutes later.
               </div>
             ) : postMode === 'edit' ? (
-              <Textarea
-                value={postBody}
-                onChange={(e) => setPostBody(e.target.value)}
-                rows={8}
-                className="text-[length:var(--t-base)] leading-relaxed"
-              />
+              <>
+                <Textarea
+                  value={postBody}
+                  onChange={(e) => setPostBody(e.target.value)}
+                  rows={8}
+                  className="text-[length:var(--t-base)] leading-relaxed"
+                />
+                <div className="mt-1.5 h-0.5 rounded-full bg-[var(--ds-line)] overflow-hidden">
+                  <div className="h-full bg-[var(--ds-accent)] transition-all" style={{ width: `${Math.min(100, postBody.length / 3000 * 100)}%` }} />
+                </div>
+              </>
             ) : (
               <div className="rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-3">
                 <LinkedInPostPreview
@@ -382,8 +387,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </Card>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <FieldLabel className="!mb-0">Instagram caption</FieldLabel>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[13px] font-semibold text-[var(--ds-ink)]">Instagram caption</h3>
               <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
                 <button
                   onClick={() => setIgMode('edit')}
@@ -423,7 +428,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             </button>
             {fieldsOpen && (
             <div className="border-t border-[var(--ds-line)] p-3">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+              <div className="col-span-2 text-[10px] uppercase tracking-widest text-[var(--ds-dim)] font-medium pt-1 pb-0.5">Editorial</div>
               <div>
                 <FieldLabel>Pillar</FieldLabel>
                 <Input value={pillar || ''} onChange={(e) => updateTax('pillar', e.target.value)} placeholder="e.g. Personal POV" />
@@ -440,6 +446,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 <FieldLabel>Source</FieldLabel>
                 <Input value={source || ''} onChange={(e) => updateTax('source', e.target.value)} placeholder="curator / call / manual" />
               </div>
+              <div className="col-span-2 text-[10px] uppercase tracking-widest text-[var(--ds-dim)] font-medium pt-3 pb-0.5">Imagery</div>
               <div className="col-span-2">
                 <FieldLabel>Image style</FieldLabel>
                 <Input value={imageStyle || ''} onChange={(e) => updateTax('image_style', e.target.value)} placeholder="Concept Visual / Photoreal / …" />
@@ -493,7 +500,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   key: 'preview',
                   label: 'Preview',
                   render: () => (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      {/* Library / Upload controls above the card */}
                       {draft.type !== 'carousel' && (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
@@ -522,7 +530,46 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                           </button>
                         </div>
                       )}
-                      {renderMedia()}
+                      {/* LinkedIn Preview label */}
+                      <div className="text-xs uppercase tracking-wider text-[var(--ds-dim)] mb-4 text-center font-medium">LinkedIn Preview</div>
+                      {/* LinkedIn card chrome */}
+                      <div className="bg-white rounded-xl shadow-md ring-1 ring-[var(--ds-line)] p-4 max-w-[520px] mx-auto">
+                        {/* Card header: avatar + name + meta */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-none">I</div>
+                          <div>
+                            <div className="text-[14px] font-semibold text-gray-900">Ivan Manfredi</div>
+                            <div className="text-[12px] text-gray-500">1st · Following</div>
+                            <div className="text-[12px] text-gray-400">just now</div>
+                          </div>
+                        </div>
+                        {/* Post body */}
+                        <div className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap">
+                          {postBody.length > 280 ? postBody.slice(0, 280) + '…' : postBody}
+                          {postBody.length > 280 && (
+                            <button className="text-gray-500 hover:underline text-[13px] ml-1">see more</button>
+                          )}
+                        </div>
+                        {/* Media / slides below text */}
+                        {(draft.imageUrls && draft.imageUrls.length > 0) || draft.slides.length > 0 ? (
+                          <div className="mt-3">
+                            {(() => {
+                              const u = draft.imageUrls?.[0];
+                              if (u) {
+                                const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                                const src = m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
+                                return <img src={src} className="w-full rounded-lg" alt="Post visual" />;
+                              }
+                              return null;
+                            })()}
+                            {(!draft.imageUrls || draft.imageUrls.length === 0) && draft.slides.length > 0 && (
+                              <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-3 text-xs text-[var(--ds-dim)] text-center">
+                                {draft.slides.length} slide{draft.slides.length !== 1 ? 's' : ''} · carousel
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   ),
                 },
@@ -542,30 +589,44 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               Column 2 now contains only the Reference Card. */}
         </div>
 
-        {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed), collapsible */}
-        <div className="min-w-0">
+        {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed), collapsible.
+            When collapsed: auto-width column with just the toggle button (reclaims space).
+            When expanded: 300px column with full feed. */}
+        <div className={logCollapsed ? 'min-w-0 w-auto' : 'min-w-0'}>
           <div className="lg:sticky lg:top-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-[var(--ds-dim)]">Activity</span>
+            {logCollapsed ? (
+              /* Collapsed: slim vertical toggle rail */
               <button
-                onClick={() => setLogCollapsed((v) => !v)}
-                className="text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] flex items-center gap-1 transition-colors min-h-[32px] min-w-[32px] justify-end"
-                title={logCollapsed ? 'Show activity log' : 'Hide activity log'}
+                onClick={() => setLogCollapsed(false)}
+                className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-md text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03] transition-colors"
+                title="Show activity log"
               >
-                {logCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-                {logCollapsed ? 'Show' : 'Hide'}
+                <ChevronDown className="w-3 h-3" />
+                <span className="text-[10px] uppercase tracking-widest font-medium [writing-mode:vertical-rl] rotate-180">Activity</span>
               </button>
-            </div>
-            <div className={logCollapsed ? 'hidden' : ''}>
-              <AgentLogFeed
-                entries={draft.agentLog}
-                table="carousel_drafts"
-                rowId={draft.id}
-                onNoteAdded={onChanged}
-                defaultOpen
-                renderMarkdown
-              />
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-[var(--ds-dim)]">Activity</span>
+                  <button
+                    onClick={() => setLogCollapsed(true)}
+                    className="text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] flex items-center gap-1 transition-colors min-h-[32px] min-w-[32px] justify-end"
+                    title="Hide activity log"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                    Hide
+                  </button>
+                </div>
+                <AgentLogFeed
+                  entries={draft.agentLog}
+                  table="carousel_drafts"
+                  rowId={draft.id}
+                  onNoteAdded={onChanged}
+                  defaultOpen
+                  renderMarkdown
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
