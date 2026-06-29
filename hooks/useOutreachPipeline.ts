@@ -193,7 +193,7 @@ export function useOutreachPipeline(timezone?: string) {
   const [engagementLog, setEngagementLog] = useState<Record<string, OutreachEngagementLog[]>>({});
   const [recentActivity, setRecentActivity] = useState<OutreachEngagementLog[]>([]);
   const [rateLimits, setRateLimits] = useState<Record<string, { count: number; daily_limit: number }>>({});
-  const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
+  const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number; inmail: number }>({ connection_request: 0, dm: 0, inmail: 0 });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [pendingCeiling, setPendingCeiling] = useState<number>(200);
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
@@ -301,8 +301,10 @@ export function useOutreachPipeline(timezone?: string) {
       });
       setRateLimits(rl);
 
-      // Capped queue: approved-but-unsent LinkedIn messages, by action_type
-      const cq = { connection_request: 0, dm: 0 };
+      // Capped queue: approved-but-unsent LinkedIn messages, by action_type.
+      // inmail is always 0 — n8n wf 73SU0w4HbG9AVPdG sends InMails directly
+      // without writing a pending row; the slot exists in the UI ready for data.
+      const cq = { connection_request: 0, dm: 0, inmail: 0 };
       (queuedLinkedInRes.data || []).forEach((r: any) => {
         if (r.message_type === 'connection_note') cq.connection_request += 1;
         else if (r.message_type === 'dm') cq.dm += 1;

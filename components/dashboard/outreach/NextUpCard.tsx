@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { Send, MessageSquare, UserCheck, Inbox } from 'lucide-react';
+import { Send, MessageSquare, UserCheck, Inbox, Mail } from 'lucide-react';
 import PanelCard from '../shared/PanelCard';
 import { timeAgo } from '../shared/utils';
 import type { OutreachProspect } from '../../../types/dashboard';
 
 interface Props {
   prospects: OutreachProspect[];
-  cappedQueue: { connection_request: number; dm: number };
+  cappedQueue: { connection_request: number; dm: number; inmail: number };
   onOpen: (p: OutreachProspect) => void;       // open detail / reply thread
   onArchive: (id: string, reason?: string) => void;
   onResolve: (id: string) => void;             // clear needs_manual_reply
@@ -55,8 +55,8 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, on
   const totalWaiting = q.repliesWaiting.length + q.acceptsToDm.length;
   const perDay = (q.invites7d / 7).toFixed(1);
 
-  // Change 5: show next-sends lane if there are queued invites OR queued DMs/conn notes
-  const hasNextSends = q.nextToSend.length > 0 || cappedQueue.dm > 0 || cappedQueue.connection_request > 0;
+  // Change 5: show next-sends lane if there are queued invites OR queued DMs/conn notes/inmails
+  const hasNextSends = q.nextToSend.length > 0 || cappedQueue.dm > 0 || cappedQueue.connection_request > 0 || cappedQueue.inmail > 0;
 
   return (
     <PanelCard
@@ -160,6 +160,23 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, on
             </div>
           </Lane>
         )}
+
+        {/* Lane 4 — InMail queue (slot always visible; data flows once n8n writes pending rows) */}
+        <Lane
+          marker="bg-violet-400"
+          icon={<Mail className="w-3.5 h-3.5 text-violet-400" />}
+          label="InMail"
+          count={cappedQueue.inmail}
+        >
+          {cappedQueue.inmail > 0 ? (
+            <p className="text-[11px] text-zinc-400">{cappedQueue.inmail} InMail{cappedQueue.inmail === 1 ? '' : 's'} queued to send</p>
+          ) : (
+            <p className="text-[11px] text-zinc-600">
+              No pending InMails — n8n wf <span className="font-mono">73SU0w4HbG9AVPdG</span> sends directly without queuing.
+              Add a pending row with <span className="font-mono">message_type='inmail'</span> + <span className="font-mono">sent_at=null</span> to surface them here.
+            </p>
+          )}
+        </Lane>
 
         {/* Nothing waiting */}
         {totalWaiting === 0 && !hasNextSends && (

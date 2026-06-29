@@ -9,10 +9,9 @@ import {
 } from '../feedHelpers';
 
 // ── Overview window constant ─────────────────────────────────────────────────
-// Change this to expand or contract the KPI window. All overview KPI tiles
-// (Active Pipeline, per-feed counts, Accept Rate, Reply Rate) use prospects
-// whose createdAt falls within the last WINDOW_DAYS calendar days.
-const WINDOW_DAYS = 3;
+// Fixed campaign-start date. All overview KPI tiles (Active Pipeline, per-feed
+// counts, Accept Rate, Reply Rate) use prospects whose createdAt >= this date.
+const CAMPAIGN_START = '2026-06-25';
 
 // ── Light KPI tile ───────────────────────────────────────────────────────────
 // Local light-theme variant — only used in this Overview's KPI row.
@@ -72,7 +71,7 @@ interface Props {
   bandsTotal: number;
   bandsHot: number;
   campaigns: OutreachCampaign[];
-  cappedQueue: { connection_request: number; dm: number };
+  cappedQueue: { connection_request: number; dm: number; inmail: number };
   onPickFeed?: (feed: OutreachFeed) => void;
   onOpenProspect: (p: OutreachProspect) => void;
   onArchiveProspect: (id: string, reason?: string) => void;
@@ -109,21 +108,15 @@ export const OverviewTab: React.FC<Props> = ({
   hotDomains,
   bandsTotal,
   bandsHot,
-  campaigns: _campaigns, // kept in Props for API compat; not used by the 3-day window
+  campaigns: _campaigns, // kept in Props for API compat; not used by the overview window
   cappedQueue,
   onPickFeed,
   onOpenProspect,
   onArchiveProspect,
   onResolveReply,
 }) => {
-  // KPI window: last WINDOW_DAYS days (rolling, not campaign-start-based).
-  // Using a stable ISO string avoids unnecessary re-renders on each render cycle.
-  const windowStart = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - WINDOW_DAYS);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally computed once per mount
+  // KPI window: fixed campaign start (CAMPAIGN_START constant above).
+  const windowStart = CAMPAIGN_START;
 
   const windowedProspects = useMemo(
     () => prospects.filter((p) => p.createdAt >= windowStart),
@@ -171,7 +164,7 @@ export const OverviewTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4">
-      {/* KPI row — light tiles, last WINDOW_DAYS days window */}
+      {/* KPI row — light tiles, since CAMPAIGN_START */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <LightKpiTile
           label="Active Pipeline"
@@ -217,9 +210,9 @@ export const OverviewTab: React.FC<Props> = ({
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">All-Feeds Funnel</span>
           <span className="text-[10px] text-zinc-600">{totalActive} in pipeline → {totalReplied} replied</span>
-          {/* Window label — reflects WINDOW_DAYS constant */}
+          {/* Window label — reflects CAMPAIGN_START constant */}
           <span className="text-[10px]" style={{ color: 'var(--ds-faint, #64748b)' }}>
-            · last {WINDOW_DAYS} days
+            · since Jun 25
           </span>
           <div className="flex items-center gap-2.5 ml-auto flex-wrap">
             {FEED_ORDER.map((f) => (
