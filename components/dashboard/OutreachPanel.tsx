@@ -1374,6 +1374,8 @@ const OutreachPanel: React.FC = () => {
       onOpenProspect={setSelectedProspect}
       onArchiveProspect={archiveProspect}
       onResolveReply={toggleNeedsReply}
+      campaigns={campaigns}
+      cappedQueue={cappedQueue}
     />
   );
 

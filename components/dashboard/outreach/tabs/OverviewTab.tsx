@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Radio, Briefcase, Flame, Snowflake, TrendingUp } from 'lucide-react';
+import { Users, Radio, Briefcase, Flame, Snowflake, TrendingUp, MessageSquare } from 'lucide-react';
 import StatCard from '../../shared/StatCard';
 import { NextUpCard } from '../NextUpCard';
-import type { OutreachProspect, FeedRollupRow, OutreachFeed } from '../../../../types/dashboard';
+import type { OutreachProspect, FeedRollupRow, OutreachFeed, OutreachCampaign } from '../../../../types/dashboard';
 import {
   FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BADGE, FEED_BAR, FEED_TEXT,
   feedRollup, warmVsCold,
@@ -14,6 +14,8 @@ interface Props {
   hotDomains: Set<string>;
   bandsTotal: number;
   bandsHot: number;
+  campaigns: OutreachCampaign[];
+  cappedQueue: { connection_request: number; dm: number };
   onPickFeed?: (feed: OutreachFeed) => void;
   onOpenProspect: (p: OutreachProspect) => void;
   onArchiveProspect: (id: string, reason?: string) => void;
@@ -44,8 +46,32 @@ const FUNNEL_STAGES: { key: keyof FeedRollupRow; label: string }[] = [
   { key: 'replied', label: 'Replied' },
 ];
 
-export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal, bandsHot, onPickFeed, onOpenProspect, onArchiveProspect, onResolveReply }) => {
-  const rows = useMemo(() => feedRollup(prospects, hotDomains), [prospects, hotDomains]);
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export const OverviewTab: React.FC<Props> = ({
+  prospects,
+  hotDomains,
+  bandsTotal,
+  bandsHot,
+  campaigns,
+  cappedQueue,
+  onPickFeed,
+  onOpenProspect,
+  onArchiveProspect,
+  onResolveReply,
+}) => {
+  // Change 1: campaign window — filter prospects to latest campaign start
+  const campaignStart = campaigns[0]?.createdAt ?? null;
+  const windowedProspects = useMemo(
+    () => (campaignStart ? prospects.filter((p) => p.createdAt >= campaignStart) : prospects),
+    [prospects, campaignStart],
+  );
+
+  // Use windowedProspects for KPIs, funnel, and accept/reply rates
+  const rows = useMemo(() => feedRollup(windowedProspects, hotDomains), [windowedProspects, hotDomains]);
   const byFeed = useMemo(() => {
     const m = new Map<OutreachFeed, FeedRollupRow>();
     rows.forEach((r) => m.set(r.feed, r));
@@ -63,24 +89,31 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
   }), [byFeed]);
   const funnelMax = Math.max(...stageData.map((s) => s.total), 1);
 
-  // warm-vs-cold: low-signal guard (rates at tiny N are noise).
-  const warmAcceptSignal = wvc.warmConnSent >= 8;
-  const coldAcceptSignal = wvc.coldConnSent >= 8;
-  const warmReplySignal = wvc.warmDmSent >= 8;
-  const coldReplySignal = wvc.coldDmSent >= 8;
+  // Change 2: Accept Rate and Reply Rate derived from windowed wvc data
+  const totalAccepted = wvc.warmConnected + wvc.coldConnected;
+  const totalConnSent = wvc.warmConnSent + wvc.coldConnSent;
+  const totalReplied = wvc.warmReplied + wvc.coldReplied;
+  const totalDmSent = wvc.warmDmSent + wvc.coldDmSent;
+
+  const acceptRateVal = totalConnSent > 0 ? (totalAccepted / totalConnSent) * 100 : null;
+  const replyRateVal = totalDmSent > 0 ? (totalReplied / totalDmSent) * 100 : null;
+
+  const acceptRateDisplay = acceptRateVal != null ? `${acceptRateVal.toFixed(1)}%` : '—';
+  const replyRateDisplay = replyRateVal != null ? `${replyRateVal.toFixed(1)}%` : '—';
+
+  // "Conversion by Source" uses all prospects (not windowed) to retain statistical signal
+  const allRows = useMemo(() => feedRollup(prospects, hotDomains), [prospects, hotDomains]);
+  const allByFeed = useMemo(() => {
+    const m = new Map<OutreachFeed, FeedRollupRow>();
+    allRows.forEach((r) => m.set(r.feed, r));
+    return m;
+  }, [allRows]);
 
   return (
     <div className="space-y-4">
-      {/* Pinned "who's next and when" command queue */}
-      <NextUpCard
-        prospects={prospects}
-        onOpen={onOpenProspect}
-        onArchive={onArchiveProspect}
-        onResolve={onResolveReply}
-      />
-
-      {/* Headline stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* Change 6: KPI row is FIRST */}
+      {/* Change 2: 7 tiles — Active Pipeline + 4 feeds + Accept Rate + Reply Rate */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <StatCard label="Active Pipeline" value={totalActive} icon={<Users className="w-5 h-5" />} color="text-zinc-300" subValue="across all feeds" />
         {FEED_ORDER.map((f) => {
           const r = byFeed.get(f);
@@ -95,13 +128,36 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
             />
           );
         })}
+        {/* Change 2: Accept Rate tile */}
+        <StatCard
+          label="Accept Rate"
+          value={acceptRateDisplay}
+          icon={<TrendingUp className="w-5 h-5" />}
+          color="text-emerald-400"
+          subValue={`${totalAccepted}/${totalConnSent} accepted`}
+        />
+        {/* Change 2: Reply Rate tile */}
+        <StatCard
+          label="Reply Rate"
+          value={replyRateDisplay}
+          icon={<MessageSquare className="w-5 h-5" />}
+          color="text-blue-400"
+          subValue={`${totalReplied}/${totalDmSent} replied`}
+        />
       </div>
 
+      {/* Change 6: Cross-feed funnel is SECOND */}
       {/* Cross-feed funnel — source-attributed */}
       <div className="panel-surface shadow-sm shadow-black/10 p-4">
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">All-Feeds Funnel</span>
-          <span className="text-[10px] text-zinc-600">{totalActive} in pipeline → {wvc.coldReplied + wvc.warmReplied} replied</span>
+          <span className="text-[10px] text-zinc-600">{totalActive} in pipeline → {totalReplied} replied</span>
+          {/* Change 1: campaign window label */}
+          {campaignStart && (
+            <span className="text-[10px]" style={{ color: 'var(--ds-dim, #71717a)' }}>
+              · since campaign start · {fmtDate(campaignStart)}
+            </span>
+          )}
           <div className="flex items-center gap-2.5 ml-auto flex-wrap">
             {FEED_ORDER.map((f) => (
               <div key={f} className="flex items-center gap-1">
@@ -150,25 +206,17 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
         </div>
       </div>
 
-      {/* Warm vs Cold — the key comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <WarmColdCard
-          title="Accept Rate"
-          subtitle="invite → connection"
-          warmRate={wvc.warmAcceptRate} coldRate={wvc.coldAcceptRate}
-          warmFrac={`${wvc.warmConnected}/${wvc.warmConnSent}`} coldFrac={`${wvc.coldConnected}/${wvc.coldConnSent}`}
-          warmSignal={warmAcceptSignal} coldSignal={coldAcceptSignal}
-        />
-        <WarmColdCard
-          title="Reply Rate"
-          subtitle="DM → reply"
-          warmRate={wvc.warmReplyRate} coldRate={wvc.coldReplyRate}
-          warmFrac={`${wvc.warmReplied}/${wvc.warmDmSent}`} coldFrac={`${wvc.coldReplied}/${wvc.coldDmSent}`}
-          warmSignal={warmReplySignal} coldSignal={coldReplySignal}
-        />
-      </div>
+      {/* Change 6: NextUpCard is THIRD (moved down from top) */}
+      <NextUpCard
+        prospects={prospects}
+        cappedQueue={cappedQueue}
+        onOpen={onOpenProspect}
+        onArchive={onArchiveProspect}
+        onResolve={onResolveReply}
+      />
 
-      {/* Conversion by source — per-feed bars */}
+      {/* Change 6: Conversion by Source is LAST */}
+      {/* Uses all prospects (not windowed) for statistical signal */}
       <div className="panel-surface shadow-sm shadow-black/10 p-4">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-zinc-500" />
@@ -177,7 +225,7 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
         </div>
         <div className="space-y-3.5">
           {FEED_ORDER.map((f) => {
-            const r = byFeed.get(f)!;
+            const r = allByFeed.get(f)!;
             const acceptN = r.connectionSent;
             const replyN = r.dmSent;
             return (
@@ -199,57 +247,6 @@ export const OverviewTab: React.FC<Props> = ({ prospects, hotDomains, bandsTotal
           {bandsTotal > 0 && <> Intent screen has flagged <span className="text-emerald-400">{bandsHot}</span> hot domain{bandsHot === 1 ? '' : 's'} of {bandsTotal} screened.</>}
         </p>
       </div>
-    </div>
-  );
-};
-
-const WarmColdCard: React.FC<{
-  title: string; subtitle: string;
-  warmRate: number; coldRate: number;
-  warmFrac: string; coldFrac: string;
-  warmSignal: boolean; coldSignal: boolean;
-}> = ({ title, subtitle, warmRate, coldRate, warmFrac, coldFrac, warmSignal, coldSignal }) => {
-  const max = Math.max(warmRate, coldRate, 1);
-  const delta = warmSignal && coldSignal ? Math.round((warmRate - coldRate) * 10) / 10 : null;
-  return (
-    <div className="panel-surface shadow-sm shadow-black/10 p-4">
-      <div className="flex items-baseline justify-between mb-3">
-        <div>
-          <span className="text-sm font-semibold text-zinc-200">{title}</span>
-          <span className="text-[10px] text-zinc-500 ml-2">{subtitle}</span>
-        </div>
-        {delta != null && (
-          <span className={`text-[11px] font-medium ${delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-zinc-500'}`}>
-            warm {delta > 0 ? '+' : ''}{delta} pts
-          </span>
-        )}
-      </div>
-      <div className="space-y-2.5">
-        {([
-          { who: 'Warm', rate: warmRate, frac: warmFrac, signal: warmSignal, bar: 'from-emerald-500 to-emerald-600', text: 'text-emerald-300' },
-          { who: 'Cold', rate: coldRate, frac: coldFrac, signal: coldSignal, bar: 'from-zinc-500 to-zinc-600', text: 'text-zinc-300' },
-        ]).map((row) => (
-          <div key={row.who} className="flex items-center gap-3">
-            <span className="text-[11px] text-zinc-400 w-10 shrink-0">{row.who}</span>
-            <div className="flex-1 h-5 bg-zinc-950/70 ring-1 ring-inset ring-zinc-800/60 rounded-md overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(row.rate / max) * 100}%` }}
-                transition={{ type: 'spring', stiffness: 220, damping: 28 }}
-                className={`h-full rounded-md bg-gradient-to-t ${row.bar}`}
-                style={{ minWidth: row.rate > 0 ? 4 : 0 }}
-              />
-            </div>
-            <span className={`text-xs font-bold w-14 text-right tabular-nums ${row.signal ? row.text : 'text-zinc-500'}`}>
-              {row.signal ? `${row.rate}%` : '—'}
-            </span>
-            <span className="text-[9px] text-zinc-600 w-12 text-right">{row.frac}</span>
-          </div>
-        ))}
-      </div>
-      {(!warmSignal || !coldSignal) && (
-        <p className="text-[9px] text-zinc-600 mt-2">Dashes = too few sends to trust the rate yet (need ≥8).</p>
-      )}
     </div>
   );
 };
