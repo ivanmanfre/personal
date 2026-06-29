@@ -11,7 +11,6 @@ import {
   Pulse, PulseCell, SectionLabel, ActionGrid,
   RowList, ClientRow, Marginalia,
 } from '../primitives';
-import { Sparkline } from '../primitives/Sparkline';
 import { AreaChart } from '../primitives/AreaChart';
 import { useCountUp } from '../primitives/useCountUp';
 import type { Severity, SectionId } from '../types';
@@ -310,24 +309,43 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
     return { total, text, singleImage, carousel, video };
   }, [posts]);
 
-  // KPI sparkline series: wfStats.active as flat series (TODO real series)
-  const wfSparkPoints = [wfStats.active, wfStats.active, wfStats.active, wfStats.active, wfStats.active, wfStats.active, wfStats.active]; // TODO real series
-  // Prospects spark: flat for now (TODO real series)
-  const prospectSparkPoints = [totalProspects, totalProspects, totalProspects, totalProspects, totalProspects, totalProspects, totalProspects]; // TODO real series
-
   // Health score as percentage for ring (active/total workflows, clamped 0-100)
   const totalWorkflows = (wfStats.active || 0) + (wfStats.totalErrors24h || 0);
   const healthScore = totalWorkflows > 0
     ? Math.round(((wfStats.active || 0) / totalWorkflows) * 100)
     : (wfStats.health === 'healthy' ? 100 : wfStats.health === 'degraded' ? 60 : 20);
 
-  // Area chart: 14-day post output (derived from pending + posted approximation)
-  // TODO: real series from a time-bucketed query. Stub a flat series based on queue.
-  const areaPoints = useMemo(() => {
-    // TODO real series — flat placeholder until time-bucketed query is wired
-    const base = Math.max(queueDepth, 1);
-    return Array(14).fill(base) as number[];
-  }, [queueDepth]);
+  // Area chart: real 14-day post output.
+  // We bucket every post by its scheduledAt date (or createdAt if scheduledAt is
+  // null) into a YYYY-MM-DD key, then count per day for the last 14 calendar days.
+  // This gives a real line that reflects actual pipeline throughput/scheduling.
+  const { areaPoints, areaLabels, areaTotal } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days: string[] = [];
+    const counts: Record<string, number> = {};
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      days.push(key);
+      counts[key] = 0;
+    }
+    posts.forEach(p => {
+      const raw = p.scheduledAt || p.createdAt;
+      if (!raw) return;
+      const key = new Date(raw).toISOString().split('T')[0];
+      if (key in counts) counts[key]++;
+    });
+    const points = days.map(d => counts[d]);
+    const total = points.reduce((s, n) => s + n, 0);
+    // Short labels for x-axis ticks (e.g. "Jun 15")
+    const labels = days.map(d => {
+      const dt = new Date(d + 'T12:00:00Z');
+      return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    });
+    return { areaPoints: points, areaLabels: labels, areaTotal: total };
+  }, [posts]);
 
   // Count-up display values for KPI numbers
   const displayQueue = useCountUp(queueDepth);
@@ -342,7 +360,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
     border: '1px solid var(--ds-line)',
     borderRadius: 'var(--ds-radius)',
     boxShadow: 'var(--ds-shadow-card)',
-    padding: '16px 17px 14px',
+    padding: '20px 20px 18px',
     position: 'relative',
     cursor: 'pointer',
     transition: 'transform .16s, box-shadow .16s',
@@ -528,70 +546,64 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
           marginBottom: '14px',
         }}
       >
-        {/* Card 1: Workflows active — sparkline */}
+        {/* Card 1: Posts in queue — no sparkline (no rolling history available) */}
         <div
           style={kpiCardStyle}
           onClick={() => onNavigate?.('content', 'pipeline')}
           role="button"
           tabIndex={0}
         >
-          <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ds-faint)', fontWeight: 600 }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ds-dim)', fontWeight: 600 }}>
             Posts in queue
           </div>
-          <div style={{ fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-ink)' }}>
+          <div style={{ fontSize: '38px', fontWeight: 800, letterSpacing: '-.03em', marginTop: '10px', lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--ds-ink)' }}>
             {displayQueue}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
-            {nextPostDate ? `Next ${nextPostDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no upcoming'}
-          </div>
-          <div style={{ position: 'absolute', right: '14px', bottom: '14px', width: '74px', height: '30px' }}>
-            <Sparkline points={wfSparkPoints} stroke="var(--ds-ok)" />{/* TODO real series */}
+          <div style={{ fontSize: '12px', fontWeight: 500, marginTop: '8px', color: 'var(--ds-dim)' }}>
+            {nextPostDate ? `Next: ${nextPostDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'no upcoming'}
           </div>
         </div>
 
-        {/* Card 2: Need DM — sparkline */}
+        {/* Card 2: Need DM — no sparkline (no rolling history available) */}
         <div
           style={kpiCardStyle}
           onClick={() => onNavigate?.('reach', 'outreach')}
           role="button"
           tabIndex={0}
         >
-          <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ds-faint)', fontWeight: 600 }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ds-dim)', fontWeight: 600 }}>
             Need DM
           </div>
           <div style={{
-            fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1,
+            fontSize: '38px', fontWeight: 800, letterSpacing: '-.03em', marginTop: '10px', lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',
             color: needDmCount > 0 ? 'var(--ds-warn)' : 'var(--ds-ink)',
           }}>
             {displayNeedDm}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 500, marginTop: '8px', color: 'var(--ds-dim)' }}>
             connected, not messaged
-          </div>
-          <div style={{ position: 'absolute', right: '14px', bottom: '14px', width: '74px', height: '30px' }}>
-            <Sparkline points={prospectSparkPoints} stroke="var(--ds-info)" />{/* TODO real series */}
           </div>
         </div>
 
-        {/* Card 3: Leads 7d — sparkline */}
+        {/* Card 3: Leads 7d — no sparkline (no rolling history available) */}
         <div
           style={kpiCardStyle}
           onClick={() => onNavigate?.('reach', 'leads')}
           role="button"
           tabIndex={0}
         >
-          <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ds-faint)', fontWeight: 600 }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ds-dim)', fontWeight: 600 }}>
             Leads · 7d
           </div>
           <div style={{
-            fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1,
+            fontSize: '38px', fontWeight: 800, letterSpacing: '-.03em', marginTop: '10px', lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',
             color: leads.length === 0 ? 'var(--ds-warn)' : 'var(--ds-ok)',
           }}>
             {displayLeads}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: leads.length === 0 ? 'var(--ds-warn)' : 'var(--ds-faint)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 500, marginTop: '8px', color: leads.length === 0 ? 'var(--ds-warn)' : 'var(--ds-dim)' }}>
             {leads.length === 0 ? 'pipeline silent' : 'captured'}
           </div>
         </div>
@@ -603,21 +615,21 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
           role="button"
           tabIndex={0}
         >
-          <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--ds-faint)', fontWeight: 600 }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--ds-dim)', fontWeight: 600 }}>
             Pipeline health
           </div>
           <div style={{
-            fontSize: '30px', fontWeight: 700, letterSpacing: '-.02em', marginTop: '8px', lineHeight: 1,
+            fontSize: '38px', fontWeight: 800, letterSpacing: '-.03em', marginTop: '10px', lineHeight: 1,
             fontVariantNumeric: 'tabular-nums',
             color: openErrors > 0 ? 'var(--ds-warn)' : 'var(--ds-ok)',
           }}>
             {openErrors > 0 ? displayOpenErrors : displayHealthScore + '%'}
           </div>
-          <div style={{ fontSize: '12px', fontWeight: 600, marginTop: '7px', color: 'var(--ds-faint)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 500, marginTop: '8px', color: 'var(--ds-dim)' }}>
             {openErrors > 0 ? `open error${openErrors !== 1 ? 's' : ''} · ${unhealthyClients.length} client${unhealthyClients.length !== 1 ? 's' : ''}` : 'across ' + unhealthyClients.length + ' clients'}
           </div>
           {/* Ring positioned center-right */}
-          <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }}>
+          <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)' }}>
             <svg width={60} height={60} aria-hidden>
               <circle cx={30} cy={30} r={26} fill="none" stroke="var(--ds-line)" strokeWidth={7} />
               <circle
@@ -647,7 +659,7 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
           marginBottom: '14px',
         }}
       >
-        {/* Area chart — 14-day output */}
+        {/* Area chart — 14-day post activity (real: posts bucketed by scheduledAt/createdAt) */}
         <div
           style={{
             background: 'var(--ds-card)',
@@ -658,16 +670,20 @@ export function Briefing({ onNavigate }: { onNavigate?: (s: SectionId, sub?: str
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ds-ink)' }}>Output over 14 days</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--ds-ink)' }}>Posts scheduled · last 14 days</div>
             <div style={{ fontSize: '12px', color: 'var(--ds-ok)', fontWeight: 600 }}>
-              {queueDepth > 0 ? `${queueDepth} pending` : 'queue empty'}
+              {areaTotal} post{areaTotal !== 1 ? 's' : ''}
             </div>
           </div>
           <AreaChart points={areaPoints} stroke="var(--ds-accent)" fillId="briefing-area-fill" height={120} />
-          <div style={{ display: 'flex', gap: '14px', marginTop: '8px', fontSize: '12px', color: 'var(--ds-dim)' }}>
-            <span><i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 5, background: 'var(--ds-accent)' }} />Pending</span>
-            <span><i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 5, background: '#a5b4fc' }} />Drafted</span>
-            <span><i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 5, background: 'var(--ds-line)' }} />Scheduled</span>
+          {/* X-axis: first + midpoint + last date labels */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '11px', color: 'var(--ds-faint)' }}>
+            <span>{areaLabels[0]}</span>
+            <span>{areaLabels[6]}</span>
+            <span>{areaLabels[13]}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '14px', marginTop: '6px', fontSize: '12px', color: 'var(--ds-dim)' }}>
+            <span><i style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 5, background: 'var(--ds-accent)' }} />Posts per day (scheduled or created)</span>
           </div>
         </div>
 
