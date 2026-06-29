@@ -31,7 +31,7 @@ const CaseStudyOwnEngine: React.FC = () => {
   useMetadata({
     title: 'How this site\'s content engine ships 5+ posts a week | Manfredi',
     description:
-      'A live case study of the Agent-Ready Ops methodology applied to its own content engine. Real metrics, honest tradeoffs.',
+      'A live case study of the AI content engine applied to its own feed. Real metrics, honest tradeoffs.',
     canonical: 'https://ivanmanfredi.com/case-studies/own-content-engine',
   });
 

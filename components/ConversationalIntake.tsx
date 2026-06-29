@@ -1587,7 +1587,7 @@ const SubmittedCard: React.FC<{ answers: Record<string, unknown>; sessionId: str
         className="h-[2px] bg-accent"
       />
       <div className="px-8 md:px-14 py-4 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.18em] text-ink-mute">
-        <span>Iván Manfredi · Agent-Ready Ops™</span>
+        <span>Iván Manfredi · AI content systems for agencies</span>
         <span>Blueprint begins</span>
       </div>
     </motion.div>

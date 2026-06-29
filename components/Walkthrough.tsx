@@ -135,7 +135,7 @@ const Slide01: React.FC = () => (
   <Slide bg="bg-paper-sunk">
     <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center max-w-7xl mx-auto">
       <div>
-        <MonoLabel delay={0.15}>AGENT-READY OPS™ / WALKTHROUGH</MonoLabel>
+        <MonoLabel delay={0.15}>AI CONTENT SYSTEMS / WALKTHROUGH</MonoLabel>
 
         <motion.h1
           className="mt-12 text-7xl md:text-[8.5rem] font-semibold tracking-tighter leading-[0.92]"
@@ -765,7 +765,7 @@ const Slide10: React.FC = () => (
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          AGENT-READY OPS™
+          AI CONTENT SYSTEMS
         </motion.div>
 
         <motion.div
@@ -803,7 +803,7 @@ const Slide10: React.FC = () => (
           transition={{ delay: 2.4 }}
         >
           <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute leading-relaxed">
-            MANFREDI / AGENT-READY OPS™
+            MANFREDI / AI CONTENT SYSTEMS
             <br />
             2026.05
           </div>

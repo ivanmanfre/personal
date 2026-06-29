@@ -79,7 +79,7 @@ interface Props {
 const LinkedInPostPreview: React.FC<Props> = ({
   text,
   author = 'Iván Manfredi',
-  headline = 'Agent-Ready Ops · AI systems for $1-10M service firms',
+  headline = 'AI content systems for agencies',
   avatarUrl = '/ivan-portrait.jpg',
   mediaUrl,
   videoUrl,

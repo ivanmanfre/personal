@@ -148,7 +148,7 @@ ${sections?.reflective_tldr ? `<blockquote style="border-left:2px solid #2A8F65;
 <p style="color:#6B6861;font-size:14px">Or paste the link into your browser:<br><a href="${publicUrl}" style="color:#2A8F65;word-break:break-all">${publicUrl}</a></p>
 <p>Happy to walk through any section live, just reply.</p>
 <p>Iván</p>
-<p style="margin-top:32px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6B6861">Agent-Ready Ops™ · ivanmanfredi.com</p>
+<p style="margin-top:32px;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6B6861">AI content systems for agencies · ivanmanfredi.com</p>
 </body></html>`;
 
   return jsonResponse({

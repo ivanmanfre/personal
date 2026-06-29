@@ -305,7 +305,7 @@ Full welcome page with details: ${welcomeUrl}
 Reply to this email with any questions.
 
 - Ivan Manfredi
-Agent-Ready Ops(TM)
+AI content systems for agencies
 ivanmanfredi.com`;
 
   const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:40px auto;padding:0 20px;color:#1A1A1A;line-height:1.55;background:#F7F4EF;">
@@ -325,7 +325,7 @@ ivanmanfredi.com`;
     <p style="margin:0 0 16px;color:#4A4A48;font-size:14px">The $2,000 is credited 100% toward any follow-on engagement within 60 days. If I recommend you wait and fix the foundation first, that recommendation is the deliverable.</p>
     <p style="margin:0 0 16px;padding:12px 14px;background:#EAE3D5;border-left:2px solid #344B29;color:#4A4A48;font-size:14px">One thing to set expectation now: <strong>I pace to your absorption, not my delivery.</strong> Your Blueprint is the start. The first kickoff call sets the implementation budget for week 1. We ship only what your team can actually integrate, leaving runway for the previous wave to land.</p>
     <p style="margin:24px 0 16px"><a href="${welcomeUrl}" style="color:#344B29;font-weight:600">Full welcome page -&gt;</a></p>
-    <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#6B6861;font-size:13px">Reply to this email with any questions.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">Agent-Ready Ops&trade;</span></p>
+    <p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(26,26,26,0.15);color:#6B6861;font-size:13px">Reply to this email with any questions.<br><br>- Iv&aacute;n Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.14em">AI content systems for agencies</span></p>
   </body></html>`;
 
   const res = await fetch("https://api.resend.com/emails", {

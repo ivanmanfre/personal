@@ -102,7 +102,7 @@ Book Day 2: ${calendlyUrl}
 After our call I deliver the Blueprint within 3 business days. It's the document you actually paid for, and it incorporates what surfaces during the call, not just what you wrote in the intake.
 
 Iván
-Agent-Ready Ops`;
+AI content systems for agencies`;
 
   const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:32px auto;padding:0 20px;color:#1A1A1A;line-height:1.6;background:#F4EFE8">
 <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#2A8F65;margin:0 0 14px">Agent-Ready Blueprint · Intake received</p>
@@ -114,7 +114,7 @@ Agent-Ready Ops`;
 </p>
 <p style="margin:0 0 16px;padding:12px 14px;background:rgba(42,143,101,0.08);border-left:2px solid #2A8F65;color:#1A1A1A;font-size:14px">After our call I deliver the Blueprint within 3 business days. It's the document you actually paid for, and it incorporates what surfaces during the call, not just what you wrote in the intake.</p>
 <p style="margin:24px 0 16px;font-size:13px;color:#6B6861">Reply to this email if anything's off.</p>
-<p style="margin:32px 0 0;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);color:#6B6861;font-size:13px">Iván Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase">Agent-Ready Ops™ · ivanmanfredi.com</span></p>
+<p style="margin:32px 0 0;padding-top:14px;border-top:1px solid rgba(0,0,0,0.08);color:#6B6861;font-size:13px">Iván Manfredi<br><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase">AI content systems for agencies · ivanmanfredi.com</span></p>
 </body></html>`;
 
   try {
@@ -205,7 +205,7 @@ function buildIntakeNotification(
     `<p style="margin:0 0 24px;color:#6B6861;font-size:13px">${escapeHtml(buyerLabel)}</p>` +
     `<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;border-top:1px solid rgba(0,0,0,0.1)">${rows}</table>` +
     `<p style="margin:24px 0 0;font-size:13px"><a href="https://ivanmanfredi.com/dashboard?tab=agentReady" style="color:#2A8F65;font-weight:600">Review in dashboard →</a></p>` +
-    `<p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861">Agent-Ready Ops™</p>` +
+    `<p style="margin:32px 0 0;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6B6861">AI content systems for agencies</p>` +
     `</body></html>`;
 
   return { subject, text, html, whatsapp };
