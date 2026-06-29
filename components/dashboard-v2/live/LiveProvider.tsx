@@ -66,6 +66,15 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Demo-only: the live layer is for prospect demos on the public /dashboard-v2
+  // surface. Ivan's authed daily dashboard (/dashboard, routed to v2 via flag)
+  // renders the same shell but should stay calm — no auto-toasts/pill/sound.
+  // Opt back in on the authed view with localStorage dv-live-force=1.
+  const isDemo = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/dashboard-v2') ||
+    (() => { try { return localStorage.getItem('dv-live-force') === '1'; } catch { return false; } })()
+  );
+
   const chime = useCallback((kind: LiveKind) => {
     if (!soundRef.current) return;
     try {
@@ -136,6 +145,7 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch real recent rows once, build the event stream, start cycling.
   useEffect(() => {
+    if (!isDemo) return;
     let alive = true;
     (async () => {
       const safe = async <T,>(p: PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
@@ -154,10 +164,11 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timer.current = window.setTimeout(step, reduced ? 2500 : 1400);
     })();
     return () => { alive = false; if (timer.current) window.clearTimeout(timer.current); };
-  }, [step, reduced]);
+  }, [step, reduced, isDemo]);
 
   // Pause the loop when the tab is hidden; resume on return.
   useEffect(() => {
+    if (!isDemo) return;
     const onVis = () => {
       if (document.hidden) {
         if (timer.current) { window.clearTimeout(timer.current); timer.current = null; }
@@ -168,7 +179,7 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [step]);
+  }, [step, isDemo]);
 
   return <Ctx.Provider value={{ now, soundOn, toggleSound, ready }}>{children}</Ctx.Provider>;
 };
