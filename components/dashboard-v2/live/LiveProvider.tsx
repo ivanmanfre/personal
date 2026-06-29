@@ -131,12 +131,16 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const dwell = reduced ? 600 : rnd(2200, 3600);
     timer.current = window.setTimeout(() => {
-      toast(ev.done, {
-        icon: ICON[ev.kind],
-        description: LABEL[ev.kind],
-        duration: 3600,
-      });
-      chime(ev.kind);
+      // Only headline wins interrupt with a toast + sound; routine activity
+      // lives in the pill only, so the stream stays signal not spam.
+      if (ev.notify) {
+        toast(ev.done, {
+          icon: ICON[ev.kind],
+          description: LABEL[ev.kind],
+          duration: 3600,
+        });
+        chime(ev.kind);
+      }
       setNow(null);
       const gap = reduced ? rnd(9000, 14000) : rnd(5000, 9000);
       timer.current = window.setTimeout(step, gap);

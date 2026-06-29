@@ -322,7 +322,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[var(--ds-bg)] border-b border-[var(--ds-line)] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
+        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[#eef1f6] border-y border-[#d9dee6] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (

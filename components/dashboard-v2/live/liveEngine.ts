@@ -13,8 +13,14 @@ export interface LiveEvent {
   kind: LiveKind;
   /** Present-tense in-progress label, e.g. "Scoring lead: Stefan Davy…" */
   working: string;
-  /** Completion line surfaced as a toast, e.g. "New lead: Stefan Davy · DavySolutions" */
+  /** Completion line surfaced as a toast, e.g. "Published: …" */
   done: string;
+  /**
+   * Whether this completion is worth a toast + sound. Only headline wins
+   * (post published, draft ready, outreach reply/accept) interrupt; routine
+   * plumbing (lead added, scoring, QA, DM sent, sync) stays in the pill only.
+   */
+  notify: boolean;
 }
 
 export interface LiveSource {
@@ -37,12 +43,12 @@ function person(name?: string | null, company?: string | null): string {
 }
 
 const FALLBACK: LiveEvent[] = [
-  { kind: 'generate', working: 'Drafting today’s posts…', done: 'New drafts queued for review' },
-  { kind: 'score', working: 'Scoring new leads…', done: 'Leads scored and ranked' },
-  { kind: 'qa', working: 'Running quality checks…', done: 'QA passed — ready to schedule' },
-  { kind: 'lead', working: 'Harvesting prospects…', done: 'Fresh prospects added to pipeline' },
-  { kind: 'publish', working: 'Syncing the schedule…', done: 'Schedule synced' },
-  { kind: 'sync', working: 'Refreshing pipeline…', done: 'Pipeline up to date' },
+  { kind: 'generate', working: 'Drafting today’s posts…', done: 'New draft ready for review', notify: true },
+  { kind: 'score', working: 'Scoring new leads…', done: 'Leads scored and ranked', notify: false },
+  { kind: 'qa', working: 'Running quality checks…', done: 'QA passed', notify: false },
+  { kind: 'lead', working: 'Harvesting prospects…', done: 'Prospects added to pipeline', notify: false },
+  { kind: 'publish', working: 'Publishing to LinkedIn…', done: 'Post published', notify: true },
+  { kind: 'sync', working: 'Refreshing pipeline…', done: 'Pipeline up to date', notify: false },
 ];
 
 /**
@@ -55,32 +61,32 @@ export function buildLiveEvents(src: LiveSource): LiveEvent[] {
     const label = clip(p.title || p.topic, 42) || 'a new post';
     const status = (p.status || '').toLowerCase();
     if (status === 'published') {
-      return { kind: 'publish', working: `Publishing “${label}”…`, done: `Published: ${label}` };
+      return { kind: 'publish', working: `Publishing “${label}”…`, done: `Published: ${label}`, notify: true };
     }
     if (status === 'scheduled' || status === 'approved') {
-      return { kind: 'qa', working: `Final QA on “${label}”…`, done: `QA passed: ${label}` };
+      return { kind: 'qa', working: `Final QA on “${label}”…`, done: `QA passed: ${label}`, notify: false };
     }
     if (status === 'idea') {
-      return { kind: 'score', working: `Scoring idea: ${label}…`, done: `Idea scored: ${label}` };
+      return { kind: 'score', working: `Scoring idea: ${label}…`, done: `Idea scored: ${label}`, notify: false };
     }
-    return { kind: 'generate', working: `Generating draft: ${label}…`, done: `Draft ready: ${label}` };
+    return { kind: 'generate', working: `Generating draft: ${label}…`, done: `Draft ready: ${label}`, notify: true };
   });
 
   const prospectEvents: LiveEvent[] = (src.prospects || []).slice(0, 16).map((p) => {
     const who = person(p.name, p.company);
     const stage = (p.stage || '').toLowerCase();
     if (stage === 'replied' || stage === 'converted') {
-      return { kind: 'accept', working: `Logging reply from ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} replied` };
+      return { kind: 'accept', working: `Logging reply from ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} replied`, notify: true };
     }
     if (stage === 'connected') {
-      return { kind: 'accept', working: `Connection accepted: ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} accepted your invite` };
+      return { kind: 'accept', working: `Connection accepted: ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} accepted your invite`, notify: true };
     }
-    return { kind: 'lead', working: `Scoring lead: ${clip(p.name, 22) || 'a prospect'}…`, done: `New lead: ${who}` };
+    return { kind: 'lead', working: `Scoring lead: ${clip(p.name, 22) || 'a prospect'}…`, done: `New lead: ${who}`, notify: false };
   });
 
   const leadEvents: LiveEvent[] = (src.leads || []).slice(0, 10).map((l) => {
     const who = person(l.name, l.company);
-    return { kind: 'lead', working: `Enriching ${clip(l.name, 22) || 'a lead'}…`, done: `New lead captured: ${who}` };
+    return { kind: 'lead', working: `Enriching ${clip(l.name, 22) || 'a lead'}…`, done: `New lead captured: ${who}`, notify: false };
   });
 
   // Round-robin interleave so content + outreach alternate.
