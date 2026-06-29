@@ -1,9 +1,9 @@
 /* components/dashboard-v2/theme/light.css */
 body.dashboard-v2-light {
   --ds-bg:#f6f7f9; --ds-card:#ffffff; --ds-line:#e9e9ee;
-  --ds-ink:#0f172a; --ds-dim:#64748b; --ds-faint:#94a3b8;
+  --ds-ink:#0f172a; --ds-dim:#475569; --ds-faint:#64748b; --ds-faintest:#94a3b8;
   --ds-accent:#4f46e5; --ds-accent-hover:#6366f1;
-  --ds-ok:#059669; --ds-warn:#d97706; --ds-info:#2563eb; --ds-violet:#7c3aed;
+  --ds-ok:#047857; --ds-warn:#b45309; --ds-info:#2563eb; --ds-violet:#7c3aed;
   --ds-shadow-sm:0 1px 2px rgba(15,23,42,.04);
   --ds-shadow-card:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18);
   --ds-radius:14px;
@@ -37,17 +37,17 @@ body.dashboard-v2-light .dashboard-v2 {
 
   /* Text — dark on light */
   --d-paper:       #0f172a;  /* primary text */
-  --d-paper-dim:   #64748b;  /* secondary text */
-  --d-paper-dimmer:#94a3b8;  /* tertiary / quiet meta */
+  --d-paper-dim:   #475569;  /* secondary text — AA+ on bg (~7:1) */
+  --d-paper-dimmer:#475569;  /* tertiary text — use same level; #64748b fails on tinted bg */
 
   /* Borders */
   --d-rule:        #e9e9ee;               /* internal dividers */
   --d-rule-strong: #d8d8df;              /* card / container borders */
 
-  /* Semantic colours — adjusted for light contrast */
-  --d-good:        #059669;
-  --d-good-hi:     #047857;
-  --d-warn:        #d97706;
+  /* Semantic colours — adjusted for light contrast (AA+ on white) */
+  --d-good:        #047857;  /* emerald-700, ~5.5:1 on white */
+  --d-good-hi:     #065f46;  /* emerald-800, ~7.7:1 on white */
+  --d-warn:        #b45309;  /* amber-700, ~5.0:1 on white */
   --d-bad:         #dc2626;
   --d-bad-txt:     #dc2626;
   --d-accent:      #4f46e5;
@@ -129,11 +129,11 @@ body.dashboard-v2-light .dv-nav-item[aria-current="page"] .dv-nav-name {
   color: var(--ds-accent) !important;
 }
 body.dashboard-v2-light .dv-nav-num {
-  color: var(--ds-faint) !important;
+  color: var(--ds-dim) !important;
   font-size: 12px !important;
 }
 body.dashboard-v2-light .dv-nav-divider {
-  color: var(--ds-faint) !important;
+  color: var(--ds-dim) !important;
   font-size: 12px !important;
 }
 body.dashboard-v2-light .dv-sidebar-foot {
@@ -354,7 +354,7 @@ body.dashboard-v2-light .dv-client-row-name {
   color: var(--ds-ink) !important;
 }
 body.dashboard-v2-light .dv-client-row-status {
-  color: var(--ds-faint) !important;
+  color: var(--ds-dim) !important;
 }
 body.dashboard-v2-light .dv-client-row-action {
   color: var(--ds-dim) !important;
