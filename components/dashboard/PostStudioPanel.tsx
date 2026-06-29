@@ -328,19 +328,28 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   );
 
   return (
-    <div className="space-y-6">
-      <LifecycleLegend />
-      <div className="flex items-center gap-3" data-tour="posts">
-        <div className="w-9 h-9 rounded-xl bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] flex items-center justify-center">
-          <FileText className="w-4 h-4 text-[var(--ds-accent)]" />
+    <div className="space-y-3">
+      {/* Compact header row: icon + title + count + New post button + view toggle + refresh */}
+      <div className="flex items-center gap-2" data-tour="posts">
+        <div className="w-8 h-8 rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] flex items-center justify-center shrink-0">
+          <FileText className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
         </div>
-        <div>
-          <h2 className="dv-section-h flex items-center gap-2">
-            {title}
-            <span className="rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] px-2 py-0.5 text-[12px] font-medium text-[var(--ds-dim)] tabular-nums leading-none">{drafts.length}</span>
-          </h2>
-        </div>
+        <h2 className="dv-section-h flex items-center gap-2 mr-1">
+          {title}
+          <span className="rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] px-2 py-0.5 text-[12px] font-medium text-[var(--ds-dim)] tabular-nums leading-none">{drafts.length}</span>
+        </h2>
+        {/* Lifecycle legend inline — no separate row */}
+        <div className="hidden sm:block [&_.dv-lifecycle]:mb-0"><LifecycleLegend /></div>
         <div className="ml-auto flex items-center gap-1.5">
+          {/* New post compact button — expands a form panel below */}
+          <button
+            data-tour="new-post"
+            onClick={() => setFormOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ds-accent)]/10 hover:bg-[var(--ds-accent)]/15 border border-[var(--ds-accent)]/20 px-2.5 py-1.5 text-[12px] font-medium text-[var(--ds-accent)] transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            New post
+          </button>
           <div className="inline-flex rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] p-0.5">
             <button
               onClick={() => setView('list')}
@@ -353,14 +362,73 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               title="Board view — kanban by status"
             ><Columns3 className="w-3.5 h-3.5" /> Board</button>
           </div>
-          <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-2 text-[var(--ds-dim)] hover:text-[var(--ds-ink)]" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
+          <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-1.5 text-[var(--ds-dim)] hover:text-[var(--ds-ink)]" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {generatingCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 animate-refresh-pulse" />
+              <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-refresh-pulse" />
             )}
           </button>
         </div>
       </div>
+
+      {/* New post form — expands inline below the header when open */}
+      {formOpen && (
+        <div className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] overflow-hidden shadow-sm px-4 pb-4 pt-4 space-y-4">
+          <div>
+            <div className="dv-field-label">Format</div>
+            <div className="flex items-center gap-1.5">
+              {(['text','single_image','carousel'] as PostType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setType(t)}
+                  className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/30 shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-inset ring-[var(--ds-line)] hover:text-[var(--ds-ink)] hover:ring-[#cbd5e1]'}`}
+                >{TYPE_LABELS[t]}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="dv-field-label">What should it be about?</div>
+            <input
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder={type === 'carousel' ? 'e.g. Why hiring more people made your firm slower' : "e.g. Stop hiring to fix a process you haven't automated yet"}
+              className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
+            />
+            <p className="mt-1.5 text-[12px] text-[var(--ds-faint)]">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
+          </div>
+          {type === 'carousel' ? (
+            <div>
+              <div className="dv-field-label">Key points <span className="normal-case font-normal text-[var(--ds-faint)]">· optional, one per line</span></div>
+              <textarea
+                value={keyPoints}
+                onChange={(e) => setKeyPoints(e.target.value)}
+                placeholder="One point per line"
+                rows={3}
+                className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
+              />
+            </div>
+          ) : (
+            <div>
+              <div className="dv-field-label">Direction <span className="normal-case font-normal text-[var(--ds-faint)]">· optional</span></div>
+              <textarea
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder="Any angle, tone, or detail to steer it"
+                rows={2}
+                className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
+              />
+            </div>
+          )}
+          <button
+            onClick={handleCreate}
+            disabled={creating}
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all"
+          >
+            {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {buttonLabel}
+          </button>
+        </div>
+      )}
 
       {/* Stuck-scheduled triage banner — only shows when there are past-due
           scheduled posts WITHOUT a LinkedIn URN. These are publisher misfires
@@ -417,77 +485,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           )}
         </div>
       )}
-
-      {/* New post — collapsed by default. Polished container with subtle gradient. */}
-      <div data-tour="new-post" className="rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] overflow-hidden shadow-sm">
-        <button
-          onClick={() => setFormOpen((v) => !v)}
-          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-medium text-[var(--ds-ink)] hover:bg-[#fafafc] transition-colors group"
-        >
-          <span className="w-6 h-6 rounded-md bg-[var(--ds-accent)]/10 border border-[var(--ds-accent)]/20 flex items-center justify-center group-hover:bg-[var(--ds-accent)]/15 transition-colors">
-            <Plus className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
-          </span>
-          New post
-          <span className="ml-auto text-[var(--ds-faint)] transition-transform">{formOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
-        </button>
-        {formOpen && (
-          <div className="px-4 pb-4 space-y-4 border-t border-[var(--ds-line)] pt-4">
-            <div>
-              <div className="dv-field-label">Format</div>
-              <div className="flex items-center gap-1.5">
-                {(['text','single_image','carousel'] as PostType[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setType(t)}
-                    className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/30 shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-inset ring-[var(--ds-line)] hover:text-[var(--ds-ink)] hover:ring-[#cbd5e1]'}`}
-                  >{TYPE_LABELS[t]}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="dv-field-label">What should it be about?</div>
-              <input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder={type === 'carousel' ? 'e.g. Why hiring more people made your firm slower' : "e.g. Stop hiring to fix a process you haven't automated yet"}
-                className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
-              />
-              <p className="mt-1.5 text-[12px] text-[var(--ds-faint)]">One line is enough. The system writes the hook, body{type === 'single_image' ? ', and image' : ''} in your voice.</p>
-            </div>
-            {type === 'carousel' ? (
-              <div>
-                <div className="dv-field-label">Key points <span className="normal-case font-normal text-[var(--ds-faint)]">· optional, one per line</span></div>
-                <textarea
-                  value={keyPoints}
-                  onChange={(e) => setKeyPoints(e.target.value)}
-                  placeholder="One point per line"
-                  rows={3}
-                  className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
-                />
-              </div>
-            ) : (
-              <div>
-                <div className="dv-field-label">Direction <span className="normal-case font-normal text-[var(--ds-faint)]">· optional</span></div>
-                <textarea
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder="Any angle, tone, or detail to steer it"
-                  rows={2}
-                  className="w-full rounded-lg bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2.5 text-sm text-[var(--ds-ink)] placeholder-[var(--ds-faint)] focus:outline-none focus:border-[var(--ds-accent)] focus:ring-1 focus:ring-[var(--ds-accent)]/30 transition-all"
-                />
-              </div>
-            )}
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="inline-flex items-center gap-2 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-500/20 transition-all"
-            >
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {buttonLabel}
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Filters / sort — single muted line. Status + type pills are visually
           quiet (no high-contrast fill on non-active), keep more room for content. */}
