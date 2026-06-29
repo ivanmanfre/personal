@@ -547,7 +547,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                         <div className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap">
                           {postBody.length > 280 ? postBody.slice(0, 280) + '…' : postBody}
                           {postBody.length > 280 && (
-                            <button className="text-gray-500 hover:underline text-[13px] ml-1">see more</button>
+                            <span aria-hidden="true" className="text-gray-500 text-[13px] ml-1 cursor-default">see more</span>
                           )}
                         </div>
                         {/* Media / slides below text */}
