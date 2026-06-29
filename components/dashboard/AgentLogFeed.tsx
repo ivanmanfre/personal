@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronUp, Sparkles, MessageSquareDashed, CheckCircle2, AlertTriangle, FileText, ImageIcon, Send, User, Loader2 } from 'lucide-react';
+import {
+  ChevronDown, ChevronUp, Sparkles, MessageSquareDashed,
+  CheckCircle2, AlertTriangle, FileText, ImageIcon, Send,
+  User, Loader2, Bot, Zap, Cpu, ScanLine, Megaphone,
+} from 'lucide-react';
 import type { AgentLogEntry } from '../../hooks/useContentLibrary';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import { renderLightMarkdown } from '../../lib/lightMarkdown';
 
 /**
- * Chronological agent commentary feed — mirrors the comment stream that used to
- * live in ClickUp tasks. Each entry shows ts + agent + body. Newest at top,
- * collapsed by default so the editor stays scrollable.
- *
- * The body is rendered as `<pre>` so the agents' formatted blocks (QA scores,
- * verdict bars, "━━━" separators) keep their shape exactly like ClickUp showed.
+ * Chronological agent run-log rendered as a vertical TIMELINE.
+ * A continuous spine runs down the left; each agent event is a node on the
+ * spine. Clicking a node expands its full reasoning text inline.
  */
-// Many n8n agents (QA, Content, Hook, …) write their log body as a raw JSON-stringified
-// blob, with the actual human-readable text buried inside as one field. Un-wrap it for
-// display: prefer a known prose field; otherwise pretty-print a slimmed object. Plain-text
-// bodies (Promoter, lint gates) pass through untouched.
+
 const HUMAN_FIELDS = [
   'qa_feedback', 'feedback', 'overall_feedback', 'generated_post', 'final_post',
   'hooks_text', 'revised_caption', 'summary', 'verdict_summary', 'note', 'text', 'body', 'message',
@@ -31,7 +29,6 @@ function humanizeBody(raw: string): string {
   for (const f of HUMAN_FIELDS) {
     if (typeof obj[f] === 'string' && obj[f].trim()) return obj[f].trim();
   }
-  // No known prose field — pretty-print, dropping bulky/duplicate/noise keys.
   try {
     const slim: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
@@ -44,43 +41,58 @@ function humanizeBody(raw: string): string {
 }
 
 const AGENT_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  'Ivan':                  User,
-  'Editorial Agent':       Sparkles,
-  'LM Editorial Agent':    Sparkles,
-  'Hook Agent':            MessageSquareDashed,
-  'Content Agent':         FileText,
-  'Carousel Structurer':   FileText,
-  'Carousel Content Agent':FileText,
-  'Carousel QA':           CheckCircle2,
-  'QA Agent':              CheckCircle2,
-  'LM QA Agent':           CheckCircle2,
-  'QA HALT':               AlertTriangle,
-  'Carousel QA Gate HALT': AlertTriangle,
-  'LM Cover Copy Agent':   ImageIcon,
-  'Image Generation':      ImageIcon,
-  'IG Caption Generator':  MessageSquareDashed,
-  'Scheduling Agent':      Send,
-  'Publisher':             Send,
+  'Ivan':                   User,
+  'Editorial Agent':        Sparkles,
+  'LM Editorial Agent':     Sparkles,
+  'Hook Agent':             MessageSquareDashed,
+  'Content Agent':          FileText,
+  'Carousel Structurer':    FileText,
+  'Carousel Content Agent': FileText,
+  'Carousel QA':            CheckCircle2,
+  'QA Agent':               CheckCircle2,
+  'LM QA Agent':            CheckCircle2,
+  'QA HALT':                AlertTriangle,
+  'Carousel QA Gate HALT':  AlertTriangle,
+  'LM Cover Copy Agent':    ImageIcon,
+  'Image Generation':       ImageIcon,
+  'IG Caption Generator':   MessageSquareDashed,
+  'Scheduling Agent':       Send,
+  'Publisher':              Send,
+  'AI-Slop Gate':           ScanLine,
+  'Lint Gate':              Cpu,
+  'Promoter':               Megaphone,
 };
 
-const AGENT_TINT: Record<string, string> = {
-  'Ivan':                  'text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold',
-  'Editorial Agent':       'text-violet-700 bg-violet-50 border-violet-200',
-  'LM Editorial Agent':    'text-violet-700 bg-violet-50 border-violet-200',
-  'Hook Agent':            'text-sky-700 bg-sky-50 border-sky-200',
-  'Content Agent':         'text-slate-700 bg-slate-50 border-slate-200',
-  'Carousel Structurer':   'text-slate-700 bg-slate-50 border-slate-200',
-  'Carousel Content Agent':'text-slate-700 bg-slate-50 border-slate-200',
-  'QA Agent':              'text-amber-700 bg-amber-50 border-amber-200',
-  'LM QA Agent':           'text-amber-700 bg-amber-50 border-amber-200',
-  'Carousel QA':           'text-amber-700 bg-amber-50 border-amber-200',
-  'QA HALT':               'text-red-700 bg-red-50 border-red-200',
-  'Carousel QA Gate HALT': 'text-red-700 bg-red-50 border-red-200',
-  'LM Cover Copy Agent':   'text-emerald-700 bg-emerald-50 border-emerald-200',
-  'Image Generation':      'text-emerald-700 bg-emerald-50 border-emerald-200',
-  'IG Caption Generator':  'text-pink-700 bg-pink-50 border-pink-200',
-  'Scheduling Agent':      'text-cyan-700 bg-cyan-50 border-cyan-200',
-  'Publisher':             'text-emerald-700 bg-emerald-50 border-emerald-200',
+// Verdict/status detection — drives the node color on the spine
+type NodeStatus = 'pass' | 'fail' | 'rewrite' | 'info' | 'halt';
+
+function detectStatus(e: AgentLogEntry): NodeStatus {
+  const body = (e.body || '').toUpperCase();
+  const agent = (e.agent || '').toUpperCase();
+  if (agent.includes('HALT')) return 'halt';
+  if (body.includes('VERDICT: PASS') || body.includes('VERDICT:PASS')) return 'pass';
+  if (body.includes('VERDICT: REWRITE_OK') || body.includes('VERDICT:REWRITE_OK')) return 'rewrite';
+  if (body.includes('VERDICT: FAIL') || body.includes('VERDICT:FAIL') ||
+      body.includes('VERDICT: NEEDS_REGENERATE') || body.includes('FAIL')) return 'fail';
+  if (body.includes('APPROVED') || body.includes('STATUS: APPROVED')) return 'pass';
+  if (agent.includes('PUBLISHER') || agent.includes('SCHEDULING')) return 'pass';
+  return 'info';
+}
+
+const NODE_COLOR: Record<NodeStatus, string> = {
+  pass:    'bg-emerald-500 ring-emerald-200',
+  fail:    'bg-red-500 ring-red-200',
+  rewrite: 'bg-amber-400 ring-amber-200',
+  info:    'bg-indigo-400 ring-indigo-200',
+  halt:    'bg-red-700 ring-red-300',
+};
+
+const VERDICT_CHIP: Record<NodeStatus, { label: string; cls: string } | null> = {
+  pass:    { label: 'PASS',    cls: 'text-emerald-700 bg-emerald-50 ring-emerald-200' },
+  fail:    { label: 'FAIL',    cls: 'text-red-700 bg-red-50 ring-red-200' },
+  rewrite: { label: 'REWRITE', cls: 'text-amber-700 bg-amber-50 ring-amber-200' },
+  halt:    { label: 'HALT',    cls: 'text-red-700 bg-red-50 ring-red-300' },
+  info:    null,
 };
 
 function relTime(iso: string | null): string {
@@ -109,8 +121,7 @@ interface Props {
   /** Called after a successful note write so the parent can refresh. */
   onNoteAdded?: () => void;
   /** Render entry bodies as markdown (paragraphs, lists, bold, code, label-prefixes)
-   *  instead of the raw <pre> block. The QA / Editorial agents emit markdown-ish
-   *  bodies that look much better rendered. */
+   *  instead of the raw <pre> block. */
   renderMarkdown?: boolean;
 }
 
@@ -119,11 +130,13 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
     () => [...entries].sort((a, b) => (b.ts || '').localeCompare(a.ts || '')),
     [entries],
   );
+  // Timeline reads oldest→newest top-to-bottom, so reverse the sort for display
+  const chronological = React.useMemo(() => [...sorted].reverse(), [sorted]);
+
   const [open, setOpen] = useState(defaultOpen ?? sorted.length <= 5);
   const [bodyOpen, setBodyOpen] = useState<Record<number, boolean>>({});
 
-  // Track which entries are NEW since the panel mounted/refreshed, so we can
-  // highlight them with a violet pulse on appearance. Compare by ts+agent.
+  // Track new entries for pulse animation
   const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
   const seenKeysRef = React.useRef<Set<string>>(new Set(sorted.map((e) => `${e.ts}|${e.agent}`)));
   React.useEffect(() => {
@@ -139,6 +152,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
     }, 1200);
     return () => clearTimeout(t);
   }, [sorted]);
+
   const [noteText, setNoteText] = useState('');
   const [posting, setPosting] = useState(false);
   const canCompose = !!(table && rowId);
@@ -166,7 +180,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
   }
 
   const composer = canCompose && (
-    <div className="border-t border-[var(--ds-line)] px-3 py-2 bg-[var(--ds-bg)]">
+    <div className="border-t border-[var(--ds-line)] px-4 py-3 bg-[var(--ds-bg)]">
       <div className="flex items-start gap-2">
         <textarea
           value={noteText}
@@ -191,7 +205,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
   if (sorted.length === 0) {
     return (
       <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)]">
-        <div className="px-3 py-2 text-xs text-[var(--ds-dim)] italic">
+        <div className="px-3 py-3 text-xs text-[var(--ds-dim)] italic">
           No agent activity yet — entries will appear here as the generation chain runs.
         </div>
         {composer}
@@ -201,58 +215,136 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
 
   return (
     <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)]">
+      {/* Panel header */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[var(--ds-ink)] hover:bg-black/[.03]"
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--ds-ink)] hover:bg-black/[.03] transition-colors"
       >
-        <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-        Agent activity
-        <span className="text-xs text-[var(--ds-dim)]">· {sorted.length} entr{sorted.length === 1 ? 'y' : 'ies'}</span>
-        <span className="ml-auto text-[var(--ds-dim)]">{open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+        <Sparkles className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+        <span className="font-medium text-[var(--ds-ink)] text-[13px]">Agent run log</span>
+        <span className="text-xs text-[var(--ds-dim)]">· {sorted.length} event{sorted.length === 1 ? '' : 's'}</span>
+        <span className="ml-auto text-[var(--ds-dim)]">
+          {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </span>
       </button>
+
       {open && (
-        <div className="border-t border-[var(--ds-line)] divide-y divide-[var(--ds-line)] max-h-[60vh] overflow-y-auto">
-          {sorted.map((e, i) => {
-            const Icon = AGENT_ICON[e.agent] || MessageSquareDashed;
-            const tint = AGENT_TINT[e.agent] || 'text-slate-700 bg-slate-50 border-slate-200';
-            const expanded = bodyOpen[i] ?? false;
-            const display = humanizeBody(e.body || '');
-            const preview = display.replace(/\s+/g, ' ').slice(0, 140);
-            const truncated = display.length > 140;
-            return (
-              <div key={i} className={`px-3 py-1.5 hover:bg-black/[.02] transition-colors ${newKeys.has(`${e.ts}|${e.agent}`) ? 'animate-log-pulse' : ''}`}>
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${tint}`}>
-                    <Icon className="w-3 h-3" /> {e.agent}
-                  </span>
-                  <span className="text-[var(--ds-dim)] font-mono tabular-nums text-xs">{relTime(e.ts)}</span>
-                  {e.source === 'clickup_backfill' && (
-                    <span className="text-xs text-[var(--ds-faint)] uppercase tracking-wider">backfill</span>
-                  )}
-                  {truncated && (
-                    <button
-                      onClick={() => setBodyOpen((s) => ({ ...s, [i]: !s[i] }))}
-                      className="ml-auto text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] px-1.5 py-0.5 rounded hover:bg-black/[.03] transition-colors"
-                    >
-                      {expanded ? 'collapse' : 'expand'}
-                    </button>
-                  )}
+        <>
+          {/* TIMELINE body */}
+          <div
+            className="border-t border-[var(--ds-line)] max-h-[60vh] overflow-y-auto"
+            style={{ padding: '16px 16px 8px 16px' }}
+          >
+            {chronological.map((e, i) => {
+              const Icon = AGENT_ICON[e.agent] || Bot;
+              const status = detectStatus(e);
+              const nodeColor = NODE_COLOR[status];
+              const chip = VERDICT_CHIP[status];
+              const expanded = bodyOpen[i] ?? false;
+              const display = humanizeBody(e.body || '');
+              const preview = display.replace(/\s+/g, ' ').slice(0, 160);
+              const truncated = display.length > 160;
+              const isNew = newKeys.has(`${e.ts}|${e.agent}`);
+              const isLast = i === chronological.length - 1;
+
+              return (
+                <div
+                  key={i}
+                  className={`relative flex gap-3 ${isNew ? 'animate-log-pulse' : ''}`}
+                  style={{ paddingBottom: isLast ? 8 : 20 }}
+                >
+                  {/* Spine + node column */}
+                  <div className="flex flex-col items-center flex-shrink-0" style={{ width: 24 }}>
+                    {/* Node dot */}
+                    <div
+                      className={`relative z-10 rounded-full ring-2 flex-shrink-0 ${nodeColor}`}
+                      style={{ width: 10, height: 10, marginTop: 4 }}
+                    />
+                    {/* Spine line below (not rendered for last item) */}
+                    {!isLast && (
+                      <div
+                        className="flex-1 w-px"
+                        style={{ marginTop: 4, backgroundColor: '#d1d5db' }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Event content */}
+                  <div className="flex-1 min-w-0" style={{ paddingBottom: 2 }}>
+                    {/* Header row: icon + name + chip + timestamp */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Icon className="w-3.5 h-3.5 text-[var(--ds-dim)] flex-shrink-0" />
+                      <span
+                        className="font-medium text-[var(--ds-ink)]"
+                        style={{ fontSize: 13 }}
+                      >
+                        {e.agent}
+                      </span>
+                      {chip && (
+                        <span
+                          className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${chip.cls}`}
+                        >
+                          {chip.label}
+                        </span>
+                      )}
+                      {e.source === 'clickup_backfill' && (
+                        <span className="text-[10px] text-[var(--ds-dim)] uppercase tracking-wider">backfill</span>
+                      )}
+                      <span className="ml-auto text-[10px] text-[var(--ds-dim)] tabular-nums font-mono flex-shrink-0">
+                        {relTime(e.ts)}
+                      </span>
+                    </div>
+
+                    {/* Body preview / expand */}
+                    <div className="mt-1.5">
+                      {expanded || !truncated ? (
+                        <>
+                          {renderMarkdown ? (
+                            <div
+                              className="text-xs text-[var(--ds-ink)] leading-relaxed pl-2.5"
+                              style={{ borderLeft: '2px solid var(--ds-line)' }}
+                            >
+                              {renderLightMarkdown(display || '(empty)', { textClass: 'text-xs text-[var(--ds-ink)] leading-relaxed' })}
+                            </div>
+                          ) : (
+                            <pre
+                              className="whitespace-pre-wrap text-xs text-[var(--ds-ink)] leading-relaxed font-sans pl-2.5"
+                              style={{ borderLeft: '2px solid var(--ds-line)' }}
+                            >
+                              {display || '(empty)'}
+                            </pre>
+                          )}
+                          {truncated && (
+                            <button
+                              onClick={() => setBodyOpen((s) => ({ ...s, [i]: false }))}
+                              className="mt-1 text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] px-1 rounded hover:bg-black/[.04] transition-colors"
+                            >
+                              collapse
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <div>
+                          <p className="text-xs text-[var(--ds-dim)] line-clamp-2 leading-snug">
+                            {preview}{truncated ? '…' : ''}
+                          </p>
+                          <button
+                            onClick={() => setBodyOpen((s) => ({ ...s, [i]: true }))}
+                            className="mt-1 text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] px-1 rounded hover:bg-black/[.04] transition-colors"
+                          >
+                            expand
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-1">
-                  {expanded || !truncated ? (
-                    renderMarkdown
-                      ? <div className="text-xs text-[var(--ds-ink)] leading-snug pl-2 border-l-2 border-[var(--ds-line)]">{renderLightMarkdown(display || '(empty)', { textClass: 'text-xs text-[var(--ds-ink)] leading-snug' })}</div>
-                      : <pre className="whitespace-pre-wrap text-xs text-[var(--ds-ink)] leading-snug font-sans pl-2 border-l-2 border-[var(--ds-line)]">{display || '(empty)'}</pre>
-                  ) : (
-                    <p className="text-xs text-[var(--ds-dim)] line-clamp-1 pl-1">{preview}{truncated ? '…' : ''}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          {composer}
+        </>
       )}
-      {open && composer}
     </div>
   );
 };
