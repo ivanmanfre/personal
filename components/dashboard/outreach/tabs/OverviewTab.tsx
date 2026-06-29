@@ -1,13 +1,70 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Radio, Briefcase, Flame, Snowflake, TrendingUp, MessageSquare } from 'lucide-react';
-import StatCard from '../../shared/StatCard';
 import { NextUpCard } from '../NextUpCard';
 import type { OutreachProspect, FeedRollupRow, OutreachFeed, OutreachCampaign } from '../../../../types/dashboard';
 import {
   FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BADGE, FEED_BAR, FEED_TEXT,
   feedRollup, warmVsCold,
 } from '../feedHelpers';
+
+// ── Overview window constant ─────────────────────────────────────────────────
+// Change this to expand or contract the KPI window. All overview KPI tiles
+// (Active Pipeline, per-feed counts, Accept Rate, Reply Rate) use prospects
+// whose createdAt falls within the last WINDOW_DAYS calendar days.
+const WINDOW_DAYS = 3;
+
+// ── Light KPI tile ───────────────────────────────────────────────────────────
+// Local light-theme variant — only used in this Overview's KPI row.
+// Intentionally NOT the shared dark StatCard; that card is used on dark panels.
+interface LightKpiTileProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  /** Tailwind text-color class for the icon badge, e.g. "text-indigo-600" */
+  accentClass?: string;
+  subValue?: string;
+}
+
+const LightKpiTile: React.FC<LightKpiTileProps> = ({ label, value, icon, accentClass = 'text-indigo-600', subValue }) => (
+  <div
+    className="rounded-xl p-4 flex items-start justify-between gap-3 transition-all duration-200 hover:border-indigo-300/60"
+    style={{
+      background: 'var(--ds-card, #fff)',
+      border: '1px solid var(--ds-line, #e9e9ee)',
+      boxShadow: 'var(--ds-shadow-card, 0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18))',
+    }}
+  >
+    <div className="flex-1 min-w-0">
+      <span
+        className="text-[11px] tracking-normal font-medium block mb-2"
+        style={{ color: 'var(--ds-dim, #475569)' }}
+      >
+        {label}
+      </span>
+      <p
+        className="text-[26px] font-bold tracking-tight leading-none tabular-nums"
+        style={{ color: 'var(--ds-ink, #0f172a)' }}
+      >
+        {value}
+      </p>
+      {subValue && (
+        <p
+          className="text-[11px] mt-2"
+          style={{ color: 'var(--ds-faint, #64748b)' }}
+        >
+          {subValue}
+        </p>
+      )}
+    </div>
+    <div
+      className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${accentClass}`}
+      style={{ background: 'var(--ds-bg, #f6f7f9)', border: '1px solid var(--ds-line, #e9e9ee)' }}
+    >
+      {icon}
+    </div>
+  </div>
+);
 
 interface Props {
   prospects: OutreachProspect[];
@@ -29,11 +86,12 @@ const feedIcon: Record<OutreachFeed, React.ReactNode> = {
   hot: <Flame className="w-5 h-5" />,
 };
 
-const feedColor: Record<OutreachFeed, string> = {
-  cold: 'text-zinc-300',
-  harvest: 'text-blue-400',
-  hiring: 'text-amber-400',
-  hot: 'text-emerald-400',
+// Icon accent classes for the LightKpiTile badge — AA+ on white/light-bg
+const feedAccent: Record<OutreachFeed, string> = {
+  cold:    'text-slate-500',
+  harvest: 'text-blue-600',
+  hiring:  'text-amber-600',
+  hot:     'text-emerald-600',
 };
 
 // The top-level cross-feed funnel. Source-attributed: each stacked segment shows
@@ -46,28 +104,30 @@ const FUNNEL_STAGES: { key: keyof FeedRollupRow; label: string }[] = [
   { key: 'replied', label: 'Replied' },
 ];
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
 export const OverviewTab: React.FC<Props> = ({
   prospects,
   hotDomains,
   bandsTotal,
   bandsHot,
-  campaigns,
+  campaigns: _campaigns, // kept in Props for API compat; not used by the 3-day window
   cappedQueue,
   onPickFeed,
   onOpenProspect,
   onArchiveProspect,
   onResolveReply,
 }) => {
-  // Change 1: campaign window — filter prospects to latest campaign start
-  const campaignStart = campaigns[0]?.createdAt ?? null;
+  // KPI window: last WINDOW_DAYS days (rolling, not campaign-start-based).
+  // Using a stable ISO string avoids unnecessary re-renders on each render cycle.
+  const windowStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - WINDOW_DAYS);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally computed once per mount
+
   const windowedProspects = useMemo(
-    () => (campaignStart ? prospects.filter((p) => p.createdAt >= campaignStart) : prospects),
-    [prospects, campaignStart],
+    () => prospects.filter((p) => p.createdAt >= windowStart),
+    [prospects, windowStart],
   );
 
   // Use windowedProspects for KPIs, funnel, and accept/reply rates
@@ -111,37 +171,42 @@ export const OverviewTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-4">
-      {/* Change 6: KPI row is FIRST */}
-      {/* Change 2: 7 tiles — Active Pipeline + 4 feeds + Accept Rate + Reply Rate */}
+      {/* KPI row — light tiles, last WINDOW_DAYS days window */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-        <StatCard label="Active Pipeline" value={totalActive} icon={<Users className="w-5 h-5" />} color="text-zinc-300" subValue="across all feeds" />
+        <LightKpiTile
+          label="Active Pipeline"
+          value={totalActive}
+          icon={<Users className="w-5 h-5" />}
+          accentClass="text-indigo-600"
+          subValue="across all feeds"
+        />
         {FEED_ORDER.map((f) => {
           const r = byFeed.get(f);
           return (
-            <StatCard
+            <LightKpiTile
               key={f}
               label={FEED_LABELS[f]}
               value={r?.total ?? 0}
               icon={feedIcon[f]}
-              color={feedColor[f]}
+              accentClass={feedAccent[f]}
               subValue={FEED_DESC[f]}
             />
           );
         })}
-        {/* Change 2: Accept Rate tile */}
-        <StatCard
+        {/* Accept Rate tile */}
+        <LightKpiTile
           label="Accept Rate"
           value={acceptRateDisplay}
           icon={<TrendingUp className="w-5 h-5" />}
-          color="text-emerald-400"
+          accentClass="text-emerald-600"
           subValue={`${totalAccepted}/${totalConnSent} accepted`}
         />
-        {/* Change 2: Reply Rate tile */}
-        <StatCard
+        {/* Reply Rate tile */}
+        <LightKpiTile
           label="Reply Rate"
           value={replyRateDisplay}
           icon={<MessageSquare className="w-5 h-5" />}
-          color="text-blue-400"
+          accentClass="text-blue-600"
           subValue={`${totalReplied}/${totalDmSent} replied`}
         />
       </div>
@@ -152,12 +217,10 @@ export const OverviewTab: React.FC<Props> = ({
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">All-Feeds Funnel</span>
           <span className="text-[10px] text-zinc-600">{totalActive} in pipeline → {totalReplied} replied</span>
-          {/* Change 1: campaign window label */}
-          {campaignStart && (
-            <span className="text-[10px]" style={{ color: 'var(--ds-dim, #71717a)' }}>
-              · since campaign start · {fmtDate(campaignStart)}
-            </span>
-          )}
+          {/* Window label — reflects WINDOW_DAYS constant */}
+          <span className="text-[10px]" style={{ color: 'var(--ds-faint, #64748b)' }}>
+            · last {WINDOW_DAYS} days
+          </span>
           <div className="flex items-center gap-2.5 ml-auto flex-wrap">
             {FEED_ORDER.map((f) => (
               <div key={f} className="flex items-center gap-1">
