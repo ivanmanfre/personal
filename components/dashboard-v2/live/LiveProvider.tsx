@@ -1,81 +1,74 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
-import {
-  Sparkles, ShieldCheck, Send, UserPlus, Handshake, Target, RefreshCw,
-} from 'lucide-react';
+import { Send, Handshake } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { buildLiveEvents, rotate, type LiveEvent, type LiveKind } from './liveEngine';
+import { buildFacts, clip, person, type LiveStats, type LiveKind } from './liveEngine';
 
 /**
- * LiveProvider — drives the demo dashboard's "alive" layer: a two-beat loop that
- * shows what the engine is doing now (in-progress label) then fires a toast +
- * optional soft chime on completion. Data is real (recent posts / prospects /
- * leads); sound is OFF by default and gated behind a user toggle (browser
- * autoplay policy + no surprise audio in a demo). Pauses when the tab is hidden.
+ * LiveProvider — HONEST liveness for the demo dashboard.
+ *
+ * The pill shows real, live-updating facts (countdown to the next scheduled
+ * post, real counts, last-published age). Toasts fire ONLY for events that
+ * genuinely happen while the page is open: we baseline the latest published
+ * post / latest reply at mount (no toast), then poll and announce only rows
+ * whose updated_at is newer than that baseline. Nothing historical is ever
+ * replayed as if it were live.
+ *
+ * Demo-only (public /dashboard-v2); Ivan's authed /dashboard stays calm.
+ * Sound OFF by default, gated behind a user toggle.
  */
 
 interface LiveCtx {
-  now: { kind: LiveKind; working: string } | null;
+  text: string;
   soundOn: boolean;
   toggleSound: () => void;
-  /** True once the engine has data and is cycling. */
   ready: boolean;
 }
 
-const Ctx = createContext<LiveCtx>({ now: null, soundOn: false, toggleSound: () => {}, ready: false });
+const Ctx = createContext<LiveCtx>({ text: '', soundOn: false, toggleSound: () => {}, ready: false });
 export const useLive = () => useContext(Ctx);
 
-const ICON: Record<LiveKind, React.ReactNode> = {
-  generate: <Sparkles className="w-4 h-4" style={{ color: '#7c3aed' }} />,
-  qa: <ShieldCheck className="w-4 h-4" style={{ color: '#047857' }} />,
+const ICON: Record<Exclude<LiveKind, 'idle'>, React.ReactNode> = {
   publish: <Send className="w-4 h-4" style={{ color: '#2563eb' }} />,
-  lead: <UserPlus className="w-4 h-4" style={{ color: '#4f46e5' }} />,
   accept: <Handshake className="w-4 h-4" style={{ color: '#047857' }} />,
-  score: <Target className="w-4 h-4" style={{ color: '#b45309' }} />,
-  sync: <RefreshCw className="w-4 h-4" style={{ color: '#475569' }} />,
 };
-
-const LABEL: Record<LiveKind, string> = {
-  generate: 'Content engine', qa: 'Quality gate', publish: 'Publisher',
-  lead: 'Outreach', accept: 'Outreach', score: 'Lead scorer', sync: 'Sync',
+const TONE: Record<Exclude<LiveKind, 'idle'>, number[]> = {
+  publish: [523.25, 659.25],
+  accept: [587.33, 783.99],
 };
+const POLL_MS = 45000;
 
-// Soft, short Web-Audio chimes. Lazily created (must follow a user gesture).
-const TONES: Record<LiveKind, number[]> = {
-  lead: [659.25, 880.0], accept: [587.33, 783.99], publish: [523.25, 659.25],
-  generate: [493.88, 659.25], qa: [659.25], score: [587.33], sync: [392.0],
+const EMPTY: LiveStats = { nextAt: null, nextTitle: null, scheduledWeek: null, lastPubAt: null, pipeline: null };
+const ms = (v: string | null | undefined): number | null => {
+  if (!v) return null;
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? null : t;
 };
-
-const rnd = (min: number, max: number) => min + (max - min) * ((Date.now() % 997) / 997);
 
 export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [now, setNow] = useState<LiveCtx['now']>(null);
+  const isDemo = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/dashboard-v2') ||
+    (() => { try { return localStorage.getItem('dv-live-force') === '1'; } catch { return false; } })()
+  );
+
+  const [stats, setStats] = useState<LiveStats>(EMPTY);
+  const [tick, setTick] = useState(0);
   const [ready, setReady] = useState(false);
   const [soundOn, setSoundOn] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('dv-live-sound') === '1';
   });
 
-  const events = useRef<LiveEvent[]>([]);
-  const idx = useRef(0);
-  const pass = useRef(0);
-  const timer = useRef<number | null>(null);
   const audio = useRef<AudioContext | null>(null);
   const soundRef = useRef(soundOn);
   soundRef.current = soundOn;
-
+  // Baselines: the newest event we already knew about at mount. Only strictly
+  // newer events toast, so we never announce pre-existing history.
+  const basePub = useRef<number>(0);
+  const baseRep = useRef<number>(0);
   const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Demo-only: the live layer is for prospect demos on the public /dashboard-v2
-  // surface. Ivan's authed daily dashboard (/dashboard, routed to v2 via flag)
-  // renders the same shell but should stay calm — no auto-toasts/pill/sound.
-  // Opt back in on the authed view with localStorage dv-live-force=1.
-  const isDemo = typeof window !== 'undefined' && (
-    window.location.pathname.startsWith('/dashboard-v2') ||
-    (() => { try { return localStorage.getItem('dv-live-force') === '1'; } catch { return false; } })()
-  );
-
-  const chime = useCallback((kind: LiveKind) => {
+  const chime = useCallback((kind: Exclude<LiveKind, 'idle'>) => {
     if (!soundRef.current) return;
     try {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -83,7 +76,7 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const c = audio.current;
       if (c.state === 'suspended') void c.resume();
       const t0 = c.currentTime;
-      (TONES[kind] || [523.25]).forEach((f, i) => {
+      (TONE[kind] || [523.25]).forEach((f, i) => {
         const o = c.createOscillator();
         const g = c.createGain();
         o.type = 'sine';
@@ -92,19 +85,15 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
         g.gain.setValueAtTime(0, t);
         g.gain.linearRampToValueAtTime(0.05, t + 0.012);
         g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-        o.connect(g);
-        g.connect(c.destination);
-        o.start(t);
-        o.stop(t + 0.24);
+        o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.24);
       });
-    } catch { /* audio unavailable — silently skip */ }
+    } catch { /* audio unavailable */ }
   }, []);
 
   const toggleSound = useCallback(() => {
     setSoundOn((s) => {
       const next = !s;
       try { localStorage.setItem('dv-live-sound', next ? '1' : '0'); } catch { /* ignore */ }
-      // Resume/create the context inside this user gesture so the first chime plays.
       if (next) {
         try {
           const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -116,74 +105,82 @@ export const LiveProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  // The loop. setTimeout recursion so cadence can jitter per step.
-  const step = useCallback(() => {
-    let list = events.current;
-    if (!list.length) return;
-    if (idx.current >= list.length) {
-      idx.current = 0;
-      pass.current += 1;
-      list = rotate(list, 3); // reorder each pass so the stream stays varied
-      events.current = list;
+  // Fetch real stats. On the first call we only baseline (no toast); subsequent
+  // calls announce genuinely-new published posts / replies.
+  const refresh = useCallback(async (first: boolean) => {
+    const nowIso = new Date().toISOString();
+    const weekIso = new Date(Date.now() + 7 * 864e5).toISOString();
+    const q = <T,>(p: PromiseLike<{ data: T | null; count?: number | null }>) =>
+      Promise.resolve(p).then((r) => r).catch(() => ({ data: null, count: null }));
+
+    const [next, week, pub, pubList, pipe, rep] = await Promise.all([
+      q(supabase.from('carousel_drafts').select('title,scheduled_at').eq('status', 'scheduled').gt('scheduled_at', nowIso).order('scheduled_at', { ascending: true }).limit(1)),
+      q(supabase.from('carousel_drafts').select('id', { count: 'exact', head: true }).eq('status', 'scheduled').gt('scheduled_at', nowIso).lte('scheduled_at', weekIso)),
+      q(supabase.from('carousel_drafts').select('title,updated_at').eq('status', 'published').order('updated_at', { ascending: false }).limit(1)),
+      q(supabase.from('carousel_drafts').select('title,updated_at').eq('status', 'published').order('updated_at', { ascending: false }).limit(4)),
+      q(supabase.from('outreach_prospects').select('id', { count: 'exact', head: true }).neq('stage', 'archived')),
+      q(supabase.from('outreach_prospects').select('name,company,updated_at').eq('stage', 'replied').order('updated_at', { ascending: false }).limit(4)),
+    ]);
+
+    const nextRow = (next.data as Array<{ title: string | null; scheduled_at: string | null }> | null)?.[0];
+    const pubRow = (pub.data as Array<{ title: string | null; updated_at: string | null }> | null)?.[0];
+
+    setStats({
+      nextAt: ms(nextRow?.scheduled_at),
+      nextTitle: nextRow?.title ?? null,
+      scheduledWeek: typeof week.count === 'number' ? week.count : null,
+      lastPubAt: ms(pubRow?.updated_at),
+      pipeline: typeof pipe.count === 'number' ? pipe.count : null,
+    });
+
+    const pubRows = (pubList.data as Array<{ title: string | null; updated_at: string | null }> | null) || [];
+    const repRows = (rep.data as Array<{ name: string | null; company: string | null; updated_at: string | null }> | null) || [];
+    const newestPub = pubRows.reduce((mx, r) => Math.max(mx, ms(r.updated_at) || 0), 0);
+    const newestRep = repRows.reduce((mx, r) => Math.max(mx, ms(r.updated_at) || 0), 0);
+
+    if (first) {
+      basePub.current = newestPub;
+      baseRep.current = newestRep;
+      setReady(true);
+      return;
     }
-    const ev = list[idx.current++];
-    setNow({ kind: ev.kind, working: ev.working });
+    // Announce only events strictly newer than our session baseline.
+    pubRows
+      .filter((r) => (ms(r.updated_at) || 0) > basePub.current)
+      .sort((a, b) => (ms(a.updated_at) || 0) - (ms(b.updated_at) || 0))
+      .forEach((r) => {
+        toast(`Published: ${clip(r.title, 46)}`, { icon: ICON.publish, description: 'Publisher', duration: 4000 });
+        chime('publish');
+      });
+    repRows
+      .filter((r) => (ms(r.updated_at) || 0) > baseRep.current)
+      .sort((a, b) => (ms(a.updated_at) || 0) - (ms(b.updated_at) || 0))
+      .forEach((r) => {
+        toast(`${person(r.name, r.company)} replied`, { icon: ICON.accept, description: 'Outreach', duration: 4000 });
+        chime('accept');
+      });
+    if (newestPub > basePub.current) basePub.current = newestPub;
+    if (newestRep > baseRep.current) baseRep.current = newestRep;
+  }, [chime]);
 
-    const dwell = reduced ? 600 : rnd(2200, 3600);
-    timer.current = window.setTimeout(() => {
-      // Only headline wins interrupt with a toast + sound; routine activity
-      // lives in the pill only, so the stream stays signal not spam.
-      if (ev.notify) {
-        toast(ev.done, {
-          icon: ICON[ev.kind],
-          description: LABEL[ev.kind],
-          duration: 3600,
-        });
-        chime(ev.kind);
-      }
-      setNow(null);
-      const gap = reduced ? rnd(9000, 14000) : rnd(5000, 9000);
-      timer.current = window.setTimeout(step, gap);
-    }, dwell);
-  }, [chime, reduced]);
-
-  // Fetch real recent rows once, build the event stream, start cycling.
   useEffect(() => {
     if (!isDemo) return;
     let alive = true;
-    (async () => {
-      const safe = async <T,>(p: PromiseLike<{ data: T[] | null }>): Promise<T[]> => {
-        try { const { data } = await p; return data || []; } catch { return []; }
-      };
-      const [posts, prospects, leads] = await Promise.all([
-        safe(supabase.from('carousel_drafts').select('title,topic,status,type').order('updated_at', { ascending: false }).limit(20)),
-        safe(supabase.from('outreach_prospects').select('name,company,stage').order('created_at', { ascending: false }).limit(25)),
-        safe(supabase.from('leads').select('name,company').order('created_at', { ascending: false }).limit(15)),
-      ]);
-      if (!alive) return;
-      events.current = buildLiveEvents({ posts, prospects, leads });
-      idx.current = 0;
-      setReady(true);
-      // First beat after a short settle so the dashboard paints first.
-      timer.current = window.setTimeout(step, reduced ? 2500 : 1400);
-    })();
-    return () => { alive = false; if (timer.current) window.clearTimeout(timer.current); };
-  }, [step, reduced, isDemo]);
+    void refresh(true);
+    const poll = window.setInterval(() => { if (!document.hidden && alive) void refresh(false); }, POLL_MS);
+    return () => { alive = false; window.clearInterval(poll); };
+  }, [isDemo, refresh]);
 
-  // Pause the loop when the tab is hidden; resume on return.
+  // 1s heartbeat tick so the countdown moves and facts rotate.
   useEffect(() => {
     if (!isDemo) return;
-    const onVis = () => {
-      if (document.hidden) {
-        if (timer.current) { window.clearTimeout(timer.current); timer.current = null; }
-        setNow(null);
-      } else if (timer.current === null && events.current.length) {
-        timer.current = window.setTimeout(step, 1200);
-      }
-    };
-    document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
-  }, [step, isDemo]);
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [isDemo]);
 
-  return <Ctx.Provider value={{ now, soundOn, toggleSound, ready }}>{children}</Ctx.Provider>;
+  const facts = useMemo(() => buildFacts(stats, Date.now()), [stats, tick]);
+  // Rotate every 5s; the countdown fact still recomputes every tick.
+  const text = facts.length ? facts[Math.floor(tick / 5) % facts.length] : 'Live · monitoring';
+
+  return <Ctx.Provider value={{ text, soundOn, toggleSound, ready }}>{children}</Ctx.Provider>;
 };

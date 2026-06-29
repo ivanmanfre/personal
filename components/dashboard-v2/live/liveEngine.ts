@@ -1,111 +1,80 @@
 /**
- * Live engine — turns real recent rows (posts, prospects, leads) into a stream
- * of "the engine is working" events for the demo dashboard's live activity pill
- * + toasts. Pure / no React. The verbs map to genuine pipeline stages (generate,
- * QA, score, publish, harvest) so the liveness is grounded in real activity, not
- * fabricated metrics. If no data loads, a small set of generic-but-honest engine
- * tasks keeps the dashboard feeling alive without inventing names.
+ * Live engine — honest liveness for the demo dashboard. No replayed history
+ * dressed up as real-time. The pill shows TRUE, live-updating facts (a countdown
+ * to the next scheduled post, real counts, last-published age); toasts fire only
+ * for things that genuinely happen while the page is open (see LiveProvider's
+ * poll-diff). Pure / no React.
  */
 
-export type LiveKind = 'generate' | 'qa' | 'publish' | 'lead' | 'accept' | 'score' | 'sync';
+export type LiveKind = 'publish' | 'accept' | 'idle';
 
-export interface LiveEvent {
-  kind: LiveKind;
-  /** Present-tense in-progress label, e.g. "Scoring lead: Stefan Davy…" */
-  working: string;
-  /** Completion line surfaced as a toast, e.g. "Published: …" */
-  done: string;
-  /**
-   * Whether this completion is worth a toast + sound. Only headline wins
-   * (post published, draft ready, outreach reply/accept) interrupt; routine
-   * plumbing (lead added, scoring, QA, DM sent, sync) stays in the pill only.
-   */
-  notify: boolean;
+export interface LiveStats {
+  /** Epoch ms of the next future scheduled post, if any. */
+  nextAt: number | null;
+  nextTitle: string | null;
+  /** Count of posts scheduled from now through the next 7 days. */
+  scheduledWeek: number | null;
+  /** Epoch ms the most recent post was published, if known. */
+  lastPubAt: number | null;
+  /** Active prospects in the pipeline. */
+  pipeline: number | null;
 }
 
-export interface LiveSource {
-  posts?: Array<{ title?: string | null; topic?: string | null; status?: string | null; type?: string | null }>;
-  prospects?: Array<{ name?: string | null; company?: string | null; stage?: string | null }>;
-  leads?: Array<{ name?: string | null; company?: string | null }>;
-}
-
-function clip(s: string | null | undefined, n = 40): string {
+export function clip(s: string | null | undefined, n = 42): string {
   const t = (s || '').trim();
   if (!t) return '';
   return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
 }
 
-function person(name?: string | null, company?: string | null): string {
-  const n = clip(name, 22);
-  const c = clip(company, 22);
-  if (n && c) return `${n} · ${c}`;
-  return n || c || 'a new prospect';
+export function person(name?: string | null, company?: string | null): string {
+  const nm = clip(name, 22);
+  const co = clip(company, 22);
+  if (nm && co) return `${nm} · ${co}`;
+  return nm || co || 'a prospect';
 }
 
-const FALLBACK: LiveEvent[] = [
-  { kind: 'generate', working: 'Drafting today’s posts…', done: 'New draft ready for review', notify: true },
-  { kind: 'score', working: 'Scoring new leads…', done: 'Leads scored and ranked', notify: false },
-  { kind: 'qa', working: 'Running quality checks…', done: 'QA passed', notify: false },
-  { kind: 'lead', working: 'Harvesting prospects…', done: 'Prospects added to pipeline', notify: false },
-  { kind: 'publish', working: 'Publishing to LinkedIn…', done: 'Post published', notify: true },
-  { kind: 'sync', working: 'Refreshing pipeline…', done: 'Pipeline up to date', notify: false },
-];
+/** "3d 4h" / "3h 12m" / "12m 04s" / "now" — for a future instant. */
+export function fmtCountdown(ms: number): string {
+  if (ms <= 0) return 'now';
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m ${String(sec).padStart(2, '0')}s`;
+}
+
+/** "8m ago" / "2h ago" / "3d ago" — for a past instant. */
+export function fmtAgo(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
 
 /**
- * Build a varied, interleaved event list from whatever real data we have.
- * Posts, prospects and leads are zipped round-robin so the stream alternates
- * between content and outreach activity instead of clumping.
+ * Build the rotating set of honest live facts from real stats. Each entry is
+ * true at render time; the countdown is recomputed every tick so it moves.
+ * `now` is passed in (epoch ms) so this stays pure.
  */
-export function buildLiveEvents(src: LiveSource): LiveEvent[] {
-  const postEvents: LiveEvent[] = (src.posts || []).slice(0, 14).map((p) => {
-    const label = clip(p.title || p.topic, 42) || 'a new post';
-    const status = (p.status || '').toLowerCase();
-    if (status === 'published') {
-      return { kind: 'publish', working: `Publishing “${label}”…`, done: `Published: ${label}`, notify: true };
-    }
-    if (status === 'scheduled' || status === 'approved') {
-      return { kind: 'qa', working: `Final QA on “${label}”…`, done: `QA passed: ${label}`, notify: false };
-    }
-    if (status === 'idea') {
-      return { kind: 'score', working: `Scoring idea: ${label}…`, done: `Idea scored: ${label}`, notify: false };
-    }
-    return { kind: 'generate', working: `Generating draft: ${label}…`, done: `Draft ready: ${label}`, notify: true };
-  });
-
-  const prospectEvents: LiveEvent[] = (src.prospects || []).slice(0, 16).map((p) => {
-    const who = person(p.name, p.company);
-    const stage = (p.stage || '').toLowerCase();
-    if (stage === 'replied' || stage === 'converted') {
-      return { kind: 'accept', working: `Logging reply from ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} replied`, notify: true };
-    }
-    if (stage === 'connected') {
-      return { kind: 'accept', working: `Connection accepted: ${clip(p.name, 22) || 'a prospect'}…`, done: `${who} accepted your invite`, notify: true };
-    }
-    return { kind: 'lead', working: `Scoring lead: ${clip(p.name, 22) || 'a prospect'}…`, done: `New lead: ${who}`, notify: false };
-  });
-
-  const leadEvents: LiveEvent[] = (src.leads || []).slice(0, 10).map((l) => {
-    const who = person(l.name, l.company);
-    return { kind: 'lead', working: `Enriching ${clip(l.name, 22) || 'a lead'}…`, done: `New lead captured: ${who}`, notify: false };
-  });
-
-  // Round-robin interleave so content + outreach alternate.
-  const lanes = [postEvents, prospectEvents, leadEvents].filter((l) => l.length > 0);
-  const out: LiveEvent[] = [];
-  if (lanes.length) {
-    const max = Math.max(...lanes.map((l) => l.length));
-    for (let i = 0; i < max; i++) {
-      for (const lane of lanes) {
-        if (lane[i]) out.push(lane[i]);
-      }
-    }
+export function buildFacts(stats: LiveStats, now: number): string[] {
+  const out: string[] = [];
+  if (stats.nextAt && stats.nextAt > now) {
+    out.push(`Next post in ${fmtCountdown(stats.nextAt - now)}`);
   }
-  return out.length ? out : FALLBACK;
-}
-
-/** Deterministic-enough shuffle seeded by an index so each pass reorders without Math.random in render. */
-export function rotate<T>(arr: T[], by: number): T[] {
-  if (arr.length < 2) return arr;
-  const k = ((by % arr.length) + arr.length) % arr.length;
-  return arr.slice(k).concat(arr.slice(0, k));
+  if (stats.scheduledWeek && stats.scheduledWeek > 0) {
+    out.push(`${stats.scheduledWeek} post${stats.scheduledWeek === 1 ? '' : 's'} scheduled this week`);
+  }
+  if (stats.lastPubAt) {
+    out.push(`Last post published ${fmtAgo(now - stats.lastPubAt)}`);
+  }
+  if (stats.pipeline && stats.pipeline > 0) {
+    out.push(`${stats.pipeline} prospects in pipeline`);
+  }
+  return out;
 }
