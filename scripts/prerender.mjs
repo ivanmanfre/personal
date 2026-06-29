@@ -62,6 +62,10 @@ const ROUTES = [
   // just enough to give bots/monitors a real 200 response.
   '/dashboard',
   '/dashboard-v2',
+  // Hypertarget content-system scans: prerendered so the clean ivanmanfredi.com/scan/:slug
+  // link returns 200 + per-scan OG meta and unfurls on LinkedIn. Add a slug here when a
+  // hypertarget sample is promoted (low volume, manual). The page still hydrates client-side.
+  '/scan/tk-douglass-9b',
 ];
 
 const PORT = 4178;
@@ -162,6 +166,16 @@ process.on('SIGTERM', () => shutdown(143));
       });
       // Give framer-motion + lazy chunks a beat to settle
       await page.waitForTimeout(800);
+
+      // Scan routes fetch their row from Supabase before useMetadata() sets the
+      // per-scan OG title/description/image. Wait for that so the prerendered HTML
+      // carries the right share tags (other routes set metadata synchronously).
+      if (route.startsWith('/scan/')) {
+        await page
+          .waitForFunction(() => /^A content system for /.test(document.title), { timeout: 15000 })
+          .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
+        await page.waitForTimeout(400);
+      }
 
       // Strip the SPA-redirect script and module preload hints? No — leave the
       // <script type="module"> entry so the real browser hydrates.

@@ -56,6 +56,8 @@ export interface ContentSystem {
     lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] };
   };
   revenue_math?: string;
+  // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.
+  og_image_url?: string;
 }
 
 export interface ReportJson {

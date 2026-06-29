@@ -6,6 +6,7 @@ import {
   ExternalLink, CheckCircle, XCircle, AlertCircle, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { useScan } from '../hooks/useScan';
+import { useMetadata } from '../hooks/useMetadata';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
@@ -2459,6 +2460,16 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const founderFull = founder?.name || companyName;
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('content system')}`;
   const BookButton = ({ label, small }: { label: string; small?: boolean }) => <CIMagneticCTA href={bookUrl} label={label} small={small} />;
+
+  // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
+  // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
+  useMetadata({
+    title: `A content system for ${companyName}`,
+    description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
+    canonical: `https://ivanmanfredi.com/scan/${scan.company_slug}`,
+    ogImage: cs.og_image_url || undefined,
+    noindex: true,
+  });
 
   // Verified receipts — real organic signals that prove we looked at THEM.
   const receipts: { label: string; value: string }[] = [];
