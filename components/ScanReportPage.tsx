@@ -2149,11 +2149,31 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
   const reduce = useReducedMotion();
   const h = CS_HERO[cs.archetype] ?? CS_HERO.silent_founder;
   const hairline = 'var(--color-hairline)';
-  const queue = (cs.sample_output?.posts ?? [
-    { format: 'Post', hook: 'The one thing nobody tells you about…' },
-    { format: 'Carousel', hook: 'A 6-step teardown of…' },
-    { format: 'Lead magnet', hook: 'The interactive assessment that…' },
-  ]).slice(0, 3);
+  // The hero's "this week" panel renders the founder's ACTUAL drafted assets as
+  // believable mini-cards: real posts (with their brand images) AND the lead magnet
+  // (its real cover). Not a text list — the proof is that it looks finished.
+  const founder = cs.founder;
+  const avatar = (founder?.avatar_url || '').trim();
+  const fname = founder?.name || who;
+  const fhead = founder?.headline || '';
+  const lm = cs.sample_output?.lm;
+  const clamp2: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
+  type DraftItem = { kind: 'post' | 'lm'; format: string; text: string; img: string };
+  const postItems: DraftItem[] = (cs.sample_output?.posts ?? []).map((p) => ({
+    kind: 'post',
+    format: (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '') ? 'Carousel' : (p.image_url ? 'Image' : 'Post'),
+    text: p.hook || (p.body || '').slice(0, 110),
+    img: p.image_url || (Array.isArray(p.image_urls) ? p.image_urls[0] : '') || '',
+  }));
+  const lmItem: DraftItem[] = lm?.title ? [{ kind: 'lm', format: 'Lead magnet', text: lm.title, img: lm.cover_url || '' }] : [];
+  // Always show posts AND the lead magnet so the card proves the full output, not just posts.
+  const draftItems: DraftItem[] = postItems.length || lmItem.length
+    ? [...postItems.slice(0, 2), ...lmItem]
+    : [
+        { kind: 'post', format: 'Post', text: 'The one thing nobody tells you about…', img: '' },
+        { kind: 'post', format: 'Carousel', text: 'A 6-step teardown of…', img: '' },
+        { kind: 'lm', format: 'Lead magnet', text: 'The interactive assessment that qualifies every signup.', img: '' },
+      ];
   const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
     <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.18em', marginBottom: '-0.18em' }}>
       <motion.span style={{ display: 'block' }} initial={reduce ? false : { y: '120%' }} animate={{ y: 0 }} transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>{children}</motion.span>
@@ -2186,10 +2206,10 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
           </motion.ul>
           <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book a 20-min look" /></motion.div>
         </div>
-        {/* RIGHT — a "this week" content queue: the thematic visual (drafts assembling) */}
+        {/* RIGHT — the founder's actual drafted week, rendered: real posts + the real lead-magnet cover */}
         <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
-          <div className="px-6 py-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center justify-between mb-5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
+          <div className="px-5 py-5" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+            <div className="flex items-center justify-between mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
               <span className="flex items-center gap-2">
                 <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
                 This week
@@ -2197,15 +2217,33 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
               <span style={{ color: 'rgba(26,26,26,0.4)' }}>drafting</span>
             </div>
             <div className="space-y-2.5">
-              {queue.map((q, i) => (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-start gap-3 px-3.5 py-3" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
-                  <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '3px 6px', flexShrink: 0, marginTop: 1 }}>{q.format}</span>
-                  <span style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#3D3D3B' }}>{q.hook}</span>
+              {draftItems.map((it, i) => it.kind === 'lm' ? (
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3 px-3 py-3" style={{ background: '#1A1A1A', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />}
+                  <span className="min-w-0">
+                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600, marginBottom: 3 }}>Lead magnet</span>
+                    <span style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '12px', lineHeight: 1.3, color: 'rgba(247,244,239,0.92)' }}>{it.text}</span>
+                  </span>
+                </motion.div>
+              ) : (
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-3.5 py-3" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {avatar
+                      ? <img src={avatar} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      : <span aria-hidden style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontFamily: MONO, fontSize: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(fname[0] || '·').toUpperCase()}</span>}
+                    <span className="min-w-0">
+                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '11.5px', fontWeight: 600, color: '#1A1A1A', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
+                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
+                    </span>
+                    <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 5px', flexShrink: 0 }}>{it.format}</span>
+                  </div>
+                  <p style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '12.5px', lineHeight: 1.4, color: '#3D3D3B' }}>{it.text}</p>
+                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', height: 62, objectFit: 'cover', borderRadius: 6, border: `1px solid ${hairline}` }} />}
                 </motion.div>
               ))}
             </div>
-            <div className="mt-5 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
-              <span>5 drafted / 5</span>
+            <div className="mt-4 pt-3.5 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
+              <span>{lm?.title ? '5 posts + 1 lead magnet' : '5 posts a week'}</span>
               <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>in your voice</span>
             </div>
           </div>
