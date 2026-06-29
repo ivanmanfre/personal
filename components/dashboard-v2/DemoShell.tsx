@@ -83,12 +83,13 @@ export default function DemoShell() {
   return (
     <DashboardProvider>
       <Toaster
+        theme="light"
         position="top-right"
         toastOptions={{
           style: {
-            background: '#18181c',
-            color: '#e7e7ea',
-            border: '1px solid rgba(231,231,234,0.15)',
+            background: '#ffffff',
+            color: '#0f172a',
+            border: '1px solid #e9e9ee',
             fontFamily: 'Inter, system-ui, sans-serif',
             fontSize: 13,
           },

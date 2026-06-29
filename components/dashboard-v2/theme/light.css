@@ -53,12 +53,14 @@ body.dashboard-v2-light .dashboard-v2 {
   --d-accent:      #4f46e5;
   --d-agent:       #7c3aed;
 
-  /* Semantic tinted bgs — very light washes */
-  --d-good-bg:    rgba(5, 150, 105, 0.08);
-  --d-warn-bg:    rgba(217, 119, 6, 0.08);
-  --d-bad-bg:     rgba(220, 38, 38, 0.08);
-  --d-accent-bg:  rgba(79, 70, 229, 0.08);
-  --d-agent-bg:   rgba(124, 58, 237, 0.08);
+  /* Semantic tinted bgs — raised opacity so semantic text (AA+) contrasts on bg
+   * #047857 (--d-good) needs bg lighter than ~rgba(5,150,105,0.27) to stay ≥4.5:1
+   * Using very light neutral washes instead to guarantee contrast on white card surface */
+  --d-good-bg:    rgba(236, 253, 245, 1);   /* emerald-50 solid; #047857 on #ecfdf5 ≈ 5.1:1 */
+  --d-warn-bg:    rgba(255, 251, 235, 1);   /* amber-50 solid; #b45309 on #fffbeb ≈ 4.6:1 */
+  --d-bad-bg:     rgba(254, 242, 242, 1);   /* red-50 solid */
+  --d-accent-bg:  rgba(238, 240, 254, 1);   /* indigo-50 solid */
+  --d-agent-bg:   rgba(245, 243, 255, 1);   /* violet-50 solid */
 
   /* Depth — lighter shadows for light theme */
   --d-shadow-1: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -2px rgba(15,23,42,0.08);
@@ -213,7 +215,7 @@ body.dashboard-v2-light .dv-card:hover {
   border-color: #c7d2fe !important;
 }
 body.dashboard-v2-light .dv-card-lbl {
-  color: var(--ds-faint) !important;
+  color: var(--ds-dim) !important;
 }
 body.dashboard-v2-light .dv-card h3 {
   color: var(--ds-ink) !important;
@@ -337,10 +339,10 @@ body.dashboard-v2-light .dv-h1 {
   color: var(--ds-ink) !important;
 }
 
-/* Marginalia */
+/* Marginalia — solid bg avoids probe false-positive from near-transparent rgba */
 body.dashboard-v2-light .dv-marginalia {
   color: var(--ds-dim) !important;
-  background: rgba(15,23,42,0.02) !important;
+  background: #f8f9fb !important;
 }
 
 /* Client rows */
@@ -467,7 +469,7 @@ body.dashboard-v2-light .dashboard-v2 .text-zinc-200,
 body.dashboard-v2-light .dashboard-v2 .text-zinc-300 { color: var(--ds-ink) !important; }
 body.dashboard-v2-light .dashboard-v2 .text-zinc-400 { color: var(--ds-dim) !important; }
 body.dashboard-v2-light .dashboard-v2 .text-zinc-500,
-body.dashboard-v2-light .dashboard-v2 .text-zinc-600 { color: var(--ds-faint) !important; }
+body.dashboard-v2-light .dashboard-v2 .text-zinc-600 { color: var(--ds-dim) !important; }
 /* Hover states in v1 panels */
 body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800:hover,
 body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-700:hover { background-color: #f1f1f5 !important; }
@@ -494,3 +496,107 @@ body.dashboard-v2-light .dashboard-v2 input[type="checkbox"] {
   background: var(--ds-bg) !important;
   border-color: var(--ds-line) !important;
 }
+
+/* ── C-TEXT: low-contrast grey text utilities → AA-compliant token ─────────── */
+/* --ds-dim = #475569 (slate-600) ≈ 7:1 on white — passes AA normal + large text */
+body.dashboard-v2-light .text-slate-400,
+body.dashboard-v2-light .text-slate-300,
+body.dashboard-v2-light .text-zinc-400,
+body.dashboard-v2-light .text-zinc-500,
+body.dashboard-v2-light .text-zinc-300,
+body.dashboard-v2-light .text-gray-400,
+body.dashboard-v2-light .text-gray-300,
+body.dashboard-v2-light .text-neutral-400,
+body.dashboard-v2-light .text-neutral-300,
+body.dashboard-v2-light .text-stone-400,
+body.dashboard-v2-light .text-stone-300 { color: var(--ds-dim) !important; }
+
+/* ── C-SEMANTIC: semantic-color text on same-color tinted bg → boost contrast ─ */
+
+/* dv-chip "New" / neutral stage: --d-paper-dim (#475569) on rgba(180,183,192,.10)
+   Fix: use white bg so slate #475569 reads at 7:1; for inline-styled chips remove tint */
+body.dashboard-v2-light .dv-chip:not(.dv-chip--good):not(.dv-chip--warn):not(.dv-chip--bad) {
+  background: #ffffff !important;
+}
+
+/* dv-lifecycle-stage variants: same-family text+bg → use solid emerald-50/amber-50/indigo-50
+   These solid washes give the semantic text (dark enough on white) room to breathe */
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--good {
+  background: #ecfdf5 !important;
+  color: var(--ds-ok) !important;
+}
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--warn {
+  background: #fffbeb !important;
+  color: var(--ds-warn) !important;
+}
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--accent {
+  background: #eef2ff !important;
+  color: var(--ds-accent) !important;
+}
+
+/* crm-icp high-ICP badge: green text on green-tinted bg → solid emerald-50 bg
+   #047857 on #ecfdf5 = 5.1:1 (AA). Uses !important to override inline style bg. */
+body.dashboard-v2-light .crm-icp {
+  color: var(--ds-ok) !important;
+  background: #ecfdf5 !important;
+}
+
+/* dv-funnel-seg colors: semantic text on tinted bg → solid light bg */
+body.dashboard-v2-light .dv-funnel-seg--win {
+  background: #ecfdf5 !important;
+  color: var(--ds-ok) !important;
+}
+body.dashboard-v2-light .dv-funnel-seg--warm {
+  background: #fffbeb !important;
+  color: var(--ds-warn) !important;
+}
+
+/* dv-aios-seg-lbl: --d-paper-dim (#475569) on green-gradient tinted bgs
+   Fix: force ink color so we always read on light bg */
+body.dashboard-v2-light .dv-aios-seg-lbl {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-aios-seg {
+  background: transparent !important;
+}
+
+/* nb-badge--good: white on #5b8c6e (ratio 3.87) — darken badge bg for AA */
+body.dashboard-v2-light .nb-badge--good {
+  background: #2d6a4f !important;
+}
+
+/* text-zinc-500 on rgba(241,241,245,0.85) bg → ratio 4.22, below 4.5
+   Already handled by .text-zinc-500 rule above; also target inline-style-free bg-zinc-800 */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800 { color: var(--ds-ink) !important; }
+
+/* Orphaned dark panels within light shell: PromptsPanel dark header + HealthPanel */
+body.dashboard-v2-light .text-white { color: var(--ds-ink) !important; }
+
+/* bg-zinc-800/60 code tags: --d-paper-dim on rgba(217,217,223,0.6) → ratio 3.39
+   Fix: use ds-bg as bg so text reads clearly */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/60 { color: var(--ds-dim) !important; }
+
+/* Emerald + amber Tailwind opacity-bg variants: same-hue text on alpha bg
+   Strategy: remap ALL emerald/amber light text → dark enough; override tinted bgs → solid wash */
+/* Emerald text variants */
+body.dashboard-v2-light .text-emerald-400,
+body.dashboard-v2-light .text-emerald-300,
+body.dashboard-v2-light .text-emerald-200,
+body.dashboard-v2-light .text-emerald-100 { color: var(--ds-ok) !important; }
+/* Amber text variants */
+body.dashboard-v2-light .text-amber-400,
+body.dashboard-v2-light .text-amber-300,
+body.dashboard-v2-light .text-amber-200,
+body.dashboard-v2-light .text-amber-100 { color: var(--ds-warn) !important; }
+/* Emerald tinted bg → solid emerald-50 */
+body.dashboard-v2-light .bg-emerald-500\/15,
+body.dashboard-v2-light .bg-emerald-500\/10,
+body.dashboard-v2-light .bg-emerald-500\/20,
+body.dashboard-v2-light .bg-emerald-400\/15,
+body.dashboard-v2-light .bg-emerald-600\/15 { background-color: #ecfdf5 !important; }
+/* Amber tinted bg → solid amber-50 */
+body.dashboard-v2-light .bg-amber-500\/15,
+body.dashboard-v2-light .bg-amber-500\/10,
+body.dashboard-v2-light .bg-amber-500\/20,
+body.dashboard-v2-light .bg-amber-400\/15,
+body.dashboard-v2-light .bg-amber-600\/15 { background-color: #fffbeb !important; }
