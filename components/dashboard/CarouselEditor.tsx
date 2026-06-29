@@ -532,43 +532,22 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       )}
                       {/* LinkedIn Preview label */}
                       <div className="text-xs uppercase tracking-wider text-[var(--ds-dim)] mb-4 text-center font-medium">LinkedIn Preview</div>
-                      {/* LinkedIn card chrome */}
-                      <div className="bg-white rounded-xl shadow-md ring-1 ring-[var(--ds-line)] p-4 max-w-[520px] mx-auto">
-                        {/* Card header: avatar + name + meta */}
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-none">I</div>
-                          <div>
-                            <div className="text-[14px] font-semibold text-gray-900">Ivan Manfredi</div>
-                            <div className="text-[12px] text-gray-500">1st · Following</div>
-                            <div className="text-[12px] text-gray-400">just now</div>
+                      {/* Faithful preview via the shared pixel-accurate component (hero) */}
+                      <div className="max-w-[520px] mx-auto">
+                        <LinkedInPostPreview
+                          text={postBody}
+                          mediaUrl={(() => {
+                            const u = (draft.imageUrls && draft.imageUrls[0]) || null;
+                            if (!u) return null;
+                            const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                            return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
+                          })()}
+                        />
+                        {(!draft.imageUrls || draft.imageUrls.length === 0) && draft.slides.length > 0 && (
+                          <div className="mt-3 rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-3 text-xs text-[var(--ds-dim)] text-center">
+                            {draft.slides.length} slide{draft.slides.length !== 1 ? 's' : ''} · carousel
                           </div>
-                        </div>
-                        {/* Post body */}
-                        <div className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap">
-                          {postBody.length > 280 ? postBody.slice(0, 280) + '…' : postBody}
-                          {postBody.length > 280 && (
-                            <span aria-hidden="true" className="text-gray-500 text-[13px] ml-1 cursor-default">see more</span>
-                          )}
-                        </div>
-                        {/* Media / slides below text */}
-                        {(draft.imageUrls && draft.imageUrls.length > 0) || draft.slides.length > 0 ? (
-                          <div className="mt-3">
-                            {(() => {
-                              const u = draft.imageUrls?.[0];
-                              if (u) {
-                                const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
-                                const src = m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
-                                return <img src={src} className="w-full rounded-lg" alt="Post visual" />;
-                              }
-                              return null;
-                            })()}
-                            {(!draft.imageUrls || draft.imageUrls.length === 0) && draft.slides.length > 0 && (
-                              <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-3 text-xs text-[var(--ds-dim)] text-center">
-                                {draft.slides.length} slide{draft.slides.length !== 1 ? 's' : ''} · carousel
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   ),
