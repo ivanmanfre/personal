@@ -69,7 +69,7 @@ function App() {
   const isDashboard = isDashboardV1Path && !isDashboardV2;
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
-  const isScanReport = /^\/scan\/[^/]+$/.test(location.pathname);
+  const isScanReport = /^\/scan\/[^/]+\/?$/.test(location.pathname);
   // / and /landing both render LandingPage with full-bleed treatment.
   // /landing kept as alias so existing links don't break.
   const isLanding = location.pathname === '/' || location.pathname.startsWith('/landing');
@@ -136,6 +136,10 @@ function App() {
       <Suspense fallback={<div className="min-h-screen bg-paper" />}>
         <Routes>
           <Route path="/scan/:slug" element={<ScanReportPage />} />
+          {/* GitHub Pages serves the prerendered scan at a trailing-slash URL (and 301s the
+              bare URL to it), so the router must match the trailing slash too — without this,
+              hydration finds no route and falls through to the marketing home. */}
+          <Route path="/scan/:slug/*" element={<ScanReportPage />} />
         </Routes>
       </Suspense>
     );

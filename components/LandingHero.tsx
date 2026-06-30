@@ -204,10 +204,7 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                An AI content system that writes your posts, builds your lead magnets, and ships them daily in your voice.{' '}
-                <span style={{ fontWeight: 600, color: '#1A1A1A' }}>
-                  You own the system, instead of renting an agency that posts for you.
-                </span>
+                An AI content system that writes your posts, builds your lead magnets, and ships them daily in your voice.
               </motion.p>
 
               {/* Benefit row — mono spec line */}

@@ -31,10 +31,10 @@ export const FEED_DESC: Record<OutreachFeed, string> = {
 //   cold = zinc (neutral), harvest = blue (warm-ish inbound), hiring = amber
 //   (signal/opportunity), hot = emerald (hottest / success).
 export const FEED_BADGE: Record<OutreachFeed, string> = {
-  cold: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25',
-  harvest: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
-  hiring: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
-  hot: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+  cold: 'bg-zinc-100 text-zinc-700 border-zinc-200',
+  harvest: 'bg-blue-50 text-blue-700 border-blue-200',
+  hiring: 'bg-amber-50 text-amber-700 border-amber-200',
+  hot: 'bg-emerald-50 text-emerald-700 border-emerald-200',
 };
 
 // Solid bar gradients for the comparison viz (gradient-to-t, matches OutreachFunnel).
@@ -46,10 +46,10 @@ export const FEED_BAR: Record<OutreachFeed, string> = {
 };
 
 export const FEED_TEXT: Record<OutreachFeed, string> = {
-  cold: 'text-zinc-300',
-  harvest: 'text-blue-300',
-  hiring: 'text-amber-300',
-  hot: 'text-emerald-300',
+  cold: 'text-zinc-600',
+  harvest: 'text-blue-700',
+  hiring: 'text-amber-700',
+  hot: 'text-emerald-700',
 };
 
 /**

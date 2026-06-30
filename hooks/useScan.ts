@@ -8,7 +8,7 @@ const SCAN_COLUMNS = [
   'company_name', 'company_size', 'revenue_range', 'domain_age_years',
   'email_infra', 'logo_url', 'anthropic_verified', 'openai_verified',
   'automation_score', 'automation_grade', 'top_gap_title', 'top_gap_summary',
-  'report_url', 'report_json',
+  'report_url', 'report_json', 'matched_offer',
 ].join(', ');
 
 const POLL_INTERVAL_MS = 10_000;

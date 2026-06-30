@@ -7,13 +7,15 @@ interface Props {
   profile: ProfileSpec;
   card: NormalizedLmCard;
   caption?: string;
+  /** When set, the document block is clickable and opens an in-page preview. */
+  onCardClick?: () => void;
 }
 
 /**
  * LinkedIn "document" post (PDF/carousel) for a lead-magnet preview.
  * Self-contained header (does NOT refactor the shared LinkedInPostPreview).
  */
-const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption }) => {
+const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption, onCardClick }) => {
   return (
     <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
       {/* Header */}
@@ -44,8 +46,19 @@ const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption }) => {
       )}
 
       {/* Document block */}
-      <div className="relative border-y border-[#dce6f1] bg-[#f3f6f8]">
+      <div
+        className={`group relative border-y border-[#dce6f1] bg-[#f3f6f8] ${onCardClick ? 'cursor-pointer' : ''}`}
+        onClick={onCardClick}
+        role={onCardClick ? 'button' : undefined}
+        tabIndex={onCardClick ? 0 : undefined}
+        onKeyDown={onCardClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(); } } : undefined}
+      >
         <img src={card.coverUrl} alt={card.title} className="w-full max-h-[520px] object-contain" loading="lazy" />
+        {onCardClick && (
+          <span className="absolute top-3 right-3 bg-white/95 text-[#0a66c2] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+            Preview →
+          </span>
+        )}
         <div className="absolute left-0 right-0 bottom-0 bg-[#1d2226]/85 text-white px-4 py-3 flex items-center gap-2">
           <FileText className="w-4 h-4 shrink-0" />
           <span className="text-[14px] font-semibold leading-tight truncate">{card.title}</span>

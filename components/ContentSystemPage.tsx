@@ -205,8 +205,8 @@ export default function ContentSystemPage() {
             <span className="font-drama italic">every day</span>, without writing a word.
           </motion.h1>
           <p className="mt-6 max-w-2xl text-xl text-ink-soft leading-relaxed">
-            Five posts a week, plus carousels and lead magnets, all in your voice and all on
-            autopilot. You approve. It does the rest.
+            Five posts a week, plus carousels, lead magnets, and a weekly newsletter, all in your voice
+            and all on autopilot. You approve. It does the rest.
           </p>
           <div className="mt-8">
             {/* px prop carries the full padding utility string, e.g. "px-9 py-4" */}

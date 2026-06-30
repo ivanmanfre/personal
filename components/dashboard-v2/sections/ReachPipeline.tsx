@@ -14,7 +14,6 @@ const UpworkPanel = lazy(() => import('../../dashboard/UpworkPanel'));
 const MeetingsPanel = lazy(() => import('../../dashboard/MeetingsPanel'));
 const AgentReadyPanel = lazy(() => import('../../dashboard/AgentReadyPanel'));
 const CrmPanel = lazy(() => import('../../dashboard/crm/CrmPanel'));
-
 type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready';
 
 const SUB_LABELS: Record<SubKey, string> = {
@@ -36,7 +35,8 @@ export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolea
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'crm';
-  const { sub, corrected } = resolveSub(new URLSearchParams(window.location.search).get('sub'));
+  const params = new URLSearchParams(window.location.search);
+  const { sub, corrected } = resolveSub(params.get('sub'));
   if (corrected) syncSubToUrl(sub); // rewrite stale ?sub=posts to ?sub=outreach
   return sub;
 }
@@ -60,13 +60,13 @@ export function ReachPipeline() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'crm':         return <CrmPanel />;
-      case 'outreach':    return <OutreachPanel />;
-      case 'leads':       return <LeadsPanel />;
-      case 'competitors': return <CompetitorIntelPanel />;
-      case 'upwork':      return <UpworkPanel />;
-      case 'meetings':    return <MeetingsPanel />;
-      case 'agentready':  return <AgentReadyPanel />;
+      case 'crm':          return <CrmPanel />;
+      case 'outreach':     return <OutreachPanel />;
+      case 'leads':        return <LeadsPanel />;
+      case 'competitors':  return <CompetitorIntelPanel />;
+      case 'upwork':       return <UpworkPanel />;
+      case 'meetings':     return <MeetingsPanel />;
+      case 'agentready':   return <AgentReadyPanel />;
     }
   };
 

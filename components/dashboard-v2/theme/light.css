@@ -1,0 +1,612 @@
+/* components/dashboard-v2/theme/light.css */
+body.dashboard-v2-light {
+  --ds-bg:#f6f7f9; --ds-card:#ffffff; --ds-line:#e9e9ee;
+  --ds-ink:#0f172a; --ds-dim:#475569; --ds-faint:#64748b; --ds-faintest:#94a3b8;
+  --ds-accent:#4f46e5; --ds-accent-hover:#6366f1;
+  --ds-ok:#047857; --ds-warn:#b45309; --ds-info:#2563eb; --ds-violet:#7c3aed;
+  --ds-shadow-sm:0 1px 2px rgba(15,23,42,.04);
+  --ds-shadow-card:0 1px 2px rgba(15,23,42,.04),0 10px 26px -18px rgba(15,23,42,.18);
+  --ds-radius:14px;
+  background:var(--ds-bg) !important; color:var(--ds-ink) !important;
+  font-family:'Inter',system-ui,-apple-system,sans-serif !important;
+}
+@media (prefers-reduced-motion: reduce){
+  body.dashboard-v2-light *{animation-duration:.001ms !important;animation-iteration-count:1 !important;animation-name:none !important}
+}
+
+@keyframes ds-draw{to{stroke-dashoffset:0}}
+@keyframes ds-ring{to{stroke-dashoffset:var(--off)}}
+@keyframes ds-rowin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ds-fill{to{width:var(--w)}}
+@keyframes ds-fadein{to{opacity:1}}
+@keyframes ds-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Bridge: remap ALL dark --d-* vars to light equivalents ──
+ * Unconverted tabs (Clients, Reach, System, Knowledge, etc.) still consume
+ * var(--d-*) tokens defined in the .dashboard-v2 block (dark palette).
+ * By redefining every --d-* here, those consumers render legibly on light
+ * without touching any TSX/component code.
+ */
+body.dashboard-v2-light .dashboard-v2 {
+  /* Backgrounds — light surfaces */
+  --d-ink:      #f6f7f9;    /* page bg (was darkest bg) */
+  --d-ink-2:    #ffffff;    /* card / panel surface */
+  --d-ink-3:    #f1f1f5;    /* inputs, raised controls */
+  --d-surface:  #ffffff;    /* card tier alias */
+  --d-surface-2:#f6f7f9;    /* hover / nested rows */
+
+  /* Text — dark on light */
+  --d-paper:       #0f172a;  /* primary text */
+  --d-paper-dim:   #475569;  /* secondary text — AA+ on bg (~7:1) */
+  --d-paper-dimmer:#475569;  /* tertiary text — use same level; #64748b fails on tinted bg */
+
+  /* Borders */
+  --d-rule:        #e9e9ee;               /* internal dividers */
+  --d-rule-strong: #d8d8df;              /* card / container borders */
+
+  /* Semantic colours — adjusted for light contrast (AA+ on white) */
+  --d-good:        #047857;  /* emerald-700, ~5.5:1 on white */
+  --d-good-hi:     #065f46;  /* emerald-800, ~7.7:1 on white */
+  --d-warn:        #b45309;  /* amber-700, ~5.0:1 on white */
+  --d-bad:         #dc2626;
+  --d-bad-txt:     #dc2626;
+  --d-accent:      #4f46e5;
+  --d-agent:       #7c3aed;
+
+  /* Semantic tinted bgs — raised opacity so semantic text (AA+) contrasts on bg
+   * #047857 (--d-good) needs bg lighter than ~rgba(5,150,105,0.27) to stay ≥4.5:1
+   * Using very light neutral washes instead to guarantee contrast on white card surface */
+  --d-good-bg:    rgba(236, 253, 245, 1);   /* emerald-50 solid; #047857 on #ecfdf5 ≈ 5.1:1 */
+  --d-warn-bg:    rgba(255, 251, 235, 1);   /* amber-50 solid; #b45309 on #fffbeb ≈ 4.6:1 */
+  --d-bad-bg:     rgba(254, 242, 242, 1);   /* red-50 solid */
+  --d-accent-bg:  rgba(238, 240, 254, 1);   /* indigo-50 solid */
+  --d-agent-bg:   rgba(245, 243, 255, 1);   /* violet-50 solid */
+
+  /* Depth — lighter shadows for light theme */
+  --d-shadow-1: 0 1px 2px rgba(15,23,42,0.04), 0 4px 12px -2px rgba(15,23,42,0.08);
+  --d-shadow-2: 0 8px 24px -6px rgba(15,23,42,0.12), 0 2px 6px -2px rgba(15,23,42,0.06);
+  --d-edge-light: inset 0 1px 0 rgba(255,255,255,0.6);
+
+  /* Base styles */
+  background: var(--ds-bg) !important;
+  color: var(--ds-ink) !important;
+}
+
+/* Briefing section — raise primitive sub-12px text to 12px minimum */
+body.dashboard-v2-light .dv-pulse-cell-meta { font-size: 12px; }
+body.dashboard-v2-light .dv-client-row-status { font-size: 12px; }
+body.dashboard-v2-light .dv-client-row-action { font-size: 12px; }
+body.dashboard-v2-light .ds-pill,
+body.dashboard-v2-light .dv-pill { font-size: 12px; }
+
+/* Pill base — font-size controlled by theme, not inline style */
+.ds-pill { font-size: 12px; }
+
+/* ── Light scrollbar ── */
+body.dashboard-v2-light .dashboard-v2 ::-webkit-scrollbar-track { background: var(--ds-bg); }
+body.dashboard-v2-light .dashboard-v2 ::-webkit-scrollbar-thumb { background: var(--ds-line); }
+body.dashboard-v2-light .dashboard-v2 ::-webkit-scrollbar-thumb:hover { background: var(--ds-faint); }
+
+/* ── Light main frame ── */
+body.dashboard-v2-light .dv-main { background: var(--ds-bg); }
+
+/* ── Light sidebar ── */
+body.dashboard-v2-light .dv-sidebar {
+  background: var(--ds-card) !important;
+  border-right-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-brand {
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-brand-mark {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-nav-item {
+  color: #475569 !important;
+  min-height: 36px;
+}
+body.dashboard-v2-light .dv-nav-item:hover {
+  background: #f1f1f5 !important;
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-nav-item[aria-current="page"] {
+  background: #eef0fe !important;
+  color: var(--ds-accent) !important;
+  box-shadow: none !important;
+}
+body.dashboard-v2-light .dv-nav-item[aria-current="page"]::before {
+  background: var(--ds-accent) !important;
+  box-shadow: none !important;
+}
+body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"] {
+  background: #eef0fe !important;
+}
+body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"]::before {
+  background: var(--ds-accent) !important;
+}
+body.dashboard-v2-light .dv-nav-name {
+  color: inherit !important;
+}
+body.dashboard-v2-light .dv-nav-item[aria-current="page"] .dv-nav-name {
+  color: var(--ds-accent) !important;
+}
+body.dashboard-v2-light .dv-nav-num {
+  color: var(--ds-dim) !important;
+  font-size: 12px !important;
+}
+body.dashboard-v2-light .dv-nav-divider {
+  color: var(--ds-dim) !important;
+  font-size: 12px !important;
+}
+body.dashboard-v2-light .dv-sidebar-foot {
+  border-top-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-kbd-hint {
+  color: var(--ds-dim) !important;
+  font-size: 12px !important;
+}
+body.dashboard-v2-light .dv-kbd-hint kbd {
+  background: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-ink) !important;
+  font-size: 12px !important;
+}
+/* Rail toggle button — light surface */
+body.dashboard-v2-light .dv-rail-toggle {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-dim) !important;
+  box-shadow: 0 2px 7px rgba(15,23,42,0.08) !important;
+}
+body.dashboard-v2-light .dv-rail-toggle:hover {
+  background: var(--ds-accent) !important;
+  border-color: var(--ds-accent) !important;
+  color: #fff !important;
+}
+/* Collapsed rail — icon/short label colors */
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-icon {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-icon {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-icon {
+  color: var(--ds-accent) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-short {
+  color: var(--ds-dim) !important;
+  font-size: 12px !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-short {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-short {
+  color: var(--ds-accent) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-divider {
+  border-top-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] {
+  box-shadow: none !important;
+}
+/* Mobile topbar */
+body.dashboard-v2-light .dv-topbar {
+  background: var(--ds-card) !important;
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-topbar-brand {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-hamburger {
+  border-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-hamburger span {
+  background: var(--ds-ink) !important;
+}
+
+/* ── Light primitives ── */
+/* Card */
+body.dashboard-v2-light .dv-card {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+}
+body.dashboard-v2-light .dv-card:hover {
+  border-color: #c7d2fe !important;
+}
+body.dashboard-v2-light .dv-card-lbl {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-card h3 {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-card p {
+  color: var(--ds-dim) !important;
+}
+
+/* KPI tile */
+body.dashboard-v2-light .dv-kpi {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+}
+body.dashboard-v2-light .dv-kpi:hover {
+  border-color: #c7d2fe !important;
+  box-shadow: 0 2px 4px rgba(15,23,42,.05), 0 16px 32px -16px rgba(15,23,42,.18) !important;
+}
+body.dashboard-v2-light .dv-kpi-lbl {
+  color: var(--ds-faint) !important;
+}
+body.dashboard-v2-light .dv-kpi-num {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-kpi-num--good { color: var(--ds-ok) !important; }
+body.dashboard-v2-light .dv-kpi-num--warn { color: var(--ds-warn) !important; }
+body.dashboard-v2-light .dv-kpi-num--bad { color: #dc2626 !important; }
+body.dashboard-v2-light .dv-kpi-delta { color: var(--ds-dim) !important; }
+body.dashboard-v2-light .dv-kpi-delta--up { color: var(--ds-ok) !important; }
+body.dashboard-v2-light .dv-kpi-delta--down { color: #dc2626 !important; }
+
+/* Row */
+body.dashboard-v2-light .dv-row {
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-row:hover {
+  background: #fafafc !important;
+}
+body.dashboard-v2-light .dv-row-date {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-row-name {
+  color: #1e293b !important;
+}
+body.dashboard-v2-light .dv-row-tag {
+  background: var(--ds-bg) !important;
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-row-meta {
+  color: var(--ds-faint) !important;
+}
+
+/* SubTabs */
+body.dashboard-v2-light .dv-subtabs {
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-subtab {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-subtab:hover:not([aria-selected="true"]) {
+  color: var(--ds-ink) !important;
+  background: rgba(15,23,42,0.03) !important;
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-subtab[aria-selected="true"] {
+  color: var(--ds-ink) !important;
+  border-bottom-color: var(--ds-accent) !important;
+}
+body.dashboard-v2-light .dv-subtab[aria-selected="true"]::after {
+  background: var(--ds-accent) !important;
+  box-shadow: none !important;
+}
+
+/* StatusChip */
+body.dashboard-v2-light .dv-chip--good {
+  color: var(--ds-ok) !important;
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+body.dashboard-v2-light .dv-chip--warn {
+  color: var(--ds-warn) !important;
+  background: #fffbeb !important;
+  border-color: #fcd34d !important;
+}
+body.dashboard-v2-light .dv-chip--bad {
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Pulse cells */
+body.dashboard-v2-light .dv-pulse-cell {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-pulse-cell:hover {
+  border-color: #c7d2fe !important;
+}
+body.dashboard-v2-light .dv-pulse-cell-name {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-pulse-cell-meta {
+  color: var(--ds-dim) !important;
+}
+
+/* Section label */
+body.dashboard-v2-light .dv-section-label {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-section-label .dv-rule {
+  background: var(--ds-line) !important;
+}
+
+/* Head row */
+body.dashboard-v2-light .dv-head {
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-h1 {
+  color: var(--ds-ink) !important;
+}
+
+/* Marginalia — solid bg avoids probe false-positive from near-transparent rgba */
+body.dashboard-v2-light .dv-marginalia {
+  color: var(--ds-dim) !important;
+  background: #f8f9fb !important;
+}
+
+/* Client rows */
+body.dashboard-v2-light .dv-client-row {
+  border-bottom-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-client-row:hover {
+  background: #fafafc !important;
+}
+body.dashboard-v2-light .dv-client-row-name {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-client-row-status {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-client-row-action {
+  color: var(--ds-dim) !important;
+}
+
+/* Toggle */
+body.dashboard-v2-light .dv-toggle {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-toggle-lbl {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-toggle-desc {
+  color: var(--ds-faint) !important;
+}
+body.dashboard-v2-light .dv-switch {
+  background: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-switch::after {
+  background: var(--ds-faint) !important;
+}
+body.dashboard-v2-light .dv-switch--on {
+  background: #ecfdf5 !important;
+  border-color: var(--ds-ok) !important;
+}
+body.dashboard-v2-light .dv-switch--on::after {
+  background: var(--ds-ok) !important;
+}
+
+/* Section heading */
+body.dashboard-v2-light .dv-section-h {
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dv-meta {
+  color: var(--ds-dim) !important;
+}
+
+/* Btn */
+body.dashboard-v2-light .dv-btn {
+  color: var(--ds-ink) !important;
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+}
+body.dashboard-v2-light .dv-btn:hover {
+  background: var(--ds-bg) !important;
+  border-color: #cbd5e1 !important;
+}
+body.dashboard-v2-light .dv-btn--dim {
+  color: var(--ds-dim) !important;
+}
+
+/* Tour trigger */
+body.dashboard-v2-light .dv-tour-trigger {
+  background: var(--ds-card) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-tour-trigger:hover {
+  background: var(--ds-bg) !important;
+}
+
+/* Notification bell button */
+body.dashboard-v2-light .nb-button {
+  background: rgba(15,23,42,0.05) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .nb-button:hover {
+  background: rgba(15,23,42,0.10) !important;
+}
+
+/* Field labels — raise to 12px min in light theme */
+body.dashboard-v2-light .dv-field-label {
+  font-size: 12px !important;
+  color: var(--ds-dim) !important;
+}
+
+/* ── Hardcoded-dark class overrides for unconverted panels ──
+ * panel-surface (styles.css) and bg-zinc-900/80 overrides (dashboard-v2.css)
+ * use literal dark rgba values instead of --d-* tokens. Re-override to light.
+ */
+body.dashboard-v2-light .panel-surface {
+  background-color: #ffffff !important;
+  border-color: var(--ds-line) !important;
+}
+/* Override the rgba values set by dashboard-v2.css's Tailwind bridge for zinc variants */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-950 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900 { background-color: var(--ds-card) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-700 { background-color: #f1f1f5 !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/50,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/60,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(241,241,245,0.85) !important; }
+/* Opacity-variant dark bgs that slip past the solid-class bridge (funnel track, modal sticky header) */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/95,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/90 { background-color: rgba(255,255,255,0.95) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-950\/70 { background-color: var(--ds-bg) !important; }
+/* Borders */
+body.dashboard-v2-light .dashboard-v2 .border-zinc-950 { border-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-900 { border-color: var(--ds-line) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-800 { border-color: var(--ds-line) !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-700 { border-color: #d8d8df !important; }
+body.dashboard-v2-light .dashboard-v2 .border-zinc-700\/60,
+body.dashboard-v2-light .dashboard-v2 .border-zinc-800\/60 { border-color: rgba(217,217,223,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .divide-zinc-800 > * + *,
+body.dashboard-v2-light .dashboard-v2 .divide-zinc-700 > * + * { border-color: var(--ds-line) !important; }
+/* Text — zinc grays → light-theme text values */
+body.dashboard-v2-light .dashboard-v2 .text-zinc-50,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-100,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-200,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-300 { color: var(--ds-ink) !important; }
+body.dashboard-v2-light .dashboard-v2 .text-zinc-400 { color: var(--ds-dim) !important; }
+body.dashboard-v2-light .dashboard-v2 .text-zinc-500,
+body.dashboard-v2-light .dashboard-v2 .text-zinc-600 { color: var(--ds-dim) !important; }
+/* Hover states in v1 panels */
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-700:hover { background-color: #f1f1f5 !important; }
+/* Darker hover variants (incl. opacity forms) used by unconverted v1 panels —
+   without these, hovering a button flips it to near-black on the light theme. */
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-900:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-950:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-900\/60:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800\/60:hover { background-color: var(--ds-bg) !important; }
+/* Inline dark bg variants used in ClientsPanel */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/20 { background-color: rgba(241,241,245,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/30 { background-color: rgba(241,241,245,0.7) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/40 { background-color: rgba(233,233,238,0.6) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/60 { background-color: rgba(217,217,223,0.6) !important; }
+/* Inputs */
+body.dashboard-v2-light .dashboard-v2 input.bg-zinc-900,
+body.dashboard-v2-light .dashboard-v2 input.bg-zinc-800,
+body.dashboard-v2-light .dashboard-v2 textarea.bg-zinc-900,
+body.dashboard-v2-light .dashboard-v2 textarea.bg-zinc-800,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50 { background-color: var(--ds-bg) !important; }
+body.dashboard-v2-light .dashboard-v2 input::placeholder,
+body.dashboard-v2-light .dashboard-v2 textarea::placeholder { color: var(--ds-faint) !important; }
+/* Native controls — select + checkbox */
+body.dashboard-v2-light .dashboard-v2 select {
+  background-color: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-ink) !important;
+}
+body.dashboard-v2-light .dashboard-v2 input[type="checkbox"] {
+  background: var(--ds-bg) !important;
+  border-color: var(--ds-line) !important;
+}
+
+/* ── C-TEXT: low-contrast grey text utilities → AA-compliant token ─────────── */
+/* --ds-dim = #475569 (slate-600) ≈ 7:1 on white — passes AA normal + large text */
+body.dashboard-v2-light .text-slate-400,
+body.dashboard-v2-light .text-slate-300,
+body.dashboard-v2-light .text-zinc-400,
+body.dashboard-v2-light .text-zinc-500,
+body.dashboard-v2-light .text-zinc-300,
+body.dashboard-v2-light .text-gray-400,
+body.dashboard-v2-light .text-gray-300,
+body.dashboard-v2-light .text-neutral-400,
+body.dashboard-v2-light .text-neutral-300,
+body.dashboard-v2-light .text-stone-400,
+body.dashboard-v2-light .text-stone-300 { color: var(--ds-dim) !important; }
+
+/* ── C-SEMANTIC: semantic-color text on same-color tinted bg → boost contrast ─ */
+
+/* dv-chip "New" / neutral stage: --d-paper-dim (#475569) on rgba(180,183,192,.10)
+   Fix: use white bg so slate #475569 reads at 7:1; for inline-styled chips remove tint */
+body.dashboard-v2-light .dv-chip:not(.dv-chip--good):not(.dv-chip--warn):not(.dv-chip--bad) {
+  background: #ffffff !important;
+}
+
+/* dv-lifecycle-stage variants: same-family text+bg → use solid emerald-50/amber-50/indigo-50
+   These solid washes give the semantic text (dark enough on white) room to breathe */
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--good {
+  background: #ecfdf5 !important;
+  color: var(--ds-ok) !important;
+}
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--warn {
+  background: #fffbeb !important;
+  color: var(--ds-warn) !important;
+}
+body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--accent {
+  background: #eef2ff !important;
+  color: var(--ds-accent) !important;
+}
+
+/* crm-icp high-ICP badge: green text on green-tinted bg → solid emerald-50 bg
+   #047857 on #ecfdf5 = 5.1:1 (AA). Uses !important to override inline style bg. */
+body.dashboard-v2-light .crm-icp {
+  color: var(--ds-ok) !important;
+  background: #ecfdf5 !important;
+}
+
+/* dv-funnel-seg colors: semantic text on tinted bg → solid light bg */
+body.dashboard-v2-light .dv-funnel-seg--win {
+  background: #ecfdf5 !important;
+  color: var(--ds-ok) !important;
+}
+body.dashboard-v2-light .dv-funnel-seg--warm {
+  background: #fffbeb !important;
+  color: var(--ds-warn) !important;
+}
+
+/* dv-aios-seg-lbl: --d-paper-dim (#475569) on green-gradient tinted bgs
+   Fix: force ink color so we always read on light bg */
+body.dashboard-v2-light .dv-aios-seg-lbl {
+  color: var(--ds-dim) !important;
+}
+body.dashboard-v2-light .dv-aios-seg {
+  background: transparent !important;
+}
+
+/* nb-badge--good: white on #5b8c6e (ratio 3.87) — darken badge bg for AA */
+body.dashboard-v2-light .nb-badge--good {
+  background: #2d6a4f !important;
+}
+
+/* text-zinc-500 on rgba(241,241,245,0.85) bg → ratio 4.22, below 4.5
+   Already handled by .text-zinc-500 rule above; also target inline-style-free bg-zinc-800 */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800 { color: var(--ds-ink) !important; }
+
+/* Orphaned dark panels within light shell: PromptsPanel dark header + HealthPanel */
+body.dashboard-v2-light .text-white { color: var(--ds-ink) !important; }
+
+/* bg-zinc-800/60 code tags: --d-paper-dim on rgba(217,217,223,0.6) → ratio 3.39
+   Fix: use ds-bg as bg so text reads clearly */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/60 { color: var(--ds-dim) !important; }
+
+/* Emerald + amber Tailwind opacity-bg variants: same-hue text on alpha bg
+   Strategy: remap ALL emerald/amber light text → dark enough; override tinted bgs → solid wash */
+/* Emerald text variants */
+body.dashboard-v2-light .text-emerald-400,
+body.dashboard-v2-light .text-emerald-300,
+body.dashboard-v2-light .text-emerald-200,
+body.dashboard-v2-light .text-emerald-100 { color: var(--ds-ok) !important; }
+/* Amber text variants */
+body.dashboard-v2-light .text-amber-400,
+body.dashboard-v2-light .text-amber-300,
+body.dashboard-v2-light .text-amber-200,
+body.dashboard-v2-light .text-amber-100 { color: var(--ds-warn) !important; }
+/* Emerald tinted bg → solid emerald-50 */
+body.dashboard-v2-light .bg-emerald-500\/15,
+body.dashboard-v2-light .bg-emerald-500\/10,
+body.dashboard-v2-light .bg-emerald-500\/20,
+body.dashboard-v2-light .bg-emerald-400\/15,
+body.dashboard-v2-light .bg-emerald-600\/15 { background-color: #ecfdf5 !important; }
+/* Amber tinted bg → solid amber-50 */
+body.dashboard-v2-light .bg-amber-500\/15,
+body.dashboard-v2-light .bg-amber-500\/10,
+body.dashboard-v2-light .bg-amber-500\/20,
+body.dashboard-v2-light .bg-amber-400\/15,
+body.dashboard-v2-light .bg-amber-600\/15 { background-color: #fffbeb !important; }

@@ -6,6 +6,7 @@ import { useCommandPaletteV2 } from '../../hooks/useCommandPaletteV2';
 import { TourProvider, useTour } from './tour/TourProvider';
 import { TourNarratorCard } from './tour/TourNarratorCard';
 import { onNav } from './lib/navBus';
+import { LiveStatus } from './live/LiveStatus';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
@@ -214,7 +215,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
           <main className="dv-main">
             <div className="dv-panel" key={`${active}:${navNonce}`}>
               {renderer ? renderer() : (
-                <div style={{ padding: '4rem', color: 'var(--d-paper-dim)' }}>
+                <div style={{ padding: '4rem', color: 'var(--ds-dim)' }}>
                   Section <code>{active}</code> not yet implemented.
                 </div>
               )}
@@ -223,6 +224,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
         </div>
         <CommandPalette {...palette} />
         <TourTrigger />
+        <LiveStatus />
         <TourNarratorCard />
       </div>
     </TourProvider>

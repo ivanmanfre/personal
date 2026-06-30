@@ -15,6 +15,7 @@ import { SystemOverview } from './sections/SystemOverview';
 import { Personal } from './sections/Personal';
 import { StealBox } from './sections/StealBox';
 import { useScheduledChecks } from '../../hooks/useScheduledChecks';
+import { LiveProvider } from './live/LiveProvider';
 import type { NavItem, SectionId } from './types';
 
 /**
@@ -70,31 +71,34 @@ function ShellInner() {
 export default function DemoShell() {
   useEffect(() => {
     registerServiceWorker();
-    // Force body to use v2 ink bg + Inter (overrides public-site cream/serif)
-    document.body.classList.add('dashboard-v2-active');
+    // Force body to use v2 light theme + Inter (overrides public-site cream/serif)
+    document.body.classList.add('dashboard-v2-light');
     // If we landed here via /dashboard?tab=foo, rewrite to v2 equivalent
     import('../../lib/dashboardUrlMigration').then(({ migrateV1Url }) => {
       if (migrateV1Url()) {
         window.dispatchEvent(new PopStateEvent('popstate'));
       }
     });
-    return () => { document.body.classList.remove('dashboard-v2-active'); };
+    return () => { document.body.classList.remove('dashboard-v2-light'); };
   }, []);
   return (
     <DashboardProvider>
       <Toaster
+        theme="light"
         position="top-right"
         toastOptions={{
           style: {
-            background: '#18181c',
-            color: '#e7e7ea',
-            border: '1px solid rgba(231,231,234,0.15)',
+            background: '#ffffff',
+            color: '#0f172a',
+            border: '1px solid #e9e9ee',
             fontFamily: 'Inter, system-ui, sans-serif',
             fontSize: 13,
           },
         }}
       />
-      <ShellInner />
+      <LiveProvider>
+        <ShellInner />
+      </LiveProvider>
       <PwaInstall />
     </DashboardProvider>
   );

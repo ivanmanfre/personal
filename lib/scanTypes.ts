@@ -43,7 +43,7 @@ export interface ContentSystem {
   archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible';
   // The content engine + lead magnets run off the FOUNDER's personal brand (this offer only
   // routes when the prospect is the owner/founder), so the page speaks to them personally.
-  founder?: { name: string; first_name?: string; headline?: string } | null;
+  founder?: { name: string; first_name?: string; headline?: string; avatar_url?: string } | null;
   thesis: string;
   audience_estimate: { value: string; basis?: string };
   observable_signals: Array<{ label: string; detail: string }>;
@@ -53,9 +53,11 @@ export interface ContentSystem {
     title: string;
     posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel' }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
-    lm?: { title: string; cover_url: string; pages?: number };
+    lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number> };
   };
   revenue_math?: string;
+  // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.
+  og_image_url?: string;
 }
 
 export interface ReportJson {
@@ -238,6 +240,7 @@ export interface Scan {
   top_gap_summary: string | null;
   report_url: string | null;
   report_json: ReportJson | null;
+  matched_offer?: 'content_system' | 'lead_magnets' | 'call_intelligence' | null;
 }
 
 export interface ProspectToken {

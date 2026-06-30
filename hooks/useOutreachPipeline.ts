@@ -193,7 +193,8 @@ export function useOutreachPipeline(timezone?: string) {
   const [engagementLog, setEngagementLog] = useState<Record<string, OutreachEngagementLog[]>>({});
   const [recentActivity, setRecentActivity] = useState<OutreachEngagementLog[]>([]);
   const [rateLimits, setRateLimits] = useState<Record<string, { count: number; daily_limit: number }>>({});
-  const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number }>({ connection_request: 0, dm: 0 });
+  const [cappedQueue, setCappedQueue] = useState<{ connection_request: number; dm: number; inmail: number }>({ connection_request: 0, dm: 0, inmail: 0 });
+  const [inmailActivity, setInmailActivity] = useState<{ sent: number; lastSent: string | null; recent: { name: string; sentAt: string }[] }>({ sent: 0, lastSent: null, recent: [] });
   const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>({});
   const [pendingCeiling, setPendingCeiling] = useState<number>(200);
   const [workflowStatuses, setWorkflowStatuses] = useState<Record<string, boolean>>({});
@@ -217,7 +218,7 @@ export function useOutreachPipeline(timezone?: string) {
         d.setHours(0, 0, 0, 0);
         return d.toISOString();
       })();
-      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes, emailsTodayRes, queuedLinkedInRes] = await Promise.all([
+      const [prospectsRes, campaignsRes, statsRes, activityRes, rateLimitRes, flagsRes, wfStatusRes, emailsTodayRes, queuedLinkedInRes, inmailSentRes] = await Promise.all([
         supabase
           .from('outreach_prospects')
           .select('*, outreach_campaigns(name, niche_tags)')
@@ -266,6 +267,15 @@ export function useOutreachPipeline(timezone?: string) {
           .not('approved_at', 'is', null)
           .is('sent_at', null)
           .or('channel.eq.linkedin,channel.is.null'),
+        // Sent InMails — the audit-sender fires these directly (no pending row), so
+        // they only surface here. prospect_id maps to names via the prospects list.
+        supabase
+          .from('outreach_messages')
+          .select('prospect_id, sent_at')
+          .eq('channel', 'linkedin_inmail')
+          .not('sent_at', 'is', null)
+          .order('sent_at', { ascending: false })
+          .limit(200),
       ]);
 
       const now = Date.now();
@@ -301,13 +311,28 @@ export function useOutreachPipeline(timezone?: string) {
       });
       setRateLimits(rl);
 
-      // Capped queue: approved-but-unsent LinkedIn messages, by action_type
-      const cq = { connection_request: 0, dm: 0 };
+      // Capped queue: approved-but-unsent LinkedIn messages, by action_type.
+      // inmail is always 0 — the audit-sender sends InMails directly without
+      // writing a pending row; sent InMails are surfaced via inmailActivity below.
+      const cq = { connection_request: 0, dm: 0, inmail: 0 };
       (queuedLinkedInRes.data || []).forEach((r: any) => {
         if (r.message_type === 'connection_note') cq.connection_request += 1;
         else if (r.message_type === 'dm') cq.dm += 1;
       });
       setCappedQueue(cq);
+
+      // Sent InMail activity — count + most-recent recipients (name resolved from
+      // the loaded prospects; archived recipients fall back to a dash).
+      const nameById = new Map(serverProspects.map((p) => [p.id, p.name] as const));
+      const inmailRows = (inmailSentRes.data || []) as { prospect_id: string | null; sent_at: string | null }[];
+      setInmailActivity({
+        sent: inmailRows.length,
+        lastSent: inmailRows[0]?.sent_at ?? null,
+        recent: inmailRows.slice(0, 4).map((r) => ({
+          name: (r.prospect_id && nameById.get(r.prospect_id)) || '—',
+          sentAt: r.sent_at ?? '',
+        })),
+      });
 
       // Feature flags
       const ff: Record<string, boolean> = {};
@@ -892,6 +917,7 @@ export function useOutreachPipeline(timezone?: string) {
     recentActivity,
     rateLimits,
     cappedQueue,
+    inmailActivity,
     featureFlags,
     pendingCeiling,
     stageCounts,

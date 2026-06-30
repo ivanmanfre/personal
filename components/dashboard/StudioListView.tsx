@@ -62,22 +62,22 @@ function formatSmartDate(ms: number | undefined, hasRow = true): { text: string;
   const absD = Math.abs(diffMs) / 86_400_000;
   if (diffMs > 0) {
     // future
-    if (absHr < 24) return { text: `in ${Math.round(absHr)}h`, tint: 'text-amber-300' };
-    if (absD < 7) return { text: `in ${Math.round(absD)}d`, tint: 'text-emerald-300' };
-    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-zinc-400' };
+    if (absHr < 24) return { text: `in ${Math.round(absHr)}h`, tint: 'text-amber-700' };
+    if (absD < 7) return { text: `in ${Math.round(absD)}d`, tint: 'text-emerald-700' };
+    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-[var(--ds-dim)]' };
   } else {
     // past
-    if (absHr < 1) return { text: 'just now', tint: 'text-zinc-400' };
-    if (absHr < 24) return { text: `${Math.round(absHr)}h ago`, tint: 'text-zinc-400' };
-    if (absD < 7) return { text: `${Math.round(absD)}d ago`, tint: 'text-zinc-500' };
-    if (absD < 365) return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-zinc-500' };
-    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), tint: 'text-zinc-600' };
+    if (absHr < 1) return { text: 'just now', tint: 'text-[var(--ds-dim)]' };
+    if (absHr < 24) return { text: `${Math.round(absHr)}h ago`, tint: 'text-[var(--ds-dim)]' };
+    if (absD < 7) return { text: `${Math.round(absD)}d ago`, tint: 'text-[var(--ds-dim)]' };
+    if (absD < 365) return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), tint: 'text-[var(--ds-faint)]' };
+    return { text: new Date(ms).toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), tint: 'text-[var(--ds-faint)]' };
   }
 }
 const STRENGTH_TINT: Record<string, string> = {
-  High:   'text-emerald-300 bg-emerald-500/[0.08] ring-1 ring-inset ring-emerald-500/25',
-  Medium: 'text-amber-300 bg-amber-500/[0.08] ring-1 ring-inset ring-amber-500/25',
-  Low:    'text-zinc-400 bg-zinc-700/30 ring-1 ring-inset ring-zinc-700/40',
+  High:   'text-emerald-700 bg-emerald-50 border-emerald-200',
+  Medium: 'text-amber-700 bg-amber-50 border-amber-200',
+  Low:    'text-slate-500 bg-slate-50 border-slate-200',
 };
 
 // Post-type chip — full label + color. Replaces the cryptic TXT/IMG/CAR
@@ -88,9 +88,9 @@ const TYPE_LABEL: Record<string, string> = {
   carousel: 'Carousel',
 };
 const TYPE_TINT: Record<string, string> = {
-  text:         'text-zinc-300 bg-zinc-500/10 ring-1 ring-inset ring-zinc-500/25',
-  single_image: 'text-sky-300 bg-sky-500/10 ring-1 ring-inset ring-sky-500/25',
-  carousel:     'text-violet-300 bg-violet-500/10 ring-1 ring-inset ring-violet-500/25',
+  text:         'text-slate-600 bg-slate-100 border border-slate-200',
+  single_image: 'text-sky-700 bg-sky-50 border border-sky-100',
+  carousel:     'text-violet-700 bg-violet-50 border border-violet-100',
 };
 
 const TIER_RANK: Record<string, number> = {
@@ -300,20 +300,20 @@ export function StudioListView({
   };
 
   return (
-    <div className="@container rounded-xl border border-zinc-800/60 overflow-hidden bg-gradient-to-b from-zinc-900/30 to-zinc-950/40 shadow-2xl shadow-black/20">
+    <div className="@container rounded-xl border border-[var(--ds-line)] overflow-hidden bg-[var(--ds-card)] shadow-sm">
       {/* Bulk action bar — shown when any rows are selected */}
       {onBulkAction && selected.size > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/30 border-b border-emerald-900/40 text-[12px] text-emerald-200">
+        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--ds-accent)]/5 border-b border-[var(--ds-accent)]/20 text-[12px] text-[var(--ds-ink)]">
           <span className="font-medium">{selected.size} selected</span>
-          <button onClick={clearSelection} className="text-zinc-400 hover:text-zinc-200">Clear</button>
+          <button onClick={clearSelection} className="text-[var(--ds-dim)] hover:text-[var(--ds-ink)]">Clear</button>
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => { onBulkAction('disqualify', Array.from(selected)); clearSelection(); }}
-              className="px-2.5 py-1 rounded border border-zinc-700/40 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-200 transition-colors"
+              className="px-2.5 py-1 rounded border border-[var(--ds-line)] bg-[var(--ds-card)] hover:bg-[var(--ds-bg)] text-[var(--ds-ink)] transition-colors"
             >Disqualify</button>
             <button
               onClick={() => { if (confirm(`Delete ${selected.size} row(s)? This can't be undone.`)) { onBulkAction('delete', Array.from(selected)); clearSelection(); } }}
-              className="px-2.5 py-1 rounded border border-red-900/40 bg-red-950/40 hover:bg-red-950/60 text-red-300 transition-colors"
+              className="px-2.5 py-1 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 transition-colors"
             >Delete</button>
           </div>
         </div>
@@ -322,7 +322,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-4 py-2 bg-zinc-900/60 backdrop-blur-md border-b border-zinc-800/60 text-[10.5px] text-zinc-500 font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
+        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[#eef1f6] border-y border-[#d9dee6] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -331,7 +331,7 @@ export function StudioListView({
             checked={selected.size > 0 && selected.size === rows.length}
             ref={(el) => { if (el) el.indeterminate = selected.size > 0 && selected.size < rows.length; }}
             onChange={(e) => { e.target.checked ? selectAll(rows.map((r) => r.id)) : clearSelection(); }}
-            className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+            className="w-3.5 h-3.5 rounded accent-[var(--ds-accent)] cursor-pointer"
             onClick={(e) => e.stopPropagation()}
           />
         )}
@@ -361,7 +361,7 @@ export function StudioListView({
                 if (dragged) reorderCols(dragged, c.key);
                 setDraggingCol(null);
               }}
-              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-zinc-200' : 'hover:text-zinc-300'} text-left transition-colors cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${draggingCol && draggingCol !== c.key ? 'hover:bg-emerald-500/10 hover:ring-1 hover:ring-emerald-500/40 rounded' : ''}`}
+              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-[var(--ds-ink)]' : 'hover:text-[var(--ds-dim)]'} text-left transition-colors cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${draggingCol && draggingCol !== c.key ? 'hover:bg-[var(--ds-accent)]/5 rounded' : ''}`}
               title="Drag to reorder · click to sort"
             >
               {c.label}
@@ -376,11 +376,11 @@ export function StudioListView({
         <div>{[...Array(8)].map((_, i) => <ListRowSkeleton key={i} />)}</div>
       ) : sorted.length === 0 ? (
         <div className="px-6 py-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800/60 to-zinc-900/40 ring-1 ring-zinc-700/40 flex items-center justify-center mb-3">
-            <ChevronDown className="w-5 h-5 text-zinc-600 rotate-[-45deg]" />
+          <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] flex items-center justify-center mb-3">
+            <ChevronDown className="w-5 h-5 text-[var(--ds-faint)] rotate-[-45deg]" />
           </div>
-          <div className="text-[13px] text-zinc-400 font-medium">No matching rows</div>
-          <div className="text-[11.5px] text-zinc-600 mt-0.5">Try clearing the filters above.</div>
+          <div className="text-[13px] text-[var(--ds-ink)] font-medium">No matching rows</div>
+          <div className="text-[12px] text-[var(--ds-dim)] mt-0.5">Try clearing the filters above.</div>
         </div>
       ) : groupByStatus ? (
         // Grouped — render a header per status, then its rows. Statuses that don't
@@ -408,19 +408,19 @@ export function StudioListView({
               // statusOrder or pinnedStatuses). Empty groups are always hidden so
               // the screen shows real content, not "Idea 0 / Approved 0 / Error 0".
               if (groupRows.length === 0) return null;
-              const meta = statusMeta[status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
+              const meta = statusMeta[status] || { dot: 'bg-slate-400', label: 'text-[var(--ds-dim)]' };
               const isCollapsed = collapsed.has(status);
               return (
-                <div key={status} className="border-b border-zinc-800/40 last:border-b-0">
+                <div key={status} className="border-t border-[var(--ds-line)] border-b border-[var(--ds-line)] last:border-b-0">
                   <button
                     onClick={() => toggleGroup(status)}
-                    className="w-full flex items-center gap-2 px-4 py-2 transition-all text-left bg-zinc-900/30 hover:bg-zinc-900/60"
+                    className="w-full flex items-center gap-2 px-4 py-3 transition-all text-left bg-[var(--ds-bg)] hover:bg-[#f1f1f5]"
                   >
                     {isCollapsed
-                      ? <ChevronRight className="w-3.5 h-3.5 text-zinc-500 transition-transform" />
-                      : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 transition-transform" />}
+                      ? <ChevronRight className="w-3.5 h-3.5 text-[var(--ds-faint)] transition-transform" />
+                      : <ChevronDown className="w-3.5 h-3.5 text-[var(--ds-dim)] transition-transform" />}
                     <span className={`inline-block w-2 h-2 rounded-full ring-2 ring-current/10 ${meta.dot}`} />
-                    <span className="dv-section-h" style={{ fontSize: 'var(--t-base)' }}>{statusLabel(status)}</span>
+                    <span className="text-[13px] font-semibold text-[var(--ds-ink)]">{statusLabel(status)}</span>
                     <span className="dv-editorial-num text-[length:var(--t-sm)] ml-0.5">{groupRows.length}</span>
                   </button>
                   <AnimatePresence initial={false}>
@@ -456,7 +456,7 @@ export function StudioListView({
   );
 
   function renderRow(r: StudioRow, i: number) {
-    const meta = statusMeta[r.status] || { dot: 'bg-zinc-500', label: 'text-zinc-300' };
+    const meta = statusMeta[r.status] || { dot: 'bg-slate-400', label: 'text-[var(--ds-dim)]' };
     // Mobile (<md): flex column, cells wrap as chips underneath the title.
     // Desktop (>=md): grid with column-aligned cells. Style is conditional —
     // grid template only applied at md+.
@@ -467,24 +467,30 @@ export function StudioListView({
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.14, ease: 'easeOut' }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.14, ease: 'easeOut', delay: Math.min(i * 0.03, 0.3) }}
         onClick={() => onOpen(r.id)}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onOpen(r.id); }}
-        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-1.5' : 'px-4 py-2.5'} text-left border-b border-zinc-800/30 last:border-b-0 hover:bg-zinc-800/40 transition-colors cursor-pointer has-[:checked]:bg-emerald-950/20 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-emerald-500/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        aria-label={`Open ${r.title || 'post'}`}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
+        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[#fafafc] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
-          <input
-            type="checkbox"
-            checked={selected.has(r.id)}
-            onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
+          <label
+            className="flex items-center justify-center w-8 h-8 cursor-pointer shrink-0"
             onClick={(e) => e.stopPropagation()}
-            className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
-          />
+          >
+            <input
+              type="checkbox"
+              checked={selected.has(r.id)}
+              onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+            />
+          </label>
         )}
         {cols.map((c) => {
           const cls = `${colClass(c.visible)} items-center min-w-0`;
@@ -498,7 +504,7 @@ export function StudioListView({
                     onClick={r.thumbUrl ? (e) => { e.stopPropagation(); setPreviewRow(r); } : undefined}
                     disabled={!r.thumbUrl}
                     title={r.thumbUrl ? 'Click to preview media' : undefined}
-                    className={`w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 ring-1 ring-zinc-800/80 flex items-center justify-center shrink-0 shadow-inner shadow-black/40 ${r.thumbUrl ? 'hover:ring-emerald-500/40 hover:scale-105 transition-all cursor-zoom-in' : ''}`}
+                    className={`w-9 h-9 rounded-lg overflow-hidden bg-[var(--ds-bg)] border border-[var(--ds-line)] flex items-center justify-center shrink-0 ${r.thumbUrl ? 'hover:border-[var(--ds-accent)]/40 hover:scale-105 transition-all cursor-zoom-in' : ''}`}
                   >
                     {r.thumbUrl ? (
                       <img src={r.thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
@@ -510,19 +516,19 @@ export function StudioListView({
                         <span className="w-[3px] h-3.5 bg-violet-400/30 rounded-sm" />
                       </div>
                     ) : r.formatLabel === 'single_image' ? (
-                      <div className="w-3.5 h-3.5 rounded-sm bg-sky-400/30 ring-1 ring-inset ring-sky-400/50" />
+                      <div className="w-3.5 h-3.5 rounded-sm bg-sky-200 border border-sky-300" />
                     ) : (
                       <div className="flex flex-col gap-0.5">
-                        <span className="w-3 h-[2px] bg-zinc-500 rounded-sm" />
-                        <span className="w-2.5 h-[2px] bg-zinc-500/70 rounded-sm" />
-                        <span className="w-2 h-[2px] bg-zinc-500/40 rounded-sm" />
+                        <span className="w-3 h-[2px] bg-slate-300 rounded-sm" />
+                        <span className="w-2.5 h-[2px] bg-slate-200 rounded-sm" />
+                        <span className="w-2 h-[2px] bg-slate-100 rounded-sm" />
                       </div>
                     )}
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className={`${dense ? 'text-[11.5px]' : 'text-[13px]'} text-zinc-100 truncate group-hover:text-white font-medium tracking-tight`}>{r.title || '(untitled)'}</div>
-                  {r.excerpt && !dense && <div className="text-[11.5px] text-zinc-500 truncate mt-0.5">{r.excerpt}</div>}
+                  <div className={`${dense ? 'text-[12px]' : 'text-[14px]'} text-[var(--ds-ink)] truncate font-medium`}>{r.title || '(untitled)'}</div>
+                  {r.excerpt && !dense && <div className="text-[12px] text-[var(--ds-faint)] truncate mt-0.5">{r.excerpt}</div>}
                 </div>
               </div>
             );
@@ -543,7 +549,7 @@ export function StudioListView({
                       if (next !== r.status) await onStatusChange!(r.id, next);
                     }}
                     onBlur={() => setEditingStatusId(null)}
-                    className="text-[11px] rounded bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 text-zinc-100 outline-none focus:border-emerald-500"
+                    className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1.5 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
                   >
                     {statusChoices!.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
                   </select>
@@ -553,7 +559,7 @@ export function StudioListView({
             return (
               <div
                 key={c.key}
-                className={cls + ' gap-1.5' + (canEdit ? ' hover:bg-zinc-800/40 rounded px-1 -mx-1' : '')}
+                className={cls + ' gap-1.5' + (canEdit ? ' hover:bg-black/[.03] rounded px-1 -mx-1' : '')}
                 onClick={canEdit ? (e) => { e.stopPropagation(); setEditingStatusId(r.id); } : undefined}
                 title={canEdit ? 'Click to change status' : undefined}
               >
@@ -573,22 +579,24 @@ export function StudioListView({
                     aria-live="polite"
                     aria-label={`Status: ${statusLabel(r.status)}`}
                   >
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
-                    <span className={`text-[11px] ${meta.label} truncate font-medium`}>{statusLabel(r.status)}</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${(meta as any).pill || 'bg-slate-100 text-slate-600'} border-current/10`}>
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
+                      {statusLabel(r.status)}
+                    </span>
                   </motion.div>
                 </AnimatePresence>
               </div>
             );
           }
-          if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.pillar || ''}</span></div>;
-          if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.hookType || ''}</span></div>;
-          if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[11px] text-zinc-300 truncate">{r.valueTier || ''}</span></div>;
+          if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.pillar || ''}</span></div>;
+          if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.hookType || ''}</span></div>;
+          if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.valueTier || ''}</span></div>;
           if (c.key === 'strength') {
             const t = r.topicStrength || '';
             if (!t) return <div key={c.key} className={cls} />;
             return (
               <div key={c.key} className={cls}>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded border text-[12px] font-medium ${STRENGTH_TINT[t] || STRENGTH_TINT.Low}`}>{t}</span>
               </div>
             );
           }
@@ -598,11 +606,11 @@ export function StudioListView({
             return (
               <div key={c.key} className={cls}>
                 {fmt && tint ? (
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tint}`}>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[12px] font-medium ${tint}`}>
                     {TYPE_LABEL[fmt] || fmt}
                   </span>
                 ) : fmt ? (
-                  <span className="text-[11px] text-zinc-400 truncate">{fmt}</span>
+                  <span className="text-[12px] text-[var(--ds-dim)] truncate">{fmt}</span>
                 ) : null}
               </div>
             );
@@ -610,14 +618,14 @@ export function StudioListView({
           if (c.key === 'source') {
             const src = r.source || '';
             if (!src) return <div key={c.key} className={cls} />;
-            const srcTint = /call|client/i.test(src) ? 'text-sky-300 bg-sky-500/10 ring-sky-500/25'
-              : /web|research/i.test(src) ? 'text-violet-300 bg-violet-500/10 ring-violet-500/25'
-              : /competitor/i.test(src) ? 'text-amber-300 bg-amber-500/10 ring-amber-500/25'
-              : /curator|lm_/i.test(src) ? 'text-emerald-300 bg-emerald-500/10 ring-emerald-500/25'
-              : 'text-zinc-400 bg-zinc-700/30 ring-zinc-700/40';
+            const srcTint = /call|client/i.test(src) ? 'text-sky-700 bg-sky-50'
+              : /web|research/i.test(src) ? 'text-violet-700 bg-violet-50'
+              : /competitor/i.test(src) ? 'text-amber-700 bg-amber-50'
+              : /curator|lm_/i.test(src) ? 'text-emerald-700 bg-emerald-50'
+              : 'text-slate-500 bg-slate-100';
             return (
               <div key={c.key} className={cls}>
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10.5px] font-medium ring-1 ring-inset truncate ${srcTint}`}>{src}</span>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[12px] font-medium truncate ${srcTint}`}>{src}</span>
               </div>
             );
           }
@@ -642,7 +650,7 @@ export function StudioListView({
                       await onDateChange!(r.id, v || null);
                     }}
                     onBlur={() => setEditingDateId(null)}
-                    className="text-[11px] rounded bg-zinc-900 border border-zinc-700 px-1 py-0.5 text-zinc-100 outline-none focus:border-emerald-500"
+                    className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
                   />
                 </div>
               );
@@ -651,14 +659,14 @@ export function StudioListView({
             return (
               <div
                 key={c.key}
-                className={cls + (canEdit ? ' hover:bg-zinc-800/40 rounded-md px-1.5 -mx-1.5 py-0.5 -my-0.5 cursor-pointer transition-colors' : '')}
+                className={cls + (canEdit ? ' hover:bg-black/[.03] rounded-md px-1.5 -mx-1.5 py-0.5 -my-0.5 cursor-pointer transition-colors' : '')}
                 onClick={canEdit ? (e) => { e.stopPropagation(); setEditingDateId(r.id); } : undefined}
                 title={canEdit ? `Click to reschedule — ${r.date || ''}` : (r.date || undefined)}
               >
                 {smart.text ? (
-                  <span className={`text-[11.5px] tabular-nums whitespace-nowrap font-medium ${smart.tint}`}>{smart.text}</span>
+                  <span className={`text-[12px] tabular-nums whitespace-nowrap font-medium ${smart.tint}`}>{smart.text}</span>
                 ) : canEdit ? (
-                  <span className="text-zinc-600 italic text-[11px]">set date</span>
+                  <span className="text-[var(--ds-faint)] italic text-[12px]">set date</span>
                 ) : null}
               </div>
             );
@@ -678,7 +686,7 @@ export function StudioListView({
               if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
               onBulkAction('delete', [r.id]);
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-zinc-500 bg-zinc-950/70 ring-1 ring-zinc-800/60 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-300 hover:bg-red-950/50 hover:ring-red-500/40 transition-all"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-[var(--ds-faint)] bg-[var(--ds-card)] border border-[var(--ds-line)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -709,18 +717,18 @@ const MediaLightbox: React.FC<{ row: StudioRow; onClose: () => void }> = ({ row,
       onClick={onClose}
     >
       <div
-        className="relative max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden ring-1 ring-zinc-700/60 bg-zinc-950 shadow-2xl"
+        className="relative max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden ring-1 ring-[var(--ds-line)] bg-[var(--ds-card)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-zinc-800/60 bg-zinc-900/40">
-          <span className="text-[11.5px] text-zinc-300 truncate flex-1 font-medium">{row.title}</span>
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--ds-line)] bg-[var(--ds-card)]">
+          <span className="text-[13px] text-[var(--ds-ink)] truncate flex-1 font-medium">{row.title}</span>
           <button
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-200 text-[18px] leading-none px-2 py-0.5 rounded hover:bg-zinc-800/60 transition-colors"
+            className="text-[var(--ds-dim)] hover:text-[var(--ds-ink)] text-[18px] leading-none px-2 py-0.5 rounded hover:bg-black/5 transition-colors"
             title="Close (Esc)"
           >×</button>
         </div>
-        <div className="bg-zinc-950 flex items-center justify-center" style={{ minHeight: 400 }}>
+        <div className="bg-[var(--ds-bg)] flex items-center justify-center" style={{ minHeight: 400 }}>
           {isDrive && driveId ? (
             <iframe
               src={`https://drive.google.com/file/d/${driveId}/preview`}

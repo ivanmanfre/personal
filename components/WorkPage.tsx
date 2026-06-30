@@ -148,7 +148,7 @@ const cases: Case[] = [
 const WorkPage: React.FC = () => {
   useMetadata({
     title: 'Work | Iván Manfredi',
-    description: 'Selected Agent-Ready Ops case studies. AI call auditing, lead magnet systems, compliance automation, content operations, sales follow-up, inventory management, reseller billing.',
+    description: 'Selected case studies. AI call auditing, lead magnet systems, compliance automation, content operations, sales follow-up, inventory management, reseller billing.',
     canonical: 'https://ivanmanfredi.com/work',
   });
 

@@ -62,7 +62,45 @@ const ROUTES = [
   // just enough to give bots/monitors a real 200 response.
   '/dashboard',
   '/dashboard-v2',
+  // Hypertarget content-system scans: prerendered so the clean ivanmanfredi.com/scan/:slug
+  // link returns 200 + per-scan OG meta and unfurls on LinkedIn. Add a slug here when a
+  // hypertarget sample is promoted (low volume, manual). The page still hydrates client-side.
+  '/scan/tk-douglass-9b',
+  '/scan/step-digital',
 ];
+
+// Dynamically add every promoted hypertarget scan (asset_ready / approved / sent) so each
+// generated scan's clean /scan/:slug link returns 200 + per-scan OG and unfurls on LinkedIn —
+// no manual ROUTES edit per prospect. Falls back to the static list if Supabase is unreachable.
+async function fetchScanSlugs() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    console.warn('[prerender] no Supabase env — skipping dynamic scan enumeration');
+    return [];
+  }
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/hypertarget_corpus?stage=in.(asset_ready,approved,sent)&company_slug=not.is.null&select=company_slug`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    if (!res.ok) {
+      console.warn(`[prerender] scan enum HTTP ${res.status} — using static routes only`);
+      return [];
+    }
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.map((r) => r.company_slug).filter(Boolean) : [];
+  } catch (e) {
+    console.warn('[prerender] scan enum failed:', e.message);
+    return [];
+  }
+}
+
+for (const slug of await fetchScanSlugs()) {
+  const r = `/scan/${slug}`;
+  if (!ROUTES.includes(r)) ROUTES.push(r);
+}
+console.log(`[prerender] scan routes:`, ROUTES.filter((r) => r.startsWith('/scan/')).join(', '));
 
 const PORT = 4178;
 const BASE = `http://${HOST}:${PORT}`;
@@ -162,6 +200,16 @@ process.on('SIGTERM', () => shutdown(143));
       });
       // Give framer-motion + lazy chunks a beat to settle
       await page.waitForTimeout(800);
+
+      // Scan routes fetch their row from Supabase before useMetadata() sets the
+      // per-scan OG title/description/image. Wait for that so the prerendered HTML
+      // carries the right share tags (other routes set metadata synchronously).
+      if (route.startsWith('/scan/')) {
+        await page
+          .waitForFunction(() => /^A content system for /.test(document.title), { timeout: 15000 })
+          .catch(() => console.error(`[prerender][${route}] scan OG title never set — check the row exists/complete`));
+        await page.waitForTimeout(400);
+      }
 
       // Strip the SPA-redirect script and module preload hints? No — leave the
       // <script type="module"> entry so the real browser hydrates.

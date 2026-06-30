@@ -13,7 +13,7 @@ const RoadmapPage: React.FC = () => {
     title: roadmap
       ? `${roadmap.title} | Manfredi`
       : 'Roadmap not found | Manfredi',
-    description: roadmap?.subtitle ?? 'Agent-Ready Ops 30-day roadmap.',
+    description: roadmap?.subtitle ?? '30-day AI roadmap.',
     canonical: roadmap
       ? `https://ivanmanfredi.com/scorecard/roadmap/${roadmap.slug}`
       : 'https://ivanmanfredi.com/scorecard',

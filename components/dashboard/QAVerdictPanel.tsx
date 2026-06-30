@@ -66,12 +66,12 @@ function prettyVerdict(v: string, fallback: string): string {
 }
 
 function verdictTone(it: QAIteration): { tone: string; label: string; Icon: React.ComponentType<{ className?: string }> } {
-  if (it.isHalt) return { tone: 'text-red-300 bg-red-500/10 border-red-500/30', label: 'Halted', Icon: AlertTriangle };
+  if (it.isHalt) return { tone: 'text-red-700 bg-red-50 border-red-200', label: 'Halted', Icon: AlertTriangle };
   const v = (it.verdict || '').toUpperCase();
   if (v === 'PASS' || v === 'REWRITE_OK' || (it.status || '').includes('APPROV')) {
-    return { tone: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30', label: prettyVerdict(v, 'Approved'), Icon: CheckCircle2 };
+    return { tone: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: prettyVerdict(v, 'Approved'), Icon: CheckCircle2 };
   }
-  return { tone: 'text-amber-300 bg-amber-500/10 border-amber-500/30', label: prettyVerdict(v, 'Needs revision'), Icon: RefreshCw };
+  return { tone: 'text-amber-700 bg-amber-50 border-amber-200', label: prettyVerdict(v, 'Needs revision'), Icon: RefreshCw };
 }
 
 function relTime(iso: string | null): string {
@@ -109,47 +109,47 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
   const scoreDelta = scores.length >= 2 ? scores[scores.length - 1] - scores[0] : null;
 
   return (
-    <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30 overflow-hidden">
+    <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-card)] overflow-hidden">
       {/* Summary header — single-line latest verdict + iteration count + score trend */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-900 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-black/[.03] transition-colors text-left"
       >
-        <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] border ${finalTone.tone}`}>
+        <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border ${finalTone.tone}`}>
           <FinalIcon className="w-3 h-3" /> {finalTone.label}
         </span>
         {typeof final.score === 'number' && (
-          <span className="text-[11px] text-zinc-400">score <span className="text-zinc-200 font-medium tabular-nums">{final.score}/10</span></span>
+          <span className="text-xs text-[var(--ds-dim)]">score <span className="text-[var(--ds-ink)] font-medium tabular-nums">{final.score}/10</span></span>
         )}
-        <span className="text-[11px] text-zinc-500">
+        <span className="text-xs text-[var(--ds-dim)]">
           · {iterations.length} iteration{iterations.length === 1 ? '' : 's'}
         </span>
         {scoreDelta !== null && scoreDelta !== 0 && (
-          <span className={`text-[11px] tabular-nums ${scoreDelta > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          <span className={`text-xs tabular-nums ${scoreDelta > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
             {scoreDelta > 0 ? '+' : ''}{scoreDelta.toFixed(1)} since first pass
           </span>
         )}
-        <span className="ml-auto text-zinc-500">
+        <span className="ml-auto text-[var(--ds-dim)]">
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </span>
       </button>
 
       {open && (
-        <div className="border-t border-zinc-800/60">
+        <div className="border-t border-[var(--ds-line)]">
           {/* Mini score-over-iterations sparkline (only if 2+ scores) */}
           {scores.length >= 2 && (
-            <div className="px-3 py-2 border-b border-zinc-800/40 flex items-center gap-1.5">
+            <div className="px-3 py-2 border-b border-[var(--ds-line)] flex items-center gap-1.5">
               {iterations.map((it, i) => {
                 const t = verdictTone(it);
                 const Icon = t.Icon;
                 return (
                   <div key={i} className="flex items-center gap-1">
-                    <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] border ${t.tone}`}>
+                    <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs border ${t.tone}`}>
                       <Icon className="w-2.5 h-2.5" />
                       {typeof it.score === 'number' ? `${it.score}/10` : t.label.slice(0, 4)}
                     </span>
                     {i < iterations.length - 1 && (
-                      <span className="text-zinc-700 text-[10px]">→</span>
+                      <span className="text-[var(--ds-dim)] text-xs">→</span>
                     )}
                   </div>
                 );
@@ -157,44 +157,44 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
             </div>
           )}
           {/* Per-iteration rows — compact one-liners with expandable body */}
-          <div className="divide-y divide-zinc-800/30">
+          <div className="divide-y divide-[var(--ds-line)]">
             {iterations.map((it, i) => {
               const t = verdictTone(it);
               const Icon = t.Icon;
               const isExpanded = expandedIdx === i;
               return (
-                <div key={i} className="px-3 py-1 hover:bg-zinc-800/20 transition-colors">
+                <div key={i} className="px-3 py-1 hover:bg-black/[.02] transition-colors">
                   <button
                     onClick={() => setExpandedIdx(isExpanded ? null : i)}
-                    className="w-full flex items-center gap-1.5 text-left text-[11px]"
+                    className="w-full flex items-center gap-1.5 text-left text-xs"
                   >
-                    <span className="text-zinc-600 font-mono w-4 tabular-nums text-[10.5px]">#{i + 1}</span>
+                    <span className="text-[var(--ds-dim)] font-mono w-4 tabular-nums text-xs">#{i + 1}</span>
                     <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium ring-1 ring-inset ${t.tone}`}>
                       <Icon className="w-2.5 h-2.5" /> {t.label}
                     </span>
                     {typeof it.score === 'number' && (
-                      <span className="text-zinc-300 tabular-nums font-medium">{it.score}/10</span>
+                      <span className="text-[var(--ds-ink)] tabular-nums font-medium">{it.score}/10</span>
                     )}
                     {typeof it.issuesCount === 'number' && it.issuesCount > 0 && (
-                      <span className="text-zinc-500">{it.issuesCount}↯</span>
+                      <span className="text-[var(--ds-dim)]">{it.issuesCount}↯</span>
                     )}
                     {it.rewrite && (
-                      <span className="text-emerald-400/80 text-[10.5px]" title="A rewrite was applied">rewrite</span>
+                      <span className="text-emerald-600 text-xs" title="A rewrite was applied">rewrite</span>
                     )}
-                    <span className="text-zinc-700 ml-auto font-mono tabular-nums text-[10.5px]">{relTime(it.ts)}</span>
-                    {isExpanded ? <ChevronUp className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
+                    <span className="text-[var(--ds-dim)] ml-auto font-mono tabular-nums text-xs">{relTime(it.ts)}</span>
+                    {isExpanded ? <ChevronUp className="w-3 h-3 text-[var(--ds-dim)]" /> : <ChevronDown className="w-3 h-3 text-[var(--ds-dim)]" />}
                   </button>
                   {isExpanded && (
-                    <div className="mt-1 ml-5 pl-2 border-l-2 border-zinc-800/60 text-[12px] text-zinc-300 leading-snug max-h-[360px] overflow-y-auto space-y-2">
+                    <div className="mt-1 ml-5 pl-2 border-l-2 border-[var(--ds-line)] text-xs text-[var(--ds-ink)] leading-snug max-h-[360px] overflow-y-auto space-y-2">
                       {it.rewrite && (
-                        <div className="rounded border-l-[3px] border-emerald-500/60 bg-emerald-950/20 pl-2 pr-2 py-1.5 -ml-2">
-                          <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 mb-1">
+                        <div className="rounded border-l-[3px] border-emerald-400 bg-emerald-50 pl-2 pr-2 py-1.5 -ml-2">
+                          <div className="text-xs uppercase tracking-wider text-emerald-700 mb-1">
                             Applied rewrite (what auto-publish shipped)
                           </div>
-                          <div className="whitespace-pre-wrap text-zinc-200 text-[12px] leading-snug">{it.rewrite}</div>
+                          <div className="whitespace-pre-wrap text-[var(--ds-ink)] text-xs leading-snug">{it.rewrite}</div>
                         </div>
                       )}
-                      {renderLightMarkdown(it.body || '(empty)', { textClass: 'text-[12px] text-zinc-300 leading-snug' })}
+                      {renderLightMarkdown(it.body || '(empty)', { textClass: 'text-xs text-[var(--ds-ink)] leading-snug' })}
                     </div>
                   )}
                 </div>

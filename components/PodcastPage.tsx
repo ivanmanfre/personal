@@ -43,13 +43,13 @@ const TOPICS = [
   },
 ];
 
-const PRE_WRITTEN_INTRO = `Iván Manfredi builds AI systems for growing service businesses. He created the Agent-Ready Ops methodology — the four conditions every AI deployment needs before it ships — and shows up to talk about why most AI projects fail at the part that isn't AI. Based in Argentina, working with founders across the US, EU, and UK.`;
+const PRE_WRITTEN_INTRO = `Iván Manfredi builds AI content systems for agencies. He runs a daily LinkedIn content engine on his own feed, and shows up to talk about why most AI projects fail at the part that isn't AI. Based in Argentina, working with founders across the US, EU, and UK.`;
 
 const PodcastPage: React.FC = () => {
   useMetadata({
     title: 'Podcast & speaking | Iván Manfredi',
     description:
-      'Available for podcasts on AI systems, growing service businesses, and the Agent-Ready Ops methodology.',
+      'Available for podcasts on AI content systems, agencies, and the human side of shipping AI.',
     canonical: 'https://ivanmanfredi.com/podcast',
   });
 

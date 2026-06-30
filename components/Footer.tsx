@@ -163,7 +163,7 @@ const Footer: React.FC = () => {
             >
               Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
             </h2>
-            <p style={monoLabel}>Agent-Ready Ops™</p>
+            <p style={monoLabel}>AI content systems for agencies</p>
           </div>
 
           <div className="flex gap-2.5">

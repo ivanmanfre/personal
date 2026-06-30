@@ -1,3 +1,5 @@
+@import './theme/light.css';
+
 /*
  * Dashboard v2 — control board design system
  * Scoped to `.dashboard-v2` root so it never leaks into the public site
@@ -13,15 +15,14 @@
  * Public site sets body { background: #F7F4EF; font-family: 'Source Serif 4' }
  * which leaks into v2 around panel gutters. Force warm-dark + Inter when v2 active.
  */
-body.dashboard-v2-active {
-  /* Subtle radial lift at top-left (behind brand + masthead) so the board reads
-   * as a designed surface, not flat near-black. Cool-neutral charcoal base. */
-  background: radial-gradient(1150px 640px at 15% -10%, #1B1F28 0%, #0E0F12 56%), radial-gradient(125% 135% at 50% -8%, transparent 58%, rgba(0,0,0,0.5) 100%) !important;
-  background-attachment: fixed !important;
+/* NOTE: body.dashboard-v2-active is no longer applied — the active body class
+ * is now dashboard-v2-light (light theme) or has no suffix (dark). These rules
+ * are retargeted to .dashboard-v2-light so font overrides still apply. */
+body.dashboard-v2-light {
   font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif !important;
-  color: #ededf0;
+  -webkit-font-smoothing: antialiased !important;
 }
-body.dashboard-v2-active * {
+body.dashboard-v2-light * {
   /* Inputs and elements that explicitly set font-family will still win;
      this only affects elements that inherit. */
 }
@@ -1020,3 +1021,61 @@ body.dashboard-v2-active * {
  *   panels; rounded-xl and bg-zinc-900/90 appear on nested elements (icon
  *   badges, filter pills, chart cards) making any broad selector unsafe. */
 .dashboard-v2 .dv-content-studio-body .text-emerald-400 { color: var(--d-good-hi); }
+
+/* ── Live activity pill (demo "alive" layer) ─────────────────────────────────
+   Fixed bottom-right; shows the engine's current task + a sound toggle. Light
+   themed via --ds-* tokens (dashboard-v2 is always light). */
+.dashboard-v2 .dv-live {
+  position: fixed; right: 18px; bottom: 18px; z-index: 45;
+  display: inline-flex; align-items: center; gap: 9px;
+  max-width: min(360px, calc(100vw - 36px));
+  padding: 7px 10px 7px 12px;
+  border-radius: 999px;
+  background: var(--ds-card, #fff);
+  border: 1px solid var(--ds-line, #e9e9ee);
+  box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 12px 30px -16px rgba(15,23,42,.28);
+  font-size: 12px; line-height: 1; color: var(--ds-ink, #0f172a);
+  animation: dv-live-in .4s cubic-bezier(.3,.8,.3,1) both;
+}
+@keyframes dv-live-in { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+
+.dashboard-v2 .dv-live-beat {
+  position: relative; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ds-ok, #047857);
+}
+.dashboard-v2 .dv-live-beat::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--ds-ok, #047857);
+  animation: dv-live-ping 2s cubic-bezier(0,.2,.8,1) infinite;
+}
+.dashboard-v2 .dv-live-beat.is-working { background: var(--ds-accent, #4f46e5); }
+.dashboard-v2 .dv-live-beat.is-working::after { background: var(--ds-accent, #4f46e5); animation-duration: 1.1s; }
+@keyframes dv-live-ping { 0% { transform: scale(1); opacity: .55; } 70%,100% { transform: scale(2.6); opacity: 0; } }
+
+.dashboard-v2 .dv-live-task { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.dashboard-v2 .dv-live-spin { color: var(--ds-accent, #4f46e5); animation: dv-live-rot .9s linear infinite; flex: 0 0 auto; }
+@keyframes dv-live-rot { to { transform: rotate(360deg); } }
+.dashboard-v2 .dv-live-text {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 250px; font-weight: 500; color: var(--ds-ink, #0f172a);
+}
+.dashboard-v2 .dv-live-text.dv-live-idle { color: var(--ds-dim, #475569); font-weight: 500; }
+
+.dashboard-v2 .dv-live-sound {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; margin-left: 1px; border-radius: 50%;
+  color: var(--ds-faint, #64748b); background: transparent; border: none; cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.dashboard-v2 .dv-live-sound:hover { background: var(--ds-bg, #f6f7f9); color: var(--ds-ink, #0f172a); }
+.dashboard-v2 .dv-live-sound[aria-pressed="true"] { color: var(--ds-accent, #4f46e5); }
+
+@media (max-width: 768px) {
+  .dashboard-v2 .dv-live { right: 12px; bottom: 12px; max-width: calc(100vw - 24px); }
+  .dashboard-v2 .dv-live-text { max-width: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-v2 .dv-live { animation: none; }
+  .dashboard-v2 .dv-live-beat::after { animation: none; opacity: 0; }
+  .dashboard-v2 .dv-live-spin { animation: none; }
+}

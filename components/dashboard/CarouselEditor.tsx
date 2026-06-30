@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -95,6 +95,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [logCollapsed, setLogCollapsed] = useState(true);
   const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow picking the same file again later
@@ -186,13 +187,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       const embedSrc = `https://drive.google.com/file/d/${driveId}/preview`;
       return (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[11px] text-zinc-500">
-            <span className="text-emerald-500/80">Carousel PDF</span>
-            <a href={firstUrl} target="_blank" rel="noreferrer" className="ml-auto text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1">
+          <div className="flex items-center gap-2 text-xs text-[var(--ds-dim)]">
+            <span className="text-[var(--ds-accent)]">Carousel PDF</span>
+            <a href={firstUrl} target="_blank" rel="noreferrer" className="ml-auto text-[var(--ds-accent)] hover:opacity-75 inline-flex items-center gap-1">
               <ExternalLink className="w-3 h-3" /> Open
             </a>
           </div>
-          <iframe src={embedSrc} className="w-full aspect-square rounded-md border border-zinc-800 bg-zinc-950" title="Carousel PDF preview" />
+          <iframe src={embedSrc} className="w-full aspect-square rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)]" title="Carousel PDF preview" />
         </div>
       );
     }
@@ -214,13 +215,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       return (
         <div className={urls.length === 1 ? '' : 'grid grid-cols-2 gap-2'}>
           {urls.map((url, i) => (
-            <div key={i} className="rounded-md border border-zinc-800 bg-zinc-950 overflow-hidden">
+            <div key={i} className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] overflow-hidden">
               {isVideo(url) ? (
                 <video src={url} className="w-full h-auto" controls preload="metadata" />
               ) : (
                 <img src={toImgSrc(url)} alt={urls.length === 1 ? 'Post image' : `Slide ${i + 1}`} className="w-full h-auto" loading="lazy" />
               )}
-              {urls.length > 1 && <div className="px-1 py-0.5 text-center text-[10px] text-zinc-500">{i + 1}</div>}
+              {urls.length > 1 && <div className="px-1 py-0.5 text-center text-xs text-[var(--ds-dim)]">{i + 1}</div>}
             </div>
           ))}
         </div>
@@ -235,8 +236,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             const titleKey = s?.title !== undefined ? 'title' : s?.headline !== undefined ? 'headline' : 'title';
             const bodyKey  = s?.body !== undefined ? 'body' : s?.content !== undefined ? 'content' : s?.subtext !== undefined ? 'subtext' : 'body';
             return (
-              <div key={i} className="rounded-md border border-zinc-800 bg-zinc-900/50 p-2.5 space-y-1.5">
-                <div className="text-[11px] font-medium text-emerald-500/80">Slide {i + 1}</div>
+              <div key={i} className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-2.5 space-y-1.5">
+                <div className="text-xs font-medium text-[var(--ds-accent)]">Slide {i + 1}</div>
                 <Input
                   value={String(s?.[titleKey] || s?.hook || '')}
                   onChange={(e) => updateSlide(i, titleKey, e.target.value)}
@@ -264,7 +265,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
       ? 'No image yet. Click "Upload" above to attach one.'
       : 'Text-only post. Click "Upload" above to attach a visual.';
     return (
-      <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-sm text-zinc-500 italic">
+      <div className="rounded-md border border-dashed border-[var(--ds-line)] bg-[var(--ds-bg)] p-6 text-center text-sm text-[var(--ds-dim)] italic">
         {empty}
       </div>
     );
@@ -281,7 +282,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           F-pattern entry point"). Now reads as editorial annotation, not
           primary signal. Editable values live in the "Edit fields" Card. */}
       {(pillar || hookType || valueTier || source || draft.topicStrength || draft.renderEngine || draft.sourcePostId) && (
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[length:var(--t-sm)] text-[color:var(--d-paper-dimmer)]">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-[var(--ds-dim)]">
           {pillar      && <span><span className="opacity-60 mr-1">Pillar</span>{humanizeValue(pillar)}</span>}
           {hookType    && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Hook</span>{humanizeValue(hookType)}</span>}
           {valueTier   && <span className="before:content-['·'] before:mr-2 before:opacity-50"><span className="opacity-60 mr-1">Tier</span>{humanizeValue(valueTier)}</span>}
@@ -294,7 +295,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 ? `https://www.linkedin.com/feed/update/${draft.sourcePostId}/`
                 : `https://www.linkedin.com/in/ivanmanfredi/`}
               target="_blank" rel="noreferrer"
-              className="ml-auto inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-mono"
+              className="ml-auto inline-flex items-center gap-1 text-[var(--ds-accent)] hover:opacity-75 font-mono"
               title={draft.sourcePostId}
             >
               <ExternalLink className="w-3 h-3" /> on LinkedIn
@@ -309,7 +310,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             agent rail spans both cols on row 2 (audit rank 10, the :nth-child(3) trick).
             Stops Approve from being 2 viewports below the fold on iPad.
           - lg (≥1024): 3-column ClickUp layout with sticky rail. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_360px] gap-5 md:[&>*:nth-child(3)]:col-span-2 lg:[&>*:nth-child(3)]:col-span-1">
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:[&>*:nth-child(3)]:col-span-2 ${logCollapsed ? 'lg:grid-cols-[1fr_1.3fr_auto] lg:[&>*:nth-child(3)]:col-span-1' : 'lg:grid-cols-[1fr_1.1fr_300px] lg:[&>*:nth-child(3)]:col-span-1'}`}>
         {/* LEFT COLUMN — context first (source), then copy editing */}
         <div className="space-y-4 min-w-0">
           {/* Source briefing on top — the raw material that fed generation. */}
@@ -321,8 +322,8 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           {qa && qa.verdict && !draft.agentLog.some((e) => /QA|HALT/i.test(e.agent)) && (
             <div className={`rounded-md border px-3 py-2 text-xs ${
               qa.verdict === 'PASS'
-                ? 'border-emerald-900/60 bg-emerald-950/30 text-emerald-300'
-                : 'border-amber-900/60 bg-amber-950/30 text-amber-300'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-amber-200 bg-amber-50 text-amber-700'
             }`}>
               QA: {qa.verdict === 'PASS' ? 'Pass' : humanizeValue(qa.verdict)}{qa.failing_slides?.length ? `, slides ${qa.failing_slides.join(', ')}` : ''}{qa.feedback ? ` · ${qa.feedback}` : ''}
             </div>
@@ -332,21 +333,21 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               rule + editorial section header. Was a small 10.5px uppercase
               FieldLabel that read as secondary; the audit's F-pattern fix
               promotes it visually so the eye lands here first. */}
-          <Card className="border-l-[3px] border-l-[var(--d-good)]">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="dv-section-h">LinkedIn caption</h3>
+          <Card className="border-l-[3px] border-l-[var(--ds-accent)]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[13px] font-semibold text-[var(--ds-ink)]">LinkedIn caption</h3>
               <div className="inline-flex items-center gap-2">
-                <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
                   <button
                     onClick={() => setPostMode('edit')}
-                    className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2 py-0.5 text-xs rounded transition-colors ${postMode === 'edit' ? 'bg-white text-[var(--ds-ink)] shadow-sm' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                   >Edit</button>
                   <button
                     onClick={() => setPostMode('preview')}
-                    className={`px-2 py-0.5 text-[11px] rounded transition-colors ${postMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`px-2 py-0.5 text-xs rounded transition-colors ${postMode === 'preview' ? 'bg-white text-[var(--ds-ink)] shadow-sm' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                   >Preview</button>
                 </div>
-                <span className="text-[10.5px] text-[color:var(--d-paper-dimmer)] tabular-nums">
+                <span className="text-xs text-[var(--ds-dim)] tabular-nums">
                   {postBody.length}{postBody.length > 210 && <span className="text-amber-400 ml-1">· past fold</span>}
                 </span>
               </div>
@@ -355,18 +356,23 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               // Mid-generation: the image renders first and the caption lands a
               // few minutes later (brand-newsjack/single_image especially), so a
               // blank surface reads as broken. Show the in-progress state instead.
-              <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-950/40 p-6 text-center text-sm text-zinc-500 italic">
+              <div className="rounded-md border border-dashed border-[var(--ds-line)] bg-[var(--ds-bg)] p-6 text-center text-sm text-[var(--ds-dim)] italic">
                 Writing caption… the image renders first, the copy lands a few minutes later.
               </div>
             ) : postMode === 'edit' ? (
-              <Textarea
-                value={postBody}
-                onChange={(e) => setPostBody(e.target.value)}
-                rows={8}
-                className="text-[length:var(--t-base)] leading-relaxed"
-              />
+              <>
+                <Textarea
+                  value={postBody}
+                  onChange={(e) => setPostBody(e.target.value)}
+                  rows={8}
+                  className="text-[length:var(--t-base)] leading-relaxed"
+                />
+                <div className="mt-1.5 h-0.5 rounded-full bg-[var(--ds-line)] overflow-hidden">
+                  <div className="h-full bg-[var(--ds-accent)] transition-all" style={{ width: `${Math.min(100, postBody.length / 3000 * 100)}%` }} />
+                </div>
+              </>
             ) : (
-              <div className="rounded-md bg-zinc-950/80 border border-zinc-800 p-3">
+              <div className="rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-3">
                 <LinkedInPostPreview
                   text={postBody}
                   mediaUrl={(() => {
@@ -381,19 +387,19 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </Card>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <FieldLabel className="!mb-0">Instagram caption</FieldLabel>
-              <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-[13px] font-semibold text-[var(--ds-ink)]">Instagram caption</h3>
+              <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
                 <button
                   onClick={() => setIgMode('edit')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${igMode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${igMode === 'edit' ? 'bg-white text-[var(--ds-ink)] shadow-sm' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                 >Edit</button>
                 <button
                   onClick={() => setIgMode('preview')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-colors ${igMode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${igMode === 'preview' ? 'bg-white text-[var(--ds-ink)] shadow-sm' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                 >Preview</button>
               </div>
-              <span className="text-[10.5px] text-zinc-600 tabular-nums">{igCaption.length}</span>
+              <span className="text-xs text-[var(--ds-dim)] tabular-nums">{igCaption.length}</span>
             </div>
             {igMode === 'edit' ? (
               <Textarea
@@ -403,7 +409,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 className="text-[13.5px] leading-relaxed"
               />
             ) : (
-              <div className="min-h-[100px] rounded-md bg-zinc-950 border border-zinc-800 px-3 py-2">
+              <div className="min-h-[100px] rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] px-3 py-2">
                 <PostPreview text={igCaption} showFold={false} />
               </div>
             )}
@@ -412,17 +418,18 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           {/* Editable taxonomy + imagery — closes the read-only gap with ClickUp.
               Pillar/Hook/Tier/ImageStyle/ImageDesc/VisualLink were forcing a
               ClickUp roundtrip on the most common review-state edit. */}
-          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+          <div className="rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)]">
             <button
               onClick={() => setFieldsOpen((v) => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 font-medium hover:bg-zinc-900"
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wider text-[var(--ds-dim)] font-medium hover:bg-black/[.03]"
             >
               Edit fields
-              <span className="ml-auto text-zinc-500">{fieldsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
+              <span className="ml-auto text-[var(--ds-dim)]">{fieldsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</span>
             </button>
             {fieldsOpen && (
-            <div className="border-t border-zinc-800/60 p-3">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            <div className="border-t border-[var(--ds-line)] p-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+              <div className="col-span-2 text-[10px] uppercase tracking-widest text-[var(--ds-dim)] font-medium pt-1 pb-0.5">Editorial</div>
               <div>
                 <FieldLabel>Pillar</FieldLabel>
                 <Input value={pillar || ''} onChange={(e) => updateTax('pillar', e.target.value)} placeholder="e.g. Personal POV" />
@@ -439,6 +446,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 <FieldLabel>Source</FieldLabel>
                 <Input value={source || ''} onChange={(e) => updateTax('source', e.target.value)} placeholder="curator / call / manual" />
               </div>
+              <div className="col-span-2 text-[10px] uppercase tracking-widest text-[var(--ds-dim)] font-medium pt-3 pb-0.5">Imagery</div>
               <div className="col-span-2">
                 <FieldLabel>Image style</FieldLabel>
                 <Input value={imageStyle || ''} onChange={(e) => updateTax('image_style', e.target.value)} placeholder="Concept Visual / Photoreal / …" />
@@ -492,14 +500,15 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   key: 'preview',
                   label: 'Preview',
                   render: () => (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      {/* Library / Upload controls above the card */}
                       {draft.type !== 'carousel' && (
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => setLibraryOpen(true)}
                             disabled={!!busy}
-                            className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
                             title="Pick from previously-uploaded images"
                           >
                             {busy === 'apply library image'
@@ -511,7 +520,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
                             disabled={!!busy}
-                            className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-md text-zinc-300 bg-zinc-900/70 ring-1 ring-zinc-800/80 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
                             title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
                           >
                             {busy === 'upload image'
@@ -521,7 +530,25 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                           </button>
                         </div>
                       )}
-                      {renderMedia()}
+                      {/* LinkedIn Preview label */}
+                      <div className="text-xs uppercase tracking-wider text-[var(--ds-dim)] mb-4 text-center font-medium">LinkedIn Preview</div>
+                      {/* Faithful preview via the shared pixel-accurate component (hero) */}
+                      <div className="max-w-[520px] mx-auto">
+                        <LinkedInPostPreview
+                          text={postBody}
+                          mediaUrl={(() => {
+                            const u = (draft.imageUrls && draft.imageUrls[0]) || null;
+                            if (!u) return null;
+                            const m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+                            return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
+                          })()}
+                        />
+                        {(!draft.imageUrls || draft.imageUrls.length === 0) && draft.slides.length > 0 && (
+                          <div className="mt-3 rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-3 text-xs text-[var(--ds-dim)] text-center">
+                            {draft.slides.length} slide{draft.slides.length !== 1 ? 's' : ''} · carousel
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ),
                 },
@@ -541,17 +568,44 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               Column 2 now contains only the Reference Card. */}
         </div>
 
-        {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed) */}
-        <div className="min-w-0">
+        {/* RIGHT RAIL — sticky agent activity (ClickUp-style activity feed), collapsible.
+            When collapsed: auto-width column with just the toggle button (reclaims space).
+            When expanded: 300px column with full feed. */}
+        <div className={logCollapsed ? 'min-w-0 w-auto' : 'min-w-0'}>
           <div className="lg:sticky lg:top-2">
-            <AgentLogFeed
-              entries={draft.agentLog}
-              table="carousel_drafts"
-              rowId={draft.id}
-              onNoteAdded={onChanged}
-              defaultOpen
-              renderMarkdown
-            />
+            {logCollapsed ? (
+              /* Collapsed: slim vertical toggle rail */
+              <button
+                onClick={() => setLogCollapsed(false)}
+                className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-md text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03] transition-colors"
+                title="Show activity log"
+              >
+                <ChevronDown className="w-3 h-3" />
+                <span className="text-[10px] uppercase tracking-widest font-medium [writing-mode:vertical-rl] rotate-180">Activity</span>
+              </button>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-[var(--ds-dim)]">Activity</span>
+                  <button
+                    onClick={() => setLogCollapsed(true)}
+                    className="text-xs text-[var(--ds-dim)] hover:text-[var(--ds-ink)] flex items-center gap-1 transition-colors min-h-[32px] min-w-[32px] justify-end"
+                    title="Hide activity log"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                    Hide
+                  </button>
+                </div>
+                <AgentLogFeed
+                  entries={draft.agentLog}
+                  table="carousel_drafts"
+                  rowId={draft.id}
+                  onNoteAdded={onChanged}
+                  defaultOpen
+                  renderMarkdown
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -563,7 +617,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           scroll position. -mx-4 cancels the Sheet's px-4 so the bar bleeds
           to the sheet edges; the inner content keeps the panel max-width.
           AnimatePresence keyed by status preserves the cross-state morph. */}
-      <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-2.5 bg-[color:var(--d-ink-2)]/95 backdrop-blur border-t border-[color:var(--d-rule-strong)]">
+      <div className="sticky bottom-0 z-10 -mx-4 mt-6 px-4 py-2.5 bg-[var(--ds-card)]/95 backdrop-blur border-t border-[var(--ds-line)]">
         <div className="flex flex-wrap items-center gap-2">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -585,8 +639,11 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   }).eq('id', draft.id);
                   if (upErr) throw upErr;
                   if (draft.type === 'carousel') {
-                    const carouselId = `studio-${(crypto.randomUUID?.() || String(Date.now())).slice(0, 12)}`;
-                    return buildCarousel({ carousel_id: carouselId, topic: draft.topic || draft.title || '', key_points: [] });
+                    // Use the draft's real uuid — NOT a throwaway `studio-<rand>` id.
+                    // The carousel sub-workflow looks this up against carousel_drafts.id
+                    // (a uuid column); a studio- id fails with "invalid input syntax for
+                    // type uuid" and the carousel silently never generates.
+                    return buildCarousel({ carousel_id: draft.id, draft_id: draft.id, topic: draft.topic || draft.title || '', key_points: [] });
                   }
                   return generatePostContent({
                     draft_id: draft.id,
@@ -604,7 +661,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'idea' || s === 'suggestion') {
                   return (
                     <>
-                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)] mr-1">
+                      <span className="text-xs text-[var(--ds-dim)] mr-1">
                         Suggestion · {draft.type === 'carousel' ? '~2 min build' : '~8 min draft'}
                       </span>
                       <Button
@@ -626,9 +683,9 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   return (
                     <>
                       {stuck
-                        ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                        : <Loader2 className="w-4 h-4 animate-spin text-sky-400 shrink-0" />}
-                      <span className={`text-[12px] ${stuck ? 'text-amber-300' : 'text-sky-300'} font-medium`}>
+                        ? <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                        : <Loader2 className="w-4 h-4 animate-spin text-sky-500 shrink-0" />}
+                      <span className={`text-xs ${stuck ? 'text-amber-600' : 'text-sky-600'} font-medium`}>
                         {elapsedMin === null ? 'In progress' : stuck ? `${elapsedMin}m elapsed · likely stalled` : `${elapsedMin}m elapsed`}
                       </span>
                       {stuck && (
@@ -647,12 +704,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'published') {
                   return (
                     <>
-                      <span className="text-[12px] text-emerald-300 font-medium">Live on LinkedIn</span>
+                      <span className="text-xs text-emerald-700 font-medium">Live on LinkedIn</span>
                       {draft.sourcePostId && (
                         <a
                           href={`https://www.linkedin.com/feed/update/${draft.sourcePostId}`}
                           target="_blank" rel="noreferrer"
-                          className="text-[11.5px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
+                          className="text-xs text-emerald-700 hover:opacity-75 inline-flex items-center gap-1"
                         >
                           <ExternalLink className="w-3 h-3" /> open on LinkedIn
                         </a>
@@ -664,7 +721,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'disqualified') {
                   return (
                     <>
-                      <span className="text-[11.5px] text-[color:var(--d-paper-dimmer)]">Disqualified. Restart to send it back through generation.</span>
+                      <span className="text-xs text-[var(--ds-dim)]">Disqualified. Restart to send it back through generation.</span>
                       <Button
                         variant="secondary"
                         disabled={!!busy}
@@ -682,7 +739,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'error') {
                   return (
                     <>
-                      <span className="text-[11.5px] text-red-300">Last generation failed.</span>
+                      <span className="text-xs text-red-600">Last generation failed.</span>
                       <Button
                         variant="primary"
                         disabled={!!busy}
@@ -745,7 +802,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <Button
               variant="ghost"
               disabled={!!busy}
-              className="text-red-400 hover:text-red-300 hover:bg-red-950/40 mr-1"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 mr-1"
               title="Delete this post permanently"
               onClick={() => {
                 if (!confirm(`Delete this ${draft.type || 'post'} permanently? This can't be undone.`)) return;
@@ -784,7 +841,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   onChange={(e) => setVideoStyle(e.target.value)}
                   disabled={!!busy}
                   title="Animated video style"
-                  className="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-[12px] text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  className="bg-[var(--ds-card)] border border-[var(--ds-line)] rounded-md px-2 py-1.5 text-xs text-[var(--ds-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--ds-accent)]"
                 >
                   <option value="serpentine-flow">Serpentine Flow</option>
                   <option value="product-ui-showcase">Product UI</option>
