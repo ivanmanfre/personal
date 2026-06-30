@@ -132,11 +132,12 @@ const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
           loading="eager"
         />
 
-        {/* Arrow buttons — visible on hover; always-on for touch via :focus-visible-within would over-complicate. */}
+        {/* Arrow buttons — always visible (hover-only hid them on trackpad/iPad where
+            there is no hover state). Darken slightly on hover for affordance. */}
         {idx > 0 && (
           <button
             onClick={() => go(-1)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-zinc-200 inline-flex items-center justify-center backdrop-blur transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-zinc-200 inline-flex items-center justify-center backdrop-blur transition"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -145,7 +146,7 @@ const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
         {idx < total - 1 && (
           <button
             onClick={() => go(1)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-zinc-200 inline-flex items-center justify-center backdrop-blur transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-zinc-200 inline-flex items-center justify-center backdrop-blur transition"
             aria-label="Next slide"
           >
             <ChevronRight className="w-4 h-4" />
