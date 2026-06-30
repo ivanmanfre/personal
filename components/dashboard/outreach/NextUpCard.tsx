@@ -7,6 +7,7 @@ import type { OutreachProspect } from '../../../types/dashboard';
 interface Props {
   prospects: OutreachProspect[];
   cappedQueue: { connection_request: number; dm: number; inmail: number };
+  inmailActivity: { sent: number; lastSent: string | null; recent: { name: string; sentAt: string }[] };
   onOpen: (p: OutreachProspect) => void;       // open detail / reply thread
   onArchive: (id: string, reason?: string) => void;
   onResolve: (id: string) => void;             // clear needs_manual_reply
@@ -20,7 +21,7 @@ const daysSince = (s: string | null) => (s ? Math.floor((Date.now() - ts(s)) / D
 // already-loaded `prospects` array — no extra fetch. Ordered by what actually
 // needs Ivan: replies he owes > accepts about to auto-DM > what the sender fires next.
 // Lanes with nothing in them hide themselves.
-export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, onArchive, onResolve }) => {
+export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, inmailActivity, onOpen, onArchive, onResolve }) => {
   const q = useMemo(() => {
     // Only count GENUINE inbound replies: needsManualReply is set on DM-send (not on inbound),
     // so it alone inflates the count. Require an actual reply (reply_count > 0) before a lead
@@ -164,20 +165,28 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, on
           </Lane>
         )}
 
-        {/* Lane 4 — InMail queue (slot always visible; data flows once n8n writes pending rows) */}
+        {/* Lane 4 — InMail: sent audit-InMails (the sender fires these directly,
+            so there's no pending queue; this shows what actually went out). */}
         <Lane
           marker="bg-violet-400"
           icon={<Mail className="w-3.5 h-3.5 text-violet-400" />}
           label="InMail"
-          count={cappedQueue.inmail}
+          count={inmailActivity.sent}
         >
-          {cappedQueue.inmail > 0 ? (
-            <p className="text-[11px] text-zinc-400">{cappedQueue.inmail} InMail{cappedQueue.inmail === 1 ? '' : 's'} queued to send</p>
+          {inmailActivity.sent > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[11px] text-zinc-400">
+                {inmailActivity.sent} sent{cappedQueue.inmail > 0 ? ` · ${cappedQueue.inmail} queued` : ''}
+                {inmailActivity.lastSent && <span className="text-zinc-600"> · last {timeAgo(inmailActivity.lastSent)}</span>}
+              </p>
+              {inmailActivity.recent.length > 0 && (
+                <p className="text-[10px] text-zinc-500 truncate">
+                  recent: {inmailActivity.recent.map((r) => r.name).join(', ')}
+                </p>
+              )}
+            </div>
           ) : (
-            <p className="text-[11px] text-zinc-600">
-              No pending InMails — n8n wf <span className="font-mono">73SU0w4HbG9AVPdG</span> sends directly without queuing.
-              Add a pending row with <span className="font-mono">message_type='inmail'</span> + <span className="font-mono">sent_at=null</span> to surface them here.
-            </p>
+            <p className="text-[11px] text-zinc-600">No InMails sent yet.</p>
           )}
         </Lane>
 

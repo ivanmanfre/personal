@@ -134,7 +134,7 @@ export const OutreachTimingHeatmap: React.FC = () => {
                   return (
                     <div
                       key={block}
-                      className="rounded-md h-12 flex flex-col items-center justify-center border border-zinc-800/40"
+                      className="rounded-md h-9 flex flex-col items-center justify-center border border-zinc-800/40"
                       style={{ background: bg }}
                       title={`${DOW_LABEL[dow]} ${BLOCKS[block].label}${c.sub ? ` · ${c.sub}` : ''}`}
                     >

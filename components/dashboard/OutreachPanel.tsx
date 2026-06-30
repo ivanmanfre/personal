@@ -22,9 +22,7 @@ import { ActivityFeed } from './outreach/ActivityFeed';
 import { PendingInviteGauge } from './outreach/PendingInviteGauge';
 import { AuditClicks } from './outreach/AuditClicks';
 import HypertargetQueue from './outreach/HypertargetQueue';
-import { InboxTab } from './outreach/tabs/InboxTab';
 import { OverviewTab } from './outreach/tabs/OverviewTab';
-import { SourcesTab } from './outreach/tabs/SourcesTab';
 import { EmailTab } from './outreach/tabs/EmailTab';
 import { feedOf, FEED_ORDER, FEED_LABELS, FEED_BADGE } from './outreach/feedHelpers';
 import type { OutreachProspect, OutreachFeed } from '../../types/dashboard';
@@ -34,9 +32,9 @@ import type { OutreachProspect, OutreachFeed } from '../../types/dashboard';
 // Feeds-centric revamp: Overview (all feeds at a glance) is the new default;
 // Sources is the per-source prune/add control center. Health stays folded into
 // Pipeline. Review/Inbox unchanged.
-type OutreachTab = 'overview' | 'hypertarget' | 'sources' | 'pipeline' | 'review' | 'inbox' | 'email';
-const TAB_ORDER: OutreachTab[] = ['overview', 'hypertarget', 'sources', 'pipeline', 'review', 'inbox', 'email'];
-const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', hypertarget: 'Hypertarget', sources: 'Sources', pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', email: 'Email' };
+type OutreachTab = 'overview' | 'hypertarget' | 'pipeline' | 'review' | 'email';
+const TAB_ORDER: OutreachTab[] = ['overview', 'hypertarget', 'pipeline', 'review', 'email'];
+const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', hypertarget: 'Hypertarget', pipeline: 'Pipeline', review: 'Review', email: 'Email' };
 function readTab(): OutreachTab {
   if (typeof window === 'undefined') return 'overview';
   // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
@@ -83,7 +81,7 @@ const OutreachPanel: React.FC = () => {
   const feeds = useOutreachFeeds();
   const {
     prospects, campaigns, stats, loading, messages, engagementLog,
-    recentActivity, rateLimits, cappedQueue, featureFlags, pendingCeiling, stageCounts, actionNeeded,
+    recentActivity, rateLimits, cappedQueue, inmailActivity, featureFlags, pendingCeiling, stageCounts, actionNeeded,
     refresh, fetchMessages, fetchEngagementLog,
     updateStage, updateNotes, updateIcpScore, archiveProspect, skipProspect,
     toggleBlacklist, toggleNeedsReply, toggleCampaign, updateCampaignField,
@@ -969,15 +967,6 @@ const OutreachPanel: React.FC = () => {
     </div>
   );
 
-  const inboxTab = (
-    <InboxTab
-      prospects={prospects}
-      messages={messages}
-      fetchMessages={fetchMessages}
-      onSelectProspect={setSelectedProspect}
-    />
-  );
-
   const healthTab = (
     <div className="space-y-4">
       {!featureFlags.outreach_enabled && (
@@ -1343,25 +1332,12 @@ const OutreachPanel: React.FC = () => {
     <OverviewTab
       prospects={prospects}
       hotDomains={feeds.hotDomains}
-      onPickFeed={(f) => { setFeedFilter(f); changeTab('pipeline'); }}
       onOpenProspect={setSelectedProspect}
       onArchiveProspect={archiveProspect}
       onResolveReply={toggleNeedsReply}
       campaigns={campaigns}
       cappedQueue={cappedQueue}
-    />
-  );
-
-  const sourcesTab = (
-    <SourcesTab
-      harvestSources={feeds.harvestSources}
-      hiringMap={feeds.hiringMap}
-      bands={feeds.bands}
-      recentHotDomains={feeds.recentHotDomains}
-      prospects={prospects}
-      hotDomains={feeds.hotDomains}
-      onSetStatus={feeds.setHarvestStatus}
-      onAddSource={feeds.addHarvestSource}
+      inmailActivity={inmailActivity}
     />
   );
 
@@ -1369,9 +1345,7 @@ const OutreachPanel: React.FC = () => {
 
   const activeTab = tab === 'overview' ? overviewTab
     : tab === 'hypertarget' ? <HypertargetQueue />
-    : tab === 'sources' ? sourcesTab
     : tab === 'review' ? reviewTab
-    : tab === 'inbox' ? inboxTab
     : tab === 'email' ? emailTab
     : (
       <>
@@ -1384,28 +1358,13 @@ const OutreachPanel: React.FC = () => {
     );
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">ICP Outreach</h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => toggleFeatureFlag('outreach_enabled')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              featureFlags.outreach_enabled
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
-                : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
-            }`}
-          >
-            System: {featureFlags.outreach_enabled ? 'ON' : 'OFF'}
-          </button>
-          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
-        </div>
-      </div>
-
-      <SubTabs>
-        {TAB_ORDER.map((t) => (
-          <SubTab
+    <div className="space-y-3">
+      {/* Tab row + inline controls (System toggle + refresh) — no separate header block */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex-1 min-w-0">
+          <SubTabs>
+            {TAB_ORDER.map((t) => (
+              <SubTab
             key={t}
             id={t}
             active={tab}
@@ -1413,9 +1372,22 @@ const OutreachPanel: React.FC = () => {
             badge={t === 'review' && reviewCount > 0 ? { count: reviewCount, severity: 'warn' } : undefined}
           >
             {TAB_LABELS[t]}
-          </SubTab>
-        ))}
-      </SubTabs>
+              </SubTab>
+            ))}
+          </SubTabs>
+        </div>
+        <button
+          onClick={() => toggleFeatureFlag('outreach_enabled')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            featureFlags.outreach_enabled
+              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
+              : 'bg-zinc-600/15 text-zinc-500 border-zinc-600/20'
+          }`}
+        >
+          System: {featureFlags.outreach_enabled ? 'ON' : 'OFF'}
+        </button>
+        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+      </div>
 
       <PanelErrorBoundary label={tab}>
         {activeTab}
