@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { avatarInitials } from './LinkedInPostPreview';
 
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
@@ -90,7 +91,7 @@ const LinkedInCarouselCard: React.FC<Props> = ({
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-zinc-200 shrink-0" aria-hidden />
+          <div className="w-12 h-12 rounded-full bg-[#e3ebf3] text-[#0a66c2] shrink-0 flex items-center justify-center text-[15px] font-semibold" aria-hidden>{avatarInitials(author)}</div>
         )}
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-semibold leading-tight text-[#0a66c2] hover:underline cursor-pointer truncate">{author}</div>
