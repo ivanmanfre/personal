@@ -1,9 +1,10 @@
-// components/dashboard-v2/sections/HypertargetQueue.tsx
+// components/dashboard/outreach/HypertargetQueue.tsx
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 
 const REVIEW_HOOK = 'https://n8n.ivanmanfredi.com/webhook/hypertarget-review';
-const STAGES = ['asset_ready', 'approved', 'sent', 'rejected', 'failed'] as const;
+// Only actionable stages: rejected/failed are excluded to avoid clutter
+const STAGES = ['asset_ready', 'approved', 'sent'] as const;
 
 export default function HypertargetQueue() {
   const [rows, setRows] = useState<any[]>([]);

@@ -4,7 +4,7 @@ import { Users, Radio, Briefcase, Flame, Snowflake, TrendingUp, MessageSquare } 
 import { NextUpCard } from '../NextUpCard';
 import type { OutreachProspect, FeedRollupRow, OutreachFeed, OutreachCampaign } from '../../../../types/dashboard';
 import {
-  FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BADGE, FEED_BAR, FEED_TEXT,
+  FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BAR, FEED_TEXT,
   feedRollup, warmVsCold,
 } from '../feedHelpers';
 import { OutreachTimingHeatmap } from '../OutreachTimingHeatmap';
@@ -28,7 +28,7 @@ interface LightKpiTileProps {
 
 const LightKpiTile: React.FC<LightKpiTileProps> = ({ label, value, icon, accentClass = 'text-indigo-600', subValue }) => (
   <div
-    className="rounded-xl p-4 flex items-start justify-between gap-3 transition-all duration-200 hover:border-indigo-300/60"
+    className="rounded-xl p-3 flex items-start justify-between gap-2 transition-all duration-200 hover:border-indigo-300/60"
     style={{
       background: 'var(--ds-card, #fff)',
       border: '1px solid var(--ds-line, #e9e9ee)',
@@ -37,20 +37,20 @@ const LightKpiTile: React.FC<LightKpiTileProps> = ({ label, value, icon, accentC
   >
     <div className="flex-1 min-w-0">
       <span
-        className="text-[11px] tracking-normal font-medium block mb-2"
+        className="text-[10px] tracking-normal font-medium block mb-1"
         style={{ color: 'var(--ds-dim, #475569)' }}
       >
         {label}
       </span>
       <p
-        className="text-[26px] font-bold tracking-tight leading-none tabular-nums"
+        className="text-[22px] font-bold tracking-tight leading-none tabular-nums"
         style={{ color: 'var(--ds-ink, #0f172a)' }}
       >
         {value}
       </p>
       {subValue && (
         <p
-          className="text-[11px] mt-2"
+          className="text-[10px] mt-1"
           style={{ color: 'var(--ds-faint, #64748b)' }}
         >
           {subValue}
@@ -58,7 +58,7 @@ const LightKpiTile: React.FC<LightKpiTileProps> = ({ label, value, icon, accentC
       )}
     </div>
     <div
-      className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${accentClass}`}
+      className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${accentClass}`}
       style={{ background: 'var(--ds-bg, #f6f7f9)', border: '1px solid var(--ds-line, #e9e9ee)' }}
     >
       {icon}
@@ -69,8 +69,6 @@ const LightKpiTile: React.FC<LightKpiTileProps> = ({ label, value, icon, accentC
 interface Props {
   prospects: OutreachProspect[];
   hotDomains: Set<string>;
-  bandsTotal: number;
-  bandsHot: number;
   campaigns: OutreachCampaign[];
   cappedQueue: { connection_request: number; dm: number; inmail: number };
   onPickFeed?: (feed: OutreachFeed) => void;
@@ -107,8 +105,6 @@ const FUNNEL_STAGES: { key: keyof FeedRollupRow; label: string }[] = [
 export const OverviewTab: React.FC<Props> = ({
   prospects,
   hotDomains,
-  bandsTotal,
-  bandsHot,
   campaigns: _campaigns, // kept in Props for API compat; not used by the overview window
   cappedQueue,
   onPickFeed,
@@ -155,18 +151,10 @@ export const OverviewTab: React.FC<Props> = ({
   const acceptRateDisplay = acceptRateVal != null ? `${acceptRateVal.toFixed(1)}%` : '—';
   const replyRateDisplay = replyRateVal != null ? `${replyRateVal.toFixed(1)}%` : '—';
 
-  // "Conversion by Source" uses all prospects (not windowed) to retain statistical signal
-  const allRows = useMemo(() => feedRollup(prospects, hotDomains), [prospects, hotDomains]);
-  const allByFeed = useMemo(() => {
-    const m = new Map<OutreachFeed, FeedRollupRow>();
-    allRows.forEach((r) => m.set(r.feed, r));
-    return m;
-  }, [allRows]);
-
   return (
     <div className="space-y-4">
       {/* KPI row — light tiles, since CAMPAIGN_START */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         <LightKpiTile
           label="Active Pipeline"
           value={totalActive}
@@ -275,60 +263,7 @@ export const OverviewTab: React.FC<Props> = ({
         onResolve={onResolveReply}
       />
 
-      {/* Change 6: Conversion by Source is LAST */}
-      {/* Uses all prospects (not windowed) for statistical signal */}
-      <div className="panel-surface shadow-sm shadow-black/10 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-zinc-500" />
-          <span className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">Conversion by Source</span>
-          <span className="text-[10px] text-zinc-600">accept (invite→conn) · reply (DM→reply)</span>
-        </div>
-        <div className="space-y-3.5">
-          {FEED_ORDER.map((f) => {
-            const r = allByFeed.get(f)!;
-            const acceptN = r.connectionSent;
-            const replyN = r.dmSent;
-            return (
-              <div key={f} className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${FEED_BADGE[f]}`}>{FEED_LABELS[f]}</span>
-                  <span className="text-[10px] text-zinc-600">{r.total} prospects</span>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <RateBar label="Accept" rate={r.acceptRate} denom={acceptN} num={r.connected} feed={f} signalMin={8} />
-                  <RateBar label="Reply" rate={r.replyRate} denom={replyN} num={r.replied} feed={f} signalMin={8} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-[10px] text-zinc-600 mt-4 leading-relaxed">
-          Harvest &amp; Hiring feeds just launched — most conversion numbers are near-zero until invites land and accepts roll in over the coming days.
-          {bandsTotal > 0 && <> Intent screen has flagged <span className="text-emerald-400">{bandsHot}</span> hot domain{bandsHot === 1 ? '' : 's'} of {bandsTotal} screened.</>}
-        </p>
-      </div>
     </div>
   );
 };
 
-const RateBar: React.FC<{ label: string; rate: number; denom: number; num: number; feed: OutreachFeed; signalMin: number }> = ({ label, rate, denom, num, feed, signalMin }) => {
-  const signal = denom >= signalMin;
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-[10px] text-zinc-500 w-10 shrink-0">{label}</span>
-      <div className="flex-1 h-3.5 bg-zinc-950/70 ring-1 ring-inset ring-zinc-800/60 rounded-full overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.min(rate, 100)}%` }}
-          transition={{ type: 'spring', stiffness: 220, damping: 28 }}
-          className={`h-full rounded-full bg-gradient-to-t ${FEED_BAR[feed]}`}
-          style={{ minWidth: rate > 0 ? 3 : 0 }}
-        />
-      </div>
-      <span className={`text-[10px] font-medium w-10 text-right tabular-nums ${signal ? FEED_TEXT[feed] : 'text-zinc-600'}`}>
-        {signal ? `${rate}%` : '—'}
-      </span>
-      <span className="text-[9px] text-zinc-600 w-10 text-right">{num}/{denom}</span>
-    </div>
-  );
-};

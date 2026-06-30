@@ -16,13 +16,12 @@ import FilterBar from './shared/FilterBar';
 import { timeAgo } from './shared/utils';
 import { OutreachFunnel } from './outreach/OutreachFunnel';
 import { ProspectDetailModal } from './outreach/ProspectDetailModal';
-import { CampaignManager } from './outreach/CampaignManager';
 import { SubTabs, SubTab } from '../dashboard-v2/primitives';
 import PanelErrorBoundary from './shared/PanelErrorBoundary';
 import { ActivityFeed } from './outreach/ActivityFeed';
 import { PendingInviteGauge } from './outreach/PendingInviteGauge';
-import { CampaignPerformance } from './outreach/CampaignPerformance';
 import { AuditClicks } from './outreach/AuditClicks';
+import HypertargetQueue from './outreach/HypertargetQueue';
 import { InboxTab } from './outreach/tabs/InboxTab';
 import { OverviewTab } from './outreach/tabs/OverviewTab';
 import { SourcesTab } from './outreach/tabs/SourcesTab';
@@ -35,9 +34,9 @@ import type { OutreachProspect, OutreachFeed } from '../../types/dashboard';
 // Feeds-centric revamp: Overview (all feeds at a glance) is the new default;
 // Sources is the per-source prune/add control center. Health stays folded into
 // Pipeline. Review/Inbox unchanged.
-type OutreachTab = 'overview' | 'sources' | 'pipeline' | 'review' | 'inbox' | 'email';
-const TAB_ORDER: OutreachTab[] = ['overview', 'sources', 'pipeline', 'review', 'inbox', 'email'];
-const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', sources: 'Sources', pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', email: 'Email' };
+type OutreachTab = 'overview' | 'hypertarget' | 'sources' | 'pipeline' | 'review' | 'inbox' | 'email';
+const TAB_ORDER: OutreachTab[] = ['overview', 'hypertarget', 'sources', 'pipeline', 'review', 'inbox', 'email'];
+const TAB_LABELS: Record<OutreachTab, string> = { overview: 'Overview', hypertarget: 'Hypertarget', sources: 'Sources', pipeline: 'Pipeline', review: 'Review', inbox: 'Inbox', email: 'Email' };
 function readTab(): OutreachTab {
   if (typeof window === 'undefined') return 'overview';
   // NB: param is `otab`, not `tab` — the dashboard Shell has a legacy v1 `?tab=`
@@ -117,7 +116,6 @@ const OutreachPanel: React.FC = () => {
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedProspect, setSelectedProspect] = useState<OutreachProspect | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showCampaigns, setShowCampaigns] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [page, setPage] = useState(1);
 
@@ -210,7 +208,6 @@ const OutreachPanel: React.FC = () => {
       {/* Section 2: Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <StatCard label="Prospects" value={stats.totalProspects} icon={<Users className="w-5 h-5" />} color="text-zinc-300" />
-        <StatCard label="Campaigns" value={stats.activeCampaigns} icon={<Target className="w-5 h-5" />} color="text-zinc-300" />
         <StatCard label="Pending" value={stats.connectionSent} icon={<MessageSquare className="w-5 h-5" />} color="text-zinc-300" />
         {(() => {
           // Reply rate at small N is meaningless (1/1 = 100%). Show the fraction as
@@ -228,9 +225,6 @@ const OutreachPanel: React.FC = () => {
           );
         })()}
       </div>
-
-      {/* Per-campaign performance */}
-      <CampaignPerformance prospects={prospects} />
 
       {/* Audit-link clicks (previously buried in Agency-Ready only) */}
       <AuditClicks />
@@ -647,25 +641,6 @@ const OutreachPanel: React.FC = () => {
         </>
       )}
 
-      {/* Section 8: Campaign Manager */}
-      <div>
-        <button
-          onClick={() => setShowCampaigns(!showCampaigns)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors mb-2"
-        >
-          {showCampaigns ? '▼' : '▶'} Campaigns ({campaigns.length})
-        </button>
-        {showCampaigns && (
-          <CampaignManager
-            campaigns={campaigns}
-            onToggle={toggleCampaign}
-            onUpdate={updateCampaignField}
-            onCreate={createCampaign}
-            onDelete={deleteCampaign}
-            onImport={importProspects}
-          />
-        )}
-      </div>
     </div>
   );
 
@@ -1368,8 +1343,6 @@ const OutreachPanel: React.FC = () => {
     <OverviewTab
       prospects={prospects}
       hotDomains={feeds.hotDomains}
-      bandsTotal={feeds.bands.total}
-      bandsHot={feeds.bands.hot}
       onPickFeed={(f) => { setFeedFilter(f); changeTab('pipeline'); }}
       onOpenProspect={setSelectedProspect}
       onArchiveProspect={archiveProspect}
@@ -1395,6 +1368,7 @@ const OutreachPanel: React.FC = () => {
   const emailTab = <EmailTab prospects={prospects} />;
 
   const activeTab = tab === 'overview' ? overviewTab
+    : tab === 'hypertarget' ? <HypertargetQueue />
     : tab === 'sources' ? sourcesTab
     : tab === 'review' ? reviewTab
     : tab === 'inbox' ? inboxTab
