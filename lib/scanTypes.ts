@@ -53,7 +53,7 @@ export interface ContentSystem {
     title: string;
     posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel' }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
-    lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] };
+    lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number> };
   };
   revenue_math?: string;
   // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.

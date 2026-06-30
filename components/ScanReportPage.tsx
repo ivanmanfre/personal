@@ -15,6 +15,8 @@ import { PROMISES, METRICS, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/
 import SystemFlowDiagram from './SystemFlowDiagram';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
+import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
+import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -2305,7 +2307,7 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
 // In-page preview of the prospect's lead magnet. The LM card in the feed opens this:
 // the real cover next to what's inside (the actual prompts), so it reads as a finished
 // resource without leaving the page. Not a live external link by design.
-function LmPreviewModal({ lm, who, bookUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] }; who: string; bookUrl: string; onClose: () => void }) {
+function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] }; who: string; bookUrl: string; embedUrl?: string | null; onClose: () => void }) {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
   useEffect(() => {
@@ -2324,6 +2326,11 @@ function LmPreviewModal({ lm, who, bookUrl, onClose }: { lm: { title: string; co
         <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(26,26,26,0.06)' }}>
           <XCircle className="w-5 h-5" style={{ color: '#1A1A1A' }} />
         </button>
+        {embedUrl ? (
+          <div className="p-2 sm:p-3">
+            <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} />
+          </div>
+        ) : (
         <div className="grid md:grid-cols-2">
           <div className="p-5 sm:p-6 flex items-center justify-center" style={{ background: '#1A1A1A' }}>
             <img src={lm.cover_url} alt={lm.title} className="w-full h-auto" style={{ borderRadius: CI_R_SM, maxHeight: '64vh', objectFit: 'contain' }} />
@@ -2351,6 +2358,7 @@ function LmPreviewModal({ lm, who, bookUrl, onClose }: { lm: { title: string; co
             <div className="mt-5"><CIMagneticCTA href={bookUrl} label="See the live version" small /></div>
           </div>
         </div>
+        )}
       </motion.div>
     </motion.div>
   );
@@ -2737,7 +2745,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <AnimatePresence>
         {lmOpen && cs.sample_output?.lm && (
-          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} onClose={() => setLmOpen(false)} />
+          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={buildAssessmentEmbedUrl(cs.sample_output.lm, { prospectId: scan?.company_slug || companyName })} onClose={() => setLmOpen(false)} />
         )}
       </AnimatePresence>
     </div>
