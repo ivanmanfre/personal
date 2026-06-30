@@ -12,7 +12,11 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Queue deploys instead of cancelling. The prerender build is slow (installs
+  # Chromium), and automation pushes to main frequently — with cancel-in-progress
+  # every new push killed the in-flight deploy, so builds rarely completed and
+  # production stayed frozen on a stale bundle. Queueing lets the latest main land.
+  cancel-in-progress: false
 
 jobs:
   build:
