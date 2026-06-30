@@ -4,6 +4,9 @@ const RESOURCES_BASE = 'https://resources.ivanmanfredi.com';
 export interface AssessmentEmbedLm {
   slug?: string;
   seed_answers?: Record<string, number>;
+  /** The lead's brand color (hex). Threaded into the embed so the scorecard renders in
+   *  the prospect's brand, matching their cover + post image. Empty/absent -> neutral. */
+  accent_hex?: string;
 }
 
 export interface AssessmentEmbedOpts {
@@ -33,5 +36,8 @@ export function buildAssessmentEmbedUrl(
   params.set('seed', encodeSeed(seed));
   params.set('src', opts?.src ?? 'scan_embed');
   if (opts?.prospectId) params.set('pid', opts.prospectId);
+  // The lead's brand color rides into the embed so the live scorecard matches their cover.
+  const accent = (lm.accent_hex || '').replace(/[^0-9a-fA-F]/g, '');
+  if (accent) params.set('accent', accent);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }
