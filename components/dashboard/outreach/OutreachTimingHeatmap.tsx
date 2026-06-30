@@ -98,8 +98,8 @@ export const OutreachTimingHeatmap: React.FC = () => {
               onClick={() => setMetric(m.key)}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
                 metric === m.key
-                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                  : 'bg-zinc-900/40 border-zinc-800/60 text-zinc-500 hover:text-zinc-300'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                  : 'bg-white border-[var(--ds-line,#e9e9ee)] text-slate-500 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
               {m.label}
@@ -130,15 +130,15 @@ export const OutreachTimingHeatmap: React.FC = () => {
                   const has = c.value != null;
                   const bg = has
                     ? `rgba(34, 197, 94, ${(0.12 + c.intensity * 0.78).toFixed(3)})`
-                    : 'rgba(24, 24, 27, 0.45)';
+                    : 'rgba(148, 163, 184, 0.12)';
                   return (
                     <div
                       key={block}
-                      className="rounded-md h-9 flex flex-col items-center justify-center border border-zinc-800/40"
+                      className="rounded-md h-9 flex flex-col items-center justify-center border border-black/5"
                       style={{ background: bg }}
                       title={`${DOW_LABEL[dow]} ${BLOCKS[block].label}${c.sub ? ` · ${c.sub}` : ''}`}
                     >
-                      <span className={`text-[12px] font-bold tabular-nums leading-none ${has ? (c.intensity > 0.5 ? 'text-white' : 'text-emerald-200') : 'text-zinc-600'}`}>
+                      <span className={`text-[12px] font-bold tabular-nums leading-none ${has ? (c.intensity > 0.6 ? 'text-white' : 'text-emerald-900') : 'text-slate-400'}`}>
                         {c.label}
                       </span>
                       {c.sub && <span className="text-[9px] text-zinc-500 mt-0.5 leading-none">{c.sub}</span>}

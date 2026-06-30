@@ -29,6 +29,8 @@ export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, inmailActi
     const repliesWaiting = prospects
       .filter((p) =>
         (p.replyCount ?? 0) > 0 &&
+        // Only the last 7 days — older unanswered replies are stale, not actionable.
+        Date.now() - ts(p.lastReplyAt) <= 7 * DAY &&
         (p.needsManualReply ||
           (p.stage === 'replied' && ts(p.lastReplyAt) > ts(p.lastDmSentAt)))
       )

@@ -116,10 +116,12 @@ export const OverviewTab: React.FC<Props> = ({
   const acceptRate = totalConnSent > 0 ? `${((totalAccepted / totalConnSent) * 100).toFixed(0)}%` : '—';
   const replyRate = totalDmSent > 0 ? `${((totalReplied / totalDmSent) * 100).toFixed(0)}%` : '—';
 
-  // Genuine replies owed a response — same rule NextUpCard uses (replyCount>0).
+  // Genuine replies owed a response, last 7 days only — same rule NextUpCard uses
+  // (replyCount>0 + recency window; older unanswered replies are stale, not actionable).
   const repliesWaiting = useMemo(
     () => prospects.filter((p) =>
       (p.replyCount ?? 0) > 0 &&
+      Date.now() - ts(p.lastReplyAt) <= 7 * 86_400_000 &&
       (p.needsManualReply || (p.stage === 'replied' && ts(p.lastReplyAt) > ts(p.lastDmSentAt))),
     ).length,
     [prospects],
