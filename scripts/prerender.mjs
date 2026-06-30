@@ -66,6 +66,7 @@ const ROUTES = [
   // link returns 200 + per-scan OG meta and unfurls on LinkedIn. Add a slug here when a
   // hypertarget sample is promoted (low volume, manual). The page still hydrates client-side.
   '/scan/tk-douglass-9b',
+  '/scan/step-digital',
 ];
 
 // Dynamically add every promoted hypertarget scan (asset_ready / approved / sent) so each
