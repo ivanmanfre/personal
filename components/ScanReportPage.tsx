@@ -1882,7 +1882,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</Link>
+          <Link to="/" aria-label="Iván Manfredi · Content System" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Call Intelligence · {companyName}</span>
           <BookButton label="Book a call" small />
         </div>
@@ -2240,7 +2240,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
                     <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 5px', flexShrink: 0 }}>{it.format}</span>
                   </div>
                   <p style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '12.5px', lineHeight: 1.4, color: '#3D3D3B' }}>{it.text}</p>
-                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', height: 62, objectFit: 'cover', borderRadius: 6, border: `1px solid ${hairline}` }} />}
+                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center', borderRadius: 6, border: `1px solid ${hairline}`, background: '#fff' }} />}
                 </motion.div>
               ))}
             </div>
@@ -2546,7 +2546,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</Link>
+          <Link to="/" aria-label="Iván Manfredi · Content System" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Content System · {founderFull}</span>
           <BookButton label="Book a look" small />
         </div>
@@ -2710,11 +2710,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       {/* FOUNDER NOTE */}
       <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="flex items-start gap-5">
-          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 16, flexShrink: 0 }} />
+        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
+          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} className="w-28 h-28 sm:w-36 sm:h-36" style={{ objectFit: 'cover', borderRadius: 22, flexShrink: 0, boxShadow: CI_SHADOW_LG }} />
           <div>
-            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 3vw, 2.1rem)', lineHeight: 1.15, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I build <Italic>content engines that run themselves.</Italic></h2>
-            <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>I've built 100+ AI systems for agencies and service businesses, and I run my own LinkedIn on the same engine I'd install for you. I'll train yours on your voice and your real work, then show you a week of drafts before you commit to anything.</p>
+            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I build <Italic>content engines that run themselves.</Italic></h2>
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>I've built 100+ AI systems for agencies and service businesses, and I run my own LinkedIn on the same engine I'd install for you. I'll train yours on your voice and your real work, then show you a week of drafts before you commit to anything.</p>
             <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · AI content systems for agencies</p>
           </div>
         </div>

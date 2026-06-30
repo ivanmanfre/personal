@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
+/** First letters of the first two words, for the no-photo avatar fallback. */
+export function avatarInitials(name?: string): string {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '·';
+  return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+}
+
 /**
  * Pixel-accurate LinkedIn feed post preview. Renders the actual LinkedIn UI
  * around the caption text — profile header, "see more" fold, reaction strip,
@@ -108,7 +115,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-zinc-200 shrink-0" aria-hidden />
+            <div className="w-9 h-9 rounded-full bg-[#e3ebf3] text-[#0a66c2] shrink-0 flex items-center justify-center text-[12px] font-semibold" aria-hidden>{avatarInitials(author)}</div>
           )}
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold leading-tight text-[#0a66c2] truncate">{author}</div>
@@ -159,7 +166,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
           />
         ) : (
-          <div className="w-12 h-12 rounded-full bg-zinc-200 shrink-0" aria-hidden />
+          <div className="w-12 h-12 rounded-full bg-[#e3ebf3] text-[#0a66c2] shrink-0 flex items-center justify-center text-[15px] font-semibold" aria-hidden>{avatarInitials(author)}</div>
         )}
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-semibold leading-tight text-[#0a66c2] hover:underline cursor-pointer truncate">{author}</div>
