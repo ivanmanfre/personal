@@ -14,8 +14,9 @@ const UpworkPanel = lazy(() => import('../../dashboard/UpworkPanel'));
 const MeetingsPanel = lazy(() => import('../../dashboard/MeetingsPanel'));
 const AgentReadyPanel = lazy(() => import('../../dashboard/AgentReadyPanel'));
 const CrmPanel = lazy(() => import('../../dashboard/crm/CrmPanel'));
+const HypertargetQueue = lazy(() => import('./HypertargetQueue'));
 
-type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready';
+type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready' | 'hypertarget';
 
 const SUB_LABELS: Record<SubKey, string> = {
   crm: 'CRM',
@@ -25,9 +26,10 @@ const SUB_LABELS: Record<SubKey, string> = {
   upwork: 'Upwork',
   meetings: 'Meetings',
   agentready: 'Agent-Ready',
+  hypertarget: 'Hypertarget',
 };
 
-const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready'];
+const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready', 'hypertarget'];
 
 export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolean } {
   if (raw && (SUB_ORDER as string[]).includes(raw)) return { sub: raw as SubKey, corrected: false };
@@ -36,7 +38,11 @@ export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolea
 
 function getInitialSub(): SubKey {
   if (typeof window === 'undefined') return 'crm';
-  const { sub, corrected } = resolveSub(new URLSearchParams(window.location.search).get('sub'));
+  const params = new URLSearchParams(window.location.search);
+  // Support both ?sub=hypertarget (direct tab click) and ?otab=hypertarget (deeplink from bell)
+  const otab = params.get('otab');
+  if (otab === 'hypertarget') return 'hypertarget';
+  const { sub, corrected } = resolveSub(params.get('sub'));
   if (corrected) syncSubToUrl(sub); // rewrite stale ?sub=posts to ?sub=outreach
   return sub;
 }
@@ -60,13 +66,14 @@ export function ReachPipeline() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'crm':         return <CrmPanel />;
-      case 'outreach':    return <OutreachPanel />;
-      case 'leads':       return <LeadsPanel />;
-      case 'competitors': return <CompetitorIntelPanel />;
-      case 'upwork':      return <UpworkPanel />;
-      case 'meetings':    return <MeetingsPanel />;
-      case 'agentready':  return <AgentReadyPanel />;
+      case 'crm':          return <CrmPanel />;
+      case 'outreach':     return <OutreachPanel />;
+      case 'leads':        return <LeadsPanel />;
+      case 'competitors':  return <CompetitorIntelPanel />;
+      case 'upwork':       return <UpworkPanel />;
+      case 'meetings':     return <MeetingsPanel />;
+      case 'agentready':   return <AgentReadyPanel />;
+      case 'hypertarget':  return <HypertargetQueue />;
     }
   };
 
