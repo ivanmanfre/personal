@@ -24,6 +24,9 @@ export interface LeadMagnetDraft {
   notes: string | null;
   source: string | null;
   description: string | null;
+  /** ISO timestamp of the most-recent posted promo. Populated if available;
+   *  undefined/null suppresses the recency warning in the Repost confirm. */
+  lastPostedAt?: string | null;
 }
 
 // Canonical LM pipeline has 9 stages. Legacy/duplicate DB values are folded

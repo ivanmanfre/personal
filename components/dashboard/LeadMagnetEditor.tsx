@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2, CalendarClock } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
-import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft } from '../../lib/studioActions';
+import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft, repostLeadMagnet } from '../../lib/studioActions';
 import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
+import { daysSinceLastPosted } from '../../lib/repostRecency';
 import { SchedulePicker } from './SchedulePicker';
 import { versionedAssetUrl } from '../../lib/driveThumb';
 import { supabase } from '../../lib/supabase';
@@ -77,6 +78,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // time you pick — or rescheduled if already queued. Mirrors the carousel editor.
   const canSchedule = draft.status === 'approved' || draft.status === 'scheduled';
   const isScheduled = draft.status === 'scheduled';
+  const canRepost = draft.status === 'published';
   const dirty = postBody !== (draft.postBody || '')
     || emailCopy !== (draft.emailCopy || '')
     || resourceHtml !== (draft.resourceHtml || '')
@@ -329,6 +331,22 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   {isScheduled ? (when ? 'Update' : 'Reschedule · auto-slot') : (when ? 'Schedule' : 'Schedule · auto-slot')}
                 </Button>
               </>
+            )}
+            {canRepost && (
+              <Button
+                variant="primary"
+                disabled={!!busy}
+                onClick={() => {
+                  const days = daysSinceLastPosted(draft.lastPostedAt ?? null, new Date().toISOString());
+                  const warn = days !== null && days < 7
+                    ? `\n\nHeads up: you last posted this ${days} day${days === 1 ? '' : 's'} ago.`
+                    : '';
+                  if (!window.confirm(`Generate a fresh promo for this lead magnet and queue it for the next slot?${warn}`)) return;
+                  run('repost', () => repostLeadMagnet(draft.id), 'Repost queued — fresh promo generating');
+                }}>
+                {busy === 'repost' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Repost
+              </Button>
             )}
           </div>
 
