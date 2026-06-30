@@ -22,11 +22,14 @@ const daysSince = (s: string | null) => (s ? Math.floor((Date.now() - ts(s)) / D
 // Lanes with nothing in them hide themselves.
 export const NextUpCard: React.FC<Props> = ({ prospects, cappedQueue, onOpen, onArchive, onResolve }) => {
   const q = useMemo(() => {
-    // Change 3 fix: catch both flag-set and stage='replied' with fresh reply timestamp
+    // Only count GENUINE inbound replies: needsManualReply is set on DM-send (not on inbound),
+    // so it alone inflates the count. Require an actual reply (reply_count > 0) before a lead
+    // counts as "owed a response".
     const repliesWaiting = prospects
       .filter((p) =>
-        p.needsManualReply ||
-        (p.stage === 'replied' && ts(p.lastReplyAt) > ts(p.lastDmSentAt))
+        (p.replyCount ?? 0) > 0 &&
+        (p.needsManualReply ||
+          (p.stage === 'replied' && ts(p.lastReplyAt) > ts(p.lastDmSentAt)))
       )
       .sort((a, b) => ts(b.lastReplyAt) - ts(a.lastReplyAt)); // freshest reply first
 
