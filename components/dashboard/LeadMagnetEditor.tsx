@@ -335,23 +335,23 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             )}
             {canRepost && (
               <Button
-                variant="primary"
+                variant="secondary"
                 disabled={!!busy}
                 onClick={() => {
                   if (isRegen) {
-                    if (!window.confirm('Regenerate a different angle for this lead magnet? This replaces the currently queued repost.')) return;
-                    run('repost', () => repostLeadMagnet(draft.id), 'Regenerating — new angle queuing');
+                    if (!window.confirm('Repost this lead magnet with a fresh angle? This replaces the currently queued repost.')) return;
+                    run('repost', () => repostLeadMagnet(draft.id), 'Reposting with a new angle...');
                   } else {
                     const days = daysSinceLastPosted(draft.lastPostedAt ?? null, new Date().toISOString());
                     const warn = days !== null && days < 7
                       ? `\n\nHeads up: you last posted this ${days} day${days === 1 ? '' : 's'} ago.`
                       : '';
                     if (!window.confirm(`Generate a fresh promo for this lead magnet and queue it for the next slot?${warn}`)) return;
-                    run('repost', () => repostLeadMagnet(draft.id), 'Repost queued — fresh promo generating');
+                    run('repost', () => repostLeadMagnet(draft.id), 'Repost queued, fresh promo generating');
                   }
                 }}>
                 {busy === 'repost' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {isRegen ? 'Regenerate angle' : 'Repost'}
+                {isRegen ? 'Repost again' : 'Repost'}
               </Button>
             )}
           </div>
