@@ -291,12 +291,16 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
       setOpenId(target);
       initialOpenRef.current = null;
       initialRestoredRef.current = true;
-    } else if (drafts.length > 0) {
-      // Drafts loaded but the deeplink doesn't match — give up.
+    } else if (!loading) {
+      // Content library finished loading and the deeplink target still isn't
+      // present — give up. Previously this gave up as soon as `drafts` was
+      // non-empty, which fired while `ideas` had loaded but `realDrafts`
+      // (carousels/posts) had not — so a ?open=<carousel-id> deeplink was
+      // dropped before its row ever arrived. Wait for the real load to finish.
       initialOpenRef.current = null;
       initialRestoredRef.current = true;
     }
-  }, [drafts]);
+  }, [drafts, loading]);
 
   const buttonLabel = creating
     ? (type === 'carousel' ? 'Building carousel…' : 'Firing…')
