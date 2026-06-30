@@ -63,33 +63,35 @@ interface Props {
 
 // Posts → emerald family. Tone drives intensity; amber for review, sky for
 // generating, red for error, muted for idea/cancelled/disqualified.
+// Light theme: solid tinted chips (-50 bg, -200 ring, -700 text) so they read
+// as clean colored pills on white, with AA-readable dark text. Tone drives hue;
+// errors stay red regardless of kind.
 const TONE_COLOR_POST: Record<CalendarTone, string> = {
-  idea:         'bg-zinc-500/15 ring-zinc-500/30 text-zinc-300',
-  generating:   'bg-sky-500/15 ring-sky-500/30 text-sky-200',
-  review:       'bg-amber-500/15 ring-amber-500/30 text-amber-200',
-  approved:     'bg-emerald-500/15 ring-emerald-500/30 text-emerald-200',
-  scheduled:    'bg-emerald-500/20 ring-emerald-500/40 text-emerald-200',
-  published:    'bg-emerald-500/30 ring-emerald-500/50 text-emerald-100',
-  disqualified: 'bg-zinc-500/10 ring-zinc-500/20 text-zinc-500 opacity-60',
-  error:        'bg-red-500/15 ring-red-500/30 text-red-200',
-  failed:       'bg-red-500/15 ring-red-500/30 text-red-200',
-  cancelled:    'bg-zinc-500/10 ring-zinc-500/20 text-zinc-500 opacity-60',
+  idea:         'bg-zinc-100 ring-zinc-200 text-zinc-700',
+  generating:   'bg-sky-50 ring-sky-200 text-sky-700',
+  review:       'bg-amber-50 ring-amber-200 text-amber-800',
+  approved:     'bg-emerald-50 ring-emerald-200 text-emerald-700',
+  scheduled:    'bg-emerald-50 ring-emerald-300 text-emerald-800',
+  published:    'bg-emerald-100 ring-emerald-300 text-emerald-800',
+  disqualified: 'bg-zinc-100 ring-zinc-200 text-zinc-500 opacity-70',
+  error:        'bg-red-50 ring-red-200 text-red-700',
+  failed:       'bg-red-50 ring-red-200 text-red-700',
+  cancelled:    'bg-zinc-100 ring-zinc-200 text-zinc-500 opacity-70',
 };
 
 // Lead magnets → violet family so they read as a different color than posts at a
-// glance. Tone still drives intensity; errors stay red (errors should always
-// read as red regardless of kind).
+// glance. Errors stay red.
 const TONE_COLOR_LM: Record<CalendarTone, string> = {
-  idea:         'bg-violet-500/12 ring-violet-500/25 text-violet-300',
-  generating:   'bg-violet-500/18 ring-violet-500/35 text-violet-200',
-  review:       'bg-violet-500/20 ring-violet-500/40 text-violet-100',
-  approved:     'bg-violet-500/22 ring-violet-500/42 text-violet-100',
-  scheduled:    'bg-violet-500/28 ring-violet-500/48 text-violet-100',
-  published:    'bg-violet-500/38 ring-violet-500/55 text-violet-50',
-  disqualified: 'bg-violet-500/10 ring-violet-500/20 text-violet-400 opacity-60',
-  error:        'bg-red-500/15 ring-red-500/30 text-red-200',
-  failed:       'bg-red-500/15 ring-red-500/30 text-red-200',
-  cancelled:    'bg-violet-500/10 ring-violet-500/20 text-violet-400 opacity-60',
+  idea:         'bg-violet-50 ring-violet-200 text-violet-700',
+  generating:   'bg-violet-50 ring-violet-200 text-violet-700',
+  review:       'bg-violet-50 ring-violet-300 text-violet-800',
+  approved:     'bg-violet-50 ring-violet-300 text-violet-800',
+  scheduled:    'bg-violet-100 ring-violet-300 text-violet-800',
+  published:    'bg-violet-100 ring-violet-400 text-violet-900',
+  disqualified: 'bg-violet-50 ring-violet-200 text-violet-500 opacity-70',
+  error:        'bg-red-50 ring-red-200 text-red-700',
+  failed:       'bg-red-50 ring-red-200 text-red-700',
+  cancelled:    'bg-violet-50 ring-violet-200 text-violet-500 opacity-70',
 };
 
 const TONE_LABEL: Record<CalendarTone, string> = {
@@ -219,15 +221,15 @@ function DayCell({
   return (
     <div
       ref={setNodeRef}
-      className={`relative min-h-[96px] border border-zinc-800/60 p-1.5 flex flex-col gap-1 transition-colors ${
-        inMonth ? 'bg-zinc-950/40' : 'bg-zinc-950/10 opacity-60'
-      } ${isToday ? 'ring-1 ring-inset ring-emerald-400/40' : ''} ${isOver ? 'ring-1 ring-inset ring-emerald-400/60 bg-emerald-950/20' : ''}`}
+      className={`relative min-h-[96px] border border-[var(--ds-line)] p-1.5 flex flex-col gap-1 transition-colors ${
+        inMonth ? 'bg-[var(--ds-card)]' : 'bg-[var(--ds-bg)]'
+      } ${isToday ? 'ring-1 ring-inset ring-emerald-400' : ''} ${isOver ? 'ring-1 ring-inset ring-emerald-400 bg-emerald-50' : ''}`}
     >
       <div className="flex items-center justify-between text-[10.5px]">
-        <span className={`tabular-nums ${isToday ? 'text-emerald-300 font-semibold' : inMonth ? 'text-zinc-400' : 'text-zinc-600'}`}>
+        <span className={`tabular-nums ${isToday ? 'text-emerald-700 font-semibold' : inMonth ? 'text-[var(--ds-dim)]' : 'text-[var(--ds-faintest)]'}`}>
           {dayNum}
         </span>
-        {isToday && <span className="text-[9px] uppercase tracking-wider text-emerald-400/70">today</span>}
+        {isToday && <span className="text-[9px] uppercase tracking-wider text-emerald-600">today</span>}
       </div>
       <div className="flex flex-col gap-0.5">
         {visible.map((it) => (
@@ -313,11 +315,11 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
         {/* Legend — color + glyph distinguish posts from lead magnets */}
         <span className="hidden md:inline-flex items-center gap-3 text-[10.5px] text-zinc-500 ml-3">
           <span className="inline-flex items-center gap-1">
-            <span className="w-2 h-2 rounded-sm bg-emerald-500/40 ring-1 ring-inset ring-emerald-500/50" />
+            <span className="w-2 h-2 rounded-sm bg-emerald-500 ring-1 ring-inset ring-emerald-600/40" />
             <FileText className="w-2.5 h-2.5" /> Post
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="w-2 h-2 rounded-sm bg-violet-500/40 ring-1 ring-inset ring-violet-500/50" />
+            <span className="w-2 h-2 rounded-sm bg-violet-500 ring-1 ring-inset ring-violet-600/40" />
             <Magnet className="w-2.5 h-2.5" /> Lead magnet
           </span>
           <span className="text-zinc-600">· times in your local time{tzLabel ? ` (${tzLabel})` : ''}</span>
@@ -325,26 +327,26 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
         <div className="ml-auto inline-flex items-center gap-1">
           <button
             onClick={() => addMonth(-1)}
-            className="p-1.5 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-zinc-100"
+            className="p-1.5 rounded hover:bg-[var(--ds-bg)] text-[var(--ds-dim)] hover:text-[var(--ds-ink)]"
             title="Previous month" aria-label="Previous month"
           ><ChevronLeft className="w-4 h-4" /></button>
           <button
             onClick={goToday}
-            className="px-2 py-1 text-[11.5px] rounded hover:bg-zinc-800/60 text-zinc-300"
+            className="px-2 py-1 text-[11.5px] rounded hover:bg-[var(--ds-bg)] text-[var(--ds-dim)]"
           >Today</button>
           <button
             onClick={() => addMonth(1)}
-            className="p-1.5 rounded hover:bg-zinc-800/60 text-zinc-400 hover:text-zinc-100"
+            className="p-1.5 rounded hover:bg-[var(--ds-bg)] text-[var(--ds-dim)] hover:text-[var(--ds-ink)]"
             title="Next month" aria-label="Next month"
           ><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div className="rounded-md border border-zinc-800/80 overflow-hidden">
-          <div className="grid grid-cols-7 bg-zinc-900/60 border-b border-zinc-800/80">
+        <div className="rounded-md border border-[var(--ds-line)] overflow-hidden">
+          <div className="grid grid-cols-7 bg-[#eef1f6] border-b border-[var(--ds-line)]">
             {DAY_LABELS.map((d) => (
-              <div key={d} className="px-2 py-1.5 text-[10.5px] uppercase tracking-wider text-zinc-500 font-medium border-r border-zinc-800/60 last:border-r-0">
+              <div key={d} className="px-2 py-1.5 text-[10.5px] uppercase tracking-wider text-[var(--ds-dim)] font-semibold border-r border-[var(--ds-line)] last:border-r-0">
                 {d}
               </div>
             ))}

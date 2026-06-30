@@ -477,6 +477,12 @@ body.dashboard-v2-light .dashboard-v2 .text-zinc-600 { color: var(--ds-dim) !imp
 /* Hover states in v1 panels */
 body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800:hover,
 body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-700:hover { background-color: #f1f1f5 !important; }
+/* Darker hover variants (incl. opacity forms) used by unconverted v1 panels —
+   without these, hovering a button flips it to near-black on the light theme. */
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-900:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-950:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-900\/60:hover,
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800\/60:hover { background-color: var(--ds-bg) !important; }
 /* Inline dark bg variants used in ClientsPanel */
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/20 { background-color: rgba(241,241,245,0.6) !important; }
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/30 { background-color: rgba(241,241,245,0.7) !important; }
