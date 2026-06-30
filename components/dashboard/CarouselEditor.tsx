@@ -543,6 +543,14 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                             return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800` : u;
                           })()}
                         />
+                        {/* Swipeable all-slides reviewer for multi-image carousels. The
+                            LinkedInPostPreview above shows only the cover (slide 1); this
+                            lets you swipe every rendered slide. renderMedia() was defined
+                            but never called, so this branch — and the SwipeableCarousel it
+                            returns — was dead-code-eliminated from the build entirely. */}
+                        {draft.type === 'carousel' && (draft.imageUrls?.length || 0) > 1 && (
+                          <div className="mt-4">{renderMedia()}</div>
+                        )}
                         {(!draft.imageUrls || draft.imageUrls.length === 0) && draft.slides.length > 0 && (
                           <div className="mt-3 rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] p-3 text-xs text-[var(--ds-dim)] text-center">
                             {draft.slides.length} slide{draft.slides.length !== 1 ? 's' : ''} · carousel
