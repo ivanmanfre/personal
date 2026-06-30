@@ -1371,7 +1371,7 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
       {/* expanding sage rule across top */}
       <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.22fr_0.78fr] lg:gap-12 lg:items-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:items-center">
         <div>
           {/* status byline */}
           <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
@@ -2160,6 +2160,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
   const fhead = founder?.headline || '';
   const lm = cs.sample_output?.lm;
   const clamp2: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
+  const clamp3: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
   type DraftItem = { kind: 'post' | 'lm'; format: string; text: string; img: string };
   const postItems: DraftItem[] = (cs.sample_output?.posts ?? []).map((p) => ({
     kind: 'post',
@@ -2186,7 +2187,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
       <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
       <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.22fr_0.78fr] lg:gap-12 lg:items-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:items-center">
         <div>
           <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
             <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
@@ -2221,25 +2222,25 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
             <div className="space-y-2.5">
               {draftItems.map((it, i) => it.kind === 'lm' ? (
                 <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3 px-3 py-3" style={{ background: '#1A1A1A', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />}
+                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 54, height: 54, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />}
                   <span className="min-w-0">
-                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600, marginBottom: 3 }}>Lead magnet</span>
-                    <span style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '12px', lineHeight: 1.3, color: 'rgba(247,244,239,0.92)' }}>{it.text}</span>
+                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600, marginBottom: 3 }}>Lead magnet</span>
+                    <span style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.35, color: 'rgba(247,244,239,0.92)' }}>{it.text}</span>
                   </span>
                 </motion.div>
               ) : (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-3.5 py-3" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
-                  <div className="flex items-center gap-2 mb-2">
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-4 py-3.5" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
+                  <div className="flex items-center gap-2 mb-2.5">
                     {avatar
-                      ? <img src={avatar} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                      : <span aria-hidden style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontFamily: MONO, fontSize: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(fname[0] || '·').toUpperCase()}</span>}
+                      ? <img src={avatar} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                      : <span aria-hidden style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontFamily: MONO, fontSize: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(fname[0] || '·').toUpperCase()}</span>}
                     <span className="min-w-0">
-                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '11.5px', fontWeight: 600, color: '#1A1A1A', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
-                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
+                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
+                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
                     </span>
-                    <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 5px', flexShrink: 0 }}>{it.format}</span>
+                    <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 6px', flexShrink: 0 }}>{it.format}</span>
                   </div>
-                  <p style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '12.5px', lineHeight: 1.4, color: '#3D3D3B' }}>{it.text}</p>
+                  <p style={{ ...clamp3, fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#2C2C2A' }}>{it.text}</p>
                   {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center', borderRadius: 6, border: `1px solid ${hairline}`, background: '#fff' }} />}
                 </motion.div>
               ))}
@@ -2529,6 +2530,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const mock = cs.sample_output;
   const mockMetrics = (mock?.metrics ?? []).slice(0, 3);
   const feedSpec = buildFeedSpecFromContentSystem(cs, { companyName });
+  // When the LM is a live, results-forward assessment we can embed, signal that everywhere
+  // (the card stops reading as a static PDF) and reuse the same URL in the modal.
+  const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
 
   const cases = [
     { client: 'Kyle Hunt', role: 'Creative-video agency · founder', src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system", summary: 'Kyle runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.', metrics: [{ value: '100%', label: 'of his content, run by the system' }, { value: '~300', label: 'comments per lead-magnet post' }, { value: '30K', label: 'impressions per post' }] },
@@ -2560,7 +2564,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
           <Kicker>Your week</Kicker>
           <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
-          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a lead magnet, ready for you to approve. Tap the lead magnet to look inside.</p>
+          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a live interactive scorecard, ready for you to approve.</p>
+          {lmEmbedUrl && (
+            <button onClick={() => setLmOpen(true)} className="group mt-6 inline-flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F7F4EF', background: '#1A1A1A', borderRadius: 999, padding: '11px 20px', fontWeight: 600 }}>
+              <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} />
+              Open the live scorecard
+              <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+            </button>
+          )}
           <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
             <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: CI_CARD, borderBottom: `1px solid ${hairline}` }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
@@ -2580,7 +2591,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
               {feedSpec.posts.length > 0 && (
                 <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} onLmClick={() => setLmOpen(true)} />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} onLmClick={() => setLmOpen(true)} lmInteractive={!!lmEmbedUrl} />
                 </div>
               )}
             </div>
@@ -2745,7 +2756,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <AnimatePresence>
         {lmOpen && cs.sample_output?.lm && (
-          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={buildAssessmentEmbedUrl(cs.sample_output.lm, { prospectId: scan?.company_slug || companyName })} onClose={() => setLmOpen(false)} />
+          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={lmEmbedUrl} onClose={() => setLmOpen(false)} />
         )}
       </AnimatePresence>
     </div>

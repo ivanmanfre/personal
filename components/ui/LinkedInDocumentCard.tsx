@@ -10,13 +10,15 @@ interface Props {
   caption?: string;
   /** When set, the document block is clickable and opens an in-page preview. */
   onCardClick?: () => void;
+  /** When true, the card advertises a LIVE interactive assessment (not a static PDF). */
+  interactive?: boolean;
 }
 
 /**
  * LinkedIn "document" post (PDF/carousel) for a lead-magnet preview.
  * Self-contained header (does NOT refactor the shared LinkedInPostPreview).
  */
-const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption, onCardClick }) => {
+const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption, onCardClick, interactive }) => {
   return (
     <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
       {/* Header */}
@@ -60,14 +62,28 @@ const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption, onCardC
       >
         <img src={card.coverUrl} alt={card.title} className="w-full max-h-[520px] object-contain" loading="lazy" />
         {onCardClick && (
-          <span className="absolute top-3 right-3 bg-white/95 text-[#0a66c2] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
-            Preview →
-          </span>
+          interactive ? (
+            <>
+              <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 bg-[#1d2226] text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#3fae7a] animate-pulse" aria-hidden /> Interactive
+              </span>
+              {/* hover overlay makes it unmistakable this opens a live tool */}
+              <div className="absolute inset-0 flex items-center justify-center bg-[#1d2226]/0 group-hover:bg-[#1d2226]/35 transition-colors">
+                <span className="inline-flex items-center gap-2 bg-white text-[#1d2226] text-[13px] font-semibold px-4 py-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                  Try the live scorecard <span aria-hidden>→</span>
+                </span>
+              </div>
+            </>
+          ) : (
+            <span className="absolute top-3 right-3 bg-white/95 text-[#0a66c2] text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm opacity-90 group-hover:opacity-100 transition-opacity">
+              Preview →
+            </span>
+          )
         )}
         <div className="absolute left-0 right-0 bottom-0 bg-[#1d2226]/85 text-white px-4 py-3 flex items-center gap-2">
           <FileText className="w-4 h-4 shrink-0" />
           <span className="text-[14px] font-semibold leading-tight truncate">{card.title}</span>
-          <span className="ml-auto text-[12px] text-white/70 shrink-0">{card.pages} pages</span>
+          <span className="ml-auto text-[12px] text-white/70 shrink-0">{interactive ? 'Live · 2 min' : `${card.pages} pages`}</span>
         </div>
       </div>
 

@@ -14,6 +14,8 @@ interface Props {
   showFold?: boolean;
   /** When set, the LM document card becomes clickable and calls this (opens an in-page preview). */
   onLmClick?: () => void;
+  /** When true, the LM card advertises itself as a LIVE interactive assessment (not a static PDF). */
+  lmInteractive?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * prospect's profile into each. Pure presentation — feed it a spec, it renders.
  * The feed mimics LinkedIn's neutral UI on purpose; the surrounding page supplies Ivan's brand frame.
  */
-const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', showFold = true, onLmClick }) => {
+const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', showFold = true, onLmClick, lmInteractive }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
@@ -85,8 +87,9 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
         <LinkedInDocumentCard
           profile={profile}
           card={feed.lmCard}
-          caption={`New — I put together "${feed.lmCard.title}", the playbook behind these posts. Comment "guide" and I'll send it over.`}
+          caption={`Put together a quick scorecard for anyone running the same kind of operation we do: "${feed.lmCard.title}". Two minutes, you get your score on the spot. Link's in the comments.`}
           onCardClick={onLmClick}
+          interactive={lmInteractive}
         />
       )}
     </div>
