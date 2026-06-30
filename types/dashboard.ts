@@ -448,6 +448,7 @@ export interface OutreachProspect {
   needsManualReply: boolean;
   nextTouchAfter: string | null;
   blacklisted: boolean;
+  hypertargetReserved: boolean;
   notes: string | null;
   skipReason: string | null;
   preferredChannel: string | null;

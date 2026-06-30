@@ -75,6 +75,7 @@ function mapProspect(r: any): OutreachProspect {
     needsManualReply: r.needs_manual_reply || false,
     nextTouchAfter: r.next_touch_after,
     blacklisted: r.blacklisted || false,
+    hypertargetReserved: r.hypertarget_reserved || false,
     notes: r.notes,
     skipReason: r.skip_reason,
     preferredChannel: r.preferred_channel || null,

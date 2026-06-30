@@ -6,6 +6,8 @@ import type { OutreachProspect } from '../../../../types/dashboard';
 
 // LinkedIn-active stages: these leads are already being worked on LinkedIn, so they stay OUT
 // of the cold-email cohort. A lead is never touched on both channels (the dedup decision).
+// Hypertarget-reserved leads (a built /scan asset is committed to them) also stay out — same
+// dedup rule, so the cold-email cohort never collides with the hypertarget lane.
 const LINKEDIN_ACTIVE = new Set(['connected', 'dm_sent', 'replied', 'engaged']);
 // The pitch is one Smartlead template (DM-voiced, same offer for everyone). The only per-lead
 // fields are the merge tags: first_name, company, and `descriptor` (a plain, true phrase for what
@@ -47,7 +49,7 @@ export const EmailTab: React.FC<Props> = ({ prospects }) => {
   // whose voice gets trained), and not already active on LinkedIn.
   const eligible = useMemo(
     () => prospects
-      .filter((p) => p.email && (p.icpScore ?? 0) >= 7 && isOwner(p.title) && !LINKEDIN_ACTIVE.has(p.stage) && !p.blacklisted),
+      .filter((p) => p.email && (p.icpScore ?? 0) >= 7 && isOwner(p.title) && !LINKEDIN_ACTIVE.has(p.stage) && !p.blacklisted && !p.hypertargetReserved),
     [prospects],
   );
   // Export cohort = eligible AND verified deliverable. Held back: pending (not yet verified) and dropped (undeliverable/risky).
