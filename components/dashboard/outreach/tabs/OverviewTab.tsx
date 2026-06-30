@@ -7,6 +7,7 @@ import {
   FEED_ORDER, FEED_LABELS, FEED_DESC, FEED_BADGE, FEED_BAR, FEED_TEXT,
   feedRollup, warmVsCold,
 } from '../feedHelpers';
+import { OutreachTimingHeatmap } from '../OutreachTimingHeatmap';
 
 // ── Overview window constant ─────────────────────────────────────────────────
 // Fixed campaign-start date. All overview KPI tiles (Active Pipeline, per-feed
@@ -261,6 +262,9 @@ export const OverviewTab: React.FC<Props> = ({
           })}
         </div>
       </div>
+
+      {/* Timing heatmap — best day/slot to send, by metric */}
+      <OutreachTimingHeatmap />
 
       {/* Change 6: NextUpCard is THIRD (moved down from top) */}
       <NextUpCard

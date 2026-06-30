@@ -3,8 +3,9 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { Eye, Users, Link2, Smartphone, MapPin } from 'lucide-react';
+import { Eye, Users, Link2, Smartphone, MapPin, Linkedin } from 'lucide-react';
 import { useAudience } from '../../hooks/useAudience';
+import { useFollowerHistory } from '../../hooks/useFollowerHistory';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
@@ -52,6 +53,12 @@ function Bar({ value, max }: { value: number; max: number }) {
 const AudiencePanel: React.FC = () => {
   const { data, totals, loading, refresh } = useAudience();
   const { lastRefreshed } = useAutoRefresh(refresh);
+  const { history: followerHistory, stats: followerStats } = useFollowerHistory();
+
+  const followerChart = useMemo(
+    () => followerHistory.map((h) => ({ ...h, label: formatDay(h.date) })),
+    [followerHistory]
+  );
 
   const chartData = useMemo(
     () => data.daily.slice(-30).map((d) => ({ ...d, label: formatDay(d.day) })),
@@ -84,6 +91,65 @@ const AudiencePanel: React.FC = () => {
           <p className="text-sm text-zinc-500 mt-1">Pageviews, visitors, and traffic sources for ivanmanfredi.com.</p>
         </div>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+      </div>
+
+      {/* LinkedIn audience — own follower / connection growth (always shown) */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Linkedin className="w-4 h-4 text-blue-400" />
+          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">LinkedIn audience</h2>
+        </div>
+        {followerStats.followers == null ? (
+          <p className="text-sm text-zinc-600">Daily follower tracking is initializing — the first snapshot lands within a day.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                label="Followers"
+                value={followerStats.followers}
+                icon={<Linkedin className="w-5 h-5" />}
+                color="text-blue-400"
+                trend={followerStats.weekDelta != null
+                  ? { value: pctChange(followerStats.followers, followerStats.followers - followerStats.weekDelta), label: 'last 7d' }
+                  : undefined}
+                subValue={followerStats.dayDelta != null
+                  ? `${followerStats.dayDelta >= 0 ? '+' : ''}${followerStats.dayDelta} since yesterday`
+                  : 'tracking since today'}
+              />
+              <StatCard
+                label="Connections"
+                value={followerStats.connections ?? '—'}
+                icon={<Users className="w-5 h-5" />}
+                color="text-emerald-400"
+              />
+            </div>
+            {followerChart.length >= 2 ? (
+              <div className="panel-surface shadow-sm shadow-black/10 p-4 pt-5">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.12em]">Follower growth</h3>
+                  <span className="text-[11px] text-zinc-500">{followerChart.length}-day history</span>
+                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={followerChart}>
+                    <defs>
+                      <linearGradient id="followerFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
+                    <XAxis dataKey="label" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={['dataMin - 5', 'dataMax + 5']} tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} width={44} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#a1a1aa', fontSize: 12 }} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} />
+                    <Area type="monotone" dataKey="followers" name="Followers" stroke="#3b82f6" fill="url(#followerFill)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-[11px] text-zinc-600">Growth chart fills in as daily snapshots accumulate — tracking just started ({followerStats.followers.toLocaleString()} followers · {(followerStats.connections ?? 0).toLocaleString()} connections today).</p>
+            )}
+          </>
+        )}
       </div>
 
       {!hasAnyData ? (
