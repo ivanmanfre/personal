@@ -56,6 +56,7 @@ export function Calendar() {
         platform: qr.platform,
         status: qr.status,
         scheduledAt: qr.scheduledAt,
+        isRepost: qr.isRepost,
       })),
       lmDrafts.map((d) => d.id),
     ),
