@@ -375,6 +375,25 @@ export async function scheduleLM(draft_id: string, scheduled_at: string) {
   return { ok: true, draft_id, scheduled_at };
 }
 
+const LM_REPOST_WEBHOOK =
+  import.meta.env.VITE_LM_GEN_WEBHOOK || 'https://n8n.ivanmanfredi.com/webhook/lm-gen-v2';
+const LM_REPOST_SECRET = import.meta.env.VITE_LM_REPOST_SECRET || 'pn-1ee9c4f2a7';
+
+/**
+ * Repost an already-published lead magnet: n8n regenerates fresh, lint-filtered
+ * promo copy for the SAME resource and inserts a new pending scheduled_posts row
+ * (is_repost=true) at the next slot. Does not touch the resource or the original post.
+ */
+export async function repostLeadMagnet(draft_id: string): Promise<{ ok: boolean }> {
+  const res = await fetch(LM_REPOST_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ draft_id, phase: 'repost', secret: LM_REPOST_SECRET }),
+  });
+  if (!res.ok) throw new Error(`repost failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  return res.json().catch(() => ({ ok: true }));
+}
+
 // Regenerate just the LM cover image (Gemini Nano Banana Pro, ~2-3 min, ~$0.24).
 // Fires a standalone n8n workflow that generates fresh cover copy + re-renders
 // + PATCHes lm_drafts_v2.cover_url. Does NOT touch any other LM fields.
