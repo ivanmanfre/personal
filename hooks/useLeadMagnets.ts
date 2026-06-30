@@ -86,7 +86,23 @@ export function useLeadMagnets() {
         .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
         .order('updated_at', { ascending: false });
       if (error) throw error;
-      setDrafts((data || []).map(mapDraft));
+      const mapped = (data || []).map(mapDraft);
+      // Populate lastPostedAt: latest posted-promo time per draft, for the
+      // Repost recency warning. One extra query; rows come newest-first so the
+      // first occurrence per clickup_task_id is the most recent post.
+      const { data: posted } = await supabase
+        .from('scheduled_posts')
+        .select('clickup_task_id, posted_at')
+        .eq('status', 'posted')
+        .not('posted_at', 'is', null)
+        .order('posted_at', { ascending: false });
+      const lastByTask = new Map<string, string>();
+      for (const r of (posted || []) as any[]) {
+        if (r.clickup_task_id && !lastByTask.has(r.clickup_task_id)) {
+          lastByTask.set(r.clickup_task_id, r.posted_at);
+        }
+      }
+      setDrafts(mapped.map((d) => ({ ...d, lastPostedAt: lastByTask.get(d.id) ?? null })));
     } catch (err) {
       toastError('load lead magnets', err);
     } finally {
@@ -120,7 +136,10 @@ export function useLeadMagnets() {
             const i = prev.findIndex((d) => d.id === next.id);
             if (i === -1) return [next, ...prev];
             const copy = prev.slice();
-            copy[i] = next;
+            // mapDraft (realtime payload) doesn't carry lastPostedAt — preserve
+            // the value computed during the last full refresh so the recency
+            // warning survives cover/status updates.
+            copy[i] = { ...next, lastPostedAt: next.lastPostedAt ?? prev[i].lastPostedAt };
             return copy;
           });
         },
