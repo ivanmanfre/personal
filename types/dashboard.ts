@@ -184,6 +184,7 @@ export interface ScheduledPost {
   igDmKeyword: string | null;
   igDmReply: string | null;
   platform: string | null;
+  isRepost: boolean;
 }
 
 export interface PipelineTask {

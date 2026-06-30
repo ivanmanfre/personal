@@ -50,6 +50,9 @@ export interface CalendarItem {
   // rows are locked — dragging them would silently no-op. Default true when
   // omitted (back-compat for callers that don't set it).
   reschedulable?: boolean;
+  // True when this scheduled post is a repost of an existing lead magnet post.
+  // Consumed by Task 6 to route repost chips differently.
+  isRepost?: boolean;
 }
 
 interface Props {

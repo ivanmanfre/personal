@@ -16,6 +16,7 @@ export interface QueueRow {
   platform: string | null;
   status: string;
   scheduledAt: string | null;
+  isRepost?: boolean;
 }
 
 const LM_PATTERN = /\bcomment\s+["“”]?(\w+)["“”]?\b/i;
@@ -97,6 +98,7 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftI
         tone,
         statusLabel: qr.status,
         reschedulable: isReschedulable('lm', qr.status),
+        isRepost: qr.isRepost ?? false,
       });
     } else {
       out.push({
@@ -107,6 +109,7 @@ export function buildCalendarItems(posts: PostRow[], queue: QueueRow[], lmDraftI
         tone,
         statusLabel: qr.status,
         reschedulable: isReschedulable('post-queue', qr.status),
+        isRepost: qr.isRepost ?? false,
       });
     }
   }

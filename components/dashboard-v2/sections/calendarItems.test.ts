@@ -103,3 +103,13 @@ test('carousel posts are reschedulable until published', () => {
   expect(approved.reschedulable).toBe(true);
   expect(published.reschedulable).toBe(false);
 });
+
+test('repost queue row whose clickup_task_id is an LM draft id is marked isRepost', () => {
+  const items = buildCalendarItems(
+    [],
+    [q({ id: 'sp-1', clickupTaskId: 'lm-1', status: 'pending', isRepost: true })],
+    ['lm-1'],
+  );
+  const chip = items.find((i) => i.id === 'sp-1');
+  expect(chip).toMatchObject({ kind: 'lm', tone: 'scheduled', isRepost: true });
+});
