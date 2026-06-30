@@ -12,6 +12,7 @@ import { useLeadMagnets } from '../../../hooks/useLeadMagnets';
 import LeadMagnetEditor from '../../dashboard/LeadMagnetEditor';
 import ScheduledPostEditor from '../../dashboard/ScheduledPostEditor';
 import { PanelIntro } from '../primitives';
+import { resolveLmChipTarget } from './resolveLmChipTarget';
 
 /**
  * Unified content calendar — posts (carousel_drafts) + lead magnets
@@ -153,7 +154,9 @@ export function Calendar() {
     if (item.kind === 'post') {
       setOpenPostId(item.id);
     } else if (item.kind === 'lm') {
-      if (item.editId) setOpenLmId(item.editId);
+      const t = resolveLmChipTarget(item);
+      if (t.target === 'queue') setOpenQueueId(t.id);
+      else if (t.target === 'lm-editor') setOpenLmId(t.id);
       else toast.error('No lead-magnet draft linked to this post');
     } else {
       setOpenQueueId(item.id); // post-queue → ScheduledPostEditor (Task 6)
