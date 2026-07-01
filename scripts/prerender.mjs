@@ -67,6 +67,8 @@ const ROUTES = [
   // hypertarget sample is promoted (low volume, manual). The page still hydrates client-side.
   '/scan/tk-douglass-9b',
   '/scan/step-digital',
+  '/scan/dizz-agency',
+  '/scan/skulpt',
 ];
 
 // Dynamically add every promoted hypertarget scan (asset_ready / approved / sent) so each
