@@ -43,12 +43,12 @@ export function buildAssessmentEmbedUrl(
   const params = new URLSearchParams();
   params.set('src', opts?.src ?? 'scan_embed');
   if (opts?.prospectId) params.set('pid', opts.prospectId);
-  // The lead's brand rides into the embed so the live assessment matches their site: color,
-  // their real fonts (heading + body), and their logo. Each is skipped when absent.
+  // The lead's brand rides into the embed so the live assessment matches their site: color +
+  // their real fonts (heading + body). The logo is NOT passed here — the wrapping site-header
+  // mockup (LiveAssessmentEmbed) renders it in the nav, so the assessment hero stays logo-free.
   const accent = ((brand.accent_hex || lm.accent_hex) || '').replace(/[^0-9a-fA-F]/g, '');
   if (accent) params.set('accent', accent);
   if (brand.font_heading) params.set('font', brand.font_heading);
   if (brand.font_body) params.set('fontb', brand.font_body);
-  if (brand.logo_url) params.set('logo', brand.logo_url);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }

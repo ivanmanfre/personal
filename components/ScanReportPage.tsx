@@ -2406,7 +2406,7 @@ function LmCalculatorSim({ sim }: { sim: LmSim }) {
 // In-page preview of the prospect's lead magnet. The LM card in the feed opens this:
 // the real cover next to what's inside (the actual prompts), so it reads as a finished
 // resource without leaving the page. Not a live external link by design.
-function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; sim?: LmSim }; who: string; bookUrl: string; embedUrl?: string | null; domain?: string; onClose: () => void }) {
+function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex, companyName, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; sim?: LmSim }; who: string; bookUrl: string; embedUrl?: string | null; domain?: string; logoUrl?: string; accentHex?: string; companyName?: string; onClose: () => void }) {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
   useEffect(() => {
@@ -2459,13 +2459,13 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, onClose }: { lm: {
     return (
       <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
         style={{ background: 'rgba(20,18,15,0.6)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Your live lead magnet">
-        <motion.div className="relative w-full max-w-3xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
-          style={{ maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
+        <motion.div className="relative w-full max-w-4xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
+          style={{ maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
           <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(247,244,239,0.16)', color: '#F7F4EF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             Close <XCircle className="w-4 h-4" />
           </button>
-          <div className="overflow-hidden" style={{ maxHeight: '90vh', borderRadius: 14 }}>
-            <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} domain={domain} urlPath={urlPath} />
+          <div className="overflow-hidden" style={{ maxHeight: '92vh', borderRadius: 14 }}>
+            <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} domain={domain} urlPath={urlPath} logoUrl={logoUrl} accentHex={accentHex} companyName={companyName} />
           </div>
         </motion.div>
       </motion.div>
@@ -3001,7 +3001,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <AnimatePresence>
         {lmOpen && cs.sample_output?.lm && (
-          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={lmEmbedUrl} domain={scan?.domain || companyName} onClose={() => setLmOpen(false)} />
+          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={lmEmbedUrl} domain={scan?.domain || companyName} logoUrl={cs.sample_output.lm.brand?.logo_url} accentHex={cs.sample_output.lm.brand?.accent_hex || cs.sample_output.lm.accent_hex} companyName={companyName} onClose={() => setLmOpen(false)} />
         )}
       </AnimatePresence>
     </div>
