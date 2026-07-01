@@ -2305,10 +2305,108 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   );
 }
 
+type LmSim = { kind: string; accent?: string; seed: { aov: number; cogs: number; shipping: number; feePct: number; adSpend: number; roas: number } };
+
+// An interactive SIMULATION of the prospect's lead magnet — the working calculator the
+// system drafted from their posts, seeded with their own numbers and computed live, in
+// their brand. No external page: it reads as their finished tool, right inside the scan.
+function LmCalculatorSim({ sim }: { sim: LmSim }) {
+  type SeedKey = 'aov' | 'cogs' | 'shipping' | 'feePct' | 'adSpend' | 'roas';
+  const accent = sim.accent || '#2ea3f2';
+  const [v, setV] = useState(sim.seed);
+  const set = (k: SeedKey) => (e: React.ChangeEvent<HTMLInputElement>) => setV((p) => ({ ...p, [k]: Number(e.target.value) }));
+
+  const feeCost = (v.feePct / 100) * v.aov;
+  const margin = v.aov - v.cogs - v.shipping - feeCost;      // contribution margin / order
+  const adPerOrder = v.roas > 0 ? v.aov / v.roas : 0;
+  const profit = margin - adPerOrder;                        // true profit / order
+  const breakEven = margin > 0 ? v.aov / margin : Infinity;  // ROAS where true profit = 0
+  const orders = adPerOrder > 0 ? v.adSpend / adPerOrder : 0;
+  const monthlyProfit = profit * orders;
+  const underwater = profit < 0;
+
+  const money = (n: number, dp = 2) => (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  const money0 = (n: number) => (n < 0 ? '-$' : '$') + Math.round(Math.abs(n)).toLocaleString('en-US');
+
+  const fields: { k: SeedKey; label: string; min: number; max: number; step: number; fmt: (n: number) => string }[] = [
+    { k: 'aov', label: 'Average order value', min: 20, max: 300, step: 1, fmt: (n) => '$' + n },
+    { k: 'cogs', label: 'COGS per unit', min: 0, max: 200, step: 1, fmt: (n) => '$' + n },
+    { k: 'shipping', label: 'Shipping & fulfilment', min: 0, max: 60, step: 1, fmt: (n) => '$' + n },
+    { k: 'feePct', label: 'Payment fee', min: 0, max: 8, step: 0.1, fmt: (n) => n + '%' },
+    { k: 'adSpend', label: 'Monthly ad spend', min: 2000, max: 200000, step: 1000, fmt: (n) => '$' + n.toLocaleString('en-US') },
+    { k: 'roas', label: 'Current ROAS', min: 1, max: 12, step: 0.1, fmt: (n) => n.toFixed(1) + 'x' },
+  ];
+
+  const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const INK = '#EAF1F6', MUT = 'rgba(234,241,246,0.55)', CARD = '#151A1E', LINE = 'rgba(234,241,246,0.10)', LOSS = '#FF6B6B';
+
+  return (
+    <div style={{ background: '#0C0F11', color: INK, borderRadius: CI_R_SM, overflow: 'hidden' }}>
+      <div className="flex items-center justify-between px-5 sm:px-7 py-4" style={{ borderBottom: `1px solid ${LINE}` }}>
+        <span className="flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: MUT }}>
+          <span aria-hidden style={{ width: 7, height: 7, background: accent, flexShrink: 0 }} /> Interactive sample
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: MUT }}>Drag any number</span>
+      </div>
+
+      <div className="px-5 sm:px-7 pt-6">
+        <h4 style={{ fontFamily: SANS, fontWeight: 700, fontSize: 'clamp(1.25rem,2.4vw,1.7rem)', lineHeight: 1.12, letterSpacing: '-0.01em', color: INK }}>The True-Profit ROAS Calculator</h4>
+        <p className="mt-1.5" style={{ fontFamily: SANS, fontSize: '13px', lineHeight: 1.5, color: MUT }}>Plug in your six numbers. See what each order actually keeps, and the ROAS you need before scaling makes money.</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 px-5 sm:px-7 py-6">
+        <div className="space-y-4">
+          {fields.map((f) => (
+            <div key={f.k}>
+              <div className="flex items-baseline justify-between">
+                <label htmlFor={`sim-${f.k}`} style={{ fontFamily: SANS, fontSize: '12px', color: MUT }}>{f.label}</label>
+                <span style={{ fontFamily: MONO, fontSize: '13px', fontWeight: 600, color: INK }}>{f.fmt(v[f.k])}</span>
+              </div>
+              <input id={`sim-${f.k}`} type="range" min={f.min} max={f.max} step={f.step} value={v[f.k]} onChange={set(f.k)}
+                className="w-full mt-1.5" style={{ accentColor: accent, height: 4 }} />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ background: CARD, borderRadius: CI_R_SM, padding: '20px 22px' }}>
+          <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: MUT }}>True profit per order</p>
+          <div style={{ fontFamily: MONO, fontWeight: 700, fontSize: 'clamp(2.2rem,6vw,3rem)', lineHeight: 1, marginTop: 6, color: underwater ? LOSS : accent, fontVariantNumeric: 'tabular-nums' }}>{money(profit)}</div>
+          <p className="mt-2" style={{ fontFamily: SANS, fontSize: '12.5px', lineHeight: 1.45, color: underwater ? LOSS : INK }}>
+            {underwater ? `At ${v.roas.toFixed(1)}x ROAS you lose ${money(-profit)} on every order.` : `At ${v.roas.toFixed(1)}x ROAS you keep ${money(profit)} per order.`}
+          </p>
+
+          <div className="grid grid-cols-2 gap-px mt-5" style={{ background: LINE, borderRadius: 8, overflow: 'hidden' }}>
+            {[
+              { l: 'Break-even ROAS', val: isFinite(breakEven) ? breakEven.toFixed(1) + 'x' : '—', hot: isFinite(breakEven) && v.roas < breakEven },
+              { l: 'Contribution margin', val: money(margin), hot: margin < 0 },
+              { l: 'Ad spend / order', val: money(adPerOrder), hot: false },
+              { l: 'True profit / month', val: money0(monthlyProfit), hot: monthlyProfit < 0 },
+            ].map((s, i) => (
+              <div key={i} style={{ background: CARD, padding: '12px 14px' }}>
+                <p style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: MUT }}>{s.l}</p>
+                <p style={{ fontFamily: MONO, fontWeight: 600, fontSize: '16px', marginTop: 3, color: s.hot ? LOSS : INK, fontVariantNumeric: 'tabular-nums' }}>{s.val}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-4" style={{ fontFamily: SANS, fontSize: '11.5px', lineHeight: 1.5, color: MUT }}>
+            You need <span style={{ color: accent, fontWeight: 600 }}>{isFinite(breakEven) ? breakEven.toFixed(1) + 'x' : '—'}</span> just to break even. Below it, every "winning" campaign ships at a loss.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-5 sm:px-7 py-3" style={{ borderTop: `1px solid ${LINE}` }}>
+        <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: '13px', color: INK }}>Step Digital<span style={{ color: accent }}>.</span></span>
+        <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: MUT }}>Drafted from your posts</span>
+      </div>
+    </div>
+  );
+}
+
 // In-page preview of the prospect's lead magnet. The LM card in the feed opens this:
 // the real cover next to what's inside (the actual prompts), so it reads as a finished
 // resource without leaving the page. Not a live external link by design.
-function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[] }; who: string; bookUrl: string; embedUrl?: string | null; onClose: () => void }) {
+function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; sim?: LmSim }; who: string; bookUrl: string; embedUrl?: string | null; onClose: () => void }) {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
   useEffect(() => {
@@ -2327,7 +2425,11 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: 
         <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(26,26,26,0.06)' }}>
           <XCircle className="w-5 h-5" style={{ color: '#1A1A1A' }} />
         </button>
-        {embedUrl ? (
+        {lm.sim ? (
+          <div className="p-2 sm:p-3">
+            <LmCalculatorSim sim={lm.sim} />
+          </div>
+        ) : embedUrl ? (
           <div className="p-2 sm:p-3">
             <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} />
           </div>
@@ -2550,6 +2652,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // When the LM is a live, results-forward assessment we can embed, signal that everywhere
   // (the card stops reading as a static PDF) and reuse the same URL in the modal.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
+  // A working sample of the lead magnet: either a live embeddable page (assessment) or an
+  // in-page interactive simulation (calculator drafted from the prospect's posts). Either
+  // one surfaces the bold "open the sample" CTA below and drives the preview modal.
+  const lmSim = cs.sample_output?.lm?.sim;
+  const lmHasSample = Boolean(lmEmbedUrl) || Boolean(lmSim);
 
   const cases = [
     {
@@ -2621,8 +2728,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
           </motion.div>
 
-          {/* THE LIVE SCORECARD — the single most important action, surfaced as a bold, unmissable CTA */}
-          {lmEmbedUrl && feedSpec.lmCard && (
+          {/* THE LEAD-MAGNET SAMPLE — the single most important action, surfaced as a bold, unmissable CTA.
+              Renders for a live embeddable page (assessment) OR an in-page interactive simulation (calculator). */}
+          {lmHasSample && feedSpec.lmCard && (
             <motion.button
               type="button"
               onClick={() => setLmOpen(true)}
@@ -2639,12 +2747,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
                 <div>
                   <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #4FB286)', fontWeight: 600 }}>
-                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} /> Your lead magnet sample · live
+                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, background: 'var(--color-accent)' }} /> {lmSim ? 'Your lead magnet · interactive sample' : 'Your lead magnet sample · live'}
                   </div>
-                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>What your leads land on.</h3>
-                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, {who}.</p>
+                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>{lmSim ? 'Try the tool it built.' : 'What your leads land on.'}</h3>
+                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>{lmSim ? `The system drafted this working calculator from your own posts. Your readers would get it as an interactive page on your site that captures every email. Try it the way one of them would, ${who}.` : `The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, ${who}.`}</p>
                   <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#0E1512', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
-                    Take the live sample
+                    {lmSim ? 'Open the calculator' : 'Take the live sample'}
                     <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </span>
                 </div>

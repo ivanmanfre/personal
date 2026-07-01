@@ -53,7 +53,16 @@ export interface ContentSystem {
     title: string;
     posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel' }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
-    lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number> };
+    lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number>;
+      // An in-page, interactive SIMULATION of the lead magnet the system drafted — shown when
+      // the LM is a working sample (not a live published page). Seeded with the prospect's own
+      // numbers so it reads as their real tool. `kind` selects the model + formula.
+      sim?: {
+        kind: 'true_profit_roas';
+        accent?: string;
+        seed: { aov: number; cogs: number; shipping: number; feePct: number; adSpend: number; roas: number };
+      };
+    };
   };
   revenue_math?: string;
   // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.
