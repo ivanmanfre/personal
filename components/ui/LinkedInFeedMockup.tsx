@@ -13,64 +13,77 @@ interface Props {
 
 /**
  * Renders a believable LinkedIn feed for a prospect from a FeedSpec.
- * Layout: the visual post (image/carousel) runs full-size on top; the text posts
- * sit below in a single tidy row of compact cards. The lead magnet / live scorecard
- * is surfaced separately by the page (a bold CTA), not inside this feed.
- * The feed mimics LinkedIn's neutral UI on purpose; the surrounding page supplies Ivan's brand frame.
+ * Order: the image post runs full-size on top, then the text posts, then the carousel.
+ * The text posts form a clean 3-across row ONLY when there are three; with one or two they
+ * render full-width and fully readable (a single post in a 3-col grid would sit cramped at
+ * a third width). The lead magnet is surfaced separately by the page, not inside this feed.
  */
 const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '' }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
-  const mediaPosts = posts.filter((p) => p.type === 'image' || p.type === 'carousel');
+  const imagePosts = posts.filter((p) => p.type === 'image');
   const textPosts = posts.filter((p) => p.type === 'text');
+  const carouselPosts = posts.filter((p) => p.type === 'carousel');
+
+  const author = { author: profile.name, headline: profile.headline, avatarUrl: profile.avatarUrl };
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Full-size visual post(s) on top */}
-      {mediaPosts.map((post, i) => (
-        <div key={`m-${i}`} className="max-w-[552px] mx-auto mb-3">
-          {post.type === 'carousel' ? (
-            <LinkedInCarouselCard
-              text={post.body}
-              slides={post.slides}
-              author={profile.name}
-              headline={profile.headline}
-              avatarUrl={profile.avatarUrl}
-              showFold
-              stats={{ reactions: post.reactions, comments: post.comments }}
-            />
-          ) : (
-            <LinkedInPostPreview
-              text={post.body}
-              author={profile.name}
-              headline={profile.headline}
-              avatarUrl={profile.avatarUrl}
-              mediaUrl={post.imageUrl}
-              showFold
-              stats={{ reactions: post.reactions, comments: post.comments }}
-            />
-          )}
+      {/* 1 — image post(s), full-size */}
+      {imagePosts.map((post, i) => (
+        <div key={`img-${i}`} className="max-w-[552px] mx-auto mb-3">
+          <LinkedInPostPreview
+            {...author}
+            text={post.body}
+            mediaUrl={post.imageUrl}
+            showFold
+            stats={{ reactions: post.reactions, comments: post.comments }}
+          />
         </div>
       ))}
 
-      {/* Text posts — one row of compact cards */}
-      {textPosts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch">
-          {textPosts.map((post, i) => (
+      {/* 2 — text posts. Three → a tidy 3-across row of compact cards. Fewer → full-width so
+              nothing sits cramped at a third of the column and every line stays visible. */}
+      {textPosts.length >= 3 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch mb-3">
+          {textPosts.slice(0, 3).map((post, i) => (
             <LinkedInPostPreview
               key={`t-${i}`}
               compact
+              {...author}
               text={post.body}
-              author={profile.name}
-              headline={profile.headline}
-              avatarUrl={profile.avatarUrl}
               mediaUrl={null}
               stats={{ reactions: post.reactions, comments: post.comments }}
             />
           ))}
         </div>
+      ) : (
+        textPosts.map((post, i) => (
+          <div key={`t-${i}`} className="max-w-[552px] mx-auto mb-3">
+            <LinkedInPostPreview
+              {...author}
+              text={post.body}
+              mediaUrl={null}
+              showFold
+              stats={{ reactions: post.reactions, comments: post.comments }}
+            />
+          </div>
+        ))
       )}
+
+      {/* 3 — carousel post(s), full-size */}
+      {carouselPosts.map((post, i) => (
+        <div key={`car-${i}`} className="max-w-[552px] mx-auto mb-3">
+          <LinkedInCarouselCard
+            {...author}
+            text={post.body}
+            slides={post.slides}
+            showFold
+            stats={{ reactions: post.reactions, comments: post.comments }}
+          />
+        </div>
+      ))}
     </div>
   );
 };
