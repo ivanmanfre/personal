@@ -2493,6 +2493,23 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
   );
 }
 
+/** An angled, framed portrait cut-out (magazine-collage look): paper frame, hard sage
+ *  cast-shadow, name badge. One for a solo founder, two overlapping for a pair. */
+function ProofPortrait({ src, name, pos, rotate, aspect = '4 / 5' }: { src: string; name: string; pos?: string; rotate: number; aspect?: string }) {
+  return (
+    <div style={{ position: 'relative', transform: `rotate(${rotate}deg)` }}>
+      <div style={{ background: 'var(--color-paper-raise, #fff)', padding: '7px 7px 9px', boxShadow: '14px 16px 0 rgba(42,143,101,0.20)' }}>
+        <img
+          src={src} alt={name} loading="lazy"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+          style={{ display: 'block', width: '100%', aspectRatio: aspect, objectFit: 'cover', objectPosition: pos || '50% 20%', background: 'var(--color-paper-sunk, #EFEBE3)' }}
+        />
+      </div>
+      <span style={{ position: 'absolute', left: 8, bottom: -12, fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: 'var(--color-accent-ink)', padding: '4px 8px', whiteSpace: 'nowrap' }}>{name}</span>
+    </div>
+  );
+}
+
 function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const cs = report.content_system;
   if (!cs) return null;
@@ -2535,8 +2552,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
 
   const cases = [
-    { client: 'Kyle Hunt', role: 'Creative-video agency · founder', src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system", summary: 'Kyle runs his entire content operation on the system. Every post and lead magnet is drafted in his voice and shipped, without him ever facing a blank page.', metrics: [{ value: '100%', label: 'of his content, run by the system' }, { value: '~300', label: 'comments per lead-magnet post' }, { value: '30K', label: 'impressions per post' }] },
-    { client: 'Lemonade', role: 'Demand-gen studio', src: '/content-system/lemonade-thankyou.webp', alt: "Lemonade's lead-capture page built by the system", summary: 'Lemonade turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.', metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }], flip: true },
+    {
+      client: 'Kyle Hunt', role: 'Agency Operators · founder',
+      portraits: [{ src: '/content-system/kyle-portrait.webp', name: 'Kyle Hunt', pos: '50% 24%' }],
+      quote: ['It writes every post and guide in ', 'my voice', '. I approve, and it ships.'],
+      result: 'Kyle scaled from $30k/mo to $60k/mo with us.',
+      src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system",
+      metrics: [{ value: '30K', label: 'impressions per post' }, { value: '~300', label: 'comments on a lead-magnet post' }, { value: '100%', label: 'of his content, run by the system' }],
+    },
+    {
+      client: 'Lemonade', role: 'David Dinsmore & Billy Mackie · co-founders',
+      portraits: [{ src: '/content-system/david-dinsmore.webp', name: 'David Dinsmore', pos: '50% 14%' }, { src: '/content-system/billy-mackie.webp', name: 'Billy Mackie', pos: '50% 16%' }],
+      quote: ['The lead-magnet engine books our ', 'fit calls', ' for us. Gated funnel, running on autopilot.'],
+      result: 'Lemonade books 5 new clients a month through the system.',
+      src: '/content-system/lemonade-thankyou.webp', alt: "Lemonade's lead-capture page built by the system",
+      metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }],
+    },
   ];
   const REVIEWS = [
     { q: 'Ivan is one of those rare builders who actually ships. The system runs exactly as promised and the output sounds like me, not a robot.', n: 'Adeeb Mohammed', r: 'Software Engineer · ex-Amazon · Meta' },
@@ -2565,13 +2596,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Kicker>Your week</Kicker>
           <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
           <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a live interactive scorecard, ready for you to approve.</p>
-          {lmEmbedUrl && (
-            <button onClick={() => setLmOpen(true)} className="group mt-6 inline-flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#F7F4EF', background: '#1A1A1A', borderRadius: 999, padding: '11px 20px', fontWeight: 600 }}>
-              <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} />
-              Open the live scorecard
-              <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-            </button>
-          )}
           <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
             <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: CI_CARD, borderBottom: `1px solid ${hairline}` }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
@@ -2591,13 +2615,131 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
               {feedSpec.posts.length > 0 && (
                 <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" showFold={false} onLmClick={() => setLmOpen(true)} lmInteractive={!!lmEmbedUrl} />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" />
                 </div>
               )}
             </div>
           </motion.div>
+
+          {/* THE LIVE SCORECARD — the single most important action, surfaced as a bold, unmissable CTA */}
+          {lmEmbedUrl && feedSpec.lmCard && (
+            <motion.button
+              type="button"
+              onClick={() => setLmOpen(true)}
+              className="group block w-full text-left mt-6 overflow-hidden"
+              initial={reduce ? false : { opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.7, ease: EASE }}
+              style={{ borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
+            >
+              <div className="grid sm:grid-cols-[168px_1fr] gap-6 sm:gap-9 items-center p-6 sm:p-9 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#15201b 0%,#1e2e25 100%)' }}>
+                <div className="mx-auto sm:mx-0" style={{ transform: 'rotate(-3deg)' }}>
+                  <img src={feedSpec.lmCard.coverUrl} alt={feedSpec.lmCard.title} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: 152, borderRadius: 8, boxShadow: '0 18px 44px rgba(0,0,0,0.45)' }} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #4FB286)', fontWeight: 600 }}>
+                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} /> Live · interactive · 2 min
+                  </div>
+                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.55rem, 2.7vw, 2.05rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>See your score on the spot.</h3>
+                  <p className="mt-2.5 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(244,241,235,0.72)' }}>The {feedSpec.lmCard.title}, built for your operation. Two minutes, you get your number and the gaps to fix.</p>
+                  <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#0E1512', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
+                    Open the live scorecard
+                    <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </span>
+                </div>
+              </div>
+            </motion.button>
+          )}
         </section>
       )}
+
+      {/* PROOF — real client case studies */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
+        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
+        <div className="mt-12 space-y-20 lg:space-y-24">
+          {cases.map((c, idx) => {
+            const two = c.portraits.length > 1;
+            const flip = idx % 2 === 1; // alternate sides: Kyle left, Lemonade right
+            return (
+              <div className={`grid ${flip ? 'lg:grid-cols-[1.08fr_0.92fr]' : 'lg:grid-cols-[0.92fr_1.08fr]'} gap-10 lg:gap-14 items-start`} key={c.client}>
+                {/* Portrait(s) — slide in from the OUTER edge (opposite sides per row), leading the reveal */}
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, x: flip ? 80 : -80 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-90px' }}
+                  transition={{ duration: 0.85, ease: EASE }}
+                  className={`flex justify-center ${flip ? 'lg:justify-end lg:order-2' : 'lg:justify-start lg:order-1'} lg:pt-1`}
+                >
+                  {two ? (
+                    <div style={{ position: 'relative', width: '100%', maxWidth: 430, height: 360 }}>
+                      <div style={{ position: 'absolute', left: 0, top: 0, width: 238, zIndex: 2 }}><ProofPortrait {...c.portraits[0]} rotate={-5} aspect="5 / 7" /></div>
+                      <div style={{ position: 'absolute', left: 200, top: 34, width: 224, zIndex: 1 }}><ProofPortrait {...c.portraits[1]} rotate={4} aspect="5 / 7" /></div>
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', maxWidth: 340 }}><ProofPortrait {...c.portraits[0]} rotate={-5} /></div>
+                  )}
+                </motion.div>
+
+                {/* Wording — fades in AFTER the portrait has slid in */}
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, y: 22 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-90px' }}
+                  transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : 0.45 }}
+                  className={flip ? 'lg:order-1' : 'lg:order-2'}
+                >
+                  <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.7vw, 2rem)', lineHeight: 1.14, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+                    &ldquo;{c.quote[0]}<span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>{c.quote[1]}</span>{c.quote[2]}&rdquo;
+                  </p>
+                  <div className="mt-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+                    <span style={{ color: '#1A1A1A', fontWeight: 600 }}>{c.client}</span> &nbsp;·&nbsp; {c.role}
+                  </div>
+                  <div className="mt-5 flex items-start gap-3">
+                    <span aria-hidden style={{ marginTop: 6, height: 15, width: 3, background: 'var(--color-accent)', flexShrink: 0 }} />
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.4, color: '#1A1A1A', maxWidth: '28rem' }}>{c.result}</p>
+                  </div>
+                  <figure className="m-0 mt-7 overflow-hidden" style={{ transform: 'rotate(1.2deg)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
+                    <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#1A1A1A' }}>
+                      <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+                      <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>{c.client}</span>
+                    </div>
+                    <img src={c.src} alt={c.alt} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxHeight: 430, objectFit: 'cover', objectPosition: '50% 0%' }} />
+                  </figure>
+                  <div className="mt-8 flex flex-wrap gap-x-10 gap-y-6">
+                    {c.metrics.map((m) => (
+                      <div key={m.label}>
+                        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
+                        <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{m.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* REVIEWS — a continuous, hover-pausable marquee of shorter cards */}
+      <section className="py-16 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-6"><Kicker>And more results, in their words</Kicker></div>
+        <div className="mt-8 cs-marquee-mask" style={{ overflow: 'hidden' }}>
+          <div className="cs-marquee-track">
+            {[...REVIEWS, ...REVIEWS].map((t, i) => (
+              <div
+                key={i}
+                style={{ flex: '0 0 300px', marginRight: 18, padding: '18px 20px', background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}
+              >
+                <p style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>"{t.q}"</p>
+                <p className="mt-3.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A' }}>{t.n}</p>
+                <p style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* THE FIX — the engine, as a live, animated product cockpit */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
@@ -2668,65 +2810,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         </div>
       </section>
 
-      {/* PROOF — real client case studies */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
-        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
-        <div className="mt-12 space-y-16">
-          {cases.map((c) => (
-            <motion.div key={c.client} initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.7, ease: EASE }} className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <figure className={`m-0 overflow-hidden ${c.flip ? 'lg:order-2' : ''}`} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-                <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#1A1A1A' }}>
-                  <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>{c.client}</span>
-                </div>
-                <img src={c.src} alt={c.alt} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-              </figure>
-              <div className={c.flip ? 'lg:order-1' : ''}>
-                <div style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{c.role}</div>
-                <h3 className="mt-1.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', letterSpacing: '-0.02em', color: '#1A1A1A' }}>{c.client}</h3>
-                <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>{c.summary}</p>
-                <div className="mt-7 flex flex-wrap gap-x-10 gap-y-6">
-                  {c.metrics.map((m) => (
-                    <div key={m.label}>
-                      <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
-                      <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* REVIEWS */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <Kicker>The kind of work people rehire for</Kicker>
-        <div className="mt-8 p-8 lg:p-10" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic', fontSize: 'clamp(1.4rem, 2.8vw, 2rem)', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"{REVIEWS[0].q}"</p>
-          <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>{REVIEWS[0].n}</p>
-          <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{REVIEWS[0].r}</p>
-        </div>
-        <div className="mt-5 grid md:grid-cols-3 gap-5">
-          {REVIEWS.slice(1).map((t) => (
-            <div key={t.n} className="p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#3D3D3B' }}>"{t.q}"</p>
-              <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', fontWeight: 600, color: '#1A1A1A' }}>{t.n}</p>
-              <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* FOUNDER NOTE */}
       <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} className="w-28 h-28 sm:w-36 sm:h-36" style={{ objectFit: 'cover', borderRadius: 22, flexShrink: 0, boxShadow: CI_SHADOW_LG }} />
           <div>
-            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I build <Italic>content engines that run themselves.</Italic></h2>
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>I've built 100+ AI systems for agencies and service businesses, and I run my own LinkedIn on the same engine I'd install for you. I'll train yours on your voice and your real work, then show you a week of drafts before you commit to anything.</p>
-            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · AI content systems for agencies</p>
+            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I fill founders' LinkedIn with content and lead magnets, <Italic>on autopilot.</Italic></h2>
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>It's an inbound system that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
+            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound content systems for founders</p>
           </div>
         </div>
       </section>

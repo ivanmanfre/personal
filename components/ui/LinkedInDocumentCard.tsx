@@ -1,6 +1,6 @@
 // components/ui/LinkedInDocumentCard.tsx
 import React from 'react';
-import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, FileText } from 'lucide-react';
+import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, FileText, ArrowUpRight } from 'lucide-react';
 import type { NormalizedLmCard, ProfileSpec } from '../../lib/linkedinFeedSpec';
 import { avatarInitials } from './LinkedInPostPreview';
 
@@ -67,10 +67,11 @@ const LinkedInDocumentCard: React.FC<Props> = ({ profile, card, caption, onCardC
               <span className="absolute top-3 right-3 inline-flex items-center gap-1.5 bg-[#1d2226] text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#3fae7a] animate-pulse" aria-hidden /> Interactive
               </span>
-              {/* hover overlay makes it unmistakable this opens a live tool */}
-              <div className="absolute inset-0 flex items-center justify-center bg-[#1d2226]/0 group-hover:bg-[#1d2226]/35 transition-colors">
+              {/* Hover cue only: darken the cover and surface a pill. The always-visible
+                  "open" affordance lives BELOW the card (in the feed), not over the art. */}
+              <div className="absolute inset-0 flex items-center justify-center bg-[#1d2226]/0 group-hover:bg-[#1d2226]/30 transition-colors">
                 <span className="inline-flex items-center gap-2 bg-white text-[#1d2226] text-[13px] font-semibold px-4 py-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                  Try the live scorecard <span aria-hidden>→</span>
+                  Open the live scorecard <ArrowUpRight className="w-4 h-4" />
                 </span>
               </div>
             </>
