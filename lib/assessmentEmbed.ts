@@ -14,29 +14,23 @@ export interface AssessmentEmbedOpts {
   src?: string;
 }
 
-/** base64-encode a JSON-safe object. Payload is question ids + integer indices (ASCII). */
-function encodeSeed(seed: Record<string, number>): string {
-  return btoa(JSON.stringify(seed));
-}
-
 /**
- * Build the iframe src for the live, results-forward assessment.
- * Returns null when the LM can't be embedded (no slug or no seed answers),
- * so the caller can skip the section entirely.
+ * Build the iframe src for the LIVE assessment sample shown inside a prospect scan.
+ * The prospect takes it the way their own leads would: fresh from the intro, in the
+ * lead's brand color, with Ivan's chrome and fonts stripped (engine embed mode).
+ * We deliberately do NOT use results-forward mode here — a pre-seeded score reads as
+ * "already completed" and gives the prospect nothing to interact with.
+ * Returns null when there's no slug to embed, so the caller can skip the section.
  */
 export function buildAssessmentEmbedUrl(
   lm: AssessmentEmbedLm | undefined | null,
   opts?: AssessmentEmbedOpts
 ): string | null {
   if (!lm || !lm.slug) return null;
-  const seed = lm.seed_answers;
-  if (!seed || Object.keys(seed).length === 0) return null;
   const params = new URLSearchParams();
-  params.set('mode', 'result');
-  params.set('seed', encodeSeed(seed));
   params.set('src', opts?.src ?? 'scan_embed');
   if (opts?.prospectId) params.set('pid', opts.prospectId);
-  // The lead's brand color rides into the embed so the live scorecard matches their cover.
+  // The lead's brand color rides into the embed so the live assessment matches their cover.
   const accent = (lm.accent_hex || '').replace(/[^0-9a-fA-F]/g, '');
   if (accent) params.set('accent', accent);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;

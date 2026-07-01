@@ -2633,18 +2633,18 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               transition={{ duration: 0.7, ease: EASE }}
               style={{ borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
             >
-              <div className="grid sm:grid-cols-[168px_1fr] gap-6 sm:gap-9 items-center p-6 sm:p-9 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#15201b 0%,#1e2e25 100%)' }}>
-                <div className="mx-auto sm:mx-0" style={{ transform: 'rotate(-3deg)' }}>
-                  <img src={feedSpec.lmCard.coverUrl} alt={feedSpec.lmCard.title} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: 152, borderRadius: 8, boxShadow: '0 18px 44px rgba(0,0,0,0.45)' }} />
+              <div className="grid sm:grid-cols-[300px_1fr] gap-8 sm:gap-11 items-center p-7 sm:p-11 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#15201b 0%,#1e2e25 100%)' }}>
+                <div className="mx-auto sm:mx-0 transition-transform duration-300 group-hover:scale-[1.02]" style={{ transform: 'rotate(-2deg)' }}>
+                  <img src={feedSpec.lmCard.coverUrl} alt={feedSpec.lmCard.title} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxWidth: 300, borderRadius: 10, boxShadow: '0 26px 60px rgba(0,0,0,0.5)' }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #4FB286)', fontWeight: 600 }}>
-                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} /> Live · interactive · 2 min
+                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--color-accent)' }} /> Your lead magnet sample · live
                   </div>
-                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.55rem, 2.7vw, 2.05rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>See your score on the spot.</h3>
-                  <p className="mt-2.5 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(244,241,235,0.72)' }}>The {feedSpec.lmCard.title}, built for your operation. Two minutes, you get your number and the gaps to fix.</p>
+                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>What your leads land on.</h3>
+                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, {who}.</p>
                   <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#0E1512', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
-                    Open the live scorecard
+                    Take the live sample
                     <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </span>
                 </div>
