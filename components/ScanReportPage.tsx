@@ -2406,7 +2406,7 @@ function LmCalculatorSim({ sim }: { sim: LmSim }) {
 // In-page preview of the prospect's lead magnet. The LM card in the feed opens this:
 // the real cover next to what's inside (the actual prompts), so it reads as a finished
 // resource without leaving the page. Not a live external link by design.
-function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; sim?: LmSim }; who: string; bookUrl: string; embedUrl?: string | null; onClose: () => void }) {
+function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, onClose }: { lm: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; sim?: LmSim }; who: string; bookUrl: string; embedUrl?: string | null; domain?: string; onClose: () => void }) {
   const reduce = useReducedMotion();
   const hairline = 'var(--color-hairline)';
   useEffect(() => {
@@ -2417,6 +2417,60 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: 
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [onClose]);
   const items = lm.whats_inside ?? [];
+  // A believable path off the LM title (last ~3 words), so the address bar reads like their page.
+  const urlPath = (lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-');
+  // A calculator LM has no live page to embed — present it AS the prospect's own deployed
+  // page anyway: a browser window on their domain wrapping the interactive simulation, so it
+  // reads as the tool running on their site (never an ivanmanfredi.com resource).
+  if (lm.sim) {
+    const simPath = (lm.title || 'calculator').split(':')[0].toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+    const cleanDomain = (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    return (
+      <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+        style={{ background: 'rgba(20,18,15,0.6)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Your live lead magnet">
+        <motion.div className="relative w-full max-w-3xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
+          style={{ maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
+          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(247,244,239,0.16)', color: '#F7F4EF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Close <XCircle className="w-4 h-4" />
+          </button>
+          <div className="w-full overflow-auto" style={{ maxHeight: '90vh', borderRadius: 14, border: '1px solid rgba(234,241,246,0.12)', boxShadow: '0 24px 60px rgba(26,26,26,0.28)', background: '#0C0F11' }}>
+            {cleanDomain && (
+              <div className="flex items-center gap-3 px-3.5" style={{ height: 46, background: 'linear-gradient(180deg,#12161A 0%,#0E1216 100%)', borderBottom: '1px solid rgba(234,241,246,0.10)' }}>
+                <div className="flex items-center gap-2" aria-hidden>
+                  <span style={{ width: 11, height: 11, borderRadius: 999, background: '#FF5F57' }} />
+                  <span style={{ width: 11, height: 11, borderRadius: 999, background: '#FEBC2E' }} />
+                  <span style={{ width: 11, height: 11, borderRadius: 999, background: '#28C840' }} />
+                </div>
+                <div className="flex items-center gap-2 mx-auto" style={{ maxWidth: 420, width: '100%', height: 28, padding: '0 12px', borderRadius: 8, background: 'rgba(234,241,246,0.06)', border: '1px solid rgba(234,241,246,0.10)', color: 'rgba(234,241,246,0.6)' }}>
+                  <span style={{ fontFamily: MONO, fontSize: 12, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cleanDomain}/{simPath}</span>
+                </div>
+                <div style={{ width: 46, flexShrink: 0 }} aria-hidden />
+              </div>
+            )}
+            <LmCalculatorSim sim={lm.sim} />
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+  // The live sample is shown AS the prospect's own deployed page — a browser window on their
+  // domain, no surrounding paper frame, so nothing reads as an Ivan-hosted resource.
+  if (embedUrl) {
+    return (
+      <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
+        style={{ background: 'rgba(20,18,15,0.6)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Your live lead magnet">
+        <motion.div className="relative w-full max-w-3xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
+          style={{ maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
+          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(247,244,239,0.16)', color: '#F7F4EF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Close <XCircle className="w-4 h-4" />
+          </button>
+          <div className="overflow-hidden" style={{ maxHeight: '90vh', borderRadius: 14 }}>
+            <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} domain={domain} urlPath={urlPath} />
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
   return (
     <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
       style={{ background: 'rgba(20,18,15,0.55)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Lead magnet preview">
@@ -2425,15 +2479,7 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, onClose }: { lm: { title: 
         <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(26,26,26,0.06)' }}>
           <XCircle className="w-5 h-5" style={{ color: '#1A1A1A' }} />
         </button>
-        {lm.sim ? (
-          <div className="p-2 sm:p-3">
-            <LmCalculatorSim sim={lm.sim} />
-          </div>
-        ) : embedUrl ? (
-          <div className="p-2 sm:p-3">
-            <LiveAssessmentEmbed src={embedUrl} title={lm.title} height={900} />
-          </div>
-        ) : (
+        {(
         <div className="grid md:grid-cols-2">
           <div className="p-5 sm:p-6 flex items-center justify-center" style={{ background: '#1A1A1A' }}>
             <img src={lm.cover_url} alt={lm.title} className="w-full h-auto" style={{ borderRadius: CI_R_SM, maxHeight: '64vh', objectFit: 'contain' }} />
@@ -2955,7 +3001,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <AnimatePresence>
         {lmOpen && cs.sample_output?.lm && (
-          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={lmEmbedUrl} onClose={() => setLmOpen(false)} />
+          <LmPreviewModal lm={cs.sample_output.lm} who={who} bookUrl={bookUrl} embedUrl={lmEmbedUrl} domain={scan?.domain || companyName} onClose={() => setLmOpen(false)} />
         )}
       </AnimatePresence>
     </div>
