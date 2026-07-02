@@ -53,6 +53,7 @@ const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'))
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
+const ClientBoardPage = lazy(() => import('./components/ClientBoardPage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
 
@@ -70,6 +71,8 @@ function App() {
   const isViewer = location.pathname.startsWith('/v/');
   const isWalkthrough = location.pathname.startsWith('/walkthrough');
   const isScanReport = /^\/scan\/[^/]+\/?$/.test(location.pathname);
+  // Client content board — full-screen, token-gated, no site chrome.
+  const isClientBoard = /^\/client\/[^/]+\/?$/.test(location.pathname);
   // / and /landing both render LandingPage with full-bleed treatment.
   // /landing kept as alias so existing links don't break.
   const isLanding = location.pathname === '/' || location.pathname.startsWith('/landing');
@@ -125,6 +128,17 @@ function App() {
       <Suspense fallback={<div className="min-h-screen bg-paper" />}>
         <Routes>
           <Route path="/walkthrough" element={<Walkthrough />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  if (isClientBoard) {
+    return (
+      <Suspense fallback={<div className="min-h-screen" style={{ background: '#f6f7f9' }} />}>
+        <Routes>
+          <Route path="/client/:slug" element={<ClientBoardPage />} />
+          <Route path="/client/:slug/*" element={<ClientBoardPage />} />
         </Routes>
       </Suspense>
     );
