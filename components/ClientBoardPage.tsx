@@ -10,6 +10,8 @@ import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
  * Token-gated via the get_client_board RPC; fetches ONLY the board payload
  * (never Ivan's dashboard context — this is a client-facing surface).
  * Light Premium skin + the client's own brand accent/logo/heading font.
+ * Content mirrors the Ivan System staged-board pattern: stage groups → rows →
+ * detail view with the generation agent trail.
  */
 
 // ---------- types (shape of client_boards.board) ----------
@@ -19,11 +21,17 @@ interface BoardBrand {
   font_heading?: string;
   font_body?: string;
   is_dark?: boolean;
-  logo_url?: string;
+  header_bg?: string;
+  logo_light?: string;
+  logo_dark?: string;
+  surface_hex?: string;
 }
+interface AgentStep { step: string; detail?: string; t?: string; done?: boolean }
+type Stage = 'drafted' | 'review' | 'scheduled' | 'published';
 interface QueueItem {
   id: string;
-  kind: 'post' | 'carousel' | 'lm';
+  kind: 'post' | 'carousel' | 'lm' | 'newsletter';
+  stage: Stage;
   pillar?: string;
   hook?: string;
   body?: string;
@@ -32,6 +40,8 @@ interface QueueItem {
   promise?: string;
   cover_url?: string;
   publish_date?: string;
+  generating?: boolean;
+  agent_trail?: AgentStep[];
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
@@ -41,6 +51,7 @@ interface Board {
   logo_url?: string;
   founder?: { name?: string; headline?: string; first_name?: string; avatar_url?: string };
   brand?: BoardBrand;
+  site?: { nav?: string[]; phone?: string; cta?: string };
   queue: QueueItem[];
   lm?: any;
   strategy?: { total: number; period?: string; pillars: Pillar[] };
@@ -74,21 +85,20 @@ function lmPath(title?: string): string {
   return (title || 'lead-magnet').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim()
     .split(/\s+/).slice(-3).join('-');
 }
+const KIND_LABEL: Record<string, string> = { post: 'Post', carousel: 'Carousel', lm: 'Lead magnet', newsletter: 'Newsletter' };
 
 // Segment tints: the client's accent mixed toward white at stepped ratios, so the
 // bar reads as one brand family, never a rainbow.
 const TINT_STEPS = [26, 20, 15, 11, 8];
 
 // ---------- shared bits ----------
-function StatusPill({ children, tone, accent }: { children: React.ReactNode; tone: 'review' | 'scheduled' | 'neutral'; accent: string }) {
-  const styles: Record<string, React.CSSProperties> = {
-    review: { background: `color-mix(in srgb, ${accent} 12%, white)`, color: INK },
-    scheduled: { background: '#ecfdf5', color: '#047857' },
-    neutral: { background: '#f1f5f9', color: DIM },
-  };
+function KindChip({ kind, accent }: { kind: string; accent: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={styles[tone]}>
-      {children}
+    <span
+      className="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-[11px] font-semibold"
+      style={{ background: `color-mix(in srgb, ${accent} 10%, white)`, color: INK }}
+    >
+      {KIND_LABEL[kind] || kind}
     </span>
   );
 }
@@ -102,75 +112,248 @@ function SectionHead({ title, sub }: { title: string; sub?: string }) {
   );
 }
 
-// ---------- Review surface ----------
-function ReviewSurface({ board, accent }: { board: Board; accent: string }) {
-  const [approved, setApproved] = useState<Record<string, boolean>>({});
-  const [changing, setChanging] = useState<string | null>(null);
-  const [sent, setSent] = useState<Record<string, boolean>>({});
-  const [note, setNote] = useState('');
+function PulseDot({ color }: { color: string }) {
+  return (
+    <span className="relative inline-flex h-2 w-2 shrink-0">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: color }} />
+      <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: color }} />
+    </span>
+  );
+}
+
+// ---------- Content surface: staged list ----------
+const STAGE_META: Record<Stage, { label: string; hint: string }> = {
+  drafted: { label: 'Drafted', hint: 'The engine is writing these. They move to your review when ready.' },
+  review: { label: 'Your review', hint: 'Your only job. Approve or request a change.' },
+  scheduled: { label: 'Scheduled', hint: 'Approved and queued to publish.' },
+  published: { label: 'Published', hint: 'Live on your LinkedIn.' },
+};
+const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
+
+function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
+  if (stage === 'drafted') {
+    return q.generating
+      ? <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="#0ea5e9" /> Generating…</span>
+      : <span className="text-[12px]" style={{ color: FAINT }}>In production</span>;
+  }
+  if (stage === 'review') return <span className="text-[12px]" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)} unless you change it</span>;
+  if (stage === 'scheduled') return <span className="text-[12px] font-medium" style={{ color: '#047857' }}>Publishes {fmtDay(q.publish_date)}</span>;
+  return <span className="text-[12px]" style={{ color: FAINT }}>Published {fmtDay(q.publish_date)}</span>;
+}
+
+function ReviewSurface({ board, accent, stageOf, onOpen }: {
+  board: Board; accent: string;
+  stageOf: (q: QueueItem) => Stage;
+  onOpen: (q: QueueItem) => void;
+}) {
   const autoDays = board.auto_publish_days ?? 3;
-  const pending = board.queue.filter((q) => !approved[q.id]);
-  const done = board.queue.filter((q) => approved[q.id]);
-  const ctaInk = inkOn(accent);
-
-  const card = (q: QueueItem) => {
-    const isApproved = !!approved[q.id];
-    return (
-      <div key={q.id} className="rounded-[14px] bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <StatusPill tone={isApproved ? 'scheduled' : 'review'} accent={accent}>
-            {isApproved ? 'Scheduled' : 'Your review'}
-          </StatusPill>
-          <StatusPill tone="neutral" accent={accent}>{q.kind === 'lm' ? 'Lead magnet' : q.kind === 'carousel' ? 'Carousel' : 'Post'}</StatusPill>
-          <span className="ml-auto text-[13px]" style={{ color: FAINT }}>
-            {isApproved ? `Publishes ${fmtDay(q.publish_date)}` : `Publishes ${fmtDay(q.publish_date)} unless you change it`}
-          </span>
-        </div>
-
-        {q.kind === 'lm' ? (
-          <div className="flex flex-col gap-4 sm:flex-row">
-            {q.cover_url && (
-              <img src={q.cover_url} alt="" className="w-full rounded-lg object-cover sm:w-44" style={{ border: `1px solid ${LINE}` }} />
-            )}
-            <div className="min-w-0">
-              <div className="text-[16px] font-semibold" style={{ color: INK }}>{q.title}</div>
-              <p className="mt-1 text-[14px] leading-relaxed" style={{ color: DIM }}>{q.promise}</p>
-              <p className="mt-2 text-[13px]" style={{ color: FAINT }}>Interactive assessment on your domain. Try it live in the Lead magnet tab.</p>
+  const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
+  return (
+    <div>
+      <SectionHead
+        title="Your content"
+        sub={`Everything the engine produces moves through these stages. Anything in your review you don't touch publishes automatically after ${autoDays} days.`}
+      />
+      <div className="flex flex-col gap-6">
+        {groups.map(({ stage, items }) => (
+          <div key={stage}>
+            <div className="mb-2 flex items-baseline gap-2.5 px-1">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : FAINT }}>
+                {STAGE_META[stage].label}
+              </span>
+              <span className="rounded-full px-1.5 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>{items.length}</span>
+              <span className="hidden text-[12px] sm:inline" style={{ color: FAINT }}>{STAGE_META[stage].hint}</span>
+            </div>
+            <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: stage === 'review' ? CARD_SHADOW : 'none' }}>
+              {items.length === 0 && (
+                <div className="px-4 py-4 text-[13px]" style={{ color: FAINT }}>Nothing here right now.</div>
+              )}
+              {items.map((q, i) => (
+                <button
+                  key={q.id}
+                  onClick={() => onOpen(q)}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#fbfcfd]"
+                  style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 54 }}
+                >
+                  <KindChip kind={q.kind} accent={accent} />
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium" style={{ color: INK }}>
+                    {q.hook || q.title}
+                  </span>
+                  {q.pillar && (
+                    <span className="hidden items-center gap-1.5 sm:inline-flex">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} />
+                      <span className="text-[12px] capitalize" style={{ color: FAINT }}>{q.pillar}</span>
+                    </span>
+                  )}
+                  <span className="hidden shrink-0 text-right sm:block">{stageStatus(q, stage)}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden>
+                    <path d="M9 6l6 6-6 6" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              ))}
             </div>
           </div>
-        ) : (
-          <LinkedInPostPreview
-            text={q.body || ''}
-            author={board.founder?.name || board.company_name}
-            headline={board.founder?.headline || ''}
-            avatarUrl={board.founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
-            mediaUrl={q.media_url || undefined}
-            stats={{ reactions: 0, comments: 0 }}
-            showFold
-          />
-        )}
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        {!isApproved && (
-          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+// ---------- Detail view (modal): preview + edit + agent trail ----------
+function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
+  return (
+    <div>
+      <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>How this was made</div>
+      <div className="flex flex-col">
+        {steps.map((s, i) => (
+          <div key={i} className="relative flex gap-3 pb-4 last:pb-0">
+            {i < steps.length - 1 && (
+              <span className="absolute bottom-0 left-[7px] top-5 w-px" style={{ background: LINE }} aria-hidden />
+            )}
+            <span className="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
+              {s.done === false
+                ? <PulseDot color={accent} />
+                : (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 16%, white)` }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[13px] font-semibold" style={{ color: INK }}>{s.step}</span>
+                {s.t && <span className="text-[11px]" style={{ color: FAINT }}>{s.t}</span>}
+              </div>
+              {s.detail && <div className="text-[12px] leading-snug" style={{ color: DIM }}>{s.detail}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
+  item: QueueItem; board: Board; accent: string; stage: Stage;
+  onClose: () => void; onApprove: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(item.body || '');
+  const [changing, setChanging] = useState(false);
+  const [note, setNote] = useState('');
+  const [sent, setSent] = useState(false);
+  const ctaInk = inkOn(accent);
+  const canAct = stage === 'review';
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto my-0 min-h-full w-full max-w-4xl bg-white p-4 sm:my-8 sm:min-h-0 sm:rounded-[16px] sm:p-6" style={{ boxShadow: '0 30px 80px rgba(15,23,42,.35)' }}>
+        {/* Header */}
+        <div className="mb-4 flex items-center gap-2.5">
+          <KindChip kind={item.kind} accent={accent} />
+          {item.pillar && <span className="text-[12px] capitalize" style={{ color: FAINT }}>{item.pillar}</span>}
+          <span className="ml-auto">{stageStatus(item, stage)}</span>
+          <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#f1f5f9]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+          {/* Left: content preview / edit */}
+          <div className="min-w-0">
+            {item.kind === 'lm' ? (
+              <div className="rounded-[14px] p-4" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  {item.cover_url && <img src={item.cover_url} alt="" className="w-full rounded-lg object-cover sm:w-44" style={{ border: `1px solid ${LINE}` }} />}
+                  <div className="min-w-0">
+                    <div className="text-[16px] font-semibold" style={{ color: INK }}>{item.title}</div>
+                    <p className="mt-1 text-[14px] leading-relaxed" style={{ color: DIM }}>{item.promise}</p>
+                    <p className="mt-2 text-[13px]" style={{ color: FAINT }}>Interactive assessment on your domain. Try it live in the Lead magnet tab.</p>
+                  </div>
+                </div>
+              </div>
+            ) : editing ? (
+              <div>
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  rows={Math.min(18, Math.max(8, body.split('\n').length + 2))}
+                  className="w-full rounded-[12px] p-4 text-[14px] leading-relaxed outline-none"
+                  style={{ border: `1.5px solid ${accent}`, color: INK, background: '#fbfcfd' }}
+                />
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="inline-flex min-h-[40px] items-center rounded-lg px-4 text-[13px] font-semibold"
+                    style={{ background: accent, color: ctaInk }}
+                  >
+                    Done editing
+                  </button>
+                  <span className="text-[12px]" style={{ color: FAINT }}>Edits sync to your operator before publish.</span>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {item.body ? (
+                  <LinkedInPostPreview
+                    text={body || item.body || ''}
+                    author={board.founder?.name || board.company_name}
+                    headline={board.founder?.headline || ''}
+                    avatarUrl={board.founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
+                    mediaUrl={item.media_url || undefined}
+                    stats={{ reactions: 0, comments: 0 }}
+                    showFold={false}
+                  />
+                ) : (
+                  <div className="rounded-[14px] p-5 text-[14px] italic" style={{ border: `1px dashed ${LINE}`, color: FAINT }}>
+                    {item.generating ? 'The draft is being written right now. It lands here in a few minutes.' : 'Draft in production.'}
+                  </div>
+                )}
+                {canAct && item.body && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="mt-3 inline-flex min-h-[40px] items-center rounded-lg px-4 text-[13px] font-semibold"
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                  >
+                    Edit copy
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right: agent trail */}
+          <div className="h-fit rounded-[14px] p-4" style={{ background: '#fbfcfd', border: `1px solid ${LINE}` }}>
+            <AgentTrail steps={item.agent_trail || []} accent={accent} />
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        {canAct && (
+          <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t pt-4" style={{ borderColor: LINE }}>
             <button
-              onClick={() => { setApproved((s) => ({ ...s, [q.id]: true })); setChanging(null); }}
-              className="inline-flex min-h-[44px] items-center rounded-lg px-5 text-[14px] font-semibold transition-transform active:scale-[.98]"
+              onClick={() => { onApprove(item.id); onClose(); }}
+              className="inline-flex min-h-[44px] items-center rounded-lg px-6 text-[14px] font-semibold transition-transform active:scale-[.98]"
               style={{ background: accent, color: ctaInk }}
             >
               Approve
             </button>
             <button
-              onClick={() => { setChanging(changing === q.id ? null : q.id); setNote(''); }}
+              onClick={() => setChanging(!changing)}
               className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
               style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
             >
               Request changes
             </button>
-            {sent[q.id] && <span className="text-[13px] font-medium" style={{ color: '#047857' }}>Sent. Your operator will adjust it before the publish date.</span>}
+            {sent && <span className="text-[13px] font-medium" style={{ color: '#047857' }}>Sent. Your operator will adjust it before the publish date.</span>}
           </div>
         )}
-
-        {changing === q.id && !isApproved && (
+        {changing && canAct && !sent && (
           <div className="mt-3">
             <textarea
               value={note}
@@ -181,7 +364,7 @@ function ReviewSurface({ board, accent }: { board: Board; accent: string }) {
               style={{ border: `1px solid ${LINE}`, color: INK, background: '#fbfcfd' }}
             />
             <button
-              onClick={() => { setSent((s) => ({ ...s, [q.id]: true })); setChanging(null); }}
+              onClick={() => { setSent(true); setChanging(false); }}
               className="mt-2 inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
               style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
             >
@@ -190,28 +373,6 @@ function ReviewSurface({ board, accent }: { board: Board; accent: string }) {
           </div>
         )}
       </div>
-    );
-  };
-
-  return (
-    <div>
-      <SectionHead
-        title="Your review"
-        sub={`Approve, edit, or request a change. Anything you don't touch publishes automatically after ${autoDays} days.`}
-      />
-      <div className="flex flex-col gap-5">{pending.map(card)}</div>
-      {pending.length === 0 && (
-        <div className="rounded-[14px] bg-white p-8 text-center" style={{ border: `1px solid ${LINE}` }}>
-          <div className="text-[16px] font-semibold" style={{ color: INK }}>All reviewed.</div>
-          <p className="mt-1 text-[14px]" style={{ color: DIM }}>New drafts land here every morning. That was the whole job.</p>
-        </div>
-      )}
-      {done.length > 0 && (
-        <div className="mt-8">
-          <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Scheduled</div>
-          <div className="flex flex-col gap-5 opacity-80">{done.map(card)}</div>
-        </div>
-      )}
     </div>
   );
 }
@@ -303,8 +464,7 @@ function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
 function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) {
   const lm = board.lm;
   // Default src (scan_embed) keeps the engine's embed mode: Ivan's chrome/greeting
-  // stripped + the client's accent/fonts applied. A dedicated client_board src would
-  // need an engine-side alias first.
+  // stripped + the client's accent/fonts applied.
   const src = useMemo(() => buildAssessmentEmbedUrl(lm), [lm]);
   return (
     <div>
@@ -318,9 +478,13 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
           title={lm?.title}
           domain={board.domain}
           urlPath={lmPath(lm?.title)}
-          logoUrl={board.logo_url}
+          logoUrl={board.brand?.logo_dark || board.logo_url}
           accentHex={accent}
           companyName={board.company_name}
+          navLinks={board.site?.nav}
+          headerBg={board.brand?.header_bg}
+          ctaText={board.site?.cta}
+          phone={board.site?.phone}
           height={980}
         />
       ) : (
@@ -343,7 +507,7 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
             </thead>
             <tbody style={{ color: INK }}>
               <tr style={{ borderTop: `1px solid ${LINE}` }}>
-                <td className="py-2.5">jamie@—store.com <StatusPill tone="neutral" accent={accent}>Sample</StatusPill></td>
+                <td className="py-2.5">jamie@—store.com <span className="ml-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>Sample</span></td>
                 <td className="py-2.5">52 / 100</td>
                 <td className="py-2.5">Margin visibility</td>
                 <td className="py-2.5">—</td>
@@ -367,7 +531,7 @@ function StrategySurface({ board, accent }: { board: Board; accent: string }) {
   if (!strat) return null;
 
   const openPillar = strat.pillars.find((p) => p.key === open);
-  const queueOf = (key: string) => board.queue.filter((q) => q.pillar === key);
+  const queueOf = (key: string) => board.queue.filter((q) => q.pillar === key && (q.stage === 'review' || q.stage === 'drafted'));
   const scheduledOf = (key: string) => (board.calendar?.items || []).filter((it) => it.pillar === key).length;
 
   return (
@@ -415,7 +579,7 @@ function StrategySurface({ board, accent }: { board: Board; accent: string }) {
               {queueOf(openPillar.key).map((q) => (
                 <div key={q.id} className="rounded-lg bg-white p-3" style={{ border: `1px solid ${LINE}` }}>
                   <div className="text-[13px] font-medium leading-snug" style={{ color: INK }}>{q.hook || q.title}</div>
-                  <div className="mt-1 text-[12px]" style={{ color: FAINT }}>In your review · publishes {fmtDay(q.publish_date)}</div>
+                  <div className="mt-1 text-[12px]" style={{ color: FAINT }}>{STAGE_META[q.stage].label} · publishes {fmtDay(q.publish_date)}</div>
                 </div>
               ))}
             </div>
@@ -463,7 +627,7 @@ function StrategySurface({ board, accent }: { board: Board; accent: string }) {
 
 // ---------- page ----------
 const TABS = [
-  { id: 'review', label: 'Review' },
+  { id: 'review', label: 'Content' },
   { id: 'calendar', label: 'Calendar' },
   { id: 'lm', label: 'Lead magnet' },
   { id: 'strategy', label: 'Strategy' },
@@ -478,6 +642,8 @@ export default function ClientBoardPage() {
   const [mode, setMode] = useState<string>('demo');
   const [state, setState] = useState<'loading' | 'ready' | 'invalid'>('loading');
   const [tab, setTab] = useState<TabId>('review');
+  const [detail, setDetail] = useState<QueueItem | null>(null);
+  const [stageOverride, setStageOverride] = useState<Record<string, Stage>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -507,6 +673,7 @@ export default function ClientBoardPage() {
   }, [headingFont]);
 
   const accent = cleanHex(board?.brand?.accent_hex);
+  const stageOf = (q: QueueItem): Stage => stageOverride[q.id] ?? q.stage;
 
   if (state === 'loading') {
     return (
@@ -528,11 +695,17 @@ export default function ClientBoardPage() {
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const surfaces: Record<TabId, React.ReactNode> = {
-    review: <ReviewSurface board={board} accent={accent} />,
+    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} />,
     calendar: <CalendarSurface board={board} accent={accent} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
     strategy: <StrategySurface board={board} accent={accent} />,
   };
+
+  const logo = (h: number) => (
+    board.logo_url
+      ? <img src={board.logo_url} alt={board.company_name} style={{ height: h, width: 'auto', maxWidth: 150, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+      : <span className="text-[14px] font-semibold" style={{ fontFamily: fontStack, color: INK }}>{board.company_name}</span>
+  );
 
   const nav = (vertical: boolean) => (
     <nav className={vertical ? 'flex flex-col gap-1' : 'grid w-full grid-cols-4'} aria-label="Board sections">
@@ -559,15 +732,8 @@ export default function ClientBoardPage() {
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-6 border-r bg-white p-5 lg:flex" style={{ borderColor: LINE }}>
         <div>
-          <div className="flex items-center gap-2.5">
-            {board.logo_url && (
-              <img src={board.logo_url} alt="" className="h-8 w-8 rounded object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            )}
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold" style={{ fontFamily: fontStack }}>{board.company_name}</div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Content engine</div>
-            </div>
-          </div>
+          {logo(30)}
+          <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Content engine</div>
         </div>
         {nav(true)}
         <div className="mt-auto flex flex-col gap-3">
@@ -582,12 +748,7 @@ export default function ClientBoardPage() {
 
       {/* Mobile header */}
       <header className="sticky top-0 z-20 flex items-center gap-2.5 border-b bg-white px-4 py-3 lg:hidden" style={{ borderColor: LINE }}>
-        {board.logo_url && (
-          <img src={board.logo_url} alt="" className="h-7 w-7 rounded object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-        )}
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold" style={{ fontFamily: fontStack }}>{board.company_name}</div>
-        </div>
+        {logo(22)}
         {mode === 'demo' && (
           <span className="ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>Preview</span>
         )}
@@ -601,6 +762,17 @@ export default function ClientBoardPage() {
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white px-2 py-1.5 lg:hidden" style={{ borderColor: LINE }}>
         {nav(false)}
       </div>
+
+      {detail && (
+        <DetailModal
+          item={detail}
+          board={board}
+          accent={accent}
+          stage={stageOf(detail)}
+          onClose={() => setDetail(null)}
+          onApprove={(id) => setStageOverride((s) => ({ ...s, [id]: 'scheduled' }))}
+        />
+      )}
     </div>
   );
 }

@@ -9,6 +9,8 @@ export interface AssessmentEmbedBrand {
   font_heading?: string;
   font_body?: string;
   logo_url?: string;
+  /** Page background for the embed surface (hex, no #). Absent -> engine's default paper. */
+  surface_hex?: string;
 }
 
 export interface AssessmentEmbedLm {
@@ -50,5 +52,9 @@ export function buildAssessmentEmbedUrl(
   if (accent) params.set('accent', accent);
   if (brand.font_heading) params.set('font', brand.font_heading);
   if (brand.font_body) params.set('fontb', brand.font_body);
+  // Surface override: swap the engine's warm cream paper for the lead's page background
+  // (e.g. clean white) so the embed reads as a page on THEIR site. Engine-side ?bg=.
+  const surface = ((brand as any).surface_hex || '').replace(/[^0-9a-fA-F]/g, '');
+  if (surface) params.set('bg', surface);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }

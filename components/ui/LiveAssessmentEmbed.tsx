@@ -17,6 +17,12 @@ interface Props {
   companyName?: string;
   /** Nav links shown in the simulated site header. */
   navLinks?: string[];
+  /** Header background — pass the prospect's real header color for dark-site brands. */
+  headerBg?: string;
+  /** CTA label in the simulated nav (e.g. their real "Free Strategy Call"). */
+  ctaText?: string;
+  /** Phone number shown before the CTA, like many agency navs. */
+  phone?: string;
 }
 
 const Lock: React.FC = () => (
@@ -46,12 +52,16 @@ function inkOn(hex?: string): string {
 const LiveAssessmentEmbed: React.FC<Props> = ({
   src, title, height = 1100, domain, urlPath, logoUrl, accentHex, companyName,
   navLinks = ['Home', 'About', 'Services', 'Contact'],
+  headerBg, ctaText, phone,
 }) => {
   const cleanDomain = (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   const showBar = !!cleanDomain;
   const url = cleanDomain + (urlPath ? '/' + urlPath : '');
   const accent = accentHex && /^#?[0-9a-fA-F]{6}$/.test(accentHex) ? (accentHex[0] === '#' ? accentHex : '#' + accentHex) : '#1A1A1A';
   const ctaInk = inkOn(accent);
+  const hdrBg = headerBg && /^#?[0-9a-fA-F]{6}$/.test(headerBg) ? (headerBg[0] === '#' ? headerBg : '#' + headerBg) : '#ffffff';
+  const hdrDark = inkOn(hdrBg) === '#ffffff';
+  const navInk = hdrDark ? 'rgba(255,255,255,0.78)' : 'rgba(26,26,26,0.66)';
   return (
     <div
       className="w-full overflow-hidden"
@@ -82,23 +92,28 @@ const LiveAssessmentEmbed: React.FC<Props> = ({
       {/* Simulated site header — their logo + nav + a CTA in their brand color. */}
       <div
         className="flex items-center px-5 sm:px-7"
-        style={{ height: 60, background: '#ffffff', borderBottom: '1px solid rgba(26,26,26,0.08)' }}
+        style={{ height: 60, background: hdrBg, borderBottom: hdrDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(26,26,26,0.08)' }}
       >
         <div className="flex items-center" style={{ flexShrink: 0 }}>
           {logoUrl
-            ? <img src={logoUrl} alt={companyName || 'logo'} style={{ height: 26, width: 'auto', maxWidth: 160, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            : <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{companyName}</span>}
+            ? <img src={logoUrl} alt={companyName || 'logo'} style={{ height: 30, width: 'auto', maxWidth: 170, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            : <span style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.01em', color: hdrDark ? '#fff' : '#1A1A1A' }}>{companyName}</span>}
         </div>
         <nav className="hidden md:flex items-center gap-7 ml-9">
           {navLinks.map((l) => (
-            <span key={l} style={{ fontSize: 13.5, fontWeight: 500, color: 'rgba(26,26,26,0.66)' }}>{l}</span>
+            <span key={l} style={{ fontSize: 13.5, fontWeight: 500, color: navInk }}>{l}</span>
           ))}
         </nav>
-        <span
-          className="ml-auto inline-flex items-center"
-          style={{ background: accent, color: ctaInk, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.01em', padding: '9px 18px', borderRadius: 8 }}
-        >
-          Get in touch
+        <span className="ml-auto inline-flex items-center gap-5">
+          {phone && (
+            <span className="hidden sm:inline" style={{ fontSize: 13, fontWeight: 600, color: hdrDark ? '#fff' : '#1A1A1A' }}>{phone}</span>
+          )}
+          <span
+            className="inline-flex items-center"
+            style={{ background: accent, color: ctaInk, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.01em', padding: '9px 18px', borderRadius: 4 }}
+          >
+            {ctaText || 'Get in touch'}
+          </span>
         </span>
       </div>
       <iframe
