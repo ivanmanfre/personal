@@ -272,6 +272,30 @@ const LandingHero: React.FC = () => {
                   See where you're leaking <ArrowRight size={14} />
                 </a>
               </motion.div>
+
+              {/* Named proof microline — verifiable proof inside the fold (T1,
+                  2026-07-02): the CTA no longer precedes ALL proof. Real client
+                  marks only (§5b evidence register): the two operators running
+                  the engine today, both shown with receipts further down. */}
+              <motion.p
+                initial={skip ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.1, duration: 0.7, ease }}
+                className="mt-7 flex items-center justify-center gap-2.5"
+                style={{
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#5A5752',
+                }}
+              >
+                <span
+                  style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+                  aria-hidden="true"
+                />
+                <span>Running live for Agency Operators + Lemonade</span>
+              </motion.p>
             </div>
           </div>
         </div>
