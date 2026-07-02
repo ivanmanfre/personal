@@ -385,7 +385,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   key={t}
                   onClick={() => setType(t)}
-                  className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/30 shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-inset ring-[var(--ds-line)] hover:text-[var(--ds-ink)] hover:ring-[#cbd5e1]'}`}
+                  className={`rounded-md px-3 py-1.5 transition-all duration-150 text-[12px] font-medium ${type === t ? 'bg-[var(--ds-accent)]/10 text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--ds-accent)]/30 shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-inset ring-[var(--ds-line)] hover:text-[var(--ds-ink)] hover:ring-[var(--d-rule-strong)]'}`}
                 >{TYPE_LABELS[t]}</button>
               ))}
             </div>
@@ -518,7 +518,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   onClick={() => setStatusFilter(s)}
                   className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
                     isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
-                    isActive && s === 'all' ? 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 shadow-sm font-medium' :
+                    isActive && s === 'all' ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium' :
                     isCritical ? 'text-red-600 hover:bg-red-50' :
                     isPinned && count === 0 ? 'text-[var(--ds-dim)] opacity-60 hover:opacity-100' :
                     'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
@@ -537,7 +537,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 onClick={() => setTypeFilter(t)}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
                   typeFilter === t
-                    ? 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 shadow-sm font-medium'
+                    ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium'
                     : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
                 }`}
               >
@@ -549,7 +549,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2 py-1 text-[var(--ds-dim)] hover:border-[#cbd5e1] cursor-pointer transition-colors text-[12px]"
+                className="rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2 py-1 text-[var(--ds-dim)] hover:border-[var(--d-rule-strong)] cursor-pointer transition-colors text-[12px]"
               >
                 <option value="auto">Smart sort</option>
                 <option value="updated">Sort: updated</option>
@@ -766,7 +766,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                       <button
                         key={d.id}
                         onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[var(--ds-accent)]/30 hover:bg-[#fafafe] hover:shadow-md transition-all overflow-hidden shadow-sm"
+                        className="w-full text-left rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[var(--ds-accent)]/30 hover:bg-[var(--d-surface-2)] hover:shadow-md transition-all overflow-hidden shadow-sm"
                       >
                         {thumb && (
                           <div className="aspect-[16/9] bg-[var(--ds-bg)] overflow-hidden">

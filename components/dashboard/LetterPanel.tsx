@@ -114,7 +114,7 @@ const LetterPanel: React.FC = () => {
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={openNew}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--ds-ok)] text-white hover:opacity-90 transition-colors flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" /> New issue
           </button>
@@ -241,7 +241,7 @@ const LetterPanel: React.FC = () => {
               </div>
               <button
                 onClick={openNew}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center gap-1.5"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--ds-ok)] text-white hover:opacity-90 transition-colors flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" /> New issue
               </button>

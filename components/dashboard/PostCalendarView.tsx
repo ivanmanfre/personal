@@ -347,7 +347,7 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div className="rounded-md border border-[var(--ds-line)] overflow-hidden">
-          <div className="grid grid-cols-7 bg-[#eef1f6] border-b border-[var(--ds-line)]">
+          <div className="grid grid-cols-7 bg-[var(--d-ink-3)] border-b border-[var(--ds-line)]">
             {DAY_LABELS.map((d) => (
               <div key={d} className="px-2 py-1.5 text-[10.5px] uppercase tracking-wider text-[var(--ds-dim)] font-semibold border-r border-[var(--ds-line)] last:border-r-0">
                 {d}

@@ -322,7 +322,7 @@ export function StudioListView({
       {/* Column header — sentence case, no uppercase. Hidden under md (768px)
           because the row collapses to a stacked card layout there. */}
       <div
-        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[#eef1f6] border-y border-[#d9dee6] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
+        className="hidden md:grid items-center gap-3 px-4 py-2.5 bg-[var(--d-ink-3)] border-y border-[var(--d-rule-strong)] text-[12px] text-[var(--ds-dim)] font-semibold tracking-[0.08em] uppercase sticky top-0 z-10"
         style={{ gridTemplateColumns: gridTemplate }}
       >
         {onBulkAction && (
@@ -414,7 +414,7 @@ export function StudioListView({
                 <div key={status} className="border-t border-[var(--ds-line)] border-b border-[var(--ds-line)] last:border-b-0">
                   <button
                     onClick={() => toggleGroup(status)}
-                    className="w-full flex items-center gap-2 px-4 py-3 transition-all text-left bg-[var(--ds-bg)] hover:bg-[#f1f1f5]"
+                    className="w-full flex items-center gap-2 px-4 py-3 transition-all text-left bg-[var(--ds-bg)] hover:bg-[var(--d-ink-3)]"
                   >
                     {isCollapsed
                       ? <ChevronRight className="w-3.5 h-3.5 text-[var(--ds-faint)] transition-transform" />
@@ -473,7 +473,7 @@ export function StudioListView({
         tabIndex={0}
         aria-label={`Open ${r.title || 'post'}`}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
-        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[#fafafc] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[var(--d-surface-2)] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -488,7 +488,7 @@ export function StudioListView({
               checked={selected.has(r.id)}
               onChange={(e) => { e.stopPropagation(); toggleOne(r.id); }}
               onClick={(e) => e.stopPropagation()}
-              className="w-3.5 h-3.5 rounded accent-emerald-500 cursor-pointer"
+              className="w-3.5 h-3.5 rounded accent-[var(--ds-accent)] cursor-pointer"
             />
           </label>
         )}
