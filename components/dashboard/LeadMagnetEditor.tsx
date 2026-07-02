@@ -160,7 +160,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <Textarea value={dmB} onChange={(e) => setDmB(e.target.value)} rows={5} placeholder="Hey {{firstName}}, the … is yours: …" className="text-[13px]" />
           </div>
 
-          <div className="rounded-md border border-zinc-800/60 bg-zinc-900/30">
+          <div className="rounded-md border border-zinc-800/60 bg-[var(--d-ink-3)]">
             <button
               onClick={() => setResourceOpen((v) => !v)}
               className="w-full flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wider text-zinc-500 font-medium hover:bg-zinc-900"

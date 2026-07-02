@@ -350,9 +350,9 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
           ))}
         </div>
       ) : (
-        <div className="aspect-[16/9] rounded-md overflow-hidden ring-1 ring-zinc-800/60 bg-gradient-to-br from-[#1c241f] via-[#161914] to-[#14110d] flex flex-col justify-center px-3 py-2">
+        <div className="aspect-[16/9] rounded-md overflow-hidden ring-1 ring-zinc-800/60 bg-[var(--d-ink-3)] border border-[var(--d-rule)] flex flex-col justify-center px-3 py-2">
           <div className="text-[9px] uppercase tracking-wider text-emerald-400/60 mb-1">{style.isDefault ? 'Default kit · rendered live' : 'Brand kit'}</div>
-          <div className="text-[13px] leading-tight text-zinc-200/90 font-serif italic line-clamp-2">{style.name}</div>
+          <div className="text-[13px] leading-tight text-[var(--d-paper-dim)] font-serif italic line-clamp-2">{style.name}</div>
         </div>
       )}
 
