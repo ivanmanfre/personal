@@ -457,6 +457,12 @@ body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/95,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/90 { background-color: rgba(255,255,255,0.95) !important; }
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-950\/70 { background-color: var(--ds-bg) !important; }
+/* Opacity variants used by the Content Strategy panel (sub-cards + pillar battery) that
+   slipped past the bridge above and were rendering as dark boxes on the light theme */
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/40 { background-color: rgba(241,241,245,0.85) !important; }
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-700\/70 { background-color: #e9e9ee !important; }
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-600\/70:hover { background-color: #dcdce1 !important; }
+body.dashboard-v2-light .dashboard-v2 .hover\:bg-zinc-800\/30:hover { background-color: #f1f1f5 !important; }
 /* Borders */
 body.dashboard-v2-light .dashboard-v2 .border-zinc-950 { border-color: var(--ds-bg) !important; }
 body.dashboard-v2-light .dashboard-v2 .border-zinc-900 { border-color: var(--ds-line) !important; }
