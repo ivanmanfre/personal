@@ -13,10 +13,12 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 
 const tooltipStyle = {
-  backgroundColor: '#18181b',
-  border: '1px solid rgba(63, 63, 70, 0.6)',
+  background: '#ffffff',
+  border: '1px solid #e9e9ee',
   borderRadius: 10,
-  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+  color: '#0f172a',
+  boxShadow: '0 10px 26px -18px rgba(15,23,42,.18)',
+  fontSize: 12,
   padding: '8px 12px',
 };
 
@@ -140,7 +142,7 @@ const AudiencePanel: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
                     <XAxis dataKey="label" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis domain={['dataMin - 5', 'dataMax + 5']} tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} width={44} />
-                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#a1a1aa', fontSize: 12 }} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#64748b', fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
                     <Area type="monotone" dataKey="followers" name="Followers" stroke="#3b82f6" fill="url(#followerFill)" strokeWidth={2} dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -213,7 +215,7 @@ const AudiencePanel: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
                 <XAxis dataKey="label" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#a1a1aa', fontSize: 12 }} itemStyle={{ color: '#e4e4e7', fontSize: 12 }} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#64748b', fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
                 <Area type="monotone" dataKey="views" name="Views" stroke="#3b82f6" fill="url(#audViews)" strokeWidth={2} dot={false} />
                 <Area type="monotone" dataKey="visitors" name="Visitors" stroke="#22c55e" fill="url(#audVis)" strokeWidth={2} dot={false} />
               </AreaChart>
