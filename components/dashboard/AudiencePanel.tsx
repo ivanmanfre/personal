@@ -25,7 +25,7 @@ const tooltipStyle = {
 const DEVICE_COLORS: Record<string, string> = {
   desktop: '#22c55e',
   mobile: '#3b82f6',
-  tablet: '#f59e0b',
+  tablet: '#b45309',
   unknown: '#71717a',
 };
 
@@ -47,7 +47,7 @@ function Bar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
   return (
     <div className="flex-1 h-1.5 bg-zinc-800/70 rounded-full overflow-hidden">
-      <div className="h-full bg-emerald-500/70 rounded-full" style={{ width: `${pct}%` }} />
+      <div className="h-full bg-[#047857]/70 rounded-full" style={{ width: `${pct}%` }} />
     </div>
   );
 }
