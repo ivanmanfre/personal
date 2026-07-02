@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { motion, LayoutGroup, MotionConfig, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -82,7 +82,10 @@ const INK = '#0f172a';
 const DIM = '#475569';
 const FAINT = '#64748b';
 const LINE = '#e9e9ee';
-const CARD_SHADOW = '0 1px 2px rgba(15,23,42,.04), 0 10px 26px -18px rgba(15,23,42,.18)';
+const CARD_SHADOW = '0 1px 2px rgba(15,23,42,.05)';
+const CANVAS_BG = '#f8f9fb';
+/** Interactive-card affordance: soft lift on hover, 150ms. */
+const LIFT = 'transition-[box-shadow,transform] duration-150 ease-out hover:-translate-y-px hover:shadow-md';
 const SERIF = '"DM Serif Display", serif';
 
 function cleanHex(hex?: string, fallback = '#4f46e5'): string {
@@ -150,12 +153,34 @@ function CountUpNum({ n, size }: { n: number; size: number }) {
   return <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: size, lineHeight: 1.05, color: INK }}>{v}</span>;
 }
 
-/** 16:9 row/card thumbnail: real media when it exists, a format glyph tile otherwise. */
+/** 16:9 row/card thumbnail: real media when it exists; text posts get a mini
+ *  typographic tile (opening words of the hook, serif italic, accent-tinted);
+ *  other formats get a glyph tile. */
 function Thumb({ q, accent, large = false }: { q: QueueItem; accent: string; large?: boolean }) {
   const src = q.media_url || q.cover_url;
-  const cls = large ? 'aspect-video w-full rounded-lg' : 'h-8 w-14 rounded-[6px]';
+  const cls = large ? 'aspect-video w-full rounded-lg' : 'h-10 w-14 rounded-[6px]';
   if (src) {
     return <img src={src} alt="" loading="lazy" className={`${cls} shrink-0 object-cover`} style={{ border: `1px solid ${LINE}`, background: '#f1f5f9' }} />;
+  }
+  if (q.kind === 'post' && (q.hook || q.title)) {
+    const words = (q.hook || q.title || '').split(/\s+/).slice(0, large ? 12 : 6).join(' ');
+    return (
+      <span
+        className={`${cls} flex shrink-0 items-center overflow-hidden px-1.5 py-1 text-left`}
+        style={{ background: `color-mix(in srgb, ${accent} 8%, white)`, border: `1px solid ${LINE}` }}
+        aria-hidden
+      >
+        <span
+          style={{
+            fontFamily: SERIF, fontStyle: 'italic', fontSize: large ? 15 : 8.5, lineHeight: 1.25,
+            color: `color-mix(in srgb, ${accent} 72%, ${INK})`,
+            display: '-webkit-box', WebkitLineClamp: large ? 4 : 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}
+        >
+          {words}
+        </span>
+      </span>
+    );
   }
   const glyph = (() => {
     switch (q.kind === 'post' && q.media_url ? 'image' : q.kind) {
@@ -247,10 +272,53 @@ const VIEWS: { id: ContentView; label: string }[] = [
   { id: 'feed', label: 'Feed' },
 ];
 
-function ReviewSurface({ board, accent, stageOf, onOpen, flashId, view, setView }: {
+/** Days from today to an ISO date; null when unparseable. Used for the honest
+ *  "in N days" hint on review rows — omitted entirely when the date has passed. */
+function daysUntil(iso?: string): number | null {
+  if (!iso) return null;
+  const t = new Date(iso + 'T00:00:00').getTime();
+  if (Number.isNaN(t)) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return Math.round((t - today.getTime()) / 86400000);
+}
+
+/** Right-aligned two-line publish cell for list rows: semibold date over a faint hint. */
+function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
+  if (stage === 'drafted' && q.generating) {
+    return (
+      <span className="inline-flex items-center justify-end gap-1.5 text-[12px] font-medium" style={{ color: DIM }}>
+        <PulseDot color="#0ea5e9" /> {q.live_step || 'Generating…'}
+      </span>
+    );
+  }
+  const n = daysUntil(q.publish_date);
+  const sub =
+    stage === 'review'
+      ? `auto-publishes${n != null && n > 1 ? ` · in ${n} days` : n === 1 ? ' · tomorrow' : n === 0 ? ' · today' : ''}`
+      : stage === 'scheduled'
+      ? 'approved · queued'
+      : stage === 'published'
+      ? 'live on your LinkedIn'
+      : 'in production';
+  return (
+    <span className="block text-right">
+      <span className="block text-[13px] font-semibold tabular-nums" style={{ color: stage === 'scheduled' ? '#047857' : INK }}>
+        {fmtDay(q.publish_date) || '—'}
+      </span>
+      <span className="mt-0.5 block text-[11px]" style={{ color: FAINT }}>{sub}</span>
+    </span>
+  );
+}
+
+const STAGE_SOFT_META: Record<Stage, string> = {
+  planned: 'planned', drafted: 'in production', review: 'awaiting', scheduled: 'queued', published: 'live',
+};
+
+function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, view, setView }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
-  onOpen: (q: QueueItem) => void;
+  onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
+  onApprove: (id: string) => void;
   flashId: string | null;
   view: ContentView;
   setView: (v: ContentView) => void;
@@ -318,36 +386,68 @@ function ReviewSurface({ board, accent, stageOf, onOpen, flashId, view, setView 
                   </span>
                   <span className="rounded-full px-1.5 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>{items.length}</span>
                   <span className="hidden text-[12px] sm:inline" style={{ color: FAINT }}>{STAGE_META[stage].hint}</span>
+                  {items.length > 0 && (
+                    <span className="ml-auto shrink-0 text-[12px]" style={{ color: FAINT }}>{items.length} {STAGE_SOFT_META[stage]}</span>
+                  )}
                 </div>
-                <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: stage === 'review' ? CARD_SHADOW : 'none' }}>
+                <div className="overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: stage === 'review' ? CARD_SHADOW : 'none' }}>
                   {items.length === 0 && (
                     <div className="px-4 py-4 text-[13px]" style={{ color: FAINT }}>Nothing here right now.</div>
                   )}
                   {items.map((q, i) => (
-                    <motion.button
+                    <motion.div
                       layout
                       layoutId={`l-${q.id}`}
                       key={q.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => onOpen(q)}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#fbfcfd]"
-                      style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 54, ...flashStyle(q.id) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
+                      className="group relative flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left hover:bg-[color-mix(in_srgb,var(--cb-accent)_4%,white)] sm:grid sm:grid-cols-[56px_minmax(0,1fr)_110px_200px_14px] sm:items-center sm:gap-x-4"
+                      style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 56, ...flashStyle(q.id) }}
                     >
                       <Thumb q={q} accent={accent} />
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 sm:flex-none">
                         <span className="block truncate text-[14px] font-medium" style={{ color: INK }}>{q.hook || q.title}</span>
                         <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.06em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
                       </span>
-                      {q.pillar && (
-                        <span className="hidden items-center gap-1.5 sm:inline-flex">
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} />
-                          <span className="text-[12px] capitalize" style={{ color: FAINT }}>{q.pillar}</span>
-                        </span>
-                      )}
-                      <span className="hidden shrink-0 text-right sm:block">{stageStatus(q, stage)}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden>
+                      <span className="hidden min-w-0 items-center gap-1.5 sm:inline-flex">
+                        {q.pillar && (
+                          <>
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: accent, opacity: 0.55 }} />
+                            <span className="truncate text-[12px] capitalize" style={{ color: FAINT }}>{q.pillar}</span>
+                          </>
+                        )}
+                      </span>
+                      <span className="hidden sm:block"><PublishCell q={q} stage={stage} /></span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 justify-self-end" aria-hidden>
                         <path d="M9 6l6 6-6 6" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </motion.button>
+                      {stage === 'review' && (
+                        <span
+                          className="pointer-events-none absolute right-9 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-full bg-white p-1 opacity-0 shadow-md transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 sm:flex"
+                          style={{ border: `1px solid ${LINE}` }}
+                        >
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onApprove(q.id); }}
+                            className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-semibold"
+                            style={{ background: accent, color: inkOn(accent) }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden>
+                              <path d="M5 13l4 4 10-10" stroke={inkOn(accent)} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            Approve
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }}
+                            className="min-h-[32px] rounded-full px-3 text-[12.5px] font-semibold hover:bg-[#f1f5f9]"
+                            style={{ color: DIM }}
+                          >
+                            Request change
+                          </button>
+                        </span>
+                      )}
+                    </motion.div>
                   ))}
                 </div>
               </div>
@@ -361,7 +461,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, flashId, view, setView 
           <div className="overflow-x-auto pb-2">
             <div className="flex items-start gap-3" style={{ minWidth: 'max-content' }}>
               {groups.map(({ stage, items }) => (
-                <div key={stage} className="w-[248px] shrink-0 rounded-[14px] p-2" style={{ background: '#f0f2f5', border: `1px solid ${LINE}` }}>
+                <div key={stage} className="w-[248px] shrink-0 rounded-xl p-2" style={{ background: '#f0f2f5', border: `1px solid ${LINE}` }}>
                   <div className="flex items-center gap-2 px-1.5 pb-2 pt-1">
                     <span className="h-2 w-2 rounded-full" style={{ background: stageDot(stage) }} aria-hidden />
                     <span className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : DIM }}>{STAGE_META[stage].label}</span>
@@ -377,7 +477,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, flashId, view, setView 
                         layoutId={`b-${q.id}`}
                         key={q.id}
                         onClick={() => onOpen(q)}
-                        className="flex w-full flex-col gap-2 rounded-[12px] bg-white p-2.5 text-left transition-shadow hover:shadow-md"
+                        className={`flex w-full flex-col gap-2 rounded-[12px] bg-white p-2.5 text-left ${LIFT}`}
                         style={{ border: `1px solid ${LINE}`, boxShadow: '0 1px 2px rgba(15,23,42,.05)', ...flashStyle(q.id) }}
                       >
                         <Thumb q={q} accent={accent} large />
@@ -502,13 +602,13 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
-  onClose: () => void; onApprove: (id: string) => void;
+  onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(item.body || '');
-  const [changing, setChanging] = useState(false);
+  const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
   const ctaInk = inkOn(accent);
@@ -534,7 +634,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
           {/* Left: content preview / edit */}
           <div className="min-w-0">
             {item.kind === 'lm' ? (
-              <div className="rounded-[14px] p-4" style={{ border: `1px solid ${LINE}` }}>
+              <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   {item.cover_url && <img src={item.cover_url} alt="" className="w-full rounded-lg object-cover sm:w-44" style={{ border: `1px solid ${LINE}` }} />}
                   <div className="min-w-0">
@@ -580,7 +680,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
                     showFold={false}
                   />
                 ) : (
-                  <div className="rounded-[14px] p-5 text-[14px]" style={{ border: `1px dashed ${LINE}`, color: DIM }}>
+                  <div className="rounded-xl p-5 text-[14px]" style={{ border: `1px dashed ${LINE}`, color: DIM }}>
                     <div className="text-[15px] font-semibold not-italic" style={{ color: INK }}>{item.hook}</div>
                     <p className="mt-2 leading-relaxed">
                       {stage === 'planned'
@@ -605,7 +705,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
           </div>
 
           {/* Right: agent trail */}
-          <div className="h-fit rounded-[14px] p-4" style={{ background: '#fbfcfd', border: `1px solid ${LINE}` }}>
+          <div className="h-fit rounded-xl p-4" style={{ background: '#fbfcfd', border: `1px solid ${LINE}` }}>
             <AgentTrail steps={item.agent_trail || []} accent={accent} />
           </div>
         </div>
@@ -672,12 +772,14 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
   const totals = { post: 0, carousel: 0, lm: 0, newsletter: 0 };
   cal.items.forEach((it) => { if (it.kind in totals) (totals as any)[it.kind] += 1; });
 
+  // Each format keeps its tint plus a 3px tone rail on the left, so chips read as a
+  // color system at a glance instead of undifferentiated pills.
   const chipStyle = (kind: string): React.CSSProperties => {
     switch (kind) {
-      case 'post': return { background: `color-mix(in srgb, ${accent} 13%, white)`, color: INK };
-      case 'carousel': return { background: `color-mix(in srgb, ${accent} 28%, white)`, color: INK };
-      case 'lm': return { background: `color-mix(in srgb, ${mint} 24%, white)`, color: INK };
-      case 'newsletter': return { background: '#f1f5f9', color: DIM };
+      case 'post': return { background: `color-mix(in srgb, ${accent} 13%, white)`, color: INK, borderLeft: `3px solid color-mix(in srgb, ${accent} 55%, white)` };
+      case 'carousel': return { background: `color-mix(in srgb, ${accent} 28%, white)`, color: INK, borderLeft: `3px solid ${accent}` };
+      case 'lm': return { background: `color-mix(in srgb, ${mint} 24%, white)`, color: INK, borderLeft: `3px solid ${mint}` };
+      case 'newsletter': return { background: '#f1f5f9', color: DIM, borderLeft: '3px solid #94a3b8' };
       case 'newsjack': return { background: '#fff', color: FAINT, border: `1px dashed ${LINE}` };
       default: return { background: '#f1f5f9', color: DIM };
     }
@@ -707,17 +809,20 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
           [totals.lm, 'lead magnets'],
           [totals.newsletter, 'newsletters'],
         ].map(([n, label]) => (
-          <div key={label as string} className="flex items-baseline gap-2 rounded-[14px] bg-white px-4 py-3" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+          <div key={label as string} className="flex items-baseline gap-2 rounded-xl bg-white px-4 py-3" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
             {num(n as number)}
             <span className="text-[13px] font-medium" style={{ color: DIM }}>{label}</span>
           </div>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-[14px] bg-white p-3 sm:p-4" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+      <div className="overflow-x-auto rounded-xl bg-white p-3 sm:p-4" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
         <div className="min-w-[820px]">
-          <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1">
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
             <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
+            <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `color-mix(in srgb, ${accent} 10%, white)`, color: INK }}>
+              Engine starts {fmtDay(cal.start)}
+            </span>
             <span className="text-[12px]" style={{ color: FAINT }}>{cal.items.length} pieces scheduled</span>
             <span className="ml-auto hidden items-center gap-4 md:inline-flex">
               {swatch(chipStyle('post'), 'Post')}
@@ -726,9 +831,9 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
               {swatch(chipStyle('newsletter'), 'Newsletter')}
             </span>
           </div>
-          <div className="grid grid-cols-7 gap-1.5 border-b pb-2" style={{ borderColor: LINE }}>
+          <div className="grid grid-cols-7 gap-1.5 border-b pb-1.5" style={{ borderColor: LINE }}>
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-              <div key={d} className="px-2 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>{d}</div>
+              <div key={d} className="px-2 text-[10px] font-semibold uppercase tracking-[0.1em]" style={{ color: FAINT }}>{d}</div>
             ))}
           </div>
           {weeks.map((row, wi) => (
@@ -737,8 +842,9 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
                 const iso = d.toISOString().slice(0, 10);
                 const items = byDate.get(iso) || [];
                 const visible = items.slice(0, 3);
+                const weekend = d.getDay() === 0 || d.getDay() === 6;
                 return (
-                  <div key={iso} className="min-h-[112px] rounded-lg p-1.5" style={{ border: `1px solid ${LINE}`, background: items.length ? '#fff' : '#fbfcfd' }}>
+                  <div key={iso} className="min-h-[112px] rounded-lg p-1.5" style={{ border: `1px solid ${LINE}`, background: weekend ? (items.length ? '#fafbfc' : '#f5f7f9') : items.length ? '#fff' : '#fbfcfd' }}>
                     <div className="px-0.5 pb-1 text-[12px] font-medium" style={{ color: FAINT }}>{d.getDate()}</div>
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
@@ -804,12 +910,12 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
           height={980}
         />
       ) : (
-        <div className="rounded-[14px] bg-white p-8" style={{ border: `1px solid ${LINE}` }}>
+        <div className="rounded-xl bg-white p-8" style={{ border: `1px solid ${LINE}` }}>
           <p className="text-[14px]" style={{ color: DIM }}>Your first lead magnet is in production. It lands here for review this week.</p>
         </div>
       )}
 
-      <div className="mt-6 rounded-[14px] bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+      <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
         <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Captured leads</div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-left text-[13px]">
@@ -838,6 +944,15 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
 }
 
 // ---------- Strategy surface ----------
+/** One-line job per pillar, used when the board data carries no blurb. */
+const PILLAR_JOBS: Record<string, string> = {
+  demand: 'Shows buyers what the problem is costing them right now.',
+  authority: 'Proves you understand the mechanics better than anyone else they follow.',
+  teardown: 'Walks through real numbers so the lesson sticks.',
+  proof: 'Client results, told straight.',
+  personal: 'The founder behind the work. Keeps the feed human.',
+};
+
 function StrategySurface({ board, accent, mint }: { board: Board; accent: string; mint: string }) {
   const strat = board.strategy;
   const [open, setOpen] = useState<string | null>(null);
@@ -854,7 +969,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
     <div>
       <SectionHead title="Your content strategy" sub="One plan, divided on purpose. Your operator holds the mix; you can request a shift anytime." />
 
-      <div className="rounded-[14px] bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+      <div className="rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <div className="text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: FAINT }}>
             Your content this month
@@ -924,12 +1039,10 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
                   <div
                     key={f.label}
                     className="flex min-h-[56px] flex-col items-start justify-center gap-0 px-2 py-2"
-                    style={{ flexGrow: f.n, flexBasis: 0, minWidth: 104, background: f.bg, borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.9)' : 'none' }}
+                    style={{ flexGrow: f.n, flexBasis: 0, minWidth: 62, background: f.bg, borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.9)' : 'none' }}
                   >
-                    <span className="flex items-baseline gap-1.5">
-                      <CountUpNum n={f.n} size={18} />
-                      <span className="truncate text-[11px] font-semibold" style={{ color: INK }}>{f.label}</span>
-                    </span>
+                    <CountUpNum n={f.n} size={18} />
+                    <span className="w-full truncate text-[11px] font-semibold" style={{ color: INK }}>{f.label}</span>
                   </div>
                 ))}
               </div>
@@ -940,35 +1053,85 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
           );
         })()}
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => { setShiftOpen(!shiftOpen); setShiftSent(false); }}
-            className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
-            style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-          >
-            Request a shift
-          </button>
-          {shiftSent && <span className="text-[13px] font-medium" style={{ color: '#047857' }}>Sent. Your operator reviews every shift.</span>}
-        </div>
-        {shiftOpen && !shiftSent && (
-          <div className="mt-3">
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder='e.g. "More proof posts this month, we just landed two big results."'
-              rows={3}
-              className="w-full rounded-lg p-3 text-[14px] outline-none"
-              style={{ border: `1px solid ${LINE}`, color: INK, background: '#fbfcfd' }}
-            />
-            <button
-              onClick={() => { setShiftSent(true); setShiftOpen(false); }}
-              className="mt-2 inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
-              style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-            >
-              Send
-            </button>
+      </div>
+
+      {/* Per-pillar breakdown: what each slice of the bar is doing, with a real example. */}
+      <div className="mt-6 overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="px-4 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-[0.08em] sm:px-6" style={{ color: FAINT }}>What each pillar does</div>
+        {strat.pillars.map((p, i) => {
+          const example = board.queue.find((q) => q.pillar === p.key && (q.hook || q.title))
+            || null;
+          const calExample = !example ? (board.calendar?.items || []).find((it) => it.pillar === p.key) : null;
+          const exampleTitle = example ? (example.hook || example.title) : calExample?.label;
+          return (
+            <div key={p.key} className="grid grid-cols-[minmax(96px,130px)_1fr] gap-x-4 px-4 py-3.5 sm:grid-cols-[150px_1fr_44px] sm:px-6" style={{ borderTop: `1px solid ${LINE}` }}>
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 shrink-0 rounded-[3px]" style={{ background: `color-mix(in srgb, ${accent} ${TINT_STEPS[i % TINT_STEPS.length] + 34}%, white)` }} aria-hidden />
+                <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{p.label}</span>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[13px] leading-relaxed" style={{ color: DIM }}>{p.blurb || PILLAR_JOBS[p.key] || 'Part of the monthly mix.'}</span>
+                {exampleTitle && (
+                  <span className="mt-0.5 block truncate text-[12px]" style={{ color: FAINT }}>e.g. “{exampleTitle}”</span>
+                )}
+              </span>
+              <span className="hidden text-right text-[13px] font-semibold tabular-nums sm:block" style={{ color: DIM }}>{p.pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Recent shifts: the request loop lives here — client asks, operator decides. */}
+      <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Recent shifts</div>
+        {shiftSent ? (
+          <p className="text-[13.5px] font-medium" style={{ color: '#047857' }}>Shift request sent. Your operator reviews every request and replies before the next batch drafts.</p>
+        ) : (
+          <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>No shifts requested yet. The mix is reviewed monthly with your operator.</p>
+        )}
+        {!shiftSent && (
+          <div className="mt-4">
+            {!shiftOpen ? (
+              <button
+                onClick={() => setShiftOpen(true)}
+                className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
+                style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+              >
+                Request a shift
+              </button>
+            ) : (
+              <div>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder='e.g. "More proof posts this month, we just landed two big results."'
+                  rows={3}
+                  className="w-full rounded-lg p-3 text-[14px] outline-none"
+                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fbfcfd' }}
+                />
+                <button
+                  onClick={() => { setShiftSent(true); setShiftOpen(false); }}
+                  className="mt-2 inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
+                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                >
+                  Send
+                </button>
+              </div>
+            )}
           </div>
         )}
+      </div>
+
+      {/* Operator note: why this mix, signed. */}
+      <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>IM</span>
+          <span className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Why this mix, from your operator</span>
+        </div>
+        <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
+          {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in. We review the weights together every month.
+        </p>
+        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>Ivan Manfredi · Operator</p>
       </div>
     </div>
   );
@@ -994,23 +1157,58 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
         sub="One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture gets it."
       />
 
-      {/* Header card */}
-      <div className="rounded-[14px] bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
-        <div className="text-[22px] font-semibold tracking-tight" style={{ fontFamily: fontStack, color: INK }}>{nl.name}</div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]" style={{ color: DIM }}>
-          {nl.cadence && <span>{nl.cadence}</span>}
-          {nl.from_domain && (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-              Sends from {nl.from_domain}
-            </span>
-          )}
-        </div>
-      </div>
+      {/* Hero: memo identity next to an inbox preview of the next issue. */}
+      {(() => {
+        const founderName = board.founder?.name || board.company_name;
+        const initials = founderName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+        const first = issues[0];
+        const linked = first?.ref ? board.queue.find((q) => q.id === first.ref) : null;
+        const snippet = linked?.body || 'The draft lands here the Sunday before it sends, written from the same voice model as your posts.';
+        return (
+          <div className="grid gap-5 rounded-xl bg-white p-5 sm:p-6 lg:grid-cols-[minmax(220px,1fr)_1.25fr] lg:items-center" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+            <div>
+              <div className="text-[24px] font-semibold leading-tight tracking-tight" style={{ fontFamily: fontStack, color: INK }}>{nl.name}</div>
+              <div className="mt-2.5 flex flex-col gap-1.5 text-[13px]" style={{ color: DIM }}>
+                {nl.cadence && <span>{nl.cadence}</span>}
+                {nl.from_domain && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+                    Sends from {nl.from_domain}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+                  Written in your voice, approved by you
+                </span>
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+              <div className="flex items-center gap-1.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${LINE}`, background: '#fbfcfd' }}>
+                {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 rounded-full" style={{ background: '#e2e8f0' }} aria-hidden />)}
+                <span className="ml-2 text-[11px] font-medium" style={{ color: FAINT }}>Inbox · next issue</span>
+              </div>
+              <div className="p-4 sm:p-5">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initials}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{founderName} · {nl.name}</span>
+                    <span className="block text-[11.5px]" style={{ color: FAINT }}>to your subscribers</span>
+                  </span>
+                  {first && <span className="ml-auto shrink-0 text-[11.5px] tabular-nums" style={{ color: FAINT }}>{fmtDay(first.date)}</span>}
+                </div>
+                <div className="mt-3 text-[15px] font-semibold leading-snug" style={{ fontFamily: fontStack, color: INK }}>{first?.title || 'Your first issue'}</div>
+                <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: DIM, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {snippet}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Issues */}
       <div className="mb-2 mt-6 px-1 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Upcoming issues</div>
-      <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}` }}>
+      <div className="overflow-hidden rounded-xl bg-white" style={{ border: `1px solid ${LINE}` }}>
         {issues.map((it, i) => (
           <button
             key={it.id}
@@ -1033,7 +1231,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
 
       {/* Nurture flow */}
       {nurture.length > 0 && (
-        <div className="mt-6 rounded-[14px] bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
           <div className="mb-4 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Inbound leads flow</div>
           <div className="flex flex-col sm:flex-row">
             {nurture.map((s, i) => {
@@ -1072,6 +1270,24 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
 }
 
 // ---------- Performance surface ----------
+/** Dashed placeholder sparkline paths — clearly not data, just the shape of the chart to come. */
+const PLACEHOLDER_SPARKS = [
+  'M0 34 C 20 31, 34 25, 52 27 S 92 33, 112 27 S 152 15, 170 19 S 192 13, 200 11',
+  'M0 30 C 18 33, 36 27, 54 29 S 90 21, 112 24 S 150 18, 168 14 S 190 14, 200 12',
+  'M0 36 C 22 32, 38 30, 56 31 S 94 25, 114 27 S 148 17, 168 20 S 192 10, 200 12',
+  'M0 32 C 20 34, 36 28, 54 26 S 92 30, 112 24 S 150 20, 170 15 S 192 15, 200 10',
+];
+
+/** Honest expectation line per indicator — when the number typically starts moving. */
+function expectationFor(ind: PerfIndicator): string {
+  const l = `${ind.key} ${ind.label}`.toLowerCase();
+  if (l.includes('view')) return 'Profile views usually move within the first week of posting.';
+  if (l.includes('dm')) return 'First inbound DMs typically show in weeks 2 to 3.';
+  if (l.includes('opt') || l.includes('magnet')) return 'Opt-ins start as soon as your first lead magnet goes live.';
+  if (l.includes('call')) return 'Booked calls follow opt-ins, typically from week 3 on.';
+  return 'Tracking starts the day the engine goes live.';
+}
+
 function PerformanceSurface({ board, accent }: { board: Board; accent: string }) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
@@ -1083,21 +1299,28 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
         sub={perf?.note || 'The leading indicators your retainer is measured on.'}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {indicators.map((ind) => (
-          <div key={ind.key} className="rounded-[14px] bg-white p-4" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
-            <div className="text-[13px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
-            {ind.source && <div className="mt-0.5 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
-            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ background: `color-mix(in srgb, ${accent} 8%, white)`, color: DIM }}>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.6 }} aria-hidden />
-              Tracking starts day one
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {indicators.map((ind, i) => (
+          <div key={ind.key} className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+            <div className="flex items-baseline justify-between gap-2">
+              <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
+              {ind.source && <div className="shrink-0 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
             </div>
+            <svg viewBox="0 0 200 44" className="mt-4 h-11 w-full" preserveAspectRatio="none" aria-hidden>
+              <path
+                d={PLACEHOLDER_SPARKS[i % PLACEHOLDER_SPARKS.length]}
+                fill="none" stroke="#cbd5e1" strokeWidth="1.6" strokeDasharray="3.5 5" strokeLinecap="round"
+              />
+              <line x1="0" y1="43" x2="200" y2="43" stroke="#eef1f5" strokeWidth="1.5" />
+            </svg>
+            <div className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.06em]" style={{ color: FAINT }}>No data yet</div>
+            <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{expectationFor(ind)}</p>
           </div>
         ))}
       </div>
 
       {updates.length > 0 && (
-        <div className="mt-6 rounded-[14px] bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
           <div className="mb-1 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Engine updates</div>
           <p className="mb-3 text-[13px]" style={{ color: DIM }}>The engine keeps improving; every upgrade ships to your account automatically.</p>
           <div className="flex flex-col">
@@ -1116,14 +1339,58 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
 
 // ---------- page ----------
 const TABS = [
-  { id: 'review', label: 'Content', short: 'Content' },
-  { id: 'calendar', label: 'Calendar', short: 'Calendar' },
-  { id: 'lm', label: 'Lead magnet', short: 'Magnet' },
-  { id: 'newsletter', label: 'Newsletter', short: 'Memo' },
-  { id: 'performance', label: 'Performance', short: 'Metrics' },
-  { id: 'strategy', label: 'Strategy', short: 'Strategy' },
+  { id: 'review', label: 'Content', short: 'Content', group: 'Content' },
+  { id: 'calendar', label: 'Calendar', short: 'Calendar', group: 'Content' },
+  { id: 'lm', label: 'Lead magnet', short: 'Magnet', group: 'Content' },
+  { id: 'newsletter', label: 'Newsletter', short: 'Memo', group: 'Content' },
+  { id: 'performance', label: 'Performance', short: 'Metrics', group: 'Reports' },
+  { id: 'strategy', label: 'Strategy', short: 'Strategy', group: 'Reports' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
+const NAV_GROUPS = ['Content', 'Reports'] as const;
+
+/** 16px stroke icons for the nav (feather register, 1.8 stroke). */
+const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
+  review: (
+    <>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M15 13H9M15 17H9" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3.5" y="5" width="17" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3.5 11h17" />
+    </>
+  ),
+  lm: <path d="M13 2 4.5 13.5H11l-1.5 8.5L18 10.5h-6.5L13 2z" />,
+  newsletter: (
+    <>
+      <rect x="2.5" y="5" width="19" height="14" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
+    </>
+  ),
+  performance: <path d="M18 20V10M12 20V4M6 20v-6" />,
+  strategy: (
+    <>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="m15.8 8.2-2 5.6-5.6 2 2-5.6 5.6-2z" />
+    </>
+  ),
+};
+
+function NavIcon({ id, size = 16 }: { id: TabId; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0" aria-hidden>
+      {NAV_ICON_PATHS[id]}
+    </svg>
+  );
+}
+
+/** Two-letter initials off a display name. */
+function initialsOf(name?: string): string {
+  return (name || '').split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '·';
+}
 
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -1134,6 +1401,7 @@ export default function ClientBoardPage() {
   const [state, setState] = useState<'loading' | 'ready' | 'invalid'>('loading');
   const [tab, setTab] = useState<TabId>('review');
   const [detail, setDetail] = useState<QueueItem | null>(null);
+  const [detailChanging, setDetailChanging] = useState(false);
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>({});
   const [flashId, setFlashId] = useState<string | null>(null);
   // Content view lives up here so the page can widen the container for the kanban.
@@ -1281,15 +1549,15 @@ export default function ClientBoardPage() {
 
   if (state === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: '#f6f7f9' }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: CANVAS_BG }}>
         <div className="text-[14px]" style={{ color: FAINT }}>Loading your board…</div>
       </div>
     );
   }
   if (state === 'invalid' || !board) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-6" style={{ background: '#f6f7f9' }}>
-        <div className="max-w-sm rounded-[14px] bg-white p-8 text-center" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+      <div className="flex min-h-screen items-center justify-center px-6" style={{ background: CANVAS_BG }}>
+        <div className="max-w-sm rounded-xl bg-white p-8 text-center" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
           <div className="text-[16px] font-semibold" style={{ color: INK }}>This preview link isn't valid or has expired.</div>
           <p className="mt-2 text-[14px]" style={{ color: DIM }}>Ask Ivan for a fresh link.</p>
         </div>
@@ -1298,8 +1566,10 @@ export default function ClientBoardPage() {
   }
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
+  const openDetail = (q: QueueItem, opts?: { changing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); };
+  const approve = (id: string) => { setStageOverride((s) => ({ ...s, [id]: 'scheduled' })); flash(id); };
   const surfaces: Record<TabId, React.ReactNode> = {
-    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} flashId={flashId} view={contentView} setView={setContentView} />,
+    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={openDetail} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} />,
     calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
     newsletter: <NewsletterSurface board={board} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
@@ -1313,42 +1583,60 @@ export default function ClientBoardPage() {
       : <span className="text-[14px] font-semibold" style={{ fontFamily: fontStack, color: INK }}>{board.company_name}</span>
   );
 
-  const nav = (vertical: boolean) => (
-    <nav className={vertical ? 'flex flex-col gap-1' : 'grid w-full grid-cols-6'} aria-label="Board sections">
-      {TABS.map((t) => {
-        const active = tab === t.id;
-        return (
-          <button
-            key={t.id}
-            onClick={() => { setTab(t.id); window.scrollTo({ top: 0 }); }}
-            className={`min-h-[44px] rounded-lg font-semibold transition-colors ${vertical ? 'px-3 text-left text-[13px]' : 'px-0.5 text-center text-[11px]'}`}
-            style={active
-              ? { background: `color-mix(in srgb, ${accent} 12%, white)`, color: INK }
-              : { color: DIM, background: 'transparent' }}
-          >
-            {vertical ? t.label : t.short}
-          </button>
-        );
-      })}
-    </nav>
-  );
+  const reviewCount = board.queue.filter((q) => stageOf(q) === 'review').length;
+  const founderName = board.founder?.name || board.company_name;
+  const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
+  const mintText = `color-mix(in srgb, ${mint} 30%, ${INK})`;
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="min-h-screen" style={{ background: '#f6f7f9', color: INK, fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen" style={{ background: CANVAS_BG, color: INK, fontFamily: 'Inter, system-ui, sans-serif', ['--cb-accent' as any]: accent }}>
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-6 border-r bg-white p-5 lg:flex" style={{ borderColor: LINE }}>
-        <div>
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r bg-white lg:flex" style={{ borderColor: LINE }}>
+        <div className="px-5 pb-5 pt-5">
           {logo(30)}
           <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Content engine</div>
         </div>
-        {nav(true)}
-        <div className="mt-auto flex flex-col gap-3">
+        <nav className="flex flex-col gap-5 px-3" aria-label="Board sections">
+          {NAV_GROUPS.map((g) => (
+            <div key={g}>
+              <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: FAINT }}>{g}</div>
+              <div className="flex flex-col gap-0.5">
+                {TABS.filter((t) => t.group === g).map((t) => {
+                  const active = tab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => goTab(t.id)}
+                      className="relative flex min-h-[40px] w-full items-center gap-2.5 rounded-lg px-3 text-left text-[13px] font-semibold transition-colors hover:bg-[#f6f7f9]"
+                      style={active ? { background: `color-mix(in srgb, ${accent} 9%, white)`, color: INK } : { color: DIM }}
+                    >
+                      {active && <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full" style={{ background: accent }} aria-hidden />}
+                      <span style={{ color: active ? accent : FAINT }}><NavIcon id={t.id} /></span>
+                      {t.label}
+                      {t.id === 'review' && reviewCount > 0 && (
+                        <span className="ml-auto rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}>{reviewCount}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+        <div className="mt-auto flex flex-col gap-3 px-5 pb-5">
           {mode === 'demo' && (
-            <div className="rounded-lg px-3 py-2 text-[12px] font-medium leading-snug" style={{ background: '#f1f5f9', color: DIM }}>
+            <div className="rounded-lg px-3 py-2 text-[12px] font-medium leading-snug" style={{ background: `color-mix(in srgb, ${mint} 15%, white)`, color: mintText }}>
               Preview built for {board.company_name}
             </div>
           )}
+          <div className="flex items-center gap-2.5 border-t pt-3.5" style={{ borderColor: LINE }}>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(founderName)}</span>
+            <span className="min-w-0">
+              <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>{founderName}</span>
+              <span className="block truncate text-[11px]" style={{ color: FAINT }}>{board.company_name} · Operator plan</span>
+            </span>
+          </div>
           <div className="text-[11px]" style={{ color: FAINT }}>Run by Ivan Manfredi</div>
         </div>
       </aside>
@@ -1357,17 +1645,67 @@ export default function ClientBoardPage() {
       <header className="sticky top-0 z-20 flex items-center gap-2.5 border-b bg-white px-4 py-3 lg:hidden" style={{ borderColor: LINE }}>
         {logo(22)}
         {mode === 'demo' && (
-          <span className="ml-auto rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>Preview</span>
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `color-mix(in srgb, ${mint} 15%, white)`, color: mintText }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: mint }} aria-hidden />
+            Preview
+          </span>
         )}
       </header>
 
-      <main className="px-4 pb-28 pt-6 sm:px-6 lg:ml-60 lg:px-10 lg:pb-16 lg:pt-10">
-        <div className={`mx-auto w-full ${tab === 'calendar' || (tab === 'review' && contentView === 'board') ? 'max-w-5xl' : 'max-w-3xl'}`}>{surfaces[tab]}</div>
-      </main>
+      <div className="lg:ml-60">
+        {/* Slim top bar: breadcrumb + status. Desktop only — mobile has its own header. */}
+        <div className="sticky top-0 z-10 hidden h-14 items-center gap-2.5 border-b px-10 backdrop-blur lg:flex" style={{ borderColor: LINE, background: 'rgba(255,255,255,.86)' }}>
+          <span className="text-[13px] font-medium" style={{ color: FAINT }}>Content Engine</span>
+          <span className="text-[13px]" style={{ color: '#cbd5e1' }} aria-hidden>/</span>
+          <span className="text-[13px] font-semibold" style={{ color: INK }}>{TABS.find((t) => t.id === tab)?.label}</span>
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold" style={{ background: `color-mix(in srgb, ${mint} 15%, white)`, color: mintText }}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: mint }} aria-hidden />
+            {mode === 'demo' ? 'Live preview' : 'Live'}
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[11.5px] font-medium" style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>IM</span>
+            Operator: Ivan Manfredi
+          </span>
+        </div>
+
+        <main className="px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-8">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={tab}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+            >
+              <div className={`mx-auto w-full ${tab === 'calendar' || (tab === 'review' && contentView === 'board') ? 'max-w-5xl' : 'max-w-3xl'}`}>{surfaces[tab]}</div>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
 
       {/* Mobile bottom tabs */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white px-2 py-1.5 lg:hidden" style={{ borderColor: LINE }}>
-        {nav(false)}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white px-1 pt-1 lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
+        <nav className="grid w-full grid-cols-6" aria-label="Board sections">
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => goTab(t.id)}
+                className="flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-lg px-0.5"
+                style={{ color: active ? accent : FAINT }}
+              >
+                <span className="relative">
+                  <NavIcon id={t.id} size={18} />
+                  {t.id === 'review' && reviewCount > 0 && (
+                    <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}>{reviewCount}</span>
+                  )}
+                </span>
+                <span className={`text-[10px] ${active ? 'font-bold' : 'font-semibold'}`}>{t.short}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {detail && (
@@ -1376,8 +1714,9 @@ export default function ClientBoardPage() {
           board={board}
           accent={accent}
           stage={stageOf(detail)}
-          onClose={() => setDetail(null)}
-          onApprove={(id) => { setStageOverride((s) => ({ ...s, [id]: 'scheduled' })); flash(id); }}
+          initialChanging={detailChanging}
+          onClose={() => { setDetail(null); setDetailChanging(false); }}
+          onApprove={approve}
         />
       )}
     </div>
