@@ -53,3 +53,8 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          # Pages status polling was timing out at the 10-min default (4 runs on
+          # 2026-07-02, "Timeout reached, aborting!" with a green build) — give
+          # GitHub's processing 30 min before declaring failure.
+          timeout: 1800000
