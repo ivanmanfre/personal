@@ -281,20 +281,21 @@ const LandingHero: React.FC = () => {
                 initial={skip ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.1, duration: 0.7, ease }}
-                className="mt-7 flex items-center justify-center gap-2.5"
+                className="mt-7 text-center"
                 style={{
                   fontFamily: '"IBM Plex Mono", monospace',
                   fontSize: '11px',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: '#5A5752',
+                  lineHeight: 1.8,
                 }}
               >
                 <span
-                  style={{ width: '6px', height: '6px', backgroundColor: '#2A8F65', flexShrink: 0 }}
+                  style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#2A8F65', marginRight: '10px', verticalAlign: 'middle' }}
                   aria-hidden="true"
                 />
-                <span>Running live for Agency Operators + Lemonade</span>
+                Running live for Agency Operators + Lemonade
               </motion.p>
             </div>
           </div>

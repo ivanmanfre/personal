@@ -833,9 +833,9 @@ const ComparisonSection: React.FC = () => (
             </div>
             <div className="flex flex-col gap-3">
               {MOBILE_ROWS.map((row) => (
-                <div key={row.label} className="flex flex-col gap-1">
-                  <span style={{ ...T.mono, color: '#5A5752' }}>{row.label}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A' }}>
+                <div key={row.label} className="flex items-baseline justify-between gap-3">
+                  <span style={{ ...T.mono, letterSpacing: '0.08em', color: '#5A5752', flexShrink: 0 }}>{row.label}</span>
+                  <span className="text-right" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A' }}>
                     {row.cells[ci]}
                   </span>
                 </div>
