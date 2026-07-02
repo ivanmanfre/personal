@@ -19,11 +19,23 @@ const DARK_CLASS = new RegExp(
   'g'
 );
 
+function walkDir(dir, callback) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    // Skip node_modules and _archive
+    if (entry.name === 'node_modules' || entry.name === '_archive') continue;
+
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkDir(fullPath, callback);
+    } else if (entry.isFile() && entry.name.endsWith('.tsx')) {
+      callback(fullPath);
+    }
+  }
+}
+
 const used = new Map();
 for (const dir of PANEL_DIRS) {
-  for (const f of fs.readdirSync(dir)) {
-    if (!f.endsWith('.tsx')) continue;
-    const p = path.join(dir, f);
+  walkDir(dir, (p) => {
     const lines = fs.readFileSync(p, 'utf8').split('\n');
     lines.forEach((line, i) => {
       for (const m of line.matchAll(DARK_CLASS)) {
@@ -32,7 +44,7 @@ for (const dir of PANEL_DIRS) {
         used.get(cls).push(`${p}:${i + 1}`);
       }
     });
-  }
+  });
 }
 
 // A class is covered only if light.css contains it as an EXACT escaped selector
