@@ -294,9 +294,23 @@ const ProofBand: React.FC = () => (
               )}
             </div>
             <div style={{ ...T.mono, marginBottom: '8px', color: 'var(--color-accent-ink)' }}>{m.label}</div>
-            <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, maxWidth: '30ch' }}>
-              {m.receipt}
-            </p>
+            {/* T2 (2026-07-02): the human layer, early. "Designed and run by me"
+                gets the face that claim belongs to — small editorial portrait
+                (§4 move 7 treatment), additive, no section redesign. */}
+            <div className="flex items-start gap-4">
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '14px', color: '#5A5752', lineHeight: 1.5, maxWidth: '30ch' }}>
+                {m.receipt}
+              </p>
+              {i === 0 && (
+                <img
+                  src="/ivan-portrait-400.webp"
+                  alt="Iván Manfredi"
+                  loading="eager"
+                  className="rounded-xl ring-1 ring-white/10 shadow-lg object-cover object-top flex-shrink-0"
+                  style={{ width: '56px', aspectRatio: '3 / 4' }}
+                />
+              )}
+            </div>
           </motion.div>
         ))}
       </div>
