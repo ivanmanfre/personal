@@ -27,7 +27,7 @@ interface BoardBrand {
   surface_hex?: string;
 }
 interface AgentStep { step: string; detail?: string; t?: string; done?: boolean }
-type Stage = 'drafted' | 'review' | 'scheduled' | 'published';
+type Stage = 'planned' | 'drafted' | 'review' | 'scheduled' | 'published';
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
@@ -43,7 +43,7 @@ interface QueueItem {
   generating?: boolean;
   agent_trail?: AgentStep[];
 }
-interface CalendarItem { date: string; kind: string; pillar?: string; label: string }
+interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
 interface Board {
   company_name: string;
@@ -123,6 +123,7 @@ function PulseDot({ color }: { color: string }) {
 
 // ---------- Content surface: staged list ----------
 const STAGE_META: Record<Stage, { label: string; hint: string }> = {
+  planned: { label: 'Planned', hint: 'On the calendar. The engine drafts each one a few days ahead.' },
   drafted: { label: 'Drafted', hint: 'The engine is writing these. They move to your review when ready.' },
   review: { label: 'Your review', hint: 'Your only job. Approve or request a change.' },
   scheduled: { label: 'Scheduled', hint: 'Approved and queued to publish.' },
@@ -131,6 +132,11 @@ const STAGE_META: Record<Stage, { label: string; hint: string }> = {
 const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
 
 function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
+  if (stage === 'planned') {
+    const d = q.publish_date ? new Date(q.publish_date + 'T00:00:00') : null;
+    const drafts = d ? new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10) : '';
+    return <span className="text-[12px]" style={{ color: FAINT }}>Drafts {fmtDay(drafts)} · publishes {fmtDay(q.publish_date)}</span>;
+  }
   if (stage === 'drafted') {
     return q.generating
       ? <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="#0ea5e9" /> Generating…</span>
@@ -211,7 +217,9 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
               <span className="absolute bottom-0 left-[7px] top-5 w-px" style={{ background: LINE }} aria-hidden />
             )}
             <span className="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-              {s.done === false
+              {s.done === false && !s.t
+                ? <span className="h-3 w-3 rounded-full" style={{ border: `1.5px solid ${LINE}`, background: '#fff' }} aria-hidden />
+                : s.done === false
                 ? <PulseDot color={accent} />
                 : (
                   <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 16%, white)` }}>
@@ -286,7 +294,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
                   className="w-full rounded-[12px] p-4 text-[14px] leading-relaxed outline-none"
                   style={{ border: `1.5px solid ${accent}`, color: INK, background: '#fbfcfd' }}
                 />
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => setEditing(false)}
                     className="inline-flex min-h-[40px] items-center rounded-lg px-4 text-[13px] font-semibold"
@@ -295,6 +303,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
                     Done editing
                   </button>
                   <span className="text-[12px]" style={{ color: FAINT }}>Edits sync to your operator before publish.</span>
+                  <span className="ml-auto text-[12px] tabular-nums" style={{ color: body.length > 210 ? '#b45309' : FAINT }}>
+                    {body.length} chars{body.length > 210 ? ' · past the LinkedIn fold' : ''}
+                  </span>
                 </div>
               </div>
             ) : (
@@ -310,8 +321,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
                     showFold={false}
                   />
                 ) : (
-                  <div className="rounded-[14px] p-5 text-[14px] italic" style={{ border: `1px dashed ${LINE}`, color: FAINT }}>
-                    {item.generating ? 'The draft is being written right now. It lands here in a few minutes.' : 'Draft in production.'}
+                  <div className="rounded-[14px] p-5 text-[14px]" style={{ border: `1px dashed ${LINE}`, color: DIM }}>
+                    <div className="text-[15px] font-semibold not-italic" style={{ color: INK }}>{item.hook}</div>
+                    <p className="mt-2 leading-relaxed">
+                      {stage === 'planned'
+                        ? 'Planned topic. The engine drafts it two days before the publish date, then it lands in your review.'
+                        : item.generating
+                        ? 'The draft is being written right now. It lands here in a few minutes.'
+                        : 'Draft in production.'}
+                    </p>
                   </div>
                 )}
                 {canAct && item.body && (
@@ -378,7 +396,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
 }
 
 // ---------- Calendar surface ----------
-function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
+const KIND_TIME: Record<string, string> = { post: '09:00', carousel: '09:00', newsletter: '08:00', lm: '12:00' };
+
+function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent: string; mint: string; onOpen: (it: CalendarItem) => void }) {
   const cal = board.calendar;
   if (!cal) return null;
   const start = new Date(cal.start + 'T00:00:00');
@@ -393,14 +413,20 @@ function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
 
   const chipStyle = (kind: string): React.CSSProperties => {
     switch (kind) {
-      case 'post': return { background: `color-mix(in srgb, ${accent} 14%, white)`, color: INK };
-      case 'carousel': return { background: `color-mix(in srgb, ${accent} 30%, white)`, color: INK };
-      case 'lm': return { background: '#f3eefe', color: '#6d28d9' };
+      case 'post': return { background: `color-mix(in srgb, ${accent} 13%, white)`, color: INK };
+      case 'carousel': return { background: `color-mix(in srgb, ${accent} 28%, white)`, color: INK };
+      case 'lm': return { background: `color-mix(in srgb, ${mint} 24%, white)`, color: INK };
       case 'newsletter': return { background: '#f1f5f9', color: DIM };
       case 'newsjack': return { background: '#fff', color: FAINT, border: `1px dashed ${LINE}` };
       default: return { background: '#f1f5f9', color: DIM };
     }
   };
+  const swatch = (bg: React.CSSProperties, label: string) => (
+    <span key={label} className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: DIM }}>
+      <span className="h-2.5 w-2.5 rounded-sm" style={{ ...bg, border: bg.border || `1px solid ${LINE}` }} />
+      {label}
+    </span>
+  );
 
   const weeks: Date[][] = [];
   for (let w = 0; w < cal.weeks; w++) {
@@ -408,13 +434,14 @@ function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
     for (let d = 0; d < 7; d++) row.push(new Date(start.getTime() + (w * 7 + d) * 86400000));
     weeks.push(row);
   }
+  const monthLabel = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   const num = (n: number) => (
     <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 26, lineHeight: 1, color: INK }}>{n}</span>
   );
 
   return (
     <div>
-      <SectionHead title="Your calendar" sub="A month of content, planned and drafted for you. Every item lands in your review first." />
+      <SectionHead title="Your calendar" sub="A month of content, planned topic by topic. Click any item to see it, or what the engine has planned for it." />
       <div className="mb-5 flex flex-wrap gap-3">
         {[
           [totals.post + totals.carousel, 'posts'],
@@ -429,24 +456,54 @@ function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
       </div>
 
       <div className="overflow-x-auto rounded-[14px] bg-white p-3 sm:p-4" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
-        <div className="min-w-[640px]">
-          <div className="grid grid-cols-7 gap-1.5 pb-2">
+        <div className="min-w-[820px]">
+          <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1">
+            <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
+            <span className="text-[12px]" style={{ color: FAINT }}>{cal.items.length} pieces scheduled</span>
+            <span className="ml-auto hidden items-center gap-4 md:inline-flex">
+              {swatch(chipStyle('post'), 'Post')}
+              {swatch(chipStyle('carousel'), 'Carousel')}
+              {swatch(chipStyle('lm'), 'Lead magnet')}
+              {swatch(chipStyle('newsletter'), 'Newsletter')}
+            </span>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 border-b pb-2" style={{ borderColor: LINE }}>
             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
               <div key={d} className="px-2 text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>{d}</div>
             ))}
           </div>
           {weeks.map((row, wi) => (
-            <div key={wi} className="grid grid-cols-7 gap-1.5 pb-1.5">
+            <div key={wi} className="grid grid-cols-7 gap-1.5 pt-1.5">
               {row.map((d) => {
                 const iso = d.toISOString().slice(0, 10);
                 const items = byDate.get(iso) || [];
+                const visible = items.slice(0, 3);
                 return (
-                  <div key={iso} className="min-h-[92px] rounded-lg p-1.5" style={{ border: `1px solid ${LINE}`, background: items.length ? '#fff' : '#fbfcfd' }}>
+                  <div key={iso} className="min-h-[112px] rounded-lg p-1.5" style={{ border: `1px solid ${LINE}`, background: items.length ? '#fff' : '#fbfcfd' }}>
                     <div className="px-0.5 pb-1 text-[12px] font-medium" style={{ color: FAINT }}>{d.getDate()}</div>
                     <div className="flex flex-col gap-1">
-                      {items.map((it, i) => (
-                        <div key={i} className="truncate rounded px-1.5 py-0.5 text-[11px] font-semibold" style={chipStyle(it.kind)}>{it.label}</div>
-                      ))}
+                      {visible.map((it, i) => {
+                        const time = KIND_TIME[it.kind];
+                        const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} — ${it.label}`;
+                        if (it.kind === 'newsjack') {
+                          return <div key={i} title={tip} className="truncate rounded px-1.5 py-1 text-[10.5px] font-semibold" style={chipStyle(it.kind)}>{it.label}</div>;
+                        }
+                        return (
+                          <button
+                            key={i}
+                            title={tip}
+                            onClick={() => onOpen(it)}
+                            className="flex w-full items-center gap-1 truncate rounded px-1.5 py-1 text-left text-[10.5px] font-semibold transition-transform hover:scale-[1.02]"
+                            style={chipStyle(it.kind)}
+                          >
+                            {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
+                            <span className="truncate">{it.label}</span>
+                          </button>
+                        );
+                      })}
+                      {items.length > visible.length && (
+                        <div className="px-1 text-[10.5px] font-medium" style={{ color: FAINT }}>+{items.length - visible.length} more</div>
+                      )}
                     </div>
                   </div>
                 );
@@ -455,7 +512,7 @@ function CalendarSurface({ board, accent }: { board: Board; accent: string }) {
           ))}
         </div>
       </div>
-      <p className="mt-3 text-[13px]" style={{ color: FAINT }}>Newsjack slots stay open on purpose: when news breaks in your niche, a reactive post takes the slot same-day.</p>
+      <p className="mt-3 text-[13px]" style={{ color: FAINT }}>Dashed slots stay open on purpose: when news breaks in your niche, a reactive post takes the slot same-day.</p>
     </div>
   );
 }
@@ -522,7 +579,7 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
 }
 
 // ---------- Strategy surface ----------
-function StrategySurface({ board, accent }: { board: Board; accent: string }) {
+function StrategySurface({ board, accent, mint }: { board: Board; accent: string; mint: string }) {
   const strat = board.strategy;
   const [open, setOpen] = useState<string | null>(null);
   const [shiftOpen, setShiftOpen] = useState(false);
@@ -590,6 +647,39 @@ function StrategySurface({ board, accent }: { board: Board; accent: string }) {
             )}
           </div>
         )}
+
+        {board.calendar && (() => {
+          const t = { post: 0, carousel: 0, lm: 0, newsletter: 0 };
+          board.calendar.items.forEach((it) => { if (it.kind in t) (t as any)[it.kind] += 1; });
+          const formats = [
+            { label: 'Text posts', n: t.post, bg: `color-mix(in srgb, ${accent} 13%, white)` },
+            { label: 'Carousels', n: t.carousel, bg: `color-mix(in srgb, ${accent} 28%, white)` },
+            { label: 'Lead magnets', n: t.lm, bg: `color-mix(in srgb, ${mint} 24%, white)` },
+            { label: 'Newsletters', n: t.newsletter, bg: '#f1f5f9' },
+          ].filter((f) => f.n > 0);
+          return (
+            <div className="mt-6">
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: FAINT }}>Formats this month</div>
+              <div className="flex w-full overflow-hidden rounded-lg" style={{ border: `1px solid ${LINE}` }}>
+                {formats.map((f, i) => (
+                  <div
+                    key={f.label}
+                    className="flex min-h-[56px] flex-col items-start justify-center gap-0 px-2 py-2"
+                    style={{ flexGrow: f.n, flexBasis: 0, minWidth: 104, background: f.bg, borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.9)' : 'none' }}
+                  >
+                    <span className="flex items-baseline gap-1.5">
+                      <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, lineHeight: 1.1, color: INK }}>{f.n}</span>
+                      <span className="truncate text-[11px] font-semibold" style={{ color: INK }}>{f.label}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[12px] leading-relaxed" style={{ color: FAINT }}>
+                The format each topic ships in is picked per topic: teardown math wants a carousel, a capture play wants a lead magnet.
+              </p>
+            </div>
+          );
+        })()}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
@@ -673,7 +763,34 @@ export default function ClientBoardPage() {
   }, [headingFont]);
 
   const accent = cleanHex(board?.brand?.accent_hex);
+  const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
   const stageOf = (q: QueueItem): Stage => stageOverride[q.id] ?? q.stage;
+
+  // Calendar chip click: linked items open the real draft; planned slots open a
+  // pipeline preview of what the engine will do for that topic.
+  const openCalendarItem = (it: CalendarItem) => {
+    const linked = it.ref ? board?.queue.find((q) => q.id === it.ref) : null;
+    if (linked) { setDetail(linked); return; }
+    const d = new Date(it.date + 'T00:00:00');
+    const draftDay = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    setDetail({
+      id: `cal-${it.date}-${it.kind}`,
+      kind: (it.kind === 'newsjack' ? 'post' : it.kind) as QueueItem['kind'],
+      stage: 'planned',
+      pillar: it.pillar,
+      hook: it.label,
+      publish_date: it.date,
+      agent_trail: [
+        { step: 'Queued', detail: 'slot locked on your calendar', done: true },
+        { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
+        { step: 'Hook agent', done: false },
+        { step: 'Draft agent', done: false },
+        { step: 'Copy lint v13', done: false },
+        { step: it.kind === 'lm' ? 'Assessment builder' : 'Brand image', done: false },
+        { step: 'Vision QA', detail: 'then it lands in your review', done: false },
+      ],
+    });
+  };
 
   if (state === 'loading') {
     return (
@@ -696,9 +813,9 @@ export default function ClientBoardPage() {
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const surfaces: Record<TabId, React.ReactNode> = {
     review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} />,
-    calendar: <CalendarSurface board={board} accent={accent} />,
+    calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
-    strategy: <StrategySurface board={board} accent={accent} />,
+    strategy: <StrategySurface board={board} accent={accent} mint={mint} />,
   };
 
   const logo = (h: number) => (
@@ -755,7 +872,7 @@ export default function ClientBoardPage() {
       </header>
 
       <main className="px-4 pb-28 pt-6 sm:px-6 lg:ml-60 lg:px-10 lg:pb-16 lg:pt-10">
-        <div className="mx-auto w-full max-w-3xl">{surfaces[tab]}</div>
+        <div className={`mx-auto w-full ${tab === 'calendar' ? 'max-w-5xl' : 'max-w-3xl'}`}>{surfaces[tab]}</div>
       </main>
 
       {/* Mobile bottom tabs */}

@@ -56,5 +56,10 @@ export function buildAssessmentEmbedUrl(
   // (e.g. clean white) so the embed reads as a page on THEIR site. Engine-side ?bg=.
   const surface = ((brand as any).surface_hex || '').replace(/[^0-9a-fA-F]/g, '');
   if (surface) params.set('bg', surface);
+  // Radius + ink complete the brand kit (engine hardcodes 0-radius + ink literals).
+  const radius = (brand as any).radius_px;
+  if (typeof radius === 'number' && radius >= 0) params.set('r', String(radius));
+  const ink = ((brand as any).ink_hex || '').replace(/[^0-9a-fA-F]/g, '');
+  if (ink) params.set('ink', ink);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }
