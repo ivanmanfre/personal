@@ -52,6 +52,7 @@ const T = {
     letterSpacing: '0.22em',
     textTransform: 'uppercase' as const,
     color: '#5A5752',
+    fontVariantNumeric: 'tabular-nums' as const,
   } as React.CSSProperties,
   serif: {
     fontFamily: '"Source Serif 4", Georgia, serif',
@@ -153,7 +154,7 @@ const Counter: React.FC<{ value: number; prefix?: string; style?: React.CSSPrope
     return () => controls.stop();
   }, [value, isInView]);
 
-  return <span ref={spanRef} style={style}>{prefix}{displayed.toLocaleString()}</span>;
+  return <span ref={spanRef} style={{ fontVariantNumeric: 'tabular-nums', ...style }}>{prefix}{displayed.toLocaleString()}</span>;
 };
 
 // ─── Magnetic CTA ─────────────────────────────────────────────────────────────
@@ -285,7 +286,7 @@ const ProofBand: React.FC = () => (
             className="py-9 md:py-11 px-6 sm:px-9 first:sm:pl-0 last:sm:pr-0 text-left"
           >
             <div className="flex items-baseline gap-0.5" style={{ marginBottom: '12px' }}>
-              <span style={{ ...T.display('clamp(1.9rem,2.6vw,2.6rem)'), color: '#1A1A1A', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              <span style={{ ...T.display('clamp(1.9rem,2.6vw,2.6rem)'), color: '#1A1A1A', lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {m.fig}
               </span>
               {m.unit && (
@@ -863,7 +864,7 @@ const CostSlider: React.FC<{
   <div>
     <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: '10px' }}>
       <span style={{ ...T.mono, fontSize: '11px', color: '#5A5752', minWidth: 0 }}>{label}</span>
-      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '15px', fontWeight: 600, color: '#1A1A1A', flexShrink: 0, whiteSpace: 'nowrap' }}>
+      <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '15px', fontWeight: 600, color: '#1A1A1A', flexShrink: 0, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
         {prefix}{fmtInt(value)}{suffix}
       </span>
     </div>
@@ -910,16 +911,16 @@ const ROICalculator: React.FC = () => {
           <motion.div {...inView} className="md:col-span-6 md:col-start-7">
             <div className="border" style={{ borderColor: 'rgba(26,26,26,0.12)', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(26,26,26,0.10)', padding: '32px' }}>
               <div style={{ ...T.mono, color: 'var(--color-accent-ink)', marginBottom: '14px' }}>Your content spend, today</div>
-              <div style={{ ...T.display('clamp(3rem,6vw,4.5rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+              <div style={{ ...T.display('clamp(3rem,6vw,4.5rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.03em', fontVariantNumeric: 'tabular-nums' }}>
                 ${fmtInt(monthly)}<span style={{ fontSize: '0.34em', color: '#5A5752' }}> /mo</span>
               </div>
               <div className="grid grid-cols-2 gap-x-6" style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid rgba(26,26,26,0.14)' }}>
                 <div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A' }}>${fmtInt(annual)}</div>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}>${fmtInt(annual)}</div>
                   <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginTop: '4px' }}>a year</div>
                 </div>
                 <div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A' }}>{fmtInt(hoursYear)} hrs</div>
+                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '22px', fontWeight: 600, color: '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}>{fmtInt(hoursYear)} hrs</div>
                   <div style={{ ...T.mono, fontSize: '10px', color: '#5A5752', marginTop: '4px' }}>of your year</div>
                 </div>
               </div>
@@ -1251,7 +1252,7 @@ const PaybackSection: React.FC = () => {
                 <div key={field.label}>
                   <div className="flex justify-between items-baseline mb-4">
                     <span style={T.mono}>{field.label}</span>
-                    <span style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '18px', color: '#1A1A1A', fontWeight: 500 }}>{field.fmt(field.value)}</span>
+                    <span style={{ fontFamily: '"IBM Plex Mono",monospace', fontSize: '18px', color: '#1A1A1A', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{field.fmt(field.value)}</span>
                   </div>
                   <input type="range" min={field.min} max={field.max} step={field.step} value={field.value} onChange={(e) => field.setValue(Number(e.target.value))} className="stat-slider w-full" />
                   <div className="flex justify-between mt-2" style={{ ...T.mono, fontSize: '11px' }}>
