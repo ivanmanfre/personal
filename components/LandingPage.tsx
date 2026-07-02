@@ -306,8 +306,8 @@ const ProofBand: React.FC = () => (
                   src="/ivan-portrait-400.webp"
                   alt="Iván Manfredi"
                   loading="eager"
-                  className="rounded-xl ring-1 ring-white/10 shadow-lg object-cover object-top flex-shrink-0"
-                  style={{ width: '56px', aspectRatio: '3 / 4' }}
+                  className="rounded-xl ring-1 ring-white/10 shadow-lg object-cover flex-shrink-0"
+                  style={{ width: '72px', aspectRatio: '3 / 4', objectPosition: '38% 18%' }}
                 />
               )}
             </div>
