@@ -11,6 +11,12 @@ export interface AssessmentEmbedBrand {
   logo_url?: string;
   /** Page background for the embed surface (hex, no #). Absent -> engine's default paper. */
   surface_hex?: string;
+  /** Hero template variant (e.g. 'dark'). Absent -> engine's default hero. */
+  hero?: string;
+  /** Hero background color (hex). Only meaningful with a hero variant set. */
+  hero_bg?: string;
+  /** Secondary accent (hex) for hero italics / inline emphasis. */
+  accent2?: string;
 }
 
 export interface AssessmentEmbedLm {
@@ -61,5 +67,12 @@ export function buildAssessmentEmbedUrl(
   if (typeof radius === 'number' && radius >= 0) params.set('r', String(radius));
   const ink = ((brand as any).ink_hex || '').replace(/[^0-9a-fA-F]/g, '');
   if (ink) params.set('ink', ink);
+  // Hero template variant: swaps the engine's editorial hero for the lead's own register
+  // (e.g. dark hero + secondary-accent italics). Engine-side ?hero/?hero_bg/?accent2.
+  if (brand.hero) params.set('hero', brand.hero);
+  const heroBg = (brand.hero_bg || '').replace(/[^0-9a-fA-F]/g, '');
+  if (heroBg) params.set('hero_bg', heroBg);
+  const accent2 = (brand.accent2 || '').replace(/[^0-9a-fA-F]/g, '');
+  if (accent2) params.set('accent2', accent2);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }

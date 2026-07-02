@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { motion, LayoutGroup, MotionConfig, useReducedMotion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -42,6 +43,8 @@ interface QueueItem {
   publish_date?: string;
   generating?: boolean;
   agent_trail?: AgentStep[];
+  /** Transient: the agent step currently running, shown inline on the row (intro choreography). */
+  live_step?: string;
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
@@ -85,20 +88,95 @@ function lmPath(title?: string): string {
   return (title || 'lead-magnet').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim()
     .split(/\s+/).slice(-3).join('-');
 }
-const KIND_LABEL: Record<string, string> = { post: 'Post', carousel: 'Carousel', lm: 'Lead magnet', newsletter: 'Newsletter' };
+const KIND_LABEL: Record<string, string> = { post: 'Post', carousel: 'Carousel', lm: 'Lead magnet', newsletter: 'Newsletter', newsjack: 'Reactive slot' };
+const FLASH_BG = 'color-mix(in srgb, #10b981 13%, white)';
+
+/** The body the opening-choreography draft (d1) lands with — same register as the other
+ *  seeded drafts (owner-cost storytelling, concrete and direct, no fabricated results). */
+const D1_DRAFT_BODY = `The audit that finds where ad spend leaks before you scale.
+
+Most accounts leak in the same three places: broad match quietly spending on junk queries, retargeting audiences that overlap so you pay twice for the same buyer, and ROAS targets set before your costs went up.
+
+None of it shows in the dashboard. All of it shows in a margin audit.
+
+Scaling multiplies whatever is already in the account — including the leaks. Audit first, then scale.`;
+
+/** Format kicker: refines the raw kind into the client-readable format label. */
+function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url'>): string {
+  if (q.kind === 'post') return q.media_url ? 'Image post' : 'Text post';
+  return KIND_LABEL[q.kind] || q.kind;
+}
+
+/** Inline count-up (logic mirrored from dashboard-v2 useCountUp — not imported across
+ *  the client/ops context boundary). Respects prefers-reduced-motion. */
+function useCountUp(target: number, duration = 1100): string {
+  const [v, setV] = useState(0);
+  const prevRef = useRef(0);
+  useEffect(() => {
+    const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { prevRef.current = target; setV(target); return; }
+    const from = prevRef.current;
+    prevRef.current = target;
+    const start = performance.now();
+    let raf = 0;
+    const step = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setV(Math.round(from + (1 - Math.pow(1 - p, 3)) * (target - from)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return v.toLocaleString();
+}
+
+function CountUpNum({ n, size }: { n: number; size: number }) {
+  const v = useCountUp(n);
+  return <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: size, lineHeight: 1.05, color: INK }}>{v}</span>;
+}
+
+/** 16:9 row/card thumbnail: real media when it exists, a format glyph tile otherwise. */
+function Thumb({ q, accent, large = false }: { q: QueueItem; accent: string; large?: boolean }) {
+  const src = q.media_url || q.cover_url;
+  const cls = large ? 'aspect-video w-full rounded-lg' : 'h-8 w-14 rounded-[6px]';
+  if (src) {
+    return <img src={src} alt="" loading="lazy" className={`${cls} shrink-0 object-cover`} style={{ border: `1px solid ${LINE}`, background: '#f1f5f9' }} />;
+  }
+  const glyph = (() => {
+    switch (q.kind === 'post' && q.media_url ? 'image' : q.kind) {
+      case 'carousel':
+        return <path d="M4 7h10v10H4zM16 9h4M16 12h4M16 15h4" stroke={accent} strokeWidth="1.6" strokeLinecap="round" fill="none" />;
+      case 'lm':
+        return <path d="M5 6h14M5 10h14M5 14h8M15.5 13.5l2 2 3.5-3.5" stroke={accent} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />;
+      case 'newsletter':
+        return <path d="M4 7l8 6 8-6M4 7h16v11H4z" stroke={accent} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />;
+      default:
+        return <path d="M5 7h14M5 11h14M5 15h9" stroke={accent} strokeWidth="1.6" strokeLinecap="round" fill="none" />;
+    }
+  })();
+  return (
+    <span
+      className={`${cls} flex shrink-0 items-center justify-center`}
+      style={{ background: `color-mix(in srgb, ${accent} 7%, white)`, border: `1px solid ${LINE}` }}
+      aria-hidden
+    >
+      <svg width={large ? 30 : 18} height={large ? 30 : 18} viewBox="0 0 24 24" style={{ opacity: 0.75 }}>{glyph}</svg>
+    </span>
+  );
+}
 
 // Segment tints: the client's accent mixed toward white at stepped ratios, so the
 // bar reads as one brand family, never a rainbow.
 const TINT_STEPS = [26, 20, 15, 11, 8];
 
 // ---------- shared bits ----------
-function KindChip({ kind, accent }: { kind: string; accent: string }) {
+function KindChip({ q, accent }: { q: Pick<QueueItem, 'kind' | 'media_url'>; accent: string }) {
   return (
     <span
       className="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-[11px] font-semibold"
       style={{ background: `color-mix(in srgb, ${accent} 10%, white)`, color: INK }}
     >
-      {KIND_LABEL[kind] || kind}
+      {kickerOf(q)}
     </span>
   );
 }
@@ -139,7 +217,7 @@ function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
   }
   if (stage === 'drafted') {
     return q.generating
-      ? <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="#0ea5e9" /> Generating…</span>
+      ? <span className="inline-flex items-center gap-1.5 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="#0ea5e9" /> {q.live_step || 'Generating…'}</span>
       : <span className="text-[12px]" style={{ color: FAINT }}>In production</span>;
   }
   if (stage === 'review') return <span className="text-[12px]" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)} unless you change it</span>;
@@ -147,74 +225,228 @@ function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
   return <span className="text-[12px]" style={{ color: FAINT }}>Published {fmtDay(q.publish_date)}</span>;
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen }: {
+type ContentView = 'list' | 'board' | 'feed';
+const VIEWS: { id: ContentView; label: string }[] = [
+  { id: 'list', label: 'List' },
+  { id: 'board', label: 'Board' },
+  { id: 'feed', label: 'Feed' },
+];
+
+function ReviewSurface({ board, accent, stageOf, onOpen, flashId, view, setView }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem) => void;
+  flashId: string | null;
+  view: ContentView;
+  setView: (v: ContentView) => void;
 }) {
   const autoDays = board.auto_publish_days ?? 3;
   const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
+  const stageDot = (s: Stage) => (s === 'review' ? accent : s === 'drafted' ? '#0ea5e9' : s === 'scheduled' ? '#047857' : '#94a3b8');
+  const flashStyle = (id: string): React.CSSProperties => ({
+    background: flashId === id ? FLASH_BG : undefined,
+    transition: 'background-color 700ms ease',
+  });
+
+  // Feed identity + honest counts: next-week volume read straight off the calendar.
+  const founder = board.founder;
+  const feedItems = board.queue
+    .filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && q.body)
+    .sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+  const weekCounts = (() => {
+    const cal = board.calendar;
+    if (!cal) return { posts: feedItems.length, lms: 0 };
+    const start = new Date(cal.start + 'T00:00:00').getTime();
+    const wk = cal.items.filter((it) => {
+      const t = new Date(it.date + 'T00:00:00').getTime();
+      return t >= start && t < start + 7 * 86400000;
+    });
+    return {
+      posts: wk.filter((it) => it.kind === 'post' || it.kind === 'carousel').length,
+      lms: wk.filter((it) => it.kind === 'lm').length,
+    };
+  })();
+
   return (
     <div>
-      <SectionHead
-        title="Your content"
-        sub={`Everything the engine produces moves through these stages. Anything in your review you don't touch publishes automatically after ${autoDays} days.`}
-      />
-      <div className="flex flex-col gap-6">
-        {groups.map(({ stage, items }) => (
-          <div key={stage}>
-            <div className="mb-2 flex items-baseline gap-2.5 px-1">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : FAINT }}>
-                {STAGE_META[stage].label}
-              </span>
-              <span className="rounded-full px-1.5 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>{items.length}</span>
-              <span className="hidden text-[12px] sm:inline" style={{ color: FAINT }}>{STAGE_META[stage].hint}</span>
-            </div>
-            <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: stage === 'review' ? CARD_SHADOW : 'none' }}>
-              {items.length === 0 && (
-                <div className="px-4 py-4 text-[13px]" style={{ color: FAINT }}>Nothing here right now.</div>
-              )}
-              {items.map((q, i) => (
-                <button
-                  key={q.id}
-                  onClick={() => onOpen(q)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#fbfcfd]"
-                  style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 54 }}
-                >
-                  <KindChip kind={q.kind} accent={accent} />
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium" style={{ color: INK }}>
-                    {q.hook || q.title}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-[240px] flex-1">
+          <SectionHead
+            title="Your content"
+            sub={`Everything the engine produces moves through these stages. Anything in your review you don't touch publishes automatically after ${autoDays} days.`}
+          />
+        </div>
+        <div className="inline-flex shrink-0 rounded-lg p-0.5" style={{ background: '#eceef2', border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              role="tab"
+              aria-selected={view === v.id}
+              onClick={() => setView(v.id)}
+              className="min-h-[36px] rounded-[7px] px-3.5 text-[13px] font-semibold transition-colors"
+              style={view === v.id ? { background: '#fff', color: INK, boxShadow: '0 1px 2px rgba(15,23,42,.08)' } : { color: DIM }}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {view === 'list' && (
+        <LayoutGroup id="cb-list">
+          <div className="flex flex-col gap-6">
+            {groups.map(({ stage, items }) => (
+              <div key={stage}>
+                <div className="mb-2 flex items-baseline gap-2.5 px-1">
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : FAINT }}>
+                    {STAGE_META[stage].label}
                   </span>
-                  {q.pillar && (
-                    <span className="hidden items-center gap-1.5 sm:inline-flex">
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} />
-                      <span className="text-[12px] capitalize" style={{ color: FAINT }}>{q.pillar}</span>
-                    </span>
+                  <span className="rounded-full px-1.5 text-[11px] font-semibold" style={{ background: '#f1f5f9', color: DIM }}>{items.length}</span>
+                  <span className="hidden text-[12px] sm:inline" style={{ color: FAINT }}>{STAGE_META[stage].hint}</span>
+                </div>
+                <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}`, boxShadow: stage === 'review' ? CARD_SHADOW : 'none' }}>
+                  {items.length === 0 && (
+                    <div className="px-4 py-4 text-[13px]" style={{ color: FAINT }}>Nothing here right now.</div>
                   )}
-                  <span className="hidden shrink-0 text-right sm:block">{stageStatus(q, stage)}</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden>
-                    <path d="M9 6l6 6-6 6" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
+                  {items.map((q, i) => (
+                    <motion.button
+                      layout
+                      layoutId={`l-${q.id}`}
+                      key={q.id}
+                      onClick={() => onOpen(q)}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#fbfcfd]"
+                      style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 54, ...flashStyle(q.id) }}
+                    >
+                      <Thumb q={q} accent={accent} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-medium" style={{ color: INK }}>{q.hook || q.title}</span>
+                        <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.06em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+                      </span>
+                      {q.pillar && (
+                        <span className="hidden items-center gap-1.5 sm:inline-flex">
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} />
+                          <span className="text-[12px] capitalize" style={{ color: FAINT }}>{q.pillar}</span>
+                        </span>
+                      )}
+                      <span className="hidden shrink-0 text-right sm:block">{stageStatus(q, stage)}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden>
+                        <path d="M9 6l6 6-6 6" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </LayoutGroup>
+      )}
+
+      {view === 'board' && (
+        <LayoutGroup id="cb-board">
+          <div className="overflow-x-auto pb-2">
+            <div className="flex items-start gap-3" style={{ minWidth: 'max-content' }}>
+              {groups.map(({ stage, items }) => (
+                <div key={stage} className="w-[248px] shrink-0 rounded-[14px] p-2" style={{ background: '#f0f2f5', border: `1px solid ${LINE}` }}>
+                  <div className="flex items-center gap-2 px-1.5 pb-2 pt-1">
+                    <span className="h-2 w-2 rounded-full" style={{ background: stageDot(stage) }} aria-hidden />
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : DIM }}>{STAGE_META[stage].label}</span>
+                    <span className="rounded-full px-1.5 text-[11px] font-semibold" style={{ background: '#fff', color: DIM }}>{items.length}</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {items.length === 0 && (
+                      <div className="rounded-[12px] px-3 py-4 text-[12px]" style={{ color: FAINT, border: `1px dashed ${LINE}` }}>Nothing here right now.</div>
+                    )}
+                    {items.map((q) => (
+                      <motion.button
+                        layout
+                        layoutId={`b-${q.id}`}
+                        key={q.id}
+                        onClick={() => onOpen(q)}
+                        className="flex w-full flex-col gap-2 rounded-[12px] bg-white p-2.5 text-left transition-shadow hover:shadow-md"
+                        style={{ border: `1px solid ${LINE}`, boxShadow: '0 1px 2px rgba(15,23,42,.05)', ...flashStyle(q.id) }}
+                      >
+                        <Thumb q={q} accent={accent} large />
+                        <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+                        <span className="text-[13px] font-medium leading-snug" style={{ color: INK, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {q.hook || q.title}
+                        </span>
+                        <span>{stageStatus(q, stage)}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-        ))}
-      </div>
+        </LayoutGroup>
+      )}
+
+      {view === 'feed' && (
+        <div className="rounded-[16px] px-3 py-6 sm:px-6" style={{ background: '#f3f2ef', border: `1px solid ${LINE}` }}>
+          <div className="mx-auto mb-5 max-w-[552px]">
+            <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: INK }}>Next week on your LinkedIn</h3>
+            <p className="mt-1 text-[13.5px]" style={{ color: DIM }}>
+              {weekCounts.posts} posts, {weekCounts.lms} lead magnets, drafted from your voice.
+            </p>
+          </div>
+          <div className="flex flex-col">
+            {feedItems.map((q) => (
+              <div key={q.id} className="mx-auto w-full max-w-[552px]">
+                <div className="mb-1.5 mt-4 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] first:mt-0" style={{ color: FAINT }}>
+                  {fmtDay(q.publish_date)}
+                </div>
+                <LinkedInPostPreview
+                  text={q.body || ''}
+                  author={founder?.name || board.company_name}
+                  headline={founder?.headline || ''}
+                  avatarUrl={founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
+                  mediaUrl={q.media_url || undefined}
+                  stats={{ reactions: 0, comments: 0 }}
+                  showFold
+                />
+              </div>
+            ))}
+            {feedItems.length === 0 && (
+              <div className="mx-auto max-w-[552px] rounded-[12px] bg-white px-4 py-6 text-[13px]" style={{ color: DIM, border: `1px solid ${LINE}` }}>
+                Your first drafts land here this week — this view shows them exactly as they'll run on your feed.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ---------- Detail view (modal): preview + edit + agent trail ----------
 function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
+  // The trail draws itself on open: connector spine grows, steps settle in with a
+  // ~120ms stagger, timestamps fade last. Motion demonstrates "agents ran in order".
+  const reduce = useReducedMotion();
+  const stepVariants = reduce
+    ? undefined
+    : {
+        hidden: { opacity: 0, y: 10 },
+        show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 420, damping: 28 } },
+      };
   return (
     <div>
       <div className="mb-3 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>How this was made</div>
-      <div className="flex flex-col">
+      <motion.div
+        className="flex flex-col"
+        initial={reduce ? false : 'hidden'}
+        animate="show"
+        variants={reduce ? undefined : { show: { transition: { staggerChildren: 0.12, delayChildren: 0.12 } } }}
+      >
         {steps.map((s, i) => (
-          <div key={i} className="relative flex gap-3 pb-4 last:pb-0">
+          <motion.div key={i} className="relative flex gap-3 pb-4 last:pb-0" variants={stepVariants}>
             {i < steps.length - 1 && (
-              <span className="absolute bottom-0 left-[7px] top-5 w-px" style={{ background: LINE }} aria-hidden />
+              <motion.span
+                className="absolute bottom-0 left-[7px] top-5 w-px"
+                style={{ background: LINE, transformOrigin: 'top' }}
+                aria-hidden
+                variants={reduce ? undefined : { hidden: { scaleY: 0 }, show: { scaleY: 1, transition: { duration: 0.32, ease: 'easeOut' } } }}
+              />
             )}
             <span className="relative z-10 mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
               {s.done === false && !s.t
@@ -222,23 +454,35 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
                 : s.done === false
                 ? <PulseDot color={accent} />
                 : (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 16%, white)` }}>
+                  <motion.span
+                    className="flex h-4 w-4 items-center justify-center rounded-full"
+                    style={{ background: `color-mix(in srgb, ${accent} 16%, white)` }}
+                    variants={reduce ? undefined : { hidden: { scale: 0.4 }, show: { scale: 1, transition: { type: 'spring', stiffness: 500, damping: 22 } } }}
+                  >
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden>
                       <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                  </span>
+                  </motion.span>
                 )}
             </span>
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-[13px] font-semibold" style={{ color: INK }}>{s.step}</span>
-                {s.t && <span className="text-[11px]" style={{ color: FAINT }}>{s.t}</span>}
+                {s.t && (
+                  <motion.span
+                    className="text-[11px]"
+                    style={{ color: FAINT }}
+                    variants={reduce ? undefined : { hidden: { opacity: 0 }, show: { opacity: 1, transition: { delay: 0.22, duration: 0.3 } } }}
+                  >
+                    {s.t}
+                  </motion.span>
+                )}
               </div>
               {s.detail && <div className="text-[12px] leading-snug" style={{ color: DIM }}>{s.detail}</div>}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -261,7 +505,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
       <div className="relative mx-auto my-0 min-h-full w-full max-w-4xl bg-white p-4 sm:my-8 sm:min-h-0 sm:rounded-[16px] sm:p-6" style={{ boxShadow: '0 30px 80px rgba(15,23,42,.35)' }}>
         {/* Header */}
         <div className="mb-4 flex items-center gap-2.5">
-          <KindChip kind={item.kind} accent={accent} />
+          <KindChip q={item} accent={accent} />
           {item.pillar && <span className="text-[12px] capitalize" style={{ color: FAINT }}>{item.pillar}</span>}
           <span className="ml-auto">{stageStatus(item, stage)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full hover:bg-[#f1f5f9]">
@@ -354,13 +598,15 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove }: {
         {/* Footer actions */}
         {canAct && (
           <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t pt-4" style={{ borderColor: LINE }}>
-            <button
+            <motion.button
               onClick={() => { onApprove(item.id); onClose(); }}
-              className="inline-flex min-h-[44px] items-center rounded-lg px-6 text-[14px] font-semibold transition-transform active:scale-[.98]"
+              whileTap={{ scale: 0.93 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+              className="inline-flex min-h-[44px] items-center rounded-lg px-6 text-[14px] font-semibold"
               style={{ background: accent, color: ctaInk }}
             >
               Approve
-            </button>
+            </motion.button>
             <button
               onClick={() => setChanging(!changing)}
               className="inline-flex min-h-[44px] items-center rounded-lg px-4 text-[14px] font-semibold"
@@ -435,9 +681,7 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
     weeks.push(row);
   }
   const monthLabel = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  const num = (n: number) => (
-    <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 26, lineHeight: 1, color: INK }}>{n}</span>
-  );
+  const num = (n: number) => <CountUpNum n={n} size={26} />;
 
   return (
     <div>
@@ -601,7 +845,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
             Your content this month
           </div>
           <div className="flex items-baseline gap-2">
-            <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 34, lineHeight: 1, color: INK }}>{strat.total}</span>
+            <CountUpNum n={strat.total} size={34} />
             <span className="text-[13px] font-medium" style={{ color: DIM }}>posts</span>
           </div>
         </div>
@@ -622,7 +866,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
               }}
             >
               <span className="w-full truncate text-[12px] font-semibold" style={{ color: INK }}>{p.label}</span>
-              <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 24, lineHeight: 1.05, color: INK }}>{p.count}</span>
+              <CountUpNum n={p.count} size={24} />
               <span className="text-[11px] font-medium" style={{ color: DIM }}>{p.pct}%</span>
             </button>
           ))}
@@ -668,7 +912,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
                     style={{ flexGrow: f.n, flexBasis: 0, minWidth: 104, background: f.bg, borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.9)' : 'none' }}
                   >
                     <span className="flex items-baseline gap-1.5">
-                      <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 18, lineHeight: 1.1, color: INK }}>{f.n}</span>
+                      <CountUpNum n={f.n} size={18} />
                       <span className="truncate text-[11px] font-semibold" style={{ color: INK }}>{f.label}</span>
                     </span>
                   </div>
@@ -734,6 +978,67 @@ export default function ClientBoardPage() {
   const [tab, setTab] = useState<TabId>('review');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>({});
+  const [flashId, setFlashId] = useState<string | null>(null);
+  // Content view lives up here so the page can widen the container for the kanban.
+  const [contentView, setContentViewState] = useState<ContentView>(() => {
+    try {
+      const v = localStorage.getItem('client-board-view');
+      return v === 'board' || v === 'feed' ? v : 'list';
+    } catch { return 'list'; }
+  });
+  const setContentView = (v: ContentView) => {
+    setContentViewState(v);
+    try { localStorage.setItem('client-board-view', v); } catch { /* private mode */ }
+  };
+  const reduceMotion = useReducedMotion();
+  const introRan = useRef(false);
+  const flashTimer = useRef<number>(0);
+  const introTimers = useRef<number[]>([]);
+  useEffect(() => () => { introTimers.current.forEach((t) => window.clearTimeout(t)); window.clearTimeout(flashTimer.current); }, []);
+
+  const flash = (id: string) => {
+    setFlashId(id);
+    window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setFlashId(null), 1500);
+  };
+
+  // E1 — opening choreography (once per browser): the "Generating…" draft finishes its
+  // remaining agent steps live, then travels up into "Your review". Local state theater
+  // with honest verbs — the same steps the engine actually runs, no fabricated metrics.
+  useEffect(() => {
+    if (state !== 'ready' || !board || tab !== 'review' || introRan.current || reduceMotion) return;
+    try { if (localStorage.getItem('cb-intro-played')) return; } catch { return; }
+    const d1 = board.queue.find((q) => q.id === 'd1' && q.generating);
+    if (!d1) return;
+    introRan.current = true;
+
+    const patch = (fn: (q: QueueItem) => QueueItem) =>
+      setBoard((prev) => prev ? { ...prev, queue: prev.queue.map((q) => (q.id === 'd1' ? fn({ ...q }) : q)) } : prev);
+    const completeStep = (name: string, detail: string, next?: AgentStep) => (q: QueueItem): QueueItem => {
+      let trail = (q.agent_trail || []).map((s) => (s.step === name ? { ...s, done: true, t: 'just now', detail } : s));
+      if (next && !trail.some((s) => s.step === next.step)) trail = [...trail, next];
+      return { ...q, agent_trail: trail };
+    };
+
+    // Timers live in a ref cleared only on unmount: the patches below change `board`,
+    // which re-fires this effect — a dep-tied cleanup would kill the choreography mid-run.
+    const at = (ms: number, fn: () => void) => introTimers.current.push(window.setTimeout(fn, ms));
+    at(1300, () => patch((q) => completeStep('Hook agent', '9 angles scored, picked #3', { step: 'Draft agent', detail: 'writing v1…', done: false, t: 'now' })({ ...q, live_step: 'Hook agent — picked angle #3 of 9' })));
+    at(2900, () => patch((q) => completeStep('Draft agent', 'v2 after self-review', { step: 'Copy lint v13', detail: 'checking…', done: false, t: 'now' })({ ...q, live_step: 'Draft agent — v2 after self-review' })));
+    at(4300, () => patch((q) => completeStep('Copy lint v13', 'PASS — 0 flags', { step: 'Vision QA', detail: 'reviewing…', done: false, t: 'now' })({ ...q, live_step: 'Copy lint v13 — PASS' })));
+    at(5500, () => patch((q) => completeStep('Vision QA', 'clean')({ ...q, live_step: 'Ready for your review' })));
+    at(6700, () => {
+      patch((q) => ({
+        ...q,
+        stage: 'review',
+        generating: false,
+        live_step: undefined,
+        body: q.body || D1_DRAFT_BODY,
+      }));
+      flash('d1');
+      try { localStorage.setItem('cb-intro-played', '1'); } catch { /* private mode */ }
+    });
+  }, [state, board, tab, reduceMotion]);
 
   useEffect(() => {
     let cancelled = false;
@@ -812,7 +1117,7 @@ export default function ClientBoardPage() {
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const surfaces: Record<TabId, React.ReactNode> = {
-    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} />,
+    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} flashId={flashId} view={contentView} setView={setContentView} />,
     calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
     strategy: <StrategySurface board={board} accent={accent} mint={mint} />,
@@ -845,6 +1150,7 @@ export default function ClientBoardPage() {
   );
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="min-h-screen" style={{ background: '#f6f7f9', color: INK, fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-6 border-r bg-white p-5 lg:flex" style={{ borderColor: LINE }}>
@@ -872,7 +1178,7 @@ export default function ClientBoardPage() {
       </header>
 
       <main className="px-4 pb-28 pt-6 sm:px-6 lg:ml-60 lg:px-10 lg:pb-16 lg:pt-10">
-        <div className={`mx-auto w-full ${tab === 'calendar' ? 'max-w-5xl' : 'max-w-3xl'}`}>{surfaces[tab]}</div>
+        <div className={`mx-auto w-full ${tab === 'calendar' || (tab === 'review' && contentView === 'board') ? 'max-w-5xl' : 'max-w-3xl'}`}>{surfaces[tab]}</div>
       </main>
 
       {/* Mobile bottom tabs */}
@@ -887,9 +1193,10 @@ export default function ClientBoardPage() {
           accent={accent}
           stage={stageOf(detail)}
           onClose={() => setDetail(null)}
-          onApprove={(id) => setStageOverride((s) => ({ ...s, [id]: 'scheduled' }))}
+          onApprove={(id) => { setStageOverride((s) => ({ ...s, [id]: 'scheduled' })); flash(id); }}
         />
       )}
     </div>
+    </MotionConfig>
   );
 }
