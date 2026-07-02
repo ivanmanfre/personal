@@ -214,17 +214,16 @@ const MagneticCTA: React.FC<{
 // ─── Reviews ─────────────────────────────────────────────────────────────────
 type Review = { text: string; project: string; author?: string; role?: string };
 
+// Trimmed to the six strongest quotes (density audit 2026-07-02: the full
+// 10-review double-row track ran 3919 chars incl clones). Strongest = named
+// author + concrete outcome or authority marker.
 const REVIEWS: Review[] = [
   { text: "Ivan built our n8n inventory system in roughly half the time I expected and it's been running without issues. Comes back fast when something needs tweaking.", project: "N8N Inventory System", author: "Don Morrow", role: "Highland Tech" },
   { text: "Quality work and lightning fast. Would rehire him again without any doubt.", project: "Automation Build", author: "Michel de Wachter", role: "BNP Paribas Fortis" },
-  { text: "Ivan has a strong understanding of data manipulation, visualization, and automation. He is reliable and did a great job. Will rehire next time.", project: "Data & Automation Project", author: "Andrew Motiwalla", role: "The Good Life Abroad" },
   { text: "We had a Slack alert system and a CRM that weren't talking to each other. Ivan wired the whole thing together over a couple of days. Our ops team stopped chasing leads manually from that point on.", project: "Lead Flow & Slack Integration", author: "Camille Haas", role: "Head of Operations" },
-  { text: "Ivan's one of those people where you see how he uses AI and immediately feel like you've been doing things the hard way. Walked away with a completely different approach.", project: "AI Orientation Session", author: "Cristian Trif", role: "Salesforce Consultant · 9 yrs" },
   { text: "He found three gaps in our Make.com setup we didn't know existed. Two of them were costing us real pipeline.", project: "Make.com Workflow Audit", author: "Rodrigo Ibañez", role: "Managing Director" },
   { text: "Rebuilt our whole backend architecture and wrote documentation that my team could actually follow. Solid work.", project: "Enterprise Architecture", author: "Henrik Sund", role: "CTO" },
   { text: "I'm at Meta now, spent years at Amazon. One conversation with Ivan gave me three things I went and built that same week.", project: "AI Strategy Session", author: "Adeeb Mohammed", role: "Software Engineer · ex-Amazon · Meta" },
-  { text: "We needed a voice agent wired into our existing stack on a tight timeline. Ivan delivered, communicated well throughout, and the end product held up.", project: "AI Voice Agent Infrastructure", author: "Priya Nair", role: "Co-Founder" },
-  { text: "Knows n8n properly. Asked the right questions before touching anything. Looking forward to the next project.", project: "SaaS Backend Automation", author: "Finn Gallagher", role: "Founder" },
 ];
 
 // ─── Mid-funnel ask — quiet one-liner (2026-06-10) ───────────────────────────
@@ -719,10 +718,15 @@ const COMPARE_ROWS: { label: string; cells: string[] }[] = [
   { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
 ];
 
+// Mobile shows only the three highest-contrast rows (density audit 2026-07-02:
+// the full 6-row × 4-card stack ran 2020px tall at 390w). Desktop keeps all 6.
+const MOBILE_ROW_LABELS = ['Owned audience + list', 'Your time / week', 'Time to first leads'];
+const MOBILE_ROWS = COMPARE_ROWS.filter((r) => MOBILE_ROW_LABELS.includes(r.label));
+
 const ComparisonSection: React.FC = () => (
-  <section className="py-24 md:py-32 border-t" style={DIVIDER}>
+  <section className="py-16 md:py-32 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="mb-16 max-w-2xl">
+      <motion.div {...inView} className="mb-10 md:mb-16 max-w-2xl">
         <RevealH2 style={{ ...T.display('clamp(2.4rem,3.8vw,3.4rem)'), lineHeight: 1.02 }}>
           Why not just hire<br />a ghostwriter?
         </RevealH2>
@@ -827,7 +831,7 @@ const ComparisonSection: React.FC = () => (
               </span>
             </div>
             <div className="flex flex-col gap-3">
-              {COMPARE_ROWS.map((row) => (
+              {MOBILE_ROWS.map((row) => (
                 <div key={row.label} className="flex flex-col gap-1">
                   <span style={{ ...T.mono, color: '#5A5752' }}>{row.label}</span>
                   <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '12.5px', lineHeight: 1.45, color: '#1A1A1A' }}>
@@ -1199,22 +1203,17 @@ const ReviewRow: React.FC<{ items: Review[]; direction: 'left' | 'right'; durati
   );
 };
 
-const ReviewsMarquee: React.FC = () => {
-  const half = Math.ceil(REVIEWS.length / 2);
-  const rowA = REVIEWS.slice(0, half);
-  const rowB = REVIEWS.slice(half);
-  return (
-    <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
-      <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
-        <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
-      </div>
-      <div className="flex flex-col gap-5">
-        <ReviewRow items={rowA} direction="left" duration={55} />
-        <ReviewRow items={rowB} direction="right" duration={60} />
-      </div>
-    </section>
-  );
-};
+// Single belt of the six quotes (was two counter-rotating rows of five): the
+// halved track keeps the loop seamless (6 cards x ~372px per half > any
+// viewport) and halves the section's visual density.
+const ReviewsMarquee: React.FC = () => (
+  <section className="py-14 md:py-20 border-t overflow-hidden" style={{ ...DIVIDER, backgroundColor: '#EFE7D6' }}>
+    <div className="container mx-auto px-8 max-w-6xl mb-10 md:mb-12">
+      <p style={{ ...T.mono, color: '#5A5752' }}>And the broader book of work</p>
+    </div>
+    <ReviewRow items={REVIEWS} direction="left" duration={55} />
+  </section>
+);
 
 // ─── Section 5: 90-Day Payback ───────────────────────────────────────────────
 const PaybackSection: React.FC = () => {
