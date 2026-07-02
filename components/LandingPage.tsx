@@ -1450,7 +1450,7 @@ const FAQS = [
   { q: 'Will it actually sound like me?', a: "Yes. The engine is trained on your voice from a short intake, and every piece runs through an anti-slop QA pass before it ships. If it reads like AI, it doesn't go out." },
   { q: "How long until it's live?", a: 'About 30 days from kickoff. Week one is voice and positioning, week two is the build, then it ships daily while we tune.' },
   { q: 'What do I own?', a: "You own the audience, the content, and the email list, and they all live in your accounts. The engine is fully managed, so there's nothing for you to run, host, or maintain." },
-  { q: 'What does it cost?', a: "A flat monthly that covers building and running the whole engine for you, fully managed and scoped to your channels and volume on the fit call. No build fee and no long lock-in. The audience and list are yours to keep." },
+  { q: 'What does it cost?', a: "One flat monthly rate that covers building and running the whole engine, scoped to your channels and volume on the fit call. No build fee, no long lock-in, and the audience and list are yours to keep." },
   { q: 'What do I actually have to do?', a: 'Record a voice intake once, then review and approve. About 15 minutes a week. The engine handles the rest.' },
   { q: 'How is this different from a ghostwriter or an agency?', a: 'A ghostwriter writes posts. This is a fully managed engine that writes the posts, builds the lead magnets, and ships every format daily in your voice. You keep the audience and list, with nothing to manage.' },
   { q: "What if it's not a fit?", a: "The fit call tells us fast. If it's not right for you, I'll say so on the call. No pressure either way." },
