@@ -48,6 +48,18 @@ interface QueueItem {
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
+interface NewsletterIssue { id: string; ref?: string; date: string; stage: 'scheduled' | 'planned' | string; title: string }
+interface NurtureStep { step: string; detail?: string }
+interface NewsletterSpec {
+  name: string;
+  cadence?: string;
+  from_domain?: string;
+  issues?: NewsletterIssue[];
+  nurture?: NurtureStep[];
+}
+interface PerfIndicator { key: string; label: string; source?: string }
+interface PerformanceSpec { note?: string; indicators?: PerfIndicator[] }
+interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
   domain?: string;
@@ -59,6 +71,9 @@ interface Board {
   lm?: any;
   strategy?: { total: number; period?: string; pillars: Pillar[] };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
+  newsletter?: NewsletterSpec;
+  performance?: PerformanceSpec;
+  engine_updates?: EngineUpdate[];
   auto_publish_days?: number;
 }
 
@@ -959,12 +974,154 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
   );
 }
 
+// ---------- Newsletter surface ----------
+function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
+  board: Board; accent: string; fontStack: string;
+  onOpenIssue: (it: NewsletterIssue) => void;
+}) {
+  const nl = board.newsletter;
+  if (!nl) return null;
+  const issues = nl.issues || [];
+  const nurture = nl.nurture || [];
+
+  const issueStatus = (it: NewsletterIssue) =>
+    stageStatus({ id: it.id, kind: 'newsletter', stage: it.stage === 'scheduled' ? 'scheduled' : 'planned', publish_date: it.date }, it.stage === 'scheduled' ? 'scheduled' : 'planned');
+
+  return (
+    <div>
+      <SectionHead
+        title="Your newsletter"
+        sub="One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture gets it."
+      />
+
+      {/* Header card */}
+      <div className="rounded-[14px] bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+        <div className="text-[22px] font-semibold tracking-tight" style={{ fontFamily: fontStack, color: INK }}>{nl.name}</div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px]" style={{ color: DIM }}>
+          {nl.cadence && <span>{nl.cadence}</span>}
+          {nl.from_domain && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+              Sends from {nl.from_domain}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Issues */}
+      <div className="mb-2 mt-6 px-1 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Upcoming issues</div>
+      <div className="overflow-hidden rounded-[14px] bg-white" style={{ border: `1px solid ${LINE}` }}>
+        {issues.map((it, i) => (
+          <button
+            key={it.id}
+            onClick={() => onOpenIssue(it)}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[#fbfcfd]"
+            style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none', minHeight: 54 }}
+          >
+            <Thumb q={{ id: it.id, kind: 'newsletter', stage: 'planned' }} accent={accent} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-medium" style={{ color: INK }}>{it.title}</span>
+              <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.06em]" style={{ color: FAINT }}>Newsletter</span>
+            </span>
+            <span className="hidden shrink-0 text-right sm:block">{issueStatus(it)}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0" aria-hidden>
+              <path d="M9 6l6 6-6 6" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ))}
+      </div>
+
+      {/* Nurture flow */}
+      {nurture.length > 0 && (
+        <div className="mt-6 rounded-[14px] bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+          <div className="mb-4 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Inbound leads flow</div>
+          <div className="flex flex-col sm:flex-row">
+            {nurture.map((s, i) => {
+              const last = i === nurture.length - 1;
+              return (
+                <div key={i} className="relative flex gap-3 pb-6 last:pb-0 sm:flex-1 sm:flex-col sm:gap-2.5 sm:pb-0 sm:pr-4 sm:last:pr-0">
+                  {i < nurture.length - 1 && (
+                    <>
+                      <span className="absolute bottom-0 left-[9px] top-6 w-px sm:hidden" style={{ background: LINE }} aria-hidden />
+                      <span className="absolute hidden h-px sm:block" style={{ background: LINE, top: 10, left: 28, right: 8 }} aria-hidden />
+                    </>
+                  )}
+                  <span
+                    className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                    style={last ? { background: accent } : { background: `color-mix(in srgb, ${accent} 16%, white)` }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M5 13l4 4 10-10" stroke={last ? inkOn(accent) : accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold leading-snug" style={{ color: last ? accent : INK }}>{s.step}</div>
+                    {s.detail && <div className="mt-0.5 text-[12px] leading-snug" style={{ color: DIM }}>{s.detail}</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-5 text-[13px]" style={{ color: FAINT }}>
+            Leads captured by your assessments feed this list automatically. Yours to keep, exportable anytime.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Performance surface ----------
+function PerformanceSurface({ board, accent }: { board: Board; accent: string }) {
+  const perf = board.performance;
+  const updates = board.engine_updates || [];
+  const indicators = perf?.indicators || [];
+  return (
+    <div>
+      <SectionHead
+        title="Your performance"
+        sub={perf?.note || 'The leading indicators your retainer is measured on.'}
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {indicators.map((ind) => (
+          <div key={ind.key} className="rounded-[14px] bg-white p-4" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+            <div className="text-[13px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
+            {ind.source && <div className="mt-0.5 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
+            <div className="mt-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ background: `color-mix(in srgb, ${accent} 8%, white)`, color: DIM }}>
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: accent, opacity: 0.6 }} aria-hidden />
+              Tracking starts day one
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {updates.length > 0 && (
+        <div className="mt-6 rounded-[14px] bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
+          <div className="mb-1 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Engine updates</div>
+          <p className="mb-3 text-[13px]" style={{ color: DIM }}>The engine keeps improving; every upgrade ships to your account automatically.</p>
+          <div className="flex flex-col">
+            {updates.map((u, i) => (
+              <div key={i} className="flex items-baseline gap-3 py-2.5" style={{ borderTop: i > 0 ? `1px solid ${LINE}` : 'none' }}>
+                <span className="w-24 shrink-0 text-[12px] tabular-nums" style={{ color: FAINT }}>{fmtDay(u.date)}</span>
+                <span className="text-[13.5px] leading-snug" style={{ color: INK }}>{u.note}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- page ----------
 const TABS = [
-  { id: 'review', label: 'Content' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'lm', label: 'Lead magnet' },
-  { id: 'strategy', label: 'Strategy' },
+  { id: 'review', label: 'Content', short: 'Content' },
+  { id: 'calendar', label: 'Calendar', short: 'Calendar' },
+  { id: 'lm', label: 'Lead magnet', short: 'Magnet' },
+  { id: 'newsletter', label: 'Newsletter', short: 'Memo' },
+  { id: 'performance', label: 'Performance', short: 'Metrics' },
+  { id: 'strategy', label: 'Strategy', short: 'Strategy' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -1097,6 +1254,31 @@ export default function ClientBoardPage() {
     });
   };
 
+  // Newsletter issue click: the linked issue opens the real queue item; planned issues
+  // open the planned-slot pipeline preview with a nurture-appropriate trail.
+  const openNewsletterIssue = (it: NewsletterIssue) => {
+    const linked = it.ref ? board?.queue.find((q) => q.id === it.ref) : null;
+    if (linked) { setDetail(linked); return; }
+    const d = new Date(it.date + 'T00:00:00');
+    const draftDay = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const fromDomain = board?.newsletter?.from_domain;
+    setDetail({
+      id: `nl-${it.id}`,
+      kind: 'newsletter',
+      stage: 'planned',
+      hook: it.title,
+      publish_date: it.date,
+      agent_trail: [
+        { step: 'Queued', detail: 'issue slot locked on your calendar', done: true },
+        { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
+        { step: 'Draft agent', detail: "pulls the week's numbers and stories", done: false },
+        { step: 'Copy lint v13', done: false },
+        { step: 'Email render', detail: fromDomain ? `sends from ${fromDomain}` : undefined, done: false },
+        { step: 'Vision QA', detail: 'then it lands in your review', done: false },
+      ],
+    });
+  };
+
   if (state === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: '#f6f7f9' }}>
@@ -1120,6 +1302,8 @@ export default function ClientBoardPage() {
     review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={setDetail} flashId={flashId} view={contentView} setView={setContentView} />,
     calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
+    newsletter: <NewsletterSurface board={board} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
+    performance: <PerformanceSurface board={board} accent={accent} />,
     strategy: <StrategySurface board={board} accent={accent} mint={mint} />,
   };
 
@@ -1130,19 +1314,19 @@ export default function ClientBoardPage() {
   );
 
   const nav = (vertical: boolean) => (
-    <nav className={vertical ? 'flex flex-col gap-1' : 'grid w-full grid-cols-4'} aria-label="Board sections">
+    <nav className={vertical ? 'flex flex-col gap-1' : 'grid w-full grid-cols-6'} aria-label="Board sections">
       {TABS.map((t) => {
         const active = tab === t.id;
         return (
           <button
             key={t.id}
             onClick={() => { setTab(t.id); window.scrollTo({ top: 0 }); }}
-            className={`min-h-[44px] rounded-lg text-[13px] font-semibold transition-colors ${vertical ? 'px-3 text-left' : 'px-1 text-center'}`}
+            className={`min-h-[44px] rounded-lg font-semibold transition-colors ${vertical ? 'px-3 text-left text-[13px]' : 'px-0.5 text-center text-[11px]'}`}
             style={active
               ? { background: `color-mix(in srgb, ${accent} 12%, white)`, color: INK }
               : { color: DIM, background: 'transparent' }}
           >
-            {t.label}
+            {vertical ? t.label : t.short}
           </button>
         );
       })}
