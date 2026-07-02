@@ -139,7 +139,7 @@ const AudiencePanel: React.FC = () => {
                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e9e9ee" />
                     <XAxis dataKey="label" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis domain={['dataMin - 5', 'dataMax + 5']} tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} width={44} />
                     <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#64748b', fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
@@ -212,7 +212,7 @@ const AudiencePanel: React.FC = () => {
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(39, 39, 42, 0.6)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e9e9ee" />
                 <XAxis dataKey="label" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: '#64748b', fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
