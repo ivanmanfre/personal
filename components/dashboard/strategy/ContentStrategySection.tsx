@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CalendarDays,
   Video,
@@ -26,6 +26,7 @@ import {
   type PrecondictionEpisode,
   type OpenDecision,
 } from '../../../lib/strategyConfig';
+import { useContentLibrary, type CarouselDraft } from '../../../hooks/useContentLibrary';
 
 const REPO_ROOT = '/Users/ivanmanfredi/Desktop/personal-site';
 const PLAN_EPOCH = new Date('2026-05-03T00:00:00Z');
@@ -40,6 +41,34 @@ function localPath(url: string): string {
   if (url.startsWith('/')) return `${REPO_ROOT}${url}`;
   return url;
 }
+
+const PILLAR_ORDER = ['Translator', 'Methodology', 'Teardown', 'Case Study', 'Personal'];
+const PILLAR_WINDOW_DAYS = 30;
+
+function normalizePillar(raw: unknown): string {
+  if (typeof raw !== 'string') return 'Other';
+  const k = raw.trim().toLowerCase().replace(/[_-]+/g, ' ');
+  return PILLAR_ORDER.find(p => p.toLowerCase() === k) ?? 'Other';
+}
+
+// Drift band: how far actual sits from its target, symmetric so both
+// over- and under-weight pillars flag (per the drift-visible requirement).
+function mixStatus(actual: number, target: number): 'ok' | 'warn' | 'off' {
+  if (!target) return 'ok';
+  const rel = Math.abs(actual - target) / target;
+  return rel <= 0.25 ? 'ok' : rel <= 0.5 ? 'warn' : 'off';
+}
+
+const STATUS_RULE: Record<'ok' | 'warn' | 'off', string> = {
+  ok: 'border-emerald-500/60',
+  warn: 'border-amber-500/60',
+  off: 'border-red-500/60',
+};
+const STATUS_TEXT: Record<'ok' | 'warn' | 'off', string> = {
+  ok: 'text-emerald-400',
+  warn: 'text-amber-400',
+  off: 'text-red-400',
+};
 
 export const ContentStrategySection: React.FC = () => {
   return (
@@ -136,6 +165,30 @@ const CommitmentRow: React.FC<{ checked: boolean; onToggle: () => void; label: s
 
 const NinetyDayPlanCard: React.FC = () => {
   const shippedCount: number | null = null; // TODO wire from own_posts joined to plan epoch
+  const { drafts, loading } = useContentLibrary();
+  const [openPillar, setOpenPillar] = useState<string | null>(null);
+
+  const mix = useMemo(() => {
+    const since = Date.now() - PILLAR_WINDOW_DAYS * 86400000;
+    const published = drafts.filter(
+      d => d.status === 'published' && d.updatedAt && new Date(d.updatedAt).getTime() >= since,
+    );
+    const groups: Record<string, CarouselDraft[]> = {};
+    for (const d of published) {
+      const p = normalizePillar(d.taxonomy?.pillar);
+      (groups[p] ||= []).push(d);
+    }
+    const total = published.length;
+    const rows = [...PILLAR_ORDER, 'Other']
+      .map(pillar => {
+        const posts = groups[pillar] || [];
+        return { pillar, count: posts.length, pct: total ? Math.round((posts.length / total) * 100) : 0, posts };
+      })
+      .filter(r => r.pillar !== 'Other' || r.count > 0);
+    return { rows, total };
+  }, [drafts]);
+
+  const targetOf = (pillar: string) => pillarMixTargets.find(p => p.pillar === pillar)?.targetPct ?? 0;
 
   return (
     <SubCard title="90-Day Plan State" icon={<Target className="w-3.5 h-3.5" />}>
@@ -157,15 +210,34 @@ const NinetyDayPlanCard: React.FC = () => {
           )}
         </div>
 
-        {/* Pillar mix actual vs target */}
+        {/* Pillar mix \u2014 battery + actual vs target */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium mb-1.5">Pillar mix {'\u2014'} actual vs target</p>
-          <div className="space-y-1.5">
-            {pillarMixTargets.map(p => (
-              <PillarBar key={p.pillar} pillar={p.pillar} target={p.targetPct} actual={p.actualPct} />
-            ))}
-          </div>
-          <p className="text-[10px] text-zinc-600 mt-1.5">TODO: pull `pillar` field from ClickUp Linkedin Posts list 901324306245.</p>
+          <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium mb-1.5">
+            Pillar mix {'\u2014'} last {PILLAR_WINDOW_DAYS} days
+            <span className="text-zinc-600 normal-case tracking-normal"> {'\u00b7'} {mix.total} published</span>
+          </p>
+          {loading ? (
+            <p className="text-[11px] text-zinc-600">loading{'\u2026'}</p>
+          ) : mix.total === 0 ? (
+            <p className="text-[11px] text-zinc-600">No published posts in the last {PILLAR_WINDOW_DAYS} days.</p>
+          ) : (
+            <>
+              <PillarBattery rows={mix.rows} openPillar={openPillar} onToggle={setOpenPillar} targetOf={targetOf} />
+              {openPillar && (
+                <PillarPile pillar={openPillar} posts={mix.rows.find(r => r.pillar === openPillar)?.posts || []} />
+              )}
+              <div className="space-y-1.5 mt-3">
+                {pillarMixTargets.map(p => (
+                  <PillarBar
+                    key={p.pillar}
+                    pillar={p.pillar}
+                    target={p.targetPct}
+                    actual={mix.rows.find(r => r.pillar === p.pillar)?.pct ?? 0}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Series progress */}
@@ -207,6 +279,70 @@ const PillarBar: React.FC<{ pillar: string; target: number; actual: number | nul
     </div>
   );
 };
+
+// Composition "battery": one stacked bar, segments sized by share of published
+// posts. Uniform fill (calm), drift signalled by a colored bottom rule + the %.
+// Click a segment to expand its post pile.
+const PillarBattery: React.FC<{
+  rows: { pillar: string; count: number; pct: number }[];
+  openPillar: string | null;
+  onToggle: (p: string | null) => void;
+  targetOf: (p: string) => number;
+}> = ({ rows, openPillar, onToggle, targetOf }) => (
+  <div>
+    <div className="flex w-full h-9 gap-0.5">
+      {rows.map(r => {
+        const st = mixStatus(r.pct, targetOf(r.pillar));
+        const isOpen = openPillar === r.pillar;
+        return (
+          <button
+            key={r.pillar}
+            onClick={() => onToggle(isOpen ? null : r.pillar)}
+            title={`${r.pillar}: ${r.count} posts · ${r.pct}% (target ${targetOf(r.pillar)}%)`}
+            className={`relative h-full bg-zinc-700/70 hover:bg-zinc-600/70 border-b-2 ${STATUS_RULE[st]} ${isOpen ? 'ring-1 ring-zinc-400' : ''} focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 transition-colors flex items-center justify-center`}
+            style={{ flexBasis: `${r.pct}%`, minWidth: '2.25rem', flexGrow: 0, flexShrink: 1 }}
+          >
+            <span className="font-mono text-[11px] text-zinc-200">{r.count}</span>
+          </button>
+        );
+      })}
+    </div>
+    <div className="flex w-full gap-0.5 mt-1">
+      {rows.map(r => {
+        const st = mixStatus(r.pct, targetOf(r.pillar));
+        return (
+          <div
+            key={r.pillar}
+            className="min-w-0 overflow-hidden"
+            style={{ flexBasis: `${r.pct}%`, minWidth: '2.25rem', flexGrow: 0, flexShrink: 1 }}
+          >
+            <p className="text-[9px] text-zinc-400 truncate leading-tight">{r.pillar}</p>
+            <p className={`text-[10px] font-mono leading-tight ${STATUS_TEXT[st]}`}>{r.pct}%</p>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const PillarPile: React.FC<{ pillar: string; posts: CarouselDraft[] }> = ({ pillar, posts }) => (
+  <div className="mt-2 bg-zinc-900/40 border border-zinc-800/40 rounded-lg p-2.5">
+    <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium mb-1.5">{pillar} {'—'} {posts.length} posts</p>
+    {posts.length === 0 ? (
+      <p className="text-[11px] text-zinc-600">none in window</p>
+    ) : (
+      <div className="space-y-1">
+        {posts.slice(0, 30).map(p => (
+          <div key={p.id} className="flex items-baseline gap-2 text-[11px]">
+            <span className="font-mono text-zinc-600 shrink-0">{p.updatedAt?.slice(0, 10)}</span>
+            <span className="text-zinc-300 truncate" title={p.title}>{p.title}</span>
+          </div>
+        ))}
+        {posts.length > 30 && <p className="text-[10px] text-zinc-600 mt-1">+{posts.length - 30} more</p>}
+      </div>
+    )}
+  </div>
+);
 
 const EpisodeRow: React.FC<{ ep: PrecondictionEpisode; isCurrent: boolean }> = ({ ep, isCurrent }) => (
   <div className={`flex items-start gap-2.5 px-2 py-1 rounded ${isCurrent ? 'bg-purple-500/10 border border-purple-500/25' : ''}`}>

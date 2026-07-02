@@ -272,14 +272,15 @@ export const preconditionEpisodes: PrecondictionEpisode[] = [
   },
 ];
 
-// Pillar mix — target from C10 D02 ruling (35/30/25/7 + 3% experimental buffer)
-// actual is null until ClickUp Linkedin Posts list .pillar field wires up
+// Pillar mix — target from 2026-06-10 taxonomy rework (35/30/15/10/10)
+// actualPct stays null here; live actuals are computed from carousel_drafts
+// (published, taxonomy.pillar) in ContentStrategySection.
 export const pillarMixTargets: PillarTarget[] = [
-  { pillar: 'Durable',       targetPct: 35, actualPct: null },
-  { pillar: 'Methodology',   targetPct: 30, actualPct: null },
-  { pillar: 'Tactical',      targetPct: 25, actualPct: null },
-  { pillar: 'Personal-POV',  targetPct: 7,  actualPct: null },
-  { pillar: 'Experimental',  targetPct: 3,  actualPct: null },
+  { pillar: 'Translator',  targetPct: 35, actualPct: null },
+  { pillar: 'Methodology', targetPct: 30, actualPct: null },
+  { pillar: 'Teardown',    targetPct: 15, actualPct: null },
+  { pillar: 'Case Study',  targetPct: 10, actualPct: null },
+  { pillar: 'Personal',    targetPct: 10, actualPct: null },
 ];
 
 // Audit gates — Day 14 / 30 / 60 / 90 from C10 synthesis (Day 0 = 2026-05-03 per wave-0-baseline)
