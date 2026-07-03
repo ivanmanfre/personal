@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
+import { isPostScraped } from '../lib/scrapeStatus';
 import type { OwnPost } from '../types/dashboard';
 
 function mapPost(row: any): OwnPost {
@@ -17,6 +18,7 @@ function mapPost(row: any): OwnPost {
     topicCategory: row.topic_category,
     hookPattern: row.hook_pattern,
     pillar: row.pillar ?? null,
+    metricsUpdatedAt: row.metrics_updated_at ?? null,
   };
 }
 
@@ -32,7 +34,7 @@ export function useOwnPosts(days: number = 30) {
       const since = new Date(Date.now() - days * 86400000).toISOString();
       const { data, error: qErr } = await supabase
         .from('own_posts')
-        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar')
+        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar, metrics_updated_at')
         .gte('posted_at', since)
         .order('posted_at', { ascending: false });
       if (qErr) throw qErr;
@@ -51,16 +53,32 @@ export function useOwnPosts(days: number = 30) {
   const totalLikes = posts.reduce((s, p) => s + p.likes, 0);
   const totalComments = posts.reduce((s, p) => s + p.comments, 0);
   const totalShares = posts.reduce((s, p) => s + p.shares, 0);
-  const avgImpressions = posts.length ? Math.round(totalImpressions / posts.length) : 0;
-  const engagementRate = totalImpressions > 0
-    ? ((totalLikes + totalComments + totalShares) / totalImpressions * 100).toFixed(2)
+
+  // Averages are honest: only scraped posts count (never-scraped placeholders
+  // would otherwise drag the mean to zero). Legacy rows with real metrics but no
+  // timestamp still count (see isPostScraped).
+  const scraped = posts.filter(isPostScraped);
+  const scrapedImpressions = scraped.reduce((s, p) => s + p.impressions, 0);
+  const scrapedEngagements = scraped.reduce((s, p) => s + p.likes + p.comments + p.shares, 0);
+  const avgImpressions = scraped.length ? Math.round(scrapedImpressions / scraped.length) : 0;
+  const engagementRate = scrapedImpressions > 0
+    ? (scrapedEngagements / scrapedImpressions * 100).toFixed(2)
     : '0';
+  const lastScrapedAt = posts.reduce<string | null>((max, p) => {
+    if (!p.metricsUpdatedAt) return max;
+    return !max || p.metricsUpdatedAt > max ? p.metricsUpdatedAt : max;
+  }, null);
 
   return {
     posts,
     loading,
     error,
     refresh: fetch,
-    stats: { totalImpressions, totalLikes, totalComments, totalShares, avgImpressions, engagementRate, count: posts.length },
+    stats: {
+      totalImpressions, totalLikes, totalComments, totalShares,
+      avgImpressions, engagementRate, count: posts.length,
+      scrapedCount: scraped.length, unscrapedCount: posts.length - scraped.length,
+      lastScrapedAt,
+    },
   };
 }

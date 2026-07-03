@@ -11,6 +11,7 @@ export interface OwnPost {
   topicCategory: string | null;
   hookPattern: string | null;
   pillar: string | null;
+  metricsUpdatedAt: string | null;
 }
 
 export interface WorkflowStat {
