@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import { useCarouselStyles, CarouselStyle } from '../../hooks/useCarouselStyles';
 import { useStylePrompts, StylePrompt } from '../../hooks/useStylePrompts';
+import { useStyleUsage } from '../../hooks/useStyleUsage';
+import { StyleUsage } from '../../lib/styleUsage';
 import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import { renderLightMarkdown } from '../../lib/lightMarkdown';
 import { PanelIntro } from '../dashboard-v2/primitives';
@@ -78,7 +80,7 @@ const ASSET_STYLES: AssetStyle[] = [
   // ── Single-image post styles (6) ───────────────────────────────────────
   // No promptSlug — single_image style hints are embedded in the Image Agent's
   // main post-generation prompt (slug 'post-generation'), not separate pages.
-  { id: '86afhgewx', name: 'Framework Diagram', category: 'single_image', blurb: 'Single architectural diagram — boxes/arrows showing how components connect. Most-used single_image style (19 posts).' },
+  { id: '86afhgewx', name: 'Framework Diagram', category: 'single_image', blurb: 'Single architectural diagram — boxes/arrows showing how components connect. The workhorse single-image style.' },
   { id: '86afhgex8', name: 'Stat Card', category: 'single_image', blurb: 'Single oversized stat with caption underneath. Receipt-style proof point — 1 number, 1 line of context.' },
   { id: '86afhgexy', name: 'Concept Visual', category: 'single_image', blurb: 'Abstract conceptual illustration — metaphor for the post idea. Used when no concrete data or person is the subject.' },
   { id: '86afhgevv', name: 'Lifestyle Photo', category: 'single_image', blurb: 'Photoreal Ivan in setting (founder/office/screen). Best for personality posts + Founder Lifestyle pillar.' },
@@ -106,7 +108,7 @@ const TEXT_STYLES: TextStyle[] = [
   { name: 'Story opener', axis: 'hook', blurb: 'In-medias-res narrative. "I was on a call when…" Pulls readers in via Story tension; longer body to pay it off.' },
   { name: 'Universal aspirational', axis: 'hook', blurb: 'States a universal frustration/desire ICP feels. Lowest-friction hook; risk = generic if not paired with a specific receipt.' },
   // Pillars — the angle, regardless of hook
-  { name: 'Methodology', axis: 'pillar', blurb: 'Frameworks, decision trees, criteria-based content. The "how I think about X" pillar. Highest usage (9 posts).' },
+  { name: 'Methodology', axis: 'pillar', blurb: 'Frameworks, decision trees, criteria-based content. The "how I think about X" pillar.' },
   { name: 'Audit-Receipt', axis: 'pillar', blurb: 'Concrete findings from real audits — anonymized but specific. Builds expertise via proof points.' },
   { name: 'Translator', axis: 'pillar', blurb: 'Translates AI/tech concepts for operator-buyers. Bridges agency-owner vocabulary to Ivan\'s technical world.' },
   { name: 'Personal POV', axis: 'pillar', blurb: 'First-person opinion + experience. The personality pillar; carries Founder Lifestyle photos when paired with single_image.' },
@@ -130,6 +132,7 @@ const LM_FORMATS: { name: string; blurb: string; icon: string }[] = [
 const StyleGalleryPanel: React.FC = () => {
   const { styles, loading, error, refresh } = useCarouselStyles();
   const { prompts: stylePrompts } = useStylePrompts();
+  const { imageStyleStats } = useStyleUsage();
   const [newOpen, setNewOpen] = useState(false);
 
   return (
@@ -193,7 +196,7 @@ const StyleGalleryPanel: React.FC = () => {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {ASSET_STYLES.filter((s) => s.category === 'single_image').map((s) => (
-            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} />
+            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} usage={imageStyleStats[s.name]} />
           ))}
         </div>
       </section>
@@ -252,16 +255,29 @@ const StyleGalleryPanel: React.FC = () => {
 };
 
 // ─── Asset Style card (ClickUp-backed layout archetypes + image intents) ─────
-const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt }> = ({ style, prompt }) => {
+const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?: StyleUsage }> = ({ style, prompt, usage }) => {
   const [open, setOpen] = useState(false);
+  const [imgOk, setImgOk] = useState(true);
   const hasPrompt = !!prompt && !!prompt.body;
   return (
     <Card className="space-y-2 group">
+      {usage?.cover && imgOk ? (
+        <div className="aspect-[16/9] rounded-md overflow-hidden ring-1 ring-zinc-800/60 bg-zinc-950">
+          <img src={usage.cover} alt={`${style.name} example`} loading="lazy" className="w-full h-full object-cover" onError={() => setImgOk(false)} />
+        </div>
+      ) : usage?.cover ? (
+        <div className="aspect-[16/9] rounded-md overflow-hidden ring-1 ring-zinc-800/60 bg-[var(--d-ink-3)] border border-[var(--d-rule)] flex items-center justify-center px-3">
+          <div className="text-[12px] leading-tight text-[var(--d-paper-dim)] font-serif italic text-center line-clamp-2">{style.name}</div>
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[13.5px] font-semibold text-zinc-100 truncate">{style.name}</div>
-          <div className="text-[10.5px] text-zinc-500 mt-0.5 uppercase tracking-wider">
-            {style.category === 'carousel' ? 'Carousel layout' : 'Single-image intent'}
+          <div className="text-[10.5px] text-zinc-500 mt-0.5 uppercase tracking-wider flex items-center gap-2">
+            <span>{style.category === 'carousel' ? 'Carousel layout' : 'Single-image intent'}</span>
+            {usage?.count ? (
+              <span className="text-emerald-400/80 normal-case tracking-normal">· {usage.count} post{usage.count === 1 ? '' : 's'}</span>
+            ) : null}
           </div>
         </div>
         <a
@@ -345,7 +361,7 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
               className="aspect-square rounded-md overflow-hidden bg-zinc-950 ring-1 ring-zinc-800/60 hover:ring-emerald-600/40 transition"
               title="Open reference"
             >
-              <img src={url} alt={`reference ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+              <img src={url} alt={`reference ${i + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
             </a>
           ))}
         </div>
@@ -375,7 +391,7 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
 
       {/* Kit indicator */}
       <div className="text-[10.5px] text-zinc-600 flex items-center gap-3 pt-1 border-t border-zinc-900/60">
-        <span>{style.hasKit ? '✓ kit_css' : '— no kit_css'}</span>
+        <span>{style.hasKit ? '✓ kit_css' : style.isDefault ? 'renderer default kit' : 'no custom kit'}</span>
         {style.createdAt && <span>created {new Date(style.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
       </div>
     </Card>
@@ -508,7 +524,7 @@ const NewStyleModal: React.FC<{ onClose: () => void; onCreated: () => void; webh
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {refs.map((r, i) => (
                   <div key={i} className="relative aspect-square rounded-md overflow-hidden bg-zinc-950 ring-1 ring-zinc-800/60">
-                    <img src={r.url} alt={`ref ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={r.url} alt={`ref ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                     <button
                       onClick={() => removeRef(i)}
                       className="absolute top-0.5 right-0.5 rounded-full bg-black/70 hover:bg-black p-0.5 text-zinc-300"
