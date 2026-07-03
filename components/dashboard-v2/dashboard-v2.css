@@ -251,7 +251,12 @@ body.dashboard-v2-light * {
 }
 
 /* MAIN */
-.dv-main { overflow-y: auto; }
+/* padding-bottom: clears the fixed .dv-live pill (bottom:18px, ~42px tall —
+ * see rule at line ~1028) from scrolled content. Measured: pill height 42px +
+ * 16px margin = 58px min; rounded to 60px. .dv-main is a fixed-height grid
+ * item (100vh via .dashboard-v2-shell), so this only extends how far the
+ * panel can scroll — it does not reposition content already above the fold. */
+.dv-main { overflow-y: auto; padding-bottom: 60px; }
 .dv-panel { padding: var(--sp-6) var(--sp-6) var(--sp-7); max-width: 1600px; margin: 0 auto; }
 /* dvFadeIn was firing on every panel switch + every realtime data update —
  * read as "screen refresh." Removed. Native React reconciliation is silent. */
