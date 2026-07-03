@@ -14,6 +14,7 @@ import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import { formatNum, formatDate } from './shared/utils';
 import { PanelIntro } from '../dashboard-v2/primitives';
+import { normalizePillar } from '../../lib/pillarTaxonomy';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
@@ -30,15 +31,6 @@ const CHART = {
 const METRIC_COLORS: Record<Metric, string> = { impressions: CHART.info, likes: CHART.violet, comments: CHART.warn };
 const METRIC_LABELS: Record<Metric, string> = { impressions: 'Impressions', likes: 'Likes', comments: 'Comments' };
 const TYPE_COLORS = [CHART.primary, CHART.info, CHART.violet, CHART.warn];
-
-// Friendly labels for the content pillars (taxonomy keys → the post-v14 strategy names).
-const PILLAR_LABELS: Record<string, string> = {
-  translator: 'Agency Diagnostic',
-  methodology: 'Build-in-public',
-  teardown: 'Anti-slop',
-  case_study: 'Case study',
-  personal: 'Owner-POV',
-};
 
 const tooltipStyle = {
   background: '#ffffff',
@@ -132,11 +124,14 @@ const PerformancePanel: React.FC = () => {
       if (p.impressions > 0) m[p.pillar].imprForRate += p.impressions;
     });
     return Object.entries(m)
-      .map(([name, d]) => ({
-        name, label: PILLAR_LABELS[name] || name, count: d.count,
-        avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
-        engRate: d.imprForRate > 0 ? +((d.eng / d.imprForRate) * 100).toFixed(2) : 0,
-      }))
+      .map(([name, d]) => {
+        const { label, unmapped } = normalizePillar(name);
+        return {
+          name, label, unmapped, count: d.count,
+          avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
+          engRate: d.imprForRate > 0 ? +((d.eng / d.imprForRate) * 100).toFixed(2) : 0,
+        };
+      })
       .sort((a, b) => b.avgImpressions - a.avgImpressions);
   }, [posts]);
 
