@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { toastError } from '../lib/dashboardActions';
+import { deriveIssueTimeline } from '../lib/newsletterStrip';
 
 export interface SequencePerf {
   slug: string;
@@ -237,6 +238,9 @@ export function useNewsletter() {
       (s) => s.unsubscribedAt && now - new Date(s.unsubscribedAt).getTime() < ms30d
     ).length;
     const captures7d = data.captures.filter((c) => now - new Date(c.createdAt).getTime() < ms7d).length;
+    const timeline = deriveIssueTimeline(
+      data.issues.map((i) => ({ status: i.status, scheduledFor: i.scheduledFor, sentAt: i.sentAt }))
+    );
     return {
       activeSubs,
       subs30d,
@@ -251,6 +255,11 @@ export function useNewsletter() {
       delivered7d,
       opened7d,
       clicked7d,
+      nextScheduledAt: timeline.nextScheduledAt,
+      lastSentAt: timeline.lastSentAt,
+      sentCount: timeline.sentCount,
+      scheduledCount: timeline.scheduledCount,
+      draftCount: timeline.draftCount,
     };
   }, [data]);
 
