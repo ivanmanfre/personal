@@ -71,6 +71,10 @@ interface LeadMagnetEntry {
   status: 'live' | 'in_production' | 'planned' | string;
   date_label?: string;
 }
+/** Idea-bank entry: an upcoming topic the engine holds but has NOT drafted yet. It has
+ *  no date and no metrics — it drafts when it reaches its calendar slot. Rendered as the
+ *  IDEAS stage at the top of the All content ledger; opens a lightweight preview only. */
+interface Idea { id: string; title: string; pillar?: string; hook?: string; status?: 'idea' | string }
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
@@ -112,6 +116,7 @@ interface Board {
   brand?: BoardBrand;
   site?: { nav?: string[]; phone?: string; cta?: string };
   queue: QueueItem[];
+  ideas?: Idea[];
   lm?: any;
   lead_magnets?: LeadMagnetEntry[];
   strategy?: { total: number; period?: string; pillars: Pillar[] };
@@ -445,6 +450,32 @@ const STAGE_META: Record<Stage, { label: string; hint: string }> = {
 };
 const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
 
+/** All content LIST view = a STAGE-GROUPED pipeline (the operator mental model), so it
+ *  reads distinctly from the This week deck. Order top→bottom: Ideas → Your review →
+ *  Drafting → Scheduled → Published. Ideas is sourced separately (board.ideas). */
+const LIST_STAGE_SECTIONS: { stage: Stage; label: string; blurb: string }[] = [
+  { stage: 'review', label: 'Your review', blurb: STAGE_META_review_blurb() },
+  { stage: 'drafted', label: 'Drafting', blurb: 'The engine is writing these. They move to your review when ready.' },
+  { stage: 'scheduled', label: 'Scheduled', blurb: 'Approved and queued to publish on their dates.' },
+  { stage: 'published', label: 'Published', blurb: 'How live posts will report here once the engine is running.' },
+];
+function STAGE_META_review_blurb() { return 'Your only job. Approve, or say what to change in plain words.'; }
+const IDEAS_BLURB = "The engine's upcoming idea bank. Each one drafts when it reaches its slot.";
+
+/** Editorial section header for a ledger stage group: mono-caps eyebrow + accent count,
+ *  a one-line Source Serif description. Matches the V9 masthead type system. */
+function LedgerSectionHead({ eyebrow, count, blurb, accent }: { eyebrow: string; count: number; blurb: string; accent: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-2.5 pt-9 first:pt-0" style={{ borderBottom: `1px solid ${LINE_BOLD}` }}>
+      <div className="flex items-baseline gap-2.5">
+        <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.22em', color: INK_MUTE }}>{eyebrow}</span>
+        <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{String(count).padStart(2, '0')}</span>
+      </div>
+      <span className="max-w-[52ch] sm:text-right" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>{blurb}</span>
+    </div>
+  );
+}
+
 function stageStatus(q: QueueItem, stage: Stage, startIso?: string): React.ReactNode {
   if (stage === 'planned') {
     const d = q.publish_date ? new Date(q.publish_date + 'T00:00:00') : null;
@@ -571,10 +602,51 @@ function BuildSequence({ trail, accent }: { trail: AgentStep[]; accent: string }
   );
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, view, setView, skips }: {
+/** Lightweight preview for an IDEAS-stage row. Ideas are not approvable yet, so this is
+ *  deliberately NOT the DetailModal — just the topic, its pillar, and the promise that it
+ *  drafts when it reaches its slot. No feed preview, no agent trail, no actions. */
+function IdeaPreviewModal({ idea, accent, onClose }: { idea: Idea; accent: string; onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-lg flex-col bg-white sm:my-16 sm:min-h-0 sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+        <div className="flex items-center gap-2.5 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Idea</span>
+          {idea.pillar && <span className="capitalize" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{idea.pillar}</span>}
+          <button onClick={onClose} aria-label="Close" className="ml-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 pb-6 sm:px-6">
+          <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{idea.title}</h3>
+          {idea.hook && <p className="mt-3 max-w-[46ch]" style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.6, color: INK_SOFT }}>{idea.hook}</p>}
+          <div className="mt-5 rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+            <div className="flex items-center gap-2">
+              <PulseDot color={accent} size={6} />
+              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>In the idea bank</span>
+            </div>
+            <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+              {idea.pillar ? `A ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
+  onOpenIdea: (idea: Idea) => void;
   onApprove: (id: string) => void;
   flashId: string | null;
   view: ContentView;
@@ -587,12 +659,12 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
   const stageDot = (s: Stage) => (s === 'review' ? accent : s === 'published' ? 'var(--cb-mint)' : FAINT);
-  // The ledger: every piece, time-ordered, stage as a column. Historical "example"
-  // posts sink to the bottom so the ledger opens on this week's live pipeline (the brief
-  // leads with the review rows, not past examples). The first review row opens.
-  const sortKey = (q: QueueItem) => (stageOf(q) === 'published' ? 'z' : '') + (q.publish_date || '9999-99');
-  const ledgerRows = [...board.queue].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
-  const firstReviewId = ledgerRows.find((q) => stageOf(q) === 'review' && !skips[q.id])?.id || null;
+  // All content LIST view = the pipeline grouped BY STAGE (distinct from the This week
+  // deck, which is a day-by-day approval flow). Within a stage, rows sort by date.
+  // The engine's idea bank leads at the top: upcoming topics not yet drafted.
+  const ideas = board.ideas || [];
+  const byDate = (a: QueueItem, b: QueueItem) => (a.publish_date || '9999-99').localeCompare(b.publish_date || '9999-99');
+  const firstReviewId = groups.find((g) => g.stage === 'review')?.items.filter((q) => !skips[q.id]).sort(byDate)[0]?.id || null;
   const [openRow, setOpenRow] = useState<string | null>(firstReviewId);
   const flashStyle = (id: string): React.CSSProperties => ({
     background: flashId === id ? FLASH_BG : undefined,
@@ -657,6 +729,120 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
     };
   })();
 
+  // One unfolding ledger row, reused across every stage section in the list view.
+  const renderLedgerRow = (q: QueueItem) => {
+    const stage = stageOf(q);
+    const skipped = stage === 'review' && !!skips[q.id];
+    const isOpen = openRow === q.id;
+    const mark = stageMark(q, stage, autoDays);
+    const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
+    const provenance = stage === 'review' ? (q.promise || 'drafted from your voice — nothing invented')
+      : q.generating ? 'reactive — drafting began after the news broke'
+      : (q.promise || '');
+    return (
+      <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
+        <div
+          role="button" tabIndex={0}
+          onClick={() => setOpenRow(isOpen ? null : q.id)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenRow(isOpen ? null : q.id); } }}
+          className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
+          style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
+        >
+          <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'live'}</span>
+          <span className="min-w-0">
+            <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{q.hook || q.title}</span>
+            {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
+          </span>
+          <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
+          <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: mark.color }}>
+            {mark.text}{mark.pulse && <span className="ml-1.5 inline-block"><PulseDot color={accent} size={6} /></span>}
+            {mark.sub && <><br /><span style={{ color: INK_MUTE, fontSize: 10 }}>{mark.sub}</span></>}
+          </span>
+          <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>{isOpen ? '▾' : '▸'}</span>
+        </div>
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              initial={reduce ? false : { opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={reduce ? undefined : { opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: EASE }}
+              className="overflow-hidden"
+              style={{ margin: '0 -14px', background: rowBg }}
+            >
+              <div className="grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]">
+                <div style={{ maxWidth: 430 }}>
+                  {q.body || stage === 'review' || stage === 'scheduled'
+                    ? <FeedPreview item={q.body ? q : { ...q, body: q.body }} board={board} accent={accent} fontStack={fontStack} size="sm" cover={q.generating ? 'render' : 'plate'} />
+                    : q.generating
+                    ? <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" cover="render" />
+                    : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" />}
+                </div>
+                <div className="flex flex-col gap-3 pt-1.5">
+                  {stage === 'review' && !skipped ? (
+                    <>
+                      <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT, maxWidth: '40ch' }}>Exactly how it lands in the feed. Approve it, or say what to change in plain words.</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onApprove(q.id); }}
+                          className="uppercase transition-colors duration-150"
+                          style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', background: INK, color: PAPER, border: 'none', borderRadius: 7, padding: '12px 20px', cursor: 'pointer' }}
+                          onMouseEnter={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
+                          onMouseLeave={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = INK; }}
+                        >Approve ✓</button>
+                        <button onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>request a change…</button>
+                      </div>
+                      <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>{mark.sub || `auto-publishes in ${autoDays} days`} if untouched</div>
+                    </>
+                  ) : q.generating ? (
+                    <BuildSequence trail={q.agent_trail || []} accent={accent} />
+                  ) : stage === 'scheduled' ? (
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>Signed off. On the schedule.</div>
+                  ) : q.kind === 'lm' ? (
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>Live on your domain — a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.</div>
+                  ) : stage === 'published' ? (
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>An example of how your published posts will report here once the engine is live. Nothing has run on your account yet.</div>
+                  ) : (
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{skipped ? 'Skipped this week. Nothing publishes in this slot.' : 'In production. It lands in your review the moment it is ready.'}</div>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); onOpen(q); }} className="mt-1 inline-flex w-fit items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>
+                    see how it was made →
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  // One IDEAS-stage row: title + pillar dot + a quiet "queued as an idea" mark. Opens a
+  // lightweight preview, never the approve flow.
+  const renderIdeaRow = (idea: Idea) => (
+    <div key={idea.id} style={{ borderBottom: `1px solid ${LINE}` }}>
+      <div
+        role="button" tabIndex={0}
+        onClick={() => onOpenIdea(idea)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenIdea(idea); } }}
+        className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
+        style={{ margin: '0 -14px' }}
+      >
+        <span style={{ fontFamily: MONO, fontSize: 12, color: INK_MUTE }}>—</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
+          <span className="min-w-0">
+            <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{idea.title}</span>
+            {idea.hook && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{idea.hook}</span>}
+          </span>
+        </span>
+        <span className="hidden capitalize sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{idea.pillar || 'idea'}</span>
+        <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>queued as an idea</span>
+        <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>→</span>
+      </div>
+    </div>
+  );
+
   return (
     <div>
       {/* Header stays capped at the list width in every view, so the view switcher
@@ -687,94 +873,22 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
 
       {view === 'list' && (
         <div className="max-w-[980px]">
-          {/* Ledger head: When · Piece · Format · Stage · chevron. */}
-          <div className="grid items-baseline gap-x-[18px] pb-2 uppercase sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]" style={{ borderBottom: `1px solid ${LINE_BOLD}`, fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>
-            <span>When</span><span>Piece</span><span className="hidden sm:block">Format</span><span className="hidden sm:block">Stage</span><span />
-          </div>
-          {ledgerRows.map((q) => {
-            const stage = stageOf(q);
-            const skipped = stage === 'review' && !!skips[q.id];
-            const isOpen = openRow === q.id;
-            const mark = stageMark(q, stage, autoDays);
-            const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-            const provenance = stage === 'review' ? (q.promise || 'drafted from your voice — nothing invented')
-              : q.generating ? 'reactive — drafting began after the news broke'
-              : (q.promise || '');
+          {/* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */}
+          {ideas.length > 0 && (
+            <section>
+              <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={IDEAS_BLURB} accent={accent} />
+              {ideas.map(renderIdeaRow)}
+            </section>
+          )}
+          {/* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */}
+          {LIST_STAGE_SECTIONS.map(({ stage, label, blurb }) => {
+            const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
+            if (rows.length === 0) return null;
             return (
-              <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
-                <div
-                  role="button" tabIndex={0}
-                  onClick={() => setOpenRow(isOpen ? null : q.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenRow(isOpen ? null : q.id); } }}
-                  className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
-                  style={{ margin: '0 -14px', background: rowBg, opacity: skipped ? 0.6 : 1, transition: 'background-color 700ms ease' }}
-                >
-                  <span style={{ fontFamily: MONO, fontSize: 12, color: INK_SOFT }}>{q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : 'live'}</span>
-                  <span className="min-w-0">
-                    <span className="block truncate" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{q.hook || q.title}</span>
-                    {provenance && <span className="block truncate" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{provenance}</span>}
-                  </span>
-                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: INK_MUTE }}>{kickerOf(q)}</span>
-                  <span className="hidden sm:block" style={{ fontFamily: MONO, fontSize: 11, color: mark.color }}>
-                    {mark.text}{mark.pulse && <span className="ml-1.5 inline-block"><PulseDot color={accent} size={6} /></span>}
-                    {mark.sub && <><br /><span style={{ color: INK_MUTE, fontSize: 10 }}>{mark.sub}</span></>}
-                  </span>
-                  <span className="hidden text-right sm:block" style={{ fontFamily: MONO, fontSize: 13, color: INK_MUTE }}>{isOpen ? '▾' : '▸'}</span>
-                </div>
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      initial={reduce ? false : { opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={reduce ? undefined : { opacity: 0, height: 0 }}
-                      transition={{ duration: 0.35, ease: EASE }}
-                      className="overflow-hidden"
-                      style={{ margin: '0 -14px', background: rowBg }}
-                    >
-                      <div className="grid gap-6 px-3.5 pb-6 pt-1.5 lg:grid-cols-[430px_1fr]">
-                        <div style={{ maxWidth: 430 }}>
-                          {q.body || stage === 'review' || stage === 'scheduled'
-                            ? <FeedPreview item={q.body ? q : { ...q, body: q.body }} board={board} accent={accent} fontStack={fontStack} size="sm" cover={q.generating ? 'render' : 'plate'} />
-                            : q.generating
-                            ? <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" cover="render" />
-                            : <FeedPreview item={q} board={board} accent={accent} fontStack={fontStack} size="sm" />}
-                        </div>
-                        <div className="flex flex-col gap-3 pt-1.5">
-                          {stage === 'review' && !skipped ? (
-                            <>
-                              <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT, maxWidth: '40ch' }}>Exactly how it lands in the feed. Approve it, or say what to change in plain words.</p>
-                              <div className="flex flex-wrap items-center gap-3">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onApprove(q.id); }}
-                                  className="uppercase transition-colors duration-150"
-                                  style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', background: INK, color: PAPER, border: 'none', borderRadius: 7, padding: '12px 20px', cursor: 'pointer' }}
-                                  onMouseEnter={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = `color-mix(in oklab, ${accent} 80%, #1A1A1A)`; }}
-                                  onMouseLeave={(ev) => { (ev.currentTarget as HTMLButtonElement).style.background = INK; }}
-                                >Approve ✓</button>
-                                <button onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>request a change…</button>
-                              </div>
-                              <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>{mark.sub || `auto-publishes in ${autoDays} days`} if untouched</div>
-                            </>
-                          ) : q.generating ? (
-                            <BuildSequence trail={q.agent_trail || []} accent={accent} />
-                          ) : stage === 'scheduled' ? (
-                            <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>Signed off. On the schedule.</div>
-                          ) : q.kind === 'lm' ? (
-                            <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>Live on your domain — a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.</div>
-                          ) : stage === 'published' ? (
-                            <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>An example of how your published posts will report here once the engine is live. Nothing has run on your account yet.</div>
-                          ) : (
-                            <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{skipped ? 'Skipped this week. Nothing publishes in this slot.' : 'In production. It lands in your review the moment it is ready.'}</div>
-                          )}
-                          <button onClick={(e) => { e.stopPropagation(); onOpen(q); }} className="mt-1 inline-flex w-fit items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>
-                            see how it was made →
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <section key={stage}>
+                <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
+                {rows.map(renderLedgerRow)}
+              </section>
             );
           })}
         </div>
@@ -2694,6 +2808,9 @@ export default function ClientBoardPage() {
   const [tab, setTab] = useState<TabId>('week');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
+  // Ideas are not approvable yet — they open a lightweight preview, kept separate from the
+  // full DetailModal approve flow.
+  const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
   // Demo interaction state survives a reload: approvals persist per-slug.
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>(() => {
     try {
@@ -3071,7 +3188,7 @@ export default function ClientBoardPage() {
         modalOpen={!!detail}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
@@ -3278,6 +3395,9 @@ export default function ClientBoardPage() {
           onClose={() => { setDetail(null); setDetailChanging(false); }}
           onApprove={approve}
         />
+      )}
+      {ideaPreview && (
+        <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} />
       )}
     </div>
     </MotionConfig>
