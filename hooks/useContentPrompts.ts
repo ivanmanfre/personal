@@ -104,5 +104,18 @@ export function useContentPrompts() {
     };
   }, []);
 
-  return { prompts, loading, error, refresh, savePrompt };
+  /** Patch one row's version/provenance in local state after our own save lands —
+   * no refetch, so the next save's CAS expectedVersion is immediately current. */
+  const applyRowPatch = useCallback((
+    id: string,
+    patch: { version: number; updated_at: string; updated_by: string | null },
+  ) => {
+    setPrompts((prev) => prev.map((p) => (
+      p.id === id
+        ? { ...p, version: patch.version, updatedAt: patch.updated_at, updatedBy: patch.updated_by }
+        : p
+    )));
+  }, []);
+
+  return { prompts, loading, error, refresh, savePrompt, applyRowPatch };
 }

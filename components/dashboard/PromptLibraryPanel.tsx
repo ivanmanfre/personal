@@ -51,7 +51,7 @@ function categorize(slug: string): string {
 }
 
 const PromptLibraryPanel: React.FC = () => {
-  const { prompts, loading, error, savePrompt, refresh } = useContentPrompts();
+  const { prompts, loading, error, savePrompt, refresh, applyRowPatch } = useContentPrompts();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('all');
@@ -75,6 +75,11 @@ const PromptLibraryPanel: React.FC = () => {
   // resolveDraft so a dirty draft is never silently overwritten. prevSelectedIdRef is the
   // guard that tells the two cases apart — deliberately not left to effect-dep ordering.
   const prevSelectedIdRef = React.useRef<string | null>(null);
+  // updated_at of OUR last successful save. When that same timestamp arrives back via
+  // applyRowPatch or the realtime refresh, it's our own write echoing — not an external
+  // change — so the effect must not reseed (the draft may hold newer keystrokes typed
+  // while the save was in flight) and must not flag it.
+  const lastOwnSaveRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (!selected) {
       setDraftBody('');
@@ -93,7 +98,10 @@ const PromptLibraryPanel: React.FC = () => {
       prevSelectedIdRef.current = selectedId;
       return;
     }
-    // Same selection, row changed underneath us (realtime / our own save landing).
+    // Same selection, row changed underneath us. Our own save echoing back is a no-op:
+    // draft already holds the saved (or newer in-flight) text.
+    if (selected.updatedAt === lastOwnSaveRef.current) return;
+    // Genuinely external change (realtime from another writer).
     const next = resolveDraft({ body: draftBody, title: draftTitle, externalUpdate }, selected, dirty);
     setDraftBody(next.body);
     setDraftTitle(next.title);
@@ -151,11 +159,20 @@ const PromptLibraryPanel: React.FC = () => {
         });
         return;
       }
-      // Clear dirty BEFORE refresh() lands so the next realtime-driven row update
-      // re-seeds silently instead of tripping the external-change banner on our own save.
+      // Record our own save's timestamp FIRST, then clear dirty, then patch local
+      // state — all synchronous, before any realtime echo can hit the effect. The
+      // effect ignores updates whose updatedAt matches lastOwnSaveRef, so keystrokes
+      // typed while the save was in flight survive (no reseed, no false banner).
+      // No explicit refresh(): the realtime listener already refetches on our write,
+      // and applyRowPatch makes version/updated_at current for the next CAS save.
+      lastOwnSaveRef.current = result.row.updatedAt;
       setDirty(false);
+      applyRowPatch(result.row.id, {
+        version: result.row.version,
+        updated_at: result.row.updatedAt,
+        updated_by: result.row.updatedBy,
+      });
       toast.success('Saved');
-      await refresh();
     } catch (e: any) {
       toastError('save prompt', e);
     } finally {
