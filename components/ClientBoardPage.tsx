@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -29,6 +29,17 @@ interface BoardBrand {
 }
 interface AgentStep { step: string; detail?: string; t?: string; done?: boolean }
 type Stage = 'planned' | 'drafted' | 'review' | 'scheduled' | 'published';
+/** Bench entry for a week slot: a seeded alternate ANGLE (topic-level, never an
+ *  instant draft). Attached to queue items as `alt_angles` — the slot IS the queue
+ *  item, so the bench travels with it. */
+interface AltAngle { id: string; title: string; hook: string; pillar?: string; drafts_by?: string }
+interface LeadMagnetEntry {
+  id: string;
+  title: string;
+  format: 'assessment' | 'calculator' | 'worksheet' | 'checklist' | string;
+  status: 'live' | 'in_production' | 'planned' | string;
+  date_label?: string;
+}
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
@@ -45,10 +56,12 @@ interface QueueItem {
   agent_trail?: AgentStep[];
   /** Transient: the agent step currently running, shown inline on the row (intro choreography). */
   live_step?: string;
+  /** Seeded alternate angles for this slot (the "different idea" bench). */
+  alt_angles?: AltAngle[];
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
-interface NewsletterIssue { id: string; ref?: string; date: string; stage: 'scheduled' | 'planned' | string; title: string }
+interface NewsletterIssue { id: string; ref?: string; date: string; stage: 'scheduled' | 'planned' | string; title: string; body?: string }
 interface NurtureStep { step: string; detail?: string }
 interface NewsletterSpec {
   name: string;
@@ -69,6 +82,7 @@ interface Board {
   site?: { nav?: string[]; phone?: string; cta?: string };
   queue: QueueItem[];
   lm?: any;
+  lead_magnets?: LeadMagnetEntry[];
   strategy?: { total: number; period?: string; pillars: Pillar[] };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
@@ -318,10 +332,12 @@ const STAGE_META: Record<Stage, { label: string; hint: string }> = {
 };
 const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
 
-function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
+function stageStatus(q: QueueItem, stage: Stage, startIso?: string): React.ReactNode {
   if (stage === 'planned') {
     const d = q.publish_date ? new Date(q.publish_date + 'T00:00:00') : null;
-    const drafts = d ? new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10) : '';
+    let drafts = d ? new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10) : '';
+    // Nothing drafts before the engine starts.
+    if (drafts && startIso && drafts < startIso) drafts = startIso;
     return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Drafts {fmtDay(drafts)} · publishes {fmtDay(q.publish_date)}</span>;
   }
   if (stage === 'drafted') {
@@ -388,7 +404,7 @@ const STAGE_SOFT_META: Record<Stage, string> = {
   planned: 'planned', drafted: 'in production', review: 'awaiting', scheduled: 'queued', published: 'example',
 };
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, view, setView }: {
+function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, view, setView, skips }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
@@ -396,6 +412,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
   flashId: string | null;
   view: ContentView;
   setView: (v: ContentView) => void;
+  /** Week-home "skip this day" marks: skipped items stay listed but lose their actions. */
+  skips: Record<string, true>;
 }) {
   const autoDays = board.auto_publish_days ?? 3;
   const reduce = useReducedMotion();
@@ -426,7 +444,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
       onApprove(id);
     }, 420);
   };
-  const reviewIds = groups.find((g) => g.stage === 'review')?.items.map((q) => q.id) || [];
+  const reviewIds = (groups.find((g) => g.stage === 'review')?.items || []).filter((q) => !skips[q.id]).map((q) => q.id);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -448,7 +466,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
   // Feed identity + honest counts: next-week volume read straight off the calendar.
   const founder = board.founder;
   const feedItems = board.queue
-    .filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && q.body)
+    .filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && q.body && !skips[q.id])
     .sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
   const weekCounts = (() => {
     const cal = board.calendar;
@@ -466,10 +484,12 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      {/* Header stays capped at the list width in every view, so the view switcher
+          never jumps when the board view widens the canvas. */}
+      <div className="flex max-w-[880px] flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-[240px] flex-1">
           <SectionHead
-            title="Your content"
+            title="All content"
             sub={`Everything the engine produces moves through these stages. Anything in your review you don't touch publishes automatically after ${autoDays} days.`}
           />
         </div>
@@ -491,7 +511,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
 
       {view === 'list' && (
         <LayoutGroup id="cb-list">
-          <div className="flex flex-col gap-6">
+          <div className="flex max-w-[880px] flex-col gap-6">
             {groups.map(({ stage, items }) => (
               <div key={stage}>
                 <div className="mb-2 flex items-baseline gap-2.5 px-1">
@@ -512,7 +532,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                   {items.length === 0 && (
                     <div className="px-4 py-4 text-[13px]" style={{ color: FAINT }}>Nothing here right now.</div>
                   )}
-                  {items.map((q, i) => (
+                  {items.map((q, i) => {
+                    const skipped = stage === 'review' && !!skips[q.id];
+                    return (
                     <motion.div
                       layout
                       layoutId={`l-${q.id}`}
@@ -525,7 +547,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                       onMouseEnter={() => setHoverId(q.id)}
                       onMouseLeave={() => setHoverId((h) => (h === q.id ? null : h))}
                       className="group relative flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--cb-accent)_2.5%,white)] sm:grid sm:grid-cols-[56px_minmax(0,1fr)_110px_224px] sm:items-center sm:gap-x-4"
-                      style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none', minHeight: 56, ...flashStyle(q.id) }}
+                      style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none', minHeight: 56, opacity: skipped ? 0.55 : 1, ...flashStyle(q.id) }}
                     >
                       <Thumb q={q} accent={accent} />
                       <span className="min-w-0 flex-1 sm:flex-none">
@@ -543,10 +565,12 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                       {/* Review rows crossfade the date cell into the action cluster on hover —
                           the cluster lives in the reserved right column, so the pillar tag and
                           title never get occluded (Linear-style). */}
-                      <span className={`hidden sm:block ${stage === 'review' ? 'transition-opacity duration-150 group-focus-within:opacity-0 group-hover:opacity-0' : ''}`}>
-                        <PublishCell q={q} stage={stage} />
+                      <span className={`hidden sm:block ${stage === 'review' && !skipped ? 'transition-opacity duration-150 group-focus-within:opacity-0 group-hover:opacity-0' : ''}`}>
+                        {skipped
+                          ? <span className="block text-right text-[12px]" style={{ color: FAINT }}>Skipped this week</span>
+                          : <PublishCell q={q} stage={stage} />}
                       </span>
-                      {stage === 'review' && approvingId !== q.id && (
+                      {stage === 'review' && !skipped && approvingId !== q.id && (
                         <span
                           className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 items-center justify-end gap-1.5 opacity-0 transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 sm:flex"
                         >
@@ -596,7 +620,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                         </motion.span>
                       )}
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -629,12 +654,18 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                         className={`flex w-full flex-col gap-2 rounded-lg bg-white p-2.5 text-left ${LIFT}`}
                         style={{ ...flashStyle(q.id) }}
                       >
-                        <Thumb q={q} accent={accent} large />
+                        {/* Text posts skip the typographic thumb here — the card already
+                            leads with the title, so the tile would say it twice. */}
+                        {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} large />}
                         <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
                         <span className="text-[13px] font-medium leading-snug" style={{ color: INK, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {q.hook || q.title}
                         </span>
-                        <span>{stageStatus(q, stage)}</span>
+                        <span>
+                          {stage === 'review' && skips[q.id]
+                            ? <span className="text-[12px]" style={{ color: FAINT }}>Skipped this week</span>
+                            : stageStatus(q, stage)}
+                        </span>
                       </motion.button>
                     ))}
                   </div>
@@ -646,7 +677,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
       )}
 
       {view === 'feed' && (
-        <div className="rounded-xl px-3 py-6 sm:px-6" style={{ background: '#f3f2ef', border: `1px solid ${LINE}` }}>
+        <div className="max-w-[880px] rounded-xl px-3 py-6 sm:px-6" style={{ background: '#f3f2ef', border: `1px solid ${LINE}` }}>
           <div className="mx-auto mb-5 max-w-[552px]">
             <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: INK }}>Next week on your LinkedIn</h3>
             <p className="mt-1 text-[13.5px]" style={{ color: DIM }}>
@@ -682,7 +713,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
 
       {/* Story intake: where the client's REAL material enters the engine. The chip is a
           format explainer, not history — nothing on this card claims past activity. */}
-      <div className="mt-8 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+      <div className="mt-8 max-w-[880px] rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 10%, white)` }} aria-hidden>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -703,6 +734,577 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
             </span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Week home: "Your next 7 days" ----------
+function weekDayList(startIso: string): string[] {
+  const start = new Date(startIso + 'T00:00:00');
+  return Array.from({ length: 7 }, (_, i) => new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10));
+}
+const KIND_SORT: Record<string, number> = { newsletter: 0, post: 1, carousel: 2, lm: 3, newsjack: 4 };
+interface WeekSlot { key: string; q?: QueueItem; cal?: CalendarItem }
+
+/** Trust mark: the draft was checked against the client's voice model. Neutral chip —
+ *  accent stays rationed to actions. The full trail is one tap away (card opens the modal). */
+function VoiceChip({ accent }: { accent: string }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-medium"
+      style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}
+      title="Checked against your voice model. Open the card for the full trail."
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.7" />
+      </svg>
+      Voice-matched
+    </span>
+  );
+}
+
+/** One actionable card in the week flow. Desktop: buttons + A/R/N on the focused card.
+ *  Mobile: swipe right = approve, swipe left = different idea, tap = detail modal.
+ *  Swipe release uses a tween (no spring) per the motion contract. */
+function WeekCard({ q, accent, focused, approving, flashOn, autoDays, panel, onFocus, onOpen, onApprove, onServeAngle, onPickAngle, onClosePanel, onSkip, cardRef }: {
+  q: QueueItem; accent: string; focused: boolean; approving: boolean; flashOn: boolean; autoDays: number;
+  panel: { alt?: AltAngle; none?: boolean } | null;
+  onFocus: () => void;
+  onOpen: (opts?: { changing?: boolean }) => void;
+  onApprove: () => void;
+  onServeAngle: () => void;
+  onPickAngle: (alt: AltAngle) => void;
+  onClosePanel: () => void;
+  onSkip: () => void;
+  cardRef: (el: HTMLDivElement | null) => void;
+}) {
+  const reduce = useReducedMotion();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const x = useMotionValue(0);
+  const approveReveal = useTransform(x, [24, 90], [0, 1]);
+  const angleReveal = useTransform(x, [-90, -24], [1, 0]);
+  const dragged = useRef(false);
+  const coarse = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  const settle = () => animate(x, 0, { duration: 0.2, ease: EASE as any });
+  const kbd = (k: string) => (
+    <kbd className="ml-1 hidden h-[15px] min-w-[15px] items-center justify-center rounded-[4px] px-1 text-[9.5px] leading-none sm:inline-flex" style={{ fontFamily: MONO, background: 'rgba(2,49,47,0.06)', border: `1px solid ${LINE}`, color: DIM }}>{k}</kbd>
+  );
+  const inkCta = inkOn(accent);
+  return (
+    <div className="relative" ref={cardRef}>
+      {/* Swipe reveals (mobile): the gesture's own affordance layers. */}
+      <motion.div className="absolute inset-0 flex items-center rounded-xl px-5 sm:hidden" style={{ opacity: approveReveal, background: `color-mix(in srgb, ${accent} 10%, white)` }} aria-hidden>
+        <span className="inline-flex items-center gap-2 text-[13px] font-semibold" style={{ color: accent }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          Approve
+        </span>
+      </motion.div>
+      <motion.div className="absolute inset-0 flex items-center justify-end rounded-xl px-5 sm:hidden" style={{ opacity: angleReveal, background: 'rgba(2,49,47,0.05)' }} aria-hidden>
+        <span className="text-[13px] font-semibold" style={{ color: DIM }}>Different idea</span>
+      </motion.div>
+      <motion.div
+        role="button"
+        tabIndex={0}
+        drag={coarse ? 'x' : false}
+        dragMomentum={false}
+        dragConstraints={{ left: -140, right: 140 }}
+        dragElastic={0.12}
+        style={{ x, border: `1px solid ${focused ? 'transparent' : LINE}`, boxShadow: focused ? `0 0 0 2px ${accent}, 0 4px 14px rgba(2,32,32,0.08)` : undefined, background: flashOn ? FLASH_BG : '#fff', transition: 'background-color 700ms ease' }}
+        onDragStart={() => { dragged.current = true; }}
+        onDragEnd={(_, info) => {
+          const dx = info.offset.x;
+          settle();
+          if (dx > 90) onApprove();
+          else if (dx < -90) onServeAngle();
+          window.setTimeout(() => { dragged.current = false; }, 60);
+        }}
+        onClick={() => { if (dragged.current) return; onOpen(); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+        onMouseEnter={onFocus}
+        onFocus={onFocus}
+        className="relative cursor-pointer rounded-xl p-3.5 outline-none sm:p-4"
+        aria-label={`${q.hook || q.title} — awaiting your review`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Text posts lead with the title itself — the typographic thumb would repeat it. */}
+          {!(q.kind === 'post' && !q.media_url && !q.cover_url) && <Thumb q={q} accent={accent} />}
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-medium leading-snug" style={{ color: INK }}>{q.hook || q.title}</div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <span className="text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+              {q.pillar && (
+                <span className="inline-flex items-center gap-1.5 text-[12px] capitalize" style={{ color: FAINT }}>
+                  <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+                  {q.pillar}
+                </span>
+              )}
+              <VoiceChip accent={accent} />
+            </div>
+          </div>
+          <span className="hidden shrink-0 sm:block"><PublishCell q={q} stage="review" /></span>
+        </div>
+        {/* Desktop action row — Approve is the only filled button. */}
+        <div className="mt-3 hidden items-center gap-2 sm:flex">
+          <button
+            onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); onApprove(); }}
+            className="inline-flex min-h-[32px] items-center rounded-[6px] px-3.5 text-[12.5px] font-semibold"
+            style={{ background: accent, color: inkCta }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden className="mr-1.5">
+              <path d="M5 13l4 4 10-10" stroke={inkCta} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Approve{kbd('A')}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onServeAngle(); }}
+            className="inline-flex min-h-[32px] items-center rounded-[6px] bg-white px-3 text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+            style={{ color: DIM, border: `1px solid ${LINE}` }}
+          >
+            Different idea{kbd('N')}
+          </button>
+          <div className="relative ml-auto">
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((m) => !m); }}
+              aria-label="More options"
+              aria-expanded={menuOpen}
+              className="flex h-8 w-8 items-center justify-center rounded-[6px] transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle cx="5" cy="12" r="1.6" fill={DIM} /><circle cx="12" cy="12" r="1.6" fill={DIM} /><circle cx="19" cy="12" r="1.6" fill={DIM} />
+              </svg>
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} aria-hidden />
+                <div className="absolute right-0 top-9 z-20 w-48 rounded-lg bg-white p-1" style={{ border: `1px solid ${LINE}`, boxShadow: '0 8px 24px rgba(2,32,32,0.12)' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onOpen({ changing: true }); }}
+                    className="flex w-full items-center justify-between rounded-[6px] px-2.5 py-2 text-left text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+                    style={{ color: INK }}
+                  >
+                    Request a change{kbd('R')}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onSkip(); }}
+                    className="flex w-full rounded-[6px] px-2.5 py-2 text-left text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+                    style={{ color: DIM }}
+                  >
+                    Skip this day
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        {/* Different-idea panel: a seeded alternate ANGLE, never an instant draft. */}
+        <AnimatePresence initial={false}>
+          {panel && (
+            <motion.div
+              initial={reduce ? false : { opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={reduce ? undefined : { opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: EASE }}
+              className="overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {panel.none ? (
+                <div className="mt-3 rounded-lg p-3.5" style={{ background: 'rgba(2,49,47,0.03)', border: `1px dashed ${LINE}` }}>
+                  <p className="text-[13px] leading-relaxed" style={{ color: DIM }}>
+                    This one is already built and live on your domain, so there is no alternate angle to serve. Request a change instead and your operator adjusts it.
+                  </p>
+                  <div className="mt-2.5 flex gap-2">
+                    <button onClick={() => { onClosePanel(); onOpen({ changing: true }); }} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
+                    <button onClick={onClosePanel} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-medium" style={{ color: FAINT }}>Close</button>
+                  </div>
+                </div>
+              ) : panel.alt ? (
+                <div className="mt-3 rounded-lg p-3.5" style={{ background: `color-mix(in srgb, ${accent} 4%, white)`, border: `1px dashed color-mix(in srgb, ${accent} 30%, white)` }}>
+                  <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: FAINT }}>Different idea for this slot</div>
+                  <div className="mt-1.5 text-[13.5px] font-semibold" style={{ color: INK }}>{panel.alt.title}</div>
+                  <p className="mt-0.5 text-[13px] leading-relaxed" style={{ color: DIM }}>{panel.alt.hook}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px]" style={{ color: FAINT }}>
+                    {panel.alt.pillar && (
+                      <span className="inline-flex items-center gap-1.5 capitalize">
+                        <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+                        {panel.alt.pillar}
+                      </span>
+                    )}
+                    {panel.alt.drafts_by && <span className="tabular-nums">Drafts {fmtDay(panel.alt.drafts_by)} if you pick it</span>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button onClick={() => onPickAngle(panel.alt!)} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3.5 text-[12.5px] font-semibold" style={{ background: accent, color: inkCta }}>Use this angle</button>
+                    <button onClick={onServeAngle} className="inline-flex min-h-[32px] items-center rounded-[6px] bg-white px-3 text-[12.5px] font-medium" style={{ border: `1px solid ${LINE}`, color: DIM }}>Show another</button>
+                    <button onClick={onClosePanel} className="inline-flex min-h-[32px] items-center rounded-[6px] px-2.5 text-[12.5px] font-medium" style={{ color: FAINT }}>Keep current</button>
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* Approve moment: the check draws, then the card settles into its locked state. */}
+        {approving && (
+          <motion.span
+            className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl"
+            style={{ background: 'rgba(255,255,255,0.85)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15, ease: EASE }}
+            aria-hidden
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <motion.path
+                d="M4.5 12.5l5 5 10-11"
+                stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.3, ease: EASE }}
+              />
+            </svg>
+            <span className="text-[13px] font-semibold" style={{ color: accent }}>Approved</span>
+          </motion.span>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, skips, benchFor, onOpen, onOpenCal, onApprove, onPickAngle, onSkip, onUnskip, flashId, modalOpen }: {
+  board: Board; accent: string; mint: string;
+  stageOf: (q: QueueItem) => Stage;
+  /** Ids the CLIENT approved this session (persisted) — distinct from data-scheduled items. */
+  approvedIds: Set<string>;
+  angleSwaps: Record<string, AltAngle>;
+  skips: Record<string, true>;
+  benchFor: (id: string) => AltAngle[];
+  onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
+  onOpenCal: (it: CalendarItem) => void;
+  onApprove: (id: string) => void;
+  onPickAngle: (id: string, alt: AltAngle) => void;
+  onSkip: (id: string) => void;
+  onUnskip: (id: string) => void;
+  flashId: string | null;
+  modalOpen: boolean;
+}) {
+  const reduce = useReducedMotion();
+  const autoDays = board.auto_publish_days ?? 3;
+  const cal = board.calendar;
+  const days = cal ? weekDayList(cal.start) : [];
+  const daySet = new Set(days);
+
+  // One slot per piece: queue items own their day; calendar entries fill the rest.
+  // A calendar entry that names a queue item (ref), or an unlinked entry of a kind the
+  // queue already covers that day, collapses into the queue card — one source, no doubles.
+  const slotsByDay = useMemo(() => {
+    const map = new Map<string, WeekSlot[]>();
+    days.forEach((day) => {
+      const qItems = board.queue.filter((q) => q.publish_date === day && q.stage !== 'published');
+      const calItems = (cal?.items || []).filter((it) => it.date === day);
+      const have = new Set(qItems.map((q) => q.id));
+      const spare: Record<string, number> = {};
+      qItems.forEach((q) => { if (!calItems.some((it) => it.ref === q.id)) spare[q.kind] = (spare[q.kind] || 0) + 1; });
+      const slots: WeekSlot[] = qItems.map((q) => ({ key: q.id, q }));
+      calItems.forEach((it, i) => {
+        if (it.ref) {
+          if (have.has(it.ref)) return;
+          const linked = board.queue.find((qq) => qq.id === it.ref);
+          if (linked) {
+            if (linked.stage !== 'published') { slots.push({ key: linked.id, q: linked }); have.add(linked.id); }
+            return;
+          }
+        }
+        if (!it.ref && (spare[it.kind] || 0) > 0) { spare[it.kind] -= 1; return; }
+        slots.push({ key: `cal-${day}-${it.kind}-${i}`, cal: it });
+      });
+      slots.sort((a, b) => (KIND_SORT[(a.q ? a.q.kind : a.cal!.kind)] ?? 9) - (KIND_SORT[(b.q ? b.q.kind : b.cal!.kind)] ?? 9));
+      map.set(day, slots);
+    });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [board, cal, days.join(',')]);
+
+  // The flow ledger: total = review-stage pieces this week; handled = approved,
+  // re-angled or skipped. d1 joins the count the moment the intro lands it.
+  const weekQ = board.queue.filter((q) => daySet.has(q.publish_date || '') && q.stage !== 'published');
+  const actionable = [...weekQ.filter((q) => q.stage === 'review')].sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
+  const handledOf = (q: QueueItem) => approvedIds.has(q.id) || !!angleSwaps[q.id] || !!skips[q.id];
+  const total = actionable.length;
+  const done = actionable.filter(handledOf).length;
+  const pendingIds = actionable.filter((q) => stageOf(q) === 'review' && !skips[q.id]).map((q) => q.id);
+  const doneState = total > 0 && pendingIds.length === 0;
+
+  // Focus flow: one focused card, j/k or arrows to move, auto-advance after acting.
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const focusRef = useRef<string | null>(null);
+  focusRef.current = focusId;
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  useEffect(() => {
+    if (!focusRef.current || !pendingIds.includes(focusRef.current)) setFocusId(pendingIds[0] || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingIds.join(',')]);
+  const advanceFrom = (id: string) => {
+    const i = pendingIds.indexOf(id);
+    const next = pendingIds[i + 1] || pendingIds[i - 1] || null;
+    setFocusId(next !== id ? next : null);
+  };
+  const move = (dir: 1 | -1) => {
+    if (!pendingIds.length) return;
+    const i = focusRef.current ? pendingIds.indexOf(focusRef.current) : -1;
+    const next = pendingIds[Math.min(pendingIds.length - 1, Math.max(0, i + dir))];
+    setFocusId(next);
+    cardRefs.current[next]?.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  };
+
+  // Approve with the drawn check, then the optimistic move.
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const approveTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(approveTimer.current), []);
+  const startApprove = (id: string) => {
+    if (approvingId) return;
+    setAngle(null);
+    if (reduce) { advanceFrom(id); onApprove(id); return; }
+    setApprovingId(id);
+    window.clearTimeout(approveTimer.current);
+    approveTimer.current = window.setTimeout(() => { setApprovingId(null); advanceFrom(id); onApprove(id); }, 420);
+  };
+
+  // Different-idea bench: N (or swipe left) serves the next seeded angle for the slot.
+  const [angle, setAngle] = useState<{ id: string; alt?: AltAngle; none?: boolean } | null>(null);
+  const servedRef = useRef<Record<string, number>>({});
+  const serveAngle = (id: string) => {
+    const bench = benchFor(id);
+    if (!bench.length) { setAngle({ id, none: true }); return; }
+    const idx = servedRef.current[id] || 0;
+    servedRef.current[id] = idx + 1;
+    setAngle({ id, alt: bench[idx % bench.length] });
+  };
+  const pickAngle = (id: string, alt: AltAngle) => { setAngle(null); advanceFrom(id); onPickAngle(id, alt); };
+
+  useEffect(() => {
+    if (modalOpen) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); move(1); return; }
+      if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); return; }
+      const id = focusRef.current;
+      if (!id) return;
+      const item = board.queue.find((q) => q.id === id);
+      if (!item) return;
+      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); startApprove(id); }
+      if (e.key === 'r' || e.key === 'R') { e.preventDefault(); onOpen(item, { changing: true }); }
+      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); serveAngle(id); }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalOpen, pendingIds.join(','), board, approvingId]);
+
+  const dayHasPending = (day: string) => (slotsByDay.get(day) || []).some((s) => s.q && pendingIds.includes(s.q.id));
+
+  const renderSlot = (slot: WeekSlot) => {
+    if (slot.cal) {
+      const it = slot.cal;
+      if (it.kind === 'newsjack') {
+        return (
+          <div key={slot.key} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3" style={{ border: `1px dashed ${LINE}` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FAINT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+              <path d="M13 2 4.5 13.5H11l-1.5 8.5L18 10.5h-6.5L13 2z" />
+            </svg>
+            <span className="min-w-0 flex-1 truncate text-[13px]" style={{ color: DIM }}>{it.label}</span>
+            <span className="shrink-0 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Held open</span>
+          </div>
+        );
+      }
+      // Draft day never predates the engine start (nothing runs before Mon).
+      const rawDraft = new Date(new Date(it.date + 'T00:00:00').getTime() - 2 * 86400000).toISOString().slice(0, 10);
+      const draftDay = cal && rawDraft < cal.start ? cal.start : rawDraft;
+      return (
+        <button
+          key={slot.key}
+          onClick={() => onOpenCal(it)}
+          className="flex w-full items-center gap-3 rounded-xl bg-white px-4 py-3 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--cb-accent)_2.5%,white)]"
+          style={{ border: `1px solid ${LINE}` }}
+        >
+          <Thumb q={{ id: slot.key, kind: (it.kind === 'newsjack' ? 'post' : it.kind) as QueueItem['kind'], stage: 'planned' }} accent={accent} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13.5px] font-medium" style={{ color: INK }}>{it.label}</span>
+            <span className="mt-0.5 block text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{KIND_LABEL[it.kind] || it.kind}</span>
+          </span>
+          <span className="hidden shrink-0 text-[12px] tabular-nums sm:block" style={{ color: FAINT }}>Drafts {fmtDay(draftDay)} · lands in your review</span>
+        </button>
+      );
+    }
+    const q = slot.q!;
+    const stage = stageOf(q);
+    const swap = angleSwaps[q.id];
+    if (stage === 'review' && skips[q.id]) {
+      return (
+        <div key={slot.key} className="flex items-center gap-3 rounded-xl bg-white px-4 py-3" style={{ border: `1px dashed ${LINE}`, opacity: 0.8 }}>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium" style={{ color: DIM }}>{q.hook || q.title}</span>
+            <span className="mt-0.5 block text-[11px]" style={{ color: FAINT }}>Skipped. Nothing publishes in this slot this week.</span>
+          </span>
+          <button onClick={() => onUnskip(q.id)} className="shrink-0 rounded-[6px] bg-white px-2.5 py-1.5 text-[12px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]" style={{ border: `1px solid ${LINE}`, color: DIM }}>
+            Undo
+          </button>
+        </div>
+      );
+    }
+    if (stage === 'review') {
+      return (
+        <WeekCard
+          key={slot.key}
+          q={q}
+          accent={accent}
+          focused={focusId === q.id}
+          approving={approvingId === q.id}
+          flashOn={flashId === q.id}
+          autoDays={autoDays}
+          panel={angle?.id === q.id ? angle : null}
+          onFocus={() => setFocusId(q.id)}
+          onOpen={(opts) => onOpen(q, opts)}
+          onApprove={() => startApprove(q.id)}
+          onServeAngle={() => serveAngle(q.id)}
+          onPickAngle={(alt) => pickAngle(q.id, alt)}
+          onClosePanel={() => setAngle(null)}
+          onSkip={() => { setAngle(null); advanceFrom(q.id); onSkip(q.id); }}
+          cardRef={(el) => { cardRefs.current[q.id] = el; }}
+        />
+      );
+    }
+    // Locked / queued / in-production states — already approved, operator-run, or drafting.
+    const statusNode = (() => {
+      if (q.generating) {
+        return <span className="inline-flex items-center gap-2 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="var(--cb-mint)" /> {q.live_step || 'Drafting now…'}</span>;
+      }
+      if (swap) {
+        return (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium tabular-nums" style={{ color: DIM }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6" />
+            </svg>
+            New angle locked{swap.drafts_by ? ` · drafts ${fmtDay(swap.drafts_by)}` : ''}
+          </span>
+        );
+      }
+      if (stage === 'scheduled' && approvedIds.has(q.id)) {
+        return (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium tabular-nums" style={{ color: DIM }}>
+            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full" style={{ background: accent }} aria-hidden>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke={inkOn(accent)} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </span>
+            Approved · publishes {fmtDay(q.publish_date)}
+          </span>
+        );
+      }
+      if (stage === 'scheduled') {
+        return (
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium tabular-nums" style={{ color: DIM }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={FAINT} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="4.5" y="10.5" width="15" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+            </svg>
+            {q.kind === 'newsletter' ? `Queued · sends ${KIND_TIME.newsletter}` : `Queued · publishes ${fmtDay(q.publish_date)}`}
+          </span>
+        );
+      }
+      return <span className="text-[12px]" style={{ color: FAINT }}>In production · lands in your review first</span>;
+    })();
+    return (
+      <button
+        key={slot.key}
+        onClick={() => onOpen(q)}
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl px-4 py-3 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--cb-accent)_2.5%,white)]"
+        style={{ border: `1px solid ${LINE}`, background: flashId === q.id ? FLASH_BG : '#fff', transition: 'background-color 700ms ease' }}
+      >
+        <Thumb q={q} accent={accent} />
+        <span className="min-w-0 flex-1" style={{ minWidth: '46%' }}>
+          <span className="block truncate text-[13.5px] font-medium" style={{ color: INK }}>{q.hook || q.title}</span>
+          <span className="mt-0.5 block text-[10.5px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{kickerOf(q)}</span>
+        </span>
+        {/* Status wraps under the title at phone widths instead of crushing it. */}
+        <span className="basis-full pl-[68px] text-left sm:basis-auto sm:shrink-0 sm:pl-0 sm:text-right">{statusNode}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div className="max-w-[880px]">
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-[240px] flex-1">
+          <SectionHead
+            title="Your next 7 days"
+            sub={`Your first engine week, ${fmtDay(days[0])} to ${fmtDay(days[6])}. Approve each piece, ask for a change, or ask for a different idea. Anything you don't touch publishes automatically after ${autoDays} days.`}
+          />
+        </div>
+        {total > 0 && !doneState && (
+          <div className="mt-1.5 flex shrink-0 items-center gap-2.5" aria-label={`Reviewing ${Math.min(done + 1, total)} of ${total}`}>
+            <span className="flex items-center gap-1" aria-hidden>
+              {actionable.map((q) => (
+                <span key={q.id} className="h-[7px] w-[7px] rounded-full transition-colors duration-150" style={{ background: handledOf(q) ? accent : 'rgba(2,49,47,0.12)' }} />
+              ))}
+            </span>
+            <span className="text-[12.5px] font-medium tabular-nums" style={{ color: DIM }}>{Math.min(done + 1, total)} of {total}</span>
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {doneState && (
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: EASE }}
+            className="mb-6 flex items-start gap-3 rounded-xl p-4 sm:p-5"
+            style={{ background: `color-mix(in srgb, ${accent} 6%, white)`, border: `1px solid color-mix(in srgb, ${accent} 20%, white)` }}
+          >
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ background: accent }} aria-hidden>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-10" stroke={inkOn(accent)} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </span>
+            <div>
+              <div className="text-[14.5px] font-semibold" style={{ color: INK }}>You're set through Sunday.</div>
+              <p className="mt-1 text-[13px] leading-relaxed" style={{ color: DIM }}>
+                Next week drafts Thursday. Approved pieces publish on schedule, and if you ever miss a week nothing stalls: drafts publish automatically after {autoDays} days.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {pendingIds.length > 0 && (
+        <p className="-mt-2 mb-4 text-[12px] sm:hidden" style={{ color: FAINT }}>
+          Swipe right to approve, left for a different idea. Tap a card to read the draft.
+        </p>
+      )}
+
+      <div className="flex flex-col gap-6">
+        {days.map((day, di) => {
+          const slots = slotsByDay.get(day) || [];
+          return (
+            <section key={day} aria-label={fmtDay(day)}>
+              <div className="mb-2 flex items-baseline gap-2.5 px-1">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.08em] tabular-nums" style={{ color: dayHasPending(day) ? accent : FAINT }}>
+                  {fmtDay(day)}
+                </span>
+                {di === 0 && (
+                  <span className="rounded-full px-2 py-0.5 text-[10.5px] font-medium" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>Engine starts</span>
+                )}
+                {slots.length > 0 && (
+                  <span className="ml-auto text-[12px] tabular-nums" style={{ color: FAINT }}>{slots.length} {slots.length === 1 ? 'piece' : 'pieces'}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                {slots.length === 0 && (
+                  <div className="rounded-xl px-4 py-3 text-[12.5px]" style={{ border: `1px dashed ${LINE}`, color: FAINT }}>
+                    Nothing planned. The cadence keeps this day clear.
+                  </div>
+                )}
+                {slots.map(renderSlot)}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -812,7 +1414,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
         <div className="flex shrink-0 items-center gap-2.5 px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
           <KindChip q={item} accent={accent} />
           {item.pillar && <span className="text-[12px] capitalize" style={{ color: FAINT }}>{item.pillar}</span>}
-          <span className="ml-auto">{stageStatus(item, stage)}</span>
+          <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
@@ -824,7 +1426,31 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
         <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
           {/* Left: content preview / edit */}
           <div className="min-w-0">
-            {item.kind === 'lm' ? (
+            {item.kind === 'newsletter' && item.body ? (
+              /* Newsletter issues read as email, not as a LinkedIn post. */
+              <div className="overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(2,49,47,0.02)' }}>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>
+                    {(board.founder?.name || board.company_name).split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-semibold" style={{ color: INK }}>
+                      {board.founder?.name || board.company_name}{board.newsletter?.name ? ` · ${board.newsletter.name}` : ''}
+                    </span>
+                    <span className="block text-[11.5px]" style={{ color: FAINT }}>to your subscribers</span>
+                  </span>
+                  <span className="ml-auto shrink-0 text-[11.5px] tabular-nums" style={{ color: FAINT }}>{fmtDay(item.publish_date)}</span>
+                </div>
+                <div className="px-4 py-4 sm:px-5">
+                  <div className="text-[16px] font-semibold leading-snug" style={{ color: INK }}>{item.hook || item.title}</div>
+                  <div className="mt-3 max-w-[62ch]">
+                    {(item.body || '').split(/\n\n+/).map((p, i) => (
+                      <p key={i} className="mt-3 whitespace-pre-line text-[14px] leading-relaxed first:mt-0" style={{ color: '#2b3736' }}>{p}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : item.kind === 'lm' ? (
               <div className="rounded-xl p-4" style={{ border: `1px solid ${LINE}` }}>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   {item.cover_url && <img src={item.cover_url} alt="" className="w-full rounded-lg object-cover sm:w-44" style={{ border: `1px solid ${LINE}` }} />}
@@ -962,6 +1588,11 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
   const cal = board.calendar;
   if (!cal) return null;
   const start = new Date(cal.start + 'T00:00:00');
+  // One source for titles: a chip linked to a queue item always shows that item's hook.
+  const labelOf = (it: CalendarItem): string => {
+    const linked = it.ref ? board.queue.find((q) => q.id === it.ref) : null;
+    return linked?.hook || linked?.title || it.label;
+  };
   const byDate = new Map<string, CalendarItem[]>();
   cal.items.forEach((it) => {
     const arr = byDate.get(it.date) || [];
@@ -1042,7 +1673,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
               {dayItems.map((it, i) => {
                 const time = KIND_TIME[it.kind];
                 if (it.kind === 'newsjack') {
-                  return <div key={i} className="rounded-[6px] px-2.5 py-2 text-[12px] font-medium" style={chipStyle(it.kind)}>{it.label}</div>;
+                  return <div key={i} className="rounded-[6px] px-2.5 py-2 text-[12px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                 }
                 return (
                   <button
@@ -1052,7 +1683,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                     style={chipStyle(it.kind)}
                   >
                     {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
-                    <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                    <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
                     {approvedMark(it)}
                   </button>
                 );
@@ -1095,9 +1726,9 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
                         const time = KIND_TIME[it.kind];
-                        const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} — ${it.label}`;
+                        const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} — ${labelOf(it)}`;
                         if (it.kind === 'newsjack') {
-                          return <div key={i} title={tip} className="truncate rounded-[4px] px-1.5 py-1 text-[10.5px] font-medium" style={chipStyle(it.kind)}>{it.label}</div>;
+                          return <div key={i} title={tip} className="truncate rounded-[4px] px-1.5 py-1 text-[10.5px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                         }
                         return (
                           <button
@@ -1108,7 +1739,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                             style={chipStyle(it.kind)}
                           >
                             {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
-                            <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                            <span className="min-w-0 flex-1 truncate">{labelOf(it)}</span>
                             {approvedMark(it)}
                           </button>
                         );
@@ -1130,7 +1761,50 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
 }
 
 // ---------- Lead magnet surface ----------
-function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) {
+const LM_FORMAT_LABEL: Record<string, string> = {
+  assessment: 'Assessment', calculator: 'Calculator', worksheet: 'Worksheet', checklist: 'Checklist',
+};
+
+/** Typographic mockup cover for a library entry: brand tones + the title as the art.
+ *  Honest by construction — status chips only, no capture counts, no fake leads. */
+function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
+  entry: LeadMagnetEntry; accent: string; mint: string; brand?: BoardBrand; fontStack: string; i: number;
+}) {
+  const live = entry.status === 'live';
+  const heroBg = live ? (brand?.header_bg || INK) : `color-mix(in srgb, ${accent} ${[9, 6, 12, 7, 5][i % 5]}%, white)`;
+  const titleColor = live ? '#ffffff' : `color-mix(in srgb, ${accent} 72%, ${INK})`;
+  const statusChip = live
+    ? { label: 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
+    : entry.status === 'in_production'
+    ? { label: 'In production', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
+    : { label: 'Planned', bg: 'rgba(2,49,47,0.05)', color: DIM, dot: null };
+  return (
+    <div className={`overflow-hidden rounded-xl bg-white ${LIFT}`} style={{ border: `1px solid ${LINE}` }}>
+      <div className="flex aspect-[16/10] flex-col justify-between p-4" style={{ background: heroBg }}>
+        <span
+          className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
+          style={live ? { background: 'rgba(255,255,255,0.12)', color: mint } : { background: 'rgba(255,255,255,0.75)', color: DIM }}
+        >
+          {LM_FORMAT_LABEL[entry.format] || entry.format}
+        </span>
+        <span className="text-[17px] font-semibold leading-snug" style={{ fontFamily: fontStack, color: titleColor }}>
+          {entry.title}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 px-3.5 py-2.5">
+        <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: statusChip.bg, color: statusChip.color }}>
+          {statusChip.dot && <StatusDot color={statusChip.dot} size={5} />}
+          {statusChip.label}
+        </span>
+        <span className="ml-auto text-[11.5px] tabular-nums" style={{ color: FAINT }}>
+          {live ? 'On your domain' : entry.date_label || ''}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LeadMagnetSurface({ board, accent, mint, fontStack }: { board: Board; accent: string; mint: string; fontStack: string }) {
   const lm = board.lm;
   // Default src (scan_embed) keeps the engine's embed mode: Ivan's chrome/greeting
   // stripped + the client's accent/fonts applied. bname/blogo/cta/ctaurl rebrand the
@@ -1148,8 +1822,8 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
   return (
     <div>
       <SectionHead
-        title="Your lead magnet"
-        sub="Live and interactive, exactly what your leads see. It scores them, then captures their email."
+        title="Your lead magnets"
+        sub="The live one first, exactly what your leads see. It scores them, then captures their email. New capture assets ship on the calendar below it."
       />
       {src ? (
         <LiveAssessmentEmbed
@@ -1169,6 +1843,27 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
       ) : (
         <div className="rounded-xl bg-white p-8" style={{ border: `1px solid ${LINE}` }}>
           <p className="text-[14px]" style={{ color: DIM }}>Your first lead magnet is in production. It lands here for review this week.</p>
+        </div>
+      )}
+
+      {/* Library: the live one plus what's coming. Statuses are honest; mockup covers
+          are typographic, never screenshots of things that don't exist yet. */}
+      {(board.lead_magnets || []).length > 0 && (
+        <div className="mt-8">
+          <div className="mb-1 flex items-baseline gap-2.5">
+            <CardHead>Your lead magnet library</CardHead>
+            <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>
+              {(board.lead_magnets || []).filter((e) => e.status === 'live').length} live · {(board.lead_magnets || []).filter((e) => e.status !== 'live').length} on the calendar
+            </span>
+          </div>
+          <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
+            Each one scores or grades a real problem your buyers have, captures the email, and feeds the leads table below.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(board.lead_magnets || []).map((entry, i) => (
+              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -1485,12 +2180,14 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
   onOpenIssue: (it: NewsletterIssue) => void;
 }) {
   const nl = board.newsletter;
+  const [issueOpen, setIssueOpen] = useState(false);
+  const reduce = useReducedMotion();
   if (!nl) return null;
   const issues = nl.issues || [];
   const nurture = nl.nurture || [];
 
   const issueStatus = (it: NewsletterIssue) =>
-    stageStatus({ id: it.id, kind: 'newsletter', stage: it.stage === 'scheduled' ? 'scheduled' : 'planned', publish_date: it.date }, it.stage === 'scheduled' ? 'scheduled' : 'planned');
+    stageStatus({ id: it.id, kind: 'newsletter', stage: it.stage === 'scheduled' ? 'scheduled' : 'planned', publish_date: it.date }, it.stage === 'scheduled' ? 'scheduled' : 'planned', board.calendar?.start);
 
   return (
     <div>
@@ -1505,7 +2202,8 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
         const initials = founderName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
         const first = issues[0];
         const linked = first?.ref ? board.queue.find((q) => q.id === first.ref) : null;
-        const snippet = linked?.body || 'The draft lands here the Sunday before it sends, written from the same voice model as your posts.';
+        const fullBody = first?.body || '';
+        const snippet = fullBody || linked?.body || 'The draft lands here the Sunday before it sends, written from the same voice model as your posts.';
         return (
           <div className="grid gap-5 rounded-xl bg-white p-5 sm:p-6 lg:grid-cols-[minmax(220px,1fr)_1.25fr] lg:items-center" style={{ border: `1px solid ${LINE}` }}>
             <div>
@@ -1539,9 +2237,42 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
                   {first && <span className="ml-auto shrink-0 text-[11.5px] tabular-nums" style={{ color: FAINT }}>{fmtDay(first.date)}</span>}
                 </div>
                 <div className="mt-3 text-[15px] font-semibold leading-snug" style={{ fontFamily: fontStack, color: INK }}>{first?.title || 'Your first issue'}</div>
-                <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: DIM, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {snippet}
-                </p>
+                {!issueOpen && (
+                  <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: DIM, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {snippet}
+                  </p>
+                )}
+                {/* Issue 1 carries a full readable draft — expandable in place. */}
+                <AnimatePresence initial={false}>
+                  {issueOpen && fullBody && (
+                    <motion.div
+                      initial={reduce ? false : { opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={reduce ? undefined : { opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: EASE }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 max-w-[62ch] border-t pt-3" style={{ borderColor: DIVIDE }}>
+                        {fullBody.split(/\n\n+/).map((p, i) => (
+                          <p key={i} className="mt-3 whitespace-pre-line text-[13.5px] leading-relaxed first:mt-0" style={{ color: '#2b3736' }}>{p}</p>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {fullBody && (
+                  <button
+                    onClick={() => setIssueOpen((o) => !o)}
+                    className="mt-2.5 inline-flex min-h-[32px] items-center gap-1.5 rounded-[6px] px-2.5 text-[12.5px] font-semibold transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+                    style={{ color: accent }}
+                    aria-expanded={issueOpen}
+                  >
+                    {issueOpen ? 'Show less' : 'Read the full issue'}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden style={{ transform: issueOpen ? 'rotate(180deg)' : 'none', transition: 'transform 150ms ease' }}>
+                      <path d="M6 9l6 6 6-6" stroke={accent} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1681,9 +2412,10 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
 // ---------- page ----------
 // One vocabulary on every viewport: mobile shows the same words, sized down, never renamed.
 const TABS = [
-  { id: 'review', label: 'Content', group: 'Content' },
+  { id: 'week', label: 'This week', group: 'Content' },
+  { id: 'review', label: 'All content', group: 'Content' },
   { id: 'calendar', label: 'Calendar', group: 'Content' },
-  { id: 'lm', label: 'Lead magnet', group: 'Content' },
+  { id: 'lm', label: 'Lead magnets', group: 'Content' },
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
@@ -1693,6 +2425,12 @@ const NAV_GROUPS = ['Content', 'Reports'] as const;
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
+  week: (
+    <>
+      <path d="M10 6.5h10.5M10 12h10.5M10 17.5h10.5" />
+      <path d="m3.5 5.75 1.25 1.25 2.25-2.5M3.5 11.25 4.75 12.5 7 10M3.5 16.75 4.75 18 7 15.5" />
+    </>
+  ),
   review: (
     <>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
@@ -1798,7 +2536,7 @@ export default function ClientBoardPage() {
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
   const [state, setState] = useState<'loading' | 'ready' | 'invalid'>('loading');
-  const [tab, setTab] = useState<TabId>('review');
+  const [tab, setTab] = useState<TabId>('week');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
   // Demo interaction state survives a reload: approvals persist per-slug.
@@ -1811,6 +2549,21 @@ export default function ClientBoardPage() {
   useEffect(() => {
     try { localStorage.setItem(approvalsKey, JSON.stringify(stageOverride)); } catch { /* private mode */ }
   }, [stageOverride, approvalsKey]);
+  // Week-home decisions persist the same way: chosen alternate angles + skipped days.
+  const anglesKey = `cb-angles-${slug || ''}`;
+  const skipsKey = `cb-skips-${slug || ''}`;
+  const [angleSwaps, setAngleSwaps] = useState<Record<string, AltAngle>>(() => {
+    try { const raw = localStorage.getItem(`cb-angles-${slug || ''}`); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(anglesKey, JSON.stringify(angleSwaps)); } catch { /* private mode */ }
+  }, [angleSwaps, anglesKey]);
+  const [weekSkips, setWeekSkips] = useState<Record<string, true>>(() => {
+    try { const raw = localStorage.getItem(`cb-skips-${slug || ''}`); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(skipsKey, JSON.stringify(weekSkips)); } catch { /* private mode */ }
+  }, [weekSkips, skipsKey]);
   const [flashId, setFlashId] = useState<string | null>(null);
   // Content view lives up here so the page can widen the container for the kanban.
   const [contentView, setContentViewState] = useState<ContentView>(() => {
@@ -1827,8 +2580,8 @@ export default function ClientBoardPage() {
   const introRan = useRef(false);
   const flashTimer = useRef<number>(0);
   const introTimers = useRef<number[]>([]);
-  // Undo window after an approve: toast with Z / click to restore the row.
-  const [undo, setUndo] = useState<{ id: string } | null>(null);
+  // Undo window after an action: toast with Z / click to restore the row.
+  const [undo, setUndo] = useState<{ id: string; kind: 'approve' | 'angle' | 'skip' } | null>(null);
   const undoTimer = useRef<number>(0);
   useEffect(() => () => { introTimers.current.forEach((t) => window.clearTimeout(t)); window.clearTimeout(flashTimer.current); window.clearTimeout(undoTimer.current); }, []);
 
@@ -1838,20 +2591,37 @@ export default function ClientBoardPage() {
     flashTimer.current = window.setTimeout(() => setFlashId(null), 1500);
   };
 
-  // Optimistic approve + undo window. Defined above the early returns so the
+  // Optimistic actions + undo window. Defined above the early returns so the
   // Z-key effect keeps a stable hook order across loading states.
+  const armUndo = (id: string, kind: 'approve' | 'angle' | 'skip') => {
+    setUndo({ id, kind });
+    window.clearTimeout(undoTimer.current);
+    undoTimer.current = window.setTimeout(() => setUndo(null), 6000);
+  };
   const approve = (id: string) => {
     setStageOverride((s) => ({ ...s, [id]: 'scheduled' }));
     flash(id);
-    setUndo({ id });
-    window.clearTimeout(undoTimer.current);
-    undoTimer.current = window.setTimeout(() => setUndo(null), 6000);
+    armUndo(id, 'approve');
+  };
+  const pickAngle = (id: string, alt: AltAngle) => {
+    setAngleSwaps((s) => ({ ...s, [id]: alt }));
+    flash(id);
+    armUndo(id, 'angle');
+  };
+  const skipDay = (id: string) => {
+    setWeekSkips((s) => ({ ...s, [id]: true as const }));
+    armUndo(id, 'skip');
+  };
+  const unskipDay = (id: string) => {
+    setWeekSkips((s) => { const { [id]: _drop, ...rest } = s; return rest; });
   };
   const undoApprove = () => {
     window.clearTimeout(undoTimer.current);
     setUndo((u) => {
       if (u) {
-        setStageOverride((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
+        if (u.kind === 'approve') setStageOverride((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
+        else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
+        else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
         flash(u.id);
       }
       return null;
@@ -1875,7 +2645,9 @@ export default function ClientBoardPage() {
   // remaining agent steps live, then travels up into "Your review". Local state theater
   // with honest verbs — the same steps the engine actually runs, no fabricated metrics.
   useEffect(() => {
-    if (state !== 'ready' || !board || tab !== 'review' || introRan.current || reduceMotion) return;
+    // The intro now targets the week HOME (the finishing card lands in its day slot);
+    // it also runs from All content so ?intro=1 replays work from either surface.
+    if (state !== 'ready' || !board || (tab !== 'week' && tab !== 'review') || introRan.current || reduceMotion) return;
     try { if (localStorage.getItem(introKey)) return; } catch { return; }
     const d1 = board.queue.find((q) => q.id === 'd1' && q.generating);
     if (!d1) return;
@@ -1918,10 +2690,12 @@ export default function ClientBoardPage() {
     (async () => {
       if (!slug || !token) { setState('invalid'); return; }
       if (forceIntro) {
-        // Replay support: drop the played flag (and any stale approval of the intro card)
-        // BEFORE the board mounts, so the choreography runs again from the top.
+        // Replay support: drop the played flag (and any stale approval/angle/skip of the
+        // intro card) BEFORE the board mounts, so the choreography runs again from the top.
         try { localStorage.removeItem(introKey); } catch { /* private mode */ }
         setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setAngleSwaps((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setWeekSkips((s) => { const { d1: _drop, ...rest } = s; return rest; });
       }
       const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
       if (cancelled) return;
@@ -1966,8 +2740,51 @@ export default function ClientBoardPage() {
   const accent = cleanHex(board?.brand?.accent_hex);
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
-  // regardless of its stored stage, and never counts toward the review badge.
-  const stageOf = (q: QueueItem): Stage => (q.generating ? 'drafted' : stageOverride[q.id] ?? q.stage);
+  // regardless of its stored stage, and never counts toward the review badge. An item
+  // whose angle was swapped goes back to Drafted too: picking a different idea queues a
+  // fresh draft, it never fakes an instant one.
+  const stageOf = (q: QueueItem): Stage => (q.generating ? 'drafted' : angleSwaps[q.id] ? 'drafted' : stageOverride[q.id] ?? q.stage);
+  // Display resolution for swapped slots: the chosen angle replaces topic + pillar and
+  // clears the stale body/media; the trail restarts honestly from "new angle locked".
+  const resolveItem = (q: QueueItem): QueueItem => {
+    const a = angleSwaps[q.id];
+    if (!a) return q;
+    return {
+      ...q,
+      hook: a.hook,
+      title: a.title,
+      pillar: a.pillar || q.pillar,
+      body: undefined,
+      media_url: null,
+      cover_url: undefined,
+      agent_trail: [
+        { step: 'New angle locked', detail: 'you picked a different idea for this slot', done: true, t: 'just now' },
+        { step: 'Voice model', detail: a.drafts_by ? `drafts ${fmtDay(a.drafts_by)}` : 'queued', done: false },
+        { step: 'Hook agent', done: false },
+        { step: 'Draft agent', done: false },
+        { step: 'Copy quality gate', done: false },
+        { step: 'Image check', detail: 'then it lands back in your review', done: false },
+      ],
+    };
+  };
+  const viewBoard = useMemo(
+    () => (board ? { ...board, queue: board.queue.map(resolveItem) } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [board, angleSwaps],
+  );
+  // The bench for a slot: its seeded alternates; once an angle is picked, the ORIGINAL
+  // topic joins the bench (the rejected angle is benched, never lost).
+  const benchFor = (id: string): AltAngle[] => {
+    const raw = board?.queue.find((q) => q.id === id);
+    if (!raw) return [];
+    const chosen = angleSwaps[id];
+    const pool = raw.alt_angles || [];
+    if (!chosen) return pool;
+    return [
+      ...pool.filter((a) => a.id !== chosen.id),
+      { id: `${id}-original`, title: 'The original angle', hook: raw.hook || raw.title || '', pillar: raw.pillar, drafts_by: chosen.drafts_by },
+    ];
+  };
   // 'demo' (legacy) and 'preview' (current) mean the same thing — the board is a
   // built-ahead preview, not a live account. Reads both so a data migration can't break it.
   const isPreview = mode === 'demo' || mode === 'preview';
@@ -1993,10 +2810,12 @@ export default function ClientBoardPage() {
   // Calendar chip click: linked items open the real draft; planned slots open a
   // pipeline preview of what the engine will do for that topic.
   const openCalendarItem = (it: CalendarItem) => {
-    const linked = it.ref ? board?.queue.find((q) => q.id === it.ref) : null;
+    const linked = it.ref ? viewBoard?.queue.find((q) => q.id === it.ref) : null;
     if (linked) { setDetail(linked); return; }
     const d = new Date(it.date + 'T00:00:00');
-    const draftDay = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const rawDraft = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const engineStart = board?.calendar?.start || '';
+    const draftDay = engineStart && rawDraft < engineStart ? engineStart : rawDraft;
     setDetail({
       id: `cal-${it.date}-${it.kind}`,
       kind: (it.kind === 'newsjack' ? 'post' : it.kind) as QueueItem['kind'],
@@ -2019,10 +2838,14 @@ export default function ClientBoardPage() {
   // Newsletter issue click: the linked issue opens the real queue item; planned issues
   // open the planned-slot pipeline preview with a nurture-appropriate trail.
   const openNewsletterIssue = (it: NewsletterIssue) => {
-    const linked = it.ref ? board?.queue.find((q) => q.id === it.ref) : null;
-    if (linked) { setDetail(linked); return; }
+    const linked = it.ref ? viewBoard?.queue.find((q) => q.id === it.ref) : null;
+    // Issue bodies live on the issue record (newsletter.issues[n].body); the queue item
+    // is the schedule entry. Inject so the modal reads the full email.
+    if (linked) { setDetail(it.body && !linked.body ? { ...linked, body: it.body } : linked); return; }
     const d = new Date(it.date + 'T00:00:00');
-    const draftDay = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const rawDraft = new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10);
+    const engineStart = board?.calendar?.start || '';
+    const draftDay = engineStart && rawDraft < engineStart ? engineStart : rawDraft;
     const fromDomain = board?.newsletter?.from_domain;
     setDetail({
       id: `nl-${it.id}`,
@@ -2044,7 +2867,7 @@ export default function ClientBoardPage() {
   if (state === 'loading') {
     return <BoardSkeleton />;
   }
-  if (state === 'invalid' || !board) {
+  if (state === 'invalid' || !board || !viewBoard) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6" style={{ background: FRAME_BG }}>
         <div className="max-w-sm rounded-xl bg-white p-8 text-center" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
@@ -2057,14 +2880,35 @@ export default function ClientBoardPage() {
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const openDetail = (q: QueueItem, opts?: { changing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); };
-  const scheduledIds = new Set(board.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
+  const scheduledIds = new Set(viewBoard.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
+  const approvedIds = new Set(Object.keys(stageOverride).filter((id) => stageOverride[id] === 'scheduled'));
   const surfaces: Record<TabId, React.ReactNode> = {
-    review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={openDetail} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} />,
-    calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
-    lm: <LeadMagnetSurface board={board} accent={accent} />,
-    newsletter: <NewsletterSurface board={board} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
-    performance: <PerformanceSurface board={board} accent={accent} />,
-    strategy: <StrategySurface board={board} accent={accent} mint={mint} />,
+    week: (
+      <WeekSurface
+        board={viewBoard}
+        accent={accent}
+        mint={mint}
+        stageOf={stageOf}
+        approvedIds={approvedIds}
+        angleSwaps={angleSwaps}
+        skips={weekSkips}
+        benchFor={benchFor}
+        onOpen={openDetail}
+        onOpenCal={openCalendarItem}
+        onApprove={approve}
+        onPickAngle={pickAngle}
+        onSkip={skipDay}
+        onUnskip={unskipDay}
+        flashId={flashId}
+        modalOpen={!!detail}
+      />
+    ),
+    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} />,
+    calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
+    newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
+    performance: <PerformanceSurface board={viewBoard} accent={accent} />,
+    strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
   };
 
   const logo = (h: number) => (
@@ -2073,7 +2917,8 @@ export default function ClientBoardPage() {
       : <span className="text-[14px] font-semibold" style={{ fontFamily: fontStack, color: INK }}>{board.company_name}</span>
   );
 
-  const reviewCount = board.queue.filter((q) => stageOf(q) === 'review').length;
+  // Badge = pieces actually awaiting an action: generating, swapped and skipped excluded.
+  const reviewCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id]).length;
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
 
@@ -2103,7 +2948,7 @@ export default function ClientBoardPage() {
                       {active && <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full" style={{ background: accent }} aria-hidden />}
                       <span style={{ color: active ? accent : FAINT }}><NavIcon id={t.id} /></span>
                       {t.label}
-                      {t.id === 'review' && reviewCount > 0 && (
+                      {t.id === 'week' && reviewCount > 0 && (
                         <span className="ml-auto rounded-full px-1.5 py-0.5 text-[10.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
                       )}
                     </button>
@@ -2174,7 +3019,9 @@ export default function ClientBoardPage() {
                 exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.2, ease: EASE }}
               >
-                <div className={`w-full ${tab === 'calendar' || (tab === 'review' && contentView === 'board') ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[tab]}</div>
+                {/* All content keeps one container width across views — the header caps
+                    itself at the list width, so the view switcher never jumps. */}
+                <div className={`w-full ${tab === 'calendar' || tab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[tab]}</div>
               </motion.div>
             </AnimatePresence>
           </main>
@@ -2183,7 +3030,7 @@ export default function ClientBoardPage() {
 
       {/* Mobile bottom tabs */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/85 px-1 pt-1 backdrop-blur-md lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
-        <nav className="grid w-full grid-cols-6" aria-label="Board sections">
+        <nav className="grid w-full grid-cols-7" aria-label="Board sections">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
@@ -2195,7 +3042,7 @@ export default function ClientBoardPage() {
               >
                 <span className="relative">
                   <NavIcon id={t.id} size={18} />
-                  {t.id === 'review' && reviewCount > 0 && (
+                  {t.id === 'week' && reviewCount > 0 && (
                     <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
                   )}
                 </span>
@@ -2217,7 +3064,7 @@ export default function ClientBoardPage() {
             className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+76px)] z-30 flex justify-center px-4 lg:bottom-6"
           >
             <div className="pointer-events-auto flex items-center gap-2 rounded-lg py-1.5 pl-4 pr-1.5 text-[13px] font-medium text-white" style={{ background: INK, boxShadow: '0 8px 24px rgba(2,32,32,0.28)' }}>
-              Post approved
+              {undo.kind === 'approve' ? 'Post approved' : undo.kind === 'angle' ? 'New angle locked' : 'Day skipped'}
               <button
                 onClick={undoApprove}
                 className="ml-1 inline-flex min-h-[32px] items-center gap-1.5 rounded-[6px] px-2.5 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/10"
