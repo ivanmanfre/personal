@@ -55,6 +55,7 @@ const PromptLibraryPanel: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'slug' | 'updated'>('slug');
 
   // local edit state — initialized from selected prompt, mutated by textarea
   const [draftBody, setDraftBody] = useState<string>('');
@@ -114,7 +115,7 @@ const PromptLibraryPanel: React.FC = () => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return prompts.filter((p) => {
-      if (category !== 'all' && categorize(p.slug) !== category) return false;
+      if (category !== 'all' && (p.category ?? categorize(p.slug)) !== category) return false;
       if (!q) return true;
       return p.slug.toLowerCase().includes(q) || p.title.toLowerCase().includes(q) || p.body.toLowerCase().includes(q);
     });
@@ -123,16 +124,20 @@ const PromptLibraryPanel: React.FC = () => {
   const grouped = useMemo(() => {
     const m = new Map<string, ContentPrompt[]>();
     for (const p of filtered) {
-      const cat = categorize(p.slug);
+      const cat = p.category ?? categorize(p.slug);
       if (!m.has(cat)) m.set(cat, []);
       m.get(cat)!.push(p);
     }
-    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [filtered]);
+    const entries = Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    if (sortBy === 'updated') {
+      for (const [, list] of entries) list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+    return entries;
+  }, [filtered, sortBy]);
 
   const categories = useMemo(() => {
     const s = new Set<string>(['all']);
-    for (const p of prompts) s.add(categorize(p.slug));
+    for (const p of prompts) s.add(p.category ?? categorize(p.slug));
     return Array.from(s);
   }, [prompts]);
 
@@ -206,6 +211,22 @@ const PromptLibraryPanel: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+            <button
+              onClick={() => setSortBy('slug')}
+              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'slug' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Sort A-Z"
+            >
+              A-Z
+            </button>
+            <button
+              onClick={() => setSortBy('updated')}
+              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'updated' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              title="Sort by recently updated"
+            >
+              Recent
+            </button>
+          </div>
           <Button variant="ghost" size="sm" onClick={refresh} disabled={loading}>
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Refresh
           </Button>
@@ -244,7 +265,7 @@ const PromptLibraryPanel: React.FC = () => {
                 {c === 'all' ? 'All' : c}
                 {c !== 'all' && (
                   <span className="ml-1 text-zinc-600">
-                    {prompts.filter((p) => categorize(p.slug) === c).length}
+                    {prompts.filter((p) => (p.category ?? categorize(p.slug)) === c).length}
                   </span>
                 )}
               </button>

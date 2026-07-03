@@ -22,6 +22,7 @@ export interface ContentPrompt {
   kind: string;          // 'prompt' for everything we have today
   isActive: boolean;
   sourcePage: string | null;  // 'clickup:2ky5ezad-XXXX' (legacy origin)
+  category: string | null;    // server-side backfill of categorize()'s slug heuristic; null = "Other"
   version: number;
   updatedAt: string;
   updatedBy: string | null;
@@ -36,13 +37,14 @@ function mapRow(row: any): ContentPrompt {
     kind: row.kind || 'prompt',
     isActive: row.is_active !== false,
     sourcePage: row.source_page || null,
+    category: row.category || null,
     version: row.version || 1,
     updatedAt: row.updated_at,
     updatedBy: row.updated_by || null,
   };
 }
 
-const SELECT = 'id, slug, title, body, kind, is_active, source_page, version, updated_at, updated_by';
+const SELECT = 'id, slug, title, body, kind, is_active, source_page, category, version, updated_at, updated_by';
 
 export function useContentPrompts() {
   const [prompts, setPrompts] = useState<ContentPrompt[]>([]);
