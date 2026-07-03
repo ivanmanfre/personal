@@ -3,10 +3,10 @@ import { toast } from 'sonner';
 import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo, publishPostNow } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo, publishPostNow } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
-import { toastError } from '../../lib/dashboardActions';
+import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
 import FieldGrid from './FieldGrid';
@@ -638,33 +638,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             >
               {(() => {
                 const s = draft.status;
-                const fireGenerate = async () => {
-                  const startedAt = new Date().toISOString();
-                  const nextTax = { ...(draft.taxonomy as any || {}), generating_started_at: startedAt };
-                  const { error: upErr } = await supabase.from('carousel_drafts').update({
-                    status: 'generating',
-                    taxonomy: nextTax,
-                  }).eq('id', draft.id);
-                  if (upErr) throw upErr;
-                  if (draft.type === 'carousel') {
-                    // Use the draft's real uuid — NOT a throwaway `studio-<rand>` id.
-                    // The carousel sub-workflow looks this up against carousel_drafts.id
-                    // (a uuid column); a studio- id fails with "invalid input syntax for
-                    // type uuid" and the carousel silently never generates.
-                    return buildCarousel({ carousel_id: draft.id, draft_id: draft.id, topic: draft.topic || draft.title || '', key_points: [] });
-                  }
-                  return generatePostContent({
-                    draft_id: draft.id,
-                    topic: draft.topic || draft.title || '',
-                    title: draft.title || draft.topic || '',
-                    author: 'Ivan',
-                    source: (tax.source as string) || 'Studio',
-                    post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
-                    post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
-                    include_image: draft.type === 'single_image' ? 'Yes' : 'No',
-                    image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
-                  });
-                };
+                // Same regeneration path the row-level Retry on the Posts board
+                // list uses (lib/studioActions.ts) — kept as one function so the
+                // status flip + webhook dispatch never drifts between the two
+                // call sites.
+                const fireGenerate = () => regenerateDraft({
+                  id: draft.id,
+                  type: draft.type,
+                  topic: draft.topic,
+                  title: draft.title,
+                  taxonomy: draft.taxonomy,
+                });
 
                 if (s === 'idea' || s === 'suggestion') {
                   return (
@@ -747,7 +731,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'error') {
                   return (
                     <>
-                      <span className="text-xs text-red-600">Last generation failed.</span>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-xs text-[var(--d-bad-txt)] font-medium">Last generation failed.</span>
+                        {/* No last_error column exists on carousel_drafts yet, so
+                            this is a generic reason, not the real failure cause —
+                            see task-6-report.md backlog note. */}
+                        <span className="text-xs text-[var(--d-bad-txt)]">{GENERATION_ERROR_FALLBACK}</span>
+                      </div>
                       <Button
                         variant="primary"
                         disabled={!!busy}

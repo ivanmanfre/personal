@@ -1,6 +1,13 @@
 import { toast } from 'sonner';
 import { supabase } from './supabase';
 
+// Neither carousel_drafts nor lm_drafts_v2 persist a machine-readable failure
+// reason (no `last_error` column, no n8n error-handler write) — this generic
+// string is shown wherever a real reason would otherwise go, on both the
+// board rows and the editor banner, until that column + write path exist.
+// See .superpowers/sdd/task-6-report.md for the backlog item.
+export const GENERATION_ERROR_FALLBACK = 'Generation failed — retry or check n8n Activity';
+
 export async function dashboardAction(table: string, id: string, field: string, value: string) {
   const { error } = await supabase.rpc('dashboard_action', {
     p_table: table,

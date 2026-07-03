@@ -6,7 +6,8 @@ import { useIdeaCandidates } from '../../hooks/useIdeaCandidates';
 import { decideIdea } from '../../lib/ideaProjection';
 import IdeaDetail from './IdeaDetail';
 import { generatePostContent, buildCarousel, regenerateDraft } from '../../lib/studioActions';
-import { toastError } from '../../lib/dashboardActions';
+import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
+import { generatingChipLabel, isStuckGenerating } from './genAge';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
@@ -565,21 +566,18 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
-            // Progress hint for generating-status rows
-            const genStart = tax.generating_started_at as string | undefined;
-            const genHint = d.status === 'generating' && genStart
-              ? (() => {
-                  const elapsed = Math.round((Date.now() - new Date(genStart).getTime()) / 60_000);
-                  return elapsed >= 15
-                    ? `⚠ stuck — started ${elapsed}m ago`
-                    : `generating · started ${elapsed}m ago`;
-                })()
-              : d.status === 'generating' ? 'generating…' : undefined;
+            // Progress hint for generating-status rows — prefer the precise
+            // generating_started_at timestamp when the pipeline recorded one,
+            // else fall back to updated_at (set the moment the row flipped
+            // to 'generating'). Shared with the LM board via genAge.ts.
+            const genStart = (tax.generating_started_at as string | undefined) || d.updatedAt;
+            const genHint = d.status === 'generating' ? generatingChipLabel(genStart) : undefined;
             return {
               id: d.id,
               title: d.title || d.topic || '(untitled)',
-              excerpt: genHint || (d.postBody ? postExcerpt(d) : undefined),
+              excerpt: d.status === 'error' ? GENERATION_ERROR_FALLBACK : (genHint || (d.postBody ? postExcerpt(d) : undefined)),
               status: d.status,
+              stuckGenerating: d.status === 'generating' && isStuckGenerating(genStart),
               thumbUrl: driveThumbUrl(imageThumb, 96),
               kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : d.type === 'text' ? 'TXT' : (d.isIdea ? '—' : 'TXT'),
               // Idea rows have no schedule — the Date column shows when the idea
@@ -597,6 +595,21 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           })}
           statusMeta={STATUS_META}
           onOpen={setOpenId}
+          // Row-level Retry (error rows) / re-fire (stuck-generating rows) —
+          // same regenerateDraft() path the editor's Retry button uses, just
+          // invoked without opening the sheet first.
+          onRetry={async (id) => {
+            const cur = drafts.find((d) => d.id === id);
+            if (!cur) return;
+            applyOptimistic(id, { status: 'generating' });
+            try {
+              await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
+              toast.success('Retry fired');
+            } catch (err) {
+              toastError('retry', err);
+              refresh();
+            }
+          }}
           loading={loading && drafts.length === 0}
           // Hide the ML taxonomy columns (pillar / hook / tier / source) — they're
           // pipeline internals that read as jargon on a client-facing surface.

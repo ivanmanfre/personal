@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, List as ListIcon, Table2 } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent } from '../../lib/studioActions';
-import { toastError } from '../../lib/dashboardActions';
+import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
+import { generatingChipLabel, isStuckGenerating } from './genAge';
 import { supabase } from '../../lib/supabase';
 import LeadMagnetEditor from './LeadMagnetEditor';
 import { StudioListView } from './StudioListView';
@@ -385,8 +386,16 @@ const LeadMagnetStudioPanel: React.FC = () => {
               || (d.format
                 ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
                 : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`),
-            excerpt: (d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined,
+            // LM rows have no dedicated generating-start timestamp — updated_at
+            // is set the moment the row flips to 'generating', so it's the best
+            // available proxy (same helper Posts uses, see genAge.ts).
+            excerpt: d.status === 'error'
+              ? GENERATION_ERROR_FALLBACK
+              : d.status === 'generating'
+                ? generatingChipLabel(d.updatedAt)
+                : ((d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined),
             status: d.status,
+            stuckGenerating: d.status === 'generating' && isStuckGenerating(d.updatedAt),
             thumbUrl: driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 96),
             kicker: 'LM',
             date: lmDate(d.updatedAt),
@@ -397,6 +406,18 @@ const LeadMagnetStudioPanel: React.FC = () => {
           }))}
           statusMeta={STATUS_META}
           onOpen={setOpenId}
+          // Row-level Retry (error) / re-fire (stuck-generating) — reuses the
+          // same generateLMContent() call the LM editor's re-fire button uses
+          // (LeadMagnetEditor.tsx), no separate webhook.
+          onRetry={async (id) => {
+            const cur = drafts.find((d) => d.id === id);
+            if (!cur) return;
+            try {
+              await generateLMContent({ draft_id: cur.id, topic: cur.topic || '', format: cur.format || 'Checklist' });
+              toast.success('Retry fired (~10 min)');
+              await refresh();
+            } catch (err) { toastError('retry', err); }
+          }}
           loading={loading && drafts.length === 0}
           hiddenCols={new Set(['pillar', 'hookType', 'valueTier'])}
           groupByStatus={view === 'table' ? undefined : 'lm-studio'}

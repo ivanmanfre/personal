@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
 import { statusLabel } from '../../lib/statusLabels';
@@ -31,6 +31,10 @@ export type StudioRow = {
   source?: string;
   formatLabel?: string;
   topicStrength?: string;
+  /** True when status is 'generating' and elapsed time has passed the stuck
+   *  threshold (see genAge.ts). Surfaces the same Retry affordance as an
+   *  error row so a stalled generation isn't a dead end. */
+  stuckGenerating?: boolean;
 };
 
 export type StatusMeta = { dot: string; label: string };
@@ -105,6 +109,10 @@ export function StudioListView({
   hiddenCols = new Set<SortKey>(),
   loading = false,
   onBulkAction,
+  /** Called from an error row's Retry button. Fires the same regeneration
+   *  path as the editor's Retry — callers pass a handler bound to their
+   *  board's shared regenerate helper (never a duplicate webhook call). */
+  onRetry,
   /** When set, rows are grouped under collapsible status headers (ClickUp-style).
    *  Per-group collapse state persists to localStorage under this key. */
   groupByStatus,
@@ -130,6 +138,7 @@ export function StudioListView({
   hiddenCols?: Set<SortKey>;
   loading?: boolean;
   onBulkAction?: (action: 'disqualify' | 'delete', ids: string[]) => Promise<void> | void;
+  onRetry?: (id: string) => Promise<void> | void;
   groupByStatus?: string;
   statusOrder?: string[];
   pinnedStatuses?: string[];
@@ -172,6 +181,9 @@ export function StudioListView({
   // Stored as the row id, or null when not editing. Only one at a time.
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  // Tracks the row whose Retry button is mid-flight so it can show a spinner
+  // and disable re-clicks without needing a busy flag from every caller.
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   // Track each row's last-seen status. When it changes, mark the row for a brief
   // emerald flash so external transitions (workflow flips, auto-refresh) are
@@ -460,7 +472,11 @@ export function StudioListView({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className={`${dense ? 'text-[12px]' : 'text-[14px]'} text-[var(--ds-ink)] truncate font-medium`}>{r.title || '(untitled)'}</div>
-                  {r.excerpt && !dense && <div className="text-[12px] text-[var(--ds-faint)] truncate mt-0.5">{r.excerpt}</div>}
+                  {r.excerpt && !dense && (
+                    <div className={`text-[12px] truncate mt-0.5 ${r.status === 'error' ? 'text-[var(--d-bad-txt)]' : 'text-[var(--ds-faint)]'}`}>
+                      {r.excerpt}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -556,12 +572,28 @@ export function StudioListView({
             reuses the same bulk 'delete' path so the optimistic-hide + realtime
             reconcile behaviour is identical. Stays visible (not hover-gated) while
             the status <select> is open so onBlur can fire normally. */}
-        {(onBulkAction || (onStatusChange && statusChoices && statusChoices.length > 0)) && (
+        {(onBulkAction || onRetry || (onStatusChange && statusChoices && statusChoices.length > 0)) && (
           <div
             className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1 transition-opacity ${
               editingStatusId === r.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
             }`}
           >
+            {onRetry && (r.status === 'error' || r.stuckGenerating) && (
+              <button
+                type="button"
+                aria-label={r.status === 'error' ? 'Retry generation' : 'Re-fire — generation looks stuck'}
+                title={r.status === 'error' ? 'Retry generation' : 'Re-fire — generation looks stuck'}
+                disabled={retryingId === r.id}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setRetryingId(r.id);
+                  try { await onRetry(r.id); } finally { setRetryingId((cur) => (cur === r.id ? null : cur)); }
+                }}
+                className="p-1.5 rounded-md text-[var(--d-bad-txt)] bg-[var(--ds-card)] border border-[var(--ds-line)] hover:bg-red-50 hover:border-red-200 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${retryingId === r.id ? 'animate-spin' : ''}`} />
+              </button>
+            )}
             {onStatusChange && statusChoices && statusChoices.length > 0 && (
               editingStatusId === r.id ? (
                 <select
