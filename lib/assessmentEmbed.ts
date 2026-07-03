@@ -32,6 +32,14 @@ export interface AssessmentEmbedLm {
 export interface AssessmentEmbedOpts {
   prospectId?: string;
   src?: string;
+  /** Brand/company name the engine shows in embed context (engine-side ?bname). */
+  bname?: string;
+  /** Brand logo URL for the engine's embed chrome (engine-side ?blogo). */
+  blogo?: string;
+  /** End-screen CTA label, e.g. the client's real "Free Strategy Call" (engine-side ?cta). */
+  cta?: string;
+  /** Absolute http(s) URL the end-screen CTA points at, e.g. the client's contact page (engine-side ?ctaurl). */
+  ctaurl?: string;
 }
 
 /**
@@ -74,5 +82,12 @@ export function buildAssessmentEmbedUrl(
   if (heroBg) params.set('hero_bg', heroBg);
   const accent2 = (brand.accent2 || '').replace(/[^0-9a-fA-F]/g, '');
   if (accent2) params.set('accent2', accent2);
+  // Brand identity + CTA rewiring: the engine renders the CLIENT's name/logo and points the
+  // end-screen CTA at THEIR contact page instead of Ivan's Calendly. Additive: an engine
+  // that doesn't know these params ignores them. ctaurl must be absolute http(s).
+  if (opts?.bname) params.set('bname', opts.bname);
+  if (opts?.blogo) params.set('blogo', opts.blogo);
+  if (opts?.cta) params.set('cta', opts.cta);
+  if (opts?.ctaurl && /^https?:\/\//.test(opts.ctaurl)) params.set('ctaurl', opts.ctaurl);
   return `${RESOURCES_BASE}/${encodeURIComponent(lm.slug)}/?${params.toString()}`;
 }

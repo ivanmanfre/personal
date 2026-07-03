@@ -81,7 +81,9 @@ interface Board {
 // V6 token system: teal-cast three-ink hierarchy, ink-alpha hairlines, one easing.
 const INK = '#101B1A';
 const DIM = '#5c6b6a';
-const FAINT = '#8a9997';
+/** V7 contrast retoken: FAINT carried informational text at 2.96:1 — now 5.58:1.
+ *  Purely decorative grays (weekend numerals, ghost numerals) keep their own literals. */
+const FAINT = '#5c6b6a';
 /** Structural hairline: brand-ink alpha so it composites over any background. */
 const LINE = 'rgba(2,49,47,0.08)';
 /** Row divider: softer ink alpha for divide-y inside grouped containers. */
@@ -306,25 +308,13 @@ function PulseDot({ color }: { color: string }) {
   );
 }
 
-/** Mono keycap chip for the hover shortcut hints on review rows. */
-function Kbd({ k }: { k: string }) {
-  return (
-    <kbd
-      className="inline-flex h-[16px] min-w-[16px] items-center justify-center rounded-[4px] px-1 text-[10px] leading-none"
-      style={{ fontFamily: MONO, background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', color: DIM }}
-    >
-      {k}
-    </kbd>
-  );
-}
-
 // ---------- Content surface: staged list ----------
 const STAGE_META: Record<Stage, { label: string; hint: string }> = {
   planned: { label: 'Planned', hint: 'On the calendar. The engine drafts each one a few days ahead.' },
   drafted: { label: 'Drafted', hint: 'The engine is writing these. They move to your review when ready.' },
   review: { label: 'Your review', hint: 'Your only job. Approve or request a change.' },
   scheduled: { label: 'Scheduled', hint: 'Approved and queued to publish.' },
-  published: { label: 'Published', hint: 'Live on your LinkedIn.' },
+  published: { label: 'Published · example', hint: 'How live posts will report here once the engine is running.' },
 };
 const STAGE_ORDER: Stage[] = ['review', 'drafted', 'scheduled', 'published'];
 
@@ -341,12 +331,8 @@ function stageStatus(q: QueueItem, stage: Stage): React.ReactNode {
   }
   if (stage === 'review') return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)} unless you change it</span>;
   if (stage === 'scheduled') return <span className="text-[12px] font-medium tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)}</span>;
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] tabular-nums" style={{ color: FAINT }}>
-      <StatusDot color="var(--cb-mint)" size={5} />
-      Published {fmtDay(q.publish_date)}
-    </span>
-  );
+  // Example state, not a claim: nothing has run on the client's LinkedIn yet.
+  return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Example · {fmtDay(q.publish_date)}</span>;
 }
 
 type ContentView = 'list' | 'board' | 'feed';
@@ -383,7 +369,7 @@ function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
       : stage === 'scheduled'
       ? 'approved · queued'
       : stage === 'published'
-      ? 'live on your LinkedIn'
+      ? 'example report'
       : 'in production';
   return (
     <span className="block text-right">
@@ -391,7 +377,6 @@ function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
         {fmtDay(q.publish_date) || '—'}
       </span>
       <span className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: FAINT }}>
-        {stage === 'published' && <StatusDot color="var(--cb-mint)" size={5} />}
         {stage === 'scheduled' && <span className="inline-block h-[5px] w-[5px] rounded-full" style={{ background: FAINT }} aria-hidden />}
         {sub}
       </span>
@@ -400,7 +385,7 @@ function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
 }
 
 const STAGE_SOFT_META: Record<Stage, string> = {
-  planned: 'planned', drafted: 'in production', review: 'awaiting', scheduled: 'queued', published: 'live',
+  planned: 'planned', drafted: 'in production', review: 'awaiting', scheduled: 'queued', published: 'example',
 };
 
 function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, view, setView }: {
@@ -430,11 +415,14 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
   useEffect(() => () => window.clearTimeout(approveTimer.current), []);
   const startApprove = (id: string) => {
     if (approvingId) return;
-    if (reduce) { onApprove(id); return; }
+    if (reduce) { setHoverId(null); onApprove(id); return; }
     setApprovingId(id);
     window.clearTimeout(approveTimer.current);
     approveTimer.current = window.setTimeout(() => {
       setApprovingId(null);
+      // The row travels to Scheduled out from under the cursor — mouseleave never
+      // fires, so clear the hover target or A/R keep aiming at the moved row.
+      setHoverId(null);
       onApprove(id);
     }, 420);
   };
@@ -516,7 +504,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                   <span className="hidden text-[12px] sm:inline" style={{ color: FAINT }}>{STAGE_META[stage].hint}</span>
                   {items.length > 0 && (
                     <span className="ml-auto inline-flex shrink-0 items-baseline gap-1 text-[12px] tabular-nums" style={{ color: FAINT }}>
-                      <RollingNumber n={items.length} /> {STAGE_SOFT_META[stage]}
+                      <RollingNumber n={items.length} /> {stage === 'published' ? (items.length === 1 ? 'example' : 'examples') : STAGE_SOFT_META[stage]}
                     </span>
                   )}
                 </div>
@@ -536,7 +524,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(q); } }}
                       onMouseEnter={() => setHoverId(q.id)}
                       onMouseLeave={() => setHoverId((h) => (h === q.id ? null : h))}
-                      className="group relative flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--cb-accent)_2.5%,white)] sm:grid sm:grid-cols-[56px_minmax(0,1fr)_110px_200px] sm:items-center sm:gap-x-4"
+                      className="group relative flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--cb-accent)_2.5%,white)] sm:grid sm:grid-cols-[56px_minmax(0,1fr)_110px_224px] sm:items-center sm:gap-x-4"
                       style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none', minHeight: 56, ...flashStyle(q.id) }}
                     >
                       <Thumb q={q} accent={accent} />
@@ -552,14 +540,19 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                           </>
                         )}
                       </span>
-                      <span className="hidden sm:block"><PublishCell q={q} stage={stage} /></span>
+                      {/* Review rows crossfade the date cell into the action cluster on hover —
+                          the cluster lives in the reserved right column, so the pillar tag and
+                          title never get occluded (Linear-style). */}
+                      <span className={`hidden sm:block ${stage === 'review' ? 'transition-opacity duration-150 group-focus-within:opacity-0 group-hover:opacity-0' : ''}`}>
+                        <PublishCell q={q} stage={stage} />
+                      </span>
                       {stage === 'review' && approvingId !== q.id && (
                         <span
-                          className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-2 rounded-lg bg-white py-1 pl-1 pr-2.5 opacity-0 transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 sm:flex"
-                          style={{ boxShadow: '0 2px 10px rgba(2,32,32,0.10), 0 0 0 1px rgba(2,49,47,0.08)' }}
+                          className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 items-center justify-end gap-1.5 opacity-0 transition-opacity duration-150 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 sm:flex"
                         >
                           <button
-                            onClick={(e) => { e.stopPropagation(); startApprove(q.id); }}
+                            onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); startApprove(q.id); }}
+                            title="Approve (A)"
                             className="inline-flex min-h-[30px] items-center gap-1.5 rounded-[6px] px-3 text-[12.5px] font-semibold"
                             style={{ background: accent, color: inkOn(accent) }}
                           >
@@ -568,15 +561,14 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                             </svg>
                             Approve
                           </button>
-                          <Kbd k="A" />
                           <button
-                            onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }}
-                            className="min-h-[30px] rounded-[6px] px-2.5 text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
-                            style={{ color: DIM }}
+                            onClick={(e) => { e.stopPropagation(); (e.currentTarget as HTMLButtonElement).blur(); onOpen(q, { changing: true }); }}
+                            title="Request change (R)"
+                            className="min-h-[30px] rounded-[6px] bg-white px-2.5 text-[12.5px] font-medium transition-colors duration-150 hover:bg-[rgba(2,49,47,0.04)]"
+                            style={{ color: DIM, border: `1px solid ${LINE}` }}
                           >
                             Request change
                           </button>
-                          <Kbd k="R" />
                         </span>
                       )}
                       {approvingId === q.id && (
@@ -674,6 +666,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
                   avatarUrl={founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
                   mediaUrl={q.media_url || undefined}
                   stats={{ reactions: 0, comments: 0 }}
+                  timeLabel="Preview" /* future posts: no "1d · Edited" chrome */
                   showFold
                 />
               </div>
@@ -686,6 +679,31 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onApprove, flashId, vie
           </div>
         </div>
       )}
+
+      {/* Story intake: where the client's REAL material enters the engine. The chip is a
+          format explainer, not history — nothing on this card claims past activity. */}
+      <div className="mt-8 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 10%, white)` }} aria-hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v3" />
+            </svg>
+          </span>
+          <div className="min-w-0">
+            <CardHead>Your stories</CardHead>
+            <p className="mt-1 max-w-[58ch] text-[13.5px] leading-relaxed" style={{ color: DIM }}>
+              Once a week, send a voice note about a real client situation. The engine turns true stories into posts; nothing gets invented.
+            </p>
+            <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ background: 'rgba(2,49,47,0.04)', color: DIM }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+              </svg>
+              a 90-second note becomes 1-2 posts
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -771,12 +789,27 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review';
 
+  // Escape steps out one level at a time: edit / request-change mode first, then the modal.
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      if (editing) { setEditing(false); return; }
+      if (changing) { setChanging(false); return; }
+      onClose();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [editing, changing, onClose]);
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      <div className="relative mx-auto my-0 min-h-full w-full max-w-4xl bg-white p-4 sm:my-8 sm:min-h-0 sm:rounded-xl sm:p-6" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+      {/* Dialog caps at viewport height with internal scroll — the action footer stays
+          visible at small desktop sizes (1280x720) instead of falling below the fold. */}
+      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-4xl flex-col bg-white sm:my-6 sm:min-h-0 sm:max-h-[calc(100vh-48px)] sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
         {/* Header */}
-        <div className="mb-4 flex items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-2.5 px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
           <KindChip q={item} accent={accent} />
           {item.pillar && <span className="text-[12px] capitalize" style={{ color: FAINT }}>{item.pillar}</span>}
           <span className="ml-auto">{stageStatus(item, stage)}</span>
@@ -787,6 +820,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
           </button>
         </div>
 
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
           {/* Left: content preview / edit */}
           <div className="min-w-0">
@@ -834,6 +868,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                     avatarUrl={board.founder?.avatar_url || ''} /* '' forces initials — the component's default is Ivan's portrait */
                     mediaUrl={item.media_url || undefined}
                     stats={{ reactions: 0, comments: 0 }}
+                    timeLabel="Preview" /* future/example posts: no "1d · Edited" chrome */
                     showFold={false}
                   />
                 ) : (
@@ -866,46 +901,49 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
             <AgentTrail steps={item.agent_trail || []} accent={accent} />
           </div>
         </div>
+        </div>
 
-        {/* Footer actions */}
+        {/* Sticky action footer — Approve stays visible while the body scrolls. */}
         {canAct && (
-          <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t pt-4" style={{ borderColor: LINE }}>
-            <motion.button
-              onClick={() => { onApprove(item.id); onClose(); }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.15, ease: EASE }}
-              className="inline-flex min-h-[44px] items-center rounded-[6px] px-6 text-[14px] font-semibold"
-              style={{ background: accent, color: ctaInk }}
-            >
-              Approve
-            </motion.button>
-            <button
-              onClick={() => setChanging(!changing)}
-              className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
-              style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
-            >
-              Request changes
-            </button>
-            {sent && <span className="text-[13px] font-medium" style={{ color: DIM }}>Sent. Your operator will adjust it before the publish date.</span>}
-          </div>
-        )}
-        {changing && canAct && !sent && (
-          <div className="mt-3">
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Tell us what to change, in plain words."
-              rows={3}
-              className="w-full rounded-lg p-3 text-[14px] outline-none"
-              style={{ border: `1px solid ${LINE}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
-            />
-            <button
-              onClick={() => { setSent(true); setChanging(false); }}
-              className="mt-2 inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-              style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-            >
-              Send to your operator
-            </button>
+          <div className="sticky bottom-0 shrink-0 rounded-b-xl border-t bg-white px-4 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <motion.button
+                onClick={() => { onApprove(item.id); onClose(); }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.15, ease: EASE }}
+                className="inline-flex min-h-[44px] items-center rounded-[6px] px-6 text-[14px] font-semibold"
+                style={{ background: accent, color: ctaInk }}
+              >
+                Approve
+              </motion.button>
+              <button
+                onClick={() => setChanging(!changing)}
+                className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-medium"
+                style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}
+              >
+                Request changes
+              </button>
+              {sent && <span className="text-[13px] font-medium" style={{ color: DIM }}>Sent. Your operator will adjust it before the publish date.</span>}
+            </div>
+            {changing && !sent && (
+              <div className="mt-3">
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Tell us what to change, in plain words."
+                  rows={3}
+                  className="w-full rounded-lg p-3 text-[14px] outline-none"
+                  style={{ border: `1px solid ${LINE}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
+                />
+                <button
+                  onClick={() => { setSent(true); setChanging(false); }}
+                  className="mt-2 inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
+                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                >
+                  Send to your operator
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -916,7 +954,11 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
 // ---------- Calendar surface ----------
 const KIND_TIME: Record<string, string> = { post: '09:00', carousel: '09:00', newsletter: '08:00', lm: '12:00' };
 
-function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent: string; mint: string; onOpen: (it: CalendarItem) => void }) {
+function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
+  board: Board; accent: string; mint: string; onOpen: (it: CalendarItem) => void;
+  /** Queue ids currently in Scheduled (approved) — their linked chips get a check mark. */
+  scheduledIds: Set<string>;
+}) {
   const cal = board.calendar;
   if (!cal) return null;
   const start = new Date(cal.start + 'T00:00:00');
@@ -956,6 +998,18 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
   }
   const monthLabel = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
   const num = (n: number) => <CountUpNum n={n} size={26} />;
+  /** Approved mark on a linked chip — the calendar's visible reaction to an approve. */
+  const approvedMark = (it: CalendarItem) =>
+    it.ref && scheduledIds.has(it.ref) ? (
+      <span className="flex h-3 w-3 shrink-0 items-center justify-center rounded-full" style={{ background: accent }} title="Approved" aria-label="Approved">
+        <svg width="7" height="7" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M5 13l4 4 10-10" stroke={inkOn(accent)} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    ) : null;
+  // Mobile agenda: the 7-col grid clips at phone widths, so under 640px the month
+  // renders as a day-grouped list that keeps the same tone rails.
+  const agendaDays = Array.from(byDate.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
   return (
     <div>
@@ -973,7 +1027,42 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl bg-white p-3 sm:p-4" style={{ border: `1px solid ${LINE}` }}>
+      {/* Mobile: agenda list grouped by day (the grid clips at Mon-Wed under 640px). */}
+      <div className="rounded-xl bg-white p-3 sm:hidden" style={{ border: `1px solid ${LINE}` }}>
+        <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
+          <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
+            Engine starts {fmtDay(cal.start)}
+          </span>
+        </div>
+        {agendaDays.map(([iso, dayItems]) => (
+          <div key={iso}>
+            <div className="mb-1 mt-3 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] tabular-nums" style={{ color: FAINT }}>{fmtDay(iso)}</div>
+            <div className="flex flex-col gap-1">
+              {dayItems.map((it, i) => {
+                const time = KIND_TIME[it.kind];
+                if (it.kind === 'newsjack') {
+                  return <div key={i} className="rounded-[6px] px-2.5 py-2 text-[12px] font-medium" style={chipStyle(it.kind)}>{it.label}</div>;
+                }
+                return (
+                  <button
+                    key={i}
+                    onClick={() => onOpen(it)}
+                    className="flex w-full items-center gap-2 rounded-[6px] px-2.5 py-2 text-left text-[12px] font-medium"
+                    style={chipStyle(it.kind)}
+                  >
+                    {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
+                    <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                    {approvedMark(it)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl bg-white p-4 sm:block" style={{ border: `1px solid ${LINE}` }}>
         <div className="min-w-[820px]">
           <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1">
             <span className="text-[15px] font-semibold" style={{ color: INK }}>{monthLabel}</span>
@@ -1019,7 +1108,8 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
                             style={chipStyle(it.kind)}
                           >
                             {time && <span className="shrink-0 tabular-nums opacity-60">{time}</span>}
-                            <span className="truncate">{it.label}</span>
+                            <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                            {approvedMark(it)}
                           </button>
                         );
                       })}
@@ -1043,8 +1133,18 @@ function CalendarSurface({ board, accent, mint, onOpen }: { board: Board; accent
 function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) {
   const lm = board.lm;
   // Default src (scan_embed) keeps the engine's embed mode: Ivan's chrome/greeting
-  // stripped + the client's accent/fonts applied.
-  const src = useMemo(() => buildAssessmentEmbedUrl(lm), [lm]);
+  // stripped + the client's accent/fonts applied. bname/blogo/cta/ctaurl rebrand the
+  // engine's identity + end-screen CTA to the CLIENT (not Ivan's Calendly).
+  const src = useMemo(() => {
+    const domain = (board.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    const ctaurl = (board.site as any)?.cta_url || (domain ? `https://${domain}/` : undefined);
+    return buildAssessmentEmbedUrl(lm, {
+      bname: board.company_name,
+      blogo: board.brand?.logo_light || board.logo_url || undefined,
+      cta: board.site?.cta,
+      ctaurl,
+    });
+  }, [lm, board]);
   return (
     <div>
       <SectionHead
@@ -1074,26 +1174,25 @@ function LeadMagnetSurface({ board, accent }: { board: Board; accent: string }) 
 
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3"><CardHead>Captured leads</CardHead></div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-[13px]">
-            <thead>
-              <tr style={{ color: FAINT }}>
-                <th className="pb-2 font-medium">Email</th>
-                <th className="pb-2 font-medium">Score</th>
-                <th className="pb-2 font-medium">Weakest area</th>
-                <th className="pb-2 font-medium">When</th>
-              </tr>
-            </thead>
-            <tbody style={{ color: INK }}>
-              <tr style={{ borderTop: `1px solid ${DIVIDE}` }}>
-                <td className="py-2.5">jamie@—store.com <span className="ml-1 rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>Sample</span></td>
-                <td className="py-2.5">52 / 100</td>
-                <td className="py-2.5">Margin visibility</td>
-                <td className="py-2.5">—</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {/* Columns prioritized at phone widths: "When" hides under 640px so nothing clips. */}
+        <table className="w-full text-left text-[13px]">
+          <thead>
+            <tr style={{ color: FAINT }}>
+              <th className="pb-2 pr-3 font-medium">Email</th>
+              <th className="pb-2 pr-3 font-medium">Score</th>
+              <th className="pb-2 font-medium">Weakest area</th>
+              <th className="hidden pb-2 pl-3 font-medium sm:table-cell">When</th>
+            </tr>
+          </thead>
+          <tbody style={{ color: INK }}>
+            <tr style={{ borderTop: `1px solid ${DIVIDE}` }}>
+              <td className="py-2.5 pr-3"><span className="break-all">jamie@—store.com</span> <span className="ml-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>Sample</span></td>
+              <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">52 / 100</td>
+              <td className="py-2.5">Margin visibility</td>
+              <td className="hidden py-2.5 pl-3 sm:table-cell">—</td>
+            </tr>
+          </tbody>
+        </table>
         <p className="mt-3 text-[13px]" style={{ color: DIM }}>Leads land here the moment someone completes it. Yours to keep, exportable anytime.</p>
       </div>
     </div>
@@ -1236,6 +1335,31 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
         })}
       </div>
 
+      {/* Voice model: what the drafts are trained on. Sources named, no post counts claimed. */}
+      {(() => {
+        const domain = (board.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+        const traits: string[] = (board as any).voice?.traits || ['Plain spoken', 'Numbers on the page', 'No hype', 'Australian register'];
+        return (
+          <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+            <div className="mb-1"><CardHead>Voice model</CardHead></div>
+            <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>
+              Every draft is written from a model of how you already sound, then checked against it before it reaches your review.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {traits.map((t) => (
+                <span key={t} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium" style={{ background: `color-mix(in srgb, ${accent} 7%, white)`, color: INK }}>
+                  <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
+                  {t}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-[12px]" style={{ color: FAINT }}>
+              Sources: {domain ? `${domain} + your LinkedIn posts` : 'your site copy + your LinkedIn posts'}
+            </p>
+          </div>
+        );
+      })()}
+
       {/* Recent shifts: the request loop lives here — client asks, operator decides. */}
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3"><CardHead>Recent shifts</CardHead></div>
@@ -1288,6 +1412,69 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
         </p>
         <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>Ivan Manfredi · Operator</p>
       </div>
+
+      {/* Your plan: the money card. Deliverables derived from THIS board's own calendar,
+          so the numbers can never disagree with the rest of the surface. */}
+      {(() => {
+        const t = { post: 0, carousel: 0, lm: 0, newsletter: 0 };
+        (board.calendar?.items || []).forEach((it) => { if (it.kind in t) (t as any)[it.kind] += 1; });
+        const ships: string[] = [
+          `${t.post + t.carousel} LinkedIn posts, drafted for your approval`,
+          ...(t.lm > 0 ? [`${t.lm} lead magnet${t.lm === 1 ? '' : 's'}, live on your domain`] : []),
+          ...(t.newsletter > 0 ? [`${t.newsletter} newsletter issue${t.newsletter === 1 ? '' : 's'}`] : []),
+          'Captured leads pipeline, exportable anytime',
+          'Monthly performance report from your operator',
+        ];
+        return (
+          <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <CardHead>Your plan</CardHead>
+                <p className="mt-0.5 text-[13px]" style={{ color: DIM }}>Operator plan</p>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, lineHeight: 1.05, color: INK }}>$2,000</span>
+                <span className="text-[13px] font-medium" style={{ color: DIM }}>/month</span>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              {ships.map((s) => (
+                <div key={s} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: INK }}>
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full" style={{ background: `color-mix(in srgb, ${accent} 16%, white)` }} aria-hidden>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 13l4 4 10-10" stroke={accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  {s}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[13px] leading-relaxed" style={{ color: DIM }}>
+              Month to month. Pause anytime. Your content, your leads, yours to keep.
+            </p>
+            {/* The kill switch, visible on purpose. Inert in preview. */}
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg p-3.5" style={{ border: `1px solid ${LINE}`, background: 'rgba(2,49,47,0.02)' }}>
+              <div className="min-w-0">
+                <div className="text-[13px] font-semibold" style={{ color: INK }}>Pause engine</div>
+                <div className="mt-0.5 text-[12px] leading-snug" style={{ color: DIM }}>Stops drafting and publishing. Nothing ships while paused.</div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2.5">
+                <span className="hidden text-[11px] sm:inline" style={{ color: FAINT }}>Available when live</span>
+                <span
+                  role="switch"
+                  aria-checked={false}
+                  aria-disabled
+                  title="Available when the engine is live"
+                  className="relative inline-flex h-5 w-9 cursor-default items-center rounded-full"
+                  style={{ background: 'rgba(2,49,47,0.12)' }}
+                >
+                  <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white" style={{ boxShadow: '0 1px 2px rgba(2,32,32,0.18)' }} />
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1492,13 +1679,14 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
 }
 
 // ---------- page ----------
+// One vocabulary on every viewport: mobile shows the same words, sized down, never renamed.
 const TABS = [
-  { id: 'review', label: 'Content', short: 'Content', group: 'Content' },
-  { id: 'calendar', label: 'Calendar', short: 'Calendar', group: 'Content' },
-  { id: 'lm', label: 'Lead magnet', short: 'Magnet', group: 'Content' },
-  { id: 'newsletter', label: 'Newsletter', short: 'Memo', group: 'Content' },
-  { id: 'performance', label: 'Performance', short: 'Metrics', group: 'Reports' },
-  { id: 'strategy', label: 'Strategy', short: 'Strategy', group: 'Reports' },
+  { id: 'review', label: 'Content', group: 'Content' },
+  { id: 'calendar', label: 'Calendar', group: 'Content' },
+  { id: 'lm', label: 'Lead magnet', group: 'Content' },
+  { id: 'newsletter', label: 'Newsletter', group: 'Content' },
+  { id: 'performance', label: 'Performance', group: 'Reports' },
+  { id: 'strategy', label: 'Strategy', group: 'Reports' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 const NAV_GROUPS = ['Content', 'Reports'] as const;
@@ -1546,17 +1734,83 @@ function initialsOf(name?: string): string {
   return (name || '').split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '·';
 }
 
+/** Layout-shaped loading skeleton: sidebar + topbar + rows, one 1.4s sheen sweep.
+ *  Unmounts (killing the animation) the moment board data lands. */
+function BoardSkeleton() {
+  const sheen: React.CSSProperties = {
+    borderRadius: 6,
+    background: 'linear-gradient(90deg, rgba(2,49,47,0.05) 25%, rgba(2,49,47,0.10) 50%, rgba(2,49,47,0.05) 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'cb-sheen 1.4s linear infinite',
+  };
+  const bar = (w: number | string, h = 12): React.CSSProperties => ({ ...sheen, width: w, height: h });
+  return (
+    <div className="min-h-screen" style={{ background: FRAME_BG }} aria-busy="true" aria-label="Loading your board">
+      <style>{`@keyframes cb-sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .cb-skel [style*="cb-sheen"] { animation: none !important; } }`}</style>
+      <div className="cb-skel">
+        <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col lg:flex">
+          <div className="px-5 pb-5 pt-5">
+            <div style={bar(120, 26)} />
+            <div className="mt-3" style={bar(88, 9)} />
+          </div>
+          <div className="flex flex-col gap-2.5 px-6 pt-2">
+            {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} style={bar(i % 2 ? 132 : 112, 13)} />)}
+          </div>
+        </aside>
+        <div className="lg:ml-60 lg:py-2 lg:pr-2">
+          <div className="min-h-screen bg-white lg:min-h-[calc(100vh-16px)] lg:rounded-xl" style={{ boxShadow: CARD_SHADOW }}>
+            <div className="flex h-14 items-center gap-3 px-4 sm:px-8" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+              <div style={bar(110, 12)} />
+              <div className="ml-auto" style={{ ...bar(84, 22), borderRadius: 999 }} />
+            </div>
+            <div className="max-w-[880px] px-4 pt-8 sm:px-6 lg:px-8">
+              <div style={bar(200, 20)} />
+              <div className="mt-3" style={bar('62%', 12)} />
+              <div className="mt-8 overflow-hidden rounded-xl" style={{ border: `1px solid ${LINE}` }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3 px-4 py-3" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none', minHeight: 56 }}>
+                    <div style={{ ...bar(56, 40), borderRadius: 6 }} />
+                    <div className="flex-1">
+                      <div style={bar(i % 2 ? '52%' : '64%', 12)} />
+                      <div className="mt-2" style={bar(64, 8)} />
+                    </div>
+                    <div className="hidden sm:block" style={bar(90, 12)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
   const [params] = useSearchParams();
   const token = params.get('k') || '';
+  // ?intro=1 force-replays the opening choreography (clears the played flag before the fetch).
+  const forceIntro = params.get('intro') === '1';
+  const introKey = `cb-intro-${slug || ''}`;
+  const approvalsKey = `cb-approvals-${slug || ''}`;
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
   const [state, setState] = useState<'loading' | 'ready' | 'invalid'>('loading');
   const [tab, setTab] = useState<TabId>('review');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
-  const [stageOverride, setStageOverride] = useState<Record<string, Stage>>({});
+  // Demo interaction state survives a reload: approvals persist per-slug.
+  const [stageOverride, setStageOverride] = useState<Record<string, Stage>>(() => {
+    try {
+      const raw = localStorage.getItem(`cb-approvals-${slug || ''}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(approvalsKey, JSON.stringify(stageOverride)); } catch { /* private mode */ }
+  }, [stageOverride, approvalsKey]);
   const [flashId, setFlashId] = useState<string | null>(null);
   // Content view lives up here so the page can widen the container for the kanban.
   const [contentView, setContentViewState] = useState<ContentView>(() => {
@@ -1622,26 +1876,30 @@ export default function ClientBoardPage() {
   // with honest verbs — the same steps the engine actually runs, no fabricated metrics.
   useEffect(() => {
     if (state !== 'ready' || !board || tab !== 'review' || introRan.current || reduceMotion) return;
-    try { if (localStorage.getItem('cb-intro-played')) return; } catch { return; }
+    try { if (localStorage.getItem(introKey)) return; } catch { return; }
     const d1 = board.queue.find((q) => q.id === 'd1' && q.generating);
     if (!d1) return;
     introRan.current = true;
 
     const patch = (fn: (q: QueueItem) => QueueItem) =>
       setBoard((prev) => prev ? { ...prev, queue: prev.queue.map((q) => (q.id === 'd1' ? fn({ ...q }) : q)) } : prev);
+    // Steps that arrive already-done keep their stored detail + timestamp — the
+    // choreography only finishes what the data left pending.
     const completeStep = (name: string, detail: string, next?: AgentStep) => (q: QueueItem): QueueItem => {
-      let trail = (q.agent_trail || []).map((s) => (s.step === name ? { ...s, done: true, t: 'just now', detail } : s));
+      let trail = (q.agent_trail || []).map((s) =>
+        s.step === name ? (s.done ? { ...s, done: true } : { ...s, done: true, t: 'just now', detail }) : s);
       if (next && !trail.some((s) => s.step === next.step)) trail = [...trail, next];
       return { ...q, agent_trail: trail };
     };
 
     // Timers live in a ref cleared only on unmount: the patches below change `board`,
     // which re-fires this effect — a dep-tied cleanup would kill the choreography mid-run.
+    // Step names mirror the stored trails exactly (client vocabulary, no internal tool names).
     const at = (ms: number, fn: () => void) => introTimers.current.push(window.setTimeout(fn, ms));
-    at(1300, () => patch((q) => completeStep('Hook agent', '9 angles scored, picked #3', { step: 'Draft agent', detail: 'writing v1…', done: false, t: 'now' })({ ...q, live_step: 'Hook agent — picked angle #3 of 9' })));
-    at(2900, () => patch((q) => completeStep('Draft agent', 'v2 after self-review', { step: 'Copy lint v13', detail: 'checking…', done: false, t: 'now' })({ ...q, live_step: 'Draft agent — v2 after self-review' })));
-    at(4300, () => patch((q) => completeStep('Copy lint v13', 'PASS — 0 flags', { step: 'Vision QA', detail: 'reviewing…', done: false, t: 'now' })({ ...q, live_step: 'Copy lint v13 — PASS' })));
-    at(5500, () => patch((q) => completeStep('Vision QA', 'clean')({ ...q, live_step: 'Ready for your review' })));
+    at(1300, () => patch((q) => completeStep('Hook agent', '9 angles scored, picked the strongest', { step: 'Draft agent', detail: 'writing v1…', done: false, t: 'now' })({ ...q, live_step: 'Hook agent · picked the strongest of 9' })));
+    at(2900, () => patch((q) => completeStep('Draft agent', 'v2 after self-review pass', { step: 'Copy quality gate', detail: 'checking…', done: false, t: 'now' })({ ...q, live_step: 'Draft agent · v2 after self-review' })));
+    at(4300, () => patch((q) => completeStep('Copy quality gate', 'PASS, 0 flags', { step: 'Image check', detail: 'reviewing…', done: false, t: 'now' })({ ...q, live_step: 'Copy quality gate · PASS' })));
+    at(5500, () => patch((q) => completeStep('Image check', 'clean, approved for review')({ ...q, live_step: 'Ready for your review' })));
     at(6700, () => {
       patch((q) => ({
         ...q,
@@ -1651,7 +1909,7 @@ export default function ClientBoardPage() {
         body: q.body || D1_DRAFT_BODY,
       }));
       flash('d1');
-      try { localStorage.setItem('cb-intro-played', '1'); } catch { /* private mode */ }
+      try { localStorage.setItem(introKey, '1'); } catch { /* private mode */ }
     });
   }, [state, board, tab, reduceMotion]);
 
@@ -1659,14 +1917,37 @@ export default function ClientBoardPage() {
     let cancelled = false;
     (async () => {
       if (!slug || !token) { setState('invalid'); return; }
+      if (forceIntro) {
+        // Replay support: drop the played flag (and any stale approval of the intro card)
+        // BEFORE the board mounts, so the choreography runs again from the top.
+        try { localStorage.removeItem(introKey); } catch { /* private mode */ }
+        setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
+      }
       const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
       if (cancelled) return;
       if (error || !data) { setState('invalid'); return; }
-      setBoard((data as any).board as Board);
+      let b = (data as any).board as Board;
+      // Once the intro has played (or motion is reduced and it never will), the choreography
+      // card must land as a normal completed review card — never a stuck "Generating…" row.
+      const introPlayed = (() => {
+        try { return !!localStorage.getItem(introKey); } catch { return true; }
+      })();
+      if (introPlayed || reduceMotion) {
+        b = {
+          ...b,
+          queue: b.queue.map((q) => q.id === 'd1' && q.generating
+            ? { ...q, stage: 'review' as Stage, generating: false, body: q.body || D1_DRAFT_BODY, agent_trail: (q.agent_trail || []).map((s) => ({ ...s, done: true })) }
+            : q),
+        };
+        if (!introPlayed) { try { localStorage.setItem(introKey, '1'); } catch { /* private mode */ } }
+      }
+      if (b.logo_url) { const img = new Image(); img.src = b.logo_url; }
+      setBoard(b);
       setMode((data as any).mode || 'demo');
       setState('ready');
     })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, token]);
 
   // Load the client's heading font so the board carries their type, not ours.
@@ -1684,7 +1965,30 @@ export default function ClientBoardPage() {
 
   const accent = cleanHex(board?.brand?.accent_hex);
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
-  const stageOf = (q: QueueItem): Stage => stageOverride[q.id] ?? q.stage;
+  // Integrity rule: a still-generating card is never approvable — it renders in Drafted
+  // regardless of its stored stage, and never counts toward the review badge.
+  const stageOf = (q: QueueItem): Stage => (q.generating ? 'drafted' : stageOverride[q.id] ?? q.stage);
+  // 'demo' (legacy) and 'preview' (current) mean the same thing — the board is a
+  // built-ahead preview, not a live account. Reads both so a data migration can't break it.
+  const isPreview = mode === 'demo' || mode === 'preview';
+
+  // Per-client document head: the tab reads as the client's board, not Ivan's sales pitch.
+  // OG/meta tags stay static — GitHub Pages can't vary them per route without prerendering
+  // this route, which is out of scope here.
+  useEffect(() => {
+    if (state !== 'ready' || !board) return;
+    const prevTitle = document.title;
+    document.title = `${board.company_name} · Content Engine`;
+    const link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+    const prevHref = link?.getAttribute('href') || '';
+    const prevType = link?.getAttribute('type') || '';
+    const fav = board.logo_url || board.brand?.logo_light;
+    if (link && fav) { link.href = fav; link.removeAttribute('type'); }
+    return () => {
+      document.title = prevTitle;
+      if (link && prevHref) { link.setAttribute('href', prevHref); if (prevType) link.setAttribute('type', prevType); }
+    };
+  }, [state, board]);
 
   // Calendar chip click: linked items open the real draft; planned slots open a
   // pipeline preview of what the engine will do for that topic.
@@ -1705,9 +2009,9 @@ export default function ClientBoardPage() {
         { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
         { step: 'Hook agent', done: false },
         { step: 'Draft agent', done: false },
-        { step: 'Copy lint v13', done: false },
+        { step: 'Copy quality gate', done: false },
         { step: it.kind === 'lm' ? 'Assessment builder' : 'Brand image', done: false },
-        { step: 'Vision QA', detail: 'then it lands in your review', done: false },
+        { step: 'Image check', detail: 'then it lands in your review', done: false },
       ],
     });
   };
@@ -1730,26 +2034,22 @@ export default function ClientBoardPage() {
         { step: 'Queued', detail: 'issue slot locked on your calendar', done: true },
         { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
         { step: 'Draft agent', detail: "pulls the week's numbers and stories", done: false },
-        { step: 'Copy lint v13', done: false },
+        { step: 'Copy quality gate', done: false },
         { step: 'Email render', detail: fromDomain ? `sends from ${fromDomain}` : undefined, done: false },
-        { step: 'Vision QA', detail: 'then it lands in your review', done: false },
+        { step: 'Image check', detail: 'then it lands in your review', done: false },
       ],
     });
   };
 
   if (state === 'loading') {
-    return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: FRAME_BG }}>
-        <div className="text-[14px]" style={{ color: FAINT }}>Loading your board…</div>
-      </div>
-    );
+    return <BoardSkeleton />;
   }
   if (state === 'invalid' || !board) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6" style={{ background: FRAME_BG }}>
         <div className="max-w-sm rounded-xl bg-white p-8 text-center" style={{ border: `1px solid ${LINE}`, boxShadow: CARD_SHADOW }}>
           <div className="text-[16px] font-semibold" style={{ color: INK }}>This preview link isn't valid or has expired.</div>
-          <p className="mt-2 text-[14px]" style={{ color: DIM }}>Ask Ivan for a fresh link.</p>
+          <p className="mt-2 text-[14px]" style={{ color: DIM }}>Ask your operator for a fresh link.</p>
         </div>
       </div>
     );
@@ -1757,9 +2057,10 @@ export default function ClientBoardPage() {
 
   const fontStack = headingFont ? `"${headingFont}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const openDetail = (q: QueueItem, opts?: { changing?: boolean }) => { setDetail(q); setDetailChanging(!!opts?.changing); };
+  const scheduledIds = new Set(board.queue.filter((q) => stageOf(q) === 'scheduled').map((q) => q.id));
   const surfaces: Record<TabId, React.ReactNode> = {
     review: <ReviewSurface board={board} accent={accent} stageOf={stageOf} onOpen={openDetail} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} />,
-    calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} />,
+    calendar: <CalendarSurface board={board} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={board} accent={accent} />,
     newsletter: <NewsletterSurface board={board} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
     performance: <PerformanceSurface board={board} accent={accent} />,
@@ -1813,7 +2114,7 @@ export default function ClientBoardPage() {
           ))}
         </nav>
         <div className="mt-auto flex flex-col gap-3 px-5 pb-5">
-          {mode === 'demo' && (
+          {isPreview && (
             <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-medium leading-snug" style={{ border: `1px solid ${LINE}`, color: DIM }}>
               <StatusDot color={mint} size={5} />
               Preview built for {board.company_name}
@@ -1833,8 +2134,8 @@ export default function ClientBoardPage() {
       {/* Mobile header */}
       <header className="sticky top-0 z-20 flex items-center gap-2.5 border-b bg-white/85 px-4 py-3 backdrop-blur-md lg:hidden" style={{ borderColor: LINE }}>
         {logo(22)}
-        {mode === 'demo' && (
-          <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium" style={{ border: `1px solid ${LINE}`, color: DIM }}>
+        {isPreview && (
+          <span className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium" title="Your first month, built ahead" style={{ border: `1px solid ${LINE}`, color: DIM }}>
             <StatusDot color={mint} size={5} />
             Preview
           </span>
@@ -1849,9 +2150,14 @@ export default function ClientBoardPage() {
             <span className="text-[13px] font-medium" style={{ color: FAINT }}>Content Engine</span>
             <span className="text-[13px]" style={{ color: 'rgba(2,49,47,0.25)' }} aria-hidden>/</span>
             <span className="text-[13px] font-semibold" style={{ color: INK }}>{TABS.find((t) => t.id === tab)?.label}</span>
-            <span className="ml-auto inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11.5px] font-medium" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
+            <span
+              className="ml-auto inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[11.5px] font-medium"
+              title={isPreview ? 'Your first month, built ahead' : undefined}
+              style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}
+            >
               <StatusDot color={mint} pulse size={6} />
-              {mode === 'demo' ? 'Live preview' : 'Live'}
+              {isPreview ? 'Preview' : 'Live'}
+              {isPreview && <span className="hidden xl:inline" style={{ color: FAINT, fontWeight: 400 }}>· your first month, built ahead</span>}
             </span>
             <span className="inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-[11.5px] font-medium" style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff' }}>
               <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>IM</span>
@@ -1890,10 +2196,10 @@ export default function ClientBoardPage() {
                 <span className="relative">
                   <NavIcon id={t.id} size={18} />
                   {t.id === 'review' && reviewCount > 0 && (
-                    <span className="absolute -right-2 -top-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
+                    <span className="absolute -right-1.5 -top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8.5px] font-bold leading-none tabular-nums" style={{ background: accent, color: inkOn(accent) }}><RollingNumber n={reviewCount} /></span>
                   )}
                 </span>
-                <span className={`text-[10px] ${active ? 'font-bold' : 'font-semibold'}`}>{t.short}</span>
+                <span className={`max-w-full truncate text-[9px] leading-tight ${active ? 'font-bold' : 'font-semibold'}`}>{t.label}</span>
               </button>
             );
           })}

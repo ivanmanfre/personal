@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface Props {
   src: string;
@@ -62,6 +62,21 @@ const LiveAssessmentEmbed: React.FC<Props> = ({
   const hdrBg = headerBg && /^#?[0-9a-fA-F]{6}$/.test(headerBg) ? (headerBg[0] === '#' ? headerBg : '#' + headerBg) : '#ffffff';
   const hdrDark = inkOn(hdrBg) === '#ffffff';
   const navInk = hdrDark ? 'rgba(255,255,255,0.78)' : 'rgba(26,26,26,0.66)';
+  // Slow-load fallback: if the engine hasn't loaded within ~6s, swap the white void
+  // for a branded card inside the browser frame. The iframe stays mounted (height 0)
+  // so a late load still swaps the real assessment back in. A no-cors reachability
+  // probe backs up the timer: an unreachable engine paints Chrome's error page, which
+  // still fires the iframe's load event, so onLoad alone can't be trusted.
+  const [loaded, setLoaded] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [unreachable, setUnreachable] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSlow(true), 6000);
+    let cancelled = false;
+    fetch(src, { mode: 'no-cors' }).catch(() => { if (!cancelled) setUnreachable(true); });
+    return () => { cancelled = true; window.clearTimeout(t); };
+  }, [src]);
+  const showFallback = unreachable || (slow && !loaded);
   return (
     <div
       className="w-full overflow-hidden"
@@ -116,11 +131,30 @@ const LiveAssessmentEmbed: React.FC<Props> = ({
           </span>
         </span>
       </div>
+      {showFallback && (
+        <div className="flex items-center justify-center px-6" style={{ minHeight: 380, background: '#fff' }}>
+          <div className="w-full max-w-md rounded-xl p-6 text-center" style={{ border: '1px solid rgba(26,26,26,0.08)' }}>
+            <span className="mx-auto mb-3 flex h-9 w-9 items-center justify-center rounded-full" style={{ background: accent }} aria-hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M13 2 4.5 13.5H11l-1.5 8.5L18 10.5h-6.5L13 2z" stroke={ctaInk} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1A1A1A' }}>The live assessment is loading slowly.</div>
+            <p style={{ marginTop: 6, fontSize: 13.5, lineHeight: 1.5, color: 'rgba(26,26,26,0.66)' }}>
+              It runs at{' '}
+              <a href={src} target="_blank" rel="noreferrer" style={{ color: accent, fontWeight: 600, textDecoration: 'underline' }}>
+                {url || 'your assessment page'}
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
       <iframe
         src={src}
         title={title || 'Your live assessment'}
         loading="lazy"
-        style={{ width: '100%', height, border: 'none', display: 'block' }}
+        onLoad={() => setLoaded(true)}
+        style={{ width: '100%', height: showFallback ? 0 : height, border: 'none', display: 'block' }}
         sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
       />
     </div>

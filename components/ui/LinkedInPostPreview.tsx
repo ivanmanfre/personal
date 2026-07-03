@@ -81,6 +81,9 @@ interface Props {
   stats?: { reactions?: number; comments?: number };
   /** When true, renders a smaller condensed card suitable for a 2-column grid. */
   compact?: boolean;
+  /** Replaces the "1d · Edited" timestamp with a neutral marker (e.g. "Preview") —
+   *  for future/example posts that were never actually published. */
+  timeLabel?: string;
 }
 
 const LinkedInPostPreview: React.FC<Props> = ({
@@ -93,6 +96,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
   showFold = true,
   stats,
   compact = false,
+  timeLabel,
 }) => {
   const [expanded, setExpanded] = useState(false);
   // Compact cards are always clamped via CSS — skip the JS fold logic.
@@ -172,9 +176,15 @@ const LinkedInPostPreview: React.FC<Props> = ({
           <div className="text-[14px] font-semibold leading-tight text-[#0a66c2] hover:underline cursor-pointer truncate">{author}</div>
           <div className="text-[12px] text-[#666] leading-tight mt-0.5 truncate">{headline}</div>
           <div className="text-[12px] text-[#666] leading-tight mt-0.5 flex items-center gap-1">
-            <span>1d</span>
-            <span>·</span>
-            <span>Edited</span>
+            {timeLabel ? (
+              <span>{timeLabel}</span>
+            ) : (
+              <>
+                <span>1d</span>
+                <span>·</span>
+                <span>Edited</span>
+              </>
+            )}
             <span>·</span>
             <Globe className="w-3 h-3 inline-block" />
           </div>
@@ -249,10 +259,10 @@ const LinkedInPostPreview: React.FC<Props> = ({
         ].map((a) => (
           <button
             key={a.label}
-            className="flex items-center gap-1.5 px-3 py-2 rounded text-[#666] hover:bg-[#f3f2ef] transition-colors text-[13px] font-semibold"
+            className="flex flex-1 min-w-0 items-center justify-center gap-1 px-1 py-2 rounded text-[#666] hover:bg-[#f3f2ef] transition-colors text-[12px] font-semibold sm:flex-none sm:gap-1.5 sm:px-3 sm:text-[13px]"
           >
-            <a.icon className="w-5 h-5" />
-            <span>{a.label}</span>
+            <a.icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            <span className="truncate">{a.label}</span>
           </button>
         ))}
       </div>
