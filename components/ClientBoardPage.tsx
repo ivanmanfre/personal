@@ -28,6 +28,35 @@ interface BoardBrand {
   surface_hex?: string;
 }
 interface AgentStep { step: string; detail?: string; t?: string; done?: boolean }
+/** Friendly phase labels for the trail. Stored step NAMES stay stable — the intro
+ *  choreography and any data tooling match on them — the UI translates for the
+ *  founder reading it. Unknown names render as-is. */
+const STEP_LABELS: Record<string, string> = {
+  'Idea curator': 'Topic picked',
+  'Voice model': 'Voice matched',
+  'Hook agent': 'Opening chosen',
+  'Draft agent': 'Written',
+  'Copy quality gate': 'Quality check',
+  'Image check': 'Image check',
+  'Brand image': 'Image made',
+  'Carousel renderer': 'Slides made',
+  'Assessment builder': 'Assessment built',
+  'Scoring engine': 'Scoring set up',
+  'Cover render': 'Cover made',
+  'Email render': 'Email built',
+  Queued: 'On the calendar',
+  Published: 'Published',
+};
+const stepLabel = (name: string) => STEP_LABELS[name] || name;
+/** Completed-step sentences for the intro card's pending steps — used both by the
+ *  live choreography and by the reload path that lands d1 as an already-finished
+ *  review card (so an in-progress detail never shows on a done step). */
+const INTRO_DONE_DETAILS: Record<string, string> = {
+  'Hook agent': 'Tried 9 openings and kept the strongest',
+  'Draft agent': 'Wrote it, then rewrote it once after a self-review',
+  'Copy quality gate': 'Quality check passed, nothing flagged',
+  'Image check': 'Image matches the post, ready for you',
+};
 type Stage = 'planned' | 'drafted' | 'review' | 'scheduled' | 'published';
 /** Bench entry for a week slot: a seeded alternate ANGLE (topic-level, never an
  *  instant draft). Attached to queue items as `alt_angles` — the slot IS the queue
@@ -1359,7 +1388,7 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
             </span>
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
-                <span className="text-[13px] font-semibold" style={{ color: INK }}>{s.step}</span>
+                <span className="text-[13px] font-semibold" style={{ color: INK }}>{stepLabel(s.step)}</span>
                 {s.t && (
                   <motion.span
                     className="text-[11px]"
@@ -2668,10 +2697,10 @@ export default function ClientBoardPage() {
     // which re-fires this effect — a dep-tied cleanup would kill the choreography mid-run.
     // Step names mirror the stored trails exactly (client vocabulary, no internal tool names).
     const at = (ms: number, fn: () => void) => introTimers.current.push(window.setTimeout(fn, ms));
-    at(1300, () => patch((q) => completeStep('Hook agent', '9 angles scored, picked the strongest', { step: 'Draft agent', detail: 'writing v1…', done: false, t: 'now' })({ ...q, live_step: 'Hook agent · picked the strongest of 9' })));
-    at(2900, () => patch((q) => completeStep('Draft agent', 'v2 after self-review pass', { step: 'Copy quality gate', detail: 'checking…', done: false, t: 'now' })({ ...q, live_step: 'Draft agent · v2 after self-review' })));
-    at(4300, () => patch((q) => completeStep('Copy quality gate', 'PASS, 0 flags', { step: 'Image check', detail: 'reviewing…', done: false, t: 'now' })({ ...q, live_step: 'Copy quality gate · PASS' })));
-    at(5500, () => patch((q) => completeStep('Image check', 'clean, approved for review')({ ...q, live_step: 'Ready for your review' })));
+    at(1300, () => patch((q) => completeStep('Hook agent', INTRO_DONE_DETAILS['Hook agent'], { step: 'Draft agent', detail: 'writing the first draft…', done: false, t: 'now' })({ ...q, live_step: 'Opening chosen · kept the strongest of 9' })));
+    at(2900, () => patch((q) => completeStep('Draft agent', INTRO_DONE_DETAILS['Draft agent'], { step: 'Copy quality gate', detail: 'reading it back…', done: false, t: 'now' })({ ...q, live_step: 'Written · rewrote once after a self-review' })));
+    at(4300, () => patch((q) => completeStep('Copy quality gate', INTRO_DONE_DETAILS['Copy quality gate'], { step: 'Image check', detail: 'checking the image…', done: false, t: 'now' })({ ...q, live_step: 'Quality check passed, nothing flagged' })));
+    at(5500, () => patch((q) => completeStep('Image check', INTRO_DONE_DETAILS['Image check'])({ ...q, live_step: 'Ready for your review' })));
     at(6700, () => {
       patch((q) => ({
         ...q,
@@ -2710,7 +2739,7 @@ export default function ClientBoardPage() {
         b = {
           ...b,
           queue: b.queue.map((q) => q.id === 'd1' && q.generating
-            ? { ...q, stage: 'review' as Stage, generating: false, body: q.body || D1_DRAFT_BODY, agent_trail: (q.agent_trail || []).map((s) => ({ ...s, done: true })) }
+            ? { ...q, stage: 'review' as Stage, generating: false, body: q.body || D1_DRAFT_BODY, agent_trail: (q.agent_trail || []).map((s) => (s.done ? s : { ...s, done: true, detail: INTRO_DONE_DETAILS[s.step] ?? s.detail })) }
             : q),
         };
         if (!introPlayed) { try { localStorage.setItem(introKey, '1'); } catch { /* private mode */ } }
@@ -2759,7 +2788,7 @@ export default function ClientBoardPage() {
       cover_url: undefined,
       agent_trail: [
         { step: 'New angle locked', detail: 'you picked a different idea for this slot', done: true, t: 'just now' },
-        { step: 'Voice model', detail: a.drafts_by ? `drafts ${fmtDay(a.drafts_by)}` : 'queued', done: false },
+        { step: 'Voice model', detail: a.drafts_by ? `writing starts ${fmtDay(a.drafts_by)}` : 'up next', done: false },
         { step: 'Hook agent', done: false },
         { step: 'Draft agent', done: false },
         { step: 'Copy quality gate', done: false },
@@ -2824,8 +2853,8 @@ export default function ClientBoardPage() {
       hook: it.label,
       publish_date: it.date,
       agent_trail: [
-        { step: 'Queued', detail: 'slot locked on your calendar', done: true },
-        { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
+        { step: 'Queued', detail: 'this date is locked in for the topic above', done: true },
+        { step: 'Voice model', detail: `writing starts ${fmtDay(draftDay)}`, done: false },
         { step: 'Hook agent', done: false },
         { step: 'Draft agent', done: false },
         { step: 'Copy quality gate', done: false },
@@ -2854,8 +2883,8 @@ export default function ClientBoardPage() {
       hook: it.title,
       publish_date: it.date,
       agent_trail: [
-        { step: 'Queued', detail: 'issue slot locked on your calendar', done: true },
-        { step: 'Voice model', detail: `drafts ${fmtDay(draftDay)}`, done: false },
+        { step: 'Queued', detail: 'this send date is locked in', done: true },
+        { step: 'Voice model', detail: `writing starts ${fmtDay(draftDay)}`, done: false },
         { step: 'Draft agent', detail: "pulls the week's numbers and stories", done: false },
         { step: 'Copy quality gate', done: false },
         { step: 'Email render', detail: fromDomain ? `sends from ${fromDomain}` : undefined, done: false },
