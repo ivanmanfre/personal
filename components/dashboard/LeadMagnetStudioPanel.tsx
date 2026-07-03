@@ -84,6 +84,15 @@ const LeadMagnetStudioPanel: React.FC = () => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('lm-studio-show-disqualified') === '1';
   });
+  // Published LMs accumulate and bury the working board — collapse them behind a
+  // "Library" toggle by default. Persisted so the operator's choice sticks.
+  const [showLibrary, setShowLibrary] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('lm-studio-show-library') === '1';
+  });
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('lm-studio-show-library', showLibrary ? '1' : '0');
+  }, [showLibrary]);
   // Rows with non-canonical formats (newsletter, /start funnel forms, deprecated
   // Template) are NOT lead magnets — they leaked into lm_drafts_v2 but back live
   // pages elsewhere. They are always excluded from this section (no toggle).
@@ -139,6 +148,9 @@ const LeadMagnetStudioPanel: React.FC = () => {
         const fmt = d.format || '';
         if (!FORMATS_SET.has(fmt)) return false;
         if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
+        // Library collapse: hide published from the "all" view unless expanded.
+        // An explicit ?status=published filter always shows them.
+        if (d.status === 'published' && !showLibrary && statusFilter === 'all') return false;
         if (statusFilter !== 'all' && d.status !== statusFilter) return false;
         if (q) {
           const hay = `${d.topic || ''} ${d.postBody || ''}`.toLowerCase();
@@ -147,7 +159,13 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, searchQuery, showDisqualified]);
+  }, [drafts, statusFilter, searchQuery, showDisqualified, showLibrary]);
+
+  // Count of published LMs (real formats only) — drives the Library toggle bar.
+  const publishedCount = React.useMemo(
+    () => drafts.filter((d) => FORMATS_SET.has(d.format || '') && d.status === 'published').length,
+    [drafts],
+  );
 
   const open = drafts.find((d) => d.id === openId) || null;
 
@@ -354,6 +372,22 @@ const LeadMagnetStudioPanel: React.FC = () => {
             </span>
           </div>
         </div>
+      )}
+
+      {/* Library toggle — published LMs are collapsed out of the working board by
+          default so idea/review/scheduled rows stay visible. Only in the "all" view. */}
+      {statusFilter === 'all' && publishedCount > 0 && (
+        <button
+          onClick={() => setShowLibrary((v) => !v)}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-zinc-800 bg-zinc-900/40 text-[12px] text-zinc-400 hover:text-zinc-200 hover:bg-[var(--ds-bg)] transition focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none"
+          title={showLibrary ? 'Collapse the published library' : 'Show published lead magnets'}
+        >
+          <span className={`inline-block transition-transform ${showLibrary ? 'rotate-90' : ''} text-zinc-600`}>▸</span>
+          <span className="text-emerald-400/80">📚</span>
+          <span className="font-medium">Library</span>
+          <span className="text-zinc-500">· {publishedCount} published</span>
+          <span className="ml-auto text-[11px] text-zinc-500">{showLibrary ? 'Hide' : 'Show'}</span>
+        </button>
       )}
 
       {/* Library — filtered. Polished empty states matching the list chrome. */}
