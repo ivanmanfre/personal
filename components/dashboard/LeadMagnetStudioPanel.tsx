@@ -387,11 +387,19 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
                 : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`),
             // LM rows have no dedicated generating-start timestamp — updated_at
-            // is set the moment the row flips to 'generating', so it's the best
-            // available proxy (same helper Posts uses, see genAge.ts).
+            // is set the moment the row flips stage, so it's the best available
+            // proxy (same helper Posts uses, see genAge.ts). BOTH in-flight
+            // stages (generating = body gen, generating_assets = page/cover
+            // build) get the age chip + ⚠, but only 'generating' gets the
+            // re-fire button: generateLMContent is body-gen-only (phase:
+            // 'content', flips status back to 'generating'), so re-firing it
+            // from a stuck asset build would restart content gen and overwrite
+            // the reviewed body — and no existing handler re-fires the assets
+            // phase from a stuck state (buildLMAssets is only wired to the
+            // review-stage approve action). Chip-only until such a handler exists.
             excerpt: d.status === 'error'
               ? GENERATION_ERROR_FALLBACK
-              : d.status === 'generating'
+              : (d.status === 'generating' || d.status === 'generating_assets')
                 ? generatingChipLabel(d.updatedAt)
                 : ((d as any).postBody ? String((d as any).postBody).replace(/\s+/g, ' ').trim().slice(0, 140) : undefined),
             status: d.status,

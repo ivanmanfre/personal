@@ -7,6 +7,7 @@ import { saveDraft, scheduleCarousel, uploadPostImage, regenerateDraft, applyIma
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
 import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
+import { elapsedMinutes, isStuckGenerating } from './genAge';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
 import FieldGrid from './FieldGrid';
@@ -669,9 +670,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 }
 
                 if (s === 'generating') {
+                  // Shared threshold with the board rows (genAge.ts) — the editor
+                  // must never call a run "stalled" while the row still shows a
+                  // plain chip (or vice versa).
                   const startStr = (draft.taxonomy as any)?.generating_started_at as string | undefined;
-                  const elapsedMin = startStr ? Math.round((Date.now() - new Date(startStr).getTime()) / 60_000) : null;
-                  const stuck = elapsedMin !== null && elapsedMin >= 15;
+                  const elapsedMin = elapsedMinutes(startStr);
+                  const stuck = isStuckGenerating(startStr);
                   return (
                     <>
                       {stuck
