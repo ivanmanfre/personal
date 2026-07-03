@@ -11,6 +11,7 @@ import Sheet from '../ui/Sheet';
 import { driveThumbUrl, versionedAssetUrl } from '../../lib/driveThumb';
 import { statusLabel } from '../../lib/statusLabels';
 import { PanelIntro } from '../dashboard-v2/primitives';
+import { NeedsYouStrip } from './NeedsYouStrip';
 import EmptyState from './shared/EmptyState';
 
 // Canonical LM formats — sourced from the curator + content pipeline.
@@ -299,6 +300,11 @@ const LeadMagnetStudioPanel: React.FC = () => {
           </div>
         )}
       </div>
+
+      <NeedsYouStrip items={[
+        { label: 'errors', count: statusCounts['error'] || 0, tone: 'bad', onJump: () => setStatusFilter('error') },
+        { label: 'in review', count: statusCounts['review'] || 0, tone: 'warn', onJump: () => setStatusFilter('review') },
+      ]} />
 
       {/* Filters — compact, muted, single line */}
       {drafts.length > 0 && (
