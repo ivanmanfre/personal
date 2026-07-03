@@ -1070,128 +1070,90 @@ const WorkSection: React.FC = () => {
   );
 };
 
-// ─── Section 06: Proof — ported from the scan report's PROOF spread ──────────
-// Ivan asked to reuse the scan pages' stronger editorial case spread here:
-// polaroid portraits sliding in from the outer edge, big serif pull-quotes with
-// a sage italic accent, sage-bar result lines, framed screenshots with a dark
-// header bar, and italic serif metric numerals in sage ink.
-const CASE_SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
-const CASE_BODY = '"Source Serif 4", Georgia, serif';
-const CASE_MONO = '"IBM Plex Mono", monospace';
-const CASE_R = 22;
-const CASE_SHADOW_LG = '0 2px 6px rgba(26,26,26,0.05), 0 26px 64px rgba(26,26,26,0.11)';
-
-/** An angled, framed portrait cut-out (magazine-collage look): paper frame, hard sage
- *  cast-shadow, name badge. One for a solo founder, two overlapping for a pair. */
-const ProofPortrait: React.FC<{ src: string; name: string; pos?: string; rotate: number; aspect?: string }> = ({ src, name, pos, rotate, aspect = '4 / 5' }) => (
-  <div style={{ position: 'relative', transform: `rotate(${rotate}deg)` }}>
-    <div style={{ background: 'var(--color-paper-raise, #fff)', padding: '7px 7px 9px', boxShadow: '14px 16px 0 rgba(42,143,101,0.20)' }}>
-      <img
-        src={src} alt={name} loading="lazy"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-        style={{ display: 'block', width: '100%', aspectRatio: aspect, objectFit: 'cover', objectPosition: pos || '50% 20%', background: 'var(--color-paper-sunk, #EFEBE3)' }}
-      />
-    </div>
-    <span style={{ position: 'absolute', left: 8, bottom: -12, fontFamily: CASE_MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: 'var(--color-accent-ink)', padding: '4px 8px', whiteSpace: 'nowrap' }}>{name}</span>
-  </div>
-);
-
-const hideImgOnError: React.ReactEventHandler<HTMLImageElement> = (e) => {
-  (e.target as HTMLImageElement).style.display = 'none';
-};
-
+// ─── Section 06: Proof — content-system operators + real numbers ─────────────
+// Reworked from generic automation testimonials to content-relevant proof: the
+// two clients actually running the content engine (Kyle Hunt, Lemonade) with
+// their real numbers, then one supporting quote for broader credibility.
 const ENGINE_CASES = [
   {
-    client: 'Kyle Hunt', role: 'Agency Operators · founder',
-    portraits: [{ src: '/content-system/kyle-portrait.webp', name: 'Kyle Hunt', pos: '50% 24%' }],
-    quote: ['It writes every post and guide in ', 'my voice', '. I approve, and it ships.'],
-    result: 'Kyle scaled from $30k/mo to $60k/mo with us.',
-    src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system",
-    metrics: [{ value: '30K', label: 'impressions per post' }, { value: '~300', label: 'comments on a lead-magnet post' }, { value: '100%', label: 'of his content, run by the system' }],
+    client: 'Agency Operators',
+    role: 'Fractional COO · ops coach',
+    img: '/content-system/kyle-guides.webp',
+    alt: "Agency Operators' lead magnets, built and published by the system",
+    summary: 'Runs its entire content operation on the system. Every post and lead magnet is drafted in the founder’s voice and shipped, without anyone facing a blank page.',
+    metrics: [
+      { v: '100%', l: 'of his content, run by the system' },
+      { v: '~300', l: 'comments per lead-magnet post' },
+      { v: '30K', l: 'impressions per post' },
+    ],
   },
   {
-    client: 'Lemonade', role: 'David Dinsmore & Billy Mackie · co-founders',
-    portraits: [{ src: '/content-system/david-dinsmore.webp', name: 'David Dinsmore', pos: '50% 14%' }, { src: '/content-system/billy-mackie.webp', name: 'Billy Mackie', pos: '50% 16%' }],
-    quote: ['The lead-magnet engine books our ', 'fit calls', ' for us. Gated funnel, running on autopilot.'],
-    result: 'Lemonade books 5 new clients a month through the system.',
-    src: '/content-system/lemonade-thankyou.webp', alt: "Lemonade's lead-capture page built by the system",
-    metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }],
+    client: 'Lemonade',
+    role: 'Demand-gen studio',
+    img: '/content-system/lemonade-thankyou.webp',
+    alt: "Lemonade's lead-capture page built by the system",
+    flip: true,
+    summary: 'Turned the lead-magnet engine into a booking machine. Gated assets on live pages qualify every signup and route the best fits straight to the calendar.',
+    metrics: [
+      { v: '5', l: 'new clients a month from the system' },
+      { v: 'Live', l: 'gated funnel, on autopilot' },
+    ],
   },
 ];
 
 const TestimonialsSection: React.FC = () => (
   <section className="py-12 md:py-20 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
-      <motion.div {...inView} className="max-w-3xl">
-        <p className="mb-2" style={{ fontFamily: CASE_MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>Already running</p>
-        <RevealH2 style={{ ...T.display('clamp(1.9rem, 3.6vw, 2.8rem)'), lineHeight: 1.07 }}>
-          Built for real operators. <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>Running every day.</span>
+      <motion.div {...inView} className="mb-12 md:mb-16 max-w-2xl">
+        <RevealH2 style={{ ...T.display('clamp(2rem,3.4vw,3rem)'), lineHeight: 1.04 }}>
+          Already running for{' '}
+          <span style={{ position: 'relative', display: 'inline-block' }}>
+            real operators.
+          </span>
         </RevealH2>
       </motion.div>
 
-      <div className="mt-12 space-y-20 lg:space-y-24">
-        {ENGINE_CASES.map((c, idx) => {
-          const two = c.portraits.length > 1;
-          const flip = idx % 2 === 1; // alternate sides: Kyle left, Lemonade right
-          return (
-            <div className={`grid ${flip ? 'lg:grid-cols-[1.08fr_0.92fr]' : 'lg:grid-cols-[0.92fr_1.08fr]'} gap-10 lg:gap-14 items-start`} key={c.client}>
-              {/* Portrait(s) — slide in from the OUTER edge (opposite sides per row), leading the reveal */}
-              <motion.div
-                initial={prefersReduced ? false : { opacity: 0, x: flip ? 80 : -80 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: '-90px' }}
-                transition={{ duration: 0.85, ease }}
-                className={`flex justify-center ${flip ? 'lg:justify-end lg:order-2' : 'lg:justify-start lg:order-1'} lg:pt-1`}
+      <div className="flex flex-col gap-16 md:gap-24">
+        {ENGINE_CASES.map((c, ci) => (
+          <motion.div
+            key={c.client}
+            initial={prefersReduced ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.65, ease }}
+            className="grid md:grid-cols-12 gap-x-12 gap-y-8 items-center"
+          >
+            {/* Screenshot of the real work — sharp editorial frame */}
+            <div className={`md:col-span-6 ${c.flip ? 'md:order-2 md:col-start-7' : ''}`}>
+              <div
+                className="overflow-hidden border"
+                style={{ borderColor: 'rgba(26,26,26,0.10)', aspectRatio: '16 / 10', backgroundColor: 'var(--color-paper-raise)', borderRadius: '12px', boxShadow: '0 10px 30px rgba(26,26,26,0.10)' }}
               >
-                {two ? (
-                  // Percent-based overlap (55.3% / 52.1% of a 430px-max box) so the pair
-                  // scales cleanly at 390px viewports instead of overflowing like fixed px.
-                  <div style={{ position: 'relative', width: '100%', maxWidth: 430, aspectRatio: '43 / 36' }}>
-                    <div style={{ position: 'absolute', left: 0, top: 0, width: '55.3%', zIndex: 2 }}><ProofPortrait {...c.portraits[0]} rotate={-5} aspect="5 / 7" /></div>
-                    <div style={{ position: 'absolute', left: '46.5%', top: '8%', width: '52.1%', zIndex: 1 }}><ProofPortrait {...c.portraits[1]} rotate={4} aspect="5 / 7" /></div>
-                  </div>
-                ) : (
-                  <div style={{ width: '100%', maxWidth: 340 }}><ProofPortrait {...c.portraits[0]} rotate={-5} /></div>
-                )}
-              </motion.div>
-
-              {/* Wording — fades in AFTER the portrait has slid in */}
-              <motion.div
-                initial={prefersReduced ? false : { opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-90px' }}
-                transition={{ duration: 0.6, ease, delay: prefersReduced ? 0 : 0.45 }}
-                className={flip ? 'lg:order-1' : 'lg:order-2'}
-              >
-                <p style={{ fontFamily: CASE_SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.7vw, 2rem)', lineHeight: 1.14, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
-                  &ldquo;{c.quote[0]}<span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>{c.quote[1]}</span>{c.quote[2]}&rdquo;
-                </p>
-                <div className="mt-4" style={{ fontFamily: CASE_MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-                  <span style={{ color: '#1A1A1A', fontWeight: 600 }}>{c.client}</span> &nbsp;·&nbsp; {c.role}
-                </div>
-                <div className="mt-5 flex items-start gap-3">
-                  <span aria-hidden style={{ marginTop: 6, height: 15, width: 3, background: 'var(--color-accent)', flexShrink: 0 }} />
-                  <p style={{ fontFamily: CASE_BODY, fontSize: '16.5px', lineHeight: 1.4, color: '#1A1A1A', maxWidth: '28rem' }}>{c.result}</p>
-                </div>
-                <figure className="m-0 mt-7 overflow-hidden" style={{ transform: 'rotate(1.2deg)', borderRadius: CASE_R, border: '1px solid var(--color-hairline)', boxShadow: CASE_SHADOW_LG }}>
-                  <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#1A1A1A' }}>
-                    <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                    <span style={{ fontFamily: CASE_MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>{c.client}</span>
-                  </div>
-                  <img src={c.src} alt={c.alt} loading="lazy" onError={hideImgOnError} style={{ display: 'block', width: '100%', maxHeight: 430, objectFit: 'cover', objectPosition: '50% 0%' }} />
-                </figure>
-                <div className="mt-8 flex flex-wrap gap-x-10 gap-y-6">
-                  {c.metrics.map((m) => (
-                    <div key={m.label}>
-                      <div style={{ fontFamily: CASE_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
-                      <div className="mt-2 max-w-[200px]" style={{ fontFamily: CASE_BODY, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
+                <img src={c.img} alt={c.alt} loading="lazy" className="w-full h-full object-cover object-top" />
+              </div>
             </div>
-          );
-        })}
+
+            <div className={`md:col-span-6 ${c.flip ? 'md:order-1 md:col-start-1' : ''}`}>
+              <div style={{ ...T.display('1.9rem'), lineHeight: 1, marginBottom: '6px' }}>{c.client}</div>
+              <div style={{ ...T.mono, marginBottom: '1.25rem' }}>{c.role}</div>
+              <p style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '16px', lineHeight: 1.6, color: '#3D3D3B', marginBottom: '1.75rem', maxWidth: '42ch' }}>
+                {c.summary}
+              </p>
+              <div className="grid grid-cols-3 gap-x-5 pt-6 border-t" style={{ borderColor: 'rgba(26,26,26,0.14)' }}>
+                {c.metrics.map((m) => (
+                  <div key={m.l}>
+                    <div style={{ ...T.display('clamp(1.7rem,2.2vw,2.3rem)'), color: 'var(--color-accent)', lineHeight: 1, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+                      {m.v}
+                    </div>
+                    <div style={{ fontFamily: '"Source Serif 4",Georgia,serif', fontSize: '13px', color: '#5A5752', lineHeight: 1.4, maxWidth: '18ch' }}>
+                      {m.l}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
     </div>
   </section>
