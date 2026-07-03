@@ -14,6 +14,7 @@ import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
 import { LifecycleLegend } from '../dashboard-v2/primitives';
+import { NeedsYouStrip } from './NeedsYouStrip';
 import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
 
 type PostType = 'text' | 'single_image' | 'carousel';
@@ -374,6 +375,12 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           </button>
         </div>
       </div>
+
+      <NeedsYouStrip items={[
+        { label: 'errors', count: statusCounts['error'] || 0, tone: 'bad', onJump: () => setStatusFilter('error') },
+        { label: 'in review', count: statusCounts['review'] || 0, tone: 'warn', onJump: () => setStatusFilter('review') },
+        { label: 'stuck scheduled', count: stuckScheduled.length, tone: 'warn', onJump: () => setStatusFilter('scheduled') },
+      ]} />
 
       {/* New post form — expands inline below the header when open */}
       {formOpen && (
