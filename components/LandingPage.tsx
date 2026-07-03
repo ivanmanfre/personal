@@ -373,7 +373,7 @@ const ProblemSection: React.FC = () => (
           borderTopWidth: '2px',
         }}
       >
-A fully managed content engine, building an audience you own.
+A fully managed inbound engine, building an audience you own.
       </motion.p>
     </div>
   </section>
@@ -529,7 +529,7 @@ const BuildOutcomesSection: React.FC = () => {
           built these.
         </RevealH2>
         <p style={{ ...T.serif, fontSize: '16px', marginTop: '1.25rem' }}>
-          The content engine is one of a hundred systems I have shipped and run myself. Here are a few more, all in production. Click into any build for the full story.
+          The inbound engine is one of a hundred systems I have shipped and run myself. Here are a few more, all in production. Click into any build for the full story.
         </p>
       </motion.div>
 
@@ -1423,7 +1423,7 @@ const MeetOperator: React.FC = () => (
           </RevealH2>
           <p style={{ ...T.serif, fontSize: '18px', lineHeight: 1.65, color: '#3D3D3B', marginBottom: '2.25rem', maxWidth: '50ch' }}>
             I'm Iván. I've shipped 100+ AI systems for agencies and service
-            businesses, and I run my own LinkedIn on the same content engine I'd
+            businesses, and I run my own LinkedIn on the same inbound engine I'd
             install for you.
           </p>
           <div className="flex flex-col gap-4 mb-10">
@@ -1603,7 +1603,7 @@ const LandingFooter: React.FC = () => {
             <div style={{ ...T.display('clamp(2.6rem,5vw,4.5rem)'), fontStyle: 'normal', lineHeight: 0.95, letterSpacing: '-0.02em', marginBottom: '8px' }}>
               Iván <span style={{ fontStyle: 'italic' }}>Manfredi</span>
             </div>
-            <p style={T.mono}>AI content systems for agencies</p>
+            <p style={T.mono}>LinkedIn inbound engine for agencies</p>
           </div>
 
           <div className="flex gap-2.5">
@@ -1704,7 +1704,7 @@ const StickyCTA: React.FC = () => {
 const LandingPage: React.FC = () => {
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Iván Manfredi · The AI Content Engine for Agencies';
+    document.title = 'Iván Manfredi · The LinkedIn Inbound Engine for Agencies';
     return () => { document.title = prev; };
   }, []);
 

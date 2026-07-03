@@ -9,6 +9,8 @@ import { ArrowRight } from 'lucide-react';
 //   - Scroll parallax preserved via wrapper
 // v3 (2026-06-15): content-engine rebrand. Headline/lede/benefits repointed to
 //   the AI content system for agencies. Sage hero phrase = "$15k-$50k/mo of new pipeline".
+// v4 (2026-07-03): inbound-engine rebrand. Descriptor -> we-voice "LinkedIn inbound
+//   engine" + capture story; benefits -> content/capture/ownership. "AI content system" retired.
 
 const ease = [0.22, 0.84, 0.36, 1] as const;
 
@@ -204,7 +206,7 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                An AI content system that writes your posts, builds your lead magnets, and ships them daily in your voice.
+                We run a LinkedIn inbound engine that ships daily content in your voice and turns the readers who engage into leads in your inbox.
               </motion.p>
 
               {/* Benefit row — mono spec line */}
@@ -214,7 +216,7 @@ const LandingHero: React.FC = () => {
                 transition={{ delay: 0.86, duration: 0.7, ease }}
                 className="mb-9 flex flex-col sm:flex-row items-center justify-center gap-y-2.5 sm:gap-0"
               >
-                {['Daily content in your voice', 'A feed that brings you inbound', 'On-brand, every post'].map((b, i) => (
+                {['Daily content in your voice', 'A lead magnet that captures leads', 'An audience you own'].map((b, i) => (
                   <li
                     key={b}
                     className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l sm:border-black/10'} ${i === 2 ? 'sm:pr-0' : ''}`}
