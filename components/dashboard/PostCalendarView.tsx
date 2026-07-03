@@ -296,6 +296,16 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
     [days, buckets],
   );
 
+  // Mobile agenda: the month's days that actually hold items, in order. The
+  // 7-column grid is unreadable below md, so small screens get this list instead.
+  const agendaDays = useMemo(
+    () => days
+      .filter((d) => d.inMonth)
+      .map((d) => ({ key: ymdKey(d.y, d.month0, d.d), date: new Date(d.y, d.month0, d.d), items: buckets.get(ymdKey(d.y, d.month0, d.d)) || [] }))
+      .filter((x) => x.items.length > 0),
+    [days, buckets],
+  );
+
   const goToday = () => {
     const now = new Date();
     setCursor({ year: now.getFullYear(), month0: now.getMonth() });
@@ -316,7 +326,7 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
           {monthlyCount} scheduled this month
         </span>
         {/* Legend — color + glyph distinguish posts from lead magnets */}
-        <span className="hidden md:inline-flex items-center gap-3 text-[10.5px] text-zinc-500 ml-3">
+        <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-zinc-500 md:ml-3">
           <span className="inline-flex items-center gap-1">
             <span className="w-2 h-2 rounded-sm bg-emerald-500 ring-1 ring-inset ring-emerald-600/40" />
             <FileText className="w-2.5 h-2.5" /> Post
@@ -346,7 +356,7 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
       </div>
 
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div className="rounded-md border border-[var(--ds-line)] overflow-hidden">
+        <div className="hidden md:block rounded-md border border-[var(--ds-line)] overflow-hidden">
           <div className="grid grid-cols-7 bg-[var(--d-ink-3)] border-b border-[var(--ds-line)]">
             {DAY_LABELS.map((d) => (
               <div key={d} className="px-2 py-1.5 text-[10.5px] uppercase tracking-wider text-[var(--ds-dim)] font-semibold border-r border-[var(--ds-line)] last:border-r-0">
@@ -373,10 +383,39 @@ export default function PostCalendarView({ items, onOpenItem, onReschedule, drag
             })}
           </div>
         </div>
+
+        {/* Mobile agenda — the 7-col grid is unreadable below md */}
+        <div className="md:hidden space-y-3">
+          {agendaDays.length === 0 ? (
+            <p className="text-[12px] text-[var(--ds-dim)] italic py-4 text-center">
+              Nothing scheduled in {MONTH_NAMES[month0]}. Approve a post or lead magnet and set a future date — it lands here.
+            </p>
+          ) : (
+            agendaDays.map((day) => (
+              <div key={day.key}>
+                <div className="text-[11px] uppercase tracking-wider text-[var(--ds-dim)] font-semibold mb-1.5 flex items-center gap-2">
+                  {day.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {day.key === todayKey && <span className="text-emerald-500 normal-case tracking-normal">· Today</span>}
+                </div>
+                <div className="space-y-1">
+                  {day.items.map((it) => (
+                    <ItemChip key={`${it.kind}:${it.id}`} item={it} onOpen={() => onOpenItem(it)} draggable={false} />
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </DndContext>
 
+      {monthlyCount === 0 && (
+        <p className="hidden md:block text-[12px] text-[var(--ds-dim)] italic">
+          Nothing scheduled in {MONTH_NAMES[month0]}. Approve a post or lead magnet and set a future date — it lands here.
+        </p>
+      )}
+
       {draggable && (
-        <p className="text-[11px] text-zinc-600">
+        <p className="hidden md:block text-[11px] text-zinc-600">
           Drag an item to a different day to reschedule. Time-of-day is preserved.
         </p>
       )}

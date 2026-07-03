@@ -100,7 +100,7 @@ export function Calendar() {
           .eq('status', 'pending');
         if (qErr) throw qErr;
       }
-      toast.success('Rescheduled');
+      toast.success(promote ? 'Rescheduled — queued to publish' : 'Rescheduled');
       refreshQueue();
     } catch (err) {
       toastError('reschedule', err);
