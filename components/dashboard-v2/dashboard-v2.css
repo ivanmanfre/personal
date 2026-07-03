@@ -997,16 +997,6 @@ body.dashboard-v2-light * {
   padding: 10px 12px; font-size: var(--t-sm); color: var(--d-paper-dim); line-height: 1.5;
 }
 
-/* ── Lifecycle legend ────────────────────────────────────── */
-.dashboard-v2 .dv-lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: var(--sp-4); }
-.dashboard-v2 .dv-lifecycle-arrow { color: var(--d-paper-dimmer); font-size: var(--t-sm); }
-.dashboard-v2 .dv-lifecycle-stage {
-  font-size: var(--t-xs); padding: 3px 8px; border-radius: var(--d-r-sm);
-  border: 1px solid var(--d-rule); background: var(--d-ink-3); color: var(--d-paper-dim);
-}
-.dashboard-v2 .dv-lifecycle-stage--good   { color: var(--d-good);   border-color: var(--d-good);   background: var(--d-good-bg); }
-.dashboard-v2 .dv-lifecycle-stage--warn   { color: var(--d-warn);   border-color: var(--d-warn);   background: var(--d-warn-bg); }
-.dashboard-v2 .dv-lifecycle-stage--accent { color: var(--d-accent); border-color: var(--d-accent); background: var(--d-accent-bg); }
 
 @keyframes dv-tour-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 

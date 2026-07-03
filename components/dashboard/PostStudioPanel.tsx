@@ -87,7 +87,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'auto' | 'updated' | 'scheduled'>('auto');
   const [formOpen, setFormOpen] = useState(false);
   // Disqualified rows hidden by default — Ivan never wants to scroll past 33 dead drafts.
   // Toggle exposed as a small footer button. Persists across sessions.
@@ -112,10 +111,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     }
     return counts;
   }, [drafts]);
-  // Effective sort: auto -> 'scheduled' when scheduled filter active, else 'updated'.
-  const effectiveSort: 'updated' | 'scheduled' = sortBy === 'auto'
-    ? (statusFilter === 'scheduled' ? 'scheduled' : 'updated')
-    : sortBy;
+  // Sort: 'scheduled' when scheduled filter active, else 'updated'.
+  const effectiveSort: 'updated' | 'scheduled' = statusFilter === 'scheduled' ? 'scheduled' : 'updated';
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const filtered = drafts.filter((d) => {

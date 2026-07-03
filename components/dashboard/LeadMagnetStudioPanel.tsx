@@ -77,7 +77,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [formatFilter, setFormatFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [formOpen, setFormOpen] = useState(false);
   const [showDisqualified, setShowDisqualified] = useState<boolean>(() => {
@@ -140,7 +139,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
         if (!FORMATS_SET.has(fmt)) return false;
         if (d.status === 'disqualified' && !showDisqualified && statusFilter !== 'disqualified') return false;
         if (statusFilter !== 'all' && d.status !== statusFilter) return false;
-        if (formatFilter !== 'all' && (d.format || 'unknown') !== formatFilter) return false;
         if (q) {
           const hay = `${d.topic || ''} ${d.postBody || ''}`.toLowerCase();
           if (!hay.includes(q)) return false;
@@ -148,7 +146,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, formatFilter, searchQuery, showDisqualified]);
+  }, [drafts, statusFilter, searchQuery, showDisqualified]);
 
   const open = drafts.find((d) => d.id === openId) || null;
 

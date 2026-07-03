@@ -535,20 +535,6 @@ body.dashboard-v2-light .dv-chip:not(.dv-chip--good):not(.dv-chip--warn):not(.dv
   background: #ffffff !important;
 }
 
-/* dv-lifecycle-stage variants: same-family text+bg → use solid emerald-50/amber-50/indigo-50
-   These solid washes give the semantic text (dark enough on white) room to breathe */
-body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--good {
-  background: #ecfdf5 !important;
-  color: var(--ds-ok) !important;
-}
-body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--warn {
-  background: #fffbeb !important;
-  color: var(--ds-warn) !important;
-}
-body.dashboard-v2-light .dashboard-v2 .dv-lifecycle-stage--accent {
-  background: #eef2ff !important;
-  color: var(--ds-accent) !important;
-}
 
 /* crm-icp high-ICP badge: green text on green-tinted bg → solid emerald-50 bg
    #047857 on #ecfdf5 = 5.1:1 (AA). Uses !important to override inline style bg. */
