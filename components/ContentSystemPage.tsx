@@ -173,9 +173,9 @@ function CaseStudy({ client, role, src, alt, summary, metrics, flip }: {
 
 export default function ContentSystemPage() {
   useMetadata({
-    title: 'Content System | Manfredi',
+    title: 'Inbound Engine | Manfredi',
     description:
-      'An always-on content engine that decides what to post, writes it in your voice, refuses to ship AI slop, turns one idea into every format, and publishes itself. Five posts a week, without writing a word.',
+      'An always-on inbound engine that ships daily content in your voice, refuses to ship AI slop, and turns the readers who engage into named leads in your inbox. Five posts a week, without writing a word.',
     canonical: 'https://ivanmanfredi.com/content-system',
   });
 
@@ -196,7 +196,7 @@ export default function ContentSystemPage() {
         {/* 1 — HERO */}
         <section className="mb-12 md:mb-20">
           {/* Label already applies marginBottom 1.75rem internally */}
-          <Label>Content System</Label>
+          <Label>Inbound Engine</Label>
           <motion.h1
             {...(prefersReduced ? {} : inView)}
             className="mt-5 text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter max-w-4xl"
@@ -261,7 +261,7 @@ export default function ContentSystemPage() {
           <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
             Your own{' '}
             <span style={{ position: 'relative', display: 'inline-block' }}>
-              AI content studio.
+              inbound engine, running.
               <SageSweep delay={0.4} opacity={0.85} />
             </span>
           </RevealH2>
