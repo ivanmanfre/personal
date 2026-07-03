@@ -641,6 +641,7 @@ body.dashboard-v2-light .dashboard-v2 .text-zinc-200\/90 { color: #475569 !impor
  *   pseudo-classes, group-hover as `.group:hover .group-hover\:...`,
  *   sm: wrapped in its breakpoint media query, placeholder(-x/:x) as ::placeholder */
 body.dashboard-v2-light .dashboard-v2 .bg-amber-600\/20,
+body.dashboard-v2-light .dashboard-v2 .bg-amber-900\/20,
 body.dashboard-v2-light .dashboard-v2 .bg-amber-900\/30,
 body.dashboard-v2-light .dashboard-v2 .bg-amber-900\/40,
 body.dashboard-v2-light .dashboard-v2 .bg-amber-950\/20,
@@ -777,6 +778,7 @@ body.dashboard-v2-light .dashboard-v2 .focus\:ring-emerald-600\/40:focus,
 body.dashboard-v2-light .dashboard-v2 .hover\:ring-emerald-600\/40:hover,
 body.dashboard-v2-light .dashboard-v2 .ring-emerald-600\/40,
 body.dashboard-v2-light .dashboard-v2 .ring-emerald-700\/30 { --tw-ring-color: #a7f3d0 !important; }
+body.dashboard-v2-light .dashboard-v2 .ring-amber-700\/30 { --tw-ring-color: #fde68a !important; }
 body.dashboard-v2-light .dashboard-v2 .from-amber-950\/30 { --tw-gradient-from: #fffbeb !important; }
 body.dashboard-v2-light .dashboard-v2 .from-emerald-950\/20 { --tw-gradient-from: #ecfdf5 !important; }
 body.dashboard-v2-light .dashboard-v2 .from-zinc-800\/10,
