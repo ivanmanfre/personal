@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2, RefreshCw } 
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
 import { statusLabel } from '../../lib/statusLabels';
+import { ConfirmDialog } from './ConfirmDialog';
 
 /**
  * Real columned list view — direct ClickUp-list equivalent.
@@ -208,6 +209,9 @@ export function StudioListView({
   // Media lightbox — click a row thumbnail to view media at full size
   // without opening the editor. Stores the row currently being previewed.
   const [previewRow, setPreviewRow] = useState<StudioRow | null>(null);
+  // Delete confirmations — bulk (toolbar) and per-row (hover action).
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<StudioRow | null>(null);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggleOne = (id: string) =>
@@ -276,7 +280,7 @@ export function StudioListView({
               className="px-2.5 py-1 rounded border border-[var(--ds-line)] bg-[var(--ds-card)] hover:bg-[var(--ds-bg)] text-[var(--ds-ink)] transition-colors"
             >Disqualify</button>
             <button
-              onClick={() => { if (confirm(`Delete ${selected.size} row(s)? This can't be undone.`)) { onBulkAction('delete', Array.from(selected)); clearSelection(); } }}
+              onClick={() => setConfirmBulkDelete(true)}
               className="px-2.5 py-1 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 transition-colors"
             >Delete</button>
           </div>
@@ -396,6 +400,24 @@ export function StudioListView({
       {previewRow && previewRow.thumbUrl && (
         <MediaLightbox row={previewRow} onClose={() => setPreviewRow(null)} />
       )}
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Delete ${selected.size} row(s)?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { onBulkAction && onBulkAction('delete', Array.from(selected)); clearSelection(); setConfirmBulkDelete(false); }}
+        onCancel={() => setConfirmBulkDelete(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmDeleteRow}
+        title={`Delete "${confirmDeleteRow?.title || 'this item'}" permanently?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (confirmDeleteRow) onBulkAction && onBulkAction('delete', [confirmDeleteRow.id]); setConfirmDeleteRow(null); }}
+        onCancel={() => setConfirmDeleteRow(null)}
+      />
     </div>
   );
 
@@ -629,8 +651,7 @@ export function StudioListView({
                 title="Delete"
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
-                  onBulkAction('delete', [r.id]);
+                  setConfirmDeleteRow(r);
                 }}
                 className="p-1.5 rounded-md text-[var(--ds-faint)] bg-[var(--ds-card)] border border-[var(--ds-line)] hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
               >

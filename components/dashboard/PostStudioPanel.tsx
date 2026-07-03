@@ -16,6 +16,7 @@ import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
 import { NeedsYouStrip } from './NeedsYouStrip';
 import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
+import { ConfirmDialog } from './ConfirmDialog';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -305,6 +306,32 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     return !d.sourcePostId;
   }), [drafts]);
   const [showStuckList, setShowStuckList] = useState(false);
+  // Confirm-dialog state for the two native confirm() sites this panel used to have.
+  const [confirmStuckDisqualify, setConfirmStuckDisqualify] = useState(false);
+  const [confirmRegenerateFromIdea, setConfirmRegenerateFromIdea] = useState<null | { id: string; cur: CarouselDraft }>(null);
+
+  async function disqualifyStuck() {
+    try {
+      const { error } = await supabase
+        .from('carousel_drafts')
+        .update({ status: 'disqualified' })
+        .in('id', stuckScheduled.map((d) => d.id));
+      if (error) throw error;
+      toast.success(`Disqualified ${stuckScheduled.length} stuck posts`);
+      await refresh();
+    } catch (err) { toastError('bulk disqualify stuck', err); }
+  }
+
+  async function regenerateFromIdea(id: string, cur: CarouselDraft) {
+    applyOptimistic(id, { status: 'generating' });
+    try {
+      await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
+      toast.success('Regeneration fired');
+    } catch (err) {
+      toastError('regenerate', err);
+      refresh();
+    }
+  }
 
   // Polling removed — useContentLibrary now subscribes to a Supabase realtime
   // channel on carousel_drafts. Status flips (idea → generating → review →
@@ -446,18 +473,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               ))}
               <div className="pt-1 flex items-center gap-3 text-[12px] text-amber-700">
                 <button
-                  onClick={async () => {
-                    if (!confirm(`Mark all ${stuckScheduled.length} stuck posts as disqualified? They didn't publish to LinkedIn.`)) return;
-                    try {
-                      const { error } = await supabase
-                        .from('carousel_drafts')
-                        .update({ status: 'disqualified' })
-                        .in('id', stuckScheduled.map((d) => d.id));
-                      if (error) throw error;
-                      toast.success(`Disqualified ${stuckScheduled.length} stuck posts`);
-                      await refresh();
-                    } catch (err) { toastError('bulk disqualify stuck', err); }
-                  }}
+                  onClick={() => setConfirmStuckDisqualify(true)}
                   className="rounded px-2 py-0.5 bg-amber-100 border border-amber-200 hover:bg-amber-200"
                 >Disqualify all</button>
                 <span className="text-amber-500">Or open each to re-publish manually.</span>
@@ -641,15 +657,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             // workflow. Confirm first since this overwrites existing copy.
             const LATER = new Set(['generating','review','approved','scheduled','published','disqualified','error']);
             if (next === 'idea' && cur && LATER.has(cur.status)) {
-              if (!confirm(`Regenerate this ${cur.type || 'post'}? Flipping to 'idea' will refire the pipeline and overwrite the current copy${cur.imageUrls?.[0] ? ' and image' : ''}.`)) return;
-              applyOptimistic(id, { status: 'generating' });
-              try {
-                await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
-                toast.success('Regeneration fired');
-              } catch (err) {
-                toastError('regenerate', err);
-                refresh();
-              }
+              setConfirmRegenerateFromIdea({ id, cur });
               return;
             }
             // Default path: status-only flip, optimistic + supabase update.
@@ -743,6 +751,26 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           : <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />
         )}
       </Sheet>
+      <ConfirmDialog
+        open={confirmStuckDisqualify}
+        title={`Mark all ${stuckScheduled.length} stuck posts as disqualified?`}
+        body="They didn't publish to LinkedIn."
+        confirmLabel="Disqualify"
+        danger
+        onConfirm={() => { setConfirmStuckDisqualify(false); disqualifyStuck(); }}
+        onCancel={() => setConfirmStuckDisqualify(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmRegenerateFromIdea}
+        title={`Regenerate this ${confirmRegenerateFromIdea?.cur.type || 'post'}?`}
+        body={`Flipping to 'idea' will refire the pipeline and overwrite the current copy${confirmRegenerateFromIdea?.cur.imageUrls?.[0] ? ' and image' : ''}.`}
+        confirmLabel="Regenerate"
+        onConfirm={() => {
+          if (confirmRegenerateFromIdea) regenerateFromIdea(confirmRegenerateFromIdea.id, confirmRegenerateFromIdea.cur);
+          setConfirmRegenerateFromIdea(null);
+        }}
+        onCancel={() => setConfirmRegenerateFromIdea(null)}
+      />
     </div>
   );
 };

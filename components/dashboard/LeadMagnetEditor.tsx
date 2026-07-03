@@ -16,6 +16,7 @@ import { useUpstreamSource } from '../../hooks/useUpstreamSource';
 import { Card, CardLabel, Button, Input, Textarea, FieldLabel, EmptyState } from '../ui/primitives';
 import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface Props {
   draft: LeadMagnetDraft;
@@ -46,6 +47,10 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   const [resourceOpen, setResourceOpen] = useState(false);
   const [postMode, setPostMode] = useState<'edit' | 'preview'>('edit');
   const [when, setWhen] = useState('');
+  // Confirm-dialog state for the four native confirm() sites this editor used to have.
+  const [confirmRefire, setConfirmRefire] = useState(false);
+  const [confirmRepost, setConfirmRepost] = useState<null | { title: string; body?: string; successMsg: string }>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // The LM's schedule lives on its scheduled_posts queue row (lm_drafts_v2 has no
   // scheduled_at), so fetch the current time and seed the field — otherwise it
@@ -295,7 +300,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   // While a run is in flight the button stays as an escape hatch
                   // for stuck rows, but re-firing must be explicit — a double
                   // click was silently spawning two pipeline runs.
-                  if (draft.status === 'generating' && !window.confirm('A generation is already running for this LM (~10 min). Fire it again anyway?')) return;
+                  if (draft.status === 'generating') { setConfirmRefire(true); return; }
                   run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)');
                 }}>
                 {busy === 'regen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}{' '}
@@ -339,15 +344,21 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 disabled={!!busy}
                 onClick={() => {
                   if (isRegen) {
-                    if (!window.confirm('Repost this lead magnet with a fresh angle? This replaces the currently queued repost.')) return;
-                    run('repost', () => repostLeadMagnet(draft.id), 'Reposting with a new angle...');
+                    setConfirmRepost({
+                      title: 'Repost this lead magnet with a fresh angle?',
+                      body: 'This replaces the currently queued repost.',
+                      successMsg: 'Reposting with a new angle...',
+                    });
                   } else {
                     const days = daysSinceLastPosted(draft.lastPostedAt ?? null, new Date().toISOString());
                     const warn = days !== null && days < 7
-                      ? `\n\nHeads up: you last posted this ${days} day${days === 1 ? '' : 's'} ago.`
-                      : '';
-                    if (!window.confirm(`Generate a fresh promo for this lead magnet and queue it for the next slot?${warn}`)) return;
-                    run('repost', () => repostLeadMagnet(draft.id), 'Repost queued, fresh promo generating');
+                      ? `Heads up: you last posted this ${days} day${days === 1 ? '' : 's'} ago.`
+                      : undefined;
+                    setConfirmRepost({
+                      title: 'Generate a fresh promo for this lead magnet and queue it for the next slot?',
+                      body: warn,
+                      successMsg: 'Repost queued, fresh promo generating',
+                    });
                   }
                 }}>
                 {busy === 'repost' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -362,14 +373,7 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               className="text-red-400 hover:text-red-300 hover:bg-red-950/40"
               disabled={!!busy}
               title="Delete this lead magnet permanently"
-              onClick={() => {
-                if (!confirm(`Delete this lead magnet permanently? This can't be undone.`)) return;
-                run('delete', async () => {
-                  const { error } = await supabase.from('lm_drafts_v2').delete().eq('id', draft.id);
-                  if (error) throw error;
-                  onClose();
-                }, 'Lead magnet deleted');
-              }}>
+              onClick={() => setConfirmDelete(true)}>
               {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
             </Button>
             <Button
@@ -381,6 +385,44 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmRefire}
+        title="Fire generation again?"
+        body="A generation is already running for this LM (~10 min)."
+        confirmLabel="Fire again"
+        onConfirm={() => {
+          setConfirmRefire(false);
+          run('regen', () => generateLMContent({ draft_id: draft.id, topic: draft.topic || '', format: draft.format || 'Checklist' }), 'Generation fired (~10 min)');
+        }}
+        onCancel={() => setConfirmRefire(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmRepost}
+        title={confirmRepost?.title || ''}
+        body={confirmRepost?.body}
+        confirmLabel="Repost"
+        onConfirm={() => {
+          if (confirmRepost) run('repost', () => repostLeadMagnet(draft.id), confirmRepost.successMsg);
+          setConfirmRepost(null);
+        }}
+        onCancel={() => setConfirmRepost(null)}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete this lead magnet permanently?"
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          setConfirmDelete(false);
+          run('delete', async () => {
+            const { error } = await supabase.from('lm_drafts_v2').delete().eq('id', draft.id);
+            if (error) throw error;
+            onClose();
+          }, 'Lead magnet deleted');
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 };

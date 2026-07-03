@@ -7,6 +7,7 @@ import { toastError } from '../../lib/dashboardActions';
 import { renderLightMarkdown } from '../../lib/lightMarkdown';
 import { supabase } from '../../lib/supabase';
 import { resolveDraft } from './promptDraftResolver';
+import { ConfirmDialog } from './ConfirmDialog';
 
 /** Coarse "how long ago" for provenance display — not a full i18n date lib, just enough to read at a glance. */
 function relTime(iso: string): string {
@@ -64,6 +65,10 @@ const PromptLibraryPanel: React.FC = () => {
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [busy, setBusy] = useState(false);
   const [externalUpdate, setExternalUpdate] = useState<null | { updatedAt: string; updatedBy: string | null }>(null);
+  // Row-click discard confirmation — only shown when the current draft is dirty.
+  // Selection must not change until the user explicitly confirms (Phase 1 dirty-state
+  // flow depends on this: a cancel leaves the current draft untouched).
+  const [confirmDiscard, setConfirmDiscard] = useState<null | { nextId: string }>(null);
 
   const selected = useMemo(
     () => prompts.find((p) => p.id === selectedId) || null,
@@ -282,7 +287,7 @@ const PromptLibraryPanel: React.FC = () => {
                     <li key={p.id}>
                       <button
                         onClick={() => {
-                          if (dirty && !confirm('Discard unsaved changes?')) return;
+                          if (dirty) { setConfirmDiscard({ nextId: p.id }); return; }
                           setSelectedId(p.id);
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-md transition-colors flex items-center gap-2 ${
@@ -418,6 +423,14 @@ const PromptLibraryPanel: React.FC = () => {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={!!confirmDiscard}
+        title="Discard unsaved changes?"
+        confirmLabel="Discard"
+        danger
+        onConfirm={() => { if (confirmDiscard) setSelectedId(confirmDiscard.nextId); setConfirmDiscard(null); }}
+        onCancel={() => setConfirmDiscard(null)}
+      />
     </div>
   );
 };
