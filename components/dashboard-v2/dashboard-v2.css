@@ -966,6 +966,16 @@ body.dashboard-v2-light * {
   border: 1px solid var(--d-rule-strong); background: var(--d-ink-2); color: var(--d-paper); cursor: pointer;
 }
 .dashboard-v2 .dv-tour-trigger:hover { background: var(--d-surface-2); }
+
+/* Desktop expanded sidebar shows the ⌘K "Jump to anything" footer hint
+ * (.dv-sidebar-foot) flush against the sidebar's bottom edge — the same
+ * corner this fixed pill occupies, causing an overlap. The footer is only
+ * rendered at min-width:1101px with the sidebar NOT rail-collapsed (see
+ * .dv-sidebar-foot { display:none } rules above for the rail + tablet +
+ * mobile states); everywhere else the pill keeps its base bottom:18px. */
+@media (min-width: 1101px) {
+  .dashboard-v2-shell:not(.dashboard-v2-shell--rail) ~ .dv-tour-trigger { bottom: 70px; }
+}
 .dashboard-v2 .dv-topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 
 @keyframes dv-fade { from { opacity: 0; } to { opacity: 1; } }
