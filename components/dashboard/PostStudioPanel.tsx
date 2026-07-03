@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, Columns3, List as ListIcon } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { useIdeaCandidates } from '../../hooks/useIdeaCandidates';
 import { decideIdea } from '../../lib/ideaProjection';
@@ -13,7 +13,6 @@ import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
-import { LifecycleLegend } from '../dashboard-v2/primitives';
 import { NeedsYouStrip } from './NeedsYouStrip';
 import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
 
@@ -99,19 +98,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   React.useEffect(() => {
     try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'board' | 'list'>(() => {
-    if (typeof window !== 'undefined') {
-      const v = localStorage.getItem('post-studio-view');
-      // List is the ClickUp-style table equivalent (all columns, horizontal scroll
-      // at narrow widths) — separate Grid + Table views were redundant. Old
-      // values migrate: grid/table → list (they all flattened to the same shape).
-      if (v === 'board' || v === 'list') return v;
-      if (v === 'grid' || v === 'table' || v === 'calendar') return 'list';
-    }
-    return 'list';
-  });
-  React.useEffect(() => { try { localStorage.setItem('post-studio-view', view); } catch {} }, [view]);
-
   // Filter + sort
   const statusCounts = React.useMemo(() => {
     const counts: Record<string, number> = { all: drafts.length };
@@ -334,7 +320,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
 
   return (
     <div className="space-y-3">
-      {/* Compact header row: icon + title + count + New post button + view toggle + refresh */}
+      {/* Compact header row: icon + title + count + New post button + refresh */}
       <div className="flex items-center gap-2" data-tour="posts">
         <div className="w-8 h-8 rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] flex items-center justify-center shrink-0">
           <FileText className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
@@ -343,8 +329,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           {title}
           <span className="rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] px-2 py-0.5 text-[12px] font-medium text-[var(--ds-dim)] tabular-nums leading-none">{drafts.length}</span>
         </h2>
-        {/* Lifecycle legend inline — no separate row */}
-        <div className="hidden sm:block [&_.dv-lifecycle]:mb-0"><LifecycleLegend /></div>
         <div className="ml-auto flex items-center gap-1.5">
           {/* New post compact button — expands a form panel below */}
           <button
@@ -355,18 +339,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             <Plus className="w-3.5 h-3.5" />
             New post
           </button>
-          <div className="inline-flex rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] p-0.5">
-            <button
-              onClick={() => setView('list')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
-              title="List view — ClickUp-style table grouped by status (all columns, horizontal scroll)"
-            ><ListIcon className="w-3.5 h-3.5" /> List</button>
-            <button
-              onClick={() => setView('board')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
-              title="Board view — kanban by status"
-            ><Columns3 className="w-3.5 h-3.5" /> Board</button>
-          </div>
           <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-1.5 text-[var(--ds-dim)] hover:text-[var(--ds-ink)]" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {generatingCount > 0 && (
@@ -553,15 +525,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               </button>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5 text-[var(--ds-dim)]">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2 py-1 text-[var(--ds-dim)] hover:border-[var(--d-rule-strong)] cursor-pointer transition-colors text-[12px]"
-              >
-                <option value="auto">Smart sort</option>
-                <option value="updated">Sort: updated</option>
-                <option value="scheduled">Sort: scheduled</option>
-              </select>
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
@@ -570,7 +533,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
-                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} more`}
+                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} disqualified`}
                 </button>
               )}
             </span>
@@ -600,7 +563,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <div className="text-[13px] text-[var(--ds-ink)] font-medium">No posts match the current filter</div>
           <div className="text-[12px] text-[var(--ds-dim)] mt-0.5">Try clearing the filters above.</div>
         </div>
-      ) : view === 'list' ? (
+      ) : (
         <StudioListView
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
@@ -750,54 +713,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             }
           }}
         />
-      ) : view === 'board' ? (
-        <div className="flex gap-4 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
-          {visibleStatuses.map((status) => {
-            const col = visible.filter((d) => d.status === status);
-            const meta = STATUS_META[status] || STATUS_META.draft;
-            return (
-              <div key={status} className="flex-none w-[200px] snap-start rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] flex flex-col max-h-[75vh] shadow-sm">
-                <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-[var(--ds-line)] sticky top-0 bg-[var(--ds-card)] backdrop-blur">
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
-                  <span className="ml-auto text-[12px] text-[var(--ds-faint)] font-mono">{col.length}</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
-                  {col.length === 0 ? (
-                    <div className="text-[12px] text-[var(--ds-faint)] italic py-1.5 text-center">—</div>
-                  ) : col.map((d: CarouselDraft) => {
-                    const sched = formatScheduled(d.scheduledAt);
-                    const thumb = driveThumbUrl((d.imageUrls && d.imageUrls[0]) || null, 200);
-                    const kicker = d.type === 'carousel' ? 'Carousel' : d.type === 'single_image' ? 'Image' : 'Text';
-                    return (
-                      <button
-                        key={d.id}
-                        onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[var(--ds-accent)]/30 hover:bg-[var(--d-surface-2)] hover:shadow-md transition-all overflow-hidden shadow-sm"
-                      >
-                        {thumb && (
-                          <div className="aspect-[16/9] bg-[var(--ds-bg)] overflow-hidden">
-                            <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          </div>
-                        )}
-                        <div className="px-3 py-3">
-                          <div className="text-[10px] uppercase tracking-widest text-[var(--ds-faint)] mb-1 font-semibold">{kicker}</div>
-                          <div className="text-[14px] text-[var(--ds-ink)] line-clamp-3 leading-snug font-medium">{d.title || d.topic || 'Untitled'}</div>
-                          {sched && (
-                            <div className="mt-1 flex items-center gap-1 text-[12px] text-[var(--ds-faint)]">
-                              <Calendar className="w-2.5 h-2.5" /> {sched}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      )}
 
       {/* Editor opens in a right-anchored side-sheet — list stays visible behind */}
       <Sheet

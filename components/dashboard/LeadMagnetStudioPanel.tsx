@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, Columns3, List as ListIcon, Table2 } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, List as ListIcon, Table2 } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent } from '../../lib/studioActions';
 import { toastError } from '../../lib/dashboardActions';
@@ -90,10 +90,12 @@ const LeadMagnetStudioPanel: React.FC = () => {
   React.useEffect(() => {
     try { localStorage.setItem('lm-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'grid' | 'board' | 'list' | 'table'>(() => {
+  const [view, setView] = useState<'grid' | 'list' | 'table'>(() => {
     if (typeof window !== 'undefined') {
       const v = localStorage.getItem('lm-studio-view');
-      if (v === 'board' || v === 'grid' || v === 'list' || v === 'table') return v;
+      // 'board' migrates to 'list' — kanban board view was removed (redundant
+      // with the grouped list + status filter chips).
+      if (v === 'grid' || v === 'list' || v === 'table') return v;
     }
     return 'list';
   });
@@ -227,11 +229,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
               title="Grid view"
             ><LayoutGrid className="w-3.5 h-3.5" /> Grid</button>
             <button
-              onClick={() => setView('board')}
-              className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'board' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-              title="Board view (kanban by status)"
-            ><Columns3 className="w-3.5 h-3.5" /> Board</button>
-            <button
               onClick={() => setView('table')}
               className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${view === 'table' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Table view (dense spreadsheet, no grouping)"
@@ -317,7 +314,15 @@ const LeadMagnetStudioPanel: React.FC = () => {
             className="w-full rounded bg-zinc-950 border border-zinc-800 px-2.5 py-1 text-[12.5px] text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
           />
           <div className="flex items-center gap-x-1 gap-y-1 flex-wrap text-zinc-400">
-            {(['all', ...STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s))] as const).filter((s) => s !== 'disqualified').map((s) => {
+            {(['all', ...STATUS_ORDER.filter((s) => {
+              // Error is deliberately NOT force-pinned at zero count — NeedsYouStrip
+              // already gives the "nothing broken" signal for errors, so a redundant
+              // "Error 0" chip here is clutter. Still show it once there ARE errors,
+              // or while the user has drilled into that filter (so the active chip
+              // doesn't vanish out from under them).
+              if (s === 'error') return (statusCounts.error || 0) > 0 || statusFilter === 'error';
+              return statusCounts[s] || PINNED_STATUSES.has(s);
+            })] as const).filter((s) => s !== 'disqualified').map((s) => {
               const count = statusCounts[s] || 0;
               const isActive = statusFilter === s;
               const dot = s === 'all' ? null : STATUS_DOT[s];
@@ -335,19 +340,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 </button>
               );
             })}
-            <span className="text-zinc-700 mx-1">·</span>
-            {(['all', ...FORMATS.filter((f) => formatCounts[f])] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFormatFilter(f)}
-                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
-                  formatFilter === f ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
-                }`}
-              >
-                {f === 'all' ? 'All' : f}
-                {(formatCounts[f] || 0) > 0 && f !== 'all' && <span className="opacity-60 tabular-nums">{formatCounts[f] || 0}</span>}
-              </button>
-            ))}
             <span className="ml-auto inline-flex items-center gap-1.5">
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
@@ -436,47 +428,6 @@ const LeadMagnetStudioPanel: React.FC = () => {
             } catch (err) { toastError(`bulk ${action}`, err); }
           }}
         />
-      ) : view === 'board' ? (
-        <div className="flex gap-3 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
-          {STATUS_ORDER.filter((s) => statusCounts[s] || PINNED_STATUSES.has(s)).map((status) => {
-            const col = visible.filter((d) => d.status === status);
-            const dotClass = STATUS_DOT[status] || STATUS_DOT.idea;
-            return (
-              <div key={status} className="flex-none w-[160px] snap-start rounded-md border border-zinc-800 bg-zinc-950/40 flex flex-col max-h-[75vh]">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-zinc-800 sticky top-0 bg-zinc-950/80 backdrop-blur">
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${dotClass}`} />
-                  <span className="text-[10.5px] font-medium uppercase tracking-wider text-zinc-300 truncate">{status}</span>
-                  <span className="ml-auto text-[10px] text-zinc-500 font-mono">{col.length}</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
-                  {col.length === 0 ? (
-                    <div className="text-[10px] text-zinc-700 italic py-1.5 text-center">—</div>
-                  ) : col.map((d) => {
-                    const cover = driveThumbUrl(versionedAssetUrl(d.coverUrl, d.updatedAt), 200);
-                    const titleText = d.topic || d.description || (d.format ? `${d.format} — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : `Lead magnet — ${new Date(d.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
-                    return (
-                    <button
-                      key={d.id}
-                      onClick={() => setOpenId(d.id)}
-                      className="w-full text-left rounded-md border border-zinc-800/70 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-900 transition overflow-hidden"
-                    >
-                      {cover && (
-                        <div className="aspect-[16/9] bg-zinc-950 overflow-hidden">
-                          <img src={cover} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      )}
-                      <div className="px-1.5 py-1.5">
-                        {d.format && <div className="text-[8.5px] uppercase tracking-wider text-emerald-400/50 mb-0.5">{d.format}</div>}
-                        <div className="text-[11.5px] text-zinc-200 line-clamp-3 leading-tight">{titleText}</div>
-                      </div>
-                    </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {visible.map((d: LeadMagnetDraft) => (

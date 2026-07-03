@@ -35,12 +35,11 @@ export type StudioRow = {
 
 export type StatusMeta = { dot: string; label: string };
 
-type SortKey = 'title' | 'status' | 'pillar' | 'hookType' | 'valueTier' | 'strength' | 'date' | 'source' | 'format';
+type SortKey = 'title' | 'pillar' | 'hookType' | 'valueTier' | 'strength' | 'date' | 'source' | 'format';
 type SortDir = 'asc' | 'desc';
 
 const ALL_COLS: { key: SortKey; label: string; width: string; visible?: 'always' | 'gte-md' | 'gte-lg' }[] = [
   { key: 'title',     label: 'Title',    width: 'minmax(0,1fr)' },
-  { key: 'status',    label: 'Status',   width: '108px' },
   { key: 'pillar',    label: 'Pillar',   width: '118px', visible: 'gte-lg' },
   { key: 'hookType',  label: 'Hook',     width: '118px', visible: 'gte-lg' },
   { key: 'valueTier', label: 'Tier',     width: '108px', visible: 'gte-lg' },
@@ -206,53 +205,7 @@ export function StudioListView({
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  // Persisted column order — drag a column header to reorder. Keyed by
-  // groupByStatus prop so post + LM lists keep separate orders. Falls back
-  // to the default ALL_COLS order when no saved order exists or schema drifted.
-  const orderKey = `studio-cols-${groupByStatus || 'flat'}`;
-  const [customOrder, setCustomOrder] = useState<SortKey[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = localStorage.getItem(orderKey);
-      if (raw) return JSON.parse(raw) as SortKey[];
-    } catch {}
-    return [];
-  });
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try { localStorage.setItem(orderKey, JSON.stringify(customOrder)); } catch {}
-  }, [customOrder, orderKey]);
-  const [draggingCol, setDraggingCol] = useState<SortKey | null>(null);
-
-  const cols = useMemo(() => {
-    const skipStatus = !!groupByStatus && !onStatusChange;
-    const allKeys = ALL_COLS.map((c) => c.key);
-    // Apply custom order first, then any keys not in custom order keep default position
-    const ordered = customOrder.length
-      ? [...customOrder.filter((k) => allKeys.includes(k)), ...allKeys.filter((k) => !customOrder.includes(k))]
-      : allKeys;
-    return ordered
-      .map((k) => ALL_COLS.find((c) => c.key === k)!)
-      .filter((c) => !hiddenCols.has(c.key) && !(skipStatus && c.key === 'status'));
-  }, [hiddenCols, groupByStatus, onStatusChange, customOrder]);
-
-  function reorderCols(dragged: SortKey, dropTarget: SortKey) {
-    if (dragged === dropTarget) return;
-    const allKeys = ALL_COLS.map((c) => c.key);
-    const base = customOrder.length ? [...customOrder] : [...allKeys];
-    const from = base.indexOf(dragged);
-    if (from === -1) base.push(dragged);
-    base.splice(base.indexOf(dragged), 1);
-    const to = base.indexOf(dropTarget);
-    if (to === -1) {
-      base.push(dragged);
-    } else {
-      base.splice(to, 0, dragged);
-    }
-    // Make sure every key is represented so future renders are stable
-    for (const k of allKeys) if (!base.includes(k)) base.push(k);
-    setCustomOrder(base);
-  }
+  const cols = useMemo(() => ALL_COLS.filter((c) => !hiddenCols.has(c.key)), [hiddenCols]);
   const gridTemplate = useMemo(() => {
     const base = cols.map((c) => c.width).join(' ');
     return onBulkAction ? `32px ${base}` : base;
@@ -265,7 +218,6 @@ export function StudioListView({
       let bv: string | number = '';
       switch (sortKey) {
         case 'title':  av = a.title || ''; bv = b.title || ''; break;
-        case 'status': av = a.status || ''; bv = b.status || ''; break;
         case 'pillar': av = a.pillar || ''; bv = b.pillar || ''; break;
         case 'hookType': av = a.hookType || ''; bv = b.hookType || ''; break;
         case 'valueTier': av = TIER_RANK[a.valueTier || ''] || 99; bv = TIER_RANK[b.valueTier || ''] || 99; break;
@@ -337,32 +289,12 @@ export function StudioListView({
         )}
         {cols.map((c) => {
           const active = sortKey === c.key;
-          const isDragging = draggingCol === c.key;
           return (
             <button
               key={c.key}
               onClick={() => toggleSort(c.key)}
-              draggable
-              onDragStart={(e) => {
-                setDraggingCol(c.key);
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/x-col', c.key);
-              }}
-              onDragEnd={() => setDraggingCol(null)}
-              onDragOver={(e) => {
-                if (draggingCol && draggingCol !== c.key) {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const dragged = (e.dataTransfer.getData('text/x-col') || draggingCol || '') as SortKey;
-                if (dragged) reorderCols(dragged, c.key);
-                setDraggingCol(null);
-              }}
-              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-[var(--ds-ink)]' : 'hover:text-[var(--ds-dim)]'} text-left transition-colors cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${draggingCol && draggingCol !== c.key ? 'hover:bg-[var(--ds-accent)]/5 rounded' : ''}`}
-              title="Drag to reorder · click to sort"
+              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-[var(--ds-ink)]' : 'hover:text-[var(--ds-dim)]'} text-left transition-colors`}
+              title="Click to sort"
             >
               {c.label}
               {active ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}
@@ -533,61 +465,6 @@ export function StudioListView({
               </div>
             );
           }
-          if (c.key === 'status') {
-            const canEdit = !!onStatusChange && !!statusChoices && statusChoices.length > 0;
-            const isEditing = canEdit && editingStatusId === r.id;
-            if (isEditing) {
-              return (
-                <div key={c.key} className={cls + ' gap-1.5'}>
-                  <select
-                    autoFocus
-                    value={r.status}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={async (e) => {
-                      const next = e.target.value;
-                      setEditingStatusId(null);
-                      if (next !== r.status) await onStatusChange!(r.id, next);
-                    }}
-                    onBlur={() => setEditingStatusId(null)}
-                    className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1.5 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
-                  >
-                    {statusChoices!.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
-                  </select>
-                </div>
-              );
-            }
-            return (
-              <div
-                key={c.key}
-                className={cls + ' gap-1.5' + (canEdit ? ' hover:bg-black/[.03] rounded px-1 -mx-1' : '')}
-                onClick={canEdit ? (e) => { e.stopPropagation(); setEditingStatusId(r.id); } : undefined}
-                title={canEdit ? 'Click to change status' : undefined}
-              >
-                {/* Status pill morphs when status changes — AnimatePresence keyed by status.
-                    Dropped the redundant inner dot-scale (parent pill scale conveys it).
-                    role='status' + aria-live='polite' announces flips to AT.
-                    Motion gates on prefers-reduced-motion (no scale/opacity for that user). */}
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={r.status}
-                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.85, y: -3 }}
-                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-                    exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 3 }}
-                    transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: 'easeOut' }}
-                    className="flex items-center gap-1.5"
-                    role="status"
-                    aria-live="polite"
-                    aria-label={`Status: ${statusLabel(r.status)}`}
-                  >
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${(meta as any).pill || 'bg-slate-100 text-slate-600'} border-current/10`}>
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
-                      {statusLabel(r.status)}
-                    </span>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            );
-          }
           if (c.key === 'pillar')    return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.pillar || ''}</span></div>;
           if (c.key === 'hookType')  return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.hookType || ''}</span></div>;
           if (c.key === 'valueTier') return <div key={c.key} className={cls}><span className="text-[12px] text-[var(--ds-dim)] truncate">{r.valueTier || ''}</span></div>;
@@ -673,23 +550,62 @@ export function StudioListView({
           }
           return null;
         })}
-        {/* Per-row delete — hover-revealed, far-right edge (sits over the empty
-            tail of the Date cell). Reuses the same bulk 'delete' path so the
-            optimistic-hide + realtime reconcile behaviour is identical. */}
-        {onBulkAction && (
-          <button
-            type="button"
-            aria-label="Delete"
-            title="Delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
-              onBulkAction('delete', [r.id]);
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-[var(--ds-faint)] bg-[var(--ds-card)] border border-[var(--ds-line)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+        {/* Hover-action cluster — far-right edge (sits over the empty tail of the
+            Date cell). Status is no longer a dedicated column (redundant with the
+            group header when grouped); its edit trigger lives here instead. Delete
+            reuses the same bulk 'delete' path so the optimistic-hide + realtime
+            reconcile behaviour is identical. Stays visible (not hover-gated) while
+            the status <select> is open so onBlur can fire normally. */}
+        {(onBulkAction || (onStatusChange && statusChoices && statusChoices.length > 0)) && (
+          <div
+            className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1 transition-opacity ${
+              editingStatusId === r.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+            }`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+            {onStatusChange && statusChoices && statusChoices.length > 0 && (
+              editingStatusId === r.id ? (
+                <select
+                  autoFocus
+                  value={r.status}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={async (e) => {
+                    const next = e.target.value;
+                    setEditingStatusId(null);
+                    if (next !== r.status) await onStatusChange!(r.id, next);
+                  }}
+                  onBlur={() => setEditingStatusId(null)}
+                  className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1.5 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
+                >
+                  {statusChoices.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                </select>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={`Change status — currently ${statusLabel(r.status)}`}
+                  title={`Status: ${statusLabel(r.status)} — click to change`}
+                  onClick={(e) => { e.stopPropagation(); setEditingStatusId(r.id); }}
+                  className="p-1.5 rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] hover:bg-black/[.03] transition-colors"
+                >
+                  <span className={`inline-block w-2 h-2 rounded-full ${meta.dot}`} aria-hidden="true" />
+                </button>
+              )
+            )}
+            {onBulkAction && (
+              <button
+                type="button"
+                aria-label="Delete"
+                title="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
+                  onBulkAction('delete', [r.id]);
+                }}
+                className="p-1.5 rounded-md text-[var(--ds-faint)] bg-[var(--ds-card)] border border-[var(--ds-line)] hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
       </motion.div>
     );

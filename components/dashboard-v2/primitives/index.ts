@@ -14,4 +14,3 @@ export { Card } from './Card';
 export { HeadRow } from './HeadRow';
 export { SubTabs, SubTab } from './SubTabs';
 export { PanelIntro } from './PanelIntro';
-export { LifecycleLegend } from './LifecycleLegend';
