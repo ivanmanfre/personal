@@ -290,6 +290,7 @@ body.dashboard-v2-light * {
 .dv-chip--bad  { color: var(--d-bad);  background: var(--d-bad-bg); }
 
 /* SUB-TABS */
+.dv-subtabs-wrap { position: relative; }
 .dv-subtabs {
   display: flex; gap: 0; border-bottom: 1px solid var(--d-rule); margin-bottom: 2rem;
   overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
@@ -298,6 +299,22 @@ body.dashboard-v2-light * {
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 28px), transparent 100%);
 }
 .dv-subtabs::-webkit-scrollbar { display: none; }
+/* Overflow affordance — quiet "+N" pill pinned outside the scroll/mask area
+ * so it never fades or scrolls away. Decorative only (aria-hidden, no
+ * pointer events); the tabs themselves stay reachable by scrolling. */
+.dv-subtabs-more {
+  position: absolute; right: 0; top: 0; bottom: 2px;
+  display: inline-flex; align-items: center;
+  margin: auto 0; height: fit-content;
+  font-size: 11px; font-weight: 600; letter-spacing: 0;
+  color: var(--d-paper-dimmer);
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-rule-strong);
+  border-radius: var(--d-r-sm);
+  padding: 0.2rem 0.5rem;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
 .dv-subtab { font-size: 13px; font-weight: 500; letter-spacing: -0.01em; color: var(--d-paper-dim); padding: 0.7rem 1rem; cursor: pointer; border: none; background: transparent; transform: translateY(1px); user-select: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.45rem; transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; position: relative; }
 .dv-subtab:hover:not([aria-selected="true"]) { color: var(--d-paper); background: rgba(255,255,255,0.025); border-bottom-color: rgba(255,255,255,0.08); }
 .dv-subtab[aria-selected="true"] { color: var(--d-paper); border-bottom-color: var(--d-good); font-weight: 600; }
