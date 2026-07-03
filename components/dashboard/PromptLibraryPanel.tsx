@@ -5,6 +5,16 @@ import { useContentPrompts, ContentPrompt } from '../../hooks/useContentPrompts'
 import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import { toastError } from '../../lib/dashboardActions';
 import { renderLightMarkdown } from '../../lib/lightMarkdown';
+import { supabase } from '../../lib/supabase';
+import { resolveDraft } from './promptDraftResolver';
+
+/** Coarse "how long ago" for provenance display — not a full i18n date lib, just enough to read at a glance. */
+function relTime(iso: string): string {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+  return `${Math.round(mins / 1440)}d ago`;
+}
 
 /**
  * Prompt Library — dashboard-native editor for every system prompt in the
@@ -52,18 +62,44 @@ const PromptLibraryPanel: React.FC = () => {
   const [dirty, setDirty] = useState(false);
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [busy, setBusy] = useState(false);
+  const [externalUpdate, setExternalUpdate] = useState<null | { updatedAt: string; updatedBy: string | null }>(null);
 
   const selected = useMemo(
     () => prompts.find((p) => p.id === selectedId) || null,
     [prompts, selectedId],
   );
 
-  // Reset draft when selection changes (or the underlying prompt updates from realtime).
+  // Selection changes and realtime row updates share this effect but must be handled
+  // differently: a *selection* change always seeds a fresh draft (discard-confirm already
+  // happened at the row-click site); a row update on the SAME selection must go through
+  // resolveDraft so a dirty draft is never silently overwritten. prevSelectedIdRef is the
+  // guard that tells the two cases apart — deliberately not left to effect-dep ordering.
+  const prevSelectedIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!selected) { setDraftBody(''); setDraftTitle(''); setDirty(false); return; }
-    setDraftBody(selected.body);
-    setDraftTitle(selected.title);
-    setDirty(false);
+    if (!selected) {
+      setDraftBody('');
+      setDraftTitle('');
+      setDirty(false);
+      setExternalUpdate(null);
+      prevSelectedIdRef.current = selectedId;
+      return;
+    }
+    if (prevSelectedIdRef.current !== selectedId) {
+      // Selection change — always seed fresh, clear any stale conflict flag.
+      setDraftBody(selected.body);
+      setDraftTitle(selected.title);
+      setDirty(false);
+      setExternalUpdate(null);
+      prevSelectedIdRef.current = selectedId;
+      return;
+    }
+    // Same selection, row changed underneath us (realtime / our own save landing).
+    const next = resolveDraft({ body: draftBody, title: draftTitle, externalUpdate }, selected, dirty);
+    setDraftBody(next.body);
+    setDraftTitle(next.title);
+    setExternalUpdate(next.externalUpdate);
+    if (!next.externalUpdate) setDirty(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, selected?.updatedAt]);
 
   // Group + filter the list
@@ -102,11 +138,24 @@ const PromptLibraryPanel: React.FC = () => {
       if (draftTitle !== selected.title) patch.title = draftTitle;
       const result = await savePrompt(selected.id, patch, selected.version);
       if (!result.ok) {
-        console.warn('savePrompt conflict: version changed underneath this edit', selected.id);
+        // Someone else's write landed first (CAS on version failed). Fetch the current
+        // row and surface the banner instead of alerting — draft + dirty stay intact.
+        const { data } = await supabase
+          .from('content_prompts')
+          .select('updated_at, updated_by')
+          .eq('id', selected.id)
+          .single();
+        setExternalUpdate({
+          updatedAt: data?.updated_at ?? new Date().toISOString(),
+          updatedBy: data?.updated_by ?? null,
+        });
         return;
       }
-      toast.success('Saved');
+      // Clear dirty BEFORE refresh() lands so the next realtime-driven row update
+      // re-seeds silently instead of tripping the external-change banner on our own save.
       setDirty(false);
+      toast.success('Saved');
+      await refresh();
     } catch (e: any) {
       toastError('save prompt', e);
     } finally {
@@ -135,8 +184,8 @@ const PromptLibraryPanel: React.FC = () => {
         <div>
           <h2 className="dv-section-h">Prompt library</h2>
           <p className="text-[12px] text-[color:var(--d-paper-dimmer)] mt-0.5">
-            {prompts.length} prompts · live source-of-truth for every Claude system prompt in the content engine.
-            Edits propagate instantly to n8n via realtime — no sync wait.
+            {prompts.length} prompts · canonical prompt store (content_prompts) read by live n8n runs.
+            Version bumps on every write; rows show who wrote last.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -209,6 +258,7 @@ const PromptLibraryPanel: React.FC = () => {
                           <div className="text-[12px] text-zinc-200 truncate">{p.title}</div>
                           <div className="text-[10px] text-zinc-500 font-mono truncate">{p.slug}</div>
                         </div>
+                        <span className="text-[10px] text-zinc-600 tabular-nums shrink-0">{relTime(p.updatedAt)}</span>
                         <div className="text-[10px] text-zinc-600 tabular-nums shrink-0">
                           {(p.body.length / 1000).toFixed(1)}k
                         </div>
@@ -249,6 +299,10 @@ const PromptLibraryPanel: React.FC = () => {
                     )}
                     <span>·</span>
                     <span>{(draftBody.length / 1000).toFixed(1)}k chars</span>
+                    <span>·</span>
+                    <span title={selected.updatedAt}>
+                      {relTime(selected.updatedAt)} by {selected.updatedBy ?? 'unknown'}
+                    </span>
                     {dirty && <span className="text-amber-400">· unsaved</span>}
                   </div>
                 </div>
@@ -269,6 +323,22 @@ const PromptLibraryPanel: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {externalUpdate && (
+                <div className="text-[12px] rounded-md border border-[var(--d-rule-strong)] bg-[var(--d-warn-bg)] text-[var(--d-warn)] px-3 py-2 flex items-center gap-3">
+                  <span>
+                    Changed outside this editor ({externalUpdate.updatedBy ?? 'unknown'}, {new Date(externalUpdate.updatedAt).toLocaleTimeString()}).
+                    Your unsaved draft is preserved.
+                  </span>
+                  <button
+                    className="underline font-semibold"
+                    onClick={() => { setDraftBody(selected.body); setDraftTitle(selected.title); setDirty(false); setExternalUpdate(null); }}
+                  >
+                    Take theirs
+                  </button>
+                  <button className="underline" onClick={() => setExternalUpdate(null)}>Keep mine</button>
+                </div>
+              )}
 
               {mode === 'edit' ? (
                 <Textarea

@@ -94,10 +94,14 @@ export function useContentPrompts() {
       .update(update)
       .eq('id', id)
       .eq('version', expectedVersion)
-      .select('id');
+      .select('id, version, updated_at, updated_by');
     if (error) throw new Error(`save failed: ${error.message}`);
     if (!data || data.length === 0) return { ok: false as const, conflict: true as const };
-    return { ok: true as const };
+    const row = data[0];
+    return {
+      ok: true as const,
+      row: { id: row.id, version: row.version, updatedAt: row.updated_at, updatedBy: row.updated_by || null },
+    };
   }, []);
 
   return { prompts, loading, error, refresh, savePrompt };
