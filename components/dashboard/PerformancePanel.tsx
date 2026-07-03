@@ -2,19 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2, AlertTriangle } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  BarChart, Bar, PieChart, Pie, Cell, LabelList,
+  BarChart, Bar, Cell, LabelList,
 } from 'recharts';
 import { useOwnPosts } from '../../hooks/useOwnPosts';
 import { useCompetitors } from '../../hooks/useCompetitors';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useFollowerHistory } from '../../hooks/useFollowerHistory';
 import { useDashboard } from '../../contexts/DashboardContext';
 import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
-import { formatNum, formatDate } from './shared/utils';
+import { formatNum, formatDate, timeAgo } from './shared/utils';
 import { PanelIntro } from '../dashboard-v2/primitives';
 import { normalizePillar } from '../../lib/pillarTaxonomy';
+import { minSampleRanking, dedupeTicks } from '../../lib/perfRankings';
+import { seedIdeaFromPost } from '../../lib/runItBack';
+import type { OwnPost } from '../../types/dashboard';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
@@ -146,6 +150,35 @@ const PerformancePanel: React.FC = () => {
     ];
   }, [posts, stats.totalLikes, competitorStats]);
 
+  // Deduped date ticks so a post-indexed chart doesn't print "Jun 8, Jun 8".
+  const chartTicks = useMemo(() => dedupeTicks(chartData.map((d) => d.date)), [chartData]);
+  // Min-sample guard: topics/hooks with <3 posts are held out of the ranking.
+  const topicRank = useMemo(() => minSampleRanking(topicData, 3), [topicData]);
+  const hookRank = useMemo(() => minSampleRanking(hookData, 3), [hookData]);
+
+  const { stats: followerStats } = useFollowerHistory();
+
+  // "Run it back" — seed a fresh Posts idea from a top performer.
+  const [seedMsg, setSeedMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [seedingIdx, setSeedingIdx] = useState<number | null>(null);
+  const handleRunItBack = async (post: OwnPost, i: number) => {
+    setSeedingIdx(i);
+    setSeedMsg(null);
+    try {
+      await seedIdeaFromPost({
+        title: post.text.slice(0, 90),
+        topic: post.topicCategory ?? '',
+        pillar: normalizePillar(post.pillar).label,
+        hook: post.hookPattern ?? '',
+      });
+      setSeedMsg({ ok: true, text: 'Seeded a new idea — find it on the Posts board Idea stage.' });
+    } catch {
+      setSeedMsg({ ok: false, text: 'Could not seed the idea. Try again.' });
+    } finally {
+      setSeedingIdx(null);
+    }
+  };
+
   if (loading) return <LoadingSkeleton cards={3} rows={5} />;
 
   if (error) {
@@ -172,7 +205,12 @@ const PerformancePanel: React.FC = () => {
         purpose="What actually landed, and what the system learns from it."
         how="Daily LinkedIn metrics flow back in to inform which topics, hooks, and formats get posted next."
       />
-      <div className="flex items-center justify-end flex-wrap gap-3">
+      {/* Toolbar: real scrape time (headline) + range toggle + manual refresh */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <span className="text-[12px] text-zinc-500 inline-flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+          {stats.lastScrapedAt ? `Scraped from LinkedIn · ${timeAgo(stats.lastScrapedAt)}` : 'Metrics not scraped yet'}
+        </span>
         <div className="flex items-center gap-2">
           {(['7d', '30d', '90d'] as Range[]).map((r) => (
             <button key={r} onClick={() => setRange(r)}
@@ -191,65 +229,202 @@ const PerformancePanel: React.FC = () => {
         <StatCard label="Total Posts" value={stats.count} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />
       </div>
 
-      {/* Metric selector */}
-      <div className="flex gap-1.5">
-        {(['impressions', 'likes', 'comments'] as Metric[]).map((m) => (
-          <button key={m} onClick={() => setMetric(m)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${metric === m ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'}`}>
-            {METRIC_LABELS[m]}
-          </button>
-        ))}
+      {/* Audience strip — LinkedIn follower block (moved in from the retired Site Audience tab) + scrape coverage */}
+      <div className="panel-surface shadow-sm shadow-black/10 p-4 flex items-center gap-x-8 gap-y-3 flex-wrap">
+        <div className="flex flex-col">
+          <span className="text-lg font-bold text-zinc-100 tabular-nums">{followerStats.followers != null ? formatNum(followerStats.followers) : '—'}</span>
+          <span className="text-[11px] text-zinc-500">LinkedIn followers</span>
+        </div>
+        {followerStats.weekDelta != null && (
+          <div className="flex flex-col">
+            <span className={`text-lg font-bold tabular-nums ${followerStats.weekDelta >= 0 ? 'text-emerald-400' : 'text-zinc-400'}`}>{followerStats.weekDelta >= 0 ? '+' : ''}{formatNum(followerStats.weekDelta)}</span>
+            <span className="text-[11px] text-zinc-500">last 7 days</span>
+          </div>
+        )}
+        <div className="flex flex-col ml-auto text-right">
+          <span className="text-[12px] text-zinc-400 tabular-nums">{stats.scrapedCount} of {stats.count} posts scraped</span>
+          {stats.unscrapedCount > 0 && (
+            <span className="text-[11px] text-zinc-500 mt-0.5">{stats.unscrapedCount} <span className="ml-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide bg-amber-900/40 text-amber-300 ring-1 ring-amber-700/30">not scraped yet</span></span>
+          )}
+        </div>
       </div>
 
       {posts.length === 0 ? (
         <div className="h-72 panel-surface shadow-sm shadow-black/10 flex items-center justify-center text-zinc-600">No data for this period</div>
       ) : (
         <>
-          {/* Area chart */}
-          <div className="panel-surface shadow-sm shadow-black/10 p-4 pt-5">
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={METRIC_COLORS[metric]} stopOpacity={0.25} />
-                    <stop offset="95%" stopColor={METRIC_COLORS[metric]} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
-                <XAxis dataKey="date" tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: CHART.axis, fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
-                <Area type="monotone" dataKey={metric} stroke={METRIC_COLORS[metric]} fill="url(#perfGrad)" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Which pillars land — moved up: the most actionable "what to write next" signal */}
+          {pillarData.length > 0 && (
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-1">Which pillars land <span className="font-normal text-zinc-500">· bar = avg impressions · pipeline-generated posts only</span></h3>
+              <div className="space-y-2 mt-3">
+                {pillarData.map((t) => {
+                  const maxImp = pillarData[0].avgImpressions || 1;
+                  return (
+                    <div key={t.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-zinc-300">
+                          {t.label}
+                          {t.unmapped && <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide bg-amber-900/40 text-amber-300 ring-1 ring-amber-700/30">unmapped ({t.name})</span>}
+                        </span>
+                        <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp · {t.engRate}% eng</span>
+                      </div>
+                      <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.primary }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Topics & Hooks — min-sample guard (n≥3): thin rankings held out, not faked */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which topics land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
+              {topicRank.ranked.length > 0 ? (
+                <div className="space-y-2">
+                  {topicRank.ranked.slice(0, 6).map((t) => {
+                    const maxImp = topicRank.ranked[0].avgImpressions || 1;
+                    return (
+                      <div key={t.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{t.name}</span>
+                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.info }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="text-zinc-600 text-sm">No topic has ≥3 posts yet</p>}
+              {topicRank.pending.length > 0 && (
+                <p className="mt-3 text-[11px] text-zinc-500 border border-dashed border-zinc-700/60 rounded-lg px-3 py-2">{topicRank.pending.length} topic{topicRank.pending.length > 1 ? 's' : ''} pending — &lt;3 posts each, held out until the sample is honest.</p>
+              )}
+            </div>
+
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which hooks land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
+              {hookRank.ranked.length > 0 ? (
+                <div className="space-y-2">
+                  {hookRank.ranked.slice(0, 6).map((h) => {
+                    const maxImp = hookRank.ranked[0].avgImpressions || 1;
+                    return (
+                      <div key={h.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{h.name}</span>
+                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{h.count} posts · ~{formatNum(h.avgImpressions)} imp</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${(h.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.violet }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <p className="text-zinc-600 text-sm">No hook has ≥3 posts yet</p>}
+              {hookRank.pending.length > 0 && (
+                <p className="mt-3 text-[11px] text-zinc-500 border border-dashed border-zinc-700/60 rounded-lg px-3 py-2">{hookRank.pending.length} hook{hookRank.pending.length > 1 ? 's' : ''} pending — &lt;3 posts each, held out until the sample is honest.</p>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Content type breakdown */}
-            <div className="panel-surface shadow-sm shadow-black/10 p-4">
-              <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">By content type</h3>
-              {typeData.length > 0 ? (
-                <div className="flex items-center gap-6">
-                  <ResponsiveContainer width={120} height={120}>
-                    <PieChart>
-                      <Pie data={typeData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={50} innerRadius={25} strokeWidth={0}>
-                        {typeData.map((_, i) => <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2.5">
-                    {typeData.map((t, i) => (
-                      <div key={t.name} className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
-                        <span className="text-xs text-zinc-400">{t.name}: {t.count} posts, ~{formatNum(t.avgImpressions)} imp</span>
-                      </div>
-                    ))}
+          {/* Metric selector + Trend (moved below strategy views; deduped date ticks) */}
+          <div className="space-y-3">
+            <div className="flex gap-1.5">
+              {(['impressions', 'likes', 'comments'] as Metric[]).map((m) => (
+                <button key={m} onClick={() => setMetric(m)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${metric === m ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'}`}>
+                  {METRIC_LABELS[m]}
+                </button>
+              ))}
+            </div>
+            <div className="panel-surface shadow-sm shadow-black/10 p-4 pt-5">
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={METRIC_COLORS[metric]} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={METRIC_COLORS[metric]} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                  <XAxis dataKey="date" ticks={chartTicks} tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#52525b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: CHART.axis, fontSize: 12 }} itemStyle={{ color: '#0f172a', fontSize: 12 }} />
+                  <Area type="monotone" dataKey={metric} stroke={METRIC_COLORS[metric]} fill="url(#perfGrad)" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Top posts + Run it back */}
+          <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
+            <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5 text-zinc-500" />
+              <h3 className="text-[13px] font-semibold text-zinc-200">Top posts <span className="font-normal text-zinc-500">· by {METRIC_LABELS[metric].toLowerCase()}</span></h3>
+            </div>
+            {seedMsg && (
+              <div className={`px-4 py-2 text-[12px] ${seedMsg.ok ? 'text-emerald-300 bg-emerald-900/20' : 'text-amber-300 bg-amber-900/20'}`}>{seedMsg.text}</div>
+            )}
+            <div className="divide-y divide-zinc-800/40">
+              {topPosts.map((post, i) => (
+                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
+                  <span className="text-[11px] font-bold text-zinc-600 w-5 pt-0.5 text-center">#{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-300 truncate">{post.text.slice(0, 100)}</p>
+                    <div className="flex gap-3 mt-1.5">
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Eye className="w-3 h-3" />{formatNum(post.impressions)}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-pink-400/70"><Heart className="w-3 h-3" />{post.likes}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-blue-400/70"><MessageCircle className="w-3 h-3" />{post.comments}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Repeat2 className="w-3 h-3" />{post.shares}</span>
+                    </div>
                   </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRunItBack(post, i)}
+                      disabled={seedingIdx === i}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[12px] font-medium text-[var(--ds-accent)] bg-[var(--d-accent-bg)] ring-1 ring-inset ring-[var(--d-rule-strong)] hover:brightness-95 disabled:opacity-50 min-h-[32px]"
+                    >
+                      <Repeat2 className="w-3.5 h-3.5" />{seedingIdx === i ? 'Seeding…' : 'Run it back'}
+                    </button>
+                    {post.linkedinUrl && (
+                      <a href={post.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400/70 hover:text-emerald-400 transition-colors">View</a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Content-type share-bar + Benchmark — least actionable, kept last */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="panel-surface shadow-sm shadow-black/10 p-4">
+              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">By content type <span className="font-normal text-zinc-500">· share of posts</span></h3>
+              {typeData.length > 0 ? (
+                <div className="space-y-2">
+                  {[...typeData].sort((a, b) => b.count - a.count).map((t, i) => {
+                    const maxCount = Math.max(...typeData.map((d) => d.count)) || 1;
+                    return (
+                      <div key={t.name}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-zinc-300">{t.name}</span>
+                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
+                        </div>
+                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${(t.count / maxCount) * 100}%`, backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : <p className="text-zinc-600 text-sm">No data</p>}
             </div>
 
-            {/* Competitor benchmark */}
             <div className="panel-surface shadow-sm shadow-black/10 p-4">
               <h3 className="text-[13px] font-semibold text-zinc-200 mb-4">How you compare <span className="font-normal text-zinc-500">· avg likes per post</span></h3>
               {benchmarkData.length > 1 ? (
@@ -277,103 +452,6 @@ const PerformancePanel: React.FC = () => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : <p className="text-zinc-600 text-sm">{competitorPatterns.length > 0 ? `No competitor posts in this ${range} window` : 'No competitor data'}</p>}
-            </div>
-          </div>
-
-          {/* Which pillar lands (new: post-v14 strategy view) */}
-          {pillarData.length > 0 && (
-            <div className="panel-surface shadow-sm shadow-black/10 p-4">
-              <h3 className="text-[13px] font-semibold text-zinc-200 mb-1">Which pillars land <span className="font-normal text-zinc-500">· bar = avg impressions · pipeline-generated posts only</span></h3>
-              <div className="space-y-2 mt-3">
-                {pillarData.map((t) => {
-                  const maxImp = pillarData[0].avgImpressions || 1;
-                  return (
-                    <div key={t.name}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-zinc-300">{t.label}</span>
-                        <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp · {t.engRate}% eng</span>
-                      </div>
-                      <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.primary }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Topic & Hook breakdown */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="panel-surface shadow-sm shadow-black/10 p-4">
-              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which topics land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
-              {topicData.length > 0 ? (
-                <div className="space-y-2">
-                  {topicData.slice(0, 6).map((t) => {
-                    const maxImp = topicData[0].avgImpressions || 1;
-                    return (
-                      <div key={t.name}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{t.name}</span>
-                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
-                        </div>
-                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.info }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : <p className="text-zinc-600 text-sm">No topic data</p>}
-            </div>
-
-            <div className="panel-surface shadow-sm shadow-black/10 p-4">
-              <h3 className="text-[13px] font-semibold text-zinc-200 mb-3">Which hooks land <span className="font-normal text-zinc-500">· bar = avg impressions</span></h3>
-              {hookData.length > 0 ? (
-                <div className="space-y-2">
-                  {hookData.slice(0, 6).map((h) => {
-                    const maxImp = hookData[0].avgImpressions || 1;
-                    return (
-                      <div key={h.name}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-zinc-300 truncate max-w-[160px]">{h.name}</span>
-                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{h.count} posts · ~{formatNum(h.avgImpressions)} imp</span>
-                        </div>
-                        <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${(h.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.violet }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : <p className="text-zinc-600 text-sm">No hook data</p>}
-            </div>
-          </div>
-
-          {/* Top posts */}
-          <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
-              <FileText className="w-3.5 h-3.5 text-zinc-500" />
-              <h3 className="text-[13px] font-semibold text-zinc-200">Top posts <span className="font-normal text-zinc-500">· by {METRIC_LABELS[metric].toLowerCase()}</span></h3>
-            </div>
-            <div className="divide-y divide-zinc-800/40">
-              {topPosts.map((post, i) => (
-                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
-                  <span className="text-[11px] font-bold text-zinc-600 w-5 pt-0.5 text-center">#{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-300 truncate">{post.text.slice(0, 100)}</p>
-                    <div className="flex gap-3 mt-1.5">
-                      <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Eye className="w-3 h-3" />{formatNum(post.impressions)}</span>
-                      <span className="flex items-center gap-1 text-[11px] text-pink-400/70"><Heart className="w-3 h-3" />{post.likes}</span>
-                      <span className="flex items-center gap-1 text-[11px] text-blue-400/70"><MessageCircle className="w-3 h-3" />{post.comments}</span>
-                      <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Repeat2 className="w-3 h-3" />{post.shares}</span>
-                    </div>
-                  </div>
-                  {post.linkedinUrl && (
-                    <a href={post.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-400/70 hover:text-emerald-400 transition-colors shrink-0">View</a>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
         </>
