@@ -5,13 +5,13 @@ import { HeadRow, SubTabs, SubTab } from '../primitives';
  * Phase 6 — Knowledge.
  * Sub-tabs:
  *   - Brain: claude_memory (cross-conversation memory graph)
- *   - Prompts: ClickUp Prompts Library editor (writes back to ClickUp pages
- *     via the clickup-pages edge function; n8n prompt-sync workflow then
- *     pushes ClickUp → Supabase.content_prompts for the agents to consume).
+ *   - Prompts: Prompt Library editor — edits Supabase content_prompts
+ *     directly (the table the agents actually read). The old ClickUp-mirror
+ *     editor is retired; ClickUp is no longer a prompt source of truth.
  */
 
 const BrainPanel = lazy(() => import('../../dashboard/BrainPanel'));
-const PromptsPanel = lazy(() => import('../../dashboard/PromptsPanel'));
+const PromptLibraryPanel = lazy(() => import('../../dashboard/PromptLibraryPanel'));
 
 const Loading = () => <div style={{ padding: '2rem 0', color: 'var(--d-paper-dim)', fontSize: 13 }}>Loading…</div>;
 
@@ -50,7 +50,7 @@ export function Knowledge() {
         ))}
       </SubTabs>
       <Suspense fallback={<Loading />}>
-        {sub === 'brain' ? <BrainPanel /> : <PromptsPanel />}
+        {sub === 'brain' ? <BrainPanel /> : <PromptLibraryPanel />}
       </Suspense>
     </>
   );

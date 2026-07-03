@@ -66,7 +66,7 @@ const LazyAudiencePanel = lazy(retryImport(() => import('./AudiencePanel')));
 const LazyLetterPanel = lazy(retryImport(() => import('./LetterPanel')));
 const LazyStrategyPanel = lazy(retryImport(() => import('./StrategyPanel')));
 const LazyBrainPanel = lazy(retryImport(() => import('./BrainPanel')));
-const LazyPromptsPanel = lazy(retryImport(() => import('./PromptsPanel')));
+const LazyPromptLibraryPanel = lazy(retryImport(() => import('./PromptLibraryPanel')));
 const LazyPostStudioPanel = lazy(retryImport(() => import('./PostStudioPanel')));
 const LazyLeadMagnetStudioPanel = lazy(retryImport(() => import('./LeadMagnetStudioPanel')));
 const LazySignalClustersPanel = lazy(retryImport(() => import('./SignalClustersPanel')));
@@ -98,7 +98,7 @@ const panelComponents: Record<Tab, React.ComponentType> = {
   audience: LazyAudiencePanel as unknown as React.ComponentType,
   letter: LazyLetterPanel as unknown as React.ComponentType,
   brain: LazyBrainPanel as unknown as React.ComponentType,
-  prompts: LazyPromptsPanel as unknown as React.ComponentType,
+  prompts: LazyPromptLibraryPanel as unknown as React.ComponentType,
   studio: LazyPostStudioPanel as unknown as React.ComponentType,
   leadmagnets: LazyLeadMagnetStudioPanel as unknown as React.ComponentType,
   settings: SettingsPanel,
@@ -133,7 +133,7 @@ const lazyImports = [
   retryImport(() => import('./AgentReadyPanel')),
   retryImport(() => import('./AudiencePanel')),
   retryImport(() => import('./LetterPanel')),
-  retryImport(() => import('./PromptsPanel')),
+  retryImport(() => import('./PromptLibraryPanel')),
   retryImport(() => import('./PostStudioPanel')),
   retryImport(() => import('./LeadMagnetStudioPanel')),
   retryImport(() => import('./ScheduledOpsPanel')),

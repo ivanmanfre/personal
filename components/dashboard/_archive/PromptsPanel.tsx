@@ -6,16 +6,16 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { FileText, Search, Save, Undo2, RefreshCw, ExternalLink, Tag as TagIcon, Loader2 } from 'lucide-react';
-import PanelCard from './shared/PanelCard';
-import EmptyState from './shared/EmptyState';
-import LoadingSkeleton from './shared/LoadingSkeleton';
-import { timeAgo } from './shared/utils';
+import PanelCard from '../shared/PanelCard';
+import EmptyState from '../shared/EmptyState';
+import LoadingSkeleton from '../shared/LoadingSkeleton';
+import { timeAgo } from '../shared/utils';
 import {
   usePromptPages,
   PROMPTS_WORKSPACE_ID,
   PROMPTS_DOC_ID,
   type PromptTag,
-} from '../../hooks/usePromptPages';
+} from '../../../hooks/usePromptPages';
 
 const TAG_ORDER: PromptTag[] = ['Hook', 'Voice', 'Forbidden', 'Topic', 'Strategy', 'QA', 'Video', 'Generation', 'Other'];
 
