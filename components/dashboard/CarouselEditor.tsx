@@ -3,10 +3,11 @@ import { toast } from 'sonner';
 import { Loader2, Save, CalendarClock, RefreshCw, ExternalLink, AlertTriangle, ImagePlus, Trash2, Clapperboard, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import type { CarouselDraft } from '../../hooks/useContentLibrary';
-import { saveDraft, scheduleCarousel, buildCarousel, generatePostContent, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo, publishPostNow } from '../../lib/studioActions';
+import { saveDraft, scheduleCarousel, uploadPostImage, regenerateDraft, applyImageToDraft, redoVideo, publishPostNow } from '../../lib/studioActions';
 import { supabase } from '../../lib/supabase';
 import { Sparkles } from 'lucide-react';
-import { toastError } from '../../lib/dashboardActions';
+import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
+import { elapsedMinutes, isStuckGenerating } from './genAge';
 import AgentLogFeed from './AgentLogFeed';
 import QAVerdictPanel from './QAVerdictPanel';
 import FieldGrid from './FieldGrid';
@@ -21,6 +22,7 @@ import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
 import ImageLibraryPicker from './ImageLibraryPicker';
 import SwipeableCarousel from './SwipeableCarousel';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Library } from 'lucide-react';
 
 interface Props {
@@ -95,6 +97,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // Confirm-dialog state for the three native browser confirmations this editor used to have.
+  const [confirmPostNow, setConfirmPostNow] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [logCollapsed, setLogCollapsed] = useState(true);
   const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -638,33 +644,17 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             >
               {(() => {
                 const s = draft.status;
-                const fireGenerate = async () => {
-                  const startedAt = new Date().toISOString();
-                  const nextTax = { ...(draft.taxonomy as any || {}), generating_started_at: startedAt };
-                  const { error: upErr } = await supabase.from('carousel_drafts').update({
-                    status: 'generating',
-                    taxonomy: nextTax,
-                  }).eq('id', draft.id);
-                  if (upErr) throw upErr;
-                  if (draft.type === 'carousel') {
-                    // Use the draft's real uuid — NOT a throwaway `studio-<rand>` id.
-                    // The carousel sub-workflow looks this up against carousel_drafts.id
-                    // (a uuid column); a studio- id fails with "invalid input syntax for
-                    // type uuid" and the carousel silently never generates.
-                    return buildCarousel({ carousel_id: draft.id, draft_id: draft.id, topic: draft.topic || draft.title || '', key_points: [] });
-                  }
-                  return generatePostContent({
-                    draft_id: draft.id,
-                    topic: draft.topic || draft.title || '',
-                    title: draft.title || draft.topic || '',
-                    author: 'Ivan',
-                    source: (tax.source as string) || 'Studio',
-                    post_format: draft.type === 'single_image' ? 'Single Image' : 'Text Post',
-                    post_format_details: draft.type === 'single_image' ? 'standard post with concept image' : 'standard text post',
-                    include_image: draft.type === 'single_image' ? 'Yes' : 'No',
-                    image_style: draft.type === 'single_image' ? ((tax.image_style as string) || 'Concept Visual') : undefined,
-                  });
-                };
+                // Same regeneration path the row-level Retry on the Posts board
+                // list uses (lib/studioActions.ts) — kept as one function so the
+                // status flip + webhook dispatch never drifts between the two
+                // call sites.
+                const fireGenerate = () => regenerateDraft({
+                  id: draft.id,
+                  type: draft.type,
+                  topic: draft.topic,
+                  title: draft.title,
+                  taxonomy: draft.taxonomy,
+                });
 
                 if (s === 'idea' || s === 'suggestion') {
                   return (
@@ -685,9 +675,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 }
 
                 if (s === 'generating') {
+                  // Shared threshold with the board rows (genAge.ts) — the editor
+                  // must never call a run "stalled" while the row still shows a
+                  // plain chip (or vice versa).
                   const startStr = (draft.taxonomy as any)?.generating_started_at as string | undefined;
-                  const elapsedMin = startStr ? Math.round((Date.now() - new Date(startStr).getTime()) / 60_000) : null;
-                  const stuck = elapsedMin !== null && elapsedMin >= 15;
+                  const elapsedMin = elapsedMinutes(startStr);
+                  const stuck = isStuckGenerating(startStr);
                   return (
                     <>
                       {stuck
@@ -747,7 +740,13 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                 if (s === 'error') {
                   return (
                     <>
-                      <span className="text-xs text-red-600">Last generation failed.</span>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-xs text-[var(--d-bad-txt)] font-medium">Last generation failed.</span>
+                        {/* No last_error column exists on carousel_drafts yet, so
+                            this is a generic reason, not the real failure cause —
+                            see task-6-report.md backlog note. */}
+                        <span className="text-xs text-[var(--d-bad-txt)]">{GENERATION_ERROR_FALLBACK}</span>
+                      </div>
                       <Button
                         variant="primary"
                         disabled={!!busy}
@@ -792,10 +791,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       variant="secondary"
                       disabled={!!busy}
                       title="Publish to LinkedIn right now — skips the schedule"
-                      onClick={() => {
-                        if (!confirm('Publish this post to LinkedIn right now?\n\nIt goes out immediately and can’t be undone.')) return;
-                        run('post now', () => publishPostNow(draft.id), 'Posting to LinkedIn now — live in ~30s');
-                      }}
+                      onClick={() => setConfirmPostNow(true)}
                     >
                       {busy === 'post now' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       {busy === 'post now' ? 'Posting…' : 'Post now'}
@@ -812,14 +808,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               disabled={!!busy}
               className="text-red-600 hover:text-red-700 hover:bg-red-50 mr-1"
               title="Delete this post permanently"
-              onClick={() => {
-                if (!confirm(`Delete this ${draft.type || 'post'} permanently? This can't be undone.`)) return;
-                run('delete', async () => {
-                  const { error } = await supabase.from('carousel_drafts').delete().eq('id', draft.id);
-                  if (error) throw error;
-                  onClose();
-                }, 'Post deleted');
-              }}
+              onClick={() => setConfirmDelete(true)}
             >
               {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
             </Button>
@@ -868,12 +857,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <Button
               variant="secondary"
               disabled={!!busy}
-              onClick={() => {
-                if (!confirm(`Regenerate this ${draft.type || 'post'}? The current copy${draft.imageUrls?.[0] ? ' and image' : ''} will be replaced.`)) return;
-                run('re-author', () => regenerateDraft({
-                  id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
-                }), 'Regeneration fired');
-              }}
+              onClick={() => setConfirmRegenerate(true)}
               title="Regenerate this post from scratch"
             >
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Regenerate
@@ -888,6 +872,46 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         onClose={() => setLibraryOpen(false)}
         onPick={onPickFromLibrary}
         currentUrl={(draft.imageUrls && draft.imageUrls[0]) || null}
+      />
+      <ConfirmDialog
+        open={confirmPostNow}
+        title="Publish this post to LinkedIn right now?"
+        body="It goes out immediately and can’t be undone."
+        confirmLabel="Post now"
+        onConfirm={() => {
+          setConfirmPostNow(false);
+          run('post now', () => publishPostNow(draft.id), 'Posting to LinkedIn now — live in ~30s');
+        }}
+        onCancel={() => setConfirmPostNow(false)}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        title={`Delete this ${draft.type || 'post'} permanently?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          setConfirmDelete(false);
+          run('delete', async () => {
+            const { error } = await supabase.from('carousel_drafts').delete().eq('id', draft.id);
+            if (error) throw error;
+            onClose();
+          }, 'Post deleted');
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+      <ConfirmDialog
+        open={confirmRegenerate}
+        title={`Regenerate this ${draft.type || 'post'}?`}
+        body={`The current copy${draft.imageUrls?.[0] ? ' and image' : ''} will be replaced.`}
+        confirmLabel="Regenerate"
+        onConfirm={() => {
+          setConfirmRegenerate(false);
+          run('re-author', () => regenerateDraft({
+            id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
+          }), 'Regeneration fired');
+        }}
+        onCancel={() => setConfirmRegenerate(false)}
       />
     </div>
   );

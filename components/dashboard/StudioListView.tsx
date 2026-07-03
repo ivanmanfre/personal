@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Trash2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from 'framer-motion';
 import { ListRowSkeleton } from '../ui/primitives';
 import { statusLabel } from '../../lib/statusLabels';
+import { ConfirmDialog } from './ConfirmDialog';
 
 /**
  * Real columned list view — direct ClickUp-list equivalent.
@@ -31,16 +32,19 @@ export type StudioRow = {
   source?: string;
   formatLabel?: string;
   topicStrength?: string;
+  /** True when status is 'generating' and elapsed time has passed the stuck
+   *  threshold (see genAge.ts). Surfaces the same Retry affordance as an
+   *  error row so a stalled generation isn't a dead end. */
+  stuckGenerating?: boolean;
 };
 
 export type StatusMeta = { dot: string; label: string };
 
-type SortKey = 'title' | 'status' | 'pillar' | 'hookType' | 'valueTier' | 'strength' | 'date' | 'source' | 'format';
+type SortKey = 'title' | 'pillar' | 'hookType' | 'valueTier' | 'strength' | 'date' | 'source' | 'format';
 type SortDir = 'asc' | 'desc';
 
 const ALL_COLS: { key: SortKey; label: string; width: string; visible?: 'always' | 'gte-md' | 'gte-lg' }[] = [
   { key: 'title',     label: 'Title',    width: 'minmax(0,1fr)' },
-  { key: 'status',    label: 'Status',   width: '108px' },
   { key: 'pillar',    label: 'Pillar',   width: '118px', visible: 'gte-lg' },
   { key: 'hookType',  label: 'Hook',     width: '118px', visible: 'gte-lg' },
   { key: 'valueTier', label: 'Tier',     width: '108px', visible: 'gte-lg' },
@@ -106,6 +110,10 @@ export function StudioListView({
   hiddenCols = new Set<SortKey>(),
   loading = false,
   onBulkAction,
+  /** Called from an error row's Retry button. Fires the same regeneration
+   *  path as the editor's Retry — callers pass a handler bound to their
+   *  board's shared regenerate helper (never a duplicate webhook call). */
+  onRetry,
   /** When set, rows are grouped under collapsible status headers (ClickUp-style).
    *  Per-group collapse state persists to localStorage under this key. */
   groupByStatus,
@@ -131,6 +139,7 @@ export function StudioListView({
   hiddenCols?: Set<SortKey>;
   loading?: boolean;
   onBulkAction?: (action: 'disqualify' | 'delete', ids: string[]) => Promise<void> | void;
+  onRetry?: (id: string) => Promise<void> | void;
   groupByStatus?: string;
   statusOrder?: string[];
   pinnedStatuses?: string[];
@@ -173,6 +182,9 @@ export function StudioListView({
   // Stored as the row id, or null when not editing. Only one at a time.
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
+  // Tracks the row whose Retry button is mid-flight so it can show a spinner
+  // and disable re-clicks without needing a busy flag from every caller.
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   // Track each row's last-seen status. When it changes, mark the row for a brief
   // emerald flash so external transitions (workflow flips, auto-refresh) are
@@ -197,6 +209,9 @@ export function StudioListView({
   // Media lightbox — click a row thumbnail to view media at full size
   // without opening the editor. Stores the row currently being previewed.
   const [previewRow, setPreviewRow] = useState<StudioRow | null>(null);
+  // Delete confirmations — bulk (toolbar) and per-row (hover action).
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<StudioRow | null>(null);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggleOne = (id: string) =>
@@ -206,53 +221,7 @@ export function StudioListView({
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  // Persisted column order — drag a column header to reorder. Keyed by
-  // groupByStatus prop so post + LM lists keep separate orders. Falls back
-  // to the default ALL_COLS order when no saved order exists or schema drifted.
-  const orderKey = `studio-cols-${groupByStatus || 'flat'}`;
-  const [customOrder, setCustomOrder] = useState<SortKey[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const raw = localStorage.getItem(orderKey);
-      if (raw) return JSON.parse(raw) as SortKey[];
-    } catch {}
-    return [];
-  });
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try { localStorage.setItem(orderKey, JSON.stringify(customOrder)); } catch {}
-  }, [customOrder, orderKey]);
-  const [draggingCol, setDraggingCol] = useState<SortKey | null>(null);
-
-  const cols = useMemo(() => {
-    const skipStatus = !!groupByStatus && !onStatusChange;
-    const allKeys = ALL_COLS.map((c) => c.key);
-    // Apply custom order first, then any keys not in custom order keep default position
-    const ordered = customOrder.length
-      ? [...customOrder.filter((k) => allKeys.includes(k)), ...allKeys.filter((k) => !customOrder.includes(k))]
-      : allKeys;
-    return ordered
-      .map((k) => ALL_COLS.find((c) => c.key === k)!)
-      .filter((c) => !hiddenCols.has(c.key) && !(skipStatus && c.key === 'status'));
-  }, [hiddenCols, groupByStatus, onStatusChange, customOrder]);
-
-  function reorderCols(dragged: SortKey, dropTarget: SortKey) {
-    if (dragged === dropTarget) return;
-    const allKeys = ALL_COLS.map((c) => c.key);
-    const base = customOrder.length ? [...customOrder] : [...allKeys];
-    const from = base.indexOf(dragged);
-    if (from === -1) base.push(dragged);
-    base.splice(base.indexOf(dragged), 1);
-    const to = base.indexOf(dropTarget);
-    if (to === -1) {
-      base.push(dragged);
-    } else {
-      base.splice(to, 0, dragged);
-    }
-    // Make sure every key is represented so future renders are stable
-    for (const k of allKeys) if (!base.includes(k)) base.push(k);
-    setCustomOrder(base);
-  }
+  const cols = useMemo(() => ALL_COLS.filter((c) => !hiddenCols.has(c.key)), [hiddenCols]);
   const gridTemplate = useMemo(() => {
     const base = cols.map((c) => c.width).join(' ');
     return onBulkAction ? `32px ${base}` : base;
@@ -265,7 +234,6 @@ export function StudioListView({
       let bv: string | number = '';
       switch (sortKey) {
         case 'title':  av = a.title || ''; bv = b.title || ''; break;
-        case 'status': av = a.status || ''; bv = b.status || ''; break;
         case 'pillar': av = a.pillar || ''; bv = b.pillar || ''; break;
         case 'hookType': av = a.hookType || ''; bv = b.hookType || ''; break;
         case 'valueTier': av = TIER_RANK[a.valueTier || ''] || 99; bv = TIER_RANK[b.valueTier || ''] || 99; break;
@@ -312,7 +280,7 @@ export function StudioListView({
               className="px-2.5 py-1 rounded border border-[var(--ds-line)] bg-[var(--ds-card)] hover:bg-[var(--ds-bg)] text-[var(--ds-ink)] transition-colors"
             >Disqualify</button>
             <button
-              onClick={() => { if (confirm(`Delete ${selected.size} row(s)? This can't be undone.`)) { onBulkAction('delete', Array.from(selected)); clearSelection(); } }}
+              onClick={() => setConfirmBulkDelete(true)}
               className="px-2.5 py-1 rounded border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 transition-colors"
             >Delete</button>
           </div>
@@ -337,32 +305,12 @@ export function StudioListView({
         )}
         {cols.map((c) => {
           const active = sortKey === c.key;
-          const isDragging = draggingCol === c.key;
           return (
             <button
               key={c.key}
               onClick={() => toggleSort(c.key)}
-              draggable
-              onDragStart={(e) => {
-                setDraggingCol(c.key);
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/x-col', c.key);
-              }}
-              onDragEnd={() => setDraggingCol(null)}
-              onDragOver={(e) => {
-                if (draggingCol && draggingCol !== c.key) {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const dragged = (e.dataTransfer.getData('text/x-col') || draggingCol || '') as SortKey;
-                if (dragged) reorderCols(dragged, c.key);
-                setDraggingCol(null);
-              }}
-              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-[var(--ds-ink)]' : 'hover:text-[var(--ds-dim)]'} text-left transition-colors cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${draggingCol && draggingCol !== c.key ? 'hover:bg-[var(--ds-accent)]/5 rounded' : ''}`}
-              title="Drag to reorder · click to sort"
+              className={`${colClass(c.visible)} items-center gap-1 ${active ? 'text-[var(--ds-ink)]' : 'hover:text-[var(--ds-dim)]'} text-left transition-colors`}
+              title="Click to sort"
             >
               {c.label}
               {active ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-2.5 h-2.5 opacity-30" />}
@@ -452,6 +400,24 @@ export function StudioListView({
       {previewRow && previewRow.thumbUrl && (
         <MediaLightbox row={previewRow} onClose={() => setPreviewRow(null)} />
       )}
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Delete ${selected.size} row(s)?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { onBulkAction && onBulkAction('delete', Array.from(selected)); clearSelection(); setConfirmBulkDelete(false); }}
+        onCancel={() => setConfirmBulkDelete(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmDeleteRow}
+        title={`Delete "${confirmDeleteRow?.title || 'this item'}" permanently?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (confirmDeleteRow) onBulkAction && onBulkAction('delete', [confirmDeleteRow.id]); setConfirmDeleteRow(null); }}
+        onCancel={() => setConfirmDeleteRow(null)}
+      />
     </div>
   );
 
@@ -473,7 +439,7 @@ export function StudioListView({
         tabIndex={0}
         aria-label={`Open ${r.title || 'post'}`}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(r.id); } }}
-        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[var(--d-surface-2)] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
+        className={`group relative w-full ${dense ? 'grid' : 'flex flex-wrap md:grid'} items-center gap-x-3 gap-y-1 ${dense ? 'px-3 py-2' : 'px-4 py-3.5'} text-left border-b border-[var(--ds-line)] last:border-b-0 hover:bg-[var(--d-surface-2)] transition-colors cursor-pointer has-[:checked]:bg-[var(--ds-accent)]/5 has-[:checked]:ring-1 has-[:checked]:ring-inset has-[:checked]:ring-[var(--ds-accent)]/20 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${flashIds.has(r.id) ? 'animate-status-flash' : ''}`}
         // gridTemplateColumns only takes effect when display:grid is active (md+);
         // flexbox layout below md ignores it, so cells wrap naturally as chips.
         style={{ gridTemplateColumns: gridTemplate }}
@@ -528,63 +494,12 @@ export function StudioListView({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className={`${dense ? 'text-[12px]' : 'text-[14px]'} text-[var(--ds-ink)] truncate font-medium`}>{r.title || '(untitled)'}</div>
-                  {r.excerpt && !dense && <div className="text-[12px] text-[var(--ds-faint)] truncate mt-0.5">{r.excerpt}</div>}
+                  {r.excerpt && !dense && (
+                    <div className={`text-[12px] truncate mt-0.5 ${r.status === 'error' ? 'text-[var(--d-bad-txt)]' : 'text-[var(--ds-faint)]'}`}>
+                      {r.excerpt}
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          }
-          if (c.key === 'status') {
-            const canEdit = !!onStatusChange && !!statusChoices && statusChoices.length > 0;
-            const isEditing = canEdit && editingStatusId === r.id;
-            if (isEditing) {
-              return (
-                <div key={c.key} className={cls + ' gap-1.5'}>
-                  <select
-                    autoFocus
-                    value={r.status}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={async (e) => {
-                      const next = e.target.value;
-                      setEditingStatusId(null);
-                      if (next !== r.status) await onStatusChange!(r.id, next);
-                    }}
-                    onBlur={() => setEditingStatusId(null)}
-                    className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1.5 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
-                  >
-                    {statusChoices!.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
-                  </select>
-                </div>
-              );
-            }
-            return (
-              <div
-                key={c.key}
-                className={cls + ' gap-1.5' + (canEdit ? ' hover:bg-black/[.03] rounded px-1 -mx-1' : '')}
-                onClick={canEdit ? (e) => { e.stopPropagation(); setEditingStatusId(r.id); } : undefined}
-                title={canEdit ? 'Click to change status' : undefined}
-              >
-                {/* Status pill morphs when status changes — AnimatePresence keyed by status.
-                    Dropped the redundant inner dot-scale (parent pill scale conveys it).
-                    role='status' + aria-live='polite' announces flips to AT.
-                    Motion gates on prefers-reduced-motion (no scale/opacity for that user). */}
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={r.status}
-                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.85, y: -3 }}
-                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-                    exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 3 }}
-                    transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: 'easeOut' }}
-                    className="flex items-center gap-1.5"
-                    role="status"
-                    aria-live="polite"
-                    aria-label={`Status: ${statusLabel(r.status)}`}
-                  >
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${(meta as any).pill || 'bg-slate-100 text-slate-600'} border-current/10`}>
-                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
-                      {statusLabel(r.status)}
-                    </span>
-                  </motion.div>
-                </AnimatePresence>
               </div>
             );
           }
@@ -673,23 +588,81 @@ export function StudioListView({
           }
           return null;
         })}
-        {/* Per-row delete — hover-revealed, far-right edge (sits over the empty
-            tail of the Date cell). Reuses the same bulk 'delete' path so the
-            optimistic-hide + realtime reconcile behaviour is identical. */}
-        {onBulkAction && (
-          <button
-            type="button"
-            aria-label="Delete"
-            title="Delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!confirm(`Delete "${r.title || 'this item'}" permanently? This can't be undone.`)) return;
-              onBulkAction('delete', [r.id]);
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 rounded-md text-[var(--ds-faint)] bg-[var(--ds-card)] border border-[var(--ds-line)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+        {/* Hover-action cluster — far-right edge (sits over the empty tail of the
+            Date cell). Status is no longer a dedicated column (redundant with the
+            group header when grouped); its edit trigger lives here instead. Delete
+            reuses the same bulk 'delete' path so the optimistic-hide + realtime
+            reconcile behaviour is identical. Stays visible (not hover-gated) while
+            the status <select> is open so onBlur can fire normally. */}
+        {(onBulkAction || onRetry || (onStatusChange && statusChoices && statusChoices.length > 0)) && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1">
+            {(onRetry || (onStatusChange && statusChoices && statusChoices.length > 0)) && (
+              <div
+                className={`flex items-center gap-1 transition-opacity ${
+                  editingStatusId === r.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'
+                }`}
+              >
+                {onRetry && (r.status === 'error' || r.stuckGenerating) && (
+                  <button
+                    type="button"
+                    aria-label={r.status === 'error' ? 'Retry generation' : 'Re-fire — generation looks stuck'}
+                    title={r.status === 'error' ? 'Retry generation' : 'Re-fire — generation looks stuck'}
+                    disabled={retryingId === r.id}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setRetryingId(r.id);
+                      try { await onRetry(r.id); } finally { setRetryingId((cur) => (cur === r.id ? null : cur)); }
+                    }}
+                    className="p-1.5 rounded-md text-[var(--d-bad-txt)] bg-[var(--ds-card)] border border-[var(--ds-line)] hover:bg-red-50 hover:border-red-200 transition-all disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${retryingId === r.id ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+                {onStatusChange && statusChoices && statusChoices.length > 0 && (
+                  editingStatusId === r.id ? (
+                    <select
+                      autoFocus
+                      value={r.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={async (e) => {
+                        const next = e.target.value;
+                        setEditingStatusId(null);
+                        if (next !== r.status) await onStatusChange!(r.id, next);
+                      }}
+                      onBlur={() => setEditingStatusId(null)}
+                      className="text-[12px] rounded bg-[var(--ds-card)] border border-[var(--ds-line)] px-1.5 py-0.5 text-[var(--ds-ink)] outline-none focus:border-[var(--ds-accent)]"
+                    >
+                      {statusChoices.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                    </select>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Change status — currently ${statusLabel(r.status)}`}
+                      title={`Status: ${statusLabel(r.status)} — click to change`}
+                      onClick={(e) => { e.stopPropagation(); setEditingStatusId(r.id); }}
+                      className="p-1.5 rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] hover:bg-black/[.03] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none"
+                    >
+                      <span className={`inline-block w-2 h-2 rounded-full ${meta.dot}`} aria-hidden="true" />
+                    </button>
+                  )
+                )}
+              </div>
+            )}
+            {onBulkAction && (
+              <button
+                type="button"
+                aria-label="Delete"
+                title="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteRow(r);
+                }}
+                className="min-h-[32px] min-w-[32px] flex items-center justify-center rounded-md text-[var(--d-paper-dimmer)] hover:text-[var(--d-bad)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         )}
       </motion.div>
     );

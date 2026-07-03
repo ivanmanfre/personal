@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ExternalLink, Copy, Download, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from './ConfirmDialog';
 
 /**
  * LinkedIn-style swipeable carousel preview for the editor.
@@ -25,6 +26,7 @@ interface Props {
 const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
   const [idx, setIdx] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [confirmOpenAll, setConfirmOpenAll] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const touchStartXRef = useRef<number | null>(null);
   const total = urls.length;
@@ -71,7 +73,6 @@ const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
   };
 
   const openAll = () => {
-    if (!confirm(`Open ${urls.length} slides in new tabs?`)) return;
     urls.forEach((u, i) => setTimeout(() => window.open(u, '_blank', 'noopener,noreferrer'), i * 80));
   };
 
@@ -97,7 +98,7 @@ const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
             URLs
           </button>
           <button
-            onClick={openAll}
+            onClick={() => setConfirmOpenAll(true)}
             className="inline-flex items-center gap-1 px-2 py-1 rounded text-zinc-400 bg-zinc-900/60 ring-1 ring-zinc-800/80 hover:bg-zinc-800 hover:text-zinc-200 transition"
             title="Open every slide in a new tab"
           >
@@ -170,6 +171,13 @@ const SwipeableCarousel: React.FC<Props> = ({ urls, toImgSrc }) => {
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirmOpenAll}
+        title={`Open ${urls.length} slides in new tabs?`}
+        confirmLabel="Open all"
+        onConfirm={() => { setConfirmOpenAll(false); openAll(); }}
+        onCancel={() => setConfirmOpenAll(false)}
+      />
     </div>
   );
 };

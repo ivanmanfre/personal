@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp, Calendar, Columns3, List as ListIcon } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { useContentLibrary, type CarouselDraft } from '../../hooks/useContentLibrary';
 import { useIdeaCandidates } from '../../hooks/useIdeaCandidates';
 import { decideIdea } from '../../lib/ideaProjection';
 import IdeaDetail from './IdeaDetail';
 import { generatePostContent, buildCarousel, regenerateDraft } from '../../lib/studioActions';
-import { toastError } from '../../lib/dashboardActions';
+import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
+import { generatingChipLabel, isStuckGenerating } from './genAge';
 import { supabase } from '../../lib/supabase';
 import CarouselEditor from './CarouselEditor';
 import { StudioListView } from './StudioListView';
 import Sheet from '../ui/Sheet';
 import { driveThumbUrl } from '../../lib/driveThumb';
 import { statusLabel, POST_STATUSES } from '../../lib/statusLabels';
-import { LifecycleLegend } from '../dashboard-v2/primitives';
+import { NeedsYouStrip } from './NeedsYouStrip';
 import { getTourIntent, onTourIntent } from '../dashboard-v2/tour/tourBus';
+import { ConfirmDialog } from './ConfirmDialog';
 
 type PostType = 'text' | 'single_image' | 'carousel';
 
@@ -87,7 +89,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'auto' | 'updated' | 'scheduled'>('auto');
   const [formOpen, setFormOpen] = useState(false);
   // Disqualified rows hidden by default — Ivan never wants to scroll past 33 dead drafts.
   // Toggle exposed as a small footer button. Persists across sessions.
@@ -98,19 +99,6 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
   React.useEffect(() => {
     try { localStorage.setItem('post-studio-show-disqualified', showDisqualified ? '1' : '0'); } catch {}
   }, [showDisqualified]);
-  const [view, setView] = useState<'board' | 'list'>(() => {
-    if (typeof window !== 'undefined') {
-      const v = localStorage.getItem('post-studio-view');
-      // List is the ClickUp-style table equivalent (all columns, horizontal scroll
-      // at narrow widths) — separate Grid + Table views were redundant. Old
-      // values migrate: grid/table → list (they all flattened to the same shape).
-      if (v === 'board' || v === 'list') return v;
-      if (v === 'grid' || v === 'table' || v === 'calendar') return 'list';
-    }
-    return 'list';
-  });
-  React.useEffect(() => { try { localStorage.setItem('post-studio-view', view); } catch {} }, [view]);
-
   // Filter + sort
   const statusCounts = React.useMemo(() => {
     const counts: Record<string, number> = { all: drafts.length };
@@ -125,10 +113,8 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     }
     return counts;
   }, [drafts]);
-  // Effective sort: auto -> 'scheduled' when scheduled filter active, else 'updated'.
-  const effectiveSort: 'updated' | 'scheduled' = sortBy === 'auto'
-    ? (statusFilter === 'scheduled' ? 'scheduled' : 'updated')
-    : sortBy;
+  // Sort: 'scheduled' when scheduled filter active, else 'updated'.
+  const effectiveSort: 'updated' | 'scheduled' = statusFilter === 'scheduled' ? 'scheduled' : 'updated';
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const filtered = drafts.filter((d) => {
@@ -320,6 +306,32 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
     return !d.sourcePostId;
   }), [drafts]);
   const [showStuckList, setShowStuckList] = useState(false);
+  // Confirm-dialog state for the two native confirm() sites this panel used to have.
+  const [confirmStuckDisqualify, setConfirmStuckDisqualify] = useState(false);
+  const [confirmRegenerateFromIdea, setConfirmRegenerateFromIdea] = useState<null | { id: string; cur: CarouselDraft }>(null);
+
+  async function disqualifyStuck() {
+    try {
+      const { error } = await supabase
+        .from('carousel_drafts')
+        .update({ status: 'disqualified' })
+        .in('id', stuckScheduled.map((d) => d.id));
+      if (error) throw error;
+      toast.success(`Disqualified ${stuckScheduled.length} stuck posts`);
+      await refresh();
+    } catch (err) { toastError('bulk disqualify stuck', err); }
+  }
+
+  async function regenerateFromIdea(id: string, cur: CarouselDraft) {
+    applyOptimistic(id, { status: 'generating' });
+    try {
+      await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
+      toast.success('Regeneration fired');
+    } catch (err) {
+      toastError('regenerate', err);
+      refresh();
+    }
+  }
 
   // Polling removed — useContentLibrary now subscribes to a Supabase realtime
   // channel on carousel_drafts. Status flips (idea → generating → review →
@@ -333,7 +345,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
 
   return (
     <div className="space-y-3">
-      {/* Compact header row: icon + title + count + New post button + view toggle + refresh */}
+      {/* Compact header row: icon + title + count + New post button + refresh */}
       <div className="flex items-center gap-2" data-tour="posts">
         <div className="w-8 h-8 rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] flex items-center justify-center shrink-0">
           <FileText className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
@@ -342,30 +354,16 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           {title}
           <span className="rounded-full bg-[var(--ds-bg)] border border-[var(--ds-line)] px-2 py-0.5 text-[12px] font-medium text-[var(--ds-dim)] tabular-nums leading-none">{drafts.length}</span>
         </h2>
-        {/* Lifecycle legend inline — no separate row */}
-        <div className="hidden sm:block [&_.dv-lifecycle]:mb-0"><LifecycleLegend /></div>
         <div className="ml-auto flex items-center gap-1.5">
           {/* New post compact button — expands a form panel below */}
           <button
             data-tour="new-post"
             onClick={() => setFormOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ds-accent)]/10 hover:bg-[var(--ds-accent)]/15 border border-[var(--ds-accent)]/20 px-2.5 py-1.5 text-[12px] font-medium text-[var(--ds-accent)] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] px-2.5 py-1.5 text-[12px] font-medium text-white transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             New post
           </button>
-          <div className="inline-flex rounded-lg bg-[var(--ds-bg)] ring-1 ring-[var(--ds-line)] p-0.5">
-            <button
-              onClick={() => setView('list')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'list' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
-              title="List view — ClickUp-style table grouped by status (all columns, horizontal scroll)"
-            ><ListIcon className="w-3.5 h-3.5" /> List</button>
-            <button
-              onClick={() => setView('board')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium rounded-md transition-all ${view === 'board' ? 'bg-[var(--ds-card)] text-[var(--ds-ink)] shadow-sm border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
-              title="Board view — kanban by status"
-            ><Columns3 className="w-3.5 h-3.5" /> Board</button>
-          </div>
           <button onClick={() => { refresh(); refreshIdeas(); }} className="relative p-1.5 text-[var(--ds-dim)] hover:text-[var(--ds-ink)]" title={generatingCount > 0 ? `${generatingCount} generating · auto-refresh on` : 'Refresh'}>
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             {generatingCount > 0 && (
@@ -374,6 +372,12 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           </button>
         </div>
       </div>
+
+      <NeedsYouStrip items={[
+        { label: 'errors', count: statusCounts['error'] || 0, tone: 'bad', onJump: () => setStatusFilter('error') },
+        { label: 'in review', count: statusCounts['review'] || 0, tone: 'warn', onJump: () => setStatusFilter('review') },
+        { label: 'stuck scheduled', count: stuckScheduled.length, tone: 'warn', onJump: () => setStatusFilter('scheduled') },
+      ]} />
 
       {/* New post form — expands inline below the header when open */}
       {formOpen && (
@@ -469,18 +473,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               ))}
               <div className="pt-1 flex items-center gap-3 text-[12px] text-amber-700">
                 <button
-                  onClick={async () => {
-                    if (!confirm(`Mark all ${stuckScheduled.length} stuck posts as disqualified? They didn't publish to LinkedIn.`)) return;
-                    try {
-                      const { error } = await supabase
-                        .from('carousel_drafts')
-                        .update({ status: 'disqualified' })
-                        .in('id', stuckScheduled.map((d) => d.id));
-                      if (error) throw error;
-                      toast.success(`Disqualified ${stuckScheduled.length} stuck posts`);
-                      await refresh();
-                    } catch (err) { toastError('bulk disqualify stuck', err); }
-                  }}
+                  onClick={() => setConfirmStuckDisqualify(true)}
                   className="rounded px-2 py-0.5 bg-amber-100 border border-amber-200 hover:bg-amber-200"
                 >Disqualify all</button>
                 <span className="text-amber-500">Or open each to re-publish manually.</span>
@@ -516,7 +509,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
                     isActive && s === 'all' ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium' :
                     isCritical ? 'text-red-600 hover:bg-red-50' :
@@ -535,7 +528,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                   typeFilter === t
                     ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium'
                     : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
@@ -546,24 +539,15 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               </button>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5 text-[var(--ds-dim)]">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'auto' | 'updated' | 'scheduled')}
-                className="rounded-md bg-[var(--ds-card)] border border-[var(--ds-line)] px-2 py-1 text-[var(--ds-dim)] hover:border-[var(--d-rule-strong)] cursor-pointer transition-colors text-[12px]"
-              >
-                <option value="auto">Smart sort</option>
-                <option value="updated">Sort: updated</option>
-                <option value="scheduled">Sort: scheduled</option>
-              </select>
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
-                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] ${
+                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     showDisqualified ? 'text-[var(--ds-ink)] bg-[var(--ds-bg)] border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-dim)] hover:bg-black/[.03]'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
                 >
-                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} more`}
+                  {showDisqualified ? 'Hide disqualified' : `${statusCounts.disqualified} disqualified`}
                 </button>
               )}
             </span>
@@ -593,26 +577,23 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <div className="text-[13px] text-[var(--ds-ink)] font-medium">No posts match the current filter</div>
           <div className="text-[12px] text-[var(--ds-dim)] mt-0.5">Try clearing the filters above.</div>
         </div>
-      ) : view === 'list' ? (
+      ) : (
         <StudioListView
           rows={visible.map((d) => {
             const tax = (d.taxonomy as any) || {};
             const imageThumb = (d.imageUrls && d.imageUrls[0]) || null;
-            // Progress hint for generating-status rows
-            const genStart = tax.generating_started_at as string | undefined;
-            const genHint = d.status === 'generating' && genStart
-              ? (() => {
-                  const elapsed = Math.round((Date.now() - new Date(genStart).getTime()) / 60_000);
-                  return elapsed >= 15
-                    ? `⚠ stuck — started ${elapsed}m ago`
-                    : `generating · started ${elapsed}m ago`;
-                })()
-              : d.status === 'generating' ? 'generating…' : undefined;
+            // Progress hint for generating-status rows — prefer the precise
+            // generating_started_at timestamp when the pipeline recorded one,
+            // else fall back to updated_at (set the moment the row flipped
+            // to 'generating'). Shared with the LM board via genAge.ts.
+            const genStart = (tax.generating_started_at as string | undefined) || d.updatedAt;
+            const genHint = d.status === 'generating' ? generatingChipLabel(genStart) : undefined;
             return {
               id: d.id,
               title: d.title || d.topic || '(untitled)',
-              excerpt: genHint || (d.postBody ? postExcerpt(d) : undefined),
+              excerpt: d.status === 'error' ? GENERATION_ERROR_FALLBACK : (genHint || (d.postBody ? postExcerpt(d) : undefined)),
               status: d.status,
+              stuckGenerating: d.status === 'generating' && isStuckGenerating(genStart),
               thumbUrl: driveThumbUrl(imageThumb, 96),
               kicker: d.type === 'carousel' ? 'CAR' : d.type === 'single_image' ? 'IMG' : d.type === 'text' ? 'TXT' : (d.isIdea ? '—' : 'TXT'),
               // Idea rows have no schedule — the Date column shows when the idea
@@ -630,6 +611,21 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           })}
           statusMeta={STATUS_META}
           onOpen={setOpenId}
+          // Row-level Retry (error rows) / re-fire (stuck-generating rows) —
+          // same regenerateDraft() path the editor's Retry button uses, just
+          // invoked without opening the sheet first.
+          onRetry={async (id) => {
+            const cur = drafts.find((d) => d.id === id);
+            if (!cur) return;
+            applyOptimistic(id, { status: 'generating' });
+            try {
+              await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
+              toast.success('Retry fired');
+            } catch (err) {
+              toastError('retry', err);
+              refresh();
+            }
+          }}
           loading={loading && drafts.length === 0}
           // Hide the ML taxonomy columns (pillar / hook / tier / source) — they're
           // pipeline internals that read as jargon on a client-facing surface.
@@ -661,15 +657,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             // workflow. Confirm first since this overwrites existing copy.
             const LATER = new Set(['generating','review','approved','scheduled','published','disqualified','error']);
             if (next === 'idea' && cur && LATER.has(cur.status)) {
-              if (!confirm(`Regenerate this ${cur.type || 'post'}? Flipping to 'idea' will refire the pipeline and overwrite the current copy${cur.imageUrls?.[0] ? ' and image' : ''}.`)) return;
-              applyOptimistic(id, { status: 'generating' });
-              try {
-                await regenerateDraft({ id, type: cur.type, topic: cur.topic, title: cur.title, taxonomy: cur.taxonomy });
-                toast.success('Regeneration fired');
-              } catch (err) {
-                toastError('regenerate', err);
-                refresh();
-              }
+              setConfirmRegenerateFromIdea({ id, cur });
               return;
             }
             // Default path: status-only flip, optimistic + supabase update.
@@ -743,54 +731,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
             }
           }}
         />
-      ) : view === 'board' ? (
-        <div className="flex gap-4 overflow-x-auto pb-3 -mx-2 px-2 snap-x">
-          {visibleStatuses.map((status) => {
-            const col = visible.filter((d) => d.status === status);
-            const meta = STATUS_META[status] || STATUS_META.draft;
-            return (
-              <div key={status} className="flex-none w-[200px] snap-start rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] flex flex-col max-h-[75vh] shadow-sm">
-                <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-[var(--ds-line)] sticky top-0 bg-[var(--ds-card)] backdrop-blur">
-                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${meta.label} truncate`}>{status}</span>
-                  <span className="ml-auto text-[12px] text-[var(--ds-faint)] font-mono">{col.length}</span>
-                </div>
-                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
-                  {col.length === 0 ? (
-                    <div className="text-[12px] text-[var(--ds-faint)] italic py-1.5 text-center">—</div>
-                  ) : col.map((d: CarouselDraft) => {
-                    const sched = formatScheduled(d.scheduledAt);
-                    const thumb = driveThumbUrl((d.imageUrls && d.imageUrls[0]) || null, 200);
-                    const kicker = d.type === 'carousel' ? 'Carousel' : d.type === 'single_image' ? 'Image' : 'Text';
-                    return (
-                      <button
-                        key={d.id}
-                        onClick={() => setOpenId(d.id)}
-                        className="w-full text-left rounded-xl border border-[var(--ds-line)] bg-[var(--ds-card)] hover:border-[var(--ds-accent)]/30 hover:bg-[var(--d-surface-2)] hover:shadow-md transition-all overflow-hidden shadow-sm"
-                      >
-                        {thumb && (
-                          <div className="aspect-[16/9] bg-[var(--ds-bg)] overflow-hidden">
-                            <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          </div>
-                        )}
-                        <div className="px-3 py-3">
-                          <div className="text-[10px] uppercase tracking-widest text-[var(--ds-faint)] mb-1 font-semibold">{kicker}</div>
-                          <div className="text-[14px] text-[var(--ds-ink)] line-clamp-3 leading-snug font-medium">{d.title || d.topic || 'Untitled'}</div>
-                          {sched && (
-                            <div className="mt-1 flex items-center gap-1 text-[12px] text-[var(--ds-faint)]">
-                              <Calendar className="w-2.5 h-2.5" /> {sched}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      )}
 
       {/* Editor opens in a right-anchored side-sheet — list stays visible behind */}
       <Sheet
@@ -810,6 +751,26 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           : <CarouselEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />
         )}
       </Sheet>
+      <ConfirmDialog
+        open={confirmStuckDisqualify}
+        title={`Mark all ${stuckScheduled.length} stuck posts as disqualified?`}
+        body="They didn't publish to LinkedIn."
+        confirmLabel="Disqualify"
+        danger
+        onConfirm={() => { setConfirmStuckDisqualify(false); disqualifyStuck(); }}
+        onCancel={() => setConfirmStuckDisqualify(false)}
+      />
+      <ConfirmDialog
+        open={!!confirmRegenerateFromIdea}
+        title={`Regenerate this ${confirmRegenerateFromIdea?.cur.type || 'post'}?`}
+        body={`Flipping to 'idea' will refire the pipeline and overwrite the current copy${confirmRegenerateFromIdea?.cur.imageUrls?.[0] ? ' and image' : ''}.`}
+        confirmLabel="Regenerate"
+        onConfirm={() => {
+          if (confirmRegenerateFromIdea) regenerateFromIdea(confirmRegenerateFromIdea.id, confirmRegenerateFromIdea.cur);
+          setConfirmRegenerateFromIdea(null);
+        }}
+        onCancel={() => setConfirmRegenerateFromIdea(null)}
+      />
     </div>
   );
 };
