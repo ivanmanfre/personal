@@ -1978,7 +1978,7 @@ export default function ClientBoardPage() {
   useEffect(() => {
     if (state !== 'ready' || !board) return;
     const prevTitle = document.title;
-    document.title = `${board.company_name} · Content Engine`;
+    document.title = `${board.company_name} · Inbound Engine`;
     const link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
     const prevHref = link?.getAttribute('href') || '';
     const prevType = link?.getAttribute('type') || '';
@@ -2084,7 +2084,7 @@ export default function ClientBoardPage() {
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col lg:flex">
         <div className="px-5 pb-5 pt-5">
           {logo(30)}
-          <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Content engine</div>
+          <div className="mt-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>Inbound engine</div>
         </div>
         <nav className="flex flex-col gap-5 px-3" aria-label="Board sections">
           {NAV_GROUPS.map((g) => (
@@ -2147,7 +2147,7 @@ export default function ClientBoardPage() {
         <div className="min-h-screen bg-white lg:min-h-[calc(100vh-16px)] lg:rounded-xl" style={{ boxShadow: CARD_SHADOW }}>
           {/* Slim top bar: breadcrumb + status. Desktop only — mobile has its own header. */}
           <div className="sticky z-10 hidden h-14 items-center gap-2.5 rounded-t-xl px-8 backdrop-blur lg:top-2 lg:flex" style={{ borderBottom: `1px solid ${DIVIDE}`, background: 'rgba(255,255,255,.86)' }}>
-            <span className="text-[13px] font-medium" style={{ color: FAINT }}>Content Engine</span>
+            <span className="text-[13px] font-medium" style={{ color: FAINT }}>Inbound Engine</span>
             <span className="text-[13px]" style={{ color: 'rgba(2,49,47,0.25)' }} aria-hidden>/</span>
             <span className="text-[13px] font-semibold" style={{ color: INK }}>{TABS.find((t) => t.id === tab)?.label}</span>
             <span
