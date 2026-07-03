@@ -1,19 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Mail, Eye, UserMinus, Clock, Plus, Pencil } from 'lucide-react';
+import { Mail, Plus, Pencil } from 'lucide-react';
 import { useNewsletter, IssueRow, useNewsletterIdeas } from '../../hooks/useNewsletter';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
-import StatCard from './shared/StatCard';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import RefreshIndicator from './shared/RefreshIndicator';
 import EmptyState from './shared/EmptyState';
 import LetterEditor from './LetterEditor';
 import IdeaInboxPanel from './IdeaInboxPanel';
 import TopicQueueEditor from './TopicQueueEditor';
-
-function pctChange(curr: number, prev: number): number {
-  if (!prev) return curr > 0 ? 100 : 0;
-  return Math.round(((curr - prev) / prev) * 100);
-}
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -67,12 +61,32 @@ const eventStyles: Record<string, string> = {
   unsubscribed: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
 };
 
+function StripStat({ label, value, sub, warn }: { label: string; value: React.ReactNode; sub?: string; warn?: boolean }) {
+  return (
+    <div className="panel-surface px-3.5 py-3 rounded-xl">
+      <div className="text-[11px] text-zinc-500 uppercase tracking-wide mb-1">{label}</div>
+      <div className={`text-xl font-bold tabular-nums leading-tight ${warn ? 'text-amber-400' : 'text-zinc-100'}`}>{value}</div>
+      {sub && <div className="text-[11px] text-zinc-600 mt-0.5 truncate">{sub}</div>}
+    </div>
+  );
+}
+
+/** Short date for the strip cells — "Jun 28", no time. */
+function fmtShortDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
+
 const LetterPanel: React.FC = () => {
   const { data, totals, loading, refresh } = useNewsletter();
   const { lastRefreshed } = useAutoRefresh(refresh);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<IssueRow | null>(null);
-  const [tab, setTab] = useState<'inbox' | 'drafts' | 'queue'>('inbox');
+  const [tab, setTab] = useState<'inbox' | 'drafts' | 'queue'>('drafts');
   const { ideas: allIdeas } = useNewsletterIdeas();
   const proposedCount = allIdeas.filter((i) => i.status === 'proposed').length;
 
@@ -104,7 +118,7 @@ const LetterPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold tracking-tight">The Letter</h1>
           <p className="text-sm text-zinc-500 mt-1">
@@ -120,6 +134,36 @@ const LetterPanel: React.FC = () => {
           </button>
           <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+        <StripStat
+          label="Subscribers"
+          value={totals.activeSubs}
+          sub={`+${totals.subs7d} last 7d`}
+        />
+        <StripStat
+          label="Open rate · 7d"
+          value={`${totals.openRate7d}%`}
+          sub={`${totals.opened7d} of ${totals.delivered7d} delivered`}
+          warn={totals.delivered7d > 0 && totals.openRate7d === 0}
+        />
+        <StripStat
+          label="Queue"
+          value={totals.pending}
+          sub={totals.failed > 0 ? `${totals.failed} failed` : 'pending sends'}
+          warn={totals.failed > 0}
+        />
+        <StripStat
+          label="Next scheduled"
+          value={<span className="text-[15px]">{fmtShortDate(totals.nextScheduledAt)}</span>}
+          sub={totals.scheduledCount > 0 ? `${totals.scheduledCount} scheduled` : 'nothing queued'}
+        />
+        <StripStat
+          label="Last sent"
+          value={<span className="text-[15px]">{totals.lastSentAt ? fmtShortDate(totals.lastSentAt) : 'Never'}</span>}
+          sub={totals.lastSentAt ? relTime(totals.lastSentAt) : `${totals.sentCount} sent`}
+        />
       </div>
 
       <div className="border-b border-zinc-800 mb-4 flex gap-4">
@@ -158,38 +202,6 @@ const LetterPanel: React.FC = () => {
         />
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              label="Active subscribers"
-              value={totals.activeSubs}
-              icon={<Mail className="w-5 h-5" />}
-              color="text-emerald-400"
-              trend={{ value: pctChange(totals.subs30d, totals.subsPrev30d), label: 'vs prev 30d' }}
-              subValue={`+${totals.subs7d} last 7d`}
-            />
-            <StatCard
-              label="Queue"
-              value={totals.pending}
-              icon={<Clock className="w-5 h-5" />}
-              color={totals.failed > 0 ? 'text-amber-400' : 'text-blue-400'}
-              subValue={totals.failed > 0 ? `${totals.failed} failed` : 'pending sends'}
-            />
-            <StatCard
-              label="Open rate · 7d"
-              value={`${totals.openRate7d}%`}
-              icon={<Eye className="w-5 h-5" />}
-              color="text-blue-400"
-              subValue={`${totals.opened7d} of ${totals.delivered7d} delivered`}
-            />
-            <StatCard
-              label="Unsubs · 30d"
-              value={totals.unsubs30d}
-              icon={<UserMinus className="w-5 h-5" />}
-              color="text-zinc-300"
-              subValue={`${totals.captures7d} signups · 7d`}
-            />
-          </div>
-
           <div className="panel-surface p-5 shadow-sm shadow-black/10">
             <h2 className="text-sm font-bold text-zinc-300 mb-4">Sequences</h2>
             {data.performance.length === 0 ? (
@@ -249,7 +261,7 @@ const LetterPanel: React.FC = () => {
             {data.issues.length === 0 ? (
               <div className="rounded-xl border border-dashed border-zinc-700/70 bg-zinc-950/50 p-5 text-xs text-zinc-400 leading-relaxed">
                 <p className="font-medium text-zinc-300 mb-1">No issues yet.</p>
-                <p>Once drafts are seeded into <code className="text-zinc-300">newsletter_issues</code>, schedule them by setting <code className="text-zinc-300">status='scheduled'</code> and <code className="text-zinc-300">scheduled_for</code>. The Broadcast Sender workflow will pick them up and send via Resend.</p>
+                <p>Click <span className="text-zinc-300 font-medium">New issue</span> to write one, or approve an idea from the Idea Inbox — it'll land here as a draft, ready to schedule and send.</p>
               </div>
             ) : (
               <ul className="divide-y divide-zinc-800/60 -mx-1">
@@ -416,30 +428,6 @@ const LetterPanel: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-
-          <div className="panel-surface p-5 shadow-sm shadow-black/10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-zinc-300">Form captures</h2>
-              <span className="text-[11px] text-zinc-500">{data.captures.length} recent</span>
-            </div>
-            {data.captures.length === 0 ? (
-              <p className="text-xs text-zinc-500">
-                No form captures yet — submit the footer form on ivanmanfredi.com to confirm wiring.
-              </p>
-            ) : (
-              <ul className="divide-y divide-zinc-800/60 -mx-1">
-                {data.captures.slice(0, 20).map((c) => (
-                  <li key={c.id} className="px-1 py-2 flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs text-zinc-200 truncate">{c.email || '—'}</p>
-                      <p className="text-[11px] text-zinc-500">{c.src || 'unknown source'}</p>
-                    </div>
-                    <span className="text-[11px] text-zinc-500 shrink-0">{relTime(c.createdAt)}</span>
-                  </li>
-                ))}
-              </ul>
             )}
           </div>
         </>
