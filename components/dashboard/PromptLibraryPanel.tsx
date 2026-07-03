@@ -100,8 +100,12 @@ const PromptLibraryPanel: React.FC = () => {
       const patch: any = {};
       if (draftBody !== selected.body) patch.body = draftBody;
       if (draftTitle !== selected.title) patch.title = draftTitle;
-      const { version } = await savePrompt(selected.id, patch);
-      toast.success(`Saved · v${version}`);
+      const result = await savePrompt(selected.id, patch, selected.version);
+      if (!result.ok) {
+        console.warn('savePrompt conflict: version changed underneath this edit', selected.id);
+        return;
+      }
+      toast.success('Saved');
       setDirty(false);
     } catch (e: any) {
       toastError('save prompt', e);

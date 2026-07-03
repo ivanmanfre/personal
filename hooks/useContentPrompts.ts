@@ -74,29 +74,30 @@ export function useContentPrompts() {
     return () => { supabase.removeChannel(channel); };
   }, [refresh]);
 
-  /** PATCH body + auto-bump version. Returns the updated row. */
-  const savePrompt = useCallback(async (id: string, patch: { body?: string; title?: string; is_active?: boolean }) => {
-    // Read current version for optimistic increment.
-    const { data: row, error: readErr } = await supabase
-      .from('content_prompts').select('version, body').eq('id', id).maybeSingle();
-    if (readErr) throw new Error(`read failed: ${readErr.message}`);
-    const nextVersion = ((row?.version as number) || 0) + 1;
+  /** PATCH body/title. Version bump is owned by the DB trigger.
+   * Compare-and-swap on version: if another writer landed first, returns
+   * {ok:false, conflict:true} and writes nothing. */
+  const savePrompt = useCallback(async (
+    id: string,
+    patch: { body?: string; title?: string; is_active?: boolean },
+    expectedVersion: number,
+  ) => {
     const update: Record<string, any> = {
       updated_at: new Date().toISOString(),
       updated_by: 'dashboard',
     };
-    if (patch.body !== undefined) {
-      update.body = patch.body;
-      update.version = nextVersion;
-    }
+    if (patch.body !== undefined) update.body = patch.body;
     if (patch.title !== undefined) update.title = patch.title;
     if (patch.is_active !== undefined) update.is_active = patch.is_active;
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('content_prompts')
       .update(update)
-      .eq('id', id);
+      .eq('id', id)
+      .eq('version', expectedVersion)
+      .select('id');
     if (error) throw new Error(`save failed: ${error.message}`);
-    return { ok: true, version: nextVersion };
+    if (!data || data.length === 0) return { ok: false as const, conflict: true as const };
+    return { ok: true as const };
   }, []);
 
   return { prompts, loading, error, refresh, savePrompt };
