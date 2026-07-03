@@ -8,6 +8,7 @@ import {
   toastError,
   toastSuccess,
 } from '../../lib/dashboardActions';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const CADENCE_LABEL: Record<string, string> = {
   field_notes: 'Field Notes',
@@ -26,6 +27,7 @@ const IdeaInboxPanel: React.FC = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPatch, setEditPatch] = useState<Partial<IdeaRow>>({});
+  const [rejectTarget, setRejectTarget] = useState<IdeaRow | null>(null);
 
   const proposed = ideas.filter((i) => i.status === 'proposed');
   const approved = ideas.filter((i) => i.status === 'approved');
@@ -45,8 +47,10 @@ const IdeaInboxPanel: React.FC = () => {
     }
   }
 
-  async function onReject(idea: IdeaRow) {
-    if (!confirm('Reject this idea? It will be hidden from the inbox.')) return;
+  async function confirmReject() {
+    const idea = rejectTarget;
+    if (!idea) return;
+    setRejectTarget(null);
     setBusyId(idea.id);
     try {
       await rejectNewsletterIdea(idea.id);
@@ -89,12 +93,12 @@ const IdeaInboxPanel: React.FC = () => {
       <li key={idea.id} className="border border-zinc-800 bg-zinc-900/40 rounded p-4 mb-3">
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-2 py-0.5 text-[10.5px] uppercase tracking-wider border rounded ${CADENCE_PILL_CLASS[idea.recommended_cadence] || ''}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 text-[11px] uppercase tracking-wider border rounded ${CADENCE_PILL_CLASS[idea.recommended_cadence] || ''}`}>
               {CADENCE_LABEL[idea.recommended_cadence] || idea.recommended_cadence}
             </span>
             <span className="font-serif italic text-emerald-500 text-2xl leading-none">{idea.score}</span>
           </div>
-          <span className="text-[10.5px] text-zinc-500 uppercase tracking-wider">From: {idea.source_signal_type.replace(/_/g, ' ')}</span>
+          <span className="text-[11px] text-zinc-500 uppercase tracking-wider">From: {idea.source_signal_type.replace(/_/g, ' ')}</span>
         </div>
 
         {editing ? (
@@ -110,13 +114,15 @@ const IdeaInboxPanel: React.FC = () => {
           </div>
         ) : (
           <>
-            <h4 className="text-base font-semibold text-zinc-100 mb-1">{idea.subject}</h4>
-            <p className="text-sm italic text-zinc-400 mb-2">{idea.hook_one_liner}</p>
+            <h4 className="text-base font-semibold text-zinc-100 mb-1 leading-snug">{idea.subject}</h4>
+            {idea.hook_one_liner && (
+              <p className="text-sm italic text-zinc-400 mb-2">{idea.hook_one_liner}</p>
+            )}
             {idea.reasoning && (
-              <p className="text-xs text-zinc-500 mb-2">
-                <span className="font-mono uppercase tracking-wider text-zinc-600">Why: </span>
+              <div className="text-xs text-zinc-400 mb-2 pl-3 border-l-2 border-zinc-700/60">
+                <span className="block font-mono uppercase tracking-wider text-[11px] text-zinc-500 mb-0.5">Why</span>
                 {idea.reasoning}
-              </p>
+              </div>
             )}
             {idea.source_excerpt && (
               <p className="text-xs text-zinc-500 italic line-clamp-2">"{idea.source_excerpt}"</p>
@@ -128,14 +134,14 @@ const IdeaInboxPanel: React.FC = () => {
           <div className="flex items-center gap-2 mt-3">
             {!editing ? (
               <>
-                <button onClick={() => onApprove(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded text-sm font-medium hover:bg-emerald-500 disabled:opacity-50">
+                <button onClick={() => onApprove(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 min-h-[36px] bg-emerald-600 text-white rounded text-sm font-medium hover:bg-emerald-500 disabled:opacity-50">
                   {busyId === idea.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
                   Approve
                 </button>
-                <button onClick={() => startEdit(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 text-zinc-300 rounded text-sm hover:bg-zinc-800 disabled:opacity-50">
+                <button onClick={() => startEdit(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 min-h-[36px] border border-zinc-700 text-zinc-300 rounded text-sm hover:bg-zinc-800 disabled:opacity-50">
                   <Pencil className="w-4 h-4" /> Edit
                 </button>
-                <button onClick={() => onReject(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-red-400 rounded text-sm hover:bg-red-950/30 disabled:opacity-50 ml-auto">
+                <button onClick={() => setRejectTarget(idea)} disabled={busyId === idea.id} className="inline-flex items-center gap-1.5 px-3 min-h-[36px] rounded text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 disabled:opacity-50 ml-auto">
                   <X className="w-4 h-4" /> Reject
                 </button>
               </>
@@ -157,10 +163,12 @@ const IdeaInboxPanel: React.FC = () => {
           </div>
         )}
         {idea.status === 'drafted' && idea.linked_issue_id && (
-          <div className="text-xs text-emerald-500 mt-3 inline-flex items-center gap-1.5">
-            <CheckCircle2 className="w-3 h-3" /> Drafted + scheduled
-            <a href={`#issue-${idea.linked_issue_id}`} className="ml-2 underline inline-flex items-center gap-0.5">
-              View <ExternalLink className="w-3 h-3" />
+          <div className="flex items-center gap-3 mt-3">
+            <span className="text-xs text-emerald-500 inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3 h-3" /> Drafted + scheduled
+            </span>
+            <a href={`#issue-${idea.linked_issue_id}`} className="inline-flex items-center gap-1.5 px-3 min-h-[36px] rounded text-sm font-medium border border-zinc-700 text-zinc-300 hover:bg-zinc-800">
+              View issue <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
         )}
@@ -196,6 +204,16 @@ const IdeaInboxPanel: React.FC = () => {
           <ul>{drafted.map(renderIdea)}</ul>
         </section>
       )}
+
+      <ConfirmDialog
+        open={rejectTarget !== null}
+        title="Reject this idea?"
+        body="It will be hidden from the inbox. This can't be undone from here."
+        confirmLabel="Reject"
+        danger
+        onConfirm={confirmReject}
+        onCancel={() => setRejectTarget(null)}
+      />
     </div>
   );
 };
