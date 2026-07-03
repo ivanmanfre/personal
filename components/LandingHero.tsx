@@ -256,47 +256,7 @@ const LandingHero: React.FC = () => {
                 >
                   Book the free fit call <ArrowRight size={19} />
                 </a>
-                <a
-                  href="/scorecard"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 transition-colors"
-                  style={{
-                    fontFamily: '"Source Serif 4", serif',
-                    fontWeight: 600,
-                    fontSize: '15px',
-                    fontStyle: 'italic',
-                    color: '#4A4A48',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = '#4A4A48')}
-                >
-                  See where you're leaking <ArrowRight size={14} />
-                </a>
               </motion.div>
-
-              {/* Named proof microline — verifiable proof inside the fold (T1,
-                  2026-07-02): the CTA no longer precedes ALL proof. Real client
-                  marks only (§5b evidence register): the two operators running
-                  the engine today, both shown with receipts further down. */}
-              <motion.p
-                initial={skip ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.1, duration: 0.7, ease }}
-                className="mt-7 text-center"
-                style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: '11px',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: '#5A5752',
-                  lineHeight: 1.8,
-                }}
-              >
-                <span
-                  style={{ display: 'inline-block', width: '6px', height: '6px', backgroundColor: '#2A8F65', marginRight: '10px', verticalAlign: 'middle' }}
-                  aria-hidden="true"
-                />
-                Running live for Agency Operators + Lemonade
-              </motion.p>
             </div>
           </div>
         </div>

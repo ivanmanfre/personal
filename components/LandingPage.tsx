@@ -322,7 +322,7 @@ const ProofBand: React.FC = () => (
 const PROBLEM_LINES = [
   'You know LinkedIn inbound works. But posting daily, on top of running the agency, never actually happens.',
   "You tried a ghostwriter or an agency. The posts didn't sound like you, and the pipeline stayed flat.",
-  'A full-time content hire is $5k to $8k a month, and you still have to manage them.',
+  'A copywriter or content hire is $3k to $5k a month, and you still have to manage them.',
   'So your own feed, the thing that should be selling your agency, sits quiet.',
 ];
 
@@ -701,9 +701,6 @@ const BeforeAfterSection: React.FC = () => (
         ))}
       </div>
 
-      <MidCTA href="/scorecard" linkText="See where you're leaking. 2 minutes →">
-        Not ready for a call? Find out where your feed is leaking pipeline first.
-      </MidCTA>
     </div>
   </section>
 );
