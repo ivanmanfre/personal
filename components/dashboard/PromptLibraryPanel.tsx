@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Search, ExternalLink, FileText, Save, X, Eye, Edit3, Filter, ChevronRight, RefreshCw } from 'lucide-react';
+import { Loader2, Search, ExternalLink, FileText, Save, X, Eye, Edit3, Filter, ChevronRight, RefreshCw, History } from 'lucide-react';
 import { useContentPrompts, ContentPrompt } from '../../hooks/useContentPrompts';
 import { Card, Button, Input, Textarea, FieldLabel } from '../ui/primitives';
 import { toastError } from '../../lib/dashboardActions';
@@ -8,6 +8,7 @@ import { renderLightMarkdown } from '../../lib/lightMarkdown';
 import { supabase } from '../../lib/supabase';
 import { resolveDraft } from './promptDraftResolver';
 import { ConfirmDialog } from './ConfirmDialog';
+import PromptHistoryDrawer from './PromptHistoryDrawer';
 
 /** Coarse "how long ago" for provenance display — not a full i18n date lib, just enough to read at a glance. */
 function relTime(iso: string): string {
@@ -69,6 +70,7 @@ const PromptLibraryPanel: React.FC = () => {
   // Selection must not change until the user explicitly confirms (Phase 1 dirty-state
   // flow depends on this: a cancel leaves the current draft untouched).
   const [confirmDiscard, setConfirmDiscard] = useState<null | { nextId: string }>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const selected = useMemo(
     () => prompts.find((p) => p.id === selectedId) || null,
@@ -350,6 +352,13 @@ const PromptLibraryPanel: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => setHistoryOpen(true)}
+                    className="px-2 py-1 text-[11px] rounded inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200 border border-zinc-800 hover:bg-zinc-800/50"
+                    title="Version history + diff"
+                  >
+                    <History className="w-3 h-3" /> History
+                  </button>
                   <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
                     <button
                       onClick={() => setMode('edit')}
@@ -430,6 +439,18 @@ const PromptLibraryPanel: React.FC = () => {
         danger
         onConfirm={() => { if (confirmDiscard) setSelectedId(confirmDiscard.nextId); setConfirmDiscard(null); }}
         onCancel={() => setConfirmDiscard(null)}
+      />
+      <PromptHistoryDrawer
+        slug={selected?.slug ?? null}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onRestore={(body, title) => {
+          setDraftBody(body);
+          setDraftTitle(title);
+          setDirty(true);
+          setHistoryOpen(false);
+          toast.success('Loaded into editor — Save to apply as a new version');
+        }}
       />
     </div>
   );
