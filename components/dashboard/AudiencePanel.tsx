@@ -87,11 +87,8 @@ const AudiencePanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Audience</h1>
-          <p className="text-sm text-zinc-500 mt-1">Pageviews, visitors, and traffic sources for ivanmanfredi.com.</p>
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm text-zinc-500">Pageviews, visitors, and traffic sources for ivanmanfredi.com.</p>
         <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 

@@ -20,7 +20,6 @@ import { onNav } from '../lib/navBus';
  */
 
 const PerformancePanel = lazy(() => import('../../dashboard/PerformancePanel'));
-const AudiencePanel = lazy(() => import('../../dashboard/AudiencePanel'));
 const StrategyPanel = lazy(() => import('../../dashboard/StrategyPanel'));
 const LetterPanel = lazy(() => import('../../dashboard/LetterPanel'));
 const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
@@ -58,7 +57,7 @@ const SUB_ORDER: SubKey[] = ['posts', 'leadmagnets', 'styles', 'prompts', 'calen
 const LEGACY_SUB_REMAP: Record<string, SubKey> = {
   pipeline: 'posts',         // kanban now lives inside Posts (Board view)
   ideas: 'posts',            // content ideas are now the Idea STAGE on the Posts board
-  audience: 'performance',   // folded into Performance internal tabs
+  audience: 'performance',   // Site Audience moved to Reach & Pipeline; old ?sub=audience deeplink lands on Performance
   recordings: 'video',
   clips: 'video',
 };
@@ -110,16 +109,7 @@ export function ContentStudio() {
       case 'styles':      return <StyleGalleryPanel />;
       case 'prompts':     return <PromptLibraryPanel />;
       case 'calendar':    return <CalendarSection />;
-      case 'performance':
-        return (
-          <InternalTabs
-            storageKey="content-studio-performance-tab"
-            tabs={[
-              { key: 'posts', label: 'Post Performance', render: () => <PerformancePanel /> },
-              { key: 'audience', label: 'Site Audience', render: () => <AudiencePanel /> },
-            ]}
-          />
-        );
+      case 'performance':  return <PerformancePanel />;
       case 'video':
         return (
           <InternalTabs

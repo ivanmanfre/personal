@@ -14,19 +14,21 @@ const UpworkPanel = lazy(() => import('../../dashboard/UpworkPanel'));
 const MeetingsPanel = lazy(() => import('../../dashboard/MeetingsPanel'));
 const AgentReadyPanel = lazy(() => import('../../dashboard/AgentReadyPanel'));
 const CrmPanel = lazy(() => import('../../dashboard/crm/CrmPanel'));
-type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'upwork' | 'meetings' | 'agentready';
+const AudiencePanel = lazy(() => import('../../dashboard/AudiencePanel'));
+type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'audience' | 'upwork' | 'meetings' | 'agentready';
 
 const SUB_LABELS: Record<SubKey, string> = {
   crm: 'CRM',
   outreach: 'Outreach',
   leads: 'Leads',
   competitors: 'Competitors',
+  audience: 'Site Audience',
   upwork: 'Upwork',
   meetings: 'Meetings',
   agentready: 'Agent-Ready',
 };
 
-const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'upwork', 'meetings', 'agentready'];
+const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'audience', 'upwork', 'meetings', 'agentready'];
 
 export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolean } {
   if (raw && (SUB_ORDER as string[]).includes(raw)) return { sub: raw as SubKey, corrected: false };
@@ -64,6 +66,7 @@ export function ReachPipeline() {
       case 'outreach':     return <OutreachPanel />;
       case 'leads':        return <LeadsPanel />;
       case 'competitors':  return <CompetitorIntelPanel />;
+      case 'audience':     return <AudiencePanel />;
       case 'upwork':       return <UpworkPanel />;
       case 'meetings':     return <MeetingsPanel />;
       case 'agentready':   return <AgentReadyPanel />;
