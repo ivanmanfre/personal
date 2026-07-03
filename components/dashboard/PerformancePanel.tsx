@@ -49,7 +49,7 @@ const PerformancePanel: React.FC = () => {
   const { userTimezone } = useDashboard();
 
   const { posts, stats, loading: postsLoading, error: postsError, refresh: refreshPosts } = useOwnPosts(days);
-  const { competitorStats, loading: compLoading, error: compError, refresh: refreshComp } = useCompetitors();
+  const { competitorStats, patterns: competitorPatterns, loading: compLoading, error: compError, refresh: refreshComp } = useCompetitors(days);
 
   const refreshAll = async () => { await Promise.all([refreshPosts(), refreshComp()]); };
   const { lastRefreshed } = useAutoRefresh(refreshAll, { realtimeTables: ['own_posts'] });
@@ -137,9 +137,12 @@ const PerformancePanel: React.FC = () => {
 
   const benchmarkData = useMemo(() => {
     const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
+    // Only competitors with at least one post inside the selected window count —
+    // a competitor with 0 in-window posts would otherwise show a misleading 0 bar.
+    const inWindow = competitorStats.filter((c) => c.recentPostCount > 0);
     return [
       { name: 'You', avgLikes: yourAvgLikes },
-      ...competitorStats.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
+      ...inWindow.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
     ];
   }, [posts, stats.totalLikes, competitorStats]);
 
@@ -273,7 +276,7 @@ const PerformancePanel: React.FC = () => {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              ) : <p className="text-zinc-600 text-sm">No competitor data</p>}
+              ) : <p className="text-zinc-600 text-sm">{competitorPatterns.length > 0 ? `No competitor posts in this ${range} window` : 'No competitor data'}</p>}
             </div>
           </div>
 

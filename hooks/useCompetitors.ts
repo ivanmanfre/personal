@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { dashboardAction, toastError } from '../lib/dashboardActions';
+import { withinWindow } from '../lib/withinWindow';
 import type { CompetitorPost, CompetitorPattern } from '../types/dashboard';
 
 function mapPost(row: any): CompetitorPost {
@@ -36,7 +37,7 @@ function mapPattern(row: any): CompetitorPattern {
   };
 }
 
-export function useCompetitors() {
+export function useCompetitors(days?: number) {
   const [posts, setPosts] = useState<CompetitorPost[]>([]);
   const [patterns, setPatterns] = useState<CompetitorPattern[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,16 +72,19 @@ export function useCompetitors() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  // Aggregate stats per competitor
-  const competitorStats = useMemo(() =>
-    patterns.map((p) => {
-      const cPosts = posts.filter((cp) => cp.competitorName === p.competitorName);
+  // Aggregate stats per competitor. When `days` is provided, only competitor
+  // posts inside that window count toward the averages + recentPostCount, so the
+  // benchmark reflects the same range the rest of the panel is showing.
+  const competitorStats = useMemo(() => {
+    const now = Date.now();
+    const inWindow = days == null ? posts : posts.filter((cp) => withinWindow(cp.postDate, days, now));
+    return patterns.map((p) => {
+      const cPosts = inWindow.filter((cp) => cp.competitorName === p.competitorName);
       const avgLikes = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.likesCount, 0) / cPosts.length) : 0;
       const avgComments = cPosts.length ? Math.round(cPosts.reduce((s, c) => s + c.commentsCount, 0) / cPosts.length) : 0;
       return { ...p, avgLikes, avgComments, recentPostCount: cPosts.length };
-    }),
-    [patterns, posts]
-  );
+    });
+  }, [patterns, posts, days]);
 
   const opportunities = useMemo(() =>
     posts.filter((p) => p.hasOpportunity && !p.opportunityActioned),
