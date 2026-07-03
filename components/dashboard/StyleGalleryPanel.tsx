@@ -260,7 +260,7 @@ const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt }> = ({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[13.5px] font-semibold text-zinc-100 truncate">{style.name}</div>
-          <div className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wider">
+          <div className="text-[10.5px] text-zinc-500 mt-0.5 uppercase tracking-wider">
             {style.category === 'carousel' ? 'Carousel layout' : 'Single-image intent'}
           </div>
         </div>
@@ -323,12 +323,12 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
           <div className="flex items-center gap-2">
             <span className="text-[13.5px] font-semibold text-zinc-100 truncate">{style.name}</span>
             {style.isDefault && (
-              <span className="text-[9.5px] uppercase tracking-wider rounded px-1.5 py-0.5 bg-emerald-900/40 text-emerald-300 ring-1 ring-emerald-700/30">default</span>
+              <span className="text-[10.5px] uppercase tracking-wider rounded px-1.5 py-0.5 bg-emerald-900/40 text-emerald-300 ring-1 ring-emerald-700/30">default</span>
             )}
           </div>
           <div className="text-[10.5px] text-zinc-500 font-mono mt-0.5">{style.slug}</div>
         </div>
-        <span className={`text-[9.5px] uppercase tracking-wider rounded px-1.5 py-0.5 ${
+        <span className={`text-[10.5px] uppercase tracking-wider rounded px-1.5 py-0.5 ${
           style.status === 'active' ? 'bg-zinc-800 text-zinc-400' : 'bg-amber-900/40 text-amber-300'
         }`}>{style.status}</span>
       </div>
@@ -351,7 +351,7 @@ const CarouselStyleCard: React.FC<{ style: CarouselStyle }> = ({ style }) => {
         </div>
       ) : (
         <div className="aspect-[16/9] rounded-md overflow-hidden ring-1 ring-zinc-800/60 bg-[var(--d-ink-3)] border border-[var(--d-rule)] flex flex-col justify-center px-3 py-2">
-          <div className="text-[9px] uppercase tracking-wider text-emerald-400/60 mb-1">{style.isDefault ? 'Default kit · rendered live' : 'Brand kit'}</div>
+          <div className="text-[10.5px] uppercase tracking-wider text-emerald-400/60 mb-1">{style.isDefault ? 'Default kit · rendered live' : 'Brand kit'}</div>
           <div className="text-[13px] leading-tight text-[var(--d-paper-dim)] font-serif italic line-clamp-2">{style.name}</div>
         </div>
       )}

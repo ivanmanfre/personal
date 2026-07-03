@@ -293,7 +293,7 @@ const PerformancePanel: React.FC = () => {
                     <div key={t.name}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-zinc-300">{t.label}</span>
-                        <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp · {t.engRate}% eng</span>
+                        <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp · {t.engRate}% eng</span>
                       </div>
                       <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.primary }} />
@@ -317,7 +317,7 @@ const PerformancePanel: React.FC = () => {
                       <div key={t.name}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-zinc-300 truncate max-w-[160px]">{t.name}</span>
-                          <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
+                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{t.count} posts · ~{formatNum(t.avgImpressions)} imp</span>
                         </div>
                         <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${(t.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.info }} />
@@ -339,7 +339,7 @@ const PerformancePanel: React.FC = () => {
                       <div key={h.name}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-zinc-300 truncate max-w-[160px]">{h.name}</span>
-                          <span className="text-[10px] text-zinc-500 shrink-0 ml-2">{h.count} posts · ~{formatNum(h.avgImpressions)} imp</span>
+                          <span className="text-[11px] text-zinc-500 shrink-0 ml-2">{h.count} posts · ~{formatNum(h.avgImpressions)} imp</span>
                         </div>
                         <div className="h-1.5 bg-zinc-800/60 rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${(h.avgImpressions / maxImp) * 100}%`, backgroundColor: CHART.violet }} />

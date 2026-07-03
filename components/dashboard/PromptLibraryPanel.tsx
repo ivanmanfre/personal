@@ -281,7 +281,7 @@ const PromptLibraryPanel: React.FC = () => {
             {!loading && grouped.length === 0 && <div className="text-[12px] text-zinc-500 italic">No prompts match.</div>}
             {grouped.map(([cat, list]) => (
               <div key={cat}>
-                <div className="text-[10px] uppercase tracking-wider text-emerald-400/70 font-semibold mb-1 px-1">{cat}</div>
+                <div className="text-[10.5px] uppercase tracking-wider text-emerald-400/70 font-semibold mb-1 px-1">{cat}</div>
                 <ul className="space-y-0.5">
                   {list.map((p) => (
                     <li key={p.id}>
@@ -299,10 +299,10 @@ const PromptLibraryPanel: React.FC = () => {
                         <FileText className="w-3 h-3 text-zinc-500 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="text-[12px] text-zinc-200 truncate">{p.title}</div>
-                          <div className="text-[10px] text-zinc-500 font-mono truncate">{p.slug}</div>
+                          <div className="text-[11px] text-zinc-500 font-mono truncate">{p.slug}</div>
                         </div>
-                        <span className="text-[10px] text-zinc-600 tabular-nums shrink-0">{relTime(p.updatedAt)}</span>
-                        <div className="text-[10px] text-zinc-600 tabular-nums shrink-0">
+                        <span className="text-[11px] text-zinc-600 tabular-nums shrink-0">{relTime(p.updatedAt)}</span>
+                        <div className="text-[11px] text-zinc-600 tabular-nums shrink-0">
                           {(p.body.length / 1000).toFixed(1)}k
                         </div>
                         <ChevronRight className={`w-3 h-3 shrink-0 transition ${selectedId === p.id ? 'text-emerald-400' : 'text-zinc-700'}`} />

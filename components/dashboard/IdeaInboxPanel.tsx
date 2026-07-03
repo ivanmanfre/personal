@@ -89,12 +89,12 @@ const IdeaInboxPanel: React.FC = () => {
       <li key={idea.id} className="border border-zinc-800 bg-zinc-900/40 rounded p-4 mb-3">
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-2 py-0.5 text-[10px] uppercase tracking-wider border rounded ${CADENCE_PILL_CLASS[idea.recommended_cadence] || ''}`}>
+            <span className={`inline-flex items-center px-2 py-0.5 text-[10.5px] uppercase tracking-wider border rounded ${CADENCE_PILL_CLASS[idea.recommended_cadence] || ''}`}>
               {CADENCE_LABEL[idea.recommended_cadence] || idea.recommended_cadence}
             </span>
             <span className="font-serif italic text-emerald-500 text-2xl leading-none">{idea.score}</span>
           </div>
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">From: {idea.source_signal_type.replace(/_/g, ' ')}</span>
+          <span className="text-[10.5px] text-zinc-500 uppercase tracking-wider">From: {idea.source_signal_type.replace(/_/g, ' ')}</span>
         </div>
 
         {editing ? (

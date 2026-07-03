@@ -129,7 +129,7 @@ const LetterPanel: React.FC = () => {
         >
           Idea Inbox
           {proposedCount > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] bg-emerald-700 text-white rounded-full">{proposedCount}</span>
+            <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10.5px] bg-emerald-700 text-white rounded-full">{proposedCount}</span>
           )}
         </button>
         <button
@@ -261,10 +261,10 @@ const LetterPanel: React.FC = () => {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wide">{i.format.replace('_', ' ')}</span>
+                        <span className="text-[10.5px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono uppercase tracking-wide">{i.format.replace('_', ' ')}</span>
                         <p className="text-xs text-zinc-200 truncate font-medium">{i.subject}</p>
                         {i.sourceIdeaId && (
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 ml-2">From idea</span>
+                          <span className="text-[10.5px] font-mono uppercase tracking-wider text-emerald-400 ml-2">From idea</span>
                         )}
                         <Pencil className="w-3 h-3 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -283,7 +283,7 @@ const LetterPanel: React.FC = () => {
                       )}
                       {i.errorMessage && <p className="text-[11px] text-red-400 mt-1 truncate">{i.errorMessage}</p>}
                     </div>
-                    <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${issueStatusStyles[i.status] || issueStatusStyles.draft}`}>
+                    <span className={`shrink-0 text-[10.5px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${issueStatusStyles[i.status] || issueStatusStyles.draft}`}>
                       {i.status}
                     </span>
                   </li>
@@ -310,7 +310,7 @@ const LetterPanel: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
                           {q.emailStep != null && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">
                               Step {q.emailStep}
                             </span>
                           )}
@@ -333,7 +333,7 @@ const LetterPanel: React.FC = () => {
                         )}
                       </div>
                       <span
-                        className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
+                        className={`shrink-0 text-[10.5px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
                           statusStyles[q.status] || statusStyles.skipped
                         }`}
                       >
@@ -358,7 +358,7 @@ const LetterPanel: React.FC = () => {
                     <li key={e.id} className="px-1 py-2 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span
-                          className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
+                          className={`shrink-0 text-[10.5px] px-2 py-0.5 rounded-full border uppercase tracking-wide ${
                             eventStyles[e.eventType] || eventStyles.delivered
                           }`}
                         >
@@ -402,11 +402,11 @@ const LetterPanel: React.FC = () => {
                         <td className="px-2 py-2.5 text-zinc-500">{fmtDate(s.createdAt)}</td>
                         <td className="px-2 py-2.5">
                           {s.unsubscribedAt ? (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full border bg-zinc-500/15 text-zinc-400 border-zinc-500/30 uppercase tracking-wide">
+                            <span className="text-[10.5px] px-2 py-0.5 rounded-full border bg-zinc-500/15 text-zinc-400 border-zinc-500/30 uppercase tracking-wide">
                               unsubscribed
                             </span>
                           ) : (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30 uppercase tracking-wide">
+                            <span className="text-[10.5px] px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-400 border-emerald-500/30 uppercase tracking-wide">
                               active
                             </span>
                           )}
