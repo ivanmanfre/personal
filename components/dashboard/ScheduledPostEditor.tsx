@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import type { ScheduledPost } from '../../types/dashboard';
 import { SchedulePicker } from './SchedulePicker';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface Props {
   post: ScheduledPost;
@@ -33,6 +34,7 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   const uploadImage = async (file: File) => {
     if (!/^image\//.test(file.type)) { toast.error('Only image files are allowed'); return; }
@@ -70,7 +72,6 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
   };
 
   const cancelPost = async () => {
-    if (!window.confirm('Cancel this post? It stays as a record but will not publish.')) return;
     setSaving(true);
     try {
       const { error } = await supabase.from('scheduled_posts').update({ status: 'cancelled' }).eq('id', post.id);
@@ -138,7 +139,7 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
       {!readOnly && (
         <div className="flex items-center justify-between pt-2">
           {isDead ? <span /> : (
-            <button onClick={cancelPost} disabled={saving}
+            <button onClick={() => setConfirmCancel(true)} disabled={saving}
               className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-300 text-xs">
               <Trash2 className="w-3.5 h-3.5" /> Cancel post
             </button>
@@ -149,6 +150,15 @@ const ScheduledPostEditor: React.FC<Props> = ({ post, onClose, onChanged }) => {
           </button>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Cancel this post?"
+        body="It stays as a record but will not publish."
+        confirmLabel="Cancel post"
+        danger
+        onConfirm={() => { setConfirmCancel(false); cancelPost(); }}
+        onCancel={() => setConfirmCancel(false)}
+      />
     </div>
   );
 };

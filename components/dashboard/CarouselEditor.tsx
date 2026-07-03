@@ -22,6 +22,7 @@ import LinkedInPostPreview from '../ui/LinkedInPostPreview';
 import { InternalTabs } from './InternalTabs';
 import ImageLibraryPicker from './ImageLibraryPicker';
 import SwipeableCarousel from './SwipeableCarousel';
+import { ConfirmDialog } from './ConfirmDialog';
 import { Library } from 'lucide-react';
 
 interface Props {
@@ -96,6 +97,10 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // Confirm-dialog state for the three native browser confirmations this editor used to have.
+  const [confirmPostNow, setConfirmPostNow] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [logCollapsed, setLogCollapsed] = useState(true);
   const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -786,10 +791,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                       variant="secondary"
                       disabled={!!busy}
                       title="Publish to LinkedIn right now — skips the schedule"
-                      onClick={() => {
-                        if (!confirm('Publish this post to LinkedIn right now?\n\nIt goes out immediately and can’t be undone.')) return;
-                        run('post now', () => publishPostNow(draft.id), 'Posting to LinkedIn now — live in ~30s');
-                      }}
+                      onClick={() => setConfirmPostNow(true)}
                     >
                       {busy === 'post now' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       {busy === 'post now' ? 'Posting…' : 'Post now'}
@@ -806,14 +808,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
               disabled={!!busy}
               className="text-red-600 hover:text-red-700 hover:bg-red-50 mr-1"
               title="Delete this post permanently"
-              onClick={() => {
-                if (!confirm(`Delete this ${draft.type || 'post'} permanently? This can't be undone.`)) return;
-                run('delete', async () => {
-                  const { error } = await supabase.from('carousel_drafts').delete().eq('id', draft.id);
-                  if (error) throw error;
-                  onClose();
-                }, 'Post deleted');
-              }}
+              onClick={() => setConfirmDelete(true)}
             >
               {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
             </Button>
@@ -862,12 +857,7 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
             <Button
               variant="secondary"
               disabled={!!busy}
-              onClick={() => {
-                if (!confirm(`Regenerate this ${draft.type || 'post'}? The current copy${draft.imageUrls?.[0] ? ' and image' : ''} will be replaced.`)) return;
-                run('re-author', () => regenerateDraft({
-                  id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
-                }), 'Regeneration fired');
-              }}
+              onClick={() => setConfirmRegenerate(true)}
               title="Regenerate this post from scratch"
             >
               {busy === 're-author' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Regenerate
@@ -882,6 +872,46 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         onClose={() => setLibraryOpen(false)}
         onPick={onPickFromLibrary}
         currentUrl={(draft.imageUrls && draft.imageUrls[0]) || null}
+      />
+      <ConfirmDialog
+        open={confirmPostNow}
+        title="Publish this post to LinkedIn right now?"
+        body="It goes out immediately and can’t be undone."
+        confirmLabel="Post now"
+        onConfirm={() => {
+          setConfirmPostNow(false);
+          run('post now', () => publishPostNow(draft.id), 'Posting to LinkedIn now — live in ~30s');
+        }}
+        onCancel={() => setConfirmPostNow(false)}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        title={`Delete this ${draft.type || 'post'} permanently?`}
+        body="This can't be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => {
+          setConfirmDelete(false);
+          run('delete', async () => {
+            const { error } = await supabase.from('carousel_drafts').delete().eq('id', draft.id);
+            if (error) throw error;
+            onClose();
+          }, 'Post deleted');
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
+      <ConfirmDialog
+        open={confirmRegenerate}
+        title={`Regenerate this ${draft.type || 'post'}?`}
+        body={`The current copy${draft.imageUrls?.[0] ? ' and image' : ''} will be replaced.`}
+        confirmLabel="Regenerate"
+        onConfirm={() => {
+          setConfirmRegenerate(false);
+          run('re-author', () => regenerateDraft({
+            id: draft.id, type: draft.type, topic: draft.topic, title: draft.title, taxonomy: draft.taxonomy,
+          }), 'Regeneration fired');
+        }}
+        onCancel={() => setConfirmRegenerate(false)}
       />
     </div>
   );
