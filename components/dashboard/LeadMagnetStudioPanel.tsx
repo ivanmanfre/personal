@@ -329,7 +329,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition ${
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     isActive ? 'bg-emerald-600/90 text-white' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
                   }`}
                 >
@@ -343,7 +343,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
-                  className={`rounded px-1.5 py-0.5 transition ${
+                  className={`rounded px-1.5 py-0.5 transition focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     showDisqualified ? 'text-zinc-300 bg-zinc-900/60' : 'text-zinc-600 hover:text-zinc-400'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}

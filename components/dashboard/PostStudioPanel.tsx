@@ -359,7 +359,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
           <button
             data-tour="new-post"
             onClick={() => setFormOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ds-accent)]/10 hover:bg-[var(--ds-accent)]/15 border border-[var(--ds-accent)]/20 px-2.5 py-1.5 text-[12px] font-medium text-[var(--ds-accent)] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] px-2.5 py-1.5 text-[12px] font-medium text-white transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             New post
@@ -509,7 +509,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     isActive && s !== 'all' && pillClass ? pillClass + ' ring-1 ring-inset ring-current/20 shadow-sm font-medium' :
                     isActive && s === 'all' ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium' :
                     isCritical ? 'text-red-600 hover:bg-red-50' :
@@ -528,7 +528,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 ${
+                className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                   typeFilter === t
                     ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)] shadow-sm font-medium'
                     : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)] hover:bg-black/[.03]'
@@ -542,7 +542,7 @@ const PostStudioPanel: React.FC<PostStudioPanelProps> = ({ restrictTypes, title 
               {(statusCounts.disqualified || 0) > 0 && (
                 <button
                   onClick={() => setShowDisqualified((v) => !v)}
-                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] ${
+                  className={`rounded-md px-2 py-1 transition-all duration-150 text-[12px] focus-visible:ring-2 focus-visible:ring-[var(--ds-accent)] outline-none ${
                     showDisqualified ? 'text-[var(--ds-ink)] bg-[var(--ds-bg)] border border-[var(--ds-line)]' : 'text-[var(--ds-dim)] hover:text-[var(--ds-dim)] hover:bg-black/[.03]'
                   }`}
                   title={showDisqualified ? 'Hide disqualified' : `Show ${statusCounts.disqualified} disqualified`}
