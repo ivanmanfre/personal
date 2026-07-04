@@ -24,6 +24,7 @@ import ImageLibraryPicker from './ImageLibraryPicker';
 import SwipeableCarousel from './SwipeableCarousel';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Library } from 'lucide-react';
+import ImageEditorModal from './ImageEditor/ImageEditorModal';
 
 interface Props {
   draft: CarouselDraft;
@@ -97,6 +98,11 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   // helper validates again before the upload call.
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  // Spot-editor modal state. No existing state tracks the "active slide" for
+  // multi-image carousels (SwipeableCarousel owns its own swipe index
+  // internally and doesn't lift it up), so the edit target defaults to slide 0.
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [activeIndex] = useState(0);
   // Confirm-dialog state for the three native browser confirmations this editor used to have.
   const [confirmPostNow, setConfirmPostNow] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -177,6 +183,12 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
   }, [draft.status]);
 
   const qa = draft.qa;
+
+  // Mirrors the PDF-carousel detection in renderMedia's isCarouselPdf below —
+  // a carousel whose first slide is a Drive-hosted PDF export isn't a raster
+  // image the spot editor's segmentation model can operate on.
+  const editFirstUrl = (draft.imageUrls && draft.imageUrls[0]) || '';
+  const isPdfDraft = draft.type === 'carousel' && (/\.pdf($|\?)/i.test(editFirstUrl) || /drive\.google\.com\/file\/d\//.test(editFirstUrl));
 
   // Media-preview render.
   // The previous regex treated EVERY Drive /file/ link as a PDF — but single_image
@@ -507,35 +519,51 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                   label: 'Preview',
                   render: () => (
                     <div className="space-y-3">
-                      {/* Library / Upload controls above the card */}
-                      {draft.type !== 'carousel' && (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setLibraryOpen(true)}
-                            disabled={!!busy}
-                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
-                            title="Pick from previously-uploaded images"
-                          >
-                            {busy === 'apply library image'
-                              ? <Loader2 className="w-3 h-3 animate-spin" />
-                              : <Library className="w-3 h-3" />}
-                            Library
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={!!busy}
-                            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
-                            title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
-                          >
-                            {busy === 'upload image'
-                              ? <Loader2 className="w-3 h-3 animate-spin" />
-                              : <ImagePlus className="w-3 h-3" />}
-                            {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload'}
-                          </button>
-                        </div>
-                      )}
+                      {/* Library / Upload / Edit controls above the card. Library +
+                          Upload stay carousel-excluded as before (carousels are
+                          built by the render webhook, not hand-uploaded); Edit
+                          image is available for any draft with a baked image,
+                          carousels included, since AI Editor Task 11 hooks
+                          into the ImageEditorModal spot-editor regardless of type. */}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {draft.type !== 'carousel' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setLibraryOpen(true)}
+                              disabled={!!busy}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
+                              title="Pick from previously-uploaded images"
+                            >
+                              {busy === 'apply library image'
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <Library className="w-3 h-3" />}
+                              Library
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={!!busy}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
+                              title={(draft.imageUrls && draft.imageUrls[0]) ? 'Replace image' : 'Upload image'}
+                            >
+                              {busy === 'upload image'
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <ImagePlus className="w-3 h-3" />}
+                              {(draft.imageUrls && draft.imageUrls[0]) ? 'Replace' : 'Upload'}
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setEditorOpen(true)}
+                          disabled={!!busy || (draft.imageUrls?.length || 0) === 0 || isPdfDraft}
+                          className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md text-[var(--ds-ink)] bg-[var(--ds-card)] ring-1 ring-[var(--ds-line)] hover:bg-black/[.03] disabled:opacity-50 transition-colors"
+                          title={isPdfDraft ? 'Not available for PDF carousels' : 'Edit image with AI'}
+                        >
+                          ✨ Edit image
+                        </button>
+                      </div>
                       {/* LinkedIn Preview label */}
                       <div className="text-xs uppercase tracking-wider text-[var(--ds-dim)] mb-4 text-center font-medium">LinkedIn Preview</div>
                       {/* Faithful preview via the shared pixel-accurate component (hero) */}
@@ -873,6 +901,16 @@ const CarouselEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
         onPick={onPickFromLibrary}
         currentUrl={(draft.imageUrls && draft.imageUrls[0]) || null}
       />
+      {editorOpen && (
+        <ImageEditorModal
+          open={editorOpen}
+          draftId={draft.id}
+          imageUrls={draft.imageUrls}
+          index={activeIndex}
+          onClose={() => setEditorOpen(false)}
+          onCommitted={() => { setEditorOpen(false); onChanged(); }}
+        />
+      )}
       <ConfirmDialog
         open={confirmPostNow}
         title="Publish this post to LinkedIn right now?"
