@@ -39,6 +39,10 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
           VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
+          # client_boards is RLS deny-all; prerender enumerates finished preview boards
+          # via the board-generator service (bearer BOARD_GEN_TOKEN) to bake per-board OG.
+          BOARD_GEN_URL: ${{ secrets.BOARD_GEN_URL }}
+          BOARD_GEN_TOKEN: ${{ secrets.BOARD_GEN_TOKEN }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

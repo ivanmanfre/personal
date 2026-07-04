@@ -104,6 +104,45 @@ for (const slug of await fetchScanSlugs()) {
 }
 console.log(`[prerender] scan routes:`, ROUTES.filter((r) => r.startsWith('/scan/')).join(', '));
 
+// Parallel to the scan enumeration, but for client boards. client_boards is RLS
+// deny-all (only the get_client_board token RPC reads it), so the anon key CANNOT
+// enumerate it. Instead we ask the deployed board-generator service — the only holder
+// of the service-role key — for the finished preview boards, bearer-protected by
+// BOARD_GEN_TOKEN. Each returns {slug, token}; we prerender /client/:slug?k=<token> so
+// the clean link returns 200 + per-board OG (no Ivan portrait) and unfurls cleanly.
+// Falls back to zero client routes if the service/env is unavailable — the per-board
+// useMetadata() OG still fixes the unfurl for JS-rendering scrapers even without prerender.
+async function fetchClientBoardSlugs() {
+  const base = process.env.BOARD_GEN_URL;
+  const token = process.env.BOARD_GEN_TOKEN;
+  if (!base || !token) {
+    console.warn('[prerender] no BOARD_GEN_URL/TOKEN — skipping client-board enumeration');
+    return [];
+  }
+  try {
+    const res = await fetch(`${base.replace(/\/$/, '')}/list-board-slugs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      console.warn(`[prerender] client-board enum HTTP ${res.status} — skipping client routes`);
+      return [];
+    }
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.filter((r) => r && r.slug && r.token) : [];
+  } catch (e) {
+    console.warn('[prerender] client-board enum failed:', e.message);
+    return [];
+  }
+}
+
+for (const { slug, token } of await fetchClientBoardSlugs()) {
+  // Query is kept for navigation (the board RPC needs ?k=<token>) but stripped from the
+  // on-disk path in the render loop, so this lands at dist/client/<slug>/index.html.
+  const r = `/client/${slug}?k=${token}`;
+  if (!ROUTES.includes(r)) ROUTES.push(r);
+}
+console.log(`[prerender] client routes:`, ROUTES.filter((r) => r.startsWith('/client/')).map((r) => r.split('?')[0]).join(', ') || '(none)');
+
 const PORT = 4178;
 const BASE = `http://${HOST}:${PORT}`;
 
@@ -213,6 +252,16 @@ process.on('SIGTERM', () => shutdown(143));
         await page.waitForTimeout(400);
       }
 
+      // Client boards fetch their row via the get_client_board RPC before useMetadata()
+      // sets the per-board OG title/description/image. Wait for that so the baked HTML
+      // carries the clean per-board share tags (no Ivan portrait) instead of the defaults.
+      if (route.startsWith('/client/')) {
+        await page
+          .waitForFunction(() => / · content preview$/.test(document.title), { timeout: 15000 })
+          .catch(() => console.error(`[prerender][${route}] client OG title never set — check the board row is mode=preview and the token is valid`));
+        await page.waitForTimeout(400);
+      }
+
       // Strip the SPA-redirect script and module preload hints? No — leave the
       // <script type="module"> entry so the real browser hydrates.
       // Also strip transient/runtime-only attributes Playwright might add.
@@ -225,7 +274,11 @@ process.on('SIGTERM', () => shutdown(143));
         return '<!doctype html>\n' + document.documentElement.outerHTML;
       });
 
-      const outDir = join(DIST, route.replace(/^\//, ''));
+      // Strip any query string (e.g. /client/:slug?k=<token>) from the on-disk path:
+      // GitHub Pages resolves the file by path only, so this maps to
+      // dist/<path>/index.html and the token stays out of the directory name.
+      const outPath = route.split('?')[0];
+      const outDir = join(DIST, outPath.replace(/^\//, ''));
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, 'index.html'), html, 'utf8');
       console.log(`[prerender] wrote ${outDir}/index.html (${html.length} bytes)`);

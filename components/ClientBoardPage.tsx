@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -119,6 +120,9 @@ interface Board {
   ideas?: Idea[];
   lm?: any;
   lead_magnets?: LeadMagnetEntry[];
+  /** Real captured leads, if any exist yet. Absent/empty on a fresh preview board — the
+   *  Captured leads table then shows a clean empty-state, never a staged sample lead. */
+  leads?: { email: string; score?: string; weakest_area?: string; when?: string }[];
   strategy?: { total: number; period?: string; pillars: Pillar[] };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
@@ -198,7 +202,7 @@ Most accounts leak in the same three places: broad match quietly spending on jun
 
 None of it shows in the dashboard. All of it shows in a margin audit.
 
-Scaling multiplies whatever is already in the account — including the leaks. Audit first, then scale.`;
+Scaling multiplies whatever is already in the account, including the leaks. Audit first, then scale.`;
 
 /** Format kicker: refines the raw kind into the client-readable format label. */
 function kickerOf(q: Pick<QueueItem, 'kind' | 'media_url'>): string {
@@ -736,8 +740,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || 'drafted from your voice — nothing invented')
-      : q.generating ? 'reactive — drafting began after the news broke'
+    const provenance = stage === 'review' ? (q.promise || 'drafted from your voice, nothing invented')
+      : q.generating ? 'reactive: drafting began after the news broke'
       : (q.promise || '');
     return (
       <div key={q.id} style={{ borderBottom: `1px solid ${LINE}` }}>
@@ -799,7 +803,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                   ) : stage === 'scheduled' ? (
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>Signed off. On the schedule.</div>
                   ) : q.kind === 'lm' ? (
-                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>Live on your domain — a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.</div>
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>Live on your domain: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.</div>
                   ) : stage === 'published' ? (
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>An example of how your published posts will report here once the engine is live. Nothing has run on your account yet.</div>
                   ) : (
@@ -969,7 +973,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
             ))}
             {feedItems.length === 0 && (
               <div className="mx-auto max-w-[552px] rounded-[12px] bg-white px-4 py-6 text-[13px]" style={{ color: DIM, border: `1px solid ${LINE}` }}>
-                Your first drafts land here this week — this view shows them exactly as they'll run on your feed.
+                Your first drafts land here this week. This view shows them exactly as they'll run on your feed.
               </div>
             )}
           </div>
@@ -1089,7 +1093,7 @@ function WeekCard({ q, accent, focused, approving, flashOn, autoDays, panel, onF
         onMouseEnter={onFocus}
         onFocus={onFocus}
         className="relative cursor-pointer rounded-xl p-3.5 outline-none sm:p-4"
-        aria-label={`${q.hook || q.title} — awaiting your review`}
+        aria-label={`${q.hook || q.title}, awaiting your review`}
       >
         <div className="flex items-start gap-3">
           {/* Text posts lead with the title itself — the typographic thumb would repeat it. */}
@@ -1385,7 +1389,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     return { letter: TICK_LETTER[i], done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || 'drafted from your voice — nothing invented') : '';
+  const provenance = focused ? (focused.promise || 'drafted from your voice, nothing invented') : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -1403,7 +1407,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
       <div className="pt-2" style={{ borderTop: `1px solid ${LINE}` }}>
         <button onClick={() => onOpenBehind()} className="w-full rounded-[10px] px-4 py-4 text-left transition-colors hover:brightness-[0.98]" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
           <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE, marginBottom: 6 }}>Behind this week</div>
-          <div style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: INK }}>{pipelineCount} pieces in the pipeline — planned, drafting, queued.</div>
+          <div style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: INK }}>{pipelineCount} pieces in the pipeline: planned, drafting, queued.</div>
           <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent), letterSpacing: '0.04em' }}>open the pipeline →</div>
         </button>
       </div>
@@ -1452,7 +1456,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
             <motion.div initial={reduce ? false : { opacity: 0, y: 14, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.45, ease: EASE }}>
               <p className="mt-1 max-w-[52ch]" style={{ fontFamily: BODY, fontSize: 16, lineHeight: 1.6, color: INK_SOFT }}>
                 {total === 0
-                  ? 'Nothing needs you this week — every piece is already approved or operator-run. The engine keeps drafting next week behind the scenes.'
+                  ? 'Nothing needs you this week. Every piece is already approved or operator-run. The engine keeps drafting next week behind the scenes.'
                   : `Seven pieces, approved in your voice, queued to their slots. The engine keeps drafting next week behind the scenes, and if you ever miss a week nothing stalls: drafts publish automatically after ${autoDays} days.`}
               </p>
               <div className="mt-6" style={{ borderTop: `1px solid ${LINE_BOLD}` }}>
@@ -1498,7 +1502,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       </div>
                       {swapChip && (
                         <div className="mb-3 inline-block rounded-full uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent), background: caWash(accent, 9), border: `1px solid ${caBorder(accent, 35)}`, padding: '5px 12px' }}>
-                          ⟲ fresh idea — same slot, still your voice
+                          ⟲ fresh idea: same slot, still your voice
                         </div>
                       )}
                       <div onClick={() => onOpen(focused)} className="cursor-pointer">
@@ -1992,7 +1996,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
                         const time = KIND_TIME[it.kind];
-                        const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} — ${labelOf(it)}`;
+                        const tip = `${time ? time + ' · ' : ''}${KIND_LABEL[it.kind] || it.kind} · ${labelOf(it)}`;
                         if (it.kind === 'newsjack') {
                           return <div key={i} title={tip} className="truncate rounded-[4px] px-1.5 py-1 text-[10.5px] font-medium" style={chipStyle(it.kind)}>{labelOf(it)}</div>;
                         }
@@ -2136,26 +2140,39 @@ function LeadMagnetSurface({ board, accent, mint, fontStack }: { board: Board; a
 
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3"><CardHead>Captured leads</CardHead></div>
-        {/* Columns prioritized at phone widths: "When" hides under 640px so nothing clips. */}
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr style={{ color: FAINT }}>
-              <th className="pb-2 pr-3 font-medium">Email</th>
-              <th className="pb-2 pr-3 font-medium">Score</th>
-              <th className="pb-2 font-medium">Weakest area</th>
-              <th className="hidden pb-2 pl-3 font-medium sm:table-cell">When</th>
-            </tr>
-          </thead>
-          <tbody style={{ color: INK }}>
-            <tr style={{ borderTop: `1px solid ${DIVIDE}` }}>
-              <td className="py-2.5 pr-3"><span className="break-all">jamie@—store.com</span> <span className="ml-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>Sample</span></td>
-              <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">52 / 100</td>
-              <td className="py-2.5">Margin visibility</td>
-              <td className="hidden py-2.5 pl-3 sm:table-cell">—</td>
-            </tr>
-          </tbody>
-        </table>
-        <p className="mt-3 text-[13px]" style={{ color: DIM }}>Leads land here the moment someone completes it. Yours to keep, exportable anytime.</p>
+        {(board.leads && board.leads.length > 0) ? (
+          <>
+            {/* Columns prioritized at phone widths: "When" hides under 640px so nothing clips. */}
+            <table className="w-full text-left text-[13px]">
+              <thead>
+                <tr style={{ color: FAINT }}>
+                  <th className="pb-2 pr-3 font-medium">Email</th>
+                  <th className="pb-2 pr-3 font-medium">Score</th>
+                  <th className="pb-2 font-medium">Weakest area</th>
+                  <th className="hidden pb-2 pl-3 font-medium sm:table-cell">When</th>
+                </tr>
+              </thead>
+              <tbody style={{ color: INK }}>
+                {board.leads.map((lead, i) => (
+                  <tr key={i} style={{ borderTop: `1px solid ${DIVIDE}` }}>
+                    <td className="py-2.5 pr-3"><span className="break-all">{lead.email}</span></td>
+                    <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">{lead.score || ''}</td>
+                    <td className="py-2.5">{lead.weakest_area || ''}</td>
+                    <td className="hidden py-2.5 pl-3 sm:table-cell">{lead.when || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-3 text-[13px]" style={{ color: DIM }}>Yours to keep, exportable anytime.</p>
+          </>
+        ) : (
+          /* Fresh preview board: no real leads yet, so no staged sample row. */
+          <div className="rounded-lg px-4 py-6 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
+            <p className="mx-auto max-w-[46ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
+              Leads land here the moment someone completes your assessment. Yours to keep, exportable anytime.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2635,7 +2652,7 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
       <SectionHead
         eyebrow="What we track"
         title={<>The numbers, <Accent>told straight.</Accent></>}
-        sub={perf?.note || 'The leading indicators your retainer is measured on. No invented charts — real series appear the day the engine goes live.'}
+        sub={perf?.note || 'The leading indicators your retainer is measured on. No invented charts: real series appear the day the engine goes live.'}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -3103,20 +3120,33 @@ export default function ClientBoardPage() {
   // built-ahead preview, not a live account. Reads both so a data migration can't break it.
   const isPreview = mode === 'demo' || mode === 'preview';
 
-  // Per-client document head: the tab reads as the client's board, not Ivan's sales pitch.
-  // OG/meta tags stay static — GitHub Pages can't vary them per route without prerendering
-  // this route, which is out of scope here.
+  // Per-board share metadata (mirrors ScanReportPage). Sets the title + a NEUTRAL OG about
+  // a content preview built for this company — never Ivan's agency pitch — and an OG image
+  // that is the board's own brand asset (or a house fallback), never ivan-portrait.jpg.
+  // This kills the portrait unfurl for JS-rendering scrapers even on boards not yet
+  // prerendered, and bakes correctly into the static HTML that scripts/prerender.mjs emits.
+  // useMetadata is a hook, so it runs every render; the values simply update once the board
+  // loads. noindex keeps these private prospect demos out of search.
+  const ogCompany = board?.company_name || pendingCompany || 'Your brand';
+  const ogImage = board?.brand?.logo_light || board?.logo_url || board?.brand?.logo_dark || 'https://ivanmanfredi.com/og-scorecard.png';
+  useMetadata({
+    title: `${ogCompany} · content preview`,
+    description: `A month of content built for ${ogCompany} to preview: LinkedIn posts, carousels, and a live lead magnet, themed to your brand and ready to approve.`,
+    canonical: slug ? `https://ivanmanfredi.com/client/${slug}` : undefined,
+    ogImage,
+    noindex: true,
+  });
+
+  // Favicon only: swap the tab icon to the client's mark. Title + OG are owned by
+  // useMetadata above; this just makes the browser tab read as the client's board.
   useEffect(() => {
     if (state !== 'ready' || !board) return;
-    const prevTitle = document.title;
-    document.title = `${board.company_name} · Inbound Engine`;
     const link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
     const prevHref = link?.getAttribute('href') || '';
     const prevType = link?.getAttribute('type') || '';
     const fav = board.logo_url || board.brand?.logo_light;
     if (link && fav) { link.href = fav; link.removeAttribute('type'); }
     return () => {
-      document.title = prevTitle;
       if (link && prevHref) { link.setAttribute('href', prevHref); if (prevType) link.setAttribute('type', prevType); }
     };
   }, [state, board]);
