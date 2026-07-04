@@ -23,7 +23,7 @@ import {
 } from '../../../lib/imageEditModel';
 import type { EditState, Selection } from '../../../lib/imageEditModel';
 import { buildEditReq, editImage } from '../../../lib/imageEditApi';
-import { commitImageEdit, revertImageEdit } from '../../../lib/studioActions';
+import { commitImageEdit, revertImageEdit, replaceAt } from '../../../lib/studioActions';
 import ProposalPanel from './ProposalPanel';
 import SelectionCanvas from './SelectionCanvas';
 import ActionPopover from './ActionPopover';
@@ -36,6 +36,11 @@ export interface ImageEditorModalProps {
   index: number;
   onClose: () => void;
   onCommitted: (nextUrls: string[]) => void;
+  // Optional alternate commit target. When provided, Keep/Undo call this
+  // instead of commitImageEdit/revertImageEdit (which write carousel_drafts).
+  // Absent by default so every existing caller (CarouselEditor) is unaffected.
+  commitProposal?: (newUrl: string, op: string, prompt?: string) => Promise<void>;
+  undoProposal?: (prevUrl: string) => Promise<void>;
 }
 
 type EditOp = 'erase' | 'replace' | 'refine';
@@ -48,7 +53,7 @@ interface LastEditArgs {
 }
 
 export default function ImageEditorModal(props: ImageEditorModalProps) {
-  const { open, draftId, imageUrls, index, onClose, onCommitted } = props;
+  const { open, draftId, imageUrls, index, onClose, onCommitted, commitProposal, undoProposal } = props;
 
   const [state, setState] = useState<EditState>(() => initEditState(imageUrls[index] || ''));
   const [mode, setMode] = useState<'click' | 'brush'>('click');
@@ -128,14 +133,20 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
     if (!state.proposalUrl) return;
     setCommitting(true);
     try {
-      const nextUrls = await commitImageEdit({
-        draftId,
-        imageUrls,
-        index,
-        newUrl: state.proposalUrl,
-        op: lastEditArgs?.op || 'refine',
-        prompt: lastEditArgs?.prompt,
-      });
+      let nextUrls: string[];
+      if (commitProposal) {
+        await commitProposal(state.proposalUrl, lastEditArgs?.op || 'refine', lastEditArgs?.prompt);
+        nextUrls = replaceAt(imageUrls, index, state.proposalUrl);
+      } else {
+        nextUrls = await commitImageEdit({
+          draftId,
+          imageUrls,
+          index,
+          newUrl: state.proposalUrl,
+          op: lastEditArgs?.op || 'refine',
+          prompt: lastEditArgs?.prompt,
+        });
+      }
       setState((s) => onKeep(s));
       onCommitted(nextUrls);
     } catch (e) {
@@ -143,7 +154,7 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
     } finally {
       setCommitting(false);
     }
-  }, [state.proposalUrl, draftId, imageUrls, index, lastEditArgs, onCommitted]);
+  }, [state.proposalUrl, draftId, imageUrls, index, lastEditArgs, onCommitted, commitProposal]);
 
   const handleTryAgain = useCallback(() => {
     if (!lastEditArgs) {
@@ -169,7 +180,13 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
     const prevUrl = state.versions[state.versions.length - 1];
     setCommitting(true);
     try {
-      const nextUrls = await revertImageEdit({ draftId, imageUrls, index, prevUrl });
+      let nextUrls: string[];
+      if (undoProposal) {
+        await undoProposal(prevUrl);
+        nextUrls = replaceAt(imageUrls, index, prevUrl);
+      } else {
+        nextUrls = await revertImageEdit({ draftId, imageUrls, index, prevUrl });
+      }
       setState((s) => onUndo(s));
       onCommitted(nextUrls);
     } catch (e) {
@@ -177,7 +194,7 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
     } finally {
       setCommitting(false);
     }
-  }, [state, committing, draftId, imageUrls, index, onCommitted]);
+  }, [state, committing, draftId, imageUrls, index, onCommitted, undoProposal]);
 
   // Esc / backdrop: dismiss the current step first; only close the modal
   // outright once we're already idle.
