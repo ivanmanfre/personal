@@ -65,9 +65,11 @@ Deno.serve(async (req) => {
       );
       if (!gRes.ok) return json({ error: `gemini ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
       const g = await gRes.json();
-      const part = g?.candidates?.[0]?.content?.parts?.find((p: any) => p?.inline_data?.data);
-      if (!part) return json({ error: "gemini returned no image", raw: g }, 502);
-      resultBytes = Uint8Array.from(atob(part.inline_data.data), (c) => c.charCodeAt(0));
+      // Gemini REST returns camelCase `inlineData` in responses (request takes snake_case) — accept both.
+      const part = g?.candidates?.[0]?.content?.parts?.find((p: any) => p?.inline_data?.data || p?.inlineData?.data);
+      const b64data: string | undefined = part?.inline_data?.data ?? part?.inlineData?.data;
+      if (!b64data) return json({ error: "gemini returned no image", raw: g }, 502);
+      resultBytes = Uint8Array.from(atob(b64data), (c) => c.charCodeAt(0));
     } else {
       const FAL_KEY = Deno.env.get("FAL_KEY");
       if (!FAL_KEY) return json({ error: "FAL_KEY not configured" }, 503);

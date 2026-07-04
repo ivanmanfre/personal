@@ -41,8 +41,9 @@ Deno.serve(async (req) => {
       return json({ error: `fal ${falRes.status}`, detail: t.slice(0, 500) }, 502);
     }
     const out = await falRes.json();
-    // --- response parse (verify shape at fal.ai/models) ---
-    const maskUrl: string | undefined = out?.image_url ?? out?.masks?.[0]?.url ?? out?.combined_mask?.url;
+    // --- response parse (verified live against fal-ai/sam2/image: mask is at out.image.url) ---
+    const maskUrl: string | undefined =
+      out?.image?.url ?? out?.image_url ?? out?.masks?.[0]?.url ?? out?.combined_mask?.url;
     if (!maskUrl) return json({ error: "fal returned no mask", raw: out }, 502);
     const bbox = out?.bbox ?? out?.masks?.[0]?.bbox ?? [x, y, 0, 0];
     return json({ mask_url: maskUrl, bbox, object_class: out?.object_class });
