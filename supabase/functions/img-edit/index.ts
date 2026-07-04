@@ -1,0 +1,97 @@
+// supabase/functions/img-edit/index.ts
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
+  "Access-Control-Max-Age": "86400",
+  "Content-Type": "application/json",
+};
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: CORS });
+}
+
+const FAL_INPAINT_MODEL = "fal-ai/flux-lora-fill"; // verify slug at fal.ai/models
+const GEMINI_MODEL = "gemini-3.1-flash-image-preview";
+
+async function fetchAsBase64(url: string): Promise<{ b64: string; mime: string }> {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`fetch source ${r.status}`);
+  const mime = r.headers.get("content-type") || "image/png";
+  const buf = new Uint8Array(await r.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+  return { b64: btoa(bin), mime };
+}
+
+function opToPrompt(op: string, prompt?: string): string {
+  if (prompt && prompt.trim()) return prompt.trim();
+  if (op === "erase") return "remove the selected object and fill the area naturally to match the surroundings";
+  return "improve the selected region";
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+  if (req.method !== "POST") return json({ error: "POST only" }, 405);
+
+  let body: { image_url?: string; op?: string; mask_url?: string; prompt?: string; whole_image?: boolean; draft_id?: string };
+  try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
+  const { image_url, op = "refine", mask_url, prompt, whole_image, draft_id } = body;
+  if (!image_url || !draft_id) return json({ error: "image_url and draft_id required" }, 400);
+
+  const useGemini = whole_image === true || !mask_url;
+
+  try {
+    let resultBytes: Uint8Array;
+
+    if (useGemini) {
+      const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+      if (!GEMINI_API_KEY) return json({ error: "GEMINI_API_KEY not configured" }, 503);
+      const { b64, mime } = await fetchAsBase64(image_url);
+      const gRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [
+              { inline_data: { mime_type: mime, data: b64 } },
+              { text: opToPrompt(op, prompt) },
+            ] }],
+          }),
+        },
+      );
+      if (!gRes.ok) return json({ error: `gemini ${gRes.status}`, detail: (await gRes.text()).slice(0, 500) }, 502);
+      const g = await gRes.json();
+      const part = g?.candidates?.[0]?.content?.parts?.find((p: any) => p?.inline_data?.data);
+      if (!part) return json({ error: "gemini returned no image", raw: g }, 502);
+      resultBytes = Uint8Array.from(atob(part.inline_data.data), (c) => c.charCodeAt(0));
+    } else {
+      const FAL_KEY = Deno.env.get("FAL_KEY");
+      if (!FAL_KEY) return json({ error: "FAL_KEY not configured" }, 503);
+      const falRes = await fetch(`https://fal.run/${FAL_INPAINT_MODEL}`, {
+        method: "POST",
+        headers: { "Authorization": `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ image_url, mask_url, prompt: opToPrompt(op, prompt) }),
+      });
+      if (!falRes.ok) return json({ error: `fal ${falRes.status}`, detail: (await falRes.text()).slice(0, 500) }, 502);
+      const out = await falRes.json();
+      const url: string | undefined = out?.images?.[0]?.url ?? out?.image?.url;
+      if (!url) return json({ error: "fal returned no image", raw: out }, 502);
+      const rb = await fetch(url);
+      resultBytes = new Uint8Array(await rb.arrayBuffer());
+    }
+
+    // upload PREVIEW (not committed) to post-stills
+    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const path = `${draft_id}/_edit_preview/${Date.now()}.png`;
+    const up = await supa.storage.from("post-stills").upload(path, resultBytes, { upsert: true, contentType: "image/png" });
+    if (up.error) return json({ error: `upload ${up.error.message}` }, 500);
+    const { data: pub } = supa.storage.from("post-stills").getPublicUrl(path);
+    return json({ result_url: pub.publicUrl });
+  } catch (e) {
+    return json({ error: String(e) }, 500);
+  }
+});
