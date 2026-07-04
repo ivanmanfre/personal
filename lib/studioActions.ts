@@ -453,3 +453,33 @@ export async function generatePostContent(payload: PostGenPayload) {
   if (!res.ok) throw new Error(`post-gen-v2 failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
   return res.json();
 }
+
+export function replaceAt(urls: string[], index: number, url: string): string[] {
+  const out = [...urls];
+  if (index >= 0 && index < out.length) out[index] = url;
+  return out;
+}
+
+export async function commitImageEdit(a: {
+  draftId: string; imageUrls: string[]; index: number; newUrl: string; op: string; prompt?: string;
+}): Promise<string[]> {
+  const { supabase } = await import('./supabase');
+  const next = replaceAt(a.imageUrls, a.index, a.newUrl);
+  await supabase.from('image_edit_versions').insert({
+    draft_id: a.draftId, image_index: a.index,
+    prev_url: a.imageUrls[a.index] ?? null, new_url: a.newUrl, op: a.op, prompt: a.prompt ?? null,
+  });
+  const { error } = await supabase.from('carousel_drafts').update({ image_urls: next }).eq('id', a.draftId);
+  if (error) throw new Error(error.message);
+  return next;
+}
+
+export async function revertImageEdit(a: {
+  draftId: string; imageUrls: string[]; index: number; prevUrl: string;
+}): Promise<string[]> {
+  const { supabase } = await import('./supabase');
+  const next = replaceAt(a.imageUrls, a.index, a.prevUrl);
+  const { error } = await supabase.from('carousel_drafts').update({ image_urls: next }).eq('id', a.draftId);
+  if (error) throw new Error(error.message);
+  return next;
+}
