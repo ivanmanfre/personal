@@ -2300,7 +2300,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
       {/* Voice model: what the drafts are trained on. Sources named, no post counts claimed. */}
       {(() => {
         const domain = (board.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
-        const traits: string[] = (board as any).voice?.traits || ['Plain spoken', 'Numbers on the page', 'No hype', 'Australian register'];
+        const traits: string[] = (board as any).voice?.traits || ['Plain spoken', 'Numbers on the page', 'No hype'];
         return (
           <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
             <div className="mb-1"><CardHead>Voice model</CardHead></div>
