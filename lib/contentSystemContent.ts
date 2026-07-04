@@ -58,7 +58,7 @@ export const SCOPE: { inScope: string[]; notInScope: string[] } = {
   inScope: [
     'Voice training on your real posts + calls',
     'The idea curator, scorer, and newsjack radar',
-    'Multi-format generation (posts, carousels, video, lead magnets)',
+    'Multi-format generation (posts, carousels, lead magnets)',
     'Quality + anti-slop gating on every piece',
     'Native LinkedIn publishing + the performance loop',
     'A dashboard where you approve and schedule',

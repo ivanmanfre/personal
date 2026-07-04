@@ -206,7 +206,7 @@ const LandingHero: React.FC = () => {
                   color: '#3D3D3B',
                 }}
               >
-                We run a LinkedIn inbound engine that ships daily content in your voice and turns the readers who engage into leads in your inbox.
+                We run a LinkedIn inbound engine that posts daily in your voice and turns the readers who engage into leads in your inbox.
               </motion.p>
 
               {/* Benefit row — mono spec line */}

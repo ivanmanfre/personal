@@ -1882,7 +1882,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Content System" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
+          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Call Intelligence · {companyName}</span>
           <BookButton label="Book a call" small />
         </div>
@@ -2084,7 +2084,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#3D3D3B' }}>
                 Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
               </p>
-              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · AI content systems for agencies</p>
+              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for agencies</p>
             </div>
           </div>
         </div>
@@ -2191,7 +2191,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
         <div>
           <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
             <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
-            <span>Content System · {meta.tag}</span>
+            <span>Inbound Engine · {meta.tag}</span>
             <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
             <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {who}{companyName && who !== companyName ? `, founder of ${companyName}` : ''}</span>
           </motion.div>
@@ -2207,7 +2207,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
               </li>
             ))}
           </motion.ul>
-          <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book a 20-min look" /></motion.div>
+          <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book the free fit call" /></motion.div>
         </div>
         {/* RIGHT — the founder's actual drafted week, rendered: real posts + the real lead-magnet cover */}
         <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
@@ -2556,7 +2556,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
       <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
         <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
-          {companyName} · Content System
+          {companyName} · Inbound Engine
         </span>
         <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
           <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ height: 6, width: 6, background: 'var(--color-accent)' }} />
@@ -2670,13 +2670,13 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const founder = cs.founder;
   const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || companyName;
   const founderFull = founder?.name || companyName;
-  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('content system')}`;
+  const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('inbound engine')}`;
   const BookButton = ({ label, small }: { label: string; small?: boolean }) => <CIMagneticCTA href={bookUrl} label={label} small={small} />;
 
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
-    title: `A content system for ${companyName}`,
+    title: `An inbound engine for ${companyName}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `https://ivanmanfredi.com/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
@@ -2710,7 +2710,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       portraits: [{ src: '/content-system/kyle-portrait.webp', name: 'Kyle Hunt', pos: '50% 24%' }],
       quote: ['It writes every post and guide in ', 'my voice', '. I approve, and it ships.'],
       result: 'Kyle scaled from $30k/mo to $60k/mo with us.',
-      src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's content engine running in the system",
+      src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's inbound engine running in the system",
       metrics: [{ value: '30K', label: 'impressions per post' }, { value: '~300', label: 'comments on a lead-magnet post' }, { value: '100%', label: 'of his content, run by the system' }],
     },
     {
@@ -2734,9 +2734,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Content System" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Content System · {founderFull}</span>
-          <BookButton label="Book a look" small />
+          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Inbound Engine · {founderFull}</span>
+          <BookButton label="Book a call" small />
         </div>
       </header>
 
@@ -2970,8 +2970,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} className="w-28 h-28 sm:w-36 sm:h-36" style={{ objectFit: 'cover', borderRadius: 22, flexShrink: 0, boxShadow: CI_SHADOW_LG }} />
           <div>
             <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I fill founders' LinkedIn with content and lead magnets, <Italic>on autopilot.</Italic></h2>
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>It's an inbound system that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
-            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound content systems for founders</p>
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>It's an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
+            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for founders</p>
           </div>
         </div>
       </section>
@@ -2980,9 +2980,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
         <div className="p-10 lg:p-16 text-center" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
           <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Be the sharpest voice in your space. <Italic>Without writing a word.</Italic></h2>
-          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>Book a 20-minute look. We'll scope it to your channels, formats, and voice, and you'll get a fixed proposal.</p>
+          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>Book the free fit call. We'll scope it to your channels, formats, and voice, and you'll keep the audience, list, and every lead it builds.</p>
           <div className="mt-8 flex flex-col items-center gap-3.5">
-            <BookButton label="Book a 20-min look" />
+            <BookButton label="Book the free fit call" />
             <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working system.</span>
           </div>
         </div>
@@ -2990,9 +2990,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <footer style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-4">
-          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginLeft: 8 }}>Content System</span></span>
+          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginLeft: 8 }}>Inbound Engine</span></span>
           <span className="flex items-center gap-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em' }}>
-            <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a look</a>
+            <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a call</a>
             <a href="https://ivanmanfredi.com" style={{ color: 'rgba(26,26,26,0.55)' }}>ivanmanfredi.com</a>
           </span>
         </div>
@@ -3938,7 +3938,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
                 textDecorationColor: 'rgba(76,110,61,0.45)',
               }}
             >
-              Book a free 30-min walkthrough <ArrowRight className="w-4 h-4 self-center transition-transform group-hover:translate-x-0.5" />
+              Book the free fit call <ArrowRight className="w-4 h-4 self-center transition-transform group-hover:translate-x-0.5" />
             </a>
           </div>
         </div>
@@ -4404,7 +4404,7 @@ const SECTION_REGISTRY: NavSection[] = [
   { id: 'ai-adoption',  label: 'AI Adoption' },
   { id: 'competitive',  label: 'Competitive' },
   { id: 'week-one',     label: 'The Play' },
-  { id: 'cta',          label: 'Book a Call' },
+  { id: 'cta',          label: 'Book a call' },
 ];
 
 const SidebarNav: React.FC = () => {

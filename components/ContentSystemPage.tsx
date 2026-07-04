@@ -175,7 +175,7 @@ export default function ContentSystemPage() {
   useMetadata({
     title: 'Inbound Engine | Manfredi',
     description:
-      'An always-on inbound engine that ships daily content in your voice, refuses to ship AI slop, and turns the readers who engage into named leads in your inbox. Five posts a week, without writing a word.',
+      'An always-on inbound engine that posts daily in your voice, refuses to publish AI slop, and turns the readers who engage into named leads in your inbox. Five posts a week, without writing a word.',
     canonical: 'https://ivanmanfredi.com/content-system',
   });
 
@@ -201,17 +201,17 @@ export default function ContentSystemPage() {
             {...(prefersReduced ? {} : inView)}
             className="mt-5 text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tighter max-w-4xl"
           >
-            Be the sharpest voice in your space,{' '}
-            <span className="font-drama italic">every day</span>, without writing a word.
+            Turn your LinkedIn into a{' '}
+            <span className="font-drama italic">pipeline you own</span>.
           </motion.h1>
           <p className="mt-6 max-w-2xl text-xl text-ink-soft leading-relaxed">
-            Five posts a week, plus carousels, lead magnets, and a weekly newsletter, all in your voice
-            and all on autopilot. You approve. It does the rest.
+            We run a LinkedIn inbound engine that posts daily in your voice and turns the readers
+            who engage into leads in your inbox. You never write a post.
           </p>
           <div className="mt-8">
             {/* px prop carries the full padding utility string, e.g. "px-9 py-4" */}
             <MagneticCTA href="/start" fontSize="17px" px="px-9 py-4">
-              Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+              Book the free fit call <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
           </div>
           {/* Trust proof at the fold. */}
@@ -396,6 +396,25 @@ export default function ContentSystemPage() {
           </div>
         </section>
 
+        {/* 7.5 — WHAT YOU OWN (the asset-ownership frame, per positioning lock) */}
+        <section className="mb-16 md:mb-24">
+          <Label>What you own</Label>
+          <RevealH2
+            style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}
+          >
+            You own what it{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              builds.
+              <SageSweep delay={0.4} opacity={0.85} />
+            </span>
+          </RevealH2>
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed">
+            The audience, the email list, the content, and every lead the engine captures are yours
+            to keep. We run the engine, you keep the asset it builds. If we ever part ways, you walk
+            away with all of it.
+          </p>
+        </section>
+
         {/* 8 — CLIENT CASE STUDIES (real operators + numbers) */}
         <section className="mb-16 md:mb-24">
           <Label>Client results</Label>
@@ -442,7 +461,7 @@ export default function ContentSystemPage() {
               Want this running in your voice? Let&apos;s scope it on a quick call.
             </p>
             <MagneticCTA href="/start" fontSize="16px" px="px-7 py-3.5">
-              Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+              Book the free fit call <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
           </div>
         </section>
@@ -498,11 +517,11 @@ export default function ContentSystemPage() {
           </p>
           <div className="mt-9 flex flex-col items-center gap-4">
             <MagneticCTA href="/start" dark fontSize="18px" px="px-10 py-5">
-              Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+              Book the free fit call <ArrowRight aria-hidden="true" size={18} />
             </MagneticCTA>
             <p className="text-sm text-zinc-400">
-              We&apos;ll scope it to your channels, formats and voice, and you leave with a fixed
-              proposal, no obligation.
+              We&apos;ll scope it to your channels, formats, and voice, and you leave knowing exactly
+              what it runs and what it costs.
             </p>
           </div>
         </section>
@@ -517,7 +536,7 @@ export default function ContentSystemPage() {
         tabIndex={showSticky ? 0 : -1}
         aria-hidden={!showSticky}
       >
-        Book a 20-min look <ArrowRight aria-hidden="true" size={18} />
+        Book the free fit call <ArrowRight aria-hidden="true" size={18} />
       </a>
     </div>
   );
