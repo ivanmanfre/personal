@@ -2804,7 +2804,10 @@ export default function ClientBoardPage() {
   const approvalsKey = `cb-approvals-${slug || ''}`;
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
-  const [state, setState] = useState<'loading' | 'ready' | 'invalid'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed'>('loading');
+  // Company name for the pre-render states (generating / failed): the placeholder row
+  // carries it before the full board jsonb exists, so the building screen can name it.
+  const [pendingCompany, setPendingCompany] = useState<string>('');
   const [tab, setTab] = useState<TabId>('week');
   const [detail, setDetail] = useState<QueueItem | null>(null);
   const [detailChanging, setDetailChanging] = useState(false);
@@ -2972,6 +2975,16 @@ export default function ClientBoardPage() {
       const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
       if (cancelled) return;
       if (error || !data) { setState('invalid'); return; }
+      const rowMode = (data as any).mode || 'demo';
+      // The board-generator service reserves the row in 'generating' before the full
+      // jsonb exists, then flips it to 'preview' (done) or 'failed'. In those pre-render
+      // states the board is a minimal placeholder — show a dedicated screen instead of
+      // trying to render an empty board (which would read as the invalid-link error).
+      if (rowMode === 'generating' || rowMode === 'failed') {
+        setPendingCompany(((data as any).board?.company_name as string) || '');
+        setState(rowMode);
+        return;
+      }
       let b = (data as any).board as Board;
       // Once the intro has played (or motion is reduced and it never will), the choreography
       // card must land as a normal completed review card — never a stuck "Generating…" row.
@@ -2995,6 +3008,23 @@ export default function ClientBoardPage() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, token]);
+
+  // While the board is still generating, poll the row every 15s. When it flips to a
+  // renderable mode, reload once so the full loader (intro choreography included) runs
+  // cleanly; if it fails, drop to the failed screen.
+  useEffect(() => {
+    if (state !== 'generating' || !slug || !token) return;
+    let stopped = false;
+    const id = setInterval(async () => {
+      const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
+      if (stopped || error || !data) return;
+      const m = (data as any).mode || 'demo';
+      if (m === 'failed') { setPendingCompany(((data as any).board?.company_name as string) || pendingCompany); setState('failed'); }
+      else if (m !== 'generating') { window.location.reload(); }
+    }, 15000);
+    return () => { stopped = true; clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, slug, token]);
 
   // Load the client's heading font so the board carries their type, not ours.
   const headingFont = board?.brand?.font_heading;
@@ -3150,6 +3180,44 @@ export default function ClientBoardPage() {
 
   if (state === 'loading') {
     return <BoardSkeleton />;
+  }
+  if (state === 'generating') {
+    const who = pendingCompany ? `${pendingCompany}'s` : 'your';
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6" style={{ background: PAPER, color: INK }}>
+        <style>{`@keyframes cb-build { 0%,100% { opacity:.3 } 50% { opacity:1 } } @media (prefers-reduced-motion: reduce){ .cb-build-dot{ animation:none !important } }`}</style>
+        <div className="w-full max-w-md text-center">
+          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Content desk</div>
+          <h1 className="mt-4" style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.15, color: INK }}>
+            We're building {who} board<span style={{ color: '#2A8F65' }}>.</span>
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm" style={{ fontFamily: BODY, fontSize: 15, color: DIM }}>
+            The engine is reading your brand, drafting a month of posts, and theming your lead magnet. This takes a few minutes. The page turns itself on the moment it's ready, so you can leave it open.
+          </p>
+          <div className="mt-7 flex items-center justify-center gap-1.5" aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="cb-build-dot" style={{ width: 7, height: 7, borderRadius: 99, background: '#2A8F65', display: 'inline-block', animation: 'cb-build 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }} />
+            ))}
+          </div>
+          <div className="mt-3 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>Checking again every few seconds</div>
+        </div>
+      </div>
+    );
+  }
+  if (state === 'failed') {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6" style={{ background: PAPER, color: INK }}>
+        <div className="w-full max-w-md text-center">
+          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Content desk</div>
+          <h1 className="mt-4" style={{ fontFamily: SERIF, fontSize: 28, lineHeight: 1.15, color: INK }}>
+            This board didn't finish building<span style={{ color: '#2A8F65' }}>.</span>
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm" style={{ fontFamily: BODY, fontSize: 15, color: DIM }}>
+            Something interrupted the run. Nothing is wrong on your end. Ask your operator to kick it off again, they'll have a fresh link for you in a few minutes.
+          </p>
+        </div>
+      </div>
+    );
   }
   if (state === 'invalid' || !board || !viewBoard) {
     return (
