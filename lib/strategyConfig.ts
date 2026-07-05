@@ -1,4 +1,4 @@
-import type { OfferLadderRung, FunnelTouchpoint, PlannedLeadMagnet, ExternalLink } from '../types/dashboard';
+import type { OfferLadderRung, FunnelTouchpoint, PlannedLeadMagnet, ExternalLink, PositioningLockItem, Objection, ToolStackItem, LoopBreakItem } from '../types/dashboard';
 
 // Offer ladder — 2026-04-19 strategy doc + 2026-04-25 lead magnet spec
 export const offerLadder: OfferLadderRung[] = [
@@ -14,23 +14,12 @@ export const offerLadder: OfferLadderRung[] = [
     visibility: 'public',
   },
   {
-    id: 'orientation-500',
-    name: 'AI Orientation Session',
-    priceLabel: '$500',
-    priceTier: 'low',
-    status: 'internal',
-    description: '1-hour walk-through (unlisted). Internal upsell after qualified Discovery.',
-    stripeUrl: null,
-    resourceUrl: null,
-    visibility: 'unlisted',
-  },
-  {
     id: 'content-system-2k',
     name: 'Content System (done-for-you)',
     priceLabel: '$2K/mo',
     priceTier: 'high',
     status: 'live',
-    description: 'Managed LinkedIn content engine in the client voice: ~26 posts + ~12 lead magnets + weekly newsletter/mo. The only cold front-door offer. ~$1-2k one-time onboarding.',
+    description: 'Managed LinkedIn content engine in the client voice: ~26 posts + ~12 lead magnets + weekly newsletter/mo. Tokens and tools included. The only cold front-door offer.',
     stripeUrl: null,
     resourceUrl: 'https://ivanmanfredi.com/content-system',
     visibility: 'public',
@@ -311,4 +300,71 @@ export const sourceOfTruthDocs: ExternalLink[] = [
   { label: 'Positioning & Offer Strategy (2026-04-19)', url: '/docs/superpowers/specs/2026-04-19-positioning-and-offer-strategy-design.md', category: 'spec' },
   { label: 'Outreach Strategy Purge (2026-04-23)', url: 'memory/outreach-strategy-purge-2026-04-23.md', category: 'doc' },
   { label: 'MEMORY index', url: 'memory/MEMORY.md', category: 'doc' },
+];
+
+// ─── Positioning & Offer — locked 2026-07-03 (positioning-lock memory) ───
+
+// The lock: the five ratified positions, for pulling up live on a sales call.
+export const positioningLock: PositioningLockItem[] = [
+  { label: 'Price', value: '$2k/mo, tokens + tools included. Ratified 2026-06-29. Tripwire: 4+ calls, 0 yes before any reshape.' },
+  { label: 'Headline', value: 'The owned asset you build and run for them: audience, email list, captured named leads. Anti-ghostwriter, anti-SDR.' },
+  { label: 'The machine', value: 'Proof in the demo and a steering wheel they rarely touch. Internals (prompts, voice model, corpus) stay yours.' },
+  { label: 'Delivery', value: 'Approve-first for month one to dial in the voice, then auto-approve so it runs itself.' },
+  { label: 'Identity', value: 'Operator who runs the engine for them. Builder, never copywriter.' },
+];
+
+// Objection → the answer the position gives.
+export const positioningObjections: Objection[] = [
+  {
+    objection: 'I could just do this myself with GPT.',
+    answer: 'You run it for them, results arrive without their labor, and the compounding voice model + corpus is the part they cannot cheaply rebuild.',
+  },
+  {
+    objection: "I'll just buy the tools and run it myself.",
+    answer: 'The tools alone run $300-$600/mo (LinkedIn API, newsletter platform, scraper, design software, model tokens) and you still operate each by hand. At $2k I bill all of it and run it, so you never touch a vendor invoice or an API key.',
+    isNew: true,
+  },
+  {
+    objection: 'Ghostwriters never sounded like me.',
+    answer: 'A trained voice model plus QA so nothing reads like AI. One voice note re-tunes the whole system.',
+  },
+  {
+    objection: "I don't want a $3-6k content hire.",
+    answer: 'Operated for them at $2k, no headcount to manage, no ramp, no sick days.',
+  },
+  {
+    objection: "I don't want to rent an agency forever.",
+    answer: 'They own the asset: audience, list, and leads. You run the engine that keeps filling it.',
+  },
+  {
+    objection: 'Does content actually produce pipeline?',
+    answer: 'The lead-magnet capture turns reach into named leads and booked calls. Reach on its own is applause.',
+  },
+];
+
+// What $2k replaces: the DIY tool stack a client would otherwise assemble (public prices, verified 2026-07).
+export const toolStackReplaced: ToolStackItem[] = [
+  { tool: 'LinkedIn scheduler SaaS', job: 'drafting, scheduling, analytics', cost: '39–65' },
+  { tool: 'Unipile', job: 'LinkedIn API / messaging', cost: '55–99' },
+  { tool: 'Kit / newsletter platform', job: 'newsletter', cost: '39–89' },
+  { tool: 'Apify', job: 'scraping / lead sourcing', cost: '49' },
+  { tool: 'Claude / GPT tokens', job: 'generation at volume', cost: '50–150' },
+  { tool: 'Canva Pro / design', job: 'carousels, covers', cost: '15–30' },
+  { tool: 'Smartlead + verification', job: 'cold email + enrichment', cost: '39–94' },
+  { tool: 'n8n hosting', job: 'orchestration', cost: '20–50' },
+];
+export const toolStackTotalLabel = '≈ $300–600/mo';
+
+// The loop Ivan kept running, and the question that ends it.
+export const positioningLoopBreak: LoopBreakItem[] = [
+  {
+    kind: 'loop',
+    label: 'The loop you kept running',
+    body: 'Show the machine → feels like a tool they could run → so hide it → black-box feels thin → back to the start.',
+  },
+  {
+    kind: 'break',
+    label: 'The question that cuts it',
+    body: 'Does getting value require their work? If leads, content, and booked calls arrive whether or not they log in, it is a service. The dashboard is a bonus on top.',
+  },
 ];

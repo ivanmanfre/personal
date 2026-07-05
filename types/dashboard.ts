@@ -935,6 +935,30 @@ export interface ExternalLink {
   category: 'live-site' | 'tool' | 'doc' | 'spec';
 }
 
+// Positioning & Offer (locked 2026-07-03) — sales-call reference
+export interface PositioningLockItem {
+  label: string;    // "Price", "Headline", "The machine", "Delivery", "Identity"
+  value: string;
+}
+
+export interface Objection {
+  objection: string;
+  answer: string;
+  isNew?: boolean;
+}
+
+export interface ToolStackItem {
+  tool: string;
+  job: string;
+  cost: string;     // $/mo range, e.g. "39–65"
+}
+
+export interface LoopBreakItem {
+  kind: 'loop' | 'break';
+  label: string;
+  body: string;
+}
+
 export interface StrategyCampaignSummary {
   id: string;
   name: string;

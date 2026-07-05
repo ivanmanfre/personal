@@ -7,6 +7,7 @@ import { ContentStrategySection } from './strategy/ContentStrategySection';
 import { ICPCampaignsSection } from './strategy/ICPCampaignsSection';
 import { LeadMagnetInventorySection } from './strategy/LeadMagnetInventorySection';
 import { OfferLadderSection } from './strategy/OfferLadderSection';
+import { PositioningOfferSection } from './strategy/PositioningOfferSection';
 import { FunnelTouchpointsSection } from './strategy/FunnelTouchpointsSection';
 import { CrossReferencesSection } from './strategy/CrossReferencesSection';
 import { SourceOfTruthSection } from './strategy/SourceOfTruthSection';
@@ -38,6 +39,7 @@ const StrategyPanel: React.FC = () => {
         paidAssessmentsTotal={paidAssessmentsTotal}
         activeClients={activeClients}
       />
+      <PositioningOfferSection />
       <FunnelTouchpointsSection paidAssessmentsThisMonth={paidAssessmentsThisMonth} />
       <CrossReferencesSection />
       <SourceOfTruthSection />
