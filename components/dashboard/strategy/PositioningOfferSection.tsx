@@ -14,7 +14,7 @@ export const PositioningOfferSection: React.FC = () => {
     <PanelCard title="Positioning & Offer" accent="emerald" headerRight={<span className="text-[10px] font-mono text-zinc-600">locked 2026-07-03</span>}>
       <div className="p-4 space-y-3">
         <p className="text-[11px] text-zinc-500">
-          The ratified $2k position, the objection answers, and the DIY-cost math — a live reference for sales calls.
+          The ratified $2k position, the objection answers, and the DIY-cost math. A live reference for sales calls.
         </p>
 
         <SubCard title="The Lock" icon={<Lock className="w-3 h-3" />}>
