@@ -31,7 +31,9 @@ export function onSegmented(s: EditState, sel: Selection): EditState {
 }
 
 export function onEditStart(s: EditState): EditState {
-  return { ...s, phase: 'editing', error: null };
+  // count every generation start (click edit, command-bar, or Try-again) — NOT just
+  // Keeps — so overCostCap actually caps a retry loop (each generation costs money).
+  return { ...s, phase: 'editing', error: null, editCount: s.editCount + 1 };
 }
 
 export function onProposal(s: EditState, proposalUrl: string): EditState {
@@ -40,6 +42,7 @@ export function onProposal(s: EditState, proposalUrl: string): EditState {
 
 export function onKeep(s: EditState): EditState {
   if (!s.proposalUrl) return s;
+  // editCount is bumped at generation start (onEditStart), not here.
   return {
     ...s,
     imageUrl: s.proposalUrl,
@@ -47,7 +50,6 @@ export function onKeep(s: EditState): EditState {
     proposalUrl: null,
     selection: null,
     phase: 'idle',
-    editCount: s.editCount + 1,
   };
 }
 

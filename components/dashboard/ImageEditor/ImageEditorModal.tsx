@@ -76,6 +76,12 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
 
   const runEdit = useCallback(
     async (args: LastEditArgs) => {
+      // single chokepoint for every generation (click edit, command-bar, Try-again):
+      // enforce the session cost cap here so a retry loop cannot burn unbounded spend.
+      if (overCostCap(state)) {
+        setState((s) => onError(s, 'You have made a lot of edits this session — reopen the editor to continue.'));
+        return;
+      }
       setLastEditArgs(args);
       setState((s) => onEditStart(s));
       try {
@@ -94,7 +100,7 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
         setState((s) => onError(s, e instanceof Error ? e.message : 'Edit failed'));
       }
     },
-    [state.imageUrl, draftId],
+    [state, draftId],
   );
 
   // --- CLICK path -----------------------------------------------------
@@ -130,7 +136,7 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
 
   // --- Proposal actions -----------------------------------------------------
   const handleKeep = useCallback(async () => {
-    if (!state.proposalUrl) return;
+    if (!state.proposalUrl || committing) return; // re-entry guard: a double-click must not double-commit
     setCommitting(true);
     try {
       let nextUrls: string[];
@@ -154,7 +160,7 @@ export default function ImageEditorModal(props: ImageEditorModalProps) {
     } finally {
       setCommitting(false);
     }
-  }, [state.proposalUrl, draftId, imageUrls, index, lastEditArgs, onCommitted, commitProposal]);
+  }, [state.proposalUrl, committing, draftId, imageUrls, index, lastEditArgs, onCommitted, commitProposal]);
 
   const handleTryAgain = useCallback(() => {
     if (!lastEditArgs) {

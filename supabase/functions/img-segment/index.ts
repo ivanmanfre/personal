@@ -15,6 +15,17 @@ function json(body: unknown, status = 200) {
 // --- fal slug (verify at fal.ai/models when FAL_KEY exists) ---
 const FAL_SEGMENT_MODEL = "fal-ai/sam2/image";
 
+// SSRF guard: only forward images from known-good hosts (no internal URLs).
+const ALLOWED_HOST_SUFFIXES = [".supabase.co", ".fal.media", ".fal.run", "drive.google.com", ".googleusercontent.com"];
+function assertAllowedUrl(u: string): string | null {
+  let parsed: URL;
+  try { parsed = new URL(u); } catch { return "image_url is not a valid URL"; }
+  if (parsed.protocol !== "https:") return "image_url must be https";
+  const host = parsed.hostname.toLowerCase();
+  const ok = ALLOWED_HOST_SUFFIXES.some((s) => host === s.replace(/^\./, "") || host.endsWith(s));
+  return ok ? null : "image_url host not allowed";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
@@ -28,6 +39,8 @@ Deno.serve(async (req) => {
   if (!image_url || typeof x !== "number" || typeof y !== "number") {
     return json({ error: "image_url, x, y required" }, 400);
   }
+  const badImg = assertAllowedUrl(image_url);
+  if (badImg) return json({ error: badImg }, 400);
 
   try {
     const falRes = await fetch(`https://fal.run/${FAL_SEGMENT_MODEL}`, {

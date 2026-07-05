@@ -16,6 +16,18 @@ function json(body: unknown, status = 200) {
 const FAL_INPAINT_MODEL = "fal-ai/flux-lora-fill"; // verify slug at fal.ai/models
 const GEMINI_MODEL = "gemini-3.1-flash-image-preview";
 
+// SSRF guard: only fetch/forward images from known-good hosts (no internal URLs).
+const ALLOWED_HOST_SUFFIXES = [".supabase.co", ".fal.media", ".fal.run", "drive.google.com", ".googleusercontent.com"];
+function assertAllowedUrl(u: string | undefined, label: string): string | null {
+  if (!u) return `${label} required`;
+  let parsed: URL;
+  try { parsed = new URL(u); } catch { return `${label} is not a valid URL`; }
+  if (parsed.protocol !== "https:") return `${label} must be https`;
+  const host = parsed.hostname.toLowerCase();
+  const ok = ALLOWED_HOST_SUFFIXES.some((s) => host === s.replace(/^\./, "") || host.endsWith(s));
+  return ok ? null : `${label} host not allowed`;
+}
+
 async function fetchAsBase64(url: string): Promise<{ b64: string; mime: string }> {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`fetch source ${r.status}`);
@@ -40,6 +52,10 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
   const { image_url, op = "refine", mask_url, prompt, whole_image, draft_id } = body;
   if (!image_url || !draft_id) return json({ error: "image_url and draft_id required" }, 400);
+  const badImg = assertAllowedUrl(image_url, "image_url");
+  if (badImg) return json({ error: badImg }, 400);
+  if (mask_url) { const badMask = assertAllowedUrl(mask_url, "mask_url"); if (badMask) return json({ error: badMask }, 400); }
+  if (typeof prompt === "string" && prompt.length > 2000) return json({ error: "prompt too long" }, 400);
 
   const useGemini = whole_image === true || !mask_url;
 
@@ -86,10 +102,15 @@ Deno.serve(async (req) => {
       resultBytes = new Uint8Array(await rb.arrayBuffer());
     }
 
+    // sniff the real format so JPEG bytes aren't served as image/png (breaks LinkedIn publish)
+    const isJpeg = resultBytes[0] === 0xff && resultBytes[1] === 0xd8;
+    const ext = isJpeg ? "jpg" : "png";
+    const contentType = isJpeg ? "image/jpeg" : "image/png";
+
     // upload PREVIEW (not committed) to post-stills
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const path = `${draft_id}/_edit_preview/${Date.now()}.png`;
-    const up = await supa.storage.from("post-stills").upload(path, resultBytes, { upsert: true, contentType: "image/png" });
+    const path = `${draft_id}/_edit_preview/${Date.now()}.${ext}`;
+    const up = await supa.storage.from("post-stills").upload(path, resultBytes, { upsert: true, contentType });
     if (up.error) return json({ error: `upload ${up.error.message}` }, 500);
     const { data: pub } = supa.storage.from("post-stills").getPublicUrl(path);
     return json({ result_url: pub.publicUrl });

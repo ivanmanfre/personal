@@ -64,7 +64,8 @@ export function swapBoardItemImage(
  * the tested reference for the swap the edge fn mirrors server-side.)
  */
 export async function commitClientBoardImage(a: {
-  boardId: string;
+  slug: string;
+  token: string;
   itemId: string;
   field: 'media_url' | 'cover_url';
   prevUrl: string;
@@ -75,7 +76,8 @@ export async function commitClientBoardImage(a: {
   const { supabase } = await import('./supabase');
   const { data, error } = await supabase.functions.invoke('img-board-commit', {
     body: {
-      boardId: a.boardId,
+      slug: a.slug,
+      token: a.token,
       itemId: a.itemId,
       field: a.field,
       prevUrl: a.prevUrl,
