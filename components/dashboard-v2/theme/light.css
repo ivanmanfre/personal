@@ -452,6 +452,7 @@ body.dashboard-v2-light .dashboard-v2 .bg-zinc-700 { background-color: #f1f1f5 !
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/50,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-800\/50,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/60,
+body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/85,
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/80 { background-color: rgba(241,241,245,0.85) !important; }
 /* Opacity-variant dark bgs that slip past the solid-class bridge (funnel track, modal sticky header) */
 body.dashboard-v2-light .dashboard-v2 .bg-zinc-900\/95,

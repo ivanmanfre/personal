@@ -79,6 +79,31 @@ const LeadMagnetStudioPanel: React.FC = () => {
   const [openId, setOpenId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  // "Edit resource" — reveal the LM edit token once per session and open the LIVE
+  // resource page in inline-edit mode (?edit=<token>). Same flow as the buried
+  // Strategy → Lead Magnet Inventory pencil, surfaced directly on the library cards.
+  const [lmEditToken, setLmEditToken] = useState<string | null>(null);
+  const [revealingId, setRevealingId] = useState<string | null>(null);
+  async function openResourceEditor(d: LeadMagnetDraft) {
+    if (!d.resourceUrl) return;
+    setRevealingId(d.id);
+    try {
+      let token = lmEditToken;
+      if (!token) {
+        const { data, error } = await supabase.functions.invoke('lm-edit-token-reveal', { body: {} });
+        if (error) throw error;
+        token = (data as { token?: string } | null)?.token || null;
+        if (!token) throw new Error('no token returned');
+        setLmEditToken(token);
+      }
+      const sep = d.resourceUrl.includes('?') ? '&' : '?';
+      window.open(`${d.resourceUrl}${sep}edit=${encodeURIComponent(token)}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toastError('open resource editor', err);
+    } finally {
+      setRevealingId(null);
+    }
+  }
   const [formOpen, setFormOpen] = useState(false);
   const [showDisqualified, setShowDisqualified] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -509,6 +534,18 @@ const LeadMagnetStudioPanel: React.FC = () => {
                     </div>
                   )}
                 <span className={`absolute top-2 right-2 inline-block w-2 h-2 rounded-full ${STATUS_DOT[d.status] || STATUS_DOT.idea} shadow-[0_0_0_2px_rgba(0,0,0,0.4)]`} />
+                {d.resourceUrl && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); openResourceEditor(d); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); openResourceEditor(d); } }}
+                    className="absolute top-2 left-2 inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium bg-zinc-900/85 text-zinc-100 border border-zinc-700 opacity-0 group-hover:opacity-100 focus:opacity-100 transition hover:bg-zinc-800 cursor-pointer"
+                    title="Edit the live resource page"
+                  >
+                    {revealingId === d.id ? 'Opening…' : '✏️ Edit resource'}
+                  </span>
+                )}
               </div>
               <div className="p-3 space-y-2">
                 <div className="text-sm text-zinc-200 line-clamp-2">
