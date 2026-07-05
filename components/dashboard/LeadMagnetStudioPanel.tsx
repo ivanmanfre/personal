@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Plus, Loader2, RefreshCw, Magnet, ChevronDown, ChevronUp, LayoutGrid, List as ListIcon, Table2 } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets';
+import { useLeadMagnetIdeas } from '../../hooks/useLeadMagnetIdeas';
+import LmIdeasPanel from './LmIdeasPanel';
 import { generateLMContent } from '../../lib/studioActions';
 import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
 import { generatingChipLabel, isStuckGenerating } from './genAge';
@@ -72,6 +74,12 @@ function lmDate(iso: string | null | undefined): string | undefined {
 
 const LeadMagnetStudioPanel: React.FC = () => {
   const { drafts, loading, refresh } = useLeadMagnets();
+  // Curator-scored lead_magnet ideas, projected onto the board's Idea stage as
+  // status='idea' rows alongside the real drafts (mirrors the Posts board).
+  // Clicking one opens the review panel; approving there promotes it to a real
+  // draft and it leaves the Idea stage. See lmIdeaProjection.ts.
+  const { ideas, refreshIdeas } = useLeadMagnetIdeas();
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [topic, setTopic] = useState('');
   const [format, setFormat] = useState(FORMATS[0]);
   const [editorialNotes, setEditorialNotes] = useState('');
@@ -135,10 +143,13 @@ const LeadMagnetStudioPanel: React.FC = () => {
   });
   React.useEffect(() => { try { localStorage.setItem('lm-studio-view', view); } catch {} }, [view]);
 
+  // Idea-stage rows (curator candidates) render on the board next to real drafts.
+  const allDrafts = React.useMemo(() => [...ideas, ...drafts], [ideas, drafts]);
+
   // Counts exclude non-LM formats so the chip counts match the visible rows.
   const countedDrafts = React.useMemo(
-    () => drafts.filter((d) => FORMATS_SET.has(d.format || '')),
-    [drafts],
+    () => allDrafts.filter((d) => FORMATS_SET.has(d.format || '')),
+    [allDrafts],
   );
   const statusCounts = React.useMemo(() => {
     const c: Record<string, number> = { all: countedDrafts.length };
@@ -166,7 +177,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
 
   const visible = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return drafts
+    return allDrafts
       .filter((d) => {
         // Exclude rows whose format isn't a real LM format (newsletter / forms /
         // deprecated Template — they back live pages but aren't lead magnets).
@@ -184,7 +195,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
         return true;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [drafts, statusFilter, searchQuery, showDisqualified, showLibrary]);
+  }, [allDrafts, statusFilter, searchQuery, showDisqualified, showLibrary]);
 
   // Count of published LMs (real formats only) — drives the Library toggle bar.
   const publishedCount = React.useMemo(
@@ -472,7 +483,10 @@ const LeadMagnetStudioPanel: React.FC = () => {
             topicStrength: d.topicStrength || undefined,
           }))}
           statusMeta={STATUS_META}
-          onOpen={setOpenId}
+          onOpen={(id) => {
+            const row = allDrafts.find((d) => d.id === id);
+            if (row?.ideaCandidateId) setReviewOpen(true); else setOpenId(id);
+          }}
           // Row-level Retry (error) / re-fire (stuck-generating) — reuses the
           // same generateLMContent() call the LM editor's re-fire button uses
           // (LeadMagnetEditor.tsx), no separate webhook.
@@ -519,7 +533,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           {visible.map((d: LeadMagnetDraft) => (
             <button
               key={d.id}
-              onClick={() => setOpenId(d.id)}
+              onClick={() => d.ideaCandidateId ? setReviewOpen(true) : setOpenId(d.id)}
               className="text-left rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden hover:border-zinc-600 transition group"
             >
               <div className="aspect-[16/9] bg-zinc-950 overflow-hidden relative">
@@ -571,6 +585,17 @@ const LeadMagnetStudioPanel: React.FC = () => {
         title={open ? <span className="truncate">{open.topic || '(untitled)'}</span> : ''}
       >
         {open && <LeadMagnetEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
+      </Sheet>
+
+      {/* Idea review side-sheet — the existing curator queue (approve promotes an
+          idea into a real draft, which then shows in Generating). */}
+      <Sheet
+        open={reviewOpen}
+        onClose={() => { setReviewOpen(false); refresh(); refreshIdeas(); }}
+        size="full"
+        title="Lead magnet ideas — review"
+      >
+        {reviewOpen && <LmIdeasPanel contentType="lead_magnet" />}
       </Sheet>
     </div>
   );

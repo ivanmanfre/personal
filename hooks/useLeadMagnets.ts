@@ -27,6 +27,12 @@ export interface LeadMagnetDraft {
   /** ISO timestamp of the most-recent posted promo. Populated if available;
    *  undefined/null suppresses the recency warning in the Repost confirm. */
   lastPostedAt?: string | null;
+  /** Set only on curator-idea rows projected onto the Idea stage (see
+   *  lmIdeaProjection.ts) — the lm_idea_candidates uuid, used to open the
+   *  review panel + decide. Absent on real lm_drafts_v2 rows. */
+  ideaCandidateId?: string;
+  /** Composite curator score (0-100), idea rows only. */
+  ideaScore?: number | null;
 }
 
 // Canonical LM pipeline has 9 stages. Legacy/duplicate DB values are folded
