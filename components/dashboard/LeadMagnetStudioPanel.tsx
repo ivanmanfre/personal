@@ -79,7 +79,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
   // Clicking one opens the review panel; approving there promotes it to a real
   // draft and it leaves the Idea stage. See lmIdeaProjection.ts.
   const { ideas, refreshIdeas } = useLeadMagnetIdeas();
-  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewCandidateId, setReviewCandidateId] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [format, setFormat] = useState(FORMATS[0]);
   const [editorialNotes, setEditorialNotes] = useState('');
@@ -485,7 +485,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           statusMeta={STATUS_META}
           onOpen={(id) => {
             const row = allDrafts.find((d) => d.id === id);
-            if (row?.ideaCandidateId) setReviewOpen(true); else setOpenId(id);
+            if (row?.ideaCandidateId) setReviewCandidateId(row.ideaCandidateId); else setOpenId(id);
           }}
           // Row-level Retry (error) / re-fire (stuck-generating) — reuses the
           // same generateLMContent() call the LM editor's re-fire button uses
@@ -533,7 +533,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
           {visible.map((d: LeadMagnetDraft) => (
             <button
               key={d.id}
-              onClick={() => d.ideaCandidateId ? setReviewOpen(true) : setOpenId(d.id)}
+              onClick={() => d.ideaCandidateId ? setReviewCandidateId(d.ideaCandidateId) : setOpenId(d.id)}
               className="text-left rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden hover:border-zinc-600 transition group"
             >
               <div className="aspect-[16/9] bg-zinc-950 overflow-hidden relative">
@@ -587,15 +587,15 @@ const LeadMagnetStudioPanel: React.FC = () => {
         {open && <LeadMagnetEditor draft={open} onClose={() => setOpenId(null)} onChanged={refresh} />}
       </Sheet>
 
-      {/* Idea review side-sheet — the existing curator queue (approve promotes an
-          idea into a real draft, which then shows in Generating). */}
+      {/* Idea review side-sheet — the single clicked idea (approve promotes it
+          into a real draft on the board). */}
       <Sheet
-        open={reviewOpen}
-        onClose={() => { setReviewOpen(false); refresh(); refreshIdeas(); }}
+        open={!!reviewCandidateId}
+        onClose={() => { setReviewCandidateId(null); refresh(); refreshIdeas(); }}
         size="full"
-        title="Lead magnet ideas — review"
+        title="Lead magnet idea — review"
       >
-        {reviewOpen && <LmIdeasPanel contentType="lead_magnet" />}
+        {reviewCandidateId && <LmIdeasPanel contentType="lead_magnet" focusCandidateId={reviewCandidateId} />}
       </Sheet>
     </div>
   );

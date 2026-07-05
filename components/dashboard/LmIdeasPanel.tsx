@@ -106,7 +106,7 @@ function matchesContentType(c: Candidate, ct?: 'post' | 'lead_magnet'): boolean 
  * and the Lead Magnets section (contentType="lead_magnet"), so both surfaces have
  * an identical Ideas review queue — split only by the candidate's content_type.
  */
-export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | 'lead_magnet' } = {}) {
+export default function LmIdeasPanel({ contentType, focusCandidateId }: { contentType?: 'post' | 'lead_magnet'; focusCandidateId?: string } = {}) {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,12 +145,15 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
     if (!feed) return [] as Candidate[];
     return feed.pending.filter(c => {
       if (!matchesContentType(c, contentType)) return false;
+      // Focused mode (a single idea opened from the board): show only that
+      // candidate, ignore the queue filters entirely.
+      if (focusCandidateId) return c.id === focusCandidateId;
       if (filterSource !== 'all' && c.source !== filterSource) return false;
       if (typeof c.composite_score === 'number' && c.composite_score < minScore) return false;
       if (filterFormat !== 'all' && c.format_recommendation !== filterFormat) return false;
       return true;
     });
-  }, [feed, contentType, filterSource, minScore, filterFormat]);
+  }, [feed, contentType, focusCandidateId, filterSource, minScore, filterFormat]);
 
   // Promoted/archived carry content_type only when the feed selects it; filter
   // defensively (an undefined content_type passes, so nothing silently vanishes).
@@ -295,7 +298,7 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
 
   return (
     <div ref={containerRef} style={{ padding: '8px 0 24px', color: 'var(--d-paper)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+      <div style={{ display: focusCandidateId ? 'none' : 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
         <div style={{ fontSize: 13, color: 'var(--d-paper-dim)' }}>
           This week: <strong style={{ color: '#2A8F65' }}>{promotedCount}</strong> promoted ·{' '}
           <strong>{reviewingCount}</strong> to review ·{' '}
@@ -304,7 +307,7 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
         <button onClick={reload} style={{ fontSize: 12, padding: '4px 10px', border: '1px solid #444', background: 'transparent', color: 'inherit', borderRadius: 6, cursor: 'pointer' }}>↻ Refresh</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: focusCandidateId ? 'none' : 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <label style={{ fontSize: 12 }}>Source
           <select value={filterSource} onChange={e => setFilterSource(e.target.value)} style={{ marginLeft: 6 }}>
             <option value="all">All sources</option>
@@ -325,7 +328,7 @@ export default function LmIdeasPanel({ contentType }: { contentType?: 'post' | '
         <button onClick={() => setShowHelp(true)} style={{ fontSize: 11, color: 'var(--d-paper-dim)', background: 'transparent', border: 'none', cursor: 'pointer' }}>? shortcuts</button>
       </div>
 
-      <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '12px 0 8px' }}>Review queue ({filtered.length})</h3>
+      {!focusCandidateId && <h3 style={{ fontSize: 13, fontWeight: 700, opacity: 0.7, margin: '12px 0 8px' }}>Review queue ({filtered.length})</h3>}
       {filtered.length === 0 ? (
         <div style={{ padding: 18, border: '1px dashed #333', borderRadius: 8, fontSize: 13, color: 'var(--d-paper-dim)' }}>
           No {noun} ideas to review right now. The curator scans sources daily. Last feed refresh: {new Date(feed.metrics.last_refresh).toLocaleString()}.
