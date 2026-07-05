@@ -615,6 +615,7 @@ body.dashboard-v2-light .dashboard-v2 .ring-zinc-800\/80,
 body.dashboard-v2-light .dashboard-v2 .ring-zinc-800\/60 { --tw-ring-color: #d8d8df !important; }
 body.dashboard-v2-light .dashboard-v2 .placeholder-zinc-600::placeholder { color: #94a3b8 !important; }
 body.dashboard-v2-light .dashboard-v2 .text-red-300 { color: #b91c1c !important; }
+body.dashboard-v2-light .dashboard-v2 .text-red-500 { color: #dc2626 !important; }
 body.dashboard-v2-light .dashboard-v2 .border-red-900\/50 { border-color: #fecaca !important; }
 body.dashboard-v2-light .dashboard-v2 .bg-red-950\/30 { background-color: #fef2f2 !important; }
 body.dashboard-v2-light .dashboard-v2 .bg-red-900\/50 { background-color: #fee2e2 !important; }
