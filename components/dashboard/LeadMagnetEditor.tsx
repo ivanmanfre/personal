@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2, CalendarClock } from 'lucide-react';
+import { Loader2, CheckCircle, ExternalLink, RefreshCw, Image as ImageIcon, Save, ChevronDown, ChevronUp, Trash2, CalendarClock, Pencil } from 'lucide-react';
 import type { LeadMagnetDraft } from '../../hooks/useLeadMagnets';
 import { generateLMContent, buildLMAssets, scheduleLM, regenLMCover, saveLMDraft, repostLeadMagnet } from '../../lib/studioActions';
 import { findNextSlot, toDatetimeLocalString, initialScheduleInput } from '../../lib/findNextSlot';
@@ -76,6 +76,32 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
     try { await fn(); toast.success(successMsg); onChanged(); }
     catch (err) { toastError(label, err); }
     finally { setBusy(null); }
+  }
+
+  // "Edit resource on live page" — reveal the LM edit token (once/session) and open
+  // the live resource page in inline-edit mode (?edit=<token>). Same lm-edit-token-reveal
+  // flow used on the library cards + the Strategy inventory pencil.
+  const [lmEditToken, setLmEditToken] = useState<string | null>(null);
+  const [revealingEdit, setRevealingEdit] = useState(false);
+  async function openResourceEditor() {
+    if (!draft.resourceUrl) return;
+    setRevealingEdit(true);
+    try {
+      let token = lmEditToken;
+      if (!token) {
+        const { data, error } = await supabase.functions.invoke('lm-edit-token-reveal', { body: {} });
+        if (error) throw error;
+        token = (data as { token?: string } | null)?.token || null;
+        if (!token) throw new Error('no token returned');
+        setLmEditToken(token);
+      }
+      const sep = draft.resourceUrl.includes('?') ? '&' : '?';
+      window.open(`${draft.resourceUrl}${sep}edit=${encodeURIComponent(token)}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toastError('open resource editor', err);
+    } finally {
+      setRevealingEdit(false);
+    }
   }
 
   const isReview = draft.status === 'review';
@@ -258,6 +284,18 @@ const LeadMagnetEditor: React.FC<Props> = ({ draft, onClose, onChanged }) => {
                             <ExternalLink className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{draft.resourceUrl}</span>
                           </div>
                         </a>
+                      )}
+                      {draft.resourceUrl && (
+                        <button
+                          type="button"
+                          onClick={openResourceEditor}
+                          disabled={revealingEdit}
+                          className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-950/30 disabled:opacity-50 transition-colors"
+                          title="Open the live resource page in inline-edit mode"
+                        >
+                          {revealingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pencil className="w-4 h-4" />}
+                          {revealingEdit ? 'Opening…' : 'Edit resource on live page'}
+                        </button>
                       )}
                     </div>
                   ),
