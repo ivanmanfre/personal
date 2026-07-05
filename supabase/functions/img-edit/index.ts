@@ -1,4 +1,7 @@
 // supabase/functions/img-edit/index.ts
+// DEPLOY WITH: supabase functions deploy img-edit --no-verify-jwt --project-ref bjbvqvzbzczjbatgmccb
+// (browser-called; platform JWT gate 401s without CORS → "Failed to send a request".
+//  Auth handled in-function: per-IP rate limit + SSRF allowlist.)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getClientIp } from "../_shared/security.ts";

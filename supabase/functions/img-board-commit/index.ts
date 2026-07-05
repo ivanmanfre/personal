@@ -1,3 +1,6 @@
+// DEPLOY WITH: supabase functions deploy img-board-commit --no-verify-jwt --project-ref bjbvqvzbzczjbatgmccb
+// (browser-called; platform JWT gate 401s without CORS → "Failed to send a request".
+//  Auth handled in-function: writes gated by the board's slug+token.)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 

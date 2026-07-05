@@ -1,4 +1,7 @@
 // supabase/functions/img-segment/index.ts
+// DEPLOY WITH: supabase functions deploy img-segment --no-verify-jwt --project-ref bjbvqvzbzczjbatgmccb
+// (browser-called; the platform JWT gate returns 401 without CORS headers → "Failed to send
+//  a request to the Edge Function". Auth is handled in-function: rate limit + SSRF allowlist.)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getClientIp } from "../_shared/security.ts";
