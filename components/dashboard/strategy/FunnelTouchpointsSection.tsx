@@ -4,20 +4,20 @@ import PanelCard from '../shared/PanelCard';
 import { funnelTouchpoints } from '../../../lib/strategyConfig';
 
 interface Props {
-  paidAssessmentsThisMonth: number;
+  activeClients: number;
 }
 
-export const FunnelTouchpointsSection: React.FC<Props> = ({ paidAssessmentsThisMonth }) => {
+export const FunnelTouchpointsSection: React.FC<Props> = ({ activeClients }) => {
   return (
     <PanelCard title="Funnel Touchpoints" accent="amber">
       <div className="space-y-3">
-        <p className="text-[11px] text-zinc-500">The 4 touchpoints from the 2026-04-19 strategy doc. Lead magnets feed into Touchpoint #1 (not direct-to-CTA).</p>
+        <p className="text-[11px] text-zinc-500">The path from cold to closed. Lead magnets feed Touchpoint #1; the free fit call closes into the $2k retainer at #3.</p>
         <div className="space-y-2">
           {funnelTouchpoints.map((tp, i) => (
             <React.Fragment key={tp.step}>
               <TouchpointRow
                 touchpoint={tp}
-                liveMetric={tp.step === 3 ? `${paidAssessmentsThisMonth} sold this month` : tp.metric}
+                liveMetric={tp.step === 3 ? (activeClients > 0 ? `${activeClients} active client${activeClients === 1 ? '' : 's'}` : null) : tp.metric}
               />
               {i < funnelTouchpoints.length - 1 && (
                 <div className="flex justify-center">

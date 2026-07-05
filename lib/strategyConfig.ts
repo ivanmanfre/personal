@@ -42,15 +42,15 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
     buildStatus: 'partial',
     url: 'https://cal.com/ivanmanfredi/discovery',
     metric: null,
-    description: 'Free call only after Pre-Call Form qualifies. Outcome: Blueprint sale or polite no.',
+    description: 'Free call only after the Pre-Call Form qualifies. Outcome: the $2k retainer or a polite no.',
   },
   {
     step: 3,
-    name: 'Agent-Ready Blueprint (paid, $2,500)',
+    name: '$2k/mo Content System (retainer)',
     buildStatus: 'built',
-    url: 'https://ivanmanfredi.com/assessment',
+    url: 'https://ivanmanfredi.com/content-system',
     metric: null,
-    description: '1-week paid diagnostic. Conversion target: 50-70% to Care Plan or LMS project.',
+    description: 'The paid conversion. The free fit call closes into the $2k/mo retainer, tokens and tools included.',
   },
   {
     step: 4,
@@ -58,7 +58,7 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
     buildStatus: 'partial',
     url: null,
     metric: null,
-    description: 'Onboarding flow after Blueprint converts to engagement.',
+    description: 'Onboarding once the retainer starts. Month one is approve-first to dial in the voice.',
   },
 ];
 

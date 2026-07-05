@@ -40,7 +40,7 @@ const StrategyPanel: React.FC = () => {
         activeClients={activeClients}
       />
       <PositioningOfferSection />
-      <FunnelTouchpointsSection paidAssessmentsThisMonth={paidAssessmentsThisMonth} />
+      <FunnelTouchpointsSection activeClients={activeClients} />
       <CrossReferencesSection />
       <SourceOfTruthSection />
     </div>
