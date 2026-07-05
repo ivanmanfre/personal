@@ -1,6 +1,9 @@
 // supabase/functions/img-edit/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { getClientIp } from "../_shared/security.ts";
+
+const RATE_PER_MIN = 20; // per-IP; each edit is a paid generation (fal/Gemini)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +59,16 @@ Deno.serve(async (req) => {
   if (badImg) return json({ error: badImg }, 400);
   if (mask_url) { const badMask = assertAllowedUrl(mask_url, "mask_url"); if (badMask) return json({ error: badMask }, 400); }
   if (typeof prompt === "string" && prompt.length > 2000) return json({ error: "prompt too long" }, 400);
+
+  // per-IP rate limit (fixed 60s window) to cap cost-abuse of a paid endpoint
+  try {
+    const rl = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const bucket = Math.floor(Date.now() / 60000);
+    const { data: allowed } = await rl.rpc("bump_edge_rate", {
+      p_bucket: bucket, p_ip: getClientIp(req), p_fn: "img-edit", p_limit: RATE_PER_MIN,
+    });
+    if (allowed === false) return json({ error: "rate limit exceeded, slow down" }, 429);
+  } catch { /* fail-open: never let the limiter break a legit edit */ }
 
   const useGemini = whole_image === true || !mask_url;
 

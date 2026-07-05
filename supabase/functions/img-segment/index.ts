@@ -1,5 +1,9 @@
 // supabase/functions/img-segment/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import { getClientIp } from "../_shared/security.ts";
+
+const RATE_PER_MIN = 60; // per-IP; segmentation is cheap, users click a lot
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +45,16 @@ Deno.serve(async (req) => {
   }
   const badImg = assertAllowedUrl(image_url);
   if (badImg) return json({ error: badImg }, 400);
+
+  // per-IP rate limit (fixed 60s window) to cap cost-abuse of a paid endpoint
+  try {
+    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const bucket = Math.floor(Date.now() / 60000);
+    const { data: allowed } = await supa.rpc("bump_edge_rate", {
+      p_bucket: bucket, p_ip: getClientIp(req), p_fn: "img-segment", p_limit: RATE_PER_MIN,
+    });
+    if (allowed === false) return json({ error: "rate limit exceeded, slow down" }, 429);
+  } catch { /* fail-open: never let the limiter break a legit edit */ }
 
   try {
     const falRes = await fetch(`https://fal.run/${FAL_SEGMENT_MODEL}`, {
