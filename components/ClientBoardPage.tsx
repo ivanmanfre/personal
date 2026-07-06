@@ -123,6 +123,11 @@ interface Board {
   /** Real captured leads, if any exist yet. Absent/empty on a fresh preview board — the
    *  Captured leads table then shows a clean empty-state, never a staged sample lead. */
   leads?: { email: string; score?: string; weakest_area?: string; when?: string }[];
+  /** Rich engager DM pipeline for the Leads tab (offer: inbound-engine-engager-dm-pipeline).
+   *  Distinct from the thin assessment `leads` above. Live boards fill it from the real
+   *  pipeline; demo/preview boards fall back to a LABELED sample deck (see LeadsSurface).
+   *  A live board with no data shows a clean empty-state, never a staged sample. */
+  lead_pipeline?: PipelineLead[];
   strategy?: { total: number; period?: string; pillars: Pillar[] };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
@@ -2643,6 +2648,169 @@ function expectationFor(ind: PerfIndicator): string {
   return 'Tracking starts the day the engine goes live.';
 }
 
+// ---------- Leads (engager DM pipeline) ----------
+type PipelineStep = { key: string; label: string; done: boolean; current?: boolean };
+type PipelineLead = {
+  name: string; role?: string; company?: string; icp: number;
+  track: 'handraiser' | 'reactor';
+  source: 'comment' | 'optin' | 'like';
+  steps: PipelineStep[];
+  in_newsletter?: boolean;
+  last_touch?: string; next_action?: string;
+};
+
+/** Build a step trail from ordered labels + the index the lead has reached. Steps before
+ *  the reached index are done; the reached step is current (filled + ring). */
+function mkSteps(labels: string[], reached: number): PipelineStep[] {
+  return labels.map((label, i) => ({
+    key: `${i}-${label}`.toLowerCase().replace(/\s+/g, '-'),
+    label,
+    done: i < reached,
+    current: i === reached,
+  }));
+}
+const HR_STEPS = (first: string) => [first, 'resource sent', 'follow-up', 'replied'];
+const RE_STEPS = ['ICP match', 'connect sent', 'connected', 'DM sent', 'follow-up', 'replied'];
+
+/** LABELED example deck — only ever rendered on a demo/preview board, behind the
+ *  "example data" chip. A live board renders board.lead_pipeline or a clean empty-state. */
+const SAMPLE_LEAD_PIPELINE: PipelineLead[] = [
+  { name: 'Marcus Webb', role: 'Founder', company: 'Northbeam Studio', icp: 9, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 3) },
+  { name: 'Dana Okafor', role: 'Head of Ops', company: 'Litmus Legal', icp: 8, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 2) },
+  { name: 'Priya Nair', role: 'Managing Partner', company: 'Cedar & Vale', icp: 8, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 2) },
+  { name: 'Tom Reilly', role: 'Founder', company: 'Reilly Advisory', icp: 7, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 1) },
+  { name: 'Grace Lin', role: 'Ops Lead', company: 'Vantage Group', icp: 8, track: 'handraiser', source: 'comment', steps: mkSteps(HR_STEPS('commented'), 0) },
+  { name: 'Elena Vasquez', role: 'VP Marketing', company: 'Summit Partners', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 5) },
+  { name: 'Sarah Chen', role: 'Head of Growth', company: 'Fathom Consulting', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 4) },
+  { name: 'Nina Alvarez', role: 'Director', company: 'BrightPath Agency', icp: 8, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 3) },
+  { name: 'Devon Clarke', role: 'Principal', company: 'Clarke & Co', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 2) },
+  { name: 'Raj Patel', role: 'Founder', company: 'Meridian Ops', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 0) },
+];
+
+const stepFilled = (s: PipelineStep) => s.done || !!s.current;
+const isReplied = (s: PipelineStep) => /replied/i.test(s.label) && stepFilled(s);
+
+/** One person's journey as an ordered trail of sharp-square markers + mono labels. */
+function LeadRow({ lead, accent }: { lead: PipelineLead; accent: string }) {
+  return (
+    <div className="py-4" style={{ borderTop: `1px solid ${DIVIDE}` }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span style={{ fontFamily: SERIF, fontSize: 17, color: INK }}>{lead.name}</span>
+        <span style={{ fontFamily: BODY, fontSize: 13, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
+        <span className="ml-auto flex items-center gap-2.5">
+          {lead.in_newsletter && (
+            <span className="inline-flex items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>
+              <span style={{ width: 6, height: 6, background: caText(accent) }} />newsletter
+            </span>
+          )}
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
+        </span>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        {lead.steps.map((s) => {
+          const filled = stepFilled(s);
+          return (
+            <span key={s.key} className="inline-flex items-center gap-1.5">
+              <span
+                style={{
+                  width: 7, height: 7,
+                  background: filled ? caText(accent) : 'transparent',
+                  border: filled ? 'none' : `1px solid ${LINE_BOLD}`,
+                  boxShadow: s.current ? `0 0 0 3px ${caWash(accent, 22)}` : undefined,
+                }}
+              />
+              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: s.current ? caText(accent) : s.done ? INK_SOFT : FAINT }}>{s.label}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LeadsSurface({ board, accent, preview }: { board: Board; accent: string; preview: boolean }) {
+  const real = board.lead_pipeline && board.lead_pipeline.length > 0 ? board.lead_pipeline : null;
+  const usingSample = !real && preview;
+  const leads: PipelineLead[] = real ?? (usingSample ? SAMPLE_LEAD_PIPELINE : []);
+
+  const captured = leads.length;
+  const contacted = leads.filter((l) => l.steps.some((s, i) => i > 0 && stepFilled(s))).length;
+  const replied = leads.filter((l) => l.steps.some(isReplied)).length;
+  const onNewsletter = leads.filter((l) => l.in_newsletter).length;
+
+  const handRaisers = leads.filter((l) => l.track === 'handraiser');
+  const reactors = leads.filter((l) => l.track === 'reactor');
+
+  const tiles = [
+    { n: captured, l: 'captured' },
+    { n: contacted, l: 'contacted' },
+    { n: replied, l: 'replied' },
+    { n: onNewsletter, l: 'on newsletter' },
+  ];
+
+  return (
+    <div className="pb-16">
+      <div className="mb-7">
+        <div className="mb-2.5 flex items-center gap-2.5">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>capture → pipeline</span>
+          {usingSample && (
+            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>example data</span>
+          )}
+        </div>
+        <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(29px, 3.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>Leads</h2>
+        <p className="mt-3.5 max-w-[62ch]" style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
+          {usingSample
+            ? 'Everyone your content pulled in, and where each person sits in the pipeline. These are example leads — real named people land here the moment your engine goes live.'
+            : 'Everyone your content pulled in, and where each person sits in the pipeline. Yours to keep, exportable anytime.'}
+        </p>
+      </div>
+
+      {leads.length === 0 ? (
+        <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
+          <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
+            Every ICP-matched person who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit reactors get a connection request and a DM. Yours to keep.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Hairline-gap grid: 1px cell gaps over a line-colored bg read as clean dividers
+           *  in both the 4-col desktop row and the 2-col mobile wrap — no per-cell borders. */}
+          <div className="mb-9 grid grid-cols-2 gap-px overflow-hidden rounded-xl sm:grid-cols-4" style={{ background: LINE, border: `1px solid ${LINE}` }}>
+            {tiles.map((m) => (
+              <div key={m.l} className="bg-white px-5 py-4">
+                <div style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1, color: INK }}>{m.n}</div>
+                <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: INK_MUTE }}>{m.l}</div>
+              </div>
+            ))}
+          </div>
+
+          {handRaisers.length > 0 && (
+            <section className="mb-9">
+              <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>hand-raisers</span>
+                <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{handRaisers.length}</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>commented or opted in — they asked for it</span>
+              </div>
+              {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} />)}
+            </section>
+          )}
+
+          {reactors.length > 0 && (
+            <section>
+              <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>ICP reactors</span>
+                <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post — we reached out</span>
+              </div>
+              {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} />)}
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function PerformanceSurface({ board, accent }: { board: Board; accent: string }) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
@@ -2703,6 +2871,7 @@ const TABS = [
   { id: 'calendar', label: 'Calendar', group: 'Content' },
   { id: 'lm', label: 'Lead magnets', group: 'Content' },
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
+  { id: 'leads', label: 'Leads', group: 'Reports' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
 ] as const;
@@ -2736,6 +2905,7 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
       <path d="m3.5 7 8.5 6 8.5-6" />
     </>
   ),
+  leads: <path d="M3.5 5.5h17l-6.5 7.7v5.6l-4 2v-7.6z" />,
   performance: <path d="M18 20V10M12 20V4M6 20v-6" />,
   strategy: (
     <>
@@ -3290,6 +3460,7 @@ export default function ClientBoardPage() {
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
+    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
   };
@@ -3436,7 +3607,7 @@ export default function ClientBoardPage() {
 
       {/* Mobile bottom tabs */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/85 px-1 pt-1 backdrop-blur-md lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
-        <nav className="grid w-full grid-cols-7" aria-label="Board sections">
+        <nav className="grid w-full grid-cols-8" aria-label="Board sections">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
