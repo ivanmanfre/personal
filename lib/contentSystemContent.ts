@@ -9,7 +9,7 @@ export const PROMISES: ContentPromise[] = [
   { headline: 'It decides what to post', benefit: 'It pulls ideas from your calls, the web and your past winners, then ranks them by what will land. You are not feeding a prompt box.' },
   { headline: 'It sounds like you', benefit: 'Trained on your voice and built on your real conversations, so every post reads like you wrote it, not a model.' },
   { headline: 'It refuses to ship slop', benefit: 'Every draft clears a nine-point QA agent and a deterministic lint that strips the AI tells, rewritten until it passes.' },
-  { headline: 'It runs the whole funnel', benefit: 'It publishes to LinkedIn, builds the lead magnets, captures the leads, and learns from what performs. All of it, without you in the loop.' },
+  { headline: 'It runs the whole funnel', benefit: 'It publishes to LinkedIn, builds the lead magnets, works every engager who fits with the resource and a follow-up until they reply, and learns from what performs. All of it, without you in the loop.' },
 ];
 
 export interface Metric { value: string; label: string; }
@@ -61,10 +61,12 @@ export const SCOPE: { inScope: string[]; notInScope: string[] } = {
     'Multi-format generation (posts, carousels, lead magnets)',
     'Quality + anti-slop gating on every piece',
     'Native LinkedIn publishing + the performance loop',
+    'Warm engager follow-up (the resource DM + a follow-up to everyone who fits)',
     'A dashboard where you approve and schedule',
   ],
   notInScope: [
     "We don't write your content by hand",
+    'No cold outreach to strangers, only people who engaged your content',
     'No paid ads management',
     'No general marketing strategy coaching',
     'No guaranteed follower or engagement numbers',

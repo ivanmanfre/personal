@@ -369,8 +369,9 @@ export default function ContentSystemPage() {
           </RevealH2>
           <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
             From one idea, the system builds an interactive lead magnet, publishes it as a live
-            hosted page, adds every signup to your email list, and routes the best by fit. You wake
-            up to booked calls and a growing list, not busywork.
+            hosted page, and adds every signup to your email list. It then works the best-fit
+            engagers with a resource DM and a follow-up until they reply, and routes them to your
+            calendar. You wake up to booked calls and a growing list, not busywork.
           </p>
           {/* Every format = a real, currently-live lead magnet. Uniform tiles,
               click any to expand the full page. */}
@@ -512,8 +513,8 @@ export default function ContentSystemPage() {
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-300 leading-relaxed">
             Five posts a week in your voice, lead magnets that capture and qualify every signup, and
-            the best-fit buyers sent straight to your calendar. Content that builds pipeline, not
-            just likes.
+            the best-fit engagers worked to a reply and sent straight to your calendar. Content that
+            builds pipeline, not just likes.
           </p>
           <div className="mt-9 flex flex-col items-center gap-4">
             <MagneticCTA href="/start" dark fontSize="18px" px="px-10 py-5">

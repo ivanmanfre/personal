@@ -712,6 +712,7 @@ const COMPARE_ROWS: { label: string; cells: string[] }[] = [
   { label: 'Sounds like you', cells: ['Yes, anti-slop QA', 'Sometimes', 'Sometimes', 'Yes'] },
   { label: 'Formats', cells: ['Posts, carousels, video, lead magnets, newsletter', 'Posts', 'Posts', 'Whatever you manage'] },
   { label: 'Owned audience + list', cells: ['Yes, yours to keep', 'No', 'No', 'Yes'] },
+  { label: 'What happens to a lead', cells: ['Worked to a reply, then your calendar', 'Nothing, you chase them', 'You chase them', 'You chase them'] },
   { label: 'Your time / week', cells: ['About 15 min review', '2 to 4 hrs', '5 to 10 hrs managing', '15 to 20 hrs'] },
   { label: 'Time to first leads', cells: ['About 30 days', '60 to 90 days', '90+ days', '6+ months'] },
 ];
