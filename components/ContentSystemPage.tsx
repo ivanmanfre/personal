@@ -292,6 +292,14 @@ export default function ContentSystemPage() {
               <BrowserFrame src="/content-system/ui/leadmagnets.webp" mobileSrc="/content-system/ui/leadmagnets-m.webp" alt="The lead-magnet studio with built, on-brand assets" caption="Lead magnets · built and published" />
             </Reveal>
           </div>
+          <Reveal className="mt-5">
+            <BrowserFrame
+              src="/content-system/ui/leads.webp"
+              mobileSrc="/content-system/ui/leads-m.webp"
+              alt="The Leads board: every engager, ICP-scored, with the messages the engine sent"
+              caption="Leads · every engager, worked to a reply"
+            />
+          </Reveal>
         </section>
 
         {/* 3 — PROBLEM → FLIP */}
