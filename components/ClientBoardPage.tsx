@@ -2650,6 +2650,9 @@ function expectationFor(ind: PerfIndicator): string {
 
 // ---------- Leads (engager DM pipeline) ----------
 type PipelineStep = { key: string; label: string; done: boolean; current?: boolean };
+/** One message in a lead's thread. `from:'lead'` = something they wrote (comment / reply);
+ *  `from:'engine'` = a message the pipeline sent (resource DM, follow-up). */
+type ThreadMsg = { from: 'lead' | 'engine'; label: string; when?: string; text: string };
 type PipelineLead = {
   name: string; role?: string; company?: string; icp: number;
   track: 'handraiser' | 'reactor';
@@ -2657,6 +2660,8 @@ type PipelineLead = {
   steps: PipelineStep[];
   in_newsletter?: boolean;
   last_touch?: string; next_action?: string;
+  /** The actual conversation — powers the click-a-lead reveal. */
+  thread?: ThreadMsg[];
 };
 
 /** Build a step trail from ordered labels + the index the lead has reached. Steps before
@@ -2675,25 +2680,86 @@ const RE_STEPS = ['ICP match', 'connect sent', 'connected', 'DM sent', 'follow-u
 /** LABELED example deck — only ever rendered on a demo/preview board, behind the
  *  "example data" chip. A live board renders board.lead_pipeline or a clean empty-state. */
 const SAMPLE_LEAD_PIPELINE: PipelineLead[] = [
-  { name: 'Marcus Webb', role: 'Founder', company: 'Northbeam Studio', icp: 9, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 3) },
-  { name: 'Dana Okafor', role: 'Head of Ops', company: 'Litmus Legal', icp: 8, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 2) },
-  { name: 'Priya Nair', role: 'Managing Partner', company: 'Cedar & Vale', icp: 8, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 2) },
-  { name: 'Tom Reilly', role: 'Founder', company: 'Reilly Advisory', icp: 7, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 1) },
-  { name: 'Grace Lin', role: 'Ops Lead', company: 'Vantage Group', icp: 8, track: 'handraiser', source: 'comment', steps: mkSteps(HR_STEPS('commented'), 0) },
-  { name: 'Elena Vasquez', role: 'VP Marketing', company: 'Summit Partners', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 5) },
-  { name: 'Sarah Chen', role: 'Head of Growth', company: 'Fathom Consulting', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 4) },
-  { name: 'Nina Alvarez', role: 'Director', company: 'BrightPath Agency', icp: 8, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 3) },
-  { name: 'Devon Clarke', role: 'Principal', company: 'Clarke & Co', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 2) },
+  { name: 'Marcus Webb', role: 'Founder', company: 'Northbeam Studio', icp: 9, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 3), thread: [
+    { from: 'lead', label: 'commented on your post', when: 'day 0', text: 'This is exactly the problem we keep hitting. Can you send it over?' },
+    { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hey Marcus, here’s the teardown you asked for: [link]. The section on hand-off gaps is the part most teams miss. Happy to walk you through how it maps to Northbeam if useful.' },
+    { from: 'engine', label: 'follow-up', when: 'day 2', text: 'Did the framework land? Curious whether the scoring section matched what you’re seeing on your side.' },
+    { from: 'lead', label: 'replied', when: 'day 3', text: 'It did, the scoring part especially. We should talk. What does working together look like?' },
+  ] },
+  { name: 'Dana Okafor', role: 'Head of Ops', company: 'Litmus Legal', icp: 8, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 2), thread: [
+    { from: 'lead', label: 'opted in', when: 'day 0', text: 'Downloaded the assessment.' },
+    { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hi Dana, sent the assessment to your inbox. Question 4 is the one that trips up most ops leads. Let me know what it flagged for you.' },
+    { from: 'engine', label: 'follow-up', when: 'day 2', text: 'Any surprises in the results? Happy to unpack the weakest-area section with you.' },
+  ] },
+  { name: 'Priya Nair', role: 'Managing Partner', company: 'Cedar & Vale', icp: 8, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 2), thread: [
+    { from: 'lead', label: 'commented on your post', when: 'day 0', text: 'Would love a copy of this.' },
+    { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Here you go, Priya: [link]. The part on partner-level workflows is written for firms like Cedar & Vale.' },
+    { from: 'engine', label: 'follow-up', when: 'day 3', text: 'Did it spark anything? Glad to compare notes on how partners are handling this.' },
+  ] },
+  { name: 'Tom Reilly', role: 'Founder', company: 'Reilly Advisory', icp: 7, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 1), thread: [
+    { from: 'lead', label: 'opted in', when: 'day 0', text: 'Downloaded the guide.' },
+    { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hi Tom, the guide’s in your inbox. Start with the second half, that’s where the ROI math is. Shout if anything’s unclear.' },
+  ] },
+  { name: 'Grace Lin', role: 'Ops Lead', company: 'Vantage Group', icp: 8, track: 'handraiser', source: 'comment', steps: mkSteps(HR_STEPS('commented'), 0), thread: [
+    { from: 'lead', label: 'commented on your post', when: 'just now', text: 'Sounds useful, send it my way?' },
+  ] },
+  { name: 'Elena Vasquez', role: 'VP Marketing', company: 'Summit Partners', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 5), thread: [
+    { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Elena, saw you following the thread on attribution. Sending a connect, I think what we’re building is right up Summit’s alley.' },
+    { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for connecting. Put together a short teardown on the exact problem you were reacting to, want me to send it?' },
+    { from: 'lead', label: 'replied', when: 'day 2', text: 'Yes please. And if you have time this week, I’d take a call.' },
+  ] },
+  { name: 'Sarah Chen', role: 'Head of Growth', company: 'Fathom Consulting', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 4), thread: [
+    { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Sarah, noticed you engaging with the growth-systems posts. Connecting, I think there’s overlap with what Fathom’s working on.' },
+    { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for the connect. Made a quick breakdown of the workflow you reacted to, sending it over: [link].' },
+    { from: 'engine', label: 'follow-up', when: 'day 3', text: 'Did the breakdown help? Happy to tailor the second half to Fathom’s stack.' },
+  ] },
+  { name: 'Nina Alvarez', role: 'Director', company: 'BrightPath Agency', icp: 8, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 3), thread: [
+    { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Nina, saw you reacting to the agency-ops thread. Sending a connect.' },
+    { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for connecting. The thing you reacted to, I wrote up how it plays out for agencies like BrightPath. Want it?' },
+  ] },
+  { name: 'Devon Clarke', role: 'Principal', company: 'Clarke & Co', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 2), thread: [
+    { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Devon, noticed you following the thread. Connecting, I think there’s a fit with how Clarke & Co runs.' },
+  ] },
   { name: 'Raj Patel', role: 'Founder', company: 'Meridian Ops', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 0) },
 ];
 
 const stepFilled = (s: PipelineStep) => s.done || !!s.current;
 const isReplied = (s: PipelineStep) => /replied/i.test(s.label) && stepFilled(s);
 
-/** One person's journey as an ordered trail of sharp-square markers + mono labels. */
-function LeadRow({ lead, accent }: { lead: PipelineLead; accent: string }) {
+/** One person's journey as an ordered trail of sharp-square markers + mono labels.
+ *  Shared by the row and the detail modal. */
+function StepTrail({ steps, accent }: { steps: PipelineStep[]; accent: string }) {
   return (
-    <div className="py-4" style={{ borderTop: `1px solid ${DIVIDE}` }}>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {steps.map((s) => {
+        const filled = stepFilled(s);
+        return (
+          <span key={s.key} className="inline-flex items-center gap-1.5">
+            <span
+              style={{
+                width: 7, height: 7,
+                background: filled ? caText(accent) : 'transparent',
+                border: filled ? 'none' : `1px solid ${LINE_BOLD}`,
+                boxShadow: s.current ? `0 0 0 3px ${caWash(accent, 22)}` : undefined,
+              }}
+            />
+            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: s.current ? caText(accent) : s.done ? INK_SOFT : FAINT }}>{s.label}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** A clickable lead row. Opens the detail modal with the full message thread. */
+function LeadRow({ lead, accent, onOpen }: { lead: PipelineLead; accent: string; onOpen: (l: PipelineLead) => void }) {
+  return (
+    <button
+      onClick={() => onOpen(lead)}
+      aria-label={`Open ${lead.name}`}
+      className="group -mx-3 block w-full rounded-lg px-3 py-4 text-left transition-colors duration-150 hover:bg-[rgba(26,26,26,0.03)]"
+      style={{ borderTop: `1px solid ${DIVIDE}` }}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <span style={{ fontFamily: SERIF, fontSize: 17, color: INK }}>{lead.name}</span>
         <span style={{ fontFamily: BODY, fontSize: 13, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
@@ -2704,31 +2770,20 @@ function LeadRow({ lead, accent }: { lead: PipelineLead; accent: string }) {
             </span>
           )}
           <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
+          {/* Affordance: chevron nudges right on hover so rows read as openable. */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden>
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </span>
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
-        {lead.steps.map((s) => {
-          const filled = stepFilled(s);
-          return (
-            <span key={s.key} className="inline-flex items-center gap-1.5">
-              <span
-                style={{
-                  width: 7, height: 7,
-                  background: filled ? caText(accent) : 'transparent',
-                  border: filled ? 'none' : `1px solid ${LINE_BOLD}`,
-                  boxShadow: s.current ? `0 0 0 3px ${caWash(accent, 22)}` : undefined,
-                }}
-              />
-              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: s.current ? caText(accent) : s.done ? INK_SOFT : FAINT }}>{s.label}</span>
-            </span>
-          );
-        })}
+      <div className="mt-2.5">
+        <StepTrail steps={lead.steps} accent={accent} />
       </div>
-    </div>
+    </button>
   );
 }
 
-function LeadsSurface({ board, accent, preview }: { board: Board; accent: string; preview: boolean }) {
+function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void }) {
   const real = board.lead_pipeline && board.lead_pipeline.length > 0 ? board.lead_pipeline : null;
   const usingSample = !real && preview;
   const leads: PipelineLead[] = real ?? (usingSample ? SAMPLE_LEAD_PIPELINE : []);
@@ -2791,7 +2846,7 @@ function LeadsSurface({ board, accent, preview }: { board: Board; accent: string
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{handRaisers.length}</span>
                 <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>commented or opted in — they asked for it</span>
               </div>
-              {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} />)}
+              {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
             </section>
           )}
 
@@ -2802,11 +2857,92 @@ function LeadsSurface({ board, accent, preview }: { board: Board; accent: string
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
                 <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post — we reached out</span>
               </div>
-              {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} />)}
+              {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
             </section>
           )}
         </>
       )}
+    </div>
+  );
+}
+
+/** Click-a-lead reveal: the person's journey + the actual message thread the pipeline
+ *  ran. Engine-sent messages carry the accent rule; the lead's own words stay neutral. */
+function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent: string; onClose: () => void }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  const first = (lead.name.split(/\s+/)[0]) || lead.name;
+  const trackLabel = lead.track === 'handraiser' ? 'hand-raiser' : 'ICP reactor';
+  const thread = lead.thread || [];
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-lg flex-col bg-white sm:my-16 sm:min-h-0 sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+        <div className="flex items-center gap-2.5 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Lead</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{trackLabel}</span>
+          <button onClick={onClose} aria-label="Close" className="ml-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 pb-6 sm:px-6">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{lead.name}</h3>
+            <span style={{ fontFamily: BODY, fontSize: 13.5, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
+          </div>
+          <div className="mt-2.5 flex items-center gap-2.5">
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
+            {lead.in_newsletter && (
+              <span className="inline-flex items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>
+                <span style={{ width: 6, height: 6, background: caText(accent) }} />newsletter
+              </span>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <StepTrail steps={lead.steps} accent={accent} />
+          </div>
+
+          <div className="mt-6 border-t pt-5" style={{ borderColor: DIVIDE }}>
+            {thread.length > 0 ? (
+              <>
+                <div className="mb-4 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>the conversation</div>
+                <div className="flex flex-col gap-4">
+                  {thread.map((m, i) => {
+                    const isEngine = m.from === 'engine';
+                    return (
+                      <div key={i} className="relative pl-4">
+                        <span className="absolute bottom-1 left-0 top-1" style={{ width: 2, background: isEngine ? caText(accent) : LINE_BOLD }} aria-hidden />
+                        <div className="flex items-center gap-1.5">
+                          {isEngine && <span style={{ width: 6, height: 6, background: caText(accent) }} aria-hidden />}
+                          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.13em', color: isEngine ? caText(accent) : INK_MUTE }}>
+                            {isEngine ? `sent · ${m.label}` : `${first} · ${m.label}`}{m.when ? ` · ${m.when}` : ''}
+                          </span>
+                        </div>
+                        <p className="mt-1.5" style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.6, color: INK_SOFT }}>{m.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-5 text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
+                  Every message marked <span style={{ color: caText(accent) }}>sent</span> went out automatically. You approve the first send; after that the engine runs the cadence.
+                </p>
+              </>
+            ) : (
+              <div className="rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+                  {first} just entered the pipeline. The conversation shows up here as the engine reaches out, and you approve the first send.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3001,6 +3137,7 @@ export default function ClientBoardPage() {
   // Ideas are not approvable yet — they open a lightweight preview, kept separate from the
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
+  const [leadDetail, setLeadDetail] = useState<PipelineLead | null>(null);
   // Demo interaction state survives a reload: approvals persist per-slug.
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>(() => {
     try {
@@ -3460,7 +3597,7 @@ export default function ClientBoardPage() {
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
-    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} />,
+    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
   };
@@ -3667,6 +3804,9 @@ export default function ClientBoardPage() {
       )}
       {ideaPreview && (
         <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} />
+      )}
+      {leadDetail && (
+        <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} />
       )}
     </div>
     </MotionConfig>
