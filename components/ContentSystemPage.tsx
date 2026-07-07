@@ -5,7 +5,7 @@ import { useMetadata } from '../hooks/useMetadata';
 import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
 import { HeroVideo } from './HeroVideo';
 import { SystemFlowDiagram } from './SystemFlowDiagram';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE } from '../lib/contentSystemContent';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE, ICP_GATE, ONGOING } from '../lib/contentSystemContent';
 
 /** Scroll-reveal wrapper with staggered delay. */
 function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?: number; className?: string }) {
@@ -476,8 +476,12 @@ export default function ContentSystemPage() {
         </section>
 
         {/* 9 — SCOPE / NOT IN SCOPE */}
-        <section className="mb-16 md:mb-24 grid md:grid-cols-2 gap-10">
-          <h2 className="sr-only">What's in and out of scope</h2>
+        <section className="mb-16 md:mb-24">
+          <h2 className="sr-only">Who this is for, and what's in and out of scope</h2>
+          <p className="max-w-3xl text-lg md:text-xl text-ink leading-relaxed mb-10 md:mb-12">
+            {ICP_GATE}
+          </p>
+          <div className="grid md:grid-cols-2 gap-10">
           <div>
             <Label>What you get</Label>
             <ul className="mt-4 space-y-3">
@@ -506,6 +510,26 @@ export default function ContentSystemPage() {
               ))}
             </ul>
           </div>
+          </div>
+        </section>
+
+        {/* 9b — ONGOING: why the engagement stays live (answers "why not a one-time build I own?") */}
+        <section className="mb-16 md:mb-24 max-w-3xl">
+          <Label>Kept current</Label>
+          <p className="mt-4 mb-6 text-lg md:text-xl text-ink leading-relaxed">
+            {ONGOING.lead}
+          </p>
+          <ul className="space-y-3">
+            {ONGOING.items.map((s) => (
+              <li
+                key={s}
+                className="flex items-start gap-3 text-[15px] md:text-base text-ink-soft leading-relaxed"
+              >
+                <ArrowRight aria-hidden="true" size={16} className="mt-1 shrink-0 text-accent-ink" />
+                {s}
+              </li>
+            ))}
+          </ul>
         </section>
 
         {/* 10 — FINAL CTA */}

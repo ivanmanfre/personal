@@ -72,3 +72,21 @@ export const SCOPE: { inScope: string[]; notInScope: string[] } = {
     'No guaranteed follower or engagement numbers',
   ],
 };
+
+// Who this is for. Shown as a qualifier above the scope split so the wrong-fit
+// reader self-selects out. Up-market gate (revenue, not follower count).
+export const ICP_GATE =
+  'This is for agency owners already past $30k/mo who want inbound running without them posting every day.';
+
+// Why the engagement stays live instead of a one-time build handoff. Each item
+// needs a human in the loop as the ground shifts; none can be installed once and
+// left. No em dashes, no AI tells (matches HONESTY RULE above).
+export const ONGOING: { lead: string; items: string[] } = {
+  lead: 'Continued follow-up and hand-holding let us:',
+  items: [
+    "move with LinkedIn's algorithm so your content keeps landing as the rules shift",
+    "keep your lead magnets meta, built around whatever the market's paying attention to",
+    'ship infra updates that keep those magnets top-tier resources in your niche',
+    'retune the engine as models change and output drifts, before it ever shows',
+  ],
+};
