@@ -27,6 +27,9 @@ export function buildFeedSpecFromContentSystem(
       const body = (p.body && p.body.trim()) || (p.hook && p.hook.trim()) || '';
       if (!body) return null;
       if (Array.isArray(p.image_urls) && p.image_urls.length >= 2) return { type: 'carousel', body, slides: p.image_urls } as FeedPostSpec;
+      // Text carousel: the builder drafted heading+body slide cards (no images). Render them
+      // as styled text-slide cards so the carousel content is visible, not dropped.
+      if (Array.isArray(p.slides) && p.slides.length >= 2) return { type: 'carousel', body, slides: [], textSlides: p.slides } as FeedPostSpec;
       if (p.image_url) return { type: 'image', body, imageUrl: p.image_url } as FeedPostSpec;
       return { type: 'text', body } as FeedPostSpec;
     })

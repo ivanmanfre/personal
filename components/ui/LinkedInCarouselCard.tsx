@@ -45,6 +45,9 @@ function tokenize(line: string): React.ReactNode[] {
 interface Props {
   text: string;
   slides: string[];
+  /** Text-slide cards (heading + body). When present, the media area renders styled text
+   *  slides instead of images — used for carousels the builder drafts as copy, not artwork. */
+  textSlides?: { heading: string; body: string }[];
   author?: string;
   headline?: string;
   avatarUrl?: string;
@@ -60,6 +63,7 @@ interface Props {
 const LinkedInCarouselCard: React.FC<Props> = ({
   text,
   slides,
+  textSlides,
   author = 'Iván Manfredi',
   headline = 'AI content systems for agencies',
   avatarUrl = '/ivan-portrait.jpg',
@@ -69,7 +73,9 @@ const LinkedInCarouselCard: React.FC<Props> = ({
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
-  const total = slides.length;
+  const hasTextSlides = Array.isArray(textSlides) && textSlides.length > 0;
+  const total = hasTextSlides ? textSlides!.length : slides.length;
+  const clampedIndex = Math.min(index, Math.max(0, total - 1));
   const truncate = showFold && text.length > FOLD_AT && !expanded;
   const visibleText = truncate ? text.slice(0, FOLD_AT).trimEnd() : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
@@ -139,22 +145,36 @@ const LinkedInCarouselCard: React.FC<Props> = ({
       {/* Carousel media area */}
       {total > 0 && (
         <div className="border-y border-[#dce6f1] bg-[#f0f2f5] relative">
-          {/* Slide image — 4:5 portrait aspect */}
+          {/* Slide media — 4:5 portrait aspect. Text carousels render styled copy cards. */}
           <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
-            <img
-              src={slides[index]}
-              alt={`Slide ${index + 1} of ${total}`}
-              className="absolute inset-0 w-full h-full object-contain"
-              loading="lazy"
-            />
+            {hasTextSlides ? (
+              <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-8" style={{ background: 'linear-gradient(150deg,#1d2733 0%,#0f1620 100%)' }}>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+                  {clampedIndex + 1} / {total}
+                </div>
+                <h4 className="mt-3 text-white font-bold leading-[1.15]" style={{ fontSize: 'clamp(1.15rem, 5vw, 1.6rem)' }}>
+                  {textSlides![clampedIndex].heading}
+                </h4>
+                <p className="mt-3 text-white/80 leading-[1.5]" style={{ fontSize: 'clamp(0.85rem, 3.4vw, 1rem)' }}>
+                  {textSlides![clampedIndex].body}
+                </p>
+              </div>
+            ) : (
+              <img
+                src={slides[clampedIndex]}
+                alt={`Slide ${clampedIndex + 1} of ${total}`}
+                className="absolute inset-0 w-full h-full object-contain"
+                loading="lazy"
+              />
+            )}
 
             {/* Slide counter badge */}
             <div className="absolute top-2 right-2 bg-black/50 text-white text-[11px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">
-              {index + 1} / {total}
+              {clampedIndex + 1} / {total}
             </div>
 
             {/* Left arrow */}
-            {index > 0 && (
+            {clampedIndex > 0 && (
               <button
                 onClick={prev}
                 aria-label="Previous slide"
@@ -165,7 +185,7 @@ const LinkedInCarouselCard: React.FC<Props> = ({
             )}
 
             {/* Right arrow */}
-            {index < total - 1 && (
+            {clampedIndex < total - 1 && (
               <button
                 onClick={next}
                 aria-label="Next slide"
@@ -179,13 +199,13 @@ const LinkedInCarouselCard: React.FC<Props> = ({
           {/* Page dots */}
           {total > 1 && (
             <div className="flex items-center justify-center gap-1.5 py-2">
-              {slides.map((_, i) => (
+              {Array.from({ length: total }).map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setIndex(i)}
                   aria-label={`Go to slide ${i + 1}`}
                   className={`rounded-full transition-all ${
-                    i === index
+                    i === clampedIndex
                       ? 'w-2 h-2 bg-[#0a66c2]'
                       : 'w-1.5 h-1.5 bg-[#b0b8c1] hover:bg-[#666]'
                   }`}

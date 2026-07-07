@@ -51,9 +51,21 @@ export interface ContentSystem {
   system: { summary: string; capabilities: string[] };
   sample_output?: {
     title: string;
-    posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel' }[];
+    posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel';
+      // Text-carousel slides (heading + body cards) drafted for a Carousel-format post.
+      slides?: { heading: string; body: string }[] }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
+    // Then it nurtures: a newsletter drafted from the prospect's own content.
+    newsletter?: { subject: string; preview?: string; sections: { h: string; body: string }[]; cta: string };
+    // Then it converts: the post-capture email sequence everyone who grabs the magnet gets.
+    follow_ups?: { step: number; day: number; subject: string; body: string }[];
+    // Then it books: reactions on the prospect's posts turned into personal DMs.
+    engager_outreach?: { explainer: string; samples: { trigger: string; dm: string }[] };
     lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number>;
+      // Brand-mirror data — the prospect's own accent/logo/fonts, so the engine-tour
+      // mockups (newsletter, follow-ups, outreach) read as THEIR asset, not a template.
+      accent_hex?: string;
+      brand?: { accent_hex?: string; logo_url?: string; font_heading?: string; font_body?: string };
       // An in-page, interactive SIMULATION of the lead magnet the system drafted — shown when
       // the LM is a working sample (not a live published page). Seeded with the prospect's own
       // numbers so it reads as their real tool. `kind` selects the model + formula.

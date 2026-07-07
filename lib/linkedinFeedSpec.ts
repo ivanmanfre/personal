@@ -25,6 +25,9 @@ export interface CarouselPostSpec {
   type: 'carousel';
   body: string;
   slides: string[];
+  /** Text-slide cards (heading + body). When present, the card renders these styled
+   *  text slides instead of images; `slides` may be empty in that case. */
+  textSlides?: { heading: string; body: string }[];
   reactions?: number;
   comments?: number;
 }
@@ -81,7 +84,11 @@ export function normalizeFeedSpec(spec: FeedSpec, mode: RenderMode = 'tease'): N
     if (post.type === 'image' && !post.imageUrl) {
       throw new Error('normalizeFeedSpec: image posts need an imageUrl');
     }
-    if (post.type === 'carousel' && (!Array.isArray(post.slides) || post.slides.length === 0)) {
+    if (
+      post.type === 'carousel' &&
+      (!Array.isArray(post.slides) || post.slides.length === 0) &&
+      (!Array.isArray(post.textSlides) || post.textSlides.length === 0)
+    ) {
       throw new Error('normalizeFeedSpec: carousel posts need at least one slide');
     }
   }

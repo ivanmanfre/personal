@@ -14,6 +14,9 @@ import { gradeColor } from '../lib/scanApi';
 import { PROMISES, METRICS, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import SystemFlowDiagram from './SystemFlowDiagram';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
+import NewsletterMockup from './ui/NewsletterMockup';
+import FollowUpSequence from './ui/FollowUpSequence';
+import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -2658,6 +2661,19 @@ function ProofPortrait({ src, name, pos, rotate, aspect = '4 / 5' }: { src: stri
   );
 }
 
+// Engine-tour section wrapper — matches the visual rhythm of the report's other sections
+// (top hairline, max-w-5xl, generous vertical padding), leading with a kicker + serif title.
+const SectionIntro: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({ kicker, title, children }) => {
+  const hairline = 'var(--color-hairline)';
+  return (
+    <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+      <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>{kicker}</p>
+      <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{title}</h2>
+      <div className="mt-10">{children}</div>
+    </section>
+  );
+};
+
 function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const cs = report.content_system;
   if (!cs) return null;
@@ -2694,6 +2710,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
   const mock = cs.sample_output;
   const mockMetrics = (mock?.metrics ?? []).slice(0, 3);
+  // Brand-mirror the engine-tour mockups (newsletter / follow-ups / outreach) in the
+  // prospect's own accent + logo so each reads as THEIR owned asset, not a template.
+  const prospectAccent = cs.sample_output?.lm?.brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
+  const prospectLogo = cs.sample_output?.lm?.brand?.logo_url || undefined;
   const feedSpec = buildFeedSpecFromContentSystem(cs, { companyName });
   // When the LM is a live, results-forward assessment we can embed, signal that everywhere
   // (the card stops reading as a static PDF) and reuse the same URL in the modal.
@@ -2807,6 +2827,24 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           )}
         </section>
       )}
+
+      {/* THE REST OF YOUR ENGINE — content feed captured the reader; now it nurtures,
+          converts, and books. Each pillar renders only when the builder emitted it. */}
+      {cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? (
+        <SectionIntro kicker="Then it nurtures" title={<>Your list hears from you, <Italic>in your voice.</Italic></>}>
+          <NewsletterMockup data={cs.sample_output.newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
+        </SectionIntro>
+      ) : null}
+      {cs.sample_output?.follow_ups?.length ? (
+        <SectionIntro kicker="Then it converts" title={<>Everyone who grabs the magnet <Italic>gets a sequence.</Italic></>}>
+          <FollowUpSequence data={cs.sample_output.follow_ups} accent={prospectAccent} who={who} />
+        </SectionIntro>
+      ) : null}
+      {cs.sample_output?.engager_outreach?.samples?.length ? (
+        <SectionIntro kicker="Then it books calls" title={<>Reactions to your posts <Italic>turn into conversations.</Italic></>}>
+          <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
+        </SectionIntro>
+      ) : null}
 
       {/* PROOF — real client case studies */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>

@@ -79,6 +79,7 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
             {...author}
             text={post.body}
             slides={post.slides}
+            textSlides={post.textSlides}
             showFold
             stats={{ reactions: post.reactions, comments: post.comments }}
           />
