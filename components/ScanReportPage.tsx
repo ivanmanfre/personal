@@ -17,6 +17,7 @@ import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
+import { FivePillarLoop } from './FivePillarLoop';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -2865,7 +2866,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // in-page interactive simulation (calculator drafted from the prospect's posts). Either
   // one surfaces the bold "open the sample" CTA below and drives the preview modal.
   const lmSim = cs.sample_output?.lm?.sim;
-  const lmHasSample = Boolean(lmEmbedUrl) || Boolean(lmSim);
+  // Fallback: a partial builder run can emit the LM cover but no live slug/sim. Rather than
+  // dropping the whole LM sample (it silently vanishes), still surface the cover as a static
+  // sample. lmStatic drives honest copy (no "live"/"interactive" overpromise).
+  const lmCover = cs.sample_output?.lm?.cover_url || '';
+  const lmStatic = !lmEmbedUrl && !lmSim && Boolean(lmCover);
+  const lmHasSample = Boolean(lmEmbedUrl) || Boolean(lmSim) || lmStatic;
 
   const cases = [
     {
@@ -2893,7 +2899,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   ];
 
   return (
-    <div className="min-h-screen bg-paper text-ink" style={{ '--color-accent': prospectAccent, '--color-accent-ink': prospectAccent } as React.CSSProperties}>
+    <div className="min-h-screen bg-paper text-ink">
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
@@ -2905,6 +2911,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <CSHero cs={cs} who={who} companyName={companyName} meta={meta} bookUrl={bookUrl} />
       <CSPain cs={cs} who={who} companyName={companyName} receipts={receipts} scan={scan} />
+
+      {/* THE FULL ENGINE — one idea becomes a week across five channels (same loop as the
+          content-system page), sitting right above the prospect's own drafted week. */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
+        <Kicker>The full engine</Kicker>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>One idea in. <Italic>Five channels out.</Italic></h2>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Every idea the engine picks becomes a week of presence across five channels, on its own, in your voice. You just approve.</p>
+        <div className="mt-10">
+          <FivePillarLoop />
+        </div>
+      </section>
 
       {/* THE PAYOFF — the prospect's own branded week, surfaced high for engagement */}
       {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
@@ -2956,12 +2973,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
                 <div>
                   <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #4FB286)', fontWeight: 600 }}>
-                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, background: 'var(--color-accent)' }} /> {lmSim ? 'Your lead magnet · interactive sample' : 'Your lead magnet sample · live'}
+                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, background: 'var(--color-accent)' }} /> {lmSim ? 'Your lead magnet · interactive sample' : lmStatic ? 'Your lead magnet · sample' : 'Your lead magnet sample · live'}
                   </div>
                   <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>{lmSim ? 'Try the tool it built.' : 'What your leads land on.'}</h3>
-                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>{lmSim ? `The system drafted this working calculator from your own posts. Your readers would get it as an interactive page on your site that captures every email. Try it the way one of them would, ${who}.` : `The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, ${who}.`}</p>
+                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>{lmSim ? `The system drafted this working calculator from your own posts. Your readers would get it as an interactive page on your site that captures every email. Try it the way one of them would, ${who}.` : lmStatic ? `The system drafted this lead magnet from your own posts, in your brand. Published on your domain, it captures every reader who opens it. Here's what yours looks like, ${who}.` : `The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, ${who}.`}</p>
                   <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#0E1512', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
-                    {lmSim ? 'Open the calculator' : 'Take the live sample'}
+                    {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'}
                     <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </span>
                 </div>
