@@ -2893,7 +2893,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   ];
 
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="min-h-screen bg-paper text-ink" style={{ '--color-accent': prospectAccent, '--color-accent-ink': prospectAccent } as React.CSSProperties}>
       <ScrollProgress />
       <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
