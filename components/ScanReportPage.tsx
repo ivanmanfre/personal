@@ -11,7 +11,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
-import { PROMISES, METRICS, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
+import { PROMISES, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import SystemFlowDiagram from './SystemFlowDiagram';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import NewsletterMockup from './ui/NewsletterMockup';
@@ -2517,34 +2517,78 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
   );
 }
 
-// The content-system product cockpit — an animated "software" surface showing the
-// engine running THIS founder's own content through the pipeline. Mirrors the
-// CallIntelProductMock grammar (titlebar, counter tiles, animated rows, activity feed).
+// The content-system product cockpit — a static, loyal reduction of Ivan's real client
+// operator board at /client/:slug ("This week" view). Left Content-Desk nav rail, center
+// week masthead + day pills + the founder's own drafted post, right up-next stack — so the
+// prospect sees THEIR operator board already running, not a generic dashboard. Visual
+// grammar lifted/mirrored from components/ClientBoardPage.tsx.
 function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; companyName: string }) {
   const reduce = useReducedMotion();
-  const hairline = 'var(--color-hairline)';
+  const line = 'var(--color-hairline)';
+  const accent = 'var(--color-accent)';
   const accentInk = 'var(--color-accent-ink)';
-  const founder = (cs.founder?.first_name || (cs.founder?.name || '').split(' ')[0] || companyName).trim();
+  const ink = '#1A1A1A';
+  const inkSoft = '#3D3D3B';
+  const inkMute = 'rgba(26,26,26,0.5)';
+  const accentWash = 'rgba(42,143,101,0.06)';
+  const paperRaise = '#FFFFFF';
+  const paperSunk = 'var(--color-paper-sunk, #EFEBE3)';
+  const HERO_SHADOW = '0 14px 40px rgba(26,26,26,0.12)';
 
-  const STAGES = ['Idea', 'Draft', 'Voice', 'QA', 'Scheduled'];
-  const clip = (s: string) => { const t = (s || '').replace(/\s+/g, ' ').trim(); return t.length > 48 ? t.slice(0, 46) + '…' : t; };
-  const stagePlan = [4, 3, 1]; // varied stages so the board reads as "in motion"
-  const rows: { label: string; kind: string; stage: number }[] = [];
-  (cs.sample_output?.posts ?? []).slice(0, 3).forEach((p, i) => {
-    const kind = (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '')
-      ? 'Carousel' : (p.image_url ? 'Image' : 'Post');
-    rows.push({ label: clip(p.hook || p.format || 'Post'), kind, stage: stagePlan[i] ?? 2 });
-  });
-  const lm = cs.sample_output?.lm;
-  if (lm?.title) rows.push({ label: clip(lm.title), kind: 'Lead magnet', stage: 4 });
+  const founder = cs.founder;
+  const founderName = (founder?.name || companyName || 'Founder').trim();
+  const founderFirst = (founder?.first_name || founderName.split(' ')[0] || companyName).trim();
+  const headline = (founder?.headline || `Founder, ${companyName}`).trim();
+  const initials = founderName.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'IM';
 
-  const tiles = METRICS.slice(0, 4); // honest engine specs, not invented client numbers
-  const modules = ['Ideas', 'Posts', 'Lead magnets', 'Outreach', 'Calendar'];
-  const activity = [
-    { tag: 'Voice', text: `Drafted in ${founder}'s voice, grounded in real calls and past winners.` },
-    { tag: 'QA', text: 'Cleared the nine-point quality agent and lint. Zero AI tells.' },
-    { tag: 'Funnel', text: 'Lead magnet built and published to a live page, capturing emails.' },
+  // Week scaffold — the upcoming Monday, so the board reads as "this week, ahead of you".
+  const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const TICKS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const monday = (() => { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() + ((day === 0 ? -6 : 1) - day)); return d; })();
+  const weekLabel = monday.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+  const schedShort = monday.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  const fmtLabel = (p?: { format?: string; image_url?: string; image_urls?: string[]; slides?: unknown[] }) => {
+    if (!p) return 'Text post';
+    const isCarousel = (Array.isArray(p.slides) && p.slides.length > 0) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '');
+    if (isCarousel) return 'Carousel';
+    if (p.image_url || /image/i.test(p.format || '')) return 'Image post';
+    return 'Text post';
+  };
+
+  // Believable placeholders only if the builder emitted no posts (mirrors old fallback).
+  const rawPosts = cs.sample_output?.posts ?? [];
+  const posts = rawPosts.length > 0 ? rawPosts : [
+    { format: 'Text post', hook: `The one number that quietly decides whether ${companyName}'s pipeline grows.`, body: `Most founders watch the metric that's easy to see. The one that actually moves revenue sits a layer down, and it rarely shows up until it stops.\n\nThat's the gap this engine closes: it turns what you already say into a week of content, in your voice, ready to approve.` },
+    { format: 'Carousel', hook: 'Five moves that turn a cold audience into booked calls.' },
+    { format: 'Image post', hook: 'What a week of content looks like when the system runs it for you.' },
+    { format: 'Text post', hook: 'The offer most founders bury on page two of their own site.' },
   ];
+  const lead = posts[0];
+  const N = Math.max(posts.length, 4);
+  const upNext = posts.slice(1, 3);
+
+  const lm = cs.sample_output?.lm;
+  const newsletter = cs.sample_output?.newsletter;
+  const followUps = cs.sample_output?.follow_ups;
+  const engager = cs.sample_output?.engager_outreach;
+  let pipelineCount = posts.length;
+  if (lm?.title) pipelineCount += 1;
+  if (newsletter?.subject) pipelineCount += 1;
+  if (followUps?.length) pipelineCount += 1;
+  if (engager?.samples?.length) pipelineCount += 1;
+  pipelineCount = Math.max(pipelineCount, posts.length + 2);
+
+  const leadBody = (lead?.body || '').split(/\n{2,}|\n/).map((s) => s.trim()).filter(Boolean).slice(0, 4);
+
+  const NAV_GROUPS: { group: string; items: { label: string; hero?: boolean }[] }[] = [
+    { group: 'Content', items: [{ label: 'This week', hero: true }, { label: 'All content' }, { label: 'Calendar' }, { label: 'Lead magnets' }, { label: 'Newsletter' }] },
+    { group: 'Reports', items: [{ label: 'Leads' }, { label: 'Performance' }, { label: 'Strategy' }] },
+  ];
+
+  const Pulse = ({ color = accent, size = 7 }: { color?: string; size?: number }) => (
+    <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1], scale: [1, 0.7, 1] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} style={{ height: size, width: size, borderRadius: 999, background: color, flexShrink: 0, display: 'inline-block' }} />
+  );
 
   return (
     <motion.div
@@ -2553,91 +2597,189 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.8, ease: EASE }}
       className="overflow-hidden relative"
-      style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
+      style={{ border: `1px solid ${line}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG, background: 'var(--color-paper, #F7F4EF)' }}
     >
       <CILoadShimmer />
-      {/* window titlebar */}
-      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
-        <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
-          {companyName} · Inbound Engine
+
+      {/* top status strip — mirrors the board's hairline top rule */}
+      <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${line}`, background: 'rgba(247,244,239,0.86)' }}>
+        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: inkMute }}>This week</span>
+        <span className="ml-auto inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: inkMute }}>
+          <Pulse size={6} /> Preview · built ahead
         </span>
-        <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
-          <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ height: 6, width: 6, background: 'var(--color-accent)' }} />
-          Live
+        <span className="ml-4 hidden sm:inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: inkMute }}>
+          <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: ink, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: '8.5px', fontWeight: 700 }} aria-hidden>IM</span>
+          Operator · Ivan Manfredi
         </span>
       </div>
 
-      {/* module nav — sells "runs your whole presence" */}
-      <div className="flex items-center gap-2 px-3.5 py-2.5 overflow-x-auto" style={{ borderBottom: `1px solid ${hairline}`, background: CI_CARD }}>
-        {modules.map((m, i) => (
-          <span key={m} className="shrink-0 px-2.5 py-1" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, borderRadius: 7, color: i === 1 ? '#F7F4EF' : 'rgba(26,26,26,0.5)', background: i === 1 ? 'var(--color-accent)' : 'transparent', border: i === 1 ? 'none' : `1px solid ${hairline}` }}>{m}</span>
-        ))}
-      </div>
-
-      <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
-        {/* engine-spec tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-4" style={{ borderBottom: `1px solid ${hairline}` }}>
-          {tiles.map((m, i) => (
-            <div key={i} className="px-5 py-5" style={{ borderLeft: i % 4 ? `1px solid ${hairline}` : 'none', borderTop: i >= 2 ? `1px solid ${hairline}` : 'none' }}>
-              <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.7rem, 2.7vw, 2.4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
-              <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)', lineHeight: 1.45 }}>{m.label}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="px-5 lg:px-6 py-6 space-y-6">
-          {/* pipeline board — the prospect's own content, mid-flight */}
-          {rows.length > 0 && (
-            <div>
-              <p className="mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>This week, in the pipeline</p>
-              <div>
-                {rows.map((r, ri) => (
-                  <motion.div
-                    key={ri}
-                    initial={reduce ? false : { opacity: 0, x: -8 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, margin: '-30px' }}
-                    transition={{ duration: 0.5, ease: EASE, delay: 0.1 + ri * 0.08 }}
-                    className="flex items-center gap-3 flex-wrap py-2.5"
-                    style={{ borderTop: ri ? `1px solid ${hairline}` : 'none' }}
-                  >
-                    <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 7, background: 'rgba(42,143,101,0.06)' }}>{r.kind}</span>
-                    <span className="min-w-0 flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A' }}>{r.label}</span>
-                    <span className="flex items-center gap-1" aria-hidden>
-                      {STAGES.map((_, si) => (
-                        <motion.span
-                          key={si}
-                          initial={reduce ? false : { opacity: 0.2, scaleY: 0.55 }}
-                          whileInView={{ opacity: si <= r.stage ? 1 : 0.22, scaleY: 1 }}
-                          viewport={{ once: true, margin: '-30px' }}
-                          transition={{ duration: 0.35, ease: EASE, delay: 0.2 + ri * 0.08 + si * 0.05 }}
-                          style={{ height: 6, width: 16, borderRadius: 2, background: si <= r.stage ? 'var(--color-accent)' : 'rgba(26,26,26,0.1)' }}
-                        />
-                      ))}
+      <div className="grid lg:grid-cols-[196px_minmax(0,1fr)_244px]">
+        {/* ── LEFT: Content-Desk nav rail ─────────────────────────────── */}
+        <aside className="flex flex-col border-b lg:border-b-0 lg:border-r border-[color:var(--color-hairline)]">
+          <div className="px-6 pb-4 pt-5" style={{ borderBottom: `1px solid ${line}` }}>
+            <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 20, letterSpacing: '-0.02em', color: ink }}>
+              {companyName}<span style={{ color: accent }}>.</span>
+            </span>
+            <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: inkMute }}>content desk</div>
+          </div>
+          <nav className="flex flex-col gap-4 py-4 lg:py-5" aria-label="Board sections">
+            {NAV_GROUPS.map((g) => (
+              <div key={g.group}>
+                <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: inkMute, opacity: 0.75 }}>{g.group}</div>
+                <div className="flex flex-wrap gap-1.5 px-4 lg:flex-col lg:gap-0 lg:px-0">
+                  {g.items.map((t) => (
+                    <span
+                      key={t.label}
+                      className="flex min-h-[36px] items-center justify-between gap-2 rounded lg:rounded-none px-3 py-1.5 lg:px-6 lg:py-2"
+                      style={{ borderLeft: `3px solid ${t.hero ? accent : 'transparent'}`, background: t.hero ? accentWash : 'transparent' }}
+                    >
+                      <span style={t.hero
+                        ? { fontFamily: SERIF, fontSize: 16, color: ink }
+                        : { fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: inkMute }}>
+                        {t.label}
+                      </span>
+                      {t.hero && (
+                        <span className="leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: accentInk, color: '#F7F4EF', borderRadius: 999, padding: '2px 7px' }}>{N}</span>
+                      )}
                     </span>
-                    <span className="shrink-0 text-right" style={{ width: 78, fontFamily: MONO, fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, color: r.stage >= 4 ? accentInk : 'rgba(26,26,26,0.6)' }}>{STAGES[r.stage]}</span>
-                  </motion.div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="mt-auto flex flex-col gap-3.5 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${line}` }}>
+            <div>
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: inkMute }}>This week's story</div>
+              <div className="w-full rounded-md py-2.5 text-center uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: ink, color: '#F7F4EF' }}>◉ record 90 sec</div>
+            </div>
+            <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: ink }}>
+              <Pulse size={7} /> engine running
+            </div>
+            <div className="flex items-center gap-2" style={{ fontFamily: BODY_SERIF, fontSize: '11.5px', lineHeight: 1.4, color: inkMute }}>
+              <span aria-hidden style={{ height: 5, width: 5, borderRadius: 999, background: accent, flexShrink: 0 }} />
+              Preview built for {companyName}
+            </div>
+            <div className="flex items-center gap-2.5 pt-2.5" style={{ borderTop: `1px solid ${line}` }}>
+              {founder?.avatar_url ? (
+                <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-8 w-8 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
+              ) : (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: accent, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: 11, fontWeight: 700 }} aria-hidden>{initials}</span>
+              )}
+              <span className="min-w-0">
+                <span className="block truncate" style={{ fontFamily: BODY_SERIF, fontSize: '12.5px', fontWeight: 600, color: ink }}>{founderName}</span>
+                <span className="block truncate" style={{ fontFamily: MONO, fontSize: '10px', color: inkMute }}>Run by Ivan Manfredi</span>
+              </span>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── CENTER: week masthead + the founder's own drafted post ─────── */}
+        <div className="min-w-0 px-5 py-6 lg:px-7">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: inkMute }}>
+                Week of {weekLabel} · piece 1 of {N} · {N - 1} to go
+              </div>
+              <div style={{ fontFamily: SERIF, fontSize: 'clamp(28px, 4.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: ink }}>
+                {WEEKDAYS[0]}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
               </div>
             </div>
-          )}
+            <div className="hidden shrink-0 items-center gap-1.5 sm:flex" aria-hidden>
+              {TICKS.map((t, i) => {
+                const current = i === 0;
+                return (
+                  <span key={i} className="flex items-center justify-center rounded-full" style={{
+                    width: 26, height: 26, fontFamily: MONO, fontSize: 10,
+                    border: `1.5px solid ${current ? accent : 'rgba(26,26,26,0.25)'}`,
+                    background: current ? paperRaise : 'transparent',
+                    color: current ? accentInk : inkMute,
+                  }}>{t}</span>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* live activity feed */}
-          <div className="space-y-px" style={{ borderTop: `1px solid ${hairline}` }}>
-            {activity.map((f, i) => (
+          {/* the drafted post card — front card over two rotated ghosts, like the board deck */}
+          <div className="relative">
+            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '10px -8px -10px 8px', background: paperRaise, border: `1px solid rgba(26,26,26,0.12)`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
+            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '5px -4px -5px 4px', background: paperRaise, border: `1px solid rgba(26,26,26,0.14)`, borderRadius: 14, transform: 'rotate(-.5deg)' }} aria-hidden />
+            <motion.div
+              initial={reduce ? false : { opacity: 0, x: 22, scale: 0.98 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.55, ease: EASE, delay: 0.1 }}
+              className="relative"
+              style={{ background: paperRaise, border: `1px solid rgba(26,26,26,0.18)`, borderRadius: 14, boxShadow: HERO_SHADOW }}
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-5 sm:px-6">
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: accentInk }}>{fmtLabel(lead)} · goes out {WEEKDAYS[0]}</span>
+                <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 13, color: inkMute }}>drafted from your voice, nothing invented</span>
+              </div>
+
+              {/* author row */}
+              <div className="flex items-center gap-3 px-5 pt-4 sm:px-6">
+                {founder?.avatar_url ? (
+                  <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-11 w-11 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
+                ) : (
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: accentInk, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700 }} aria-hidden>{initials}</span>
+                )}
+                <div className="min-w-0">
+                  <div className="truncate" style={{ fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700, color: ink }}>{founderName}</div>
+                  <div className="truncate" style={{ fontFamily: BODY_SERIF, fontSize: 12.5, color: inkMute }}>{headline} · 1st</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: inkMute }}>Scheduled · {schedShort} 🌐</div>
+                </div>
+              </div>
+
+              {/* post body */}
+              <div className="px-5 pt-4 sm:px-6">
+                <p style={{ fontFamily: BODY_SERIF, fontSize: 15, lineHeight: 1.55, color: ink }}>{lead?.hook}</p>
+                {leadBody.map((para, i) => (
+                  <p key={i} className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: 14.5, lineHeight: 1.55, color: inkSoft }}>{para}</p>
+                ))}
+              </div>
+
+              {/* contained image — never full-bleed */}
+              {lead?.image_url && (
+                <div className="mt-4 overflow-hidden px-5 pb-5 sm:px-6">
+                  <img
+                    src={lead.image_url}
+                    alt={lead.hook || 'Drafted post'}
+                    loading="lazy"
+                    onError={fallbackOnError}
+                    style={{ display: 'block', width: '100%', maxHeight: 340, objectFit: 'cover', objectPosition: '50% 20%', borderRadius: 10, background: paperSunk }}
+                  />
+                </div>
+              )}
+              {!lead?.image_url && <div className="pb-5" />}
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ── RIGHT: up-next stack + behind-this-week ────────────────────── */}
+        <div className="min-w-0 border-t lg:border-t-0 lg:border-l border-[color:var(--color-hairline)] px-5 py-6 lg:px-6">
+          <div className="mb-4 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: inkMute }}>Up next in the stack</div>
+          <div className="flex flex-col gap-3.5">
+            {upNext.map((q, i) => (
               <motion.div
                 key={i}
-                initial={reduce ? false : { opacity: 0, x: -8 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-30px' }}
-                transition={{ duration: 0.5, ease: EASE, delay: 0.25 + i * 0.08 }}
-                className="flex items-start gap-3 pt-3"
+                transition={{ duration: 0.5, ease: EASE, delay: 0.15 + i * 0.08 }}
+                className="rounded-[10px] px-4 py-3.5"
+                style={{ background: paperRaise, border: `1px solid ${line}` }}
               >
-                <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 8, background: 'rgba(42,143,101,0.06)' }}>{f.tag}</span>
-                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.text}</span>
+                <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: inkMute }}>{WEEKDAYS[i + 1]} · {fmtLabel(q)}</div>
+                <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: ink }}>{q.hook || q.format}</div>
               </motion.div>
             ))}
+          </div>
+          <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${line}` }}>
+            <div className="rounded-[10px] px-4 py-4" style={{ background: paperSunk, border: `1px solid ${line}` }}>
+              <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: inkMute }}>Behind this week</div>
+              <div style={{ fontFamily: BODY_SERIF, fontSize: 14, lineHeight: 1.5, color: ink }}>{pipelineCount} pieces in the pipeline: planned, drafting, queued.</div>
+              <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: accentInk }}>open the pipeline →</div>
+            </div>
           </div>
         </div>
       </div>
