@@ -2580,7 +2580,12 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
   if (engager?.samples?.length) pipelineCount += 1;
   pipelineCount = Math.max(pipelineCount, posts.length + 2);
 
-  const leadBody = (lead?.body || '').split(/\n{2,}|\n/).map((s) => s.trim()).filter(Boolean).slice(0, 4);
+  // The hook is rendered on its own line above the body; LinkedIn bodies usually repeat it as
+  // their first line, so drop a leading body paragraph identical to the hook to avoid doubling it.
+  const _leadHookNorm = (lead?.hook || '').replace(/\s+/g, ' ').trim();
+  const leadBody = (lead?.body || '').split(/\n{2,}|\n/).map((s) => s.trim()).filter(Boolean)
+    .filter((para, i) => !(i === 0 && para.replace(/\s+/g, ' ').trim() === _leadHookNorm))
+    .slice(0, 4);
 
   const NAV_GROUPS: { group: string; items: { label: string; hero?: boolean }[] }[] = [
     { group: 'Content', items: [{ label: 'This week', hero: true }, { label: 'All content' }, { label: 'Calendar' }, { label: 'Lead magnets' }, { label: 'Newsletter' }] },
