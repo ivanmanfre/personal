@@ -5,6 +5,7 @@ import { useMetadata } from '../hooks/useMetadata';
 import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCTA, useMediaQuery } from './editorial';
 import { HeroVideo } from './HeroVideo';
 import { SystemFlowDiagram } from './SystemFlowDiagram';
+import { FivePillarLoop } from './FivePillarLoop';
 import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE, ICP_GATE, ONGOING } from '../lib/contentSystemContent';
 
 /** Scroll-reveal wrapper with staggered delay. */
@@ -253,6 +254,18 @@ export default function ContentSystemPage() {
               </motion.div>
             ))}
           </div>
+        </section>
+
+        {/* 2.5 — THE FULL ENGINE: 5-pillar loop */}
+        <section className="mb-16 md:mb-24">
+          <Label>The full engine</Label>
+          <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
+            One idea in. Five channels out.
+          </RevealH2>
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+            Every idea the engine picks becomes a week of presence across five channels, on its own, in your voice. You just approve.
+          </p>
+          <FivePillarLoop />
         </section>
 
         {/* 3 — INTERFACE SHOWCASE (real dashboard screenshots) */}
