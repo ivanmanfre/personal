@@ -1374,7 +1374,7 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
       {/* expanding sage rule across top */}
       <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:items-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:items-center">
         <div>
           {/* status byline */}
           <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
@@ -2190,7 +2190,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
       <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
       <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:items-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:items-center">
         <div>
           <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
             <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
@@ -2224,11 +2224,12 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
             </div>
             <div className="space-y-2.5">
               {draftItems.map((it, i) => it.kind === 'lm' ? (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3 px-3 py-3" style={{ background: '#1A1A1A', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.08)' }}>
-                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 54, height: 54, objectFit: 'cover', borderRadius: 7, flexShrink: 0 }} />}
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3.5 px-3.5 py-3.5" style={{ background: '#161616', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 12px 30px rgba(0,0,0,0.28)' }}>
+                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 9, flexShrink: 0, border: '1px solid rgba(255,255,255,0.12)' }} />}
                   <span className="min-w-0">
-                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 600, marginBottom: 3 }}>Lead magnet</span>
-                    <span style={{ ...clamp2, fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.35, color: 'rgba(247,244,239,0.92)' }}>{it.text}</span>
+                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700, marginBottom: 4 }}>Lead magnet · interactive</span>
+                    <span style={{ ...clamp2, fontFamily: SERIF, fontWeight: 400, fontSize: '17px', lineHeight: 1.22, color: '#F7F4EF', letterSpacing: '-0.01em' }}>{it.text}</span>
+                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.5)', marginTop: 4 }}>Scores a reader → named lead</span>
                   </span>
                 </motion.div>
               ) : (
