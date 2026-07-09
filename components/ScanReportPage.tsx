@@ -21,6 +21,7 @@ import { FivePillarLoop } from './FivePillarLoop';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
+import { trackScanOpen } from '../lib/scanOpenTracker';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
@@ -4718,6 +4719,12 @@ const ScanReportPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { scan, loading, error } = useScan(slug ?? null);
   const reduceMotion = useReducedMotion();
+
+  // Record a prospect open once the report data resolves. Fire-and-forget;
+  // the edge fn decides real-vs-owner server-side (IP + dashboard/?me=1 flag).
+  useEffect(() => {
+    if (scan && slug) trackScanOpen(slug);
+  }, [scan, slug]);
 
   if (loading) {
     return (
