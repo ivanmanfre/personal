@@ -678,6 +678,9 @@ export function useOutreachPipeline(timezone?: string) {
         .select('*, outreach_prospects(name)')
         .is('sent_at', null)
         .is('email_sequence_stopped_at', null)
+        // Blocked rows are tombstones (poller banned-phrase gate, dead-thread vetting) —
+        // they must never resurface as approvable drafts in the Review queue.
+        .is('send_blocked_at', null)
         .in('message_type', ['dm', 'email', 'connection_note'])
         .order('created_at', { ascending: false });
       const drafts = (data || []).map((row: any) => {
