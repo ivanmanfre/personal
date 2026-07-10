@@ -51,6 +51,38 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = JSON.parse(raw); } catch { return jr({ error: "invalid_json" }, 400); }
 
+  // ── LM attribution (W-B.2, 2026-07-10): LM-tagged bookings → lm_attribution ──
+  // utm_campaign = lm_slug, utm_content = lm_events.session_id (R1-verified round-trip).
+  // Additive and fail-soft; the paid-assessment pipeline below is untouched.
+  try {
+    const p0 = body.payload || {};
+    const tr0 = p0.tracking || {};
+    const lmSrc = tr0.utm_source || null;
+    const lmCampaign = tr0.utm_campaign || null;
+    const lmKey = p0.scheduled_event?.uri || p0.uri || null;
+    if ((lmSrc === "lm-resource" || lmSrc === "lm") && lmCampaign && lmKey) {
+      if (body.event === "invitee.canceled") {
+        await supabase.from("lm_attribution").update({ status: "canceled", updated_at: new Date().toISOString() }).eq("calendly_event_uri", lmKey);
+      } else if (body.event === "invitee.created") {
+        let ctaEventId: number | null = null;
+        const sess = tr0.utm_content || null;
+        if (sess) {
+          const { data: ev } = await supabase.from("lm_events").select("id").eq("session_id", sess).eq("event_type", "cta_click").order("created_at", { ascending: false }).limit(1).maybeSingle();
+          if (ev) ctaEventId = ev.id;
+        }
+        await supabase.from("lm_attribution").upsert({
+          lm_slug: lmCampaign, session_id: sess, cta_click_event_id: ctaEventId,
+          calendly_event_uri: lmKey, invitee_email: String(p0.email || "").toLowerCase() || null,
+          invitee_name: p0.name || null, utm_source: lmSrc, utm_medium: tr0.utm_medium || null,
+          utm_campaign: lmCampaign, utm_content: tr0.utm_content || null,
+          booked_at: p0.created_at || new Date().toISOString(),
+          event_start_time: p0.scheduled_event?.start_time || null,
+          status: "booked", source: "webhook", updated_at: new Date().toISOString(),
+        }, { onConflict: "calendly_event_uri" });
+      }
+    }
+  } catch (_) { /* never block the paid pipeline */ }
+
   // We only care about invitee.created (a new booking)
   if (body.event !== "invitee.created") return jr({ ok: true, ignored: body.event });
 
