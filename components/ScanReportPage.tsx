@@ -2267,6 +2267,11 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   const hairline = 'var(--color-hairline)';
   const accentInk = 'var(--color-accent-ink)';
   const painLines = CS_PAIN[cs.archetype] ?? CS_PAIN.silent_founder;
+  // Wins weld (2026-07-10): when the outreach lane stored 3 gated wins for this prospect,
+  // the page opens with THOSE (the exact ones the note/DM promised) instead of the
+  // archetype pain template the audit flagged as ungrounded.
+  const winsCards = (cs.wins ?? []).filter((w) => (w.observation || '').trim());
+  const hasWins = winsCards.length >= 3;
   const aud = (cs.audience_estimate?.value || '').trim();
   const opener = aud ? `${who}, you've built ${aud}.` : `${who}, you've built a real audience.`;
   // without an audience number the opener already says painLines[0] — skip it so the page doesn't repeat itself (4/6 live scans showed the dup, 2026-07-10 audit)
@@ -2274,13 +2279,28 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   const leaks = (cs.leaking_signals ?? []).slice(0, 3);
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
-      <Kicker>Sound familiar?</Kicker>
+      <Kicker>{hasWins ? 'The three wins' : 'Sound familiar?'}</Kicker>
       <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{opener}</motion.p>
+      {hasWins ? (
+        <div className="mt-7 space-y-6">
+          {winsCards.slice(0, 3).map((w, i) => (
+            <motion.div key={i} className="flex gap-4 items-baseline" initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.08, 0.3) }}>
+              <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.6rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 24 }}>{i + 1}</span>
+              <div>
+                <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.22, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{w.observation}</p>
+                {w.build && <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.5, color: '#5A5752' }}>{w.build}</p>}
+              </div>
+            </motion.div>
+          ))}
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>The three from my note. Pulled from your own material before this page was built.</p>
+        </div>
+      ) : (
       <div className="mt-6 space-y-4">
         {shownPainLines.map((l, i) => (
           <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>{l}</motion.p>
         ))}
       </div>
+      )}
       {leaks.length > 0 && (
         <motion.div className="mt-12 p-7 lg:p-8" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }} style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
           <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Looking at your LinkedIn, three things stood out</p>

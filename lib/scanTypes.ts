@@ -41,6 +41,9 @@ export interface ContentSystem {
   //  no_capture     — posts but nothing converts readers to leads (leaking demand)
   //  invisible      — barely on LinkedIn / no owned attention at all
   archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible';
+  // The outreach lane's fabrication-gated "3 first wins" (gift note / DM1); when present the
+  // page opens with these instead of the archetype pain template.
+  wins?: { observation: string; build: string }[];
   // The content engine + lead magnets run off the FOUNDER's personal brand (this offer only
   // routes when the prospect is the owner/founder), so the page speaks to them personally.
   founder?: { name: string; first_name?: string; headline?: string; avatar_url?: string } | null;
