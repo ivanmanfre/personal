@@ -201,7 +201,7 @@ const NewsletterMock: React.FC = () => (
         <FauxLine w="52%" />
       </div>
       <div style={{ borderTop: '1px solid var(--color-hairline)', paddingTop: 12, marginTop: 2 }}>
-        <CardNote>Delivered to 2,400 subscribers</CardNote>
+        <CardNote>Delivered to your whole list</CardNote>
       </div>
     </div>
   </div>

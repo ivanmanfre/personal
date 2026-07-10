@@ -1512,7 +1512,7 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
 
       {receipts.length > 0 && (
         <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
-          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Read from your public presence today</p>
           <div className="flex flex-wrap gap-2.5">
             {receipts.map((r, i) => (
               <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
@@ -2252,7 +2252,7 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
               ))}
             </div>
             <div className="mt-4 pt-3.5 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
-              <span>{lm?.title ? '5 posts + 1 lead magnet' : '5 posts a week'}</span>
+              <span>{lm?.title ? `${postItems.length || 4} posts + 1 lead magnet` : 'a week of posts'}</span>
               <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>in your voice</span>
             </div>
           </div>
@@ -2269,13 +2269,15 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   const painLines = CS_PAIN[cs.archetype] ?? CS_PAIN.silent_founder;
   const aud = (cs.audience_estimate?.value || '').trim();
   const opener = aud ? `${who}, you've built ${aud}.` : `${who}, you've built a real audience.`;
+  // without an audience number the opener already says painLines[0] — skip it so the page doesn't repeat itself (4/6 live scans showed the dup, 2026-07-10 audit)
+  const shownPainLines = aud ? painLines : painLines.slice(1);
   const leaks = (cs.leaking_signals ?? []).slice(0, 3);
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
       <Kicker>Sound familiar?</Kicker>
       <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{opener}</motion.p>
       <div className="mt-6 space-y-4">
-        {painLines.map((l, i) => (
+        {shownPainLines.map((l, i) => (
           <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>{l}</motion.p>
         ))}
       </div>
@@ -2884,7 +2886,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       client: 'Kyle Hunt', role: 'Agency Operators · founder',
       portraits: [{ src: '/content-system/kyle-portrait.webp', name: 'Kyle Hunt', pos: '50% 24%' }],
       quote: ['It writes every post and guide in ', 'my voice', '. I approve, and it ships.'],
-      result: 'Kyle scaled from $30k/mo to $60k/mo with us.',
+      result: 'Kyle scaled from $30k/mo to $80k/mo with us.',
       src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's inbound engine running in the system",
       metrics: [{ value: '30K', label: 'impressions per post' }, { value: '~300', label: 'comments on a lead-magnet post' }, { value: '100%', label: 'of his content, run by the system' }],
     },
@@ -2901,7 +2903,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     { q: 'Ivan is one of those rare builders who actually ships. The system runs exactly as promised and the output sounds like me, not a robot.', n: 'Adeeb Mohammed', r: 'Software Engineer · ex-Amazon · Meta' },
     { q: 'He turned our content into a real pipeline. The lead magnets alone book us calls every week.', n: 'Camille Haas', r: 'Founder' },
     { q: 'Fast, clear, and genuinely good taste. The work looks premium and it just works.', n: 'Rodrigo Ibañez', r: 'Agency owner' },
-    { q: 'We went from posting sometimes to showing up every day, in our voice. Game changer.', n: 'Cristian Trif', r: 'Operator' },
+    { q: 'We went from posting sometimes to showing up every day, in our voice.', n: 'Cristian Trif', r: 'Operator' },
   ];
 
   return (
@@ -3032,7 +3034,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
         <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
-        <div className="mt-12 space-y-20 lg:space-y-24">
+        {/* overflowX clip: the ±80px slide-in initial states sit outside the viewport until
+            their reveal fires, widening the page 64px sideways on phones (2026-07-10 audit) */}
+        <div className="mt-12 space-y-20 lg:space-y-24" style={{ overflowX: 'clip' }}>
           {cases.map((c, idx) => {
             const two = c.portraits.length > 1;
             const flip = idx % 2 === 1; // alternate sides: Kyle left, Lemonade right
@@ -3048,8 +3052,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 >
                   {two ? (
                     <div style={{ position: 'relative', width: '100%', maxWidth: 430, height: 360 }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, width: 238, zIndex: 2 }}><ProofPortrait {...c.portraits[0]} rotate={-5} aspect="5 / 7" /></div>
-                      <div style={{ position: 'absolute', left: 200, top: 34, width: 224, zIndex: 1 }}><ProofPortrait {...c.portraits[1]} rotate={4} aspect="5 / 7" /></div>
+                      <div style={{ position: 'absolute', left: 0, top: 0, width: '55.3%', zIndex: 2 }}><ProofPortrait {...c.portraits[0]} rotate={-5} aspect="5 / 7" /></div>
+                      {/* % of the fluid wrapper (was px calibrated to maxWidth 430) — px offsets overflowed 65-85px past the 390px viewport on every scan (2026-07-10 audit) */}
+                      <div style={{ position: 'absolute', left: '46.5%', top: 34, width: '52.1%', zIndex: 1 }}><ProofPortrait {...c.portraits[1]} rotate={4} aspect="5 / 7" /></div>
                     </div>
                   ) : (
                     <div style={{ width: '100%', maxWidth: 340 }}><ProofPortrait {...c.portraits[0]} rotate={-5} /></div>
@@ -3119,7 +3124,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>The system</Kicker>
         <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-          Not <Italic>"AI writes my posts."</Italic> A system that runs your whole presence.
+          One system runs your <Italic>whole presence</Italic>, end to end.
         </h2>
         {cs.system?.summary && <SerifBody className="mt-4 max-w-2xl">{cs.system.summary}</SerifBody>}
         <div className="mt-10">

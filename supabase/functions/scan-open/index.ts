@@ -20,7 +20,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "content-type, authorization, apikey",
+  // x-client-info + x-supabase-api-version: supabase-js functions.invoke() always
+  // sends them; omitting them here CORS-killed every beacon (2026-07-10 audit).
+  "Access-Control-Allow-Headers":
+    "content-type, authorization, apikey, x-client-info, x-supabase-api-version",
   "Access-Control-Max-Age": "86400",
   "Content-Type": "application/json",
 };
