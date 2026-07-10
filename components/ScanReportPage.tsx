@@ -11,8 +11,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import { gradeColor } from '../lib/scanApi';
-import { PROMISES, SYSTEM_FLOW, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
-import SystemFlowDiagram from './SystemFlowDiagram';
+import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
@@ -2213,6 +2212,11 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
             ))}
           </motion.ul>
           <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book the free fit call" /></motion.div>
+          {/* One real receipt on screen 1 (2026-07-10 audit #11) — same verified Kyle number as the case study below. */}
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.18, duration: 0.7, ease: EASE }} className="mt-6 flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.08em', color: 'rgba(26,26,26,0.62)' }}>
+            <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+            Kyle Hunt scaled $30k/mo to $80k/mo on this engine
+          </motion.p>
         </div>
         {/* RIGHT — the founder's actual drafted week, rendered: real posts + the real lead-magnet cover */}
         <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
@@ -2886,7 +2890,21 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // prospect's own accent + logo so each reads as THEIR owned asset, not a template.
   const prospectAccent = cs.sample_output?.lm?.brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
   const prospectLogo = cs.sample_output?.lm?.brand?.logo_url || undefined;
-  const feedSpec = buildFeedSpecFromContentSystem(cs, { companyName });
+  // Attention budget (2026-07-10 audit #8): two posts run full-size in the feed — the first
+  // visual one (image/carousel) plus the next in week order — and the rest collapse to a
+  // hook strip under the feed. Same drafted week, roughly a screen and a half less scroll.
+  type CsPost = NonNullable<NonNullable<ContentSystem['sample_output']>['posts']>[number];
+  const weekPosts: CsPost[] = (cs.sample_output?.posts ?? []).filter((p) => !/lead.?magnet/i.test(p.format || ''));
+  const isVisualPost = (p: CsPost) => Boolean(p.image_url) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2);
+  const firstVisual = weekPosts.find(isVisualPost);
+  const featuredPosts = (firstVisual ? [firstVisual, ...weekPosts.filter((p) => p !== firstVisual)] : weekPosts)
+    .slice(0, 2)
+    .sort((a, b) => weekPosts.indexOf(a) - weekPosts.indexOf(b));
+  const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p));
+  const feedSpec = buildFeedSpecFromContentSystem(
+    cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: featuredPosts } } : cs,
+    { companyName },
+  );
   // When the LM is a live, results-forward assessment we can embed, signal that everywhere
   // (the card stops reading as a static PDF) and reuse the same URL in the modal.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
@@ -2966,7 +2984,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               {mockMetrics.length > 0 && (
                 <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
                   {mockMetrics.map((m, i) => (
-                    <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
+                    // px-3 at base (2026-07-10 audit #10): three px-5 cells left ~86px of copy at 390px
+                    <div key={i} className="px-3 py-4 sm:px-5 sm:py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
                       <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
                       <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
                       {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
@@ -2975,8 +2994,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
               )}
               {feedSpec.posts.length > 0 && (
-                <div className="px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
+                // px-2 at base (2026-07-10 audit #10): the 552px cards were double-inset at 390px
+                <div className="px-2 sm:px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
                   <LinkedInFeedMockup spec={feedSpec} mode="full" />
+                  {restOfWeek.length > 0 && (
+                    <div className="mt-4 grid gap-2.5 sm:grid-cols-2 max-w-[552px] sm:max-w-none mx-auto">
+                      {restOfWeek.map((p, i) => (
+                        <div key={i} className="px-4 py-3.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: '1px solid var(--color-hairline)' }}>
+                          <div className="mb-1.5 flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>
+                            <span aria-hidden style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} />
+                            Also drafted this week · {isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}
+                          </div>
+                          <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: '#1A1A1A' }}>{p.hook || (p.body || '').split('\n')[0]}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {/* Receipts (2026-07-10): the builder gates every post on a verbatim transcript
@@ -3029,6 +3062,15 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
             </motion.button>
           )}
+
+          {/* Mid-page CTA (2026-07-10 audit #9): the drafted week is the sell — catch the
+              sold reader here instead of one appearing only ~12k px later at the footer. */}
+          <div className="mt-10 pt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5" style={{ borderTop: `1px solid ${hairline}` }}>
+            <p className="max-w-md" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem, 2.4vw, 1.7rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+              This week is already drafted, {who}. The fit call is where it goes live.
+            </p>
+            <div className="shrink-0"><BookButton label="Book the free fit call" small /></div>
+          </div>
         </section>
       )}
 
@@ -3173,30 +3215,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               className="pl-4" style={{ borderLeft: '2px solid var(--color-accent)' }}>
               <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.2, color: '#1A1A1A' }}>{p.headline}</h3>
               <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ONE IDEA IN -> WHOLE FUNNEL OUT — the interactive fan-out animation from the landing */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.8rem, 3.4vw, 2.6rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>One idea in. <Italic>Your whole funnel out.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>The same engine runs the entire loop, end to end. You only ever touch one step.</p>
-        {/* desktop: the interactive fan-out diagram (its reveal is gated to >=1024px) */}
-        <motion.div className="mt-10 p-4 sm:p-6 md:p-8 hidden lg:block" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
-          style={{ borderRadius: 28, border: `1px solid ${hairline}`, background: 'var(--color-paper-sunk, #EFEAE2)', boxShadow: CI_SHADOW_LG }}>
-          <SystemFlowDiagram />
-        </motion.div>
-        {/* mobile: clean stacked steps (the diagram does not reveal below lg) */}
-        <div className="mt-9 lg:hidden grid gap-3">
-          {SYSTEM_FLOW.map((s, i) => (
-            <motion.div key={s.n} initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.45, ease: EASE, delay: i * 0.06 }}
-              className="flex gap-3.5 p-4" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <span aria-hidden style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.45rem', lineHeight: 1, color: 'var(--color-accent)', flexShrink: 0, minWidth: 30 }}>{s.n}</span>
-              <div>
-                <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.25, color: '#1A1A1A' }}>{s.title}</h3>
-                <p className="mt-1" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{s.body}</p>
-              </div>
             </motion.div>
           ))}
         </div>
