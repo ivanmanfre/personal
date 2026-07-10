@@ -73,7 +73,7 @@ const StartPage: React.FC = () => {
   useMetadata({
     title: 'Book a call | Manfredi',
     description: 'Answer 7 quick questions to help me come prepared. Filters for decision-maker, timeline, and budget fit so we don\'t waste each other\'s 30 minutes.',
-    canonical: 'https://ivanmanfredi.com/start',
+    canonical: 'https://inboundonsteroids.com/',
   });
   const [step, setStep] = useState<'form' | 'approved' | 'waitlist'>('form');
   const [qStep, setQStep] = useState(0);
@@ -228,6 +228,12 @@ const StartPage: React.FC = () => {
           </h1>
           <p className="text-ink-soft leading-relaxed">
             Two minutes. This helps me come prepared and stops us both from wasting 30 minutes if we're not a fit.
+          </p>
+          <p className="text-ink-soft leading-relaxed mt-3 text-sm">
+            The full system, on the record:{' '}
+            <a href="https://inboundonsteroids.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-black">
+              inboundonsteroids.com
+            </a>
           </p>
         </motion.div>
 

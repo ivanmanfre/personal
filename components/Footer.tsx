@@ -214,6 +214,16 @@ const Footer: React.FC = () => {
         >
           <p>© {new Date().getFullYear()} Iván Manfredi · All rights reserved</p>
           <div className="flex gap-7">
+            <a
+              href="https://inboundonsteroids.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'rgba(26,26,26,0.55)', transition: 'color 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.55)')}
+            >
+              InboundOnSteroids
+            </a>
             <Link
               to="/store"
               style={{ color: 'rgba(26,26,26,0.55)', transition: 'color 0.15s' }}
