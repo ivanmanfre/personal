@@ -3009,6 +3009,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {cs.sample_output?.engager_outreach?.samples?.length ? (
         <SectionIntro kicker="Then it books calls" title={<>Reactions to your posts <Italic>turn into conversations.</Italic></>}>
           <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
+          {/* Governance strip: how the lane stays safe on the prospect's account.
+              Numbers are measurements from our own lanes, never a promised result. */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3">
+            {[
+              'Warm only · people who engaged you',
+              '~15 connect requests a week, capped',
+              '27% warm acceptance in our lanes · cold sits near 14%',
+              'Every first DM approved by you',
+              'DMs can carry a resource built for that prospect, like this one',
+            ].map((t) => (
+              <span key={t} className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.62)' }}>
+                <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
+                {t}
+              </span>
+            ))}
+          </div>
         </SectionIntro>
       ) : null}
 
