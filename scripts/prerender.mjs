@@ -33,7 +33,7 @@
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import http from 'node:http';
@@ -42,6 +42,18 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const DIST = join(ROOT, 'dist');
 const HOST = '127.0.0.1';  // explicit IPv4 — CI runners can resolve 'localhost' to ::1, breaking playwright
+
+// Local runs: Node doesn't auto-load .env, so the dynamic scan/board enumeration
+// below silently degraded to the static ROUTES list outside CI (CI exports these
+// as step env — see .github/workflows/deploy.yml). Backfill missing vars from the
+// repo .env so `npm run build:prerender` behaves the same locally as in CI.
+// Exported env always wins; absent .env (the CI path) is a clean no-op.
+try {
+  for (const line of readFileSync(join(ROOT, '.env'), 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^(["'])(.*)\1$/, '$2');
+  }
+} catch { /* no .env — CI provides env directly */ }
 
 // Routes to pre-render — priority order from A08-R01.
 // Each route's <head> already comes from useMetadata(); we just freeze
