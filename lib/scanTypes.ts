@@ -51,7 +51,7 @@ export interface ContentSystem {
   system: { summary: string; capabilities: string[] };
   sample_output?: {
     title: string;
-    posts?: { format: string; hook: string; body?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel';
+    posts?: { format: string; hook: string; body?: string; source_quote?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel';
       // Text-carousel slides (heading + body cards) drafted for a Carousel-format post.
       slides?: { heading: string; body: string }[] }[];
     metrics?: { label: string; value: string; delta?: string | null }[];

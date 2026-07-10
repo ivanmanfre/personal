@@ -2959,6 +2959,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   <LinkedInFeedMockup spec={feedSpec} mode="full" />
                 </div>
               )}
+              {/* Receipts (2026-07-10): the builder gates every post on a verbatim transcript
+                  quote; when those quotes exist, show them — proof we read, not mail-merged. */}
+              {(() => {
+                const receipts = (cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[];
+                if (!receipts.length) return null;
+                return (
+                  <div className="px-4 lg:px-6 py-5" style={{ borderTop: '1px solid var(--color-hairline)' }}>
+                    <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Each post above grew from your own words</p>
+                    <ul className="mt-3 space-y-2">
+                      {receipts.slice(0, 4).map((q, i) => (
+                        <li key={i} style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#5A5752' }}>“{q}”</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
             </div>
           </motion.div>
 
