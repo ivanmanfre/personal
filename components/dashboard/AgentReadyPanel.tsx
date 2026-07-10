@@ -360,6 +360,12 @@ const BlueprintDraftBlock: React.FC<{ sessionId: string }> = ({ sessionId }) => 
   useEffect(() => { void refresh(); }, [sessionId]);
 
   const generateV1 = async () => {
+    // Blueprint generation retired 2026-07-10 (offer replaced by the $2k inbound
+    // engine; wf zfSvH4mgXqWwkchu deactivated + prompt row is_active=false).
+    // Reactivate both to restore before removing this guard.
+    setGenError('Blueprint generation retired 2026-07-10. Existing blueprints stay readable via Open.');
+    return;
+    // eslint-disable-next-line no-unreachable
     setGenerating(true);
     setGenError(null);
     try {

@@ -135,6 +135,11 @@ const BlueprintEditor: React.FC = () => {
 
   const generateV2 = useCallback(async () => {
     if (!sessionId) return;
+    // Blueprint generation retired 2026-07-10 (offer replaced by the $2k inbound
+    // engine; wf zfSvH4mgXqWwkchu deactivated + prompt row is_active=false).
+    // Reactivate both to restore before removing this guard.
+    setGenError('Blueprint generation retired 2026-07-10. Existing blueprints stay readable and editable.');
+    if (sessionId) return;
     if (!callNotes.trim()) {
       setGenError('Add call notes before generating v2.');
       return;
