@@ -6,7 +6,7 @@ import { T, ease, inView, prefersReduced, Label, RevealH2, SageSweep, MagneticCT
 import { HeroVideo } from './HeroVideo';
 import { SystemFlowDiagram } from './SystemFlowDiagram';
 import { FivePillarLoop } from './FivePillarLoop';
-import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE, ICP_GATE, ONGOING } from '../lib/contentSystemContent';
+import { PROMISES, METRICS, LM_FORMATS, LM_PROMISES, SCOPE, ICP_GATE, ONGOING, GOVERNANCE } from '../lib/contentSystemContent';
 
 /** Scroll-reveal wrapper with staggered delay. */
 function Reveal({ children, i = 0, className }: { children: React.ReactNode; i?: number; className?: string }) {
@@ -534,6 +534,42 @@ export default function ContentSystemPage() {
           </p>
           <ul className="space-y-3">
             {ONGOING.items.map((s) => (
+              <li
+                key={s}
+                className="flex items-start gap-3 text-[15px] md:text-base text-ink-soft leading-relaxed"
+              >
+                <ArrowRight aria-hidden="true" size={16} className="mt-1 shrink-0 text-accent-ink" />
+                {s}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 9c — ACCOUNT SAFETY: how the engager lane is governed. Numbers are
+            measurements from our own lanes (see GOVERNANCE in contentSystemContent),
+            shown as how we run it, never a promised client result. */}
+        <section className="mb-16 md:mb-24">
+          <Label>Account safety</Label>
+          <RevealH2 style={{ ...T.display('clamp(2rem,4vw,3rem)'), margin: '1rem 0 1rem' }}>
+            Outreach that keeps your account{' '}
+            <span style={{ position: 'relative', display: 'inline-block' }}>
+              safe.
+              <SageSweep delay={0.4} opacity={0.85} />
+            </span>
+          </RevealH2>
+          <p className="max-w-2xl text-lg text-ink-soft leading-relaxed mb-10">
+            {GOVERNANCE.lead}
+          </p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {GOVERNANCE.stats.map((s) => (
+              <div key={s.value} className="border-l-2 border-accent pl-6">
+                <div className="font-drama italic text-4xl md:text-5xl text-accent-ink leading-none">{s.value}</div>
+                <p className="mt-3 text-[15px] text-ink-soft leading-relaxed">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="mt-10 space-y-3">
+            {GOVERNANCE.notes.map((s) => (
               <li
                 key={s}
                 className="flex items-start gap-3 text-[15px] md:text-base text-ink-soft leading-relaxed"
