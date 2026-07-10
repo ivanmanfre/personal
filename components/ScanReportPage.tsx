@@ -10,7 +10,6 @@ import { useMetadata } from '../hooks/useMetadata';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
-import { gradeColor } from '../lib/scanApi';
 import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import NewsletterMockup from './ui/NewsletterMockup';
@@ -24,10 +23,60 @@ import { trackScanOpen } from '../lib/scanOpenTracker';
 
 const CALENDLY_BASE = 'https://calendly.com/im-ivanmanfredi/30min';
 
-const SERIF = '"DM Serif Display", "Bodoni Moda", Georgia, serif';
+const SERIF = '"Schibsted Grotesk", system-ui, -apple-system, sans-serif';
 const BODY_SERIF = '"Source Serif 4", Georgia, serif';
-const MONO = '"IBM Plex Mono", monospace';
+const MONO = '"Schibsted Grotesk", system-ui, -apple-system, sans-serif';
 const EASE = [0.22, 0.84, 0.36, 1] as const;
+
+// ── Black Box scope ────────────────────────────────────────────────────────────
+// Ratified v4 "Black Box" restyle. Scoped CSS-var overrides applied to every scan
+// report root so the whole page reads as the FDA boxed-warning grammar: paper white,
+// ink #131210, one signal red (the wordmark ON only), flat sharp corners, no shadows.
+// Overriding the theme vars here re-skins Tailwind utilities (bg-paper, text-ink,
+// border-hairline, rounded-*, shadow-*) AND inline var(--color-*) usages in one place.
+const INK = '#131210';
+const RED = '#C8361B';
+const PAPER = '#FFFFFF';
+const MUTED = '#6B675E';
+const SEC = '#4A463E';
+const HAIR = '#C9C2B2';
+const BLACKBOX_VARS: React.CSSProperties = {
+  ['--color-paper' as any]: PAPER,
+  ['--color-paper-sunk' as any]: PAPER,
+  ['--color-paper-raise' as any]: PAPER,
+  ['--color-ink' as any]: INK,
+  ['--color-ink-soft' as any]: SEC,
+  ['--color-ink-mute' as any]: MUTED,
+  ['--color-hairline' as any]: HAIR,
+  ['--color-hairline-bold' as any]: INK,
+  ['--color-accent' as any]: INK,
+  ['--color-accent-light' as any]: INK,
+  ['--color-accent-ink' as any]: INK,
+  ['--color-accent-soft' as any]: 'rgba(19,18,16,0.06)',
+  ['--radius' as any]: '0px',
+  ['--radius-sm' as any]: '0px',
+  ['--radius-md' as any]: '0px',
+  ['--radius-lg' as any]: '0px',
+  ['--radius-xl' as any]: '0px',
+  ['--radius-2xl' as any]: '0px',
+  ['--shadow-card' as any]: 'none',
+  ['--shadow-card-hover' as any]: 'none',
+  ['--shadow-card-subtle' as any]: 'none',
+  ['--shadow-card-lift' as any]: 'none',
+  ['--shadow-card-active' as any]: 'none',
+  ['--shadow-card-sm' as any]: 'none',
+  ['--shadow-card-sm-hover' as any]: 'none',
+  ['--shadow-card-sm-active' as any]: 'none',
+  background: PAPER,
+};
+
+// Product wordmark. One line, never stacked; ON is always weight 900 and red, the rest
+// weight 500. This red is the composition's single red.
+const Wordmark: React.FC<{ size?: number; className?: string }> = ({ size = 20, className }) => (
+  <span className={className} style={{ fontFamily: SERIF, fontWeight: 500, letterSpacing: '-0.02em', fontSize: size, lineHeight: 1, color: INK, whiteSpace: 'nowrap', textTransform: 'none' }}>
+    INBOUND<span style={{ fontWeight: 900, color: RED }}>ON</span>STEROIDS
+  </span>
+);
 
 // ── Editorial primitives ──────────────────────────────────────────────────────
 
@@ -64,7 +113,7 @@ const SectionAnswer: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'dar
     fontFamily: BODY_SERIF, fontWeight: 600,
     fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.45,
     letterSpacing: '-0.005em',
-    color: tone === 'dark' ? 'rgba(247,244,239,0.88)' : '#1A1A1A',
+    color: tone === 'dark' ? 'rgba(255,255,255,0.88)' : '#131210',
   }}>
     {children}
   </p>
@@ -77,8 +126,8 @@ const CardPanel: React.FC<{ children: React.ReactNode; className?: string; tone?
   <div
     className={`${className}`}
     style={{
-      background: tone === 'dark' ? 'rgba(247,244,239,0.04)' : '#ECE7DC',
-      border: tone === 'dark' ? '1px solid rgba(247,244,239,0.10)' : '1px solid rgba(26,26,26,0.06)',
+      background: tone === 'dark' ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+      border: tone === 'dark' ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(19,18,16,0.06)',
       padding: 'clamp(20px, 2.2vw, 32px)',
     }}
   >
@@ -97,7 +146,7 @@ const OpportunityBarChart: React.FC<{ opps: Opportunity[] }> = ({ opps }) => {
   if (max <= 0) return null;
   return (
     <CardPanel className="mb-12">
-      <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)', fontWeight: 600 }}>
+      <p className="mb-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)', fontWeight: 600 }}>
         {opps.length} opportunities at a glance · ranked by build-readiness
       </p>
       <div className="space-y-3">
@@ -108,29 +157,29 @@ const OpportunityBarChart: React.FC<{ opps: Opportunity[] }> = ({ opps }) => {
             <div key={i} className="flex items-center gap-4">
               <p className="flex-shrink-0 flex items-center gap-2" style={{
                 width: 'clamp(160px, 24vw, 260px)',
-                fontFamily: BODY_SERIF, fontSize: '14px', color: '#1A1A1A', lineHeight: 1.3,
+                fontFamily: BODY_SERIF, fontSize: '14px', color: '#131210', lineHeight: 1.3,
               }}>
-                <span style={{ fontFamily: MONO, fontSize: '11px', color: isTop ? 'var(--color-accent)' : 'rgba(26,26,26,0.45)', fontWeight: 600 }}>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: isTop ? 'var(--color-accent)' : 'rgba(19,18,16,0.45)', fontWeight: 600 }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <span>{o.title.length > 32 ? o.title.slice(0, 30) + '…' : o.title}</span>
               </p>
-              <div className="flex-1" style={{ height: 18, background: 'rgba(26,26,26,0.06)', position: 'relative' }}>
+              <div className="flex-1" style={{ height: 18, background: 'rgba(19,18,16,0.06)', position: 'relative' }}>
                 <motion.div
                   initial={reduceMotion ? false : { scaleX: 0 }}
                   whileInView={{ scaleX: pct }}
                   viewport={{ once: true, margin: '-30px' }}
                   transition={{ duration: 0.8, ease: EASE, delay: 0.1 + i * 0.08 }}
-                  style={{ height: '100%', background: isTop ? 'var(--color-accent)' : 'rgba(76,110,61,0.5)', transformOrigin: 'left' }}
+                  style={{ height: '100%', background: isTop ? 'var(--color-accent)' : 'rgba(19,18,16,0.5)', transformOrigin: 'left' }}
                 />
               </div>
               <p className="flex-shrink-0 text-right" style={{
                 width: '110px',
-                fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px',
-                color: isTop ? 'var(--color-accent)' : 'rgba(26,26,26,0.7)',
+                fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '20px',
+                color: isTop ? 'var(--color-accent)' : 'rgba(19,18,16,0.7)',
                 fontVariantNumeric: 'tabular-nums',
               }}>
-                ${(o.estimated_monthly_cost || 0).toLocaleString()}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(26,26,26,0.5)', fontStyle: 'normal', marginLeft: 2 }}>/mo</span>
+                ${(o.estimated_monthly_cost || 0).toLocaleString()}<span style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(19,18,16,0.5)', fontStyle: 'normal', marginLeft: 2 }}>/mo</span>
               </p>
             </div>
           );
@@ -163,7 +212,7 @@ const CompanyLogo: React.FC<{ logoUrl: string | null; domain: string | null }> =
       alt=""
       loading="lazy"
       className="w-16 h-16 object-contain mb-6"
-      style={{ background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 6 }}
+      style={{ background: '#fff', border: '1px solid rgba(19,18,16,0.08)', padding: 6 }}
       onError={() => setIdx((i) => i + 1)}
     />
   );
@@ -238,7 +287,7 @@ export const Emphasized: React.FC<{ children: string }> = ({ children }) => {
     <>
       {parts.map((p, i) => {
         if (p.startsWith('**') && p.endsWith('**')) {
-          return <strong key={i} style={{ fontWeight: 600, color: '#1A1A1A' }}>{p.slice(2, -2)}</strong>;
+          return <strong key={i} style={{ fontWeight: 600, color: '#131210' }}>{p.slice(2, -2)}</strong>;
         }
         return <React.Fragment key={i}>{p}</React.Fragment>;
       })}
@@ -329,11 +378,11 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   <h2
     style={{
       fontFamily: SERIF,
-      fontWeight: 400,
+      fontWeight: 800,
       fontSize: 'clamp(1.875rem, 3.4vw, 2.75rem)',
       lineHeight: 1.05,
       letterSpacing: '-0.02em',
-      color: '#1A1A1A',
+      color: '#131210',
     }}
   >
     {children}
@@ -348,8 +397,8 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // rules on each side so they read as "between sections" not "inside a section".
 const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' }> = ({ children, tone = 'paper' }) => {
   const reduceMotion = useReducedMotion();
-  const proseColor = tone === 'sage' ? 'rgba(76,110,61,0.85)' : 'rgba(26,26,26,0.65)';
-  const ruleColor = tone === 'sage' ? 'rgba(76,110,61,0.3)' : 'rgba(26,26,26,0.15)';
+  const proseColor = tone === 'sage' ? 'rgba(19,18,16,0.85)' : 'rgba(19,18,16,0.65)';
+  const ruleColor = tone === 'sage' ? 'rgba(19,18,16,0.3)' : 'rgba(19,18,16,0.15)';
   return (
     <motion.div
       initial={reduceMotion ? false : { opacity: 0, y: 8 }}
@@ -367,7 +416,7 @@ const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' 
         <div className="hidden sm:flex items-center gap-6">
           <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: ruleColor }} />
           <p style={{
-            fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+            fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400,
             fontSize: 'clamp(1.125rem, 1.7vw, 1.375rem)', lineHeight: 1.4,
             letterSpacing: '-0.005em', color: proseColor, textAlign: 'center',
             flexShrink: 1, maxWidth: '480px',
@@ -378,7 +427,7 @@ const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' 
         </div>
         {/* Mobile-only: text spans full width, centered, no flanking rules */}
         <p className="sm:hidden" style={{
-          fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+          fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400,
           fontSize: '17px', lineHeight: 1.45,
           letterSpacing: '-0.005em', color: proseColor, textAlign: 'center',
           padding: '0 16px',
@@ -392,9 +441,9 @@ const Transition: React.FC<{ children: React.ReactNode; tone?: 'paper' | 'sage' 
   );
 };
 
-// ReframeBand — sage-tinted full-bleed band for the load-bearing "but here's what you missed"
-// section (§3). Designed to be the visual hinge — different palette, different rhythm than
-// surrounding paper sections, so the reader feels the chapter break before reading it.
+// ReframeBand — THE BOX. The load-bearing §3 "scan result" verdict, rendered as the house
+// component: heavy 4px rule + 1px outline offset 3px, printed on paper, rotated -0.6deg.
+// This is the one rotated box on the page (the human move); every other box sits square.
 const ReframeBand: React.FC<{ kicker: string; children: React.ReactNode; id?: string }> = ({ kicker, children, id }) => {
   const reduceMotion = useReducedMotion();
   return (
@@ -404,19 +453,30 @@ const ReframeBand: React.FC<{ kicker: string; children: React.ReactNode; id?: st
       whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: 0.8, ease: EASE }}
-      className="py-20 lg:py-28"
-      style={{
-        background: 'linear-gradient(180deg, rgba(76,110,61,0.06) 0%, rgba(76,110,61,0.10) 100%)',
-        borderTop: '1px solid rgba(76,110,61,0.18)',
-        borderBottom: '1px solid rgba(76,110,61,0.18)',
-        scrollMarginTop: 80,
-      }}
+      className="py-16 lg:py-24"
+      style={{ scrollMarginTop: 80 }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <div className="mb-8">
-          <Kicker section={3}>{kicker}</Kicker>
+        <div
+          style={{
+            border: `4px solid ${INK}`,
+            outline: `1px solid ${INK}`,
+            outlineOffset: 3,
+            background: PAPER,
+            padding: 'clamp(20px,3vw,34px) clamp(20px,3vw,36px) clamp(24px,3.4vw,38px)',
+            transform: reduceMotion ? 'none' : 'rotate(-0.6deg)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 'clamp(14px,1.8vw,18px)', borderBottom: `2px solid ${INK}` }}>
+            <span aria-hidden style={{ width: 17, height: 17, background: INK, flexShrink: 0 }} />
+            <span style={{ fontFamily: SERIF, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 'clamp(11px,1.5vw,14px)', lineHeight: 1.25, color: INK }}>
+              Scan result: {kicker}
+            </span>
+          </div>
+          <div className="mt-4 lg:mt-5">
+            {children}
+          </div>
         </div>
-        {children}
       </div>
     </motion.section>
   );
@@ -433,11 +493,11 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
         <RevealHeadline
           style={{
             fontFamily: SERIF,
-            fontWeight: 400,
+            fontWeight: 800,
             fontSize: 'clamp(2.5rem, 4.5vw, 3.5rem)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
-            color: '#1A1A1A',
+            color: '#131210',
           }}
         >
           {title}
@@ -452,10 +512,10 @@ const Section: React.FC<{ kicker: string; title: React.ReactNode; children: Reac
 const Italic: React.FC<{ children: React.ReactNode; highlight?: boolean }> = ({ children, highlight = false }) => {
   const reduceMotion = useReducedMotion();
   if (!highlight) {
-    return <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{children}</span>;
+    return <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK }}>{children}</span>;
   }
   return (
-    <span style={{ fontStyle: 'italic', position: 'relative', color: '#1A1A1A' }}>
+    <span style={{ fontStyle: 'italic', position: 'relative', color: '#131210' }}>
       {children}
       <motion.span
         aria-hidden
@@ -489,7 +549,7 @@ const SerifBody: React.FC<{ children: React.ReactNode; large?: boolean; classNam
       // Bigger on desktop, slightly smaller on mobile so 45+ char/line at 390px
       fontSize: large ? 'clamp(17px, 2.4vw, 19px)' : 'clamp(15.5px, 2.2vw, 17px)',
       lineHeight: 1.65,
-      color: '#3D3D3B',
+      color: '#4A463E',
       fontWeight: 400,
       // W2.4 — cap line length at ~68ch per Visual spec (Tufte/Refactoring UI optimal). Callers
       // that pass max-w-* override via Tailwind cascade. Without this, long-form paragraphs
@@ -505,9 +565,9 @@ const Chip: React.FC<{ label: string; variant?: 'found' | 'missing' | 'neutral' 
   label, variant = 'neutral',
 }) => {
   const styles =
-    variant === 'found' ? { color: 'var(--color-accent)', borderColor: 'rgba(76,110,61,0.25)', background: 'rgba(76,110,61,0.06)' } :
-    variant === 'missing' ? { color: '#A85439', borderColor: 'rgba(168,84,57,0.25)', background: 'rgba(168,84,57,0.05)' } :
-    { color: 'rgba(26,26,26,0.7)', borderColor: 'rgba(26,26,26,0.12)', background: 'transparent' };
+    variant === 'found' ? { color: 'var(--color-accent)', borderColor: 'rgba(19,18,16,0.25)', background: 'rgba(19,18,16,0.06)' } :
+    variant === 'missing' ? { color: '#131210', borderColor: 'rgba(19,18,16,0.25)', background: 'rgba(19,18,16,0.05)' } :
+    { color: 'rgba(19,18,16,0.7)', borderColor: 'rgba(19,18,16,0.12)', background: 'transparent' };
   return (
     <span
       className="inline-flex items-center gap-1.5 px-3 py-1.5"
@@ -542,16 +602,15 @@ function HomepageScreenshot({ src, domain }: { src: string; domain: string }) {
       transition={{ duration: 0.7, ease: EASE }}
       className="space-y-3"
     >
-      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>
         Your homepage, captured today
       </p>
       <div
         className="overflow-hidden"
         style={{
-          border: '1px solid rgba(26,26,26,0.12)',
-          background: '#EFEAE2',
-          boxShadow: '0 8px 32px rgba(26,26,26,0.08)',
-        }}
+          border: '1px solid rgba(19,18,16,0.12)',
+          background: '#FFFFFF',
+                  }}
       >
         <img
           src={src}
@@ -589,7 +648,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
         <div className="space-y-5">
           <SerifBody large className="max-w-2xl">{company_snapshot.one_liner}</SerifBody>
           {facts.length > 0 && (
-            <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.65)' }}>
+            <div className="flex flex-wrap gap-x-6 gap-y-2" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.04em', color: 'rgba(19,18,16,0.65)' }}>
               {facts.map((f, i) => (<span key={i}>{f}</span>))}
             </div>
           )}
@@ -606,40 +665,40 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
           <div className="flex flex-wrap gap-x-12 gap-y-6 pt-2">
             {linkedin_summary?.followers != null && (
               <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>LinkedIn followers</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>LinkedIn followers</p>
+                <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#131210', marginTop: 4 }}>
                   {linkedin_summary.followers.toLocaleString()}
                 </p>
               </div>
             )}
             {linkedin_summary?.posts_30d != null && (
               <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Posts / 30d</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Posts / 30d</p>
+                <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#131210', marginTop: 4 }}>
                   {linkedin_summary.posts_30d}
                 </p>
               </div>
             )}
             {linkedin_summary?.last_post_days != null && (
               <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Last post</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: linkedin_summary.last_post_days > 30 ? '#A85439' : '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Last post</p>
+                <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: linkedin_summary.last_post_days > 30 ? '#131210' : '#131210', marginTop: 4 }}>
                   {linkedin_summary.last_post_days}d ago
                 </p>
               </div>
             )}
             {!!linkedin_summary?.ai_mentions && linkedin_summary.ai_mentions > 0 && (
               <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>AI mentions</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--color-accent)', marginTop: 4 }}>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>AI mentions</p>
+                <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--color-accent)', marginTop: 4 }}>
                   {linkedin_summary.ai_mentions}
                 </p>
               </div>
             )}
             {github && (
               <div>
-                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>GitHub repos</p>
-                <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#1A1A1A', marginTop: 4 }}>
+                <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>GitHub repos</p>
+                <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.75rem, 2.8vw, 2.25rem)', lineHeight: 1, letterSpacing: '-0.02em', color: '#131210', marginTop: 4 }}>
                   {github.repos}
                 </p>
               </div>
@@ -649,7 +708,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
 
         {/* 3. DNS verification callout — high signal, deserves prominence */}
         {(anthropic_verified || openai_verified) && (
-          <div className="px-6 py-5 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.05)' }}>
+          <div className="px-6 py-5 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(19,18,16,0.05)' }}>
             <SerifBody>
               DNS records confirm active{' '}
               <Italic>
@@ -657,7 +716,7 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
                 {anthropic_verified && openai_verified && ' + '}
                 {openai_verified && 'OpenAI'}
               </Italic>{' '}
-              API usage. The gap here isn't awareness. It's <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>deployment</strong>.
+              API usage. The gap here isn't awareness. It's <strong style={{ color: '#131210', fontWeight: 600 }}>deployment</strong>.
             </SerifBody>
           </div>
         )}
@@ -671,15 +730,15 @@ function Section1CompanyBrief({ report }: { report: ReportJson }) {
               <div className="flex flex-wrap gap-2">
                 {tech_stack_assessment.confirmed_tools.length > 0
                   ? tech_stack_assessment.confirmed_tools.map(t => <Chip key={t} label={t} variant="found" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.65)' }}>None detected</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(19,18,16,0.65)' }}>None detected</p>}
               </div>
             </div>
             <div>
-              <p style={{ fontFamily: MONO, fontSize: '10px', color: '#A85439', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>Missing</p>
+              <p style={{ fontFamily: MONO, fontSize: '10px', color: '#131210', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>Missing</p>
               <div className="flex flex-wrap gap-2">
                 {tech_stack_assessment.missing_critical_tools.length > 0
                   ? tech_stack_assessment.missing_critical_tools.slice(0, 6).map(t => <Chip key={t} label={t} variant="missing" />)
-                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(26,26,26,0.65)' }}>No critical gaps</p>}
+                  : <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(19,18,16,0.65)' }}>No critical gaps</p>}
               </div>
             </div>
           </div>
@@ -717,10 +776,10 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
       if (val != null && val > 0.005) sourceRows.push({ label, pct: val, tone });
     };
     push('Organic search', sources.search, 'var(--color-accent)');
-    push('Direct',         sources.direct, '#1A1A1A');
-    push('Referrals',      sources.referrals, 'rgba(26,26,26,0.6)');
-    push('Social',         sources.social, 'rgba(26,26,26,0.6)');
-    push('Paid',           sources.paidReferrals, '#A85439');
+    push('Direct',         sources.direct, '#131210');
+    push('Referrals',      sources.referrals, 'rgba(19,18,16,0.6)');
+    push('Social',         sources.social, 'rgba(19,18,16,0.6)');
+    push('Paid',           sources.paidReferrals, '#131210');
   }
   const topKeywords = (t?.top_keywords || []).slice(0, 5);
 
@@ -745,7 +804,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
       <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-16">
         {sourceRows.length > 0 && (
           <div>
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>
               Source breakdown
             </p>
             {/* W2.3 — Single FT/Bloomberg-style stacked horizontal bar (was 5 separate sage rectangles
@@ -753,7 +812,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
                 P0.1 fix: explicit width + flexShrink:0 so segments don't collapse on mobile when the
                 first segment is largest (was rendering with sage Organic Search empty at 390px). */}
             <div className="mt-6">
-              <div className="flex w-full" style={{ height: 28, background: 'rgba(26,26,26,0.06)' }}>
+              <div className="flex w-full" style={{ height: 28, background: 'rgba(19,18,16,0.06)' }}>
                 {sourceRows.map((row, i) => (
                   <motion.div
                     key={row.label}
@@ -767,7 +826,7 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
                       flexShrink: 0,
                       background: row.tone,
                       transformOrigin: 'left',
-                      borderRight: i < sourceRows.length - 1 ? '1px solid #F7F4EF' : 'none',
+                      borderRight: i < sourceRows.length - 1 ? '1px solid #FFFFFF' : 'none',
                     }}
                   />
                 ))}
@@ -777,10 +836,10 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
                 {sourceRows.map((row) => (
                   <li key={row.label} className="flex items-baseline gap-3">
                     <span aria-hidden style={{ display: 'inline-block', width: 10, height: 10, background: row.tone, flexShrink: 0 }} />
-                    <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A', flex: 1 }}>
+                    <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#131210', flex: 1 }}>
                       {row.label}
                     </span>
-                    <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(26,26,26,0.7)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                    <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(19,18,16,0.7)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
                       {(row.pct * 100).toFixed(0)}%
                     </span>
                   </li>
@@ -792,12 +851,12 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
 
         {topKeywords.length > 0 && (
           <div>
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>
               Top search queries
             </p>
             <ul className="mt-4 space-y-2">
               {topKeywords.map((k) => (
-                <li key={k} style={{ fontFamily: BODY_SERIF, fontSize: '16px', color: '#1A1A1A', fontStyle: 'italic' }}>
+                <li key={k} style={{ fontFamily: BODY_SERIF, fontSize: '16px', color: '#131210', fontStyle: 'italic' }}>
                   "{k}"
                 </li>
               ))}
@@ -811,8 +870,8 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
         <div className="mt-12 pt-8 border-t border-[color:var(--color-hairline)] flex flex-wrap gap-x-10 gap-y-4">
           {fundingStats.map((s) => (
             <div key={s.label}>
-              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{s.label}</p>
-              <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '24px', color: '#1A1A1A', marginTop: 2 }}>{s.display}</p>
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>{s.label}</p>
+              <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '24px', color: '#131210', marginTop: 2 }}>{s.display}</p>
             </div>
           ))}
         </div>
@@ -824,9 +883,9 @@ function SectionFundingTraffic({ report }: { report: ReportJson }) {
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 mt-6 py-3 -my-3 transition-colors"
-          style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.7)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.7)')}
+          style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.7)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#131210')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(19,18,16,0.7)')}
         >
           View Crunchbase profile <ArrowRight className="w-3 h-3" />
         </a>
@@ -857,14 +916,14 @@ function SectionStakes({ report }: { report: ReportJson }) {
       style={{ scrollMarginTop: 80 }}
     >
       <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-baseline max-w-5xl">
-        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>
           12-month cost of inaction
         </p>
         <div>
           <p style={{
-            fontFamily: SERIF, fontStyle: 'italic',
+            fontFamily: BODY_SERIF, fontStyle: 'italic',
             fontSize: 'clamp(4rem, 8vw, 6.5rem)', lineHeight: 0.92,
-            letterSpacing: '-0.035em', color: '#A85439',
+            letterSpacing: '-0.035em', color: '#131210',
             fontVariantNumeric: 'tabular-nums',
           }}>
             <Scramble value={annualDisplay} duration={0.5} />
@@ -899,9 +958,9 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
       <div className="max-w-5xl">
         <Kicker section={4}>Your #1 Gap</Kicker>
         <h2 style={{
-          fontFamily: SERIF, fontWeight: 400,
+          fontFamily: SERIF, fontWeight: 800,
           fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', lineHeight: 1.05,
-          letterSpacing: '-0.025em', color: '#1A1A1A',
+          letterSpacing: '-0.025em', color: '#131210',
           marginTop: 16,
         }}>
           {report.top_gap_title}.
@@ -920,18 +979,18 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
             emotional arc. Coral italic so it reads as the loss-aversion frame. */}
         {annualCost > 0 && (
           <div className="mt-12 lg:mt-16">
-            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               12-month cost of inaction
             </p>
             <p style={{
-              fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+              fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400,
               fontSize: 'clamp(4.5rem, 11vw, 9rem)', lineHeight: 0.92,
-              letterSpacing: '-0.04em', color: '#A85439',
+              letterSpacing: '-0.04em', color: '#131210',
               fontVariantNumeric: 'tabular-nums', marginTop: 8,
             }}>
               <Scramble value={annualDisplay} duration={0.6} />
             </p>
-            <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+            <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: 'rgba(19,18,16,0.7)', fontStyle: 'italic' }}>
               That's the compounding cost across the 5 opportunities below. Unleveraged time and missed conversion if nothing in the system changes for 12 months.
             </p>
           </div>
@@ -942,11 +1001,11 @@ function SectionPriorityGap({ report }: { report: ReportJson }) {
           className="inline-flex items-baseline gap-1.5 mt-10 group"
           style={{
             fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
-            textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)',
+            textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)',
             textDecoration: 'none',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#1A1A1A')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(26,26,26,0.6)')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#131210')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(19,18,16,0.6)')}
         >
           See the {report.opportunities.length} moves below ↓
         </a>
@@ -1029,18 +1088,18 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
 
       {/* ── What we can see from outside (the honest external audit) ── */}
       <div className="mb-14">
-        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+        <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
           What we can see from outside
         </p>
         <p style={{
-          fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400,
+          fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400,
           fontSize: 'clamp(2.75rem, 7vw, 5rem)', lineHeight: 0.95,
-          letterSpacing: '-0.03em', color: '#1A1A1A', marginTop: 10,
+          letterSpacing: '-0.03em', color: '#131210', marginTop: 10,
         }}>
           {ci.volume_estimate.value}
         </p>
         {ci.volume_estimate.basis && (
-          <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(26,26,26,0.65)' }}>
+          <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(19,18,16,0.65)' }}>
             {ci.volume_estimate.basis}
           </p>
         )}
@@ -1051,7 +1110,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
               <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>
                 {s.label}
               </p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#4A463E' }}>
                 {s.detail}
               </p>
             </div>
@@ -1070,10 +1129,10 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
                 lineHeight: 1.5, flexShrink: 0,
               }}>{String(i + 1).padStart(2, '0')}</span>
               <div>
-                <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.4vw, 1.6rem)', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+                <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.25rem, 2.4vw, 1.6rem)', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#131210' }}>
                   {l.title}
                 </p>
-                <p className="mt-1.5 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>
+                <p className="mt-1.5 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#4A463E' }}>
                   {l.detail}
                 </p>
               </div>
@@ -1089,7 +1148,7 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
           <SerifBody large className="mt-4">{ci.system.summary}</SerifBody>
           <ul className="mt-6 space-y-3">
             {ci.system.capabilities.map((c, i) => (
-              <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#3D3D3B' }}>
+              <li key={i} className="flex gap-3" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#4A463E' }}>
                 <span aria-hidden style={{ display: 'inline-block', height: 1, width: 16, background: 'var(--color-accent)', marginTop: '0.7em', flexShrink: 0 }} />
                 <span>{c}</span>
               </li>
@@ -1098,20 +1157,20 @@ function CallIntelSection({ report, companyName }: { report: ReportJson; company
         </div>
 
         {/* Sample output — faux product surface so they can picture the deliverable */}
-        <div style={{ border: `1px solid ${hairline}`, background: 'var(--color-paper, #F7F4EF)' }}>
+        <div style={{ border: `1px solid ${hairline}`, background: 'var(--color-paper, #FFFFFF)' }}>
           <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${hairline}` }}>
             <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)' }} />
-            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               {meta.sampleKicker}
             </p>
           </div>
           <div className="p-5">
-            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.35rem', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+            <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.35rem', lineHeight: 1.15, letterSpacing: '-0.015em', color: '#131210' }}>
               {ci.sample_output.title}
             </p>
             <ul className="mt-4 space-y-2.5">
               {ci.sample_output.items.map((it, i) => (
-                <li key={i} className="flex gap-2.5" style={{ fontFamily: MONO, fontSize: '13px', lineHeight: 1.5, color: '#3D3D3B' }}>
+                <li key={i} className="flex gap-2.5" style={{ fontFamily: MONO, fontSize: '13px', lineHeight: 1.5, color: '#4A463E' }}>
                   <span aria-hidden style={{ color: accentInk, flexShrink: 0 }}>→</span>
                   <span>{it}</span>
                 </li>
@@ -1155,12 +1214,12 @@ const CI_META: Record<CallIntel['archetype'], { tag: string; hiding: string; rev
 
 // Softened-brand tokens for the call-intel pitch page (Ivan, 2026-06-15: warmer, rounded, soft
 // 3D depth — keeps the serif/paper/sage editorial DNA but rounds corners + adds smooth shadows).
-const CI_CARD = '#FCFBF7';        // lifts gently off the paper bg
-const CI_R = 22;                  // card radius
-const CI_R_SM = 13;               // button / chip / small radius
-const CI_SHADOW = '0 1px 2px rgba(26,26,26,0.04), 0 10px 28px rgba(26,26,26,0.06)';
-const CI_SHADOW_LG = '0 2px 6px rgba(26,26,26,0.05), 0 26px 64px rgba(26,26,26,0.11)';
-const CI_CORAL = '#A85439';       // risk / loss accent (brand coral) — used by churn alerts
+const CI_CARD = '#FFFFFF';        // flat paper — Black Box: printed, not floating
+const CI_R = 0;                   // Black Box: sharp corners only
+const CI_R_SM = 0;                // Black Box: sharp corners only
+const CI_SHADOW = 'none';         // Black Box: no drop shadows
+const CI_SHADOW_LG = 'none';      // Black Box: no drop shadows
+const CI_CORAL = '#131210';       // risk / loss accent folded to ink (red reserved for wordmark)
 
 // The centerpiece — a branded "software" surface so the prospect pictures the deliverable.
 // Count-up for a metric value string like "31%", "12", "$40k" — animates the numeric part.
@@ -1197,32 +1256,32 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
     >
       <CILoadShimmer />
       {/* window titlebar */}
-      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+      <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
         <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.92)' }}>
           {companyName} · {meta.review}
         </span>
-        <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+        <span className="ml-auto flex items-center gap-1.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
           <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ height: 6, width: 6, background: 'var(--color-accent)' }} />
           Live
         </span>
       </div>
 
-      <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+      <div style={{ background: 'var(--color-paper, #FFFFFF)' }}>
         {metrics ? (
           <>
             {flags && flags[0] && (
-              <div className="flex items-start gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}`, background: 'rgba(42,143,101,0.05)' }}>
+              <div className="flex items-start gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}`, background: 'rgba(19,18,16,0.05)' }}>
                 <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600, marginTop: 3, flexShrink: 0 }}>This week</span>
-                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#1A1A1A' }}>{flags[0].text}</span>
+                <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.4, color: '#131210' }}>{flags[0].text}</span>
               </div>
             )}
             {/* metric tiles */}
             <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
               {metrics.map((m, i) => (
                 <div key={i} className="px-5 py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
-                  <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
-                  <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
+                  <CICountMetric value={m.value} style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#131210', fontVariantNumeric: 'tabular-nums' }} />
+                  <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>{m.label}</p>
                   {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
                 </div>
               ))}
@@ -1232,21 +1291,21 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
               {/* rep bars */}
               {reps.length > 0 && (
                 <div>
-                  <p className="mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Close rate by rep</p>
+                  <p className="mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Close rate by rep</p>
                   <div className="space-y-2.5">
                     {reps.map((r, i) => (
                       <div key={i} className="flex items-center gap-3">
-                        <span className="shrink-0" style={{ width: 96, fontFamily: BODY_SERIF, fontSize: '13px', color: '#3D3D3B' }}>{r.name}</span>
-                        <div className="relative flex-1" style={{ height: 7, background: 'rgba(26,26,26,0.07)' }}>
+                        <span className="shrink-0" style={{ width: 96, fontFamily: BODY_SERIF, fontSize: '13px', color: '#4A463E' }}>{r.name}</span>
+                        <div className="relative flex-1" style={{ height: 7, background: 'rgba(19,18,16,0.07)' }}>
                           <motion.div
                             initial={reduce ? false : { scaleX: 0 }}
                             whileInView={{ scaleX: 1 }}
                             viewport={{ once: true, margin: '-40px' }}
                             transition={{ duration: 0.9, ease: EASE, delay: 0.15 + i * 0.1 }}
-                            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((r.pct / maxPct) * 100)}%`, transformOrigin: 'left', background: bestRep && r.name === bestRep.name ? 'var(--color-accent)' : '#1A1A1A' }}
+                            style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.round((r.pct / maxPct) * 100)}%`, transformOrigin: 'left', background: bestRep && r.name === bestRep.name ? 'var(--color-accent)' : '#131210' }}
                           />
                         </div>
-                        <span className="shrink-0 text-right" style={{ width: 38, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: bestRep && r.name === bestRep.name ? accentInk : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}>{r.pct}%</span>
+                        <span className="shrink-0 text-right" style={{ width: 38, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: bestRep && r.name === bestRep.name ? accentInk : '#131210', fontVariantNumeric: 'tabular-nums' }}>{r.pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -1265,8 +1324,8 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
                       transition={{ duration: 0.5, ease: EASE, delay: 0.2 + i * 0.08 }}
                       className="flex items-start gap-3 pt-3"
                     >
-                      <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 8, background: 'rgba(42,143,101,0.06)' }}>{f.tag}</span>
-                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.text}</span>
+                      <span className="shrink-0 px-2 py-1" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: accentInk, border: `1px solid ${hairline}`, borderRadius: 8, background: 'rgba(19,18,16,0.06)' }}>{f.tag}</span>
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#4A463E' }}>{f.text}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -1276,12 +1335,12 @@ function CallIntelProductMock({ ci, companyName }: { ci: CallIntel; companyName:
         ) : (
           // fallback for pre-structured scans
           <div className="p-6 lg:p-7">
-            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{so.title}</p>
+            <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.35rem, 2.5vw, 1.75rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210' }}>{so.title}</p>
             <ul className="mt-5">
               {so.items.map((it, i) => (
                 <li key={i} className="flex gap-3.5" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.85rem' : 0, marginTop: i ? '0.85rem' : 0 }}>
                   <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: accentInk, lineHeight: 1.55, flexShrink: 0, minWidth: 16 }}>{String(i + 1).padStart(2, '0')}</span>
-                  <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+                  <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#4A463E' }}>{it}</span>
                 </li>
               ))}
             </ul>
@@ -1304,7 +1363,7 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
       onMouseMove={(e) => { if (reduce || !ref.current) return; const r = ref.current.getBoundingClientRect(); x.set((e.clientX - r.left - r.width / 2) * 0.25); y.set((e.clientY - r.top - r.height / 2) * 0.25); }}
       onMouseLeave={() => { x.set(0); y.set(0); }}>
       <motion.a href={href} target="_blank" rel="noopener noreferrer" className="group"
-        style={{ x: sx, y: sy, fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16.5px', fontWeight: 600, background: '#1A1A1A', color: '#F7F4EF', padding: small ? '0 18px' : '16px 30px', minHeight: small ? 42 : 56, borderRadius: small ? 11 : 14, boxShadow: small ? 'none' : '0 2px 6px rgba(26,26,26,0.12), 0 12px 28px rgba(26,26,26,0.16)', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+        style={{ x: sx, y: sy, fontFamily: BODY_SERIF, fontSize: small ? '14px' : '16.5px', fontWeight: 600, background: '#131210', color: '#FFFFFF', padding: small ? '0 18px' : '16px 30px', minHeight: small ? 42 : 56, borderRadius: small ? 11 : 14, boxShadow: small ? 'none' : '0 2px 6px rgba(19,18,16,0.12), 0 12px 28px rgba(19,18,16,0.16)', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
         {label}
         <ArrowRight size={small ? 14 : 17} className="transition-transform group-hover:translate-x-1" />
       </motion.a>
@@ -1369,7 +1428,7 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
   return (
     <section className="relative bg-paper overflow-hidden" style={{ borderBottom: `1px solid ${hairline}` }}>
       {/* faint editorial grid */}
-      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(19,18,16,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(19,18,16,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       {/* slow drifting paper grain */}
       <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
       {/* expanding sage rule across top */}
@@ -1378,17 +1437,17 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
       <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:items-center">
         <div>
           {/* status byline */}
-          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
+          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6B675E' }}>
             <CIWaveform count={5} maxH={13} gap={2} barW={2} className="mr-0.5" />
             <span>Call Intelligence · {meta.tag}</span>
-            <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
-            <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {companyName}</span>
+            <span aria-hidden style={{ color: 'rgba(19,18,16,0.3)' }}>/</span>
+            <span style={{ color: 'rgba(19,18,16,0.5)' }}>for {companyName}</span>
           </motion.div>
 
           {/* benefit-led headline — leads with the outcome, not the mechanism */}
-          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
+          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 800, color: '#131210', letterSpacing: '-0.02em' }}>
             <Reveal delay={0.12}>
-              <span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#3D3D3B' }}>{h.pre}</span>
+              <span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#4A463E' }}>{h.pre}</span>
             </Reveal>
             <Reveal delay={0.26}>
               <span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.4rem, 8.5vw, 6.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span>
@@ -1396,14 +1455,14 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
           </h1>
 
           {/* plain benefit subhead — bigger, short, simple */}
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#3D3D3B' }}>
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#4A463E' }}>
             {h.sub}
           </motion.p>
 
           {/* mono spec row */}
           <motion.ul initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.92, duration: 0.7, ease: EASE }} className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-0">
             {h.spec.map((s, i) => (
-              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#2C3A31', borderColor: hairline }}>
+              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#131210', borderColor: hairline }}>
                 <span className={i === 0 ? '' : 'sm:hidden'} style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />
                 {s}
               </li>
@@ -1418,17 +1477,17 @@ function CallIntelHero({ ci, companyName, meta, bookUrl }: { ci: CallIntel; comp
         {/* RIGHT — a "live call" panel: the waveform moved here as an intentional thematic visual */}
         <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
           <div className="px-6 py-7" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center justify-between mb-6" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
+            <div className="flex items-center justify-between mb-6" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6B675E' }}>
               <span className="flex items-center gap-2">
                 <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
                 Live call
               </span>
-              <span style={{ color: 'rgba(26,26,26,0.4)' }}>scoring</span>
+              <span style={{ color: 'rgba(19,18,16,0.4)' }}>scoring</span>
             </div>
             <div className="flex items-center justify-center" style={{ height: 90 }}>
               <CIWaveform count={32} maxH={78} gap={4} barW={3} />
             </div>
-            <div className="mt-6 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
+            <div className="mt-6 pt-4 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#6B675E' }}>
               <span>0:42 / 0:42</span>
               <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>analyzing…</span>
             </div>
@@ -1476,13 +1535,13 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
       <Kicker>Sound familiar?</Kicker>
       <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }}
-        style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+        style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#131210' }}>
         {opener}
       </motion.p>
       <div className="mt-6 space-y-4">
         {painLines.map((l, i) => (
           <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }}
-            style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>
+            style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#4A463E' }}>
             {l}
           </motion.p>
         ))}
@@ -1495,8 +1554,8 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
           <ul className="mt-5 space-y-4">
             {leaks.map((l, i) => (
               <li key={i} className="flex gap-4 items-baseline">
-                <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
-                <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</span>
+                <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
+                <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#131210' }}>{l.title}</span>
               </li>
             ))}
           </ul>
@@ -1504,19 +1563,19 @@ function CallIntelPain({ ci, companyName, receipts, scan }: { ci: CallIntel; com
       )}
 
       <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }}
-        style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>
+        style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>
         There's a better way.
       </motion.h2>
-      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>Here's how it works.</p>
+      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#6B675E' }}>Here's how it works.</p>
 
       {receipts.length > 0 && (
         <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
-          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Read from your public presence today</p>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>We didn't guess. Read from your public presence today</p>
           <div className="flex flex-wrap gap-2.5">
             {receipts.map((r, i) => (
               <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
                 <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#4A463E' }}>{r.value}</span>
               </span>
             ))}
           </div>
@@ -1558,10 +1617,10 @@ const SFNode: React.FC<{ x: number; y: number; w: number; label: string; accent?
   return (
     <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay }}
       onMouseEnter={onEnter} onMouseLeave={onLeave} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
-      {active && <rect x={x - 5} y={y - 27} width={w + 10} height={54} rx={16} fill="none" stroke={c} strokeWidth={1.5} strokeOpacity={0.55} />}
-      <rect x={x} y={y - 22} width={w} height={44} rx={12} fill={active ? (accent ? 'rgba(168,84,57,0.08)' : 'rgba(42,143,101,0.09)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'drop-shadow(0 6px 14px rgba(26,26,26,0.05))' }} />
+      {active && <rect x={x - 5} y={y - 27} width={w + 10} height={54} rx={0} fill="none" stroke={c} strokeWidth={1.5} strokeOpacity={0.55} />}
+      <rect x={x} y={y - 22} width={w} height={44} rx={0} fill={active ? (accent ? 'rgba(19,18,16,0.08)' : 'rgba(19,18,16,0.09)') : CI_CARD} stroke={active ? c : (accent ? CI_CORAL : hairline)} strokeWidth={active ? 1.5 : 1} style={{ filter: 'none' }} />
       <circle cx={x + 18} cy={y} r={3} fill={c} />
-      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#1A1A1A', fontWeight: active ? 600 : 400 }}>{label}</text>
+      <text x={x + 32} y={y} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 14, letterSpacing: '0.04em', fill: '#131210', fontWeight: active ? 600 : 400 }}>{label}</text>
     </motion.g>
   );
 };
@@ -1593,10 +1652,10 @@ function CallIntelSystemFlow() {
       <AnimatePresence mode="wait">
         <motion.div key={hover === 'engine' ? 'engine' : (hover ?? auto)} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.3, ease: EASE }}>
           <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: infoAccent ? CI_CORAL : accentInk, fontWeight: 600 }}>{info.label}</p>
-          <p className="mt-2 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: '#3D3D3B', maxWidth: '46ch' }}>{info.desc}</p>
+          <p className="mt-2 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.5, color: '#4A463E', maxWidth: '46ch' }}>{info.desc}</p>
         </motion.div>
       </AnimatePresence>
-      <p className="mt-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.35)' }}>Hover to explore · click to jump to it</p>
+      <p className="mt-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.35)' }}>Hover to explore · click to jump to it</p>
     </div>
   );
   return (
@@ -1611,15 +1670,15 @@ function CallIntelSystemFlow() {
             onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
             <motion.rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={20} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1}
               animate={reduce ? {} : { strokeOpacity: hover === 'engine' ? 0.6 : [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: hover === 'engine' ? 0 : Infinity, ease: 'easeInOut' }} />
-            <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={16} fill="#1A1A1A" style={{ filter: 'drop-shadow(0 14px 34px rgba(26,26,26,0.18))' }} />
+            <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={0} fill="#131210" style={{ filter: 'none' }} />
             {!reduce && (
               <motion.rect x={EX1 + 12} width={EW - 24} height={1.5} rx={1} fill={sage}
                 animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
             )}
             <circle cx={EX1 + 24} cy={ECY - 38} r={3.5} fill={sage} />
-            <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(247,244,239,0.6)' }}>ENGINE</text>
-            <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#F7F4EF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
-            <text x={EX1 + 24} y={ECY + 48} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.05em', fill: 'rgba(247,244,239,0.55)' }}>transcribe · score · route</text>
+            <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(255,255,255,0.6)' }}>ENGINE</text>
+            <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#FFFFFF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
+            <text x={EX1 + 24} y={ECY + 48} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.05em', fill: 'rgba(255,255,255,0.55)' }}>transcribe · score · route</text>
           </motion.g>
           {/* input + output nodes */}
           {SF_IN.map((l, i) => <SFNode key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} reduce={!!reduce} sage={sage} hairline={hairline} />)}
@@ -1627,10 +1686,10 @@ function CallIntelSystemFlow() {
           {/* live counter */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
             <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
-            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(26,26,26,0.5)' }}>LIVE · 1,240 calls scored this month</text>
+            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(19,18,16,0.5)' }}>LIVE · 1,240 calls scored this month</text>
           </motion.g>
-          <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>EVERY CALL IN</text>
-          <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(26,26,26,0.4)' }}>WHAT YOU GET</text>
+          <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>EVERY CALL IN</text>
+          <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>WHAT YOU GET</text>
         </svg>
       </div>
 
@@ -1640,17 +1699,17 @@ function CallIntelSystemFlow() {
           {SF_IN.map((l) => (
             <div key={l} className="flex items-center gap-2 px-3.5 py-2.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
               <span style={{ width: 5, height: 5, borderRadius: 5, background: sage, flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{l}</span>
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#131210' }}>{l}</span>
             </div>
           ))}
         </div>
         <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
           {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn' }} />}
         </div>
-        <div className="w-full px-5 py-5 text-center" style={{ background: '#1A1A1A', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>The engine</p>
-          <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#F7F4EF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(247,244,239,0.5)', marginTop: 6 }}>transcribe · score · route</p>
+        <div className="w-full px-5 py-5 text-center" style={{ background: '#131210', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>The engine</p>
+          <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#FFFFFF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>transcribe · score · route</p>
         </div>
         <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
           {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
@@ -1659,7 +1718,7 @@ function CallIntelSystemFlow() {
           {SF_OUT.map((o, i) => (
             <button key={o.label} onClick={() => goTo(o.anchor)} className="flex items-center gap-2 px-3.5 py-2.5 text-left" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${o.accent ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
               <span style={{ width: 5, height: 5, borderRadius: 5, background: o.accent ? CI_CORAL : sage, flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A' }}>{o.label}</span>
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#131210' }}>{o.label}</span>
             </button>
           ))}
         </div>
@@ -1679,7 +1738,7 @@ function CILoadShimmer() {
   return (
     <motion.div aria-hidden className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ borderRadius: CI_R }}
       initial={{ opacity: 1 }} whileInView={{ opacity: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 1 }}>
-      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(42,143,101,0.12), rgba(255,255,255,0.55), rgba(42,143,101,0.12), transparent)' }}
+      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(19,18,16,0.10), transparent)' }}
         initial={{ x: '-110%' }} whileInView={{ x: '210%' }} viewport={{ once: true }} transition={{ duration: 1.05, ease: 'easeInOut', delay: 0.05 }} />
     </motion.div>
   );
@@ -1695,37 +1754,37 @@ function CICallAnalysis() {
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
       <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
-        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(19,18,16,0.13)' }} />)}</span>
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Call analysis</span>
-        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>Discovery · Acme Co · 32 min</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>Discovery · Acme Co · 32 min</span>
       </div>
       <div className="p-5 lg:p-6">
         <div className="flex items-baseline gap-2">
-          <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2.6rem,5vw,3.4rem)', lineHeight: 0.9, color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}><Counter value={78} /></span>
-          <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(26,26,26,0.5)' }}>/100</span>
-          <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>overall</span>
+          <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(2.6rem,5vw,3.4rem)', lineHeight: 0.9, color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}><Counter value={78} /></span>
+          <span style={{ fontFamily: MONO, fontSize: '13px', color: 'rgba(19,18,16,0.5)' }}>/100</span>
+          <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>overall</span>
         </div>
         <div className="mt-5 space-y-3">
           {dims.map((d, i) => (
             <div key={i} className="flex items-center gap-3">
-              <span className="shrink-0" style={{ width: 132, fontFamily: BODY_SERIF, fontSize: '14px', color: '#3D3D3B' }}>{d.label}</span>
-              <div className="relative flex-1" style={{ height: 6, borderRadius: 3, background: 'rgba(26,26,26,0.07)' }}>
+              <span className="shrink-0" style={{ width: 132, fontFamily: BODY_SERIF, fontSize: '14px', color: '#4A463E' }}>{d.label}</span>
+              <div className="relative flex-1" style={{ height: 6, borderRadius: 3, background: 'rgba(19,18,16,0.07)' }}>
                 <motion.div initial={reduce ? false : { scaleX: 0 }} whileInView={{ scaleX: 1 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.8, ease: EASE, delay: 0.2 + i * 0.08 }}
-                  style={{ position: 'absolute', inset: 0, transformOrigin: 'left', width: `${d.s * 10}%`, borderRadius: 3, background: d.s >= 7 ? 'var(--color-accent)' : d.s >= 5 ? '#B8862E' : CI_CORAL }} />
+                  style={{ position: 'absolute', inset: 0, transformOrigin: 'left', width: `${d.s * 10}%`, borderRadius: 3, background: d.s >= 7 ? 'var(--color-accent)' : d.s >= 5 ? '#131210' : CI_CORAL }} />
               </div>
-              <span className="shrink-0 text-right" style={{ width: 34, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: '#1A1A1A' }}>{d.s}/10</span>
+              <span className="shrink-0 text-right" style={{ width: 34, fontFamily: MONO, fontSize: '12px', fontWeight: 600, color: '#131210' }}>{d.s}/10</span>
             </div>
           ))}
         </div>
         <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
           <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Flagged moment · 18:24</p>
-          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#1A1A1A' }}>"Is pricing per seat or per workspace?" Went unanswered for 40 seconds.</p>
+          <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '15px', lineHeight: 1.45, color: '#131210' }}>"Is pricing per seat or per workspace?" Went unanswered for 40 seconds.</p>
         </div>
         <div className="mt-4">
-          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What to improve</p>
+          <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>What to improve</p>
           <ul className="mt-2 space-y-1.5">
             {['Answer the pricing question head-on. Don’t defer it.', 'Lock a next step on the call. This one ended with no date.'].map((t, i) => (
-              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#4A463E' }}>
                 <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: 'var(--color-accent)', flexShrink: 0 }} /><span>{t}</span>
               </li>
             ))}
@@ -1747,26 +1806,26 @@ function CIChurnAlert() {
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, borderLeft: `3px solid ${CI_CORAL}`, boxShadow: CI_SHADOW }}>
       <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
-        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(26,26,26,0.13)' }} />)}</span>
+        <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(19,18,16,0.13)' }} />)}</span>
         <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
-        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(168,84,57,0.09)' }}>High risk</span>
+        <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(19,18,16,0.09)' }}>High risk</span>
       </div>
       <div className="p-5 lg:p-6">
-        <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What triggered it · QBR, today 9:12</p>
-        <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem,2.4vw,1.6rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>"We're re-evaluating vendors before the renewal."</p>
-        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>Said by their VP of Ops, the economic buyer on the account.</p>
+        <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>What triggered it · QBR, today 9:12</p>
+        <p className="mt-2" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.3rem,2.4vw,1.6rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#131210' }}>"We're re-evaluating vendors before the renewal."</p>
+        <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#4A463E' }}>Said by their VP of Ops, the economic buyer on the account.</p>
         <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
           <p style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Recommended save-play</p>
           <ul className="mt-2 space-y-1.5">
             {['Get your founder on a call this week, before they shortlist.', 'Send the ROI recap built from their own usage data.'].map((t, i) => (
-              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#3D3D3B' }}>
+              <li key={i} className="flex gap-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.4, color: '#4A463E' }}>
                 <span aria-hidden style={{ marginTop: '0.6em', height: 1, width: 12, background: CI_CORAL, flexShrink: 0 }} /><span>{t}</span>
               </li>
             ))}
           </ul>
         </div>
-        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', color: 'rgba(26,26,26,0.5)' }}>Renewal in 38 days · flagged to you + CS lead</p>
+        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', color: 'rgba(19,18,16,0.5)' }}>Renewal in 38 days · flagged to you + CS lead</p>
       </div>
     </motion.div>
   );
@@ -1780,30 +1839,30 @@ function CIControlPanel({ companyName }: { companyName: string }) {
   const sage = 'var(--color-accent)';
   const Block = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div>
-      <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>{label}</p>
+      <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>{label}</p>
       <div className="mt-3">{children}</div>
     </div>
   );
   const Check = ({ t }: { t: string }) => (
-    <div className="flex items-center gap-2.5 py-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#1A1A1A' }}>
+    <div className="flex items-center gap-2.5 py-1" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#131210' }}>
       <span style={{ color: sage, fontSize: '13px' }}>✓</span>{t}
     </div>
   );
   const Pill = ({ t }: { t: string }) => (
-    <span className="inline-flex px-2.5 py-1 m-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#3D3D3B', background: 'rgba(26,26,26,0.04)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>{t}</span>
+    <span className="inline-flex px-2.5 py-1 m-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: '#4A463E', background: 'rgba(19,18,16,0.04)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>{t}</span>
   );
   return (
     <motion.div className="overflow-hidden" initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
       style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: '#1A1A1A' }}>
+      <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ background: '#131210' }}>
         <span aria-hidden style={{ width: 7, height: 7, borderRadius: 7, background: sage, flexShrink: 0 }} />
-        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.92)' }}>Control panel · {companyName}</span>
-        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.5)' }}>you set the rules</span>
+        <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.92)' }}>Control panel · {companyName}</span>
+        <span className="ml-auto" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>you set the rules</span>
       </div>
       <div className="grid sm:grid-cols-2 gap-x-10 gap-y-7 p-6 lg:p-8" style={{ background: CI_CARD }}>
         <Block label="Connected sources"><Check t="Fireflies" /><Check t="Zoom" /><Check t="Slack alerts" /></Block>
         <Block label="Calls tracked"><div className="-m-0.5"><Pill t="Sales demos" /><Pill t="Discovery" /><Pill t="Customer QBRs" /><Pill t="Support" /></div></Block>
-        <Block label="Churn alerts go to"><Check t="You" /><Check t="CS lead" /><p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', color: '#5A5752' }}>Threshold: High risk and above</p></Block>
+        <Block label="Churn alerts go to"><Check t="You" /><Check t="CS lead" /><p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', color: '#6B675E' }}>Threshold: High risk and above</p></Block>
         <Block label="Scoring rubric (editable)"><div className="-m-0.5"><Pill t="Discovery" /><Pill t="Objection handling" /><Pill t="Next steps" /><Pill t="Pricing" /></div></Block>
       </div>
     </motion.div>
@@ -1814,7 +1873,7 @@ function CIControlPanel({ companyName }: { companyName: string }) {
 function CISlackAlert() {
   const reduce = useReducedMotion();
   // Slack dark-mode palette
-  const BG = '#1A1D21', LINE = 'rgba(255,255,255,0.09)', TXT = '#E4E5E6', MUT = 'rgba(228,229,230,0.45)';
+  const BG = '#131210', LINE = 'rgba(255,255,255,0.09)', TXT = '#E4E5E6', MUT = 'rgba(228,229,230,0.45)';
   const Btn = ({ t }: { t: string }) => (
     <span className="inline-flex items-center px-3 py-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: TXT, background: 'transparent', border: '1px solid rgba(255,255,255,0.22)', borderRadius: 8 }}>{t}</span>
   );
@@ -1827,7 +1886,7 @@ function CISlackAlert() {
         <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: MUT, border: `1px solid ${LINE}`, borderRadius: 6 }}>Slack</span>
       </div>
       <div className="flex gap-3.5 px-5 py-4">
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(42,143,101,0.16)', border: '1px solid rgba(42,143,101,0.4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(19,18,16,0.16)', border: '1px solid rgba(19,18,16,0.4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <CIWaveform count={3} maxH={17} gap={2.5} barW={2.5} />
         </div>
         <div className="min-w-0">
@@ -1837,11 +1896,11 @@ function CISlackAlert() {
             <span style={{ fontFamily: MONO, fontSize: '11px', color: MUT }}>9:12 AM</span>
           </div>
           <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: TXT }}>
-            <span style={{ color: '#E8836B', fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
+            <span style={{ color: '#131210', fontWeight: 600 }}>At-risk: Acme Co.</span> Their VP of Ops said “we’re re-evaluating vendors before the renewal” on today’s QBR. Renewal in 38 days.
           </p>
           <div className="mt-3 flex flex-wrap gap-2"><Btn t="Open account" /><Btn t="See save-play" /></div>
           <div className="mt-2.5 flex gap-1.5">
-            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: TXT, background: 'rgba(42,143,101,0.14)', border: '1px solid rgba(42,143,101,0.32)', borderRadius: 10 }}>{r}</span>)}
+            {['👀 3', '🔥 2'].map((r) => <span key={r} className="px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '11px', color: TXT, background: 'rgba(19,18,16,0.14)', border: '1px solid rgba(19,18,16,0.32)', borderRadius: 10 }}>{r}</span>)}
           </div>
         </div>
       </div>
@@ -1882,12 +1941,12 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
   );
 
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
       <ScrollProgress />
-      <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
+      <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Call Intelligence · {companyName}</span>
+          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#FFFFFF', fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(19,18,16,0.18)' }}>IM</span></Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Call Intelligence · {companyName}</span>
           <BookButton label="Book a call" small />
         </div>
       </header>
@@ -1900,10 +1959,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-2xl">
           <Kicker>The whole system</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
             Every call in. <Italic>The right output out.</Italic>
           </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
             Every call your team runs flows through one scoring engine, and comes back as something you can act on.
           </p>
         </div>
@@ -1914,10 +1973,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-2xl">
           <Kicker>What you get</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
             Two kinds of calls. <Italic>Two kinds of output.</Italic>
           </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>
+          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
             One improves the next deal. One saves the account before it's gone.
           </p>
         </div>
@@ -1925,31 +1984,31 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           {surfaces.map((s, i) => (
             <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="flex flex-col h-full scroll-mt-24">
               <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
-              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A', minHeight: '2.3em' }}>{s.head}</p>
+              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210', minHeight: '2.3em' }}>{s.head}</p>
               <div className="flex-1">{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
             </div>
           ))}
         </div>
         {/* and the urgent ones land where your team already works */}
         <div className="mt-12 max-w-2xl mx-auto text-center">
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#131210' }}>
             And the urgent ones ping you <Italic>where you already work.</Italic>
           </p>
-          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#5A5752' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
+          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#6B675E' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
         </div>
         <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
         <div id="ci-digest" className="mt-14 max-w-3xl mx-auto scroll-mt-24">
-          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Every Monday: the weekly digest</p>
+          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Every Monday: the weekly digest</p>
           <CallIntelProductMock ci={ci} companyName={companyName} />
         </div>
         <div id="ci-control" className="mt-14 scroll-mt-24">
-          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>You stay in control</p>
+          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>You stay in control</p>
           <CIControlPanel companyName={companyName} />
         </div>
 
         {/* MORE — extra capabilities, scannable, no heavy mocks */}
         <div className="mt-16">
-          <p className="mb-7 text-center" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <p className="mb-7 text-center" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210' }}>
             And it catches more than <Italic>you'd think.</Italic>
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1966,9 +2025,9 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
                 className="p-5 lg:p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
                 <div className="flex items-center gap-2.5">
                   <span aria-hidden style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.2rem', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{f.t}</span>
+                  <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#131210' }}>{f.t}</span>
                 </div>
-                <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.d}</p>
+                <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#4A463E' }}>{f.d}</p>
               </motion.div>
             ))}
           </div>
@@ -1978,10 +2037,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       {/* CASE STUDY — the proof: a system we already shipped */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
-        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
           How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
         </h3>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E' }}>
           Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%.
         </p>
 
@@ -2001,11 +2060,11 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               className={`px-7 py-8 ${i ? 'border-t sm:border-t-0 sm:border-l' : ''}`}
               style={{ borderColor: hairline }}
             >
-              <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.6rem, 4.8vw, 3.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.6rem, 4.8vw, 3.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
                 {s.pre}<Counter value={Number(s.fig)} />{s.suf}
               </div>
-              <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>{s.label}</p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#5A5752' }}>{s.sub}</p>
+              <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>{s.label}</p>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#6B675E' }}>{s.sub}</p>
             </motion.div>
           ))}
         </div>
@@ -2015,44 +2074,44 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           <motion.figure className="overflow-hidden"
             initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
             style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#1A1A1A' }}>
+            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
             </div>
             <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
           </motion.figure>
           <motion.figure className="overflow-hidden flex flex-col"
             initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE, delay: 0.1 }}
             style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW }}>
-            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#1A1A1A' }}>
+            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#131210' }}>
               <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.85)' }}>A single scored call</span>
+              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>A single scored call</span>
             </div>
             <div className="overflow-hidden flex-1" style={{ background: '#FFFFFF' }}>
               <img src="/cases/provaltech-detail.png" alt="An individual scored call with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }} />
             </div>
           </motion.figure>
         </div>
-        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
+        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(19,18,16,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
       </section>
 
       {/* REVIEWS — real client testimonials (from the landing page), softened-card styled */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-2xl mb-10">
           <Kicker>What they say</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
             The kind of work people <Italic>rehire for.</Italic>
           </h2>
         </div>
         {/* lead quote */}
         <motion.figure initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
           className="p-7 lg:p-10 mb-4" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <blockquote style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', lineHeight: 1.22, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <blockquote style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', lineHeight: 1.22, letterSpacing: '-0.015em', color: '#131210' }}>
             “As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.”
           </blockquote>
           <figcaption className="mt-6 flex items-baseline gap-3 flex-wrap">
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '16px', fontWeight: 600, color: '#1A1A1A' }}>Adeeb Mohammed</span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752' }}>Software Engineer · ex-Amazon · Meta</span>
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '16px', fontWeight: 600, color: '#131210' }}>Adeeb Mohammed</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E' }}>Software Engineer · ex-Amazon · Meta</span>
           </figcaption>
         </motion.figure>
         {/* supporting quotes */}
@@ -2065,10 +2124,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <motion.figure key={t.a}
               initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: i * 0.08 }}
               className="p-6 flex flex-col" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <blockquote className="flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#3D3D3B' }}>“{t.q}”</blockquote>
+              <blockquote className="flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#4A463E' }}>“{t.q}”</blockquote>
               <figcaption className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 600, color: '#1A1A1A' }}>{t.a}</p>
-                <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
+                <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 600, color: '#131210' }}>{t.a}</p>
+                <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E', marginTop: 2 }}>{t.r}</p>
               </figcaption>
             </motion.figure>
           ))}
@@ -2082,10 +2141,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
           <div className="mt-7 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-start">
             <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-cover shrink-0" style={{ borderRadius: 18, boxShadow: CI_SHADOW_LG }} onError={fallbackOnError} />
             <div>
-              <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+              <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#131210' }}>
                 I'm Ivan. I build the systems agencies <Italic>promise and never ship.</Italic>
               </p>
-              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#3D3D3B' }}>
+              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#4A463E' }}>
                 Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
               </p>
               <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for agencies</p>
@@ -2099,15 +2158,15 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <motion.div className="px-7 py-14 lg:px-14 lg:py-20 text-center"
           initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
           style={{ background: CI_CARD, borderRadius: 30, boxShadow: CI_SHADOW_LG, border: `1px solid ${hairline}` }}>
-          <h2 className="mx-auto" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#1A1A1A', maxWidth: '16ch' }}>
+          <h2 className="mx-auto" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#131210', maxWidth: '16ch' }}>
             See it running on <Italic>your</Italic> calls.
           </h2>
-          <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B', maxWidth: '40ch' }}>
+          <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E', maxWidth: '40ch' }}>
             15 minutes. Bring a few of your real calls. I'll run them through the system live and show you what it scores, flags, and surfaces.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             <BookButton label="Book a call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working demo.</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>No deck. A working demo.</span>
           </div>
         </motion.div>
       </section>
@@ -2117,16 +2176,16 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div className="flex items-center gap-3">
             <CIWaveform count={5} maxH={13} gap={2} barW={2} />
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi</span>
-            <span aria-hidden style={{ color: 'rgba(26,26,26,0.25)' }}>·</span>
-            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>Call Intelligence</span>
+            <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>Iván Manfredi</span>
+            <span aria-hidden style={{ color: 'rgba(19,18,16,0.25)' }}>·</span>
+            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Call Intelligence</span>
           </div>
           <div className="flex items-center gap-5">
-            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>Book a call</a>
-            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#3D3D3B' }}>ivanmanfredi.com</a>
+            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>Book a call</a>
+            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>ivanmanfredi.com</a>
           </div>
         </div>
-        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
+        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(19,18,16,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
       </footer>
     </div>
   );
@@ -2188,32 +2247,32 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
   );
   return (
     <section className="relative bg-paper overflow-hidden" style={{ borderBottom: `1px solid ${hairline}` }}>
-      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(26,26,26,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(26,26,26,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(19,18,16,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(19,18,16,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
       <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
       <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:items-center">
         <div>
-          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#5A5752' }}>
+          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6B675E' }}>
             <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
             <span>Inbound Engine · {meta.tag}</span>
-            <span aria-hidden style={{ color: 'rgba(26,26,26,0.3)' }}>/</span>
-            <span style={{ color: 'rgba(26,26,26,0.5)' }}>for {who}{companyName && who !== companyName ? `, founder of ${companyName}` : ''}</span>
+            <span aria-hidden style={{ color: 'rgba(19,18,16,0.3)' }}>/</span>
+            <span style={{ color: 'rgba(19,18,16,0.5)' }}>for {who}{companyName && who !== companyName ? `, founder of ${companyName}` : ''}</span>
           </motion.div>
-          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 400, color: '#1A1A1A', letterSpacing: '-0.02em' }}>
-            <Reveal delay={0.12}><span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#3D3D3B' }}>{h.pre}</span></Reveal>
+          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 800, color: '#131210', letterSpacing: '-0.02em' }}>
+            <Reveal delay={0.12}><span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#4A463E' }}>{h.pre}</span></Reveal>
             <Reveal delay={0.26}><span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.4rem, 8.5vw, 6.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span></Reveal>
           </h1>
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#3D3D3B' }}>{h.sub}</motion.p>
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#4A463E' }}>{h.sub}</motion.p>
           <motion.ul initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.92, duration: 0.7, ease: EASE }} className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-0">
             {h.spec.map((s, i) => (
-              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#2C3A31', borderColor: hairline }}>
+              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#131210', borderColor: hairline }}>
                 <span className={i === 0 ? '' : 'sm:hidden'} style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />{s}
               </li>
             ))}
           </motion.ul>
           <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book the free fit call" /></motion.div>
           {/* One real receipt on screen 1 (2026-07-10 audit #11) — same verified Kyle number as the case study below. */}
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.18, duration: 0.7, ease: EASE }} className="mt-6 flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.08em', color: 'rgba(26,26,26,0.62)' }}>
+          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.18, duration: 0.7, ease: EASE }} className="mt-6 flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.08em', color: 'rgba(19,18,16,0.62)' }}>
             <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
             Kyle Hunt scaled $30k/mo to $80k/mo on this engine
           </motion.p>
@@ -2221,41 +2280,41 @@ function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; wh
         {/* RIGHT — the founder's actual drafted week, rendered: real posts + the real lead-magnet cover */}
         <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
           <div className="px-5 py-5" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center justify-between mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#5A5752' }}>
+            <div className="flex items-center justify-between mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6B675E' }}>
               <span className="flex items-center gap-2">
                 <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
                 This week
               </span>
-              <span style={{ color: 'rgba(26,26,26,0.4)' }}>drafting</span>
+              <span style={{ color: 'rgba(19,18,16,0.4)' }}>drafting</span>
             </div>
             <div className="space-y-2.5">
               {draftItems.map((it, i) => it.kind === 'lm' ? (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3.5 px-3.5 py-3.5" style={{ background: '#161616', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 12px 30px rgba(0,0,0,0.28)' }}>
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3.5 px-3.5 py-3.5" style={{ background: '#131210', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 12px 30px rgba(0,0,0,0.28)' }}>
                   {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 9, flexShrink: 0, border: '1px solid rgba(255,255,255,0.12)' }} />}
                   <span className="min-w-0">
                     <span style={{ display: 'block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700, marginBottom: 4 }}>Lead magnet · interactive</span>
-                    <span style={{ ...clamp2, fontFamily: SERIF, fontWeight: 400, fontSize: '17px', lineHeight: 1.22, color: '#F7F4EF', letterSpacing: '-0.01em' }}>{it.text}</span>
-                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.5)', marginTop: 4 }}>Scores a reader → named lead</span>
+                    <span style={{ ...clamp2, fontFamily: SERIF, fontWeight: 800, fontSize: '17px', lineHeight: 1.22, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{it.text}</span>
+                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Scores a reader → named lead</span>
                   </span>
                 </motion.div>
               ) : (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-4 py-3.5" style={{ background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
+                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-4 py-3.5" style={{ background: 'var(--color-paper, #FFFFFF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
                   <div className="flex items-center gap-2 mb-2.5">
                     {avatar
                       ? <img src={avatar} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                       : <span aria-hidden style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontFamily: MONO, fontSize: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(fname[0] || '·').toUpperCase()}</span>}
                     <span className="min-w-0">
-                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
-                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.04em', color: 'rgba(26,26,26,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
+                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#131210', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
+                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.04em', color: 'rgba(19,18,16,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
                     </span>
                     <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 6px', flexShrink: 0 }}>{it.format}</span>
                   </div>
-                  <p style={{ ...clamp3, fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#2C2C2A' }}>{it.text}</p>
+                  <p style={{ ...clamp3, fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#131210' }}>{it.text}</p>
                   {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center', borderRadius: 6, border: `1px solid ${hairline}`, background: '#fff' }} />}
                 </motion.div>
               ))}
             </div>
-            <div className="mt-4 pt-3.5 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#5A5752' }}>
+            <div className="mt-4 pt-3.5 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#6B675E' }}>
               <span>{lm?.title ? `${postItems.length || 4} posts + 1 lead magnet` : 'a week of posts'}</span>
               <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>in your voice</span>
             </div>
@@ -2284,24 +2343,24 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
   return (
     <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
       <Kicker>{hasWins ? 'The three wins' : 'Sound familiar?'}</Kicker>
-      <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{opener}</motion.p>
+      <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#131210' }}>{opener}</motion.p>
       {hasWins ? (
         <div className="mt-7 space-y-6">
           {winsCards.slice(0, 3).map((w, i) => (
             <motion.div key={i} className="flex gap-4 items-baseline" initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.08, 0.3) }}>
-              <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.6rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 24 }}>{i + 1}</span>
+              <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '1.6rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 24 }}>{i + 1}</span>
               <div>
-                <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.22, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{w.observation}</p>
-                {w.build && <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.5, color: '#5A5752' }}>{w.build}</p>}
+                <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.22, letterSpacing: '-0.01em', color: '#131210' }}>{w.observation}</p>
+                {w.build && <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.5, color: '#6B675E' }}>{w.build}</p>}
               </div>
             </motion.div>
           ))}
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>The three from my note. Pulled from your own material before this page was built.</p>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>The three from my note. Pulled from your own material before this page was built.</p>
         </div>
       ) : (
       <div className="mt-6 space-y-4">
         {shownPainLines.map((l, i) => (
-          <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#3D3D3B' }}>{l}</motion.p>
+          <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#4A463E' }}>{l}</motion.p>
         ))}
       </div>
       )}
@@ -2311,23 +2370,23 @@ function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; w
           <ul className="mt-5 space-y-4">
             {leaks.map((l, i) => (
               <li key={i} className="flex gap-4 items-baseline">
-                <span style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
-                <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{l.title}</span>
+                <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
+                <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#131210' }}>{l.title}</span>
               </li>
             ))}
           </ul>
         </motion.div>
       )}
-      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>There's a better way.</motion.h2>
-      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#5A5752' }}>Here's how it works.</p>
+      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }} style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>There's a better way.</motion.h2>
+      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#6B675E' }}>Here's how it works.</p>
       {receipts.length > 0 && (
         <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
-          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
+          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
           <div className="flex flex-wrap gap-2.5">
             {receipts.map((r, i) => (
               <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
                 <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#3D3D3B' }}>{r.value}</span>
+                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#4A463E' }}>{r.value}</span>
               </span>
             ))}
           </div>
@@ -2370,10 +2429,10 @@ function LmCalculatorSim({ sim }: { sim: LmSim }) {
   ];
 
   const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-  const INK = '#EAF1F6', MUT = 'rgba(234,241,246,0.55)', CARD = '#151A1E', LINE = 'rgba(234,241,246,0.10)', LOSS = '#FF6B6B';
+  const INK = '#EAF1F6', MUT = 'rgba(234,241,246,0.55)', CARD = '#131210', LINE = 'rgba(234,241,246,0.10)', LOSS = '#FF6B6B';
 
   return (
-    <div style={{ background: '#0C0F11', color: INK, borderRadius: CI_R_SM, overflow: 'hidden' }}>
+    <div style={{ background: '#131210', color: INK, borderRadius: CI_R_SM, overflow: 'hidden' }}>
       <div className="flex items-center justify-between px-5 sm:px-7 py-4" style={{ borderBottom: `1px solid ${LINE}` }}>
         <span className="flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: MUT }}>
           <span aria-hidden style={{ width: 7, height: 7, background: accent, flexShrink: 0 }} /> Interactive sample
@@ -2462,12 +2521,12 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
         style={{ background: 'rgba(20,18,15,0.6)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Your live lead magnet">
         <motion.div className="relative w-full max-w-3xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
           style={{ maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
-          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(247,244,239,0.16)', color: '#F7F4EF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             Close <XCircle className="w-4 h-4" />
           </button>
-          <div className="w-full overflow-auto" style={{ maxHeight: '90vh', borderRadius: 14, border: '1px solid rgba(234,241,246,0.12)', boxShadow: '0 24px 60px rgba(26,26,26,0.28)', background: '#0C0F11' }}>
+          <div className="w-full overflow-auto" style={{ maxHeight: '90vh', borderRadius: 14, border: '1px solid rgba(234,241,246,0.12)', boxShadow: '0 24px 60px rgba(19,18,16,0.28)', background: '#131210' }}>
             {cleanDomain && (
-              <div className="flex items-center gap-3 px-3.5" style={{ height: 46, background: 'linear-gradient(180deg,#12161A 0%,#0E1216 100%)', borderBottom: '1px solid rgba(234,241,246,0.10)' }}>
+              <div className="flex items-center gap-3 px-3.5" style={{ height: 46, background: 'linear-gradient(180deg,#131210 0%,#131210 100%)', borderBottom: '1px solid rgba(234,241,246,0.10)' }}>
                 <div className="flex items-center gap-2" aria-hidden>
                   <span style={{ width: 11, height: 11, borderRadius: 999, background: '#FF5F57' }} />
                   <span style={{ width: 11, height: 11, borderRadius: 999, background: '#FEBC2E' }} />
@@ -2493,7 +2552,7 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
         style={{ background: 'rgba(20,18,15,0.6)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Your live lead magnet">
         <motion.div className="relative w-full max-w-4xl" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
           style={{ maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
-          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(247,244,239,0.16)', color: '#F7F4EF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          <button onClick={onClose} aria-label="Close" className="absolute right-0 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors" style={{ top: -40, background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', fontFamily: MONO, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
             Close <XCircle className="w-4 h-4" />
           </button>
           <div className="overflow-hidden" style={{ maxHeight: '92vh', borderRadius: 14 }}>
@@ -2507,33 +2566,33 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
     <motion.div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
       style={{ background: 'rgba(20,18,15,0.55)', backdropFilter: 'blur(3px)' }} onClick={onClose} role="dialog" aria-modal="true" aria-label="Lead magnet preview">
       <motion.div className="relative w-full max-w-3xl overflow-auto" initial={reduce ? false : { opacity: 0, y: 18, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
-        style={{ maxHeight: '88vh', background: 'var(--color-paper, #F7F4EF)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(26,26,26,0.06)' }}>
-          <XCircle className="w-5 h-5" style={{ color: '#1A1A1A' }} />
+        style={{ maxHeight: '88vh', background: 'var(--color-paper, #FFFFFF)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }} onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} aria-label="Close preview" className="absolute top-3 right-3 z-10 p-2 rounded-full transition-colors" style={{ background: 'rgba(19,18,16,0.06)' }}>
+          <XCircle className="w-5 h-5" style={{ color: '#131210' }} />
         </button>
         {(
         <div className="grid md:grid-cols-2">
-          <div className="p-5 sm:p-6 flex items-center justify-center" style={{ background: '#1A1A1A' }}>
+          <div className="p-5 sm:p-6 flex items-center justify-center" style={{ background: '#131210' }}>
             <img src={lm.cover_url} alt={lm.title} className="w-full h-auto" style={{ borderRadius: CI_R_SM, maxHeight: '64vh', objectFit: 'contain' }} />
           </div>
           <div className="p-6 sm:p-7">
             <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>Lead magnet · preview</p>
-            <h3 className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#1A1A1A' }}>{lm.title}</h3>
-            {lm.promise && <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#3D3D3B' }}>{lm.promise}</p>}
+            <h3 className="mt-3" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210' }}>{lm.title}</h3>
+            {lm.promise && <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#4A463E' }}>{lm.promise}</p>}
             {items.length > 0 && (
               <>
-                <p className="mt-6 mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>What's inside</p>
+                <p className="mt-6 mb-3" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>What's inside</p>
                 <ul>
                   {items.map((it, i) => (
                     <li key={i} className="flex gap-3" style={{ borderTop: i ? `1px solid ${hairline}` : 'none', paddingTop: i ? '0.7rem' : 0, marginTop: i ? '0.7rem' : 0 }}>
                       <span aria-hidden style={{ fontFamily: MONO, fontSize: '11px', fontWeight: 600, color: 'var(--color-accent-ink)', lineHeight: 1.5, flexShrink: 0, minWidth: 18 }}>{String(i + 1).padStart(2, '0')}</span>
-                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#3D3D3B' }}>{it}</span>
+                      <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#4A463E' }}>{it}</span>
                     </li>
                   ))}
                 </ul>
               </>
             )}
-            <p className="mt-6" style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)' }}>
+            <p className="mt-6" style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(19,18,16,0.6)' }}>
               The system builds this as an interactive page on your domain and captures every email, {who}.
             </p>
             <div className="mt-5"><CIMagneticCTA href={bookUrl} label="See the live version" small /></div>
@@ -2555,13 +2614,13 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
   const line = 'var(--color-hairline)';
   const accent = 'var(--color-accent)';
   const accentInk = 'var(--color-accent-ink)';
-  const ink = '#1A1A1A';
-  const inkSoft = '#3D3D3B';
-  const inkMute = 'rgba(26,26,26,0.5)';
-  const accentWash = 'rgba(42,143,101,0.06)';
+  const ink = '#131210';
+  const inkSoft = '#4A463E';
+  const inkMute = 'rgba(19,18,16,0.5)';
+  const accentWash = 'rgba(19,18,16,0.06)';
   const paperRaise = '#FFFFFF';
-  const paperSunk = 'var(--color-paper-sunk, #EFEBE3)';
-  const HERO_SHADOW = '0 14px 40px rgba(26,26,26,0.12)';
+  const paperSunk = 'var(--color-paper-sunk, #FFFFFF)';
+  const HERO_SHADOW = '0 14px 40px rgba(19,18,16,0.12)';
 
   const founder = cs.founder;
   const founderName = (founder?.name || companyName || 'Founder').trim();
@@ -2630,18 +2689,18 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.8, ease: EASE }}
       className="overflow-hidden relative"
-      style={{ border: `1px solid ${line}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG, background: 'var(--color-paper, #F7F4EF)' }}
+      style={{ border: `1px solid ${line}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG, background: 'var(--color-paper, #FFFFFF)' }}
     >
       <CILoadShimmer />
 
       {/* top status strip — mirrors the board's hairline top rule */}
-      <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${line}`, background: 'rgba(247,244,239,0.86)' }}>
+      <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${line}`, background: 'rgba(255,255,255,0.86)' }}>
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: inkMute }}>This week</span>
         <span className="ml-auto inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: inkMute }}>
           <Pulse size={6} /> Preview · built ahead
         </span>
         <span className="ml-4 hidden sm:inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: inkMute }}>
-          <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: ink, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: '8.5px', fontWeight: 700 }} aria-hidden>IM</span>
+          <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: ink, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: '8.5px', fontWeight: 700 }} aria-hidden>IM</span>
           Operator · Ivan Manfredi
         </span>
       </div>
@@ -2650,7 +2709,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
         {/* ── LEFT: Content-Desk nav rail ─────────────────────────────── */}
         <aside className="flex flex-col border-b lg:border-b-0 lg:border-r border-[color:var(--color-hairline)]">
           <div className="px-6 pb-4 pt-5" style={{ borderBottom: `1px solid ${line}` }}>
-            <span style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 20, letterSpacing: '-0.02em', color: ink }}>
+            <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', color: ink }}>
               {companyName}<span style={{ color: accent }}>.</span>
             </span>
             <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: inkMute }}>content desk</div>
@@ -2672,7 +2731,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
                         {t.label}
                       </span>
                       {t.hero && (
-                        <span className="leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: accentInk, color: '#F7F4EF', borderRadius: 999, padding: '2px 7px' }}>{N}</span>
+                        <span className="leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: accentInk, color: '#FFFFFF', borderRadius: 999, padding: '2px 7px' }}>{N}</span>
                       )}
                     </span>
                   ))}
@@ -2683,7 +2742,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
           <div className="mt-auto flex flex-col gap-3.5 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${line}` }}>
             <div>
               <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: inkMute }}>This week's story</div>
-              <div className="w-full rounded-md py-2.5 text-center uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: ink, color: '#F7F4EF' }}>◉ record 90 sec</div>
+              <div className="w-full rounded-md py-2.5 text-center uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: ink, color: '#FFFFFF' }}>◉ record 90 sec</div>
             </div>
             <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: ink }}>
               <Pulse size={7} /> engine running
@@ -2696,7 +2755,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
               {founder?.avatar_url ? (
                 <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-8 w-8 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
               ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: accent, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: 11, fontWeight: 700 }} aria-hidden>{initials}</span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: accent, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: 11, fontWeight: 700 }} aria-hidden>{initials}</span>
               )}
               <span className="min-w-0">
                 <span className="block truncate" style={{ fontFamily: BODY_SERIF, fontSize: '12.5px', fontWeight: 600, color: ink }}>{founderName}</span>
@@ -2723,7 +2782,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
                 return (
                   <span key={i} className="flex items-center justify-center rounded-full" style={{
                     width: 26, height: 26, fontFamily: MONO, fontSize: 10,
-                    border: `1.5px solid ${current ? accent : 'rgba(26,26,26,0.25)'}`,
+                    border: `1.5px solid ${current ? accent : 'rgba(19,18,16,0.25)'}`,
                     background: current ? paperRaise : 'transparent',
                     color: current ? accentInk : inkMute,
                   }}>{t}</span>
@@ -2734,15 +2793,15 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
 
           {/* the drafted post card — front card over two rotated ghosts, like the board deck */}
           <div className="relative">
-            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '10px -8px -10px 8px', background: paperRaise, border: `1px solid rgba(26,26,26,0.12)`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
-            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '5px -4px -5px 4px', background: paperRaise, border: `1px solid rgba(26,26,26,0.14)`, borderRadius: 14, transform: 'rotate(-.5deg)' }} aria-hidden />
+            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '10px -8px -10px 8px', background: paperRaise, border: `1px solid rgba(19,18,16,0.12)`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
+            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '5px -4px -5px 4px', background: paperRaise, border: `1px solid rgba(19,18,16,0.14)`, borderRadius: 14, transform: 'rotate(-.5deg)' }} aria-hidden />
             <motion.div
               initial={reduce ? false : { opacity: 0, x: 22, scale: 0.98 }}
               whileInView={{ opacity: 1, x: 0, scale: 1 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.55, ease: EASE, delay: 0.1 }}
               className="relative"
-              style={{ background: paperRaise, border: `1px solid rgba(26,26,26,0.18)`, borderRadius: 14, boxShadow: HERO_SHADOW }}
+              style={{ background: paperRaise, border: `1px solid rgba(19,18,16,0.18)`, borderRadius: 14, boxShadow: HERO_SHADOW }}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-5 sm:px-6">
                 <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: accentInk }}>{fmtLabel(lead)} · goes out {WEEKDAYS[0]}</span>
@@ -2754,7 +2813,7 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
                 {founder?.avatar_url ? (
                   <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-11 w-11 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
                 ) : (
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: accentInk, color: '#F7F4EF', fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700 }} aria-hidden>{initials}</span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: accentInk, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700 }} aria-hidden>{initials}</span>
                 )}
                 <div className="min-w-0">
                   <div className="truncate" style={{ fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700, color: ink }}>{founderName}</div>
@@ -2825,14 +2884,14 @@ function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; co
 function ProofPortrait({ src, name, pos, rotate, aspect = '4 / 5' }: { src: string; name: string; pos?: string; rotate: number; aspect?: string }) {
   return (
     <div style={{ position: 'relative', transform: `rotate(${rotate}deg)` }}>
-      <div style={{ background: 'var(--color-paper-raise, #fff)', padding: '7px 7px 9px', boxShadow: '14px 16px 0 rgba(42,143,101,0.20)' }}>
+      <div style={{ background: 'var(--color-paper-raise, #fff)', padding: '7px 7px 9px', boxShadow: '14px 16px 0 rgba(19,18,16,0.20)' }}>
         <img
           src={src} alt={name} loading="lazy"
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-          style={{ display: 'block', width: '100%', aspectRatio: aspect, objectFit: 'cover', objectPosition: pos || '50% 20%', background: 'var(--color-paper-sunk, #EFEBE3)' }}
+          style={{ display: 'block', width: '100%', aspectRatio: aspect, objectFit: 'cover', objectPosition: pos || '50% 20%', background: 'var(--color-paper-sunk, #FFFFFF)' }}
         />
       </div>
-      <span style={{ position: 'absolute', left: 8, bottom: -12, fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: 'var(--color-accent-ink)', padding: '4px 8px', whiteSpace: 'nowrap' }}>{name}</span>
+      <span style={{ position: 'absolute', left: 8, bottom: -12, fontFamily: '"Schibsted Grotesk", system-ui, -apple-system, sans-serif', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: 'var(--color-accent-ink)', padding: '4px 8px', whiteSpace: 'nowrap' }}>{name}</span>
     </div>
   );
 }
@@ -2844,7 +2903,7 @@ const SectionIntro: React.FC<{ kicker: string; title: React.ReactNode; children:
   return (
     <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
       <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>{kicker}</p>
-      <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>{title}</h2>
+      <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#131210' }}>{title}</h2>
       <div className="mt-10">{children}</div>
     </section>
   );
@@ -2945,12 +3004,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   ];
 
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
       <ScrollProgress />
-      <header className="sticky top-0 z-30 backdrop-blur-sm border-b" style={{ borderColor: hairline, background: 'rgba(247,244,239,0.9)' }}>
+      <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#F7F4EF', fontFamily: SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(26,26,26,0.18)' }}>IM</span></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Inbound Engine · {founderFull}</span>
+          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#FFFFFF', fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(19,18,16,0.18)' }}>IM</span></Link>
+          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Inbound Engine · {founderFull}</span>
           <BookButton label="Book a call" small />
         </div>
       </header>
@@ -2962,8 +3021,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           content-system page), sitting right above the prospect's own drafted week. */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>The full engine</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>One idea in. <Italic>Five channels out.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Every idea the engine picks becomes a week of presence across five channels, on its own, in your voice. You just approve.</p>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>One idea in. <Italic>Five channels out.</Italic></h2>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>Every idea the engine picks becomes a week of presence across five channels, on its own, in your voice. You just approve.</p>
         <div className="mt-10">
           <FivePillarLoop />
         </div>
@@ -2973,21 +3032,21 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
         <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
           <Kicker>Your week</Kicker>
-          <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
-          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a live interactive scorecard, ready for you to approve.</p>
+          <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
+          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a live interactive scorecard, ready for you to approve.</p>
           <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
             <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: CI_CARD, borderBottom: `1px solid ${hairline}` }}>
               <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.68)' }}>{companyName} · {mock?.title || 'This week'}</span>
+              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.68)' }}>{companyName} · {mock?.title || 'This week'}</span>
             </div>
-            <div style={{ background: 'var(--color-paper, #F7F4EF)' }}>
+            <div style={{ background: 'var(--color-paper, #FFFFFF)' }}>
               {mockMetrics.length > 0 && (
                 <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
                   {mockMetrics.map((m, i) => (
                     // px-3 at base (2026-07-10 audit #10): three px-5 cells left ~86px of copy at 390px
                     <div key={i} className="px-3 py-4 sm:px-5 sm:py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
-                      <CICountMetric value={m.value} style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }} />
-                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{m.label}</p>
+                      <CICountMetric value={m.value} style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#131210', fontVariantNumeric: 'tabular-nums' }} />
+                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>{m.label}</p>
                       {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
                     </div>
                   ))}
@@ -2995,17 +3054,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
               {feedSpec.posts.length > 0 && (
                 // px-2 at base (2026-07-10 audit #10): the 552px cards were double-inset at 390px
-                <div className="px-2 sm:px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #EFEBE3)' }}>
+                <div className="px-2 sm:px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #FFFFFF)' }}>
                   <LinkedInFeedMockup spec={feedSpec} mode="full" />
                   {restOfWeek.length > 0 && (
                     <div className="mt-4 grid gap-2.5 sm:grid-cols-2 max-w-[552px] sm:max-w-none mx-auto">
                       {restOfWeek.map((p, i) => (
                         <div key={i} className="px-4 py-3.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: '1px solid var(--color-hairline)' }}>
-                          <div className="mb-1.5 flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'rgba(26,26,26,0.5)' }}>
+                          <div className="mb-1.5 flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'rgba(19,18,16,0.5)' }}>
                             <span aria-hidden style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} />
                             Also drafted this week · {isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}
                           </div>
-                          <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: '#1A1A1A' }}>{p.hook || (p.body || '').split('\n')[0]}</div>
+                          <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: '#131210' }}>{p.hook || (p.body || '').split('\n')[0]}</div>
                         </div>
                       ))}
                     </div>
@@ -3019,10 +3078,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 if (!receipts.length) return null;
                 return (
                   <div className="px-4 lg:px-6 py-5" style={{ borderTop: '1px solid var(--color-hairline)' }}>
-                    <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>Each post above grew from your own words</p>
+                    <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>Each post above grew from your own words</p>
                     <ul className="mt-3 space-y-2">
                       {receipts.slice(0, 4).map((q, i) => (
-                        <li key={i} style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#5A5752' }}>“{q}”</li>
+                        <li key={i} style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#6B675E' }}>“{q}”</li>
                       ))}
                     </ul>
                   </div>
@@ -3044,17 +3103,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               transition={{ duration: 0.7, ease: EASE }}
               style={{ borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
             >
-              <div className="grid sm:grid-cols-[300px_1fr] gap-8 sm:gap-11 items-center p-7 sm:p-11 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#15201b 0%,#1e2e25 100%)' }}>
+              <div className="grid sm:grid-cols-[300px_1fr] gap-8 sm:gap-11 items-center p-7 sm:p-11 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#131210 0%,#131210 100%)' }}>
                 <div className="mx-auto sm:mx-0 transition-transform duration-300 group-hover:scale-[1.02]" style={{ transform: 'rotate(-2deg)' }}>
                   <img src={feedSpec.lmCard.coverUrl} alt={feedSpec.lmCard.title} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxWidth: 300, borderRadius: 10, boxShadow: '0 26px 60px rgba(0,0,0,0.5)' }} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #4FB286)', fontWeight: 600 }}>
+                  <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #131210)', fontWeight: 600 }}>
                     <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, background: 'var(--color-accent)' }} /> {lmSim ? 'Your lead magnet · interactive sample' : lmStatic ? 'Your lead magnet · sample' : 'Your lead magnet sample · live'}
                   </div>
-                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FBF8F2' }}>{lmSim ? 'Try the tool it built.' : 'What your leads land on.'}</h3>
+                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FFFFFF' }}>{lmSim ? 'Try the tool it built.' : 'What your leads land on.'}</h3>
                   <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>{lmSim ? `The system drafted this working calculator from your own posts. Your readers would get it as an interactive page on your site that captures every email. Try it the way one of them would, ${who}.` : lmStatic ? `The system drafted this lead magnet from your own posts, in your brand. Published on your domain, it captures every reader who opens it. Here's what yours looks like, ${who}.` : `The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, ${who}.`}</p>
-                  <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#0E1512', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
+                  <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#131210', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
                     {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'}
                     <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </span>
@@ -3066,7 +3125,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {/* Mid-page CTA (2026-07-10 audit #9): the drafted week is the sell — catch the
               sold reader here instead of one appearing only ~12k px later at the footer. */}
           <div className="mt-10 pt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5" style={{ borderTop: `1px solid ${hairline}` }}>
-            <p className="max-w-md" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.3rem, 2.4vw, 1.7rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+            <p className="max-w-md" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.3rem, 2.4vw, 1.7rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#131210' }}>
               This week is already drafted, {who}. The fit call is where it goes live.
             </p>
             <div className="shrink-0"><BookButton label="Book the free fit call" small /></div>
@@ -3099,7 +3158,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               'Every first DM approved by you',
               'DMs can carry a resource built for that prospect, like this one',
             ].map((t) => (
-              <span key={t} className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.62)' }}>
+              <span key={t} className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.62)' }}>
                 <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
                 {t}
               </span>
@@ -3111,7 +3170,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {/* PROOF — real client case studies */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
-        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
+        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#131210' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
         {/* overflowX clip: the ±80px slide-in initial states sit outside the viewport until
             their reveal fires, widening the page 64px sideways on phones (2026-07-10 audit) */}
         <div className="mt-12 space-y-20 lg:space-y-24" style={{ overflowX: 'clip' }}>
@@ -3147,28 +3206,28 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : 0.45 }}
                   className={flip ? 'lg:order-1' : 'lg:order-2'}
                 >
-                  <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.7vw, 2rem)', lineHeight: 1.14, letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+                  <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.7vw, 2rem)', lineHeight: 1.14, letterSpacing: '-0.01em', color: '#131210' }}>
                     &ldquo;{c.quote[0]}<span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>{c.quote[1]}</span>{c.quote[2]}&rdquo;
                   </p>
-                  <div className="mt-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
-                    <span style={{ color: '#1A1A1A', fontWeight: 600 }}>{c.client}</span> &nbsp;·&nbsp; {c.role}
+                  <div className="mt-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
+                    <span style={{ color: '#131210', fontWeight: 600 }}>{c.client}</span> &nbsp;·&nbsp; {c.role}
                   </div>
                   <div className="mt-5 flex items-start gap-3">
                     <span aria-hidden style={{ marginTop: 6, height: 15, width: 3, background: 'var(--color-accent)', flexShrink: 0 }} />
-                    <p style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.4, color: '#1A1A1A', maxWidth: '28rem' }}>{c.result}</p>
+                    <p style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.4, color: '#131210', maxWidth: '28rem' }}>{c.result}</p>
                   </div>
                   <figure className="m-0 mt-7 overflow-hidden" style={{ transform: 'rotate(1.2deg)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-                    <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#1A1A1A' }}>
+                    <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#131210' }}>
                       <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                      <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.9)' }}>{c.client}</span>
+                      <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>{c.client}</span>
                     </div>
                     <img src={c.src} alt={c.alt} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxHeight: 430, objectFit: 'cover', objectPosition: '50% 0%' }} />
                   </figure>
                   <div className="mt-8 flex flex-wrap gap-x-10 gap-y-6">
                     {c.metrics.map((m) => (
                       <div key={m.label}>
-                        <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
-                        <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#5A5752' }}>{m.label}</div>
+                        <div style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
+                        <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#6B675E' }}>{m.label}</div>
                       </div>
                     ))}
                   </div>
@@ -3189,9 +3248,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 key={i}
                 style={{ flex: '0 0 300px', marginRight: 18, padding: '18px 20px', background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}
               >
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>"{t.q}"</p>
-                <p className="mt-3.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#1A1A1A' }}>{t.n}</p>
-                <p style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A5752', marginTop: 2 }}>{t.r}</p>
+                <p style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#4A463E' }}>"{t.q}"</p>
+                <p className="mt-3.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#131210' }}>{t.n}</p>
+                <p style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E', marginTop: 2 }}>{t.r}</p>
               </div>
             ))}
           </div>
@@ -3201,7 +3260,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {/* THE FIX — the engine, as a live, animated product cockpit */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>The system</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>
           One system runs your <Italic>whole presence</Italic>, end to end.
         </h2>
         {cs.system?.summary && <SerifBody className="mt-4 max-w-2xl">{cs.system.summary}</SerifBody>}
@@ -3213,8 +3272,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {PROMISES.map((p, i) => (
             <motion.div key={p.headline} initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.5, ease: EASE, delay: (i % 4) * 0.07 }}
               className="pl-4" style={{ borderLeft: '2px solid var(--color-accent)' }}>
-              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.2, color: '#1A1A1A' }}>{p.headline}</h3>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
+              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.2, color: '#131210' }}>{p.headline}</h3>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#4A463E' }}>{p.benefit}</p>
             </motion.div>
           ))}
         </div>
@@ -3223,21 +3282,21 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {/* LEAD MAGNETS */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
         <Kicker>Lead magnets</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Turn attention into <Italic>qualified leads.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#3D3D3B' }}>From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are.</p>
+        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>Turn attention into <Italic>qualified leads.</Italic></h2>
+        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are.</p>
         <div className="mt-9 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {LM_FORMATS.map((f) => (
             <div key={f.name} className="p-5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>{f.name}</h3>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#3D3D3B' }}>{f.blurb}</p>
+              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>{f.name}</h3>
+              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#4A463E' }}>{f.blurb}</p>
             </div>
           ))}
         </div>
         <div className="mt-10 grid md:grid-cols-3 gap-8">
           {LM_PROMISES.map((p) => (
             <div key={p.headline} className="pl-5" style={{ borderLeft: '2px solid var(--color-accent)' }}>
-              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: '1.25rem', lineHeight: 1.12, color: '#1A1A1A' }}>{p.headline}</h3>
-              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#3D3D3B' }}>{p.benefit}</p>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.25rem', lineHeight: 1.12, color: '#131210' }}>{p.headline}</h3>
+              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#4A463E' }}>{p.benefit}</p>
             </div>
           ))}
         </div>
@@ -3248,8 +3307,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
           <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} className="w-28 h-28 sm:w-36 sm:h-36" style={{ objectFit: 'cover', borderRadius: 22, flexShrink: 0, boxShadow: CI_SHADOW_LG }} />
           <div>
-            <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#1A1A1A' }}>I'm Iván. I fill founders' LinkedIn with content and lead magnets, <Italic>on autopilot.</Italic></h2>
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#3D3D3B' }}>It's an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
+            <h2 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#131210' }}>I'm Iván. I fill founders' LinkedIn with content and lead magnets, <Italic>on autopilot.</Italic></h2>
+            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E' }}>It's an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
             <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for founders</p>
           </div>
         </div>
@@ -3258,24 +3317,24 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       {/* CTA */}
       <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
         <div className="p-10 lg:p-16 text-center" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>Be the sharpest voice in your space. <Italic>Without writing a word.</Italic></h2>
-          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#3D3D3B' }}>Book the free fit call. We'll scope it to your channels, formats, and voice, and you'll keep the audience, list, and every lead it builds.</p>
+          <h2 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>Be the sharpest voice in your space. <Italic>Without writing a word.</Italic></h2>
+          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#4A463E' }}>Book the free fit call. We'll scope it to your channels, formats, and voice, and you'll keep the audience, list, and every lead it builds.</p>
           <div className="mt-8 flex flex-col items-center gap-3.5">
             <BookButton label="Book the free fit call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)' }}>No deck. A working system.</span>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>No deck. A working system.</span>
           </div>
         </div>
       </section>
 
       <footer style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-4">
-          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.5)', marginLeft: 8 }}>Inbound Engine</span></span>
+          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)', marginLeft: 8 }}>Inbound Engine</span></span>
           <span className="flex items-center gap-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em' }}>
             <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a call</a>
-            <a href="https://ivanmanfredi.com" style={{ color: 'rgba(26,26,26,0.55)' }}>ivanmanfredi.com</a>
+            <a href="https://ivanmanfredi.com" style={{ color: 'rgba(19,18,16,0.55)' }}>ivanmanfredi.com</a>
           </span>
         </div>
-        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(26,26,26,0.35)' }}>Prepared for {founderFull} · This page was built from a live scan of your presence.</p>
+        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(19,18,16,0.35)' }}>Prepared for {founderFull} · This page was built from a live scan of your presence.</p>
       </footer>
 
       <AnimatePresence>
@@ -3314,7 +3373,7 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
 
   const platformChip = (
     <div className="flex items-center gap-2">
-      <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>{platformLabel}</span>
+      <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>{platformLabel}</span>
       {creative.is_active && (
         <span style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-accent)' }}>● Active</span>
       )}
@@ -3330,18 +3389,18 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
         {platformChip}
         <blockquote
           style={{
-            fontFamily: SERIF,
+            fontFamily: BODY_SERIF,
             fontStyle: 'italic',
             fontSize: 'clamp(18px, 2.2vw, 22px)',
             lineHeight: 1.35,
             letterSpacing: '-0.01em',
-            color: '#1A1A1A',
+            color: '#131210',
           }}
         >
           "{body.length > 220 ? body.slice(0, 217) + '…' : body}"
         </blockquote>
         {realTitle && (
-          <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.65)' }}>from {realTitle}</p>
+          <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(19,18,16,0.65)' }}>from {realTitle}</p>
         )}
         {link && (
           <a href={link} target="_blank" rel="noopener noreferrer"
@@ -3361,13 +3420,13 @@ function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform
   // mode === 'image'
   return (
     <div className="border border-[color:var(--color-hairline)] hover:border-ink/20 transition-colors flex flex-col min-h-[44px]">
-      <div className="aspect-[16/10] overflow-hidden" style={{ background: '#EFEAE2' }}>
+      <div className="aspect-[16/10] overflow-hidden" style={{ background: '#FFFFFF' }}>
         <img src={initialImage!} alt={realTitle ?? `${platformLabel} ad creative`} className="w-full h-full object-cover" loading="lazy" onError={() => setImgFailed(true)} />
       </div>
       <div className="p-5 flex-1 flex flex-col gap-3">
         {platformChip}
         {realTitle && (
-          <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#1A1A1A' }} className="line-clamp-2">{realTitle}</p>
+          <p style={{ fontFamily: SERIF, fontSize: '17px', lineHeight: 1.25, letterSpacing: '-0.01em', color: '#131210' }} className="line-clamp-2">{realTitle}</p>
         )}
         {body && <SerifBody className="line-clamp-3"><span style={{ fontSize: '14px' }}>{body}</span></SerifBody>}
         {cta && link && (
@@ -3439,12 +3498,12 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   // P1 #13: "Unknown" reframed as a sales motion (loss-frame) rather than a non-statement
   const meta: Record<string, { label: string; suffix?: string; tone: string; description: string }> = {
     early_adopter: { label: 'Early Adopter.', tone: 'var(--color-accent)', description: 'You are actively integrating AI into operations. Ahead of the peer group.' },
-    on_par: { label: 'On Par.', tone: '#A85439', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
-    behind: { label: 'Behind.', tone: '#9B2C2C', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
+    on_par: { label: 'On Par.', tone: '#131210', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
+    behind: { label: 'Behind.', tone: '#131210', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
     unknown: {
       label: 'Unknown.',
       suffix: "and that's data.",
-      tone: 'rgba(26,26,26,0.85)',
+      tone: 'rgba(19,18,16,0.85)',
       description: 'No verified AI provider, no LLM tooling in your public stack, no AI-themed posts in the last 30 days. Either your team is still scoping or the work is happening off-site. Both are gaps the Assessment closes.',
     },
   };
@@ -3453,13 +3512,13 @@ function Section4AiAdoption({ report }: { report: ReportJson }) {
   return (
     <Section id="ai-adoption" kicker="AI Adoption" title="Where you sit on the curve.">
       <div className="space-y-6 max-w-2xl">
-        <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
+        <h3 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2.5rem, 5vw, 4rem)', lineHeight: 1, letterSpacing: '-0.02em', color: m.tone }}>
           {m.label}
-          {m.suffix && <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}> {m.suffix}</span>}
+          {m.suffix && <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK }}> {m.suffix}</span>}
         </h3>
         <SerifBody large>{m.description}</SerifBody>
         {(anthropic_verified || openai_verified) && (
-          <div className="px-5 py-4 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(76,110,61,0.04)' }}>
+          <div className="px-5 py-4 border-l-2" style={{ borderColor: 'var(--color-accent)', background: 'rgba(19,18,16,0.04)' }}>
             <SerifBody>
               DNS verification confirms{' '}
               <Italic>
@@ -3492,9 +3551,9 @@ function Section5Competitive({ report }: { report: ReportJson }) {
         <div className="space-y-px border-y border-[color:var(--color-hairline)]">
           {report.competitors.map((c, i) => (
             <a key={i} href={c.url} target="_blank" rel="noopener noreferrer"
-               className="flex items-start gap-4 py-5 hover:bg-[rgba(26,26,26,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0">
+               className="flex items-start gap-4 py-5 hover:bg-[rgba(19,18,16,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0">
               <div className="flex-1">
-                <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }} className="group-hover:text-accent transition-colors">{c.title}</p>
+                <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#131210' }} className="group-hover:text-accent transition-colors">{c.title}</p>
                 {c.description && <SerifBody className="mt-1 line-clamp-2"><span style={{ fontSize: '15px' }}>{c.description}</span></SerifBody>}
               </div>
               <ExternalLink className="w-4 h-4 text-ink-mute mt-1.5 group-hover:text-accent transition-colors shrink-0" />
@@ -3539,7 +3598,7 @@ function PentagonRadarChart({
             key={ring}
             points={pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}
             fill="none"
-            stroke="rgba(247,244,239,0.12)"
+            stroke="rgba(255,255,255,0.12)"
             strokeWidth="1"
           />
         );
@@ -3550,14 +3609,14 @@ function PentagonRadarChart({
           <line key={i}
             x1={cx} y1={cy}
             x2={outer.x.toFixed(1)} y2={outer.y.toFixed(1)}
-            stroke="rgba(247,244,239,0.08)" strokeWidth="1"
+            stroke="rgba(255,255,255,0.08)" strokeWidth="1"
           />
         );
       })}
       <motion.path
         d={scorePath}
         fill="rgba(127,168,104,0.20)"
-        stroke="#7FA868"
+        stroke="#131210"
         strokeWidth="2"
         strokeLinejoin="round"
         initial={reduceMotion ? false : { opacity: 0, scale: 0.4 }}
@@ -3594,7 +3653,7 @@ function PentagonRadarChart({
           <text key={i}
             x={x} y={pt.y.toFixed(1)}
             textAnchor={textAnchor} dominantBaseline="middle"
-            style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, letterSpacing: '0.1em', fill: 'rgba(247,244,239,0.55)', textTransform: 'uppercase' }}
+            style={{ fontFamily: '"Schibsted Grotesk", system-ui, -apple-system, sans-serif', fontSize: 9, letterSpacing: '0.1em', fill: 'rgba(255,255,255,0.55)', textTransform: 'uppercase' }}
           >
             {words.map((w, wi) => (
               <tspan key={wi} x={x} dy={wi === 0 ? -((words.length - 1) * lineH) / 2 : lineH}>{w}</tspan>
@@ -3621,35 +3680,19 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
     { key: 'traffic_quality',label: 'Audience quality' },
   ];
 
-  // W1.3 — color-lock the dark band score to the SAME color as the hero score.
-  // Pre-fix: hero was warm orange (Grade C), dark band was sage green — looked like two different
-  // numbers. Now both surfaces use gradeColor() so the score keeps a single visual identity.
-  // Lighten gradeColor on the dark background so it stays legible (same hue, brighter for contrast).
-  const lightenForDark = (hex: string): string => {
-    const map: Record<string, string> = {
-      '#4C6E3D': '#7FA868', // A → bright sage
-      '#5C8049': '#8FB677', // B → mid sage
-      '#B45309': '#E8A23F', // C → warm gold
-      '#A85439': '#D89254', // D → warm coral
-      '#9B2C2C': '#D26D6D', // F → soft red
-    };
-    return map[hex] ?? hex;
-  };
-  const scoreColor = lightenForDark(gradeColor(report.automation_grade));
-
-  // Breakdown bar tones stay independent (high/mid/low) — these are PER-DIMENSION verdicts,
-  // not the overall score. Tones SOFTENED per IA spec ("AI ADOPTION 3/20 in coral red competes
-  // with the 52 for attention" — louder than the headline). Failed dims now in muted coral instead
-  // of bright red, so the headline score keeps its rank as the loudest thing on the band.
+  // Black Box: on the dark ink plane the score and bars are flat paper white (no color
+  // grade scale — red is reserved for the wordmark). Per-dimension strength reads as tone
+  // (opacity of white), never hue.
+  const scoreColor = '#FFFFFF';
   const toneFor = (pct: number) =>
-    pct >= 70 ? '#7FA868' : pct >= 40 ? '#C7864E' : '#A8625C';
+    pct >= 70 ? '#FFFFFF' : pct >= 40 ? 'rgba(255,255,255,0.72)' : 'rgba(255,255,255,0.45)';
 
   return (
     <section
       // W2.4 — bumped vertical padding on mobile from py-20 (5rem = 80px) to py-24 (6rem = 96px) so
       // the score 52 has breathing room from the section edges; desktop unchanged
       className="py-20 lg:py-28"
-      style={{ background: '#0F0F0F', color: '#F7F4EF' }}
+      style={{ background: '#131210', color: '#FFFFFF' }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         {/* Hairline sweep in sage — paints in left-to-right when section enters viewport */}
@@ -3659,30 +3702,30 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
           whileInView={{ scaleX: 1 }}
           viewport={{ once: true, margin: '-50px' }}
           transition={{ duration: 0.9, ease: EASE }}
-          style={{ height: 1, background: 'rgba(247,244,239,0.18)', transformOrigin: 'left', marginBottom: '4rem' }}
+          style={{ height: 1, background: 'rgba(255,255,255,0.18)', transformOrigin: 'left', marginBottom: '4rem' }}
         />
 
         <div className="mb-14 lg:mb-20">
           {/* Dark-band kicker — same pattern as paper sections but inverted (sage on dark stays sage) */}
           <div className="mb-1">
             <div className="flex items-center gap-3 mb-2">
-              <span aria-hidden style={{ display: 'inline-block', height: 1, width: 28, background: '#7FA868' }} />
-              <span style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
-                01
+              <span aria-hidden style={{ display: 'inline-block', height: 9, width: 9, background: '#FFFFFF' }} />
+              <span style={{ fontFamily: SERIF, fontSize: '11px', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+                Section 01
               </span>
             </div>
-            <p style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#7FA868', fontWeight: 600 }}>
+            <p style={{ fontFamily: SERIF, fontSize: '11px', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
               The Breakdown
             </p>
           </div>
           <RevealHeadline
             style={{
-              fontFamily: SERIF, fontWeight: 400,
+              fontFamily: SERIF, fontWeight: 800,
               fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', lineHeight: 1.05,
-              letterSpacing: '-0.025em', color: '#F7F4EF', marginTop: 12,
+              letterSpacing: '-0.035em', color: '#FFFFFF', marginTop: 12,
             }}
           >
-            Where you're <span style={{ fontStyle: 'italic', color: '#7FA868' }}>winning</span>. Where you're <span style={{ fontStyle: 'italic', color: '#D89254' }}>not</span>.
+            Where you're <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: '#FFFFFF' }}>winning</span>. Where you're <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: '#FFFFFF' }}>not</span>.
           </RevealHeadline>
           <SectionAnswer tone="dark">
             You scored {report.automation_score} out of 100. Grade {report.automation_grade}. Score below means more humans pasting fields. Higher means more systems doing the work.
@@ -3692,11 +3735,11 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
         <div className="grid lg:grid-cols-[auto_1fr] gap-12 lg:gap-20 items-start">
           {/* Left: massive score */}
           <div>
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
               Automation Maturity Score
             </p>
             <p style={{
-              fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic',
+              fontFamily: SERIF, fontWeight: 800,
               // P2.14 — was clamp(7rem, 14vw, 12rem). Hero score caps at 7rem; dark band was 1.7×
               // bigger which read as a re-statement. Now closer to 1.3× — still the visual climax
               // of the dark band, but felt as the same number, not a different one.
@@ -3708,10 +3751,10 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                   real number quickly instead of getting stuck on mid-scramble digits like "94" */}
               <Scramble value={String(report.automation_score)} duration={0.4} />
             </p>
-            <p style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.7)', marginTop: 8 }}>
+            <p style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
               / 100  ·  Grade <span style={{ color: scoreColor }}>{report.automation_grade}</span>
             </p>
-            <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(247,244,239,0.55)', marginTop: 14, fontStyle: 'italic' }}>
+            <p style={{ fontFamily: BODY_SERIF, fontSize: '13px', lineHeight: 1.5, color: 'rgba(255,255,255,0.55)', marginTop: 14, fontStyle: 'italic' }}>
               Higher means more systems doing the work, fewer humans pasting fields.
             </p>
           </div>
@@ -3724,8 +3767,8 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
               <PentagonRadarChart sb={sb} cats={cats} toneFor={toneFor} reduceMotion={!!reduceMotion} />
             </div>
             <div className="w-full space-y-4 lg:space-y-3">
-              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.35)' }}>
-                <span style={{ color: '#7FA868' }}>● Sage</span> = strength &nbsp; <span style={{ color: '#D89254' }}>● Warm</span> = gap
+              <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>
+                Longer bar = stronger dimension. Shorter bar = the gap.
               </p>
               {cats.map(({ key, label }) => {
                 const c = sb[key];
@@ -3733,7 +3776,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                 const pct = Math.min(100, (c.value / c.max) * 100);
                 const tone = toneFor(pct);
                 return (
-                  <div key={key} className="pb-5" style={{ borderBottom: '1px solid rgba(247,244,239,0.10)' }}>
+                  <div key={key} className="pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
                     {/* Single horizontal row: label LEFT, bar BRIDGES the gap, score RIGHT.
                         The bar visually connects label to score so the eye reads them as one unit
                         instead of "label on left, score floating in void". Standard dashboard UX. */}
@@ -3741,22 +3784,22 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                       {/* Score sits on the LEFT now (user feedback: scores stuck to right read weird).
                           Layout: SCORE → LABEL → BAR fills remaining width. */}
                       <p style={{
-                        fontFamily: SERIF, fontStyle: 'italic',
+                        fontFamily: BODY_SERIF, fontStyle: 'italic',
                         fontSize: 'clamp(1.75rem, 2.6vw, 2rem)', lineHeight: 1,
                         letterSpacing: '-0.02em', color: tone,
                         fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
                         flexShrink: 0, minWidth: '64px',
                       }}>
-                        {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(247,244,239,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
+                        {c.value}<span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginLeft: 4, fontStyle: 'normal' }}>/{c.max}</span>
                       </p>
                       <p style={{
                         fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em',
-                        textTransform: 'uppercase', color: 'rgba(247,244,239,0.75)',
+                        textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)',
                         fontWeight: 600, flexShrink: 0, minWidth: '150px',
                       }}>
                         {label}
                       </p>
-                      <div className="flex-1" style={{ height: 4, background: 'rgba(247,244,239,0.10)', position: 'relative' }}>
+                      <div className="flex-1" style={{ height: 4, background: 'rgba(255,255,255,0.10)', position: 'relative' }}>
                         <motion.div
                           initial={reduceMotion ? false : { scaleX: 0 }}
                           whileInView={{ scaleX: pct / 100 }}
@@ -3768,7 +3811,7 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
                     </div>
                     <p style={{
                       fontFamily: BODY_SERIF, fontSize: '14px',
-                      color: 'rgba(247,244,239,0.65)', lineHeight: 1.5,
+                      color: 'rgba(255,255,255,0.65)', lineHeight: 1.5,
                       paddingLeft: '88px',  // align under label (after score)
                     }} className="lg:pl-[88px] pl-0">
                       {c.rationale}
@@ -3798,23 +3841,23 @@ function SectionScoreRevealDark({ report }: { report: ReportJson }) {
 function AiPostureRowDark({ report }: { report: ReportJson }) {
   const signal = report.company_snapshot.ai_adoption_signal;
   const meta: Record<string, { label: string; tone: string; description: string }> = {
-    early_adopter: { label: 'Early Adopter.', tone: '#7FA868', description: 'You are actively integrating AI into operations. Ahead of the peer group.' },
-    on_par:        { label: 'On Par.',        tone: '#D89254', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
-    behind:        { label: 'Behind.',        tone: '#C76354', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
-    unknown:       { label: 'Unknown.',       tone: 'rgba(247,244,239,0.85)', description: "No verified AI provider, no LLM tooling in your public stack, no AI-themed posts in the last 30 days. Either your team is still scoping or the work is happening off-site." },
+    early_adopter: { label: 'Early Adopter.', tone: '#131210', description: 'You are actively integrating AI into operations. Ahead of the peer group.' },
+    on_par:        { label: 'On Par.',        tone: '#131210', description: 'The awareness is there, but deployment lags behind leading firms in your tier.' },
+    behind:        { label: 'Behind.',        tone: '#131210', description: 'No AI tooling detected on your side. Each month of delay compounds the gap.' },
+    unknown:       { label: 'Unknown.',       tone: 'rgba(255,255,255,0.85)', description: "No verified AI provider, no LLM tooling in your public stack, no AI-themed posts in the last 30 days. Either your team is still scoping or the work is happening off-site." },
   };
   const m = meta[signal] ?? meta.unknown;
   return (
-    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(247,244,239,0.12)' }}>
+    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
       <div className="grid lg:grid-cols-[auto_1fr] gap-6 lg:gap-12 items-baseline">
-        <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+        <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
           AI Posture
         </p>
         <div>
-          <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1, color: m.tone }}>
+          <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', lineHeight: 1, color: m.tone }}>
             {m.label}
           </p>
-          <p className="mt-2 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(247,244,239,0.78)' }}>
+          <p className="mt-2 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: 'rgba(255,255,255,0.78)' }}>
             {m.description}
           </p>
         </div>
@@ -3829,22 +3872,22 @@ function PeerComparisonInlineDark({ report }: { report: ReportJson }) {
   if (!pm) return null;
   const diff = report.automation_score - pm.score;
   if (diff === 0) return null;
-  const tone = diff > 0 ? '#7FA868' : '#D89254';
+  const tone = diff > 0 ? '#131210' : '#131210';
   const label = diff > 0 ? `+${diff}` : `${diff}`;
   return (
-    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(247,244,239,0.12)' }}>
-      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,239,0.55)' }}>
+    <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+      <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>
         Peer median, {pm.size_tier_compared}
       </p>
       <div className="flex items-baseline gap-5 mt-3">
-        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 1, color: '#F7F4EF', fontVariantNumeric: 'tabular-nums' }}>
+        <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(2rem, 3vw, 2.75rem)', lineHeight: 1, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
           {pm.score}
         </p>
-        <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: '20px', color: tone }}>
+        <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '20px', color: tone }}>
           ({label} vs them)
         </p>
       </div>
-      <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(247,244,239,0.78)' }}>
+      <p className="mt-3 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: 'rgba(255,255,255,0.78)' }}>
         {pm.interpretation}
       </p>
     </div>
@@ -3871,10 +3914,10 @@ function SectionContentSample({ report }: { report: ReportJson }) {
             className="px-6 py-5 hover:bg-paper-sunk/30 transition-colors"
             style={{ borderLeft: '2px solid var(--color-accent)' }}
           >
-            <p style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(16px, 1.6vw, 18px)', lineHeight: 1.5, color: '#1A1A1A' }}>
+            <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(16px, 1.6vw, 18px)', lineHeight: 1.5, color: '#131210' }}>
               "{p.text.length > 320 ? p.text.slice(0, 317) + '…' : p.text}"
             </p>
-            <div className="mt-4 flex items-center gap-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+            <div className="mt-4 flex items-center gap-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>
               {p.date && <span>{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
               {p.reactions != null && <span>{p.reactions} reactions</span>}
             </div>
@@ -3896,24 +3939,24 @@ function SectionHiring({ report }: { report: ReportJson }) {
       </SerifBody>
       <div className="grid lg:grid-cols-[auto_1fr] gap-12 lg:gap-20 items-start">
         <div>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>
             Open roles
           </p>
           <p style={{
-            fontFamily: SERIF, fontStyle: 'italic',
+            fontFamily: BODY_SERIF, fontStyle: 'italic',
             fontSize: 'clamp(5rem, 9vw, 8rem)', lineHeight: 0.9,
             letterSpacing: '-0.04em', color: 'var(--color-accent)', marginTop: 10,
             fontVariantNumeric: 'tabular-nums',
           }}>
             <Scramble value={String(h.open_count)} duration={1.0} />
           </p>
-          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
             via LinkedIn jobs
           </p>
         </div>
         {h.sample_titles && h.sample_titles.length > 0 && (
           <div>
-            <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
+            <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>
               A sample of what you're hiring
             </p>
             <div className="space-y-px border-y border-[color:var(--color-hairline)]">
@@ -3926,7 +3969,7 @@ function SectionHiring({ report }: { report: ReportJson }) {
                   transition={{ duration: 0.5, ease: EASE, delay: i * 0.06 }}
                   className="py-4 border-b border-[color:var(--color-hairline)] last:border-b-0"
                 >
-                  <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }}>
+                  <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#131210' }}>
                     {t.replace(/\s*\([^)]*\)\s*$/, '').trim()}
                   </p>
                 </motion.div>
@@ -3955,11 +3998,11 @@ function SectionNews({ report }: { report: ReportJson }) {
             href={n.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-4 py-5 hover:bg-[rgba(26,26,26,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0"
+            className="flex items-start gap-4 py-5 hover:bg-[rgba(19,18,16,0.02)] transition-colors group border-b border-[color:var(--color-hairline)] last:border-b-0"
           >
             <div className="flex-1">
-              <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#1A1A1A' }} className="group-hover:text-accent transition-colors">{n.title}</p>
-              <div className="mt-1 flex items-center gap-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+              <p style={{ fontFamily: SERIF, fontSize: '20px', letterSpacing: '-0.01em', color: '#131210' }} className="group-hover:text-accent transition-colors">{n.title}</p>
+              <div className="mt-1 flex items-center gap-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>
                 {n.source && <span>{n.source}</span>}
                 {n.date && <span>{n.date}</span>}
               </div>
@@ -4000,13 +4043,13 @@ function SectionMethodology() {
       {/* P1.7 — surface the reciprocity payoff. The collapsible was buried; 95% of readers never
           opened it. Always-visible 1-liner names the source count + model so the credibility
           signal lands before the click. The full source breakdown stays behind the disclosure. */}
-      <p className="mb-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)' }}>
-        Built from <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>14 public sources</strong>.
+      <p className="mb-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(19,18,16,0.7)' }}>
+        Built from <strong style={{ color: '#131210', fontWeight: 600 }}>14 public sources</strong>.
       </p>
       <details className="group">
         <summary
           className="cursor-pointer inline-flex items-center gap-2 list-none transition-colors"
-          style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}
+          style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}
         >
           <span className="transition-transform group-open:rotate-90" aria-hidden style={{ display: 'inline-block', fontSize: '10px' }}>▸</span>
           See sources + what we couldn't see
@@ -4014,25 +4057,25 @@ function SectionMethodology() {
 
         <div className="mt-8 space-y-8">
           <div>
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               How this report was generated
             </p>
             <SerifBody className="mt-3 max-w-2xl">
-              We pulled signals from the 14 public sources below. Claude Opus 4.7 synthesized the patterns into the gap analysis and dollar estimates. Ivan reviews every report before it ships. <strong style={{ color: '#1A1A1A', fontWeight: 600 }}>Generated {today}.</strong>
+              We pulled signals from the 14 public sources below. Claude Opus 4.7 synthesized the patterns into the gap analysis and dollar estimates. Ivan reviews every report before it ships. <strong style={{ color: '#131210', fontWeight: 600 }}>Generated {today}.</strong>
             </SerifBody>
           </div>
 
           <div>
-            <p className="mb-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <p className="mb-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               Sources pulled
             </p>
             <ul className="space-y-2 border-t border-[color:var(--color-hairline)]" style={{ listStyle: 'none', padding: 0 }}>
               {SOURCES.map((s) => (
                 <li key={s.name} className="flex items-baseline gap-4 py-2 border-b border-[color:var(--color-hairline)]">
-                  <span className="shrink-0" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#1A1A1A', fontWeight: 600, minWidth: '180px' }}>
+                  <span className="shrink-0" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.04em', color: '#131210', fontWeight: 600, minWidth: '180px' }}>
                     {s.name}
                   </span>
-                  <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(26,26,26,0.7)', lineHeight: 1.5 }}>
+                  <span style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: 'rgba(19,18,16,0.7)', lineHeight: 1.5 }}>
                     {s.what}
                   </span>
                 </li>
@@ -4041,7 +4084,7 @@ function SectionMethodology() {
           </div>
 
           <div>
-            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               What we couldn't see
             </p>
             <SerifBody className="mt-3 max-w-2xl">
@@ -4065,8 +4108,8 @@ function ClientCard({ name, domain, outcome }: { name: string; domain: string; o
           className="flex items-center justify-center"
           style={{
             width: 44, height: 44, background: '#fff',
-            border: '1px solid rgba(26,26,26,0.1)',
-            fontFamily: MONO, fontSize: '11px', letterSpacing: '0.05em', color: '#1A1A1A', fontWeight: 600,
+            border: '1px solid rgba(19,18,16,0.1)',
+            fontFamily: MONO, fontSize: '11px', letterSpacing: '0.05em', color: '#131210', fontWeight: 600,
           }}
           aria-hidden
         >
@@ -4079,14 +4122,14 @@ function ClientCard({ name, domain, outcome }: { name: string; domain: string; o
           loading="lazy"
           width={44}
           height={44}
-          style={{ width: 44, height: 44, objectFit: 'contain', background: '#fff', border: '1px solid rgba(26,26,26,0.08)', padding: 4 }}
+          style={{ width: 44, height: 44, objectFit: 'contain', background: '#fff', border: '1px solid rgba(19,18,16,0.08)', padding: 4 }}
           onError={() => setImgFailed(true)}
         />
       )}
-      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: '#1A1A1A', fontWeight: 600, lineHeight: 1.3 }}>
+      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', color: '#131210', fontWeight: 600, lineHeight: 1.3 }}>
         {name}
       </p>
-      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)' }}>
+      <p style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(19,18,16,0.7)' }}>
         {outcome}
       </p>
     </div>
@@ -4110,42 +4153,42 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
           className="mt-6 mb-6"
           style={{
             fontFamily: SERIF,
-            fontWeight: 400,
+            fontWeight: 800,
             fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
             lineHeight: 1.05,
             letterSpacing: '-0.02em',
-            color: '#1A1A1A',
+            color: '#131210',
           }}
         >
           Here's the <Italic highlight>move</Italic>.
         </h2>
 
         <SerifBody large className="mb-10 max-w-xl">
-          <span style={{ color: 'rgba(26,26,26,0.8)' }}>
+          <span style={{ color: 'rgba(19,18,16,0.8)' }}>
             Two steps, in order. The first one you can ship this week on your own. The second is the full 90-day build.
           </span>
         </SerifBody>
 
         {/* STEP 1 — Quick win the buyer can do themselves */}
         {w && (
-          <div className="mb-10 max-w-2xl px-5 sm:px-6 lg:px-8 py-7 lg:py-8 -mx-5 sm:-mx-6 lg:-mx-8" style={{ background: 'rgba(76,110,61,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
+          <div className="mb-10 max-w-2xl px-5 sm:px-6 lg:px-8 py-7 lg:py-8 -mx-5 sm:-mx-6 lg:-mx-8" style={{ background: 'rgba(19,18,16,0.06)', borderLeft: '3px solid var(--color-accent)' }}>
             <div className="flex items-center gap-3 mb-4">
               <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
                 Step 01
               </span>
-              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+              <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
                 This week, on your own
               </span>
             </div>
             <h3 style={{
-              fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
-              lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A',
+              fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
+              lineHeight: 1.1, letterSpacing: '-0.015em', color: '#131210',
             }}>
               {w.title}
             </h3>
             <SerifBody className="mt-3"><Emphasized>{w.why}</Emphasized></SerifBody>
             {(w.approach || (w.tools && w.tools.length > 0)) && (
-              <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+              <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(19,18,16,0.65)', fontStyle: 'italic' }}>
                 {w.approach ?? w.tools?.join(', ')}
               </p>
             )}
@@ -4158,27 +4201,27 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
             <span style={{ fontFamily: MONO, fontSize: '13px', letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700 }}>
               Step 02
             </span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
               When you're ready to scale
             </span>
           </div>
           <h3 style={{
-            fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
-            lineHeight: 1.1, letterSpacing: '-0.015em', color: '#1A1A1A',
+            fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.6vw, 2rem)',
+            lineHeight: 1.1, letterSpacing: '-0.015em', color: '#131210',
           }}>
             Hand us the whole scan. We build the 90-day system around it.
           </h3>
-          <p className="mt-3 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
+          <p className="mt-3 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(19,18,16,0.75)' }}>
             The Assessment converts this report into a full build sequence (what ships first, what depends on what, ROI per phase) plus a 60-minute walkthrough with Ivan.
           </p>
         </div>
 
         {/* PRICE ANCHOR + CTA — comes IMMEDIATELY after Step 02 description so the action
             is adjacent to the prompt. No social-proof gap to scroll through first. */}
-        <p className="mb-2 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.7)', fontStyle: 'italic' }}>
+        <p className="mb-2 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(19,18,16,0.7)', fontStyle: 'italic' }}>
           Costs less than the smallest opportunity above. Pays back inside the first month if even one ships.
         </p>
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.85)' }}>
+        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.85)' }}>
           $2,000 · 1 week · 60-min findings walkthrough
         </p>
 
@@ -4192,14 +4235,14 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
               fontFamily: BODY_SERIF,
               fontWeight: 600,
               fontSize: '16px',
-              backgroundColor: '#1A1A1A',
-              color: '#F7F4EF',
+              backgroundColor: '#131210',
+              color: '#FFFFFF',
             }}
           >
             Book your Agent-Ready Assessment <ArrowRight size={18} />
           </a>
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-5">
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.6)' }}>
+            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>
               Not ready to commit
             </span>
             <a
@@ -4214,7 +4257,7 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
                 color: 'var(--color-accent)',
                 textDecoration: 'underline',
                 textUnderlineOffset: '5px',
-                textDecorationColor: 'rgba(76,110,61,0.45)',
+                textDecorationColor: 'rgba(19,18,16,0.45)',
               }}
             >
               Book the free fit call <ArrowRight className="w-4 h-4 self-center transition-transform group-hover:translate-x-0.5" />
@@ -4224,8 +4267,8 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
 
         {/* SOCIAL PROOF moved BELOW the CTA. Buyer who clicks doesn't have to scroll past this.
             Buyer who needs more reassurance scrolls down and finds it. */}
-        <div className="pt-10 max-w-3xl" style={{ borderTop: '1px solid rgba(26,26,26,0.10)' }}>
-          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+        <div className="pt-10 max-w-3xl" style={{ borderTop: '1px solid rgba(19,18,16,0.10)' }}>
+          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
             Who's building this
           </p>
 
@@ -4239,13 +4282,13 @@ function SectionClosingArc({ report, companyName }: { report: ReportJson; compan
               style={{ borderRadius: 0 }}
               onError={fallbackOnError}
             />
-            <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(26,26,26,0.75)' }}>
-              <span style={{ color: '#1A1A1A', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
+            <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: 'rgba(19,18,16,0.75)' }}>
+              <span style={{ color: '#131210', fontWeight: 600 }}>Ivan Manfredi</span> builds AI systems for B2B service businesses. Every project pays back in 90 days, or he doesn't build it. This scan is the same diagnostic he runs on every Assessment client.
             </p>
           </div>
 
           {/* Recent builds — client logos */}
-          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>
+          <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
             Recent builds
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
@@ -4283,12 +4326,12 @@ function ReframeSection({ report }: { report: ReportJson }) {
     return (
       <ReframeBand kicker="The Signal" id="reframe">
         <p style={{
-          fontFamily: SERIF, fontWeight: 400,
+          fontFamily: SERIF, fontWeight: 800,
           fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
-          letterSpacing: '-0.02em', color: '#1A1A1A',
+          letterSpacing: '-0.02em', color: '#131210',
         }}>
           {pre}
-          <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{emphasis}</em>
+          <em style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK, fontWeight: 400 }}>{emphasis}</em>
           {post}
         </p>
       </ReframeBand>
@@ -4321,7 +4364,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
     const platformStr = platforms.join(' + ') || 'paid channels';
     content = {
       reframe_pre: "You're paying for clicks on ",
-      reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{platformStr}</em>,
+      reframe_emphasis: <em style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK, fontWeight: 400 }}>{platformStr}</em>,
       reframe_post: ` — ${totalAds} active ads running right now — but the path from click to booked meeting goes through a contact form into a Gmail inbox. The most expensive part of the funnel is the part with no system.`,
     };
   }
@@ -4331,7 +4374,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
     if (!hasAiRole) {
       content = {
         reframe_pre: 'You have ',
-        reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{hiringCount} open roles</em>,
+        reframe_emphasis: <em style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK, fontWeight: 400 }}>{hiringCount} open roles</em>,
         reframe_post: ` — ${hiringTitles.slice(0, 2).join(', ')} and more — and zero AI or automation titles among them. The fastest way to scale headcount is to scale systems first.`,
       };
     }
@@ -4343,7 +4386,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
     if (followers >= 500 && posts < 8) {
       content = {
         reframe_pre: 'You have ',
-        reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{followers.toLocaleString()} followers</em>,
+        reframe_emphasis: <em style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK, fontWeight: 400 }}>{followers.toLocaleString()} followers</em>,
         reframe_post: ` and published ${posts} posts in 30 days. That's an audience that's already opted in — being talked to less often than your competitors' audiences.`,
       };
     }
@@ -4352,7 +4395,7 @@ function ReframeSection({ report }: { report: ReportJson }) {
   else if (monthlyVisits >= 5000 && missingCapture) {
     content = {
       reframe_pre: 'Roughly ',
-      reframe_emphasis: <em style={{ fontStyle: 'italic', color: 'var(--color-accent)', fontWeight: 500 }}>{monthlyVisits.toLocaleString()} monthly visitors</em>,
+      reframe_emphasis: <em style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK, fontWeight: 400 }}>{monthlyVisits.toLocaleString()} monthly visitors</em>,
       reframe_post: " hit your site — and the only paths off the page are a contact form and a phone number. Everything in between (qualification, scheduling, follow-up) is human.",
     };
   }
@@ -4362,9 +4405,9 @@ function ReframeSection({ report }: { report: ReportJson }) {
   return (
     <ReframeBand kicker="The Signal" id="reframe">
       <p style={{
-        fontFamily: SERIF, fontWeight: 400,
+        fontFamily: SERIF, fontWeight: 800,
         fontSize: 'clamp(1.75rem, 3.8vw, 3rem)', lineHeight: 1.12,
-        letterSpacing: '-0.02em', color: '#1A1A1A',
+        letterSpacing: '-0.02em', color: '#131210',
       }}>
         {content.reframe_pre}{content.reframe_emphasis}{content.reframe_post}
       </p>
@@ -4404,21 +4447,21 @@ function JawDropSignal({ report }: { report: ReportJson }) {
         transition={{ duration: 0.7, ease: EASE }}
         className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
       >
-        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>
           Spotted · Live Signal
         </p>
         <div className="flex gap-6 lg:gap-10 items-start max-w-3xl">
           {imgSrc && (
-            <div className="shrink-0 w-20 h-20 lg:w-28 lg:h-28 overflow-hidden" style={{ border: '1px solid rgba(26,26,26,0.1)', background: '#EFEAE2' }}>
+            <div className="shrink-0 w-20 h-20 lg:w-28 lg:h-28 overflow-hidden" style={{ border: '1px solid rgba(19,18,16,0.1)', background: '#FFFFFF' }}>
               <img src={imgSrc} alt="Active ad creative" className="w-full h-full object-cover" loading="lazy" />
             </div>
           )}
           <div style={wrapperStyle}>
-            <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-              Running <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
+            <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>
+              Running <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
             </p>
             {firstImageCreative.body && firstImageCreative.body.trim().length > 20 && (
-              <p className="mt-2 max-w-xl line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)', fontStyle: 'italic' }}>
+              <p className="mt-2 max-w-xl line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(19,18,16,0.6)', fontStyle: 'italic' }}>
                 "{firstImageCreative.body.length > 160 ? firstImageCreative.body.slice(0, 157) + '…' : firstImageCreative.body}"
               </p>
             )}
@@ -4443,14 +4486,14 @@ function JawDropSignal({ report }: { report: ReportJson }) {
         transition={{ duration: 0.7, ease: EASE }}
         className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
       >
-        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>
           Spotted · Live Spend
         </p>
         <div className="max-w-3xl">
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-            <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
+          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>
+            <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK }}>{totalAds}</span> active {totalAds === 1 ? 'ad' : 'ads'} on {platformStr}.
           </p>
-          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)', fontStyle: 'italic' }}>
+          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(19,18,16,0.65)', fontStyle: 'italic' }}>
             Public ad library confirms current spend. Captured today.
           </p>
         </div>
@@ -4467,15 +4510,15 @@ function JawDropSignal({ report }: { report: ReportJson }) {
         transition={{ duration: 0.7, ease: EASE }}
         className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
       >
-        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>
           Spotted · Hiring Signal
         </p>
         <div className="max-w-3xl">
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-            <span style={{ fontStyle: 'italic', color: 'var(--color-accent)' }}>{hiringCount}</span> open {hiringCount === 1 ? 'role' : 'roles'} right now.
+          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 2.25rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>
+            <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', color: INK }}>{hiringCount}</span> open {hiringCount === 1 ? 'role' : 'roles'} right now.
           </p>
           {report.hiring?.sample_titles && report.hiring.sample_titles.length > 0 && (
-            <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.65)' }}>
+            <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(19,18,16,0.65)' }}>
               Including: <Italic>{report.hiring.sample_titles[0]}</Italic>
               {report.hiring.sample_titles[1] ? `, ${report.hiring.sample_titles[1]}` : ''}
               {report.hiring.sample_titles.length > 2 ? ` + ${report.hiring.sample_titles.length - 2} more` : ''}.
@@ -4495,17 +4538,17 @@ function JawDropSignal({ report }: { report: ReportJson }) {
         transition={{ duration: 0.7, ease: EASE }}
         className="py-12 lg:py-16 border-t border-[color:var(--color-hairline)]"
       >
-        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+        <p className="mb-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>
           Spotted · Recent Post
         </p>
         <blockquote
           className="max-w-2xl"
-          style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 'clamp(1.1rem, 2vw, 1.5rem)', lineHeight: 1.4, color: '#1A1A1A', borderLeft: '2px solid var(--color-accent)', paddingLeft: 16 }}
+          style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 'clamp(1.1rem, 2vw, 1.5rem)', lineHeight: 1.4, color: '#131210', borderLeft: '2px solid var(--color-accent)', paddingLeft: 16 }}
         >
           "{topPost.text.length > 280 ? topPost.text.slice(0, 277) + '…' : topPost.text}"
         </blockquote>
         {topPost.reactions != null && (
-          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>
+          <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.45)' }}>
             {topPost.reactions} reactions
           </p>
         )}
@@ -4540,16 +4583,16 @@ function SupportingEvidenceAccordion({ report }: { report: ReportJson }) {
         transition={{ duration: 0.2 }}
         className="w-full flex items-center justify-between gap-6 text-left group px-5 lg:px-7 py-5 -mx-5 lg:-mx-7"
         style={{
-          background: open ? 'rgba(76,110,61,0.07)' : 'rgba(76,110,61,0.04)',
+          background: open ? 'rgba(19,18,16,0.07)' : 'rgba(19,18,16,0.04)',
           borderLeft: '3px solid var(--color-accent)',
           transition: 'background 0.2s ease',
         }}
       >
         <div>
-          <p style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#1A1A1A' }}>
+          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.25rem, 2.2vw, 1.9rem)', lineHeight: 1.08, letterSpacing: '-0.015em', color: '#131210' }}>
             See the data behind every claim above.
           </p>
-          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(26,26,26,0.6)' }}>
+          <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: 'rgba(19,18,16,0.6)' }}>
             Built from 14 public sources.
           </p>
         </div>
@@ -4602,9 +4645,10 @@ const CinematicHero: React.FC<{
 }> = ({ companyName, report, scan, reduceMotion }) => {
   return (
     <div className="max-w-6xl mx-auto px-5 sm:px-6">
-      <div className="pt-10 lg:pt-16 pb-12 lg:pb-20">
-        <HeroBylineRow scan={scan} reduceMotion={reduceMotion} />
-        <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
+      <div className="pt-8 lg:pt-12 pb-12 lg:pb-20">
+        <HeroDocByline scan={scan} />
+        <AdminGrid companyName={companyName} scan={scan} />
+        <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end pt-10 lg:pt-16">
           <div>
             <CompanyLogo logoUrl={report.logo_url} domain={scan.domain} />
             <motion.h1
@@ -4612,17 +4656,21 @@ const CinematicHero: React.FC<{
               animate={{ y: 0 }}
               transition={{ delay: 0.15, duration: 0.7, ease: EASE }}
               style={{
-                fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(3rem, 7vw, 6rem)',
-                lineHeight: 0.94, letterSpacing: '-0.025em', color: '#1A1A1A', marginBottom: '1.25rem',
+                fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(3rem, 7vw, 6rem)',
+                lineHeight: 0.94, letterSpacing: '-0.035em', color: INK, marginBottom: '1.25rem',
               }}
             >
               {companyName}
             </motion.h1>
-            <SerifBody large className="max-w-xl"><Emphasized>{report.score_rationale}</Emphasized></SerifBody>
+            <p className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(16px,1.6vw,19px)', lineHeight: 1.5, color: SEC }}>
+              <Emphasized>{report.score_rationale}</Emphasized>
+            </p>
           </div>
           <div className="lg:w-80 lg:shrink-0">
-            <Kicker>Automation Maturity Score</Kicker>
-            <div className="mt-4">
+            <div style={{ fontFamily: SERIF, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 10, color: MUTED }}>
+              Automation Maturity Score
+            </div>
+            <div className="mt-3">
               <ScoreBar score={report.automation_score} grade={report.automation_grade} size="lg" />
             </div>
           </div>
@@ -4633,19 +4681,44 @@ const CinematicHero: React.FC<{
   );
 };
 
-// Shared sub-components for the hero (used in both pinned + static modes)
-const HeroBylineRow: React.FC<{ scan: { completed_at: string | null; created_at: string }; reduceMotion: boolean }> = ({ scan, reduceMotion }) => (
-  <div className="flex items-center gap-3 mb-8">
-    <motion.span
-      animate={reduceMotion ? undefined : { opacity: [1, 0.3, 1] }}
-      transition={reduceMotion ? undefined : { duration: 2, repeat: Infinity }}
-      style={{ color: 'var(--color-accent)', fontSize: '8px' }}
-    >●</motion.span>
-    <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-      AI Opportunity Scan · {new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+// Document byline — square + doc-type + date, a hairline rule, then the reference number.
+// The administrative title-block grammar of a regulatory document.
+const scanRef = (scan: { completed_at: string | null; created_at: string }) => {
+  const d = new Date(scan.completed_at ?? scan.created_at);
+  return `SCN-${String(d.getFullYear()).slice(2)}${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const HeroDocByline: React.FC<{ scan: { completed_at: string | null; created_at: string } }> = ({ scan }) => (
+  <div className="flex items-center gap-3" style={{ fontFamily: SERIF, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 'clamp(9px,1.1vw,11px)', color: SEC }}>
+    <span aria-hidden style={{ width: 9, height: 9, background: INK, flexShrink: 0 }} />
+    <span className="whitespace-nowrap">
+      AI Opportunity Scan&nbsp;&nbsp;·&nbsp;&nbsp;{new Date(scan.completed_at ?? scan.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
     </span>
+    <span aria-hidden style={{ flex: '1 1 0%', height: 1, background: HAIR }} />
+    <span className="whitespace-nowrap">Ref. {scanRef(scan)}</span>
   </div>
 );
+
+// Admin title-block table — 3 cells, ink top/bottom rules, hairline column dividers.
+const AdminGrid: React.FC<{ companyName: string; scan: { domain: string } }> = ({ companyName, scan }) => {
+  const cells: [string, string][] = [
+    ['Prepared for', companyName],
+    ['Scanned', scan.domain],
+    ['Measured in', 'Booked calls & margin'],
+  ];
+  return (
+    <div className="mt-6 lg:mt-8 grid grid-cols-1 sm:grid-cols-3" style={{ borderTop: `1px solid ${INK}`, borderBottom: `1px solid ${INK}` }}>
+      {cells.map(([k, v], i) => (
+        <div
+          key={k}
+          className={`py-4 sm:px-5 first:sm:pl-0 border-hairline ${i < 2 ? 'border-b sm:border-b-0 sm:border-r' : ''}`}
+        >
+          <div style={{ fontFamily: SERIF, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 10, color: MUTED }}>{k}</div>
+          <div className="mt-1.5" style={{ fontFamily: SERIF, fontWeight: 500, letterSpacing: '-0.01em', fontSize: 'clamp(15px,1.9vw,19px)', color: INK }}>{v}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const HeroTeaserSignals: React.FC<{ signals: string[] | undefined }> = ({ signals }) => {
   if (!signals || signals.length === 0) return null;
@@ -4653,7 +4726,7 @@ const HeroTeaserSignals: React.FC<{ signals: string[] | undefined }> = ({ signal
     <div className="mt-16 grid sm:grid-cols-3 gap-6 lg:gap-10">
       {signals.map((s, i) => (
         <div key={i} className="border-t-2 pt-4" style={{ borderColor: 'var(--color-accent)' }}>
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)', marginBottom: 8 }}>
+          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)', marginBottom: 8 }}>
             Signal {String(i + 1).padStart(2, '0')}
           </p>
           <SerifBody>{s.replace(/^⚠\s?/, '')}</SerifBody>
@@ -4756,15 +4829,15 @@ const SidebarNav: React.FC = () => {
                   fontSize: '10px',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: isActive ? 'var(--color-accent)' : 'rgba(26,26,26,0.4)',
+                  color: isActive ? 'var(--color-accent)' : 'rgba(19,18,16,0.4)',
                   fontWeight: isActive ? 600 : 400,
                   textDecoration: 'none',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(26,26,26,0.75)';
+                  if (!isActive) e.currentTarget.style.color = 'rgba(19,18,16,0.75)';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(26,26,26,0.4)';
+                  if (!isActive) e.currentTarget.style.color = 'rgba(19,18,16,0.4)';
                 }}
               >
                 <span
@@ -4803,10 +4876,10 @@ const ScanReportPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center" style={BLACKBOX_VARS}>
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-accent/20 border-t-accent rounded-full animate-spin" />
-          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>Loading report</p>
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Loading report</p>
         </div>
       </div>
     );
@@ -4814,10 +4887,10 @@ const ScanReportPage: React.FC = () => {
 
   if (error || !scan || !scan.report_json) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center" style={BLACKBOX_VARS}>
         <div className="text-center max-w-sm px-6">
           <AlertCircle className="w-12 h-12 text-ink-mute mx-auto mb-4" />
-          <h1 style={{ fontFamily: SERIF, fontSize: '32px', color: '#1A1A1A' }} className="mb-2">Report not available</h1>
+          <h1 style={{ fontFamily: SERIF, fontSize: '32px', color: '#131210' }} className="mb-2">Report not available</h1>
           <SerifBody className="mb-6">
             {error ?? "This scan report isn't ready yet, or the link may be incorrect."}
           </SerifBody>
@@ -4857,38 +4930,43 @@ const ScanReportPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
       <ScrollProgress />
       {/* Header */}
-      <header className="sticky top-0 z-30 backdrop-blur-sm border-b border-[color:var(--color-hairline)]" style={{ background: 'rgba(247,244,239,0.9)' }}>
+      <header className="sticky top-0 z-30 border-b" style={{ background: PAPER, borderColor: INK }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" className="transition-colors hover:text-accent"
-                style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>
-            Iván Manfredi
+          {/* Product wordmark — INBOUND + red ON + STEROIDS, one line. The red ON is the
+              composition's single red per Black Box law. */}
+          <Link to="/" className="inline-flex items-center hover:opacity-80 transition-opacity" aria-label="InboundOnSteroids">
+            <Wordmark size={20} />
           </Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.65)' }}>
-            AI Opportunity Scan · {companyName}
-          </span>
-          {/* Mobile: tighter CTA so it doesn't compete with the brand H1 below at 390px (Visual flag).
-              Desktop: full label. Same destination either way. */}
-          <a
-            href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=scan`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 px-3 sm:px-4"
-            style={{
-              fontFamily: BODY_SERIF,
-              fontSize: '14px',
-              fontWeight: 600,
-              backgroundColor: '#1A1A1A',
-              color: '#F7F4EF',
-              minHeight: 40,
-            }}
-          >
-            <span className="sm:hidden">Book</span>
-            <span className="hidden sm:inline">Book your Assessment</span>
-            <ArrowRight size={14} />
-          </a>
+          <div className="flex items-center gap-4 sm:gap-6">
+            {/* Confidential strip */}
+            <span className="hidden md:block" style={{ fontFamily: SERIF, fontWeight: 700, fontSize: '10px', letterSpacing: '0.05em', textTransform: 'uppercase', color: SEC }}>
+              AI Opportunity Scan&nbsp;&nbsp;·&nbsp;&nbsp;Confidential to recipient
+            </span>
+            {/* CTA — href unchanged. Mobile: tighter label; desktop: full. */}
+            <a
+              href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=scan`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-3 sm:px-4"
+              style={{
+                fontFamily: SERIF,
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                backgroundColor: INK,
+                color: PAPER,
+                minHeight: 40,
+              }}
+            >
+              <span className="sm:hidden">Book</span>
+              <span className="hidden sm:inline">Book your Assessment</span>
+              <ArrowRight size={14} />
+            </a>
+          </div>
         </div>
       </header>
 
