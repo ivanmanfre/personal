@@ -35,6 +35,7 @@ const typeIcons: Record<string, React.ReactNode> = {
   carousel_animation: <LayoutGrid className="w-3.5 h-3.5" />,
   screen_recording: <Monitor className="w-3.5 h-3.5" />,
   talking_head: <Camera className="w-3.5 h-3.5" />,
+  founder_recorded: <Camera className="w-3.5 h-3.5" />,
   tool_teardown: <Wrench className="w-3.5 h-3.5" />,
   system_tour: <LayoutGrid className="w-3.5 h-3.5" />,
 };
@@ -43,6 +44,7 @@ const typeLabels: Record<string, string> = {
   carousel_animation: 'Carousel',
   screen_recording: 'Screen Recording',
   talking_head: 'Talking Head',
+  founder_recorded: 'Founder Recorded',
   tool_teardown: 'Tool Teardown',
   system_tour: 'System Tour',
 };
@@ -311,8 +313,9 @@ const VideoIdeasPanel: React.FC = () => {
               const statusIdx = statusFlow.indexOf(idea.status as typeof statusFlow[number]);
               const canAdvance = statusIdx >= 0 && statusIdx < statusFlow.length - 1;
               const isRendering = idea.renderStatus && idea.renderStatus !== 'done' && idea.renderStatus !== 'error';
-              const canGenerateScript = idea.status === 'idea' && !isRendering;
-              const canGenerateVideo = idea.status === 'scripted' && idea.script && !isRendering;
+              const isFounderRecorded = idea.videoType === 'founder_recorded';
+              const canGenerateScript = idea.status === 'idea' && !isRendering && !isFounderRecorded;
+              const canGenerateVideo = idea.status === 'scripted' && idea.script && !isRendering && !isFounderRecorded;
 
               return (
                 <div key={idea.id} className="group/item px-4 py-3 hover:bg-zinc-800/20 transition-colors">
