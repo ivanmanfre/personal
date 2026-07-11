@@ -2300,7 +2300,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               </div>
             </div>
             {receipts.length > 0 && (
-              <p className="cap" style={{ marginTop: 20 }}>Read from your public presence today: {receipts.map((r, i) => <span key={i}>{i ? '  ·  ' : ''}{r.label} — {r.value}</span>)}</p>
+              <p className="cap" style={{ marginTop: 20 }}>Read from your public presence today: {receipts.map((r, i) => <span key={i}>{i ? '  ·  ' : ''}{r.label}: {r.value}</span>)}</p>
             )}
           </Rev>
         )}
