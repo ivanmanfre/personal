@@ -2169,78 +2169,179 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
     <CIMagneticCTA href={bookUrl} label={label} small={small} />
   );
 
+  // ── Derived, honest figures (numbers trace to report_json / scan stamps) ──
+  const scanDate = recDateISO(scan.completed_at, scan.created_at);
+  const volRaw = (ci.volume_estimate?.value || '').trim();
+  const volNum = (volRaw.match(/[\d][\d,]*/) || [])[0] || '';
+  const volBasis = (ci.volume_estimate?.basis || '').trim();
+  const leaks = (ci.leaking_signals ?? []).slice(0, 3);
+  const cleanDomain = (scan.domain || companyName || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  const WARN: Record<CallIntel['archetype'], { effect: string; verdict: string }> = {
+    sales_demo_driven:   { effect: 'WARNING: DEALS LOST UNEXAMINED', verdict: 'The calls happen. Nobody reviews what lost the deal.' },
+    cs_retention_driven: { effect: 'WARNING: CHURN SEEN TOO LATE', verdict: 'The customer says it on the call. You hear it at renewal.' },
+    intake_driven:       { effect: 'WARNING: GOOD CASES SLIP AWAY', verdict: 'The right cases call in. Most are never looked at twice.' },
+  };
+  const warn = WARN[ci.archetype] ?? WARN.sales_demo_driven;
+  const reading = volNum
+    ? { open: false, k: 'As found · call volume', n: volNum, d: `${volBasis || 'calls a month'}, with no record of what happens on them.` }
+    : { open: true, k: 'As found', n: '[ open ]', d: 'call volume not on record yet. The cell is ruled and left open.' };
+  // ProvalTech case-study stat tiles — copy is a PLACEHOLDER per code comment; kept verbatim, given quiet body treatment (no figure-plate certification).
+  const provalStats = [
+    { v: '+$20K', label: 'a month in new revenue', sub: 'from the calls they already ran' }, // PLACEHOLDER: '+$20K/mo'
+    { v: '+27%', label: 'close rate', sub: 'after coaching on flagged calls' },              // PLACEHOLDER: '+27%'
+    { v: '20×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' },     // REAL
+  ];
+  const CI_REVIEWS = [
+    { q: 'Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.', n: 'Camille Haas', r: 'Head of Operations' },
+    { q: 'His solutions helped uncover opportunities we were missing, directly impacting our bottom line.', n: 'Rodrigo Ibañez', r: 'Managing Director' },
+    { q: 'You see how he uses AI and immediately feel like you’ve been doing things the hard way. Walked away with a completely different approach.', n: 'Cristian Trif', r: 'Salesforce Consultant · 9 yrs' },
+  ];
+
   return (
-    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
+    <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
+      <RecordStyles />
       <ScrollProgress />
-      <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+
+      {/* ── TOP REGISTER ─────────────────────── */}
+      <header className="reg">
+        <div className="wrap reg-row">
           <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Call Intelligence · {companyName}</span>
-          <BookButton label="Book a call" small />
+          <div className="reg-right">
+            <span className="reg-meta hidden md:inline">Call Intelligence&nbsp;·&nbsp;Confidential to recipient</span>
+            <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+          </div>
         </div>
       </header>
 
-      <CallIntelHero ci={ci} companyName={companyName} meta={meta} bookUrl={bookUrl} />
+      <main className="wrap">
+        {/* ── DOCLINE ─────────────────────────── */}
+        <Docline docType="Call Intelligence · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
-      <CallIntelPain ci={ci} companyName={companyName} receipts={receipts} scan={scan} />
+        {/* ── DATA PLATE ──────────────────────── */}
+        <DataPlate cells={[
+          { k: 'Prepared for', v: companyName },
+          { k: 'Scanned', v: <>Public presence{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
+          { k: 'Scan date', v: <span className="num">{scanDate}</span> },
+          { k: 'Operator of record', v: 'Ivan Manfredi' },
+          { k: 'Measured in', v: 'Revenue from calls you already run' },
+          { k: 'Scope', v: 'Every call transcribed, scored, routed' },
+        ]} />
 
-      {/* THE WHOLE SYSTEM — animated flow diagram */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl">
-          <Kicker>The whole system</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            Every call in. <Italic>The right output out.</Italic>
-          </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
-            Every call your team runs flows through one scoring engine, and comes back as something you can act on.
-          </p>
-        </div>
-        <div className="mt-10 lg:mt-14"><CallIntelSystemFlow /></div>
-      </section>
+        {/* ── FOLD ────────────────────────────── */}
+        <Rev el="section" className="fold">
+          <div>
+            <h1 className="company">{companyName}</h1>
+            <p className="lede">{ci.thesis || 'The calls already happen. Today nothing keeps the record of what wins or loses on them.'}</p>
+          </div>
+          <div className="reading">
+            <div className="rk">{reading.k}</div>
+            <div className="rn num" style={reading.open ? { fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(22px,3vw,30px)', color: MUTED } : undefined}>{reading.n}</div>
+            <div className="rd">{reading.d}</div>
+            <div className="rrow"><span>Scored today</span><span className="num">0</span></div>
+            <div className="rrow"><span>Record kept</span><span>None</span></div>
+          </div>
+        </Rev>
 
-      {/* WHAT YOU GET — the four deliverables, up close */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl">
-          <Kicker>What you get</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            Two kinds of calls. <Italic>Two kinds of output.</Italic>
-          </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
-            One improves the next deal. One saves the account before it's gone.
-          </p>
-        </div>
-        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-stretch">
-          {surfaces.map((s, i) => (
-            <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="flex flex-col h-full scroll-mt-24">
-              <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
-              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210', minHeight: '2.3em' }}>{s.head}</p>
-              <div className="flex-1">{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
+        {/* ── VERDICT · THE BOX (1 of 2) ──────── */}
+        <div className="boxwrap">
+          <Rev className="box tilt">
+            <div className="box-head">
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">{warn.effect}</span>
             </div>
-          ))}
-        </div>
-        {/* and the urgent ones land where your team already works */}
-        <div className="mt-12 max-w-2xl mx-auto text-center">
-          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#131210' }}>
-            And the urgent ones ping you <Italic>where you already work.</Italic>
-          </p>
-          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#6B675E' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
-        </div>
-        <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
-        <div id="ci-digest" className="mt-14 max-w-3xl mx-auto scroll-mt-24">
-          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Every Monday: the weekly digest</p>
-          <CallIntelProductMock ci={ci} companyName={companyName} />
-        </div>
-        <div id="ci-control" className="mt-14 scroll-mt-24">
-          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>You stay in control</p>
-          <CIControlPanel companyName={companyName} />
+            <div className="box-body">{warn.verdict}</div>
+            <div className="afp">
+              <div className="afp-h">
+                <span>Parameter</span>
+                <span>As found · {scanDate}</span>
+                <span>Projected · scored</span>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Calls reviewed</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · none scored ]</div>
+                <div className="afp-v" data-l="Projected · scored">Every call scored on your rubric</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Deal-loss reasons</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · not on record ]</div>
+                <div className="afp-v" data-l="Projected · scored">Flagged per call, coached next time</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">At-risk accounts</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · surfaces at renewal ]</div>
+                <div className="afp-v" data-l="Projected · scored">Flagged the morning it happens</div>
+              </div>
+            </div>
+            <p className="box-note">The readings above have no before-state to record: the cells are ruled and left open, because nothing scores those calls today. Everything below this line is the record the engine would keep instead.</p>
+          </Rev>
         </div>
 
-        {/* MORE — extra capabilities, scannable, no heavy mocks */}
-        <div className="mt-16">
-          <p className="mb-7 text-center" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210' }}>
-            And it catches more than <Italic>you'd think.</Italic>
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ── SECTION 03 · OBSERVATIONS LEDGER ── */}
+        {leaks.length > 0 && (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
+              title="What the scan read on your calls."
+              note="Read from your public presence on the scan date. The trailing rows stay ruled and open until the engine is running against your live calls."
+            />
+            <div className="ledger">
+              {leaks.map((l, i) => (
+                <div className="lrow" key={i}>
+                  <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+                  <div>
+                    <div className="lobs">{l.title}</div>
+                    {l.detail ? <div className="lbuild"><span className="bl">→ Reading</span><span className="bt">{l.detail}</span></div> : null}
+                  </div>
+                </div>
+              ))}
+              <div className="lrow open">
+                <div className="lmeta"><div className="lidx num">{String(leaks.length + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+                <div className="lobs">Ruled and left open. The next reading is entered once the engine is scoring your live calls.</div>
+              </div>
+            </div>
+            {receipts.length > 0 && (
+              <p className="cap" style={{ marginTop: 20 }}>Read from your public presence today: {receipts.map((r, i) => <span key={i}>{i ? '  ·  ' : ''}{r.label} — {r.value}</span>)}</p>
+            )}
+          </Rev>
+        )}
+
+        {/* ── SECTION 04 · THE INSTRUMENT ─────── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 04&nbsp;·&nbsp;The instrument</>}
+            title={<>Every call in. <em className="cl">The right output out.</em></>}
+            note="Every call your team runs flows through one scoring engine, and comes back as something you can act on. The system keeps the record."
+          />
+          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;system flow&nbsp;·&nbsp;calls in, four outputs out</>} caption="Schematic of the scoring engine. Calls are transcribed, scored on your rubric, and routed to the right place.">
+              <CallIntelSystemFlow />
+            </Exhibit>
+          </div>
+          <div className="grid gap-7 lg:grid-cols-2" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            {surfaces.map((s, i) => (
+              <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="scroll-mt-24">
+                <FigLabel>Fig&nbsp;·&nbsp;{s.tag}&nbsp;·&nbsp;{s === SURFACE_SALES ? 'scored call' : 'churn flag'}</FigLabel>
+                <p className="ph" style={{ marginBottom: 12 }}>{s.head}</p>
+                <div className="figframe" style={{ padding: 0 }}>{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
+              </div>
+            ))}
+          </div>
+          <div id="ci-alert-slack" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;where the flags land&nbsp;·&nbsp;your Slack</>} caption="The urgent ones ping you where you already work. No new dashboard to babysit.">
+              <div style={{ maxWidth: 560 }}><CISlackAlert /></div>
+            </Exhibit>
+          </div>
+          <div id="ci-digest" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;the weekly digest&nbsp;·&nbsp;every Monday</>} caption="One scroll, no meeting: the week's pattern, your reps ranked, the accounts at risk.">
+              <CallIntelProductMock ci={ci} companyName={companyName} />
+            </Exhibit>
+          </div>
+          <div id="ci-control" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;the control panel&nbsp;·&nbsp;you set the rules</>} caption="You set the rubric, the thresholds, and who gets pinged. The system runs the way you sell.">
+              <CIControlPanel companyName={companyName} />
+            </Exhibit>
+          </div>
+          <div className="promises" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
             {[
               { t: 'Rep performance', d: 'See who is improving and who is stalling, week over week.' },
               { t: 'Coverage gaps', d: 'Get flagged when calls or follow-ups slip through the cracks.' },
@@ -2248,173 +2349,100 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               { t: 'Competitor mentions', d: 'Know every time a prospect names a rival on a call.' },
               { t: 'Talk-time ratio', d: 'Catch reps talking when they should be listening.' },
               { t: 'New-rep ramp', d: 'Watch how fast new hires get to your best rep’s bar.' },
-            ].map((f, i) => (
-              <motion.div key={f.t}
-                initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: (i % 3) * 0.07 }}
-                className="p-5 lg:p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-                <div className="flex items-center gap-2.5">
-                  <span aria-hidden style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#131210' }}>{f.t}</span>
-                </div>
-                <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#4A463E' }}>{f.d}</p>
-              </motion.div>
+            ].map((f) => (
+              <div className="pcell" key={f.t}><div className="ph">{f.t}</div><div className="pb">{f.d}</div></div>
             ))}
           </div>
-        </div>
-      </section>
+        </Rev>
 
-      {/* CASE STUDY — the proof: a system we already shipped */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
-        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-          How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
-        </h3>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E' }}>
-          Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%.
-        </p>
-
-        {/* results stat tiles. ⚠️ PLACEHOLDER: '+$20K/mo' and '+27%' are placeholders — Ivan swaps
-            the real ProvalTech figures before sending. '20× more calls reviewed' (5%→100%) is real. */}
-        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3 overflow-hidden" style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
-          {[
-            { pre: '+$', fig: '20', suf: 'K', label: 'a month in new revenue', sub: 'from the calls they already ran', placeholder: true }, // PLACEHOLDER
-            { pre: '+', fig: '27', suf: '%', label: 'close rate', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
-            { pre: '', fig: '20', suf: '×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' }, // REAL
-          ].map((s, i) => (
-            <motion.div key={i}
-              initial={reduce ? false : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.7, ease: EASE, delay: i * 0.1 }}
-              className={`px-7 py-8 ${i ? 'border-t sm:border-t-0 sm:border-l' : ''}`}
-              style={{ borderColor: hairline }}
-            >
-              <div style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.6rem, 4.8vw, 3.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
-                {s.pre}<Counter value={Number(s.fig)} />{s.suf}
+        {/* ── SECTION 05 · COMMISSIONING RECORD · PROVALTECH ── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 05&nbsp;·&nbsp;Commissioning record · ProvalTech</>}
+            title="How we turned ProvalTech's existing calls into $20K more a month."
+            note="Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%."
+          />
+          {/* quiet stat cells — placeholder figures kept verbatim, no figure-plate certification */}
+          <div className="kmet" style={{ marginTop: 'clamp(24px,3vw,36px)', borderTop: `1px solid ${HAIR}`, borderLeft: `1px solid ${HAIR}`, borderRight: `1px solid ${HAIR}`, borderBottom: `1px solid ${HAIR}` }}>
+            {provalStats.map((s, i) => (
+              <div className="m" key={i}><div className="mv num">{s.v}</div><div className="k" style={{ marginTop: 6 }}>{s.label}</div><div className="ml" style={{ marginTop: 4 }}>{s.sub}</div></div>
+            ))}
+          </div>
+          <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;ProvalTech · call performance dashboard</>} caption="The live board: per-call scores, per-rep trends, flagged moments.">
+              <div style={{ background: '#131210' }}>
+                <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
+                  <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+                </div>
+                <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
               </div>
-              <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>{s.label}</p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#6B675E' }}>{s.sub}</p>
-            </motion.div>
-          ))}
-        </div>
+            </Exhibit>
+          </div>
+          <p className="cap" style={{ marginTop: 14, letterSpacing: '0.14em', textTransform: 'uppercase', fontStyle: 'normal', fontFamily: MONO, fontSize: 11 }}>STACK · Fireflies · Airtable · n8n · Claude</p>
+        </Rev>
 
-        {/* the real product — the dashboard (wide) + a single scored call (narrow companion) */}
-        <div className="mt-10 grid gap-4 lg:grid-cols-[1.62fr_0.38fr] lg:items-stretch">
-          <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
-            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
-              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
-            </div>
-            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-          </motion.figure>
-          <motion.figure className="overflow-hidden flex flex-col"
-            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE, delay: 0.1 }}
-            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW }}>
-            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#131210' }}>
-              <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>A single scored call</span>
-            </div>
-            <div className="overflow-hidden flex-1" style={{ background: '#FFFFFF' }}>
-              <img src="/cases/provaltech-detail.png" alt="An individual scored call with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }} />
-            </div>
-          </motion.figure>
-        </div>
-        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(19,18,16,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
-      </section>
+        {/* ── SECTION 06 · REPORTED OUTCOMES ──── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 06&nbsp;·&nbsp;Reported outcomes</>}
+            title={<>The kind of work people <em className="cl">rehire for.</em></>}
+          />
+          <div className="kyle" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+            <div className="kyle-q">&ldquo;As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.&rdquo;<span className="who">Adeeb Mohammed · Software Engineer · ex-Amazon · Meta</span></div>
+          </div>
+          <div className="revs">
+            {CI_REVIEWS.map((t, i) => (
+              <div className="rev" key={i}>
+                <div className="rev-q">&ldquo;{t.q}&rdquo;</div>
+                <div className="rev-w">{t.n}<small>{t.r}</small></div>
+              </div>
+            ))}
+          </div>
+        </Rev>
 
-      {/* REVIEWS — real client testimonials (from the landing page), softened-card styled */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl mb-10">
-          <Kicker>What they say</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            The kind of work people <Italic>rehire for.</Italic>
-          </h2>
-        </div>
-        {/* lead quote */}
-        <motion.figure initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
-          className="p-7 lg:p-10 mb-4" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <blockquote style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', lineHeight: 1.22, letterSpacing: '-0.015em', color: '#131210' }}>
-            “As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.”
-          </blockquote>
-          <figcaption className="mt-6 flex items-baseline gap-3 flex-wrap">
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '16px', fontWeight: 600, color: '#131210' }}>Adeeb Mohammed</span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E' }}>Software Engineer · ex-Amazon · Meta</span>
-          </figcaption>
-        </motion.figure>
-        {/* supporting quotes */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { q: 'Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.', a: 'Camille Haas', r: 'Head of Operations' },
-            { q: 'His solutions helped uncover opportunities we were missing, directly impacting our bottom line.', a: 'Rodrigo Ibañez', r: 'Managing Director' },
-            { q: 'You see how he uses AI and immediately feel like you’ve been doing things the hard way. Walked away with a completely different approach.', a: 'Cristian Trif', r: 'Salesforce Consultant · 9 yrs' },
-          ].map((t, i) => (
-            <motion.figure key={t.a}
-              initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: i * 0.08 }}
-              className="p-6 flex flex-col" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <blockquote className="flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#4A463E' }}>“{t.q}”</blockquote>
-              <figcaption className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 600, color: '#131210' }}>{t.a}</p>
-                <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E', marginTop: 2 }}>{t.r}</p>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
-      </section>
-
-      {/* FOUNDER'S NOTE — the human close, right before the ask */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-3xl mx-auto">
-          <Kicker>Who's behind this</Kicker>
-          <div className="mt-7 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-start">
-            <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-cover shrink-0" style={{ borderRadius: 18, boxShadow: CI_SHADOW_LG }} onError={fallbackOnError} />
+        {/* ── OPERATOR OF RECORD ──────────────── */}
+        <Rev el="section" className="sec">
+          <div className="sec-label"><span className="sq" aria-hidden /> Operator of record</div>
+          <div className="operator">
+            <div className="op-portrait">
+              <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
+            </div>
             <div>
-              <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#131210' }}>
-                I'm Ivan. I build the systems agencies <Italic>promise and never ship.</Italic>
-              </p>
-              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#4A463E' }}>
-                Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
-              </p>
-              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for agencies</p>
+              <div className="op-h">I&rsquo;m Ivan. I build the systems agencies promise and never ship.</div>
+              <p className="op-b">Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I&rsquo;ll build yours, run it on your real calls first, and you&rsquo;ll see exactly what it catches before you commit to anything.</p>
+              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
           </div>
+        </Rev>
+
+        {/* ── FINAL CTA · THE BOX (2 of 2, RED) ─ */}
+        <div className="ctawrap">
+          <Rev className="box cta">
+            <div className="box-head" style={{ justifyContent: 'center' }}>
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">WARNING: REVENUE LEFT ON THE CALL</span>
+            </div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>See it running on your calls.</div>
+            <p className="cta-n">15 minutes. Bring a few of your real calls. I&rsquo;ll run them through the system live and show you what it scores, flags, and surfaces.</p>
+            <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call <span aria-hidden>→</span></a>
+            <div className="cta-fine">No deck. A working demo.</div>
+          </Rev>
         </div>
-      </section>
+      </main>
 
-      {/* CTA — soft rounded panel, centered */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
-        <motion.div className="px-7 py-14 lg:px-14 lg:py-20 text-center"
-          initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
-          style={{ background: CI_CARD, borderRadius: 30, boxShadow: CI_SHADOW_LG, border: `1px solid ${hairline}` }}>
-          <h2 className="mx-auto" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#131210', maxWidth: '16ch' }}>
-            See it running on <Italic>your</Italic> calls.
-          </h2>
-          <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E', maxWidth: '40ch' }}>
-            15 minutes. Bring a few of your real calls. I'll run them through the system live and show you what it scores, flags, and surfaces.
-          </p>
-          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <BookButton label="Book a call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>No deck. A working demo.</span>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* FOOTER — closing context below the CTA */}
-      <footer style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="flex items-center gap-3">
-            <CIWaveform count={5} maxH={13} gap={2} barW={2} />
+      {/* ── FOOTER ──────────────────────────── */}
+      <footer className="foot">
+        <div className="wrap">
+          <div className="foot-row">
             <Wordmark size={16} />
-            <span aria-hidden style={{ color: 'rgba(19,18,16,0.25)' }}>·</span>
-            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Call Intelligence</span>
+            <div className="foot-links">
+              <a className="book" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+              <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
+            </div>
           </div>
-          <div className="flex items-center gap-5">
-            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>Book a call</a>
-            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>ivanmanfredi.com</a>
-          </div>
+          <p className="foot-fine">Prepared for {companyName}. Built from a live scan of your public presence, scanned {scanDate}. The record above is projected; the open cells are honest.</p>
         </div>
-        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(19,18,16,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
       </footer>
     </div>
   );
