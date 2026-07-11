@@ -21,7 +21,7 @@ export const offerLadder: OfferLadderRung[] = [
     status: 'live',
     description: 'Managed LinkedIn content engine in the client voice: ~26 posts + ~12 lead magnets + weekly newsletter/mo. Tokens and tools included. The only cold front-door offer.',
     stripeUrl: null,
-    resourceUrl: 'https://ivanmanfredi.com/content-system',
+    resourceUrl: 'https://inboundonsteroids.com',
     visibility: 'public',
   },
 ];
@@ -48,7 +48,7 @@ export const funnelTouchpoints: FunnelTouchpoint[] = [
     step: 3,
     name: '$2k/mo Content System (retainer)',
     buildStatus: 'built',
-    url: 'https://ivanmanfredi.com/content-system',
+    url: 'https://inboundonsteroids.com',
     metric: null,
     description: 'The paid conversion. The free fit call closes into the $2k/mo retainer, tokens and tools included.',
   },
