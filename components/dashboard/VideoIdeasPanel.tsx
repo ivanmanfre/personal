@@ -234,7 +234,7 @@ const VideoIdeasPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:5199"
+            href="https://inboundonsteroids.com/prompter/?key=127919f3ffd76232"
             target="_blank"
             rel="noreferrer"
             title="Opens the local teleprompter (served by com.ivan.prompter on this Mac)"
@@ -366,7 +366,7 @@ const VideoIdeasPanel: React.FC = () => {
                       {/* Read on the teleprompter */}
                       {idea.script && (
                         <a
-                          href={`http://localhost:5199/?idea=${idea.id}`}
+                          href={`https://inboundonsteroids.com/prompter/?key=127919f3ffd76232&idea=${idea.id}`}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
