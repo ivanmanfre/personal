@@ -97,7 +97,7 @@ jobs:
           MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
         run: |
           git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/inboundonsteroids-site.git" /tmp/product-site
-          rsync -a --delete dist/ /tmp/product-site/scan/
+          rsync -a --delete --exclude CNAME dist/ /tmp/product-site/scan/
           cd /tmp/product-site
           git add scan/
           if git diff --cached --quiet; then echo "scan mirror unchanged"; exit 0; fi
