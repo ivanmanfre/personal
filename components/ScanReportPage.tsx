@@ -1374,15 +1374,13 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
 // Thematic animated audio-waveform — call intelligence reads as "live audio being scored".
 // Deterministic bar heights, gentle continuous scaleY loop. Used big in the hero + tiny inline.
 function CIWaveform({ count = 56, maxH = 56, gap = 3, barW = 2.5, className = '', barColor = 'var(--color-accent)' }: { count?: number; maxH?: number; gap?: number; barW?: number; className?: string; barColor?: string }) {
-  const reduce = useReducedMotion();
+  // Static specimen — no pulse loop (Black Box: settled type, no infinite motion).
   return (
     <div className={`flex items-center ${className}`} aria-hidden style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => {
         const base = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.45) + Math.sin(i * 0.3) * 0.4);
         return (
-          <motion.span key={i} style={{ width: barW, borderRadius: barW, background: barColor, height: Math.max(5, base * maxH), transformOrigin: 'center', flexShrink: 0 }}
-            animate={reduce ? {} : { scaleY: [1, 0.32 + (i % 4) * 0.12, 0.88, 0.46, 1] }}
-            transition={{ duration: 1.6 + (i % 5) * 0.25, repeat: Infinity, ease: 'easeInOut', delay: (i % 9) * 0.1 }} />
+          <span key={i} style={{ width: barW, background: barColor, height: Math.max(5, base * maxH), flexShrink: 0 }} />
         );
       })}
     </div>
@@ -1606,10 +1604,6 @@ const SFConnector: React.FC<{ d: string; delay: number; active?: boolean; reduce
     <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
     <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
       initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
-    {!reduce && (
-      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
-        animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
-    )}
   </g>
 );
 const SFNode: React.FC<{ x: number; y: number; w: number; label: string; accent?: boolean; active?: boolean; delay: number; reduce: boolean; sage: string; hairline: string; onEnter?: () => void; onLeave?: () => void; onClick?: () => void }> = ({ x, y, w, label, accent, active, delay, reduce, sage, hairline, onEnter, onLeave, onClick }) => {
@@ -1632,11 +1626,8 @@ function CallIntelSystemFlow() {
   const sage = 'var(--color-accent)';
   const [hover, setHover] = useState<number | 'engine' | null>(null);
   const [auto, setAuto] = useState(0);
-  useEffect(() => {
-    if (hover !== null || reduce) return;
-    const t = setInterval(() => setAuto((a) => (a + 1) % 4), 2800);
-    return () => clearInterval(t);
-  }, [hover, reduce]);
+  // Auto-cycle retired — no self-running motion. The panel follows hover; idle rests on the first output.
+  void setAuto;
   const activeOut = hover === 'engine' ? -1 : (hover ?? auto);
   const info = hover === 'engine' ? SF_ENGINE : SF_OUT[(hover ?? auto) as number];
   const infoAccent = hover !== 'engine' && (SF_OUT[(hover ?? auto) as number] as any).accent;
@@ -1668,13 +1659,8 @@ function CallIntelSystemFlow() {
           {/* engine */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
             onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
-            <motion.rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={20} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1}
-              animate={reduce ? {} : { strokeOpacity: hover === 'engine' ? 0.6 : [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: hover === 'engine' ? 0 : Infinity, ease: 'easeInOut' }} />
+            <rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={0} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1} strokeOpacity={hover === 'engine' ? 0.6 : 0.4} />
             <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={0} fill="#131210" style={{ filter: 'none' }} />
-            {!reduce && (
-              <motion.rect x={EX1 + 12} width={EW - 24} height={1.5} rx={1} fill={sage}
-                animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
-            )}
             <circle cx={EX1 + 24} cy={ECY - 38} r={3.5} fill={sage} />
             <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(255,255,255,0.6)' }}>ENGINE</text>
             <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#FFFFFF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
@@ -1683,11 +1669,6 @@ function CallIntelSystemFlow() {
           {/* input + output nodes */}
           {SF_IN.map((l, i) => <SFNode key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} reduce={!!reduce} sage={sage} hairline={hairline} />)}
           {SF_OUT.map((o, i) => <SFNode key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={(o as any).accent} active={activeOut === i} delay={0.7 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} onEnter={() => setHover(i)} onLeave={() => setHover(null)} onClick={() => goTo(o.anchor)} />)}
-          {/* live counter */}
-          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
-            <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
-            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(19,18,16,0.5)' }}>LIVE · 1,240 calls scored this month</text>
-          </motion.g>
           <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>EVERY CALL IN</text>
           <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>WHAT YOU GET</text>
         </svg>
@@ -1703,17 +1684,13 @@ function CallIntelSystemFlow() {
             </div>
           ))}
         </div>
-        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
-          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn' }} />}
-        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }} />
         <div className="w-full px-5 py-5 text-center" style={{ background: '#131210', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>The engine</p>
           <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#FFFFFF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>transcribe · score · route</p>
         </div>
-        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
-          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
-        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }} />
         <div className="w-full grid grid-cols-2 gap-2.5">
           {SF_OUT.map((o, i) => (
             <button key={o.label} onClick={() => goTo(o.anchor)} className="flex items-center gap-2 px-3.5 py-2.5 text-left" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${o.accent ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
@@ -1733,15 +1710,8 @@ function CallIntelSystemFlow() {
 // One-time "interface loading" shimmer — a sage glint sweeps across a mock as it enters view,
 // then clears. Makes the cards read as live software fetching data.
 function CILoadShimmer() {
-  const reduce = useReducedMotion();
-  if (reduce) return null;
-  return (
-    <motion.div aria-hidden className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ borderRadius: CI_R }}
-      initial={{ opacity: 1 }} whileInView={{ opacity: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 1 }}>
-      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(19,18,16,0.10), transparent)' }}
-        initial={{ x: '-110%' }} whileInView={{ x: '210%' }} viewport={{ once: true }} transition={{ duration: 1.05, ease: 'easeInOut', delay: 0.05 }} />
-    </motion.div>
-  );
+  // Retired — the loading-glint sweep read as SaaS chrome (an AI-slop tell). Black Box: printed, not loading.
+  return null;
 }
 
 function CICallAnalysis() {
@@ -1807,7 +1777,7 @@ function CIChurnAlert() {
       <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
         <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(19,18,16,0.13)' }} />)}</span>
-        <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
+        <span aria-hidden style={{ width: 7, height: 7, background: CI_CORAL, flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
         <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(19,18,16,0.09)' }}>High risk</span>
       </div>
@@ -1907,6 +1877,265 @@ function CISlackAlert() {
     </motion.div>
   );
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OPERATING-RECORD GRAMMAR (tournament winner — candidate C)
+// Scoped document grammar for the two production layouts (ContentSystemReport +
+// CallIntelReport). NOTHING here touches styles.css — every rule is scoped under
+// `.bbrec`. Tokens are the Black Box canon (ink/red/paper/muted/secondary/hairline/
+// flash). The single red per surface is `.cta-btn`; the wordmark's ON is exempt.
+// Two boxes per surface only: the verdict box (tilt) and the CTA box (square), both
+// with WARNING-pattern heads. Depicted product mocks keep native chrome and are
+// framed as Fig · exhibits with Source Serif italic captions.
+// ══════════════════════════════════════════════════════════════════════════════
+const RECORD_CSS = `
+.bbrec{
+  --ink:#131210;--red:#C8361B;--paper:#FFFFFF;--muted:#6B675E;--sec:#4A463E;--hair:#C9C2B2;--flash:#E9E4D6;
+  --grotesk:'Schibsted Grotesk',system-ui,-apple-system,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+  color:var(--ink);font-family:var(--grotesk);font-weight:400;line-height:1.5;
+  font-variant-numeric:tabular-nums;background:var(--paper);overflow-x:hidden;
+}
+.bbrec .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.bbrec .num{font-variant-numeric:tabular-nums;}
+/* register bars */
+.bbrec .reg{border-bottom:1px solid var(--ink);position:sticky;top:0;z-index:40;background:var(--paper);}
+.bbrec .reg-row{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;padding:clamp(13px,2vw,17px) 0;flex-wrap:wrap;}
+.bbrec .reg-meta{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1vw,11px);color:var(--sec);}
+.bbrec .reg-right{display:flex;align-items:center;gap:16px;}
+.bbrec .btn-ink{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--paper);background:var(--ink);padding:9px 16px;text-decoration:none;white-space:nowrap;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+/* docline */
+.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(28px,5vw,52px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
+.bbrec .sq{width:9px;height:9px;background:var(--ink);flex-shrink:0;}
+.bbrec .docline .rule{flex:1;height:1px;background:var(--hair);min-width:24px;}
+/* data plate */
+.bbrec .plate{margin-top:clamp(18px,2.6vw,26px);border:1px solid var(--ink);}
+.bbrec .plate-grid{display:grid;grid-template-columns:repeat(3,1fr);}
+.bbrec .cell{padding:clamp(12px,1.7vw,17px) clamp(13px,1.7vw,19px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .plate-grid .cell:nth-child(3n){border-right:none;}
+.bbrec .plate-grid .cell:nth-child(n+4){border-bottom:none;}
+.bbrec .k{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
+@media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
+@media(max-width:430px){.bbrec .plate-grid{grid-template-columns:1fr;}.bbrec .plate-grid .cell{border-right:none!important;border-bottom:1px solid var(--hair)!important;}.bbrec .plate-grid .cell:last-child{border-bottom:none!important;}}
+/* fold */
+.bbrec .fold{padding-top:clamp(34px,6vw,60px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(26px,5vw,56px);align-items:end;}
+@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:26px;align-items:start;}}
+.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(38px,8vw,86px);line-height:0.92;color:var(--ink);}
+.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,19px);line-height:1.5;color:var(--sec);max-width:40ch;margin-top:clamp(16px,2vw,22px);}
+.bbrec .reading{border:1px solid var(--ink);padding:clamp(15px,2vw,20px);}
+.bbrec .reading .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .reading .rn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(40px,6vw,58px);line-height:0.9;margin-top:6px;color:var(--ink);}
+.bbrec .reading .rd{font-family:var(--serif);font-style:italic;font-weight:400;font-size:14px;line-height:1.4;color:var(--muted);margin-top:10px;}
+.bbrec .reading .rrow{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--hair);margin-top:12px;padding-top:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
+/* THE BOX */
+.bbrec .boxwrap{padding-top:clamp(34px,5vw,58px);}
+.bbrec .box{border:4px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;background:var(--paper);padding:clamp(20px,3vw,34px) clamp(20px,3vw,36px) clamp(24px,3.4vw,38px);}
+.bbrec .box.tilt{transform:rotate(-0.6deg);}
+.bbrec .box-head{display:flex;align-items:center;gap:12px;padding-bottom:clamp(13px,1.8vw,17px);border-bottom:2px solid var(--ink);}
+.bbrec .box-head .sqbig{width:17px;height:17px;background:var(--ink);flex-shrink:0;}
+.bbrec .box-head .lbl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(11px,1.5vw,14px);line-height:1.25;color:var(--ink);}
+.bbrec .box-body{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(24px,3.6vw,40px);line-height:1.05;margin-top:clamp(16px,2.2vw,22px);color:var(--ink);}
+.bbrec .box-note{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(14px,1.4vw,17px);line-height:1.5;color:var(--sec);margin-top:clamp(14px,1.8vw,18px);max-width:62ch;}
+/* AS-FOUND / PROJECTED table */
+.bbrec .afp{margin-top:clamp(18px,2.4vw,24px);border-top:1px solid var(--ink);}
+.bbrec .afp-h,.bbrec .afp-r{display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:clamp(10px,1.6vw,22px);}
+.bbrec .afp-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
+.bbrec .afp-r{padding:clamp(12px,1.6vw,15px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .afp-r:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .afp-p{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);letter-spacing:-0.01em;line-height:1.2;color:var(--ink);}
+.bbrec .afp-f{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(15px,1.8vw,20px);line-height:1.05;color:var(--ink);}
+.bbrec .afp-open{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.5vw,15px);color:var(--muted);line-height:1.3;}
+.bbrec .afp-v{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);line-height:1.25;letter-spacing:-0.01em;color:var(--ink);}
+@media(max-width:640px){.bbrec .afp-h{display:none;}.bbrec .afp-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .afp-p{font-size:15px;}.bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
+/* section scaffold */
+.bbrec .sec{padding-top:clamp(52px,8vw,94px);}
+.bbrec .sec-label{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--muted);flex-wrap:wrap;}
+.bbrec .sec-label .sq{width:8px;height:8px;}
+.bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
+.bbrec .sec-note{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.4vw,18px);line-height:1.5;color:var(--sec);max-width:58ch;margin-top:clamp(14px,1.6vw,18px);}
+.bbrec .cl{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink);}
+/* ledger */
+.bbrec .ledger{margin-top:clamp(28px,3.4vw,42px);border-top:1px solid var(--ink);}
+.bbrec .lrow{display:grid;grid-template-columns:132px 1fr;gap:clamp(16px,2.4vw,34px);padding:clamp(20px,2.8vw,30px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .lrow:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .lidx{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(22px,2.6vw,30px);line-height:1;color:var(--ink);}
+.bbrec .ldate{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:8px;}
+.bbrec .lobs{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);}
+.bbrec .lbuild{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair);display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;}
+.bbrec .lbuild .bl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);white-space:nowrap;}
+.bbrec .lbuild .bt{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.5;color:var(--sec);}
+.bbrec .lrow.open .lobs{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--muted);font-size:clamp(15px,1.5vw,17px);}
+@media(max-width:620px){.bbrec .lrow{grid-template-columns:1fr;gap:12px;}.bbrec .lmeta{display:flex;align-items:baseline;gap:14px;}.bbrec .lmeta .ldate{margin-top:0;}}
+/* figures / exhibits */
+.bbrec .figlabel{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
+.bbrec .figlabel .sq{width:7px;height:7px;}
+.bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
+.bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
+/* lead-magnet exhibit */
+.bbrec .lm{margin-top:clamp(26px,3.2vw,40px);display:grid;grid-template-columns:300px 1fr;gap:clamp(26px,4vw,52px);align-items:center;}
+@media(max-width:760px){.bbrec .lm{grid-template-columns:1fr;gap:26px;}}
+.bbrec .lm-cover{border:1px solid var(--hair);background:#0e0e12;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.bbrec .lm-cover img{width:100%;display:block;}
+.bbrec .lm-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(24px,3vw,34px);line-height:1.05;color:var(--ink);}
+.bbrec .lm-promise{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.5;color:var(--sec);margin-top:14px;max-width:46ch;}
+.bbrec .inside{margin-top:22px;border-top:1px solid var(--hair);}
+.bbrec .inside .ir{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--hair);}
+.bbrec .inside .ir:last-child{border-bottom:none;}
+.bbrec .inside .ii{font-family:var(--grotesk);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:0.04em;}
+.bbrec .inside .it{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,16px);letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+/* governance strip */
+.bbrec .gov{margin-top:clamp(24px,3vw,34px);display:flex;flex-wrap:wrap;gap:10px 26px;}
+.bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
+.bbrec .gov .sq{width:6px;height:6px;flex-shrink:0;}
+/* commissioning record */
+.bbrec .kyle{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
+.bbrec .kyle-h{display:grid;grid-template-columns:1fr auto auto;gap:clamp(12px,2vw,26px);align-items:baseline;padding:clamp(16px,2.2vw,24px);border-bottom:1px solid var(--hair);}
+@media(max-width:600px){.bbrec .kyle-h{grid-template-columns:1fr;gap:14px;}}
+.bbrec .kyle-p{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);align-self:center;}
+.bbrec .kyle-af{font-family:var(--grotesk);font-weight:500;font-size:clamp(20px,2.4vw,28px);letter-spacing:-0.02em;color:var(--muted);}
+.bbrec .kyle-al{font-family:var(--grotesk);font-weight:800;font-size:clamp(30px,4.4vw,52px);letter-spacing:-0.035em;line-height:0.9;color:var(--ink);}
+.bbrec .kyle-al small{font-family:var(--grotesk);font-weight:700;font-size:0.34em;letter-spacing:0.02em;color:var(--muted);}
+.bbrec .kyle-q{padding:clamp(16px,2.2vw,24px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,20px);line-height:1.45;color:var(--ink);}
+.bbrec .kyle-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:12px;}
+.bbrec .kmet{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);}
+.bbrec .kmet .m{padding:clamp(14px,2vw,20px) clamp(14px,2vw,22px);border-right:1px solid var(--hair);}
+.bbrec .kmet .m:last-child{border-right:none;}
+.bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
+.bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
+@media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
+.bbrec .lemon{margin-top:clamp(20px,2.6vw,30px);border:1px solid var(--ink);display:grid;grid-template-columns:1fr auto;gap:clamp(14px,2vw,26px);align-items:center;padding:clamp(16px,2.2vw,24px);}
+@media(max-width:600px){.bbrec .lemon{grid-template-columns:1fr;gap:14px;}}
+.bbrec .lemon-q{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,19px);line-height:1.45;color:var(--ink);}
+.bbrec .lemon-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:10px;}
+.bbrec .lemon-r{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(16px,1.9vw,22px);line-height:1.1;max-width:14ch;color:var(--ink);}
+/* reported outcomes (static ruled grid — replaces the marquee) */
+.bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
+.bbrec .rev{display:grid;grid-template-columns:1fr 200px;gap:clamp(14px,2.4vw,32px);padding:clamp(16px,2.2vw,22px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .rev:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .rev-q{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);}
+.bbrec .rev-w{font-family:var(--grotesk);font-weight:700;font-size:12px;color:var(--ink);}
+.bbrec .rev-w small{display:block;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:9.5px;color:var(--muted);margin-top:4px;}
+@media(max-width:640px){.bbrec .rev{grid-template-columns:1fr;gap:8px;}}
+/* instrument / flow */
+.bbrec .flow{margin-top:clamp(26px,3.2vw,40px);border-top:1px solid var(--ink);}
+.bbrec .fstep{display:grid;grid-template-columns:70px 1fr;gap:clamp(16px,2.4vw,32px);padding:clamp(18px,2.4vw,26px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .fstep:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .fn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(20px,2.4vw,28px);color:var(--muted);}
+.bbrec .ft{font-family:var(--grotesk);font-weight:600;font-size:clamp(17px,2vw,22px);letter-spacing:-0.015em;line-height:1.2;color:var(--ink);}
+.bbrec .fb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.55;color:var(--sec);margin-top:8px;max-width:60ch;}
+.bbrec .promises{margin-top:clamp(22px,2.8vw,34px);display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+@media(max-width:640px){.bbrec .promises{grid-template-columns:1fr;}}
+.bbrec .pcell{padding:clamp(16px,2.2vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .promises .pcell:nth-child(2n){border-right:none;}
+@media(max-width:640px){.bbrec .pcell{border-right:none;}}
+.bbrec .ph{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.7vw,18px);letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .pb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:8px;}
+/* operator block */
+.bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
+@media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
+.bbrec .op-portrait{border:1px solid var(--ink);background:var(--flash);}
+.bbrec .op-portrait img{width:100%;display:block;filter:grayscale(100%) contrast(1.02);}
+.bbrec .op-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,3vw,36px);line-height:1.08;color:var(--ink);}
+.bbrec .op-b{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.55;color:var(--sec);margin-top:16px;max-width:56ch;}
+.bbrec .op-sig{margin-top:18px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.bbrec .op-sig a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair);}
+/* final CTA box (RED lives here) */
+.bbrec .ctawrap{padding-top:clamp(52px,8vw,90px);padding-bottom:clamp(40px,6vw,70px);}
+.bbrec .box.cta{padding:clamp(30px,5vw,56px);text-align:center;}
+.bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
+.bbrec .cta-n{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.6vw,18px);line-height:1.5;color:var(--sec);max-width:46ch;margin:clamp(16px,2vw,20px) auto 0;}
+.bbrec .cta-btn{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(22px,3vw,30px);background:var(--red);color:var(--paper);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(13px,1.5vw,15px);padding:16px 30px;text-decoration:none;}
+.bbrec .cta-fine{margin-top:16px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+/* footer */
+.bbrec .foot{border-top:1px solid var(--ink);margin-top:clamp(40px,6vw,70px);}
+.bbrec .foot-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:clamp(22px,3vw,34px) 0 12px;}
+.bbrec .foot-links{display:flex;align-items:center;gap:22px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;}
+.bbrec .foot-links a{text-decoration:none;color:var(--sec);}
+.bbrec .foot-links a.book{color:var(--ink);}
+.bbrec .foot-fine{padding-bottom:clamp(40px,6vw,60px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;color:var(--muted);}
+`;
+
+// One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
+// under reduced motion. Replaces candidate C's CSS .reveal so it obeys useReducedMotion.
+const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section' }> = ({ children, className, style, el = 'div' }) => {
+  const reduce = useReducedMotion();
+  const M = el === 'section' ? motion.section : motion.div;
+  return (
+    <M
+      className={className}
+      style={style}
+      initial={reduce ? false : { opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      {children}
+    </M>
+  );
+};
+
+const RecordStyles: React.FC = () => <style dangerouslySetInnerHTML={{ __html: RECORD_CSS }} />;
+
+// Administrative document line: square · doc-type · scan date — rule — reference.
+const Docline: React.FC<{ docType: string; date: string; refLabel: string }> = ({ docType, date, refLabel }) => (
+  <div className="docline">
+    <span className="sq" aria-hidden />
+    <span>{docType}&nbsp;·&nbsp;{date}</span>
+    <span className="rule" aria-hidden />
+    <span>Ref&nbsp;&nbsp;{refLabel}</span>
+  </div>
+);
+
+// ISO-7200 data plate — the admin title block, ruled cells with clinical field labels.
+const DataPlate: React.FC<{ cells: { k: string; v: React.ReactNode }[] }> = ({ cells }) => (
+  <div className="plate">
+    <div className="plate-grid">
+      {cells.map((c, i) => (
+        <div className="cell" key={i}>
+          <div className="k">{c.k}</div>
+          <div className="v">{c.v}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Numbered section head — clinical label + straight display title (no serif italic in heads).
+const SecHead: React.FC<{ label: React.ReactNode; title: React.ReactNode; note?: React.ReactNode }> = ({ label, title, note }) => (
+  <>
+    <div className="sec-label"><span className="sq" aria-hidden /> {label}</div>
+    <h2 className="sec-title">{title}</h2>
+    {note ? <p className="sec-note">{note}</p> : null}
+  </>
+);
+
+// Lettered exhibit caption — Source Serif italic specimen line citing the real source.
+const FigLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="figlabel"><span className="sq" aria-hidden /> {children}</div>
+);
+
+// A depicted artifact (native chrome kept) framed as a Fig · exhibit with an italic caption.
+const Exhibit: React.FC<{ label: React.ReactNode; caption?: React.ReactNode; children: React.ReactNode }> = ({ label, caption, children }) => (
+  <div>
+    <FigLabel>{label}</FigLabel>
+    <div className="figframe">{children}</div>
+    {caption ? <p className="cap">{caption}</p> : null}
+  </div>
+);
+
+// Date helpers — every displayed date derives from the scan's own created/completed stamp.
+const recDateISO = (s: string | null | undefined, fallback?: string | null) => {
+  const d = new Date(s ?? fallback ?? Date.now());
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+};
+const recDatePlusDaysISO = (s: string | null | undefined, days: number, fallback?: string | null) => {
+  const d = new Date(s ?? fallback ?? Date.now());
+  if (isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
 
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
