@@ -2929,7 +2929,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   useMetadata({
     title: `An inbound engine for ${companyName}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
-    canonical: `https://ivanmanfredi.com/scan/${scan.company_slug}`,
+    canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
     noindex: true,
   });

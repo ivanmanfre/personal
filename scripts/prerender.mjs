@@ -110,7 +110,27 @@ async function fetchScanSlugs() {
   }
 }
 
-for (const slug of await fetchScanSlugs()) {
+// Inline (corpus-less) scans — e.g. build-on-yes cold-lane builds — have NO
+// hypertarget_corpus row; enumerate them from the scans table directly so their
+// links prerender too. Anon key can read scans (verified 2026-07-11).
+async function fetchInlineScanSlugs() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/scans?status=eq.complete&matched_offer=eq.content_system&company_slug=not.is.null&select=company_slug`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows)
+      ? rows.map((r) => r.company_slug).filter((sl) => sl && sl !== 'scan-engine-selftest')
+      : [];
+  } catch { return []; }
+}
+
+for (const slug of [...(await fetchScanSlugs()), ...(await fetchInlineScanSlugs())]) {
   const r = `/scan/${slug}`;
   if (!ROUTES.includes(r)) ROUTES.push(r);
 }
@@ -154,6 +174,16 @@ for (const { slug, token } of await fetchClientBoardSlugs()) {
   if (!ROUTES.includes(r)) ROUTES.push(r);
 }
 console.log(`[prerender] client routes:`, ROUTES.filter((r) => r.startsWith('/client/')).map((r) => r.split('?')[0]).join(', ') || '(none)');
+
+// SCAN_MIRROR=1: the build (VITE_BASE=/scan/) is destined for the
+// inboundonsteroids-site repo's scan/ dir, served at inboundonsteroids.com/scan/.
+// Only scan routes render, and the on-disk path strips the leading /scan so dist/
+// copies 1:1 into that repo's scan/ directory (dist/tk-x/ -> /scan/tk-x/).
+const SCAN_MIRROR = process.env.SCAN_MIRROR === '1';
+if (SCAN_MIRROR) {
+  ROUTES.splice(0, ROUTES.length, ...ROUTES.filter((r) => r.startsWith('/scan/')));
+  console.log(`[prerender] SCAN_MIRROR: ${ROUTES.length} scan routes only`);
+}
 
 const PORT = 4178;
 const BASE = `http://${HOST}:${PORT}`;
@@ -289,7 +319,9 @@ process.on('SIGTERM', () => shutdown(143));
       // Strip any query string (e.g. /client/:slug?k=<token>) from the on-disk path:
       // GitHub Pages resolves the file by path only, so this maps to
       // dist/<path>/index.html and the token stays out of the directory name.
-      const outPath = route.split('?')[0];
+      const outPath = SCAN_MIRROR
+        ? (route.split('?')[0].replace(/^\/scan/, '') || '/')
+        : route.split('?')[0];
       const outDir = join(DIST, outPath.replace(/^\//, ''));
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, 'index.html'), html, 'utf8');

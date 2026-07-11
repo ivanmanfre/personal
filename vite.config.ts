@@ -5,7 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: '/',
+  // VITE_BASE=/scan/ builds the scan mirror served at inboundonsteroids.com/scan/
+  // (see scripts/prerender.mjs SCAN_MIRROR + deploy.yml scan-mirror job).
+  base: process.env.VITE_BASE || '/',
   server: {
     port: 3000,
     host: '0.0.0.0',
