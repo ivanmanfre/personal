@@ -2309,7 +2309,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 04&nbsp;·&nbsp;The instrument</>}
-            title={<>Every call in. <em className="cl">The right output out.</em></>}
+            title={<>Every call in. The right output out.</>}
             note="Every call your team runs flows through one scoring engine, and comes back as something you can act on. The system keeps the record."
           />
           <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
@@ -2386,7 +2386,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 06&nbsp;·&nbsp;Reported outcomes</>}
-            title={<>The kind of work people <em className="cl">rehire for.</em></>}
+            title={<>The kind of work people rehire for.</>}
           />
           <div className="kyle" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
             <div className="kyle-q">&ldquo;As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.&rdquo;<span className="who">Adeeb Mohammed · Software Engineer · ex-Amazon · Meta</span></div>
@@ -3422,7 +3422,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec">
             <SecHead
               label={<>Section 04&nbsp;·&nbsp;The dispensing log&nbsp;·&nbsp;Projected · week 1</>}
-              title={<>Dispensed daily, <em className="cl">in your voice.</em></>}
+              title={<>Dispensed daily, in your voice.</>}
               note="Drawn from your latest material and written the way you say it. The posts keep their native form; the log frames them, and the caption cites the line each one grew from."
             />
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
@@ -3496,7 +3496,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec">
             <SecHead
               label={<>Section 06&nbsp;·&nbsp;The broadcast</>}
-              title={<>Then the list <em className="cl">hears from you.</em></>}
+              title={<>Then the list hears from you.</>}
               note="One newsletter a cycle, drafted from the same week's material and sent in your voice. Framed here as the exhibit; the email keeps its own chrome."
             />
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
@@ -3512,7 +3512,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec">
             <SecHead
               label={<>Section 07&nbsp;·&nbsp;The scheduled sequence</>}
-              title={<>Everyone who grabs it <em className="cl">gets a sequence.</em></>}
+              title={<>Everyone who grabs it gets a sequence.</>}
               note="A fixed schedule of emails after the download, offsets logged from day zero. No dates invented; the clock starts when the reader opts in."
             />
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
@@ -3528,7 +3528,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec">
             <SecHead
               label={<>Section 08&nbsp;·&nbsp;The engager log</>}
-              title={<>Reactions turn into <em className="cl">conversations.</em></>}
+              title={<>Reactions turn into conversations.</>}
               note="When someone reacts to or comments on one of your posts, a warm message follows that references the specific post and offers something useful without pitching. Each entry is keyed to the post that fired it."
             />
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
@@ -3549,7 +3549,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 09&nbsp;·&nbsp;Commissioning record · already running</>}
-            title={<>Built for real operators. <em className="cl">Running every day.</em></>}
+            title={<>Built for real operators. Running every day.</>}
             note="The one before-and-after on record. Where a cell has no before-state it is left open, same as your own record above."
           />
           <div className="kyle">
@@ -3583,7 +3583,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 10&nbsp;·&nbsp;The instrument</>}
-            title={<>One system keeps <em className="cl">the whole record.</em></>}
+            title={<>One system keeps the whole record.</>}
             note={cs.system?.summary || 'The same engine that would run this record. It finds the idea, writes it in your voice, publishes it, and works the funnel. The only thing left for you is to take the calls.'}
           />
           <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
@@ -3613,7 +3613,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 11&nbsp;·&nbsp;Lead magnets</>}
-            title={<>Turn attention into <em className="cl">qualified leads.</em></>}
+            title={<>Turn attention into qualified leads.</>}
             note="From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are."
           />
           <div className="promises" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
