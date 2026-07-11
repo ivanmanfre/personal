@@ -232,7 +232,18 @@ const VideoIdeasPanel: React.FC = () => {
             </span>
           )}
         </div>
-        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        <div className="flex items-center gap-3">
+          <a
+            href="http://localhost:5199"
+            target="_blank"
+            rel="noreferrer"
+            title="Opens the local teleprompter (served by com.ivan.prompter on this Mac)"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-900 text-zinc-300 border border-zinc-700 hover:border-zinc-500 hover:text-white transition-colors"
+          >
+            <Video className="w-3.5 h-3.5" /> Prompter
+          </a>
+          <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
+        </div>
       </div>
 
       {/* Stats */}
@@ -352,6 +363,19 @@ const VideoIdeasPanel: React.FC = () => {
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Read on the teleprompter */}
+                      {idea.script && (
+                        <a
+                          href={`http://localhost:5199/?idea=${idea.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Open this script on the teleprompter"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-600 hover:border-zinc-400 hover:text-white transition-colors"
+                        >
+                          <Camera className="w-3 h-3" /> Prompt
+                        </a>
+                      )}
                       {/* Generate Script */}
                       {canGenerateScript && (
                         <button
