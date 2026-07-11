@@ -1945,7 +1945,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
       <ScrollProgress />
       <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#FFFFFF', fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(19,18,16,0.18)' }}>IM</span></Link>
+          <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Call Intelligence · {companyName}</span>
           <BookButton label="Book a call" small />
         </div>
@@ -2176,7 +2176,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
           <div className="flex items-center gap-3">
             <CIWaveform count={5} maxH={13} gap={2} barW={2} />
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>Iván Manfredi</span>
+            <Wordmark size={16} />
             <span aria-hidden style={{ color: 'rgba(19,18,16,0.25)' }}>·</span>
             <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Call Intelligence</span>
           </div>
@@ -3008,7 +3008,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <ScrollProgress />
       <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
-          <Link to="/" aria-label="Iván Manfredi · Inbound Engine" className="inline-flex items-center hover:opacity-90 transition-opacity"><span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--color-accent)', color: '#FFFFFF', fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '17px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '-0.03em', boxShadow: '0 1px 2px rgba(19,18,16,0.18)' }}>IM</span></Link>
+          <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
           <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Inbound Engine · {founderFull}</span>
           <BookButton label="Book a call" small />
         </div>
@@ -3328,7 +3328,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <footer style={{ borderTop: `1px solid ${hairline}` }}>
         <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-4">
-          <span style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>Iván Manfredi <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)', marginLeft: 8 }}>Inbound Engine</span></span>
+          <Wordmark size={16} />
           <span className="flex items-center gap-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em' }}>
             <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a call</a>
             <a href="https://ivanmanfredi.com" style={{ color: 'rgba(19,18,16,0.55)' }}>ivanmanfredi.com</a>
