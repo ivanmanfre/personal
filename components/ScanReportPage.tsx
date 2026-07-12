@@ -1917,7 +1917,7 @@ const RECORD_CSS = `
 .bbrec .k{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
 .bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
 @media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
-@media(max-width:430px){.bbrec .plate-grid{grid-template-columns:1fr;}.bbrec .plate-grid .cell{border-right:none!important;border-bottom:1px solid var(--hair)!important;}.bbrec .plate-grid .cell:last-child{border-bottom:none!important;}}
+@media(max-width:430px){.bbrec .plate-grid .cell{padding:10px 11px;}.bbrec .v{font-size:13px;}}
 /* fold */
 .bbrec .fold{padding-top:clamp(34px,6vw,60px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(26px,5vw,56px);align-items:end;}
 @media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:26px;align-items:start;}}
@@ -3281,8 +3281,31 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const warn = WARN[cs.archetype] ?? WARN.silent_founder;
   const attnFound = followers != null ? `${followers.toLocaleString()} followers, nothing routing them` : '[ open · not visible in feed ]';
   const proofFound = posts30 != null ? (posts30 === 0 ? '[ open · none in 30 days ]' : `${posts30} posts in 30 days, no capture behind them`) : '[ open · none in feed ]';
-  // Reading panel — the one honest as-found figure at the top fold.
-  const reading = followers != null
+  // Spike from the gated wins text — a number the prospect recognizes from their own feed.
+  // The observation strings are deterministically grounded upstream, so a figure lifted
+  // verbatim from them is a real reading, and its own sentence is the honest caption.
+  let spike: { n: string; d: string } | null = null;
+  for (const w of winsCards) {
+    const obs = (w.observation || '').trim();
+    const m = /(\d[\d,]{1,6})\s*\+?\s*(comments|reactions|likes|shares|reposts|views|followers|subscribers)/i.exec(obs);
+    if (m) {
+      const val = parseInt(m[1].replace(/,/g, ''), 10);
+      const cur = spike ? parseInt(spike.n.replace(/,/g, ''), 10) : -1;
+      if (val > cur) {
+        let d = obs;
+        if (d.length > 170) {
+          d = d.slice(0, 170);
+          d = d.slice(0, Math.max(d.lastIndexOf(' '), 120)) + '...';
+        }
+        spike = { n: m[1], d };
+      }
+    }
+  }
+  // Reading panel — the one honest as-found figure at the top fold. A recognizable spike
+  // from their own feed beats a profile stat beats an honest open cell.
+  const reading = spike
+    ? { open: false, k: 'As found · one spike', n: spike.n, d: spike.d }
+    : followers != null
     ? { open: false, k: 'As found · audience', n: followers.toLocaleString(), d: 'followers already earned, with nothing on record to route them anywhere.' }
     : posts30 != null
     ? { open: false, k: 'As found · cadence', n: String(posts30), d: `posts in the last 30 days, and not one of them leaves you a name to follow up.` }
@@ -3322,7 +3345,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="fold">
           <div>
             <h1 className="company">{companyName}</h1>
-            <p className="lede">{cs.thesis || 'The attention already arrives. Today nothing keeps the record of it, so it lands and goes cold.'}</p>
+            <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
           </div>
           <div className="reading">
             <div className="rk">{reading.k}</div>
@@ -3459,8 +3482,28 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <SecHead
               label={<>Section 05&nbsp;·&nbsp;Captured asset</>}
               title="The asset that keeps the address."
-              note="A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. The cover is yours, in your brand; the record frames it as the exhibit."
+              note={lmEmbedUrl
+                ? 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. It is not a mockup: the asset is already built, embedded below in your brand. Take it the way a reader would.'
+                : 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. The cover is yours, in your brand; the record frames it as the exhibit.'}
             />
+            {lmEmbedUrl && (
+              <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px 24px', marginBottom: 14 }}>
+                  <div className="lm-title" style={{ fontSize: 'clamp(20px,2.4vw,27px)' }}>{lm.title}</div>
+                  <div className="lm-gate" style={{ marginTop: 0 }}><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
+                </div>
+                <Exhibit
+                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
+                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                >
+                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                </Exhibit>
+                <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                  Open it full screen <span aria-hidden>→</span>
+                </button>
+              </div>
+            )}
+            {!lmEmbedUrl && (
             <div className="lm">
               <div>
                 <FigLabel>Fig&nbsp;·&nbsp;lead magnet cover&nbsp;·&nbsp;your brand</FigLabel>
@@ -3488,6 +3531,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 )}
               </div>
             </div>
+            )}
           </Rev>
         )}
 
