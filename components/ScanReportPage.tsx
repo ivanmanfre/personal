@@ -1374,15 +1374,13 @@ const CIMagneticCTA: React.FC<{ href: string; label: string; small?: boolean }> 
 // Thematic animated audio-waveform — call intelligence reads as "live audio being scored".
 // Deterministic bar heights, gentle continuous scaleY loop. Used big in the hero + tiny inline.
 function CIWaveform({ count = 56, maxH = 56, gap = 3, barW = 2.5, className = '', barColor = 'var(--color-accent)' }: { count?: number; maxH?: number; gap?: number; barW?: number; className?: string; barColor?: string }) {
-  const reduce = useReducedMotion();
+  // Static specimen — no pulse loop (Black Box: settled type, no infinite motion).
   return (
     <div className={`flex items-center ${className}`} aria-hidden style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => {
         const base = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.45) + Math.sin(i * 0.3) * 0.4);
         return (
-          <motion.span key={i} style={{ width: barW, borderRadius: barW, background: barColor, height: Math.max(5, base * maxH), transformOrigin: 'center', flexShrink: 0 }}
-            animate={reduce ? {} : { scaleY: [1, 0.32 + (i % 4) * 0.12, 0.88, 0.46, 1] }}
-            transition={{ duration: 1.6 + (i % 5) * 0.25, repeat: Infinity, ease: 'easeInOut', delay: (i % 9) * 0.1 }} />
+          <span key={i} style={{ width: barW, background: barColor, height: Math.max(5, base * maxH), flexShrink: 0 }} />
         );
       })}
     </div>
@@ -1606,10 +1604,6 @@ const SFConnector: React.FC<{ d: string; delay: number; active?: boolean; reduce
     <path d={d} fill="none" stroke={hairline} strokeWidth={1.25} />
     <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 2 : 1.5} strokeOpacity={active ? 0.65 : 0.3}
       initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 1, ease: EASE, delay }} />
-    {!reduce && (
-      <motion.path d={d} fill="none" stroke={sage} strokeWidth={active ? 3.4 : 2.6} strokeLinecap="round" pathLength={1} strokeDasharray="0.06 0.94"
-        animate={{ strokeDashoffset: [1, 0] }} transition={{ duration: active ? 1.5 : 2.4, repeat: Infinity, ease: 'linear', delay: delay + 0.6 }} />
-    )}
   </g>
 );
 const SFNode: React.FC<{ x: number; y: number; w: number; label: string; accent?: boolean; active?: boolean; delay: number; reduce: boolean; sage: string; hairline: string; onEnter?: () => void; onLeave?: () => void; onClick?: () => void }> = ({ x, y, w, label, accent, active, delay, reduce, sage, hairline, onEnter, onLeave, onClick }) => {
@@ -1632,11 +1626,8 @@ function CallIntelSystemFlow() {
   const sage = 'var(--color-accent)';
   const [hover, setHover] = useState<number | 'engine' | null>(null);
   const [auto, setAuto] = useState(0);
-  useEffect(() => {
-    if (hover !== null || reduce) return;
-    const t = setInterval(() => setAuto((a) => (a + 1) % 4), 2800);
-    return () => clearInterval(t);
-  }, [hover, reduce]);
+  // Auto-cycle retired — no self-running motion. The panel follows hover; idle rests on the first output.
+  void setAuto;
   const activeOut = hover === 'engine' ? -1 : (hover ?? auto);
   const info = hover === 'engine' ? SF_ENGINE : SF_OUT[(hover ?? auto) as number];
   const infoAccent = hover !== 'engine' && (SF_OUT[(hover ?? auto) as number] as any).accent;
@@ -1668,13 +1659,8 @@ function CallIntelSystemFlow() {
           {/* engine */}
           <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
             onMouseEnter={() => setHover('engine')} onMouseLeave={() => setHover(null)} style={{ cursor: 'pointer' }}>
-            <motion.rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={20} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1}
-              animate={reduce ? {} : { strokeOpacity: hover === 'engine' ? 0.6 : [0.45, 0.08, 0.45] }} transition={{ duration: 2.6, repeat: hover === 'engine' ? 0 : Infinity, ease: 'easeInOut' }} />
+            <rect x={EX1 - 8} y={ECY - 74} width={EW + 16} height={148} rx={0} fill="none" stroke={sage} strokeWidth={hover === 'engine' ? 1.5 : 1} strokeOpacity={hover === 'engine' ? 0.6 : 0.4} />
             <rect x={EX1} y={ECY - 66} width={EW} height={132} rx={0} fill="#131210" style={{ filter: 'none' }} />
-            {!reduce && (
-              <motion.rect x={EX1 + 12} width={EW - 24} height={1.5} rx={1} fill={sage}
-                animate={{ y: [ECY - 52, ECY + 54, ECY - 52], opacity: [0, 0.4, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }} />
-            )}
             <circle cx={EX1 + 24} cy={ECY - 38} r={3.5} fill={sage} />
             <text x={EX1 + 36} y={ECY - 38} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', fill: 'rgba(255,255,255,0.6)' }}>ENGINE</text>
             <text x={EX1 + 24} y={ECY + 6} style={{ fontFamily: SERIF, fontSize: 28, fill: '#FFFFFF' }}>Scoring <tspan fontStyle="italic" fill={sage}>engine</tspan></text>
@@ -1683,11 +1669,6 @@ function CallIntelSystemFlow() {
           {/* input + output nodes */}
           {SF_IN.map((l, i) => <SFNode key={`in${i}`} x={24} y={inY[i]} w={172} label={l} delay={0.15 + i * 0.07} reduce={!!reduce} sage={sage} hairline={hairline} />)}
           {SF_OUT.map((o, i) => <SFNode key={`out${i}`} x={788} y={outY[i]} w={196} label={o.label} accent={(o as any).accent} active={activeOut === i} delay={0.7 + i * 0.08} reduce={!!reduce} sage={sage} hairline={hairline} onEnter={() => setHover(i)} onLeave={() => setHover(null)} onClick={() => goTo(o.anchor)} />)}
-          {/* live counter */}
-          <motion.g initial={reduce ? false : { opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: 1.1 }}>
-            <motion.circle cx={EX1 + 26} cy={18} r={3} fill={sage} animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
-            <text x={EX1 + 36} y={18} dominantBaseline="central" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', fill: 'rgba(19,18,16,0.5)' }}>LIVE · 1,240 calls scored this month</text>
-          </motion.g>
           <text x={24} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>EVERY CALL IN</text>
           <text x={788} y={366} style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.2em', fill: 'rgba(19,18,16,0.4)' }}>WHAT YOU GET</text>
         </svg>
@@ -1703,17 +1684,13 @@ function CallIntelSystemFlow() {
             </div>
           ))}
         </div>
-        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
-          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn' }} />}
-        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }} />
         <div className="w-full px-5 py-5 text-center" style={{ background: '#131210', borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)' }}>The engine</p>
           <p style={{ fontFamily: SERIF, fontSize: '1.7rem', lineHeight: 1.05, color: '#FFFFFF', marginTop: 4 }}>Scoring <span style={{ fontStyle: 'italic', color: sage }}>engine</span></p>
           <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>transcribe · score · route</p>
         </div>
-        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }}>
-          {!reduce && <motion.span style={{ position: 'absolute', left: -2.5, width: 7, height: 7, borderRadius: 7, background: sage }} animate={{ top: [-4, 40], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: 'easeIn', delay: 0.4 }} />}
-        </div>
+        <div className="relative my-3" style={{ width: 2, height: 40, background: hairline }} />
         <div className="w-full grid grid-cols-2 gap-2.5">
           {SF_OUT.map((o, i) => (
             <button key={o.label} onClick={() => goTo(o.anchor)} className="flex items-center gap-2 px-3.5 py-2.5 text-left" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${o.accent ? CI_CORAL : hairline}`, boxShadow: CI_SHADOW }}>
@@ -1733,15 +1710,8 @@ function CallIntelSystemFlow() {
 // One-time "interface loading" shimmer — a sage glint sweeps across a mock as it enters view,
 // then clears. Makes the cards read as live software fetching data.
 function CILoadShimmer() {
-  const reduce = useReducedMotion();
-  if (reduce) return null;
-  return (
-    <motion.div aria-hidden className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ borderRadius: CI_R }}
-      initial={{ opacity: 1 }} whileInView={{ opacity: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 1 }}>
-      <motion.div className="absolute inset-y-0" style={{ width: '55%', background: 'linear-gradient(90deg, transparent, rgba(19,18,16,0.10), transparent)' }}
-        initial={{ x: '-110%' }} whileInView={{ x: '210%' }} viewport={{ once: true }} transition={{ duration: 1.05, ease: 'easeInOut', delay: 0.05 }} />
-    </motion.div>
-  );
+  // Retired — the loading-glint sweep read as SaaS chrome (an AI-slop tell). Black Box: printed, not loading.
+  return null;
 }
 
 function CICallAnalysis() {
@@ -1807,7 +1777,7 @@ function CIChurnAlert() {
       <CILoadShimmer />
       <div className="flex items-center gap-2.5 px-5 py-3.5" style={{ borderBottom: `1px solid ${hairline}` }}>
         <span className="flex gap-1" aria-hidden>{[0, 1, 2].map((d) => <span key={d} style={{ width: 7, height: 7, borderRadius: 7, background: 'rgba(19,18,16,0.13)' }} />)}</span>
-        <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.8, repeat: Infinity }} style={{ width: 7, height: 7, borderRadius: 7, background: CI_CORAL, flexShrink: 0 }} />
+        <span aria-hidden style={{ width: 7, height: 7, background: CI_CORAL, flexShrink: 0 }} />
         <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: CI_CORAL, fontWeight: 600 }}>At-risk account</span>
         <span className="ml-auto px-2 py-0.5" style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, color: CI_CORAL, borderRadius: 6, background: 'rgba(19,18,16,0.09)' }}>High risk</span>
       </div>
@@ -1908,6 +1878,272 @@ function CISlackAlert() {
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// OPERATING-RECORD GRAMMAR (tournament winner — candidate C)
+// Scoped document grammar for the two production layouts (ContentSystemReport +
+// CallIntelReport). NOTHING here touches styles.css — every rule is scoped under
+// `.bbrec`. Tokens are the Black Box canon (ink/red/paper/muted/secondary/hairline/
+// flash). The single red per surface is `.cta-btn`; the wordmark's ON is exempt.
+// Two boxes per surface only: the verdict box (tilt) and the CTA box (square), both
+// with WARNING-pattern heads. Depicted product mocks keep native chrome and are
+// framed as Fig · exhibits with Source Serif italic captions.
+// ══════════════════════════════════════════════════════════════════════════════
+const RECORD_CSS = `
+.bbrec{
+  --ink:#131210;--red:#C8361B;--paper:#FFFFFF;--muted:#6B675E;--sec:#4A463E;--hair:#C9C2B2;--flash:#E9E4D6;
+  --grotesk:'Schibsted Grotesk',system-ui,-apple-system,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+  color:var(--ink);font-family:var(--grotesk);font-weight:400;line-height:1.5;
+  font-variant-numeric:tabular-nums;background:var(--paper);overflow-x:hidden;
+}
+.bbrec .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
+.bbrec .num{font-variant-numeric:tabular-nums;}
+/* register bars */
+.bbrec .reg{border-bottom:1px solid var(--ink);position:sticky;top:0;z-index:40;background:var(--paper);}
+.bbrec .reg-row{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;padding:clamp(13px,2vw,17px) 0;flex-wrap:wrap;}
+.bbrec .reg-meta{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1vw,11px);color:var(--sec);}
+.bbrec .reg-right{display:flex;align-items:center;gap:16px;}
+.bbrec .btn-ink{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--paper);background:var(--ink);padding:9px 16px;text-decoration:none;white-space:nowrap;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+/* docline */
+.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(28px,5vw,52px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
+.bbrec .sq{width:9px;height:9px;background:var(--ink);flex-shrink:0;}
+.bbrec .docline .rule{flex:1;height:1px;background:var(--hair);min-width:24px;}
+/* data plate */
+.bbrec .plate{margin-top:clamp(18px,2.6vw,26px);border:1px solid var(--ink);}
+.bbrec .plate-grid{display:grid;grid-template-columns:repeat(3,1fr);}
+.bbrec .cell{padding:clamp(12px,1.7vw,17px) clamp(13px,1.7vw,19px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .plate-grid .cell:nth-child(3n){border-right:none;}
+.bbrec .plate-grid .cell:nth-child(n+4){border-bottom:none;}
+.bbrec .k{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
+@media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
+@media(max-width:430px){.bbrec .plate-grid .cell{padding:10px 11px;}.bbrec .v{font-size:13px;}}
+/* fold */
+.bbrec .fold{padding-top:clamp(34px,6vw,60px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(26px,5vw,56px);align-items:end;}
+@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:26px;align-items:start;}}
+.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(38px,8vw,86px);line-height:0.92;color:var(--ink);}
+.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,19px);line-height:1.5;color:var(--sec);max-width:40ch;margin-top:clamp(16px,2vw,22px);}
+.bbrec .reading{border:1px solid var(--ink);padding:clamp(15px,2vw,20px);}
+.bbrec .reading .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .reading .rn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(40px,6vw,58px);line-height:0.9;margin-top:6px;color:var(--ink);}
+.bbrec .reading .rd{font-family:var(--serif);font-style:italic;font-weight:400;font-size:14px;line-height:1.4;color:var(--muted);margin-top:10px;}
+.bbrec .reading .rrow{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--hair);margin-top:12px;padding-top:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
+/* THE BOX */
+.bbrec .boxwrap{padding-top:clamp(34px,5vw,58px);}
+.bbrec .box{border:4px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;background:var(--paper);padding:clamp(20px,3vw,34px) clamp(20px,3vw,36px) clamp(24px,3.4vw,38px);}
+.bbrec .box.tilt{transform:rotate(-0.6deg);}
+.bbrec .box-head{display:flex;align-items:center;gap:12px;padding-bottom:clamp(13px,1.8vw,17px);border-bottom:2px solid var(--ink);}
+.bbrec .box-head .sqbig{width:17px;height:17px;background:var(--ink);flex-shrink:0;}
+.bbrec .box-head .lbl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(11px,1.5vw,14px);line-height:1.25;color:var(--ink);}
+.bbrec .box-body{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(24px,3.6vw,40px);line-height:1.05;margin-top:clamp(16px,2.2vw,22px);color:var(--ink);}
+.bbrec .box-note{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(14px,1.4vw,17px);line-height:1.5;color:var(--sec);margin-top:clamp(14px,1.8vw,18px);max-width:62ch;}
+/* AS-FOUND / PROJECTED table */
+.bbrec .afp{margin-top:clamp(18px,2.4vw,24px);border-top:1px solid var(--ink);}
+.bbrec .afp-h,.bbrec .afp-r{display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:clamp(10px,1.6vw,22px);}
+.bbrec .afp-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
+.bbrec .afp-r{padding:clamp(12px,1.6vw,15px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .afp-r:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .afp-p{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);letter-spacing:-0.01em;line-height:1.2;color:var(--ink);}
+.bbrec .afp-f{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(15px,1.8vw,20px);line-height:1.05;color:var(--ink);}
+.bbrec .afp-open{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.5vw,15px);color:var(--muted);line-height:1.3;}
+.bbrec .afp-v{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);line-height:1.25;letter-spacing:-0.01em;color:var(--ink);}
+@media(max-width:640px){.bbrec .afp-h{display:none;}.bbrec .afp-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .afp-p{font-size:15px;}.bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
+/* section scaffold */
+.bbrec .sec{padding-top:clamp(52px,8vw,94px);}
+.bbrec .sec-label{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--muted);flex-wrap:wrap;}
+.bbrec .sec-label .sq{width:8px;height:8px;}
+.bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
+.bbrec .sec-note{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.4vw,18px);line-height:1.5;color:var(--sec);max-width:58ch;margin-top:clamp(14px,1.6vw,18px);}
+.bbrec .cl{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink);}
+/* ledger */
+.bbrec .ledger{margin-top:clamp(28px,3.4vw,42px);border-top:1px solid var(--ink);}
+.bbrec .lrow{display:grid;grid-template-columns:132px 1fr;gap:clamp(16px,2.4vw,34px);padding:clamp(20px,2.8vw,30px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .lrow:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .lidx{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(22px,2.6vw,30px);line-height:1;color:var(--ink);}
+.bbrec .ldate{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:8px;}
+.bbrec .lobs{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);}
+.bbrec .lbuild{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair);display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;}
+.bbrec .lbuild .bl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);white-space:nowrap;}
+.bbrec .lbuild .bt{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.5;color:var(--sec);}
+.bbrec .lrow.open .lobs{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--muted);font-size:clamp(15px,1.5vw,17px);}
+@media(max-width:620px){.bbrec .lrow{grid-template-columns:1fr;gap:12px;}.bbrec .lmeta{display:flex;align-items:baseline;gap:14px;}.bbrec .lmeta .ldate{margin-top:0;}}
+/* figures / exhibits */
+.bbrec .figlabel{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
+.bbrec .figlabel .sq{width:7px;height:7px;}
+.bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
+.bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
+/* lead-magnet exhibit */
+/* voice provenance pairing */
+.bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr 1fr;}
+.bbrec .vpair .vcell{padding:clamp(16px,2.2vw,24px) clamp(16px,2.2vw,26px) clamp(18px,2.4vw,26px) 0;}
+.bbrec .vpair .vcell+.vcell{border-left:1px solid var(--hair);padding-left:clamp(16px,2.2vw,26px);padding-right:0;}
+.bbrec .vpair .vq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:9px;}
+.bbrec .vpair .vd{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.015em;font-size:clamp(15px,1.6vw,18px);line-height:1.4;color:var(--ink);margin-top:9px;}
+@media(max-width:640px){.bbrec .vpair{grid-template-columns:1fr;}.bbrec .vpair .vcell{padding-right:0;}.bbrec .vpair .vcell+.vcell{border-left:none;border-top:1px solid var(--hair);padding-left:0;}}
+.bbrec .lm{margin-top:clamp(26px,3.2vw,40px);display:grid;grid-template-columns:300px 1fr;gap:clamp(26px,4vw,52px);align-items:center;}
+@media(max-width:760px){.bbrec .lm{grid-template-columns:1fr;gap:26px;}}
+.bbrec .lm-cover{border:1px solid var(--hair);background:#0e0e12;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.bbrec .lm-cover img{width:100%;display:block;}
+.bbrec .lm-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(24px,3vw,34px);line-height:1.05;color:var(--ink);}
+.bbrec .lm-promise{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.5;color:var(--sec);margin-top:14px;max-width:46ch;}
+.bbrec .inside{margin-top:22px;border-top:1px solid var(--hair);}
+.bbrec .inside .ir{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--hair);}
+.bbrec .inside .ir:last-child{border-bottom:none;}
+.bbrec .inside .ii{font-family:var(--grotesk);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:0.04em;}
+.bbrec .inside .it{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,16px);letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+/* governance strip */
+.bbrec .gov{margin-top:clamp(24px,3vw,34px);display:flex;flex-wrap:wrap;gap:10px 26px;}
+.bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
+.bbrec .gov .sq{width:6px;height:6px;flex-shrink:0;}
+/* commissioning record */
+.bbrec .kyle{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
+.bbrec .kyle-h{display:grid;grid-template-columns:1fr auto auto;gap:clamp(12px,2vw,26px);align-items:baseline;padding:clamp(16px,2.2vw,24px);border-bottom:1px solid var(--hair);}
+@media(max-width:600px){.bbrec .kyle-h{grid-template-columns:1fr;gap:14px;}}
+.bbrec .kyle-p{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);align-self:center;}
+.bbrec .kyle-af{font-family:var(--grotesk);font-weight:500;font-size:clamp(20px,2.4vw,28px);letter-spacing:-0.02em;color:var(--muted);}
+.bbrec .kyle-al{font-family:var(--grotesk);font-weight:800;font-size:clamp(30px,4.4vw,52px);letter-spacing:-0.035em;line-height:0.9;color:var(--ink);}
+.bbrec .kyle-al small{font-family:var(--grotesk);font-weight:700;font-size:0.34em;letter-spacing:0.02em;color:var(--muted);}
+.bbrec .kyle-q{padding:clamp(16px,2.2vw,24px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,20px);line-height:1.45;color:var(--ink);}
+.bbrec .kyle-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:12px;}
+.bbrec .kmet{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);}
+.bbrec .kmet .m{padding:clamp(14px,2vw,20px) clamp(14px,2vw,22px);border-right:1px solid var(--hair);}
+.bbrec .kmet .m:last-child{border-right:none;}
+.bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
+.bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
+@media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
+.bbrec .lemon{margin-top:clamp(20px,2.6vw,30px);border:1px solid var(--ink);display:grid;grid-template-columns:1fr auto;gap:clamp(14px,2vw,26px);align-items:center;padding:clamp(16px,2.2vw,24px);}
+@media(max-width:600px){.bbrec .lemon{grid-template-columns:1fr;gap:14px;}}
+.bbrec .lemon-q{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,19px);line-height:1.45;color:var(--ink);}
+.bbrec .lemon-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:10px;}
+.bbrec .lemon-r{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(16px,1.9vw,22px);line-height:1.1;max-width:14ch;color:var(--ink);}
+/* reported outcomes (static ruled grid — replaces the marquee) */
+.bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
+.bbrec .rev{display:grid;grid-template-columns:1fr 200px;gap:clamp(14px,2.4vw,32px);padding:clamp(16px,2.2vw,22px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .rev:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .rev-q{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);}
+.bbrec .rev-w{font-family:var(--grotesk);font-weight:700;font-size:12px;color:var(--ink);}
+.bbrec .rev-w small{display:block;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:9.5px;color:var(--muted);margin-top:4px;}
+@media(max-width:640px){.bbrec .rev{grid-template-columns:1fr;gap:8px;}}
+/* instrument / flow */
+.bbrec .flow{margin-top:clamp(26px,3.2vw,40px);border-top:1px solid var(--ink);}
+.bbrec .fstep{display:grid;grid-template-columns:70px 1fr;gap:clamp(16px,2.4vw,32px);padding:clamp(18px,2.4vw,26px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .fstep:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .fn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(20px,2.4vw,28px);color:var(--muted);}
+.bbrec .ft{font-family:var(--grotesk);font-weight:600;font-size:clamp(17px,2vw,22px);letter-spacing:-0.015em;line-height:1.2;color:var(--ink);}
+.bbrec .fb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.55;color:var(--sec);margin-top:8px;max-width:60ch;}
+.bbrec .promises{margin-top:clamp(22px,2.8vw,34px);display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+@media(max-width:640px){.bbrec .promises{grid-template-columns:1fr;}}
+.bbrec .pcell{padding:clamp(16px,2.2vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .promises .pcell:nth-child(2n){border-right:none;}
+@media(max-width:640px){.bbrec .pcell{border-right:none;}}
+.bbrec .ph{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.7vw,18px);letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .pb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:8px;}
+/* operator block */
+.bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
+@media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
+.bbrec .op-portrait{border:1px solid var(--ink);background:var(--flash);}
+.bbrec .op-portrait img{width:100%;display:block;filter:grayscale(100%) contrast(1.02);}
+.bbrec .op-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,3vw,36px);line-height:1.08;color:var(--ink);}
+.bbrec .op-b{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.55;color:var(--sec);margin-top:16px;max-width:56ch;}
+.bbrec .op-sig{margin-top:18px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.bbrec .op-sig a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair);}
+/* final CTA box (RED lives here) */
+.bbrec .ctawrap{padding-top:clamp(52px,8vw,90px);padding-bottom:clamp(40px,6vw,70px);}
+.bbrec .box.cta{padding:clamp(30px,5vw,56px);text-align:center;}
+.bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
+.bbrec .cta-n{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.6vw,18px);line-height:1.5;color:var(--sec);max-width:46ch;margin:clamp(16px,2vw,20px) auto 0;}
+.bbrec .cta-btn{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(22px,3vw,30px);background:var(--red);color:var(--paper);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(13px,1.5vw,15px);padding:16px 30px;text-decoration:none;}
+.bbrec .cta-fine{margin-top:16px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+/* footer */
+.bbrec .foot{border-top:1px solid var(--ink);margin-top:clamp(40px,6vw,70px);}
+.bbrec .foot-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:clamp(22px,3vw,34px) 0 12px;}
+.bbrec .foot-links{display:flex;align-items:center;gap:22px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;}
+.bbrec .foot-links a{text-decoration:none;color:var(--sec);}
+.bbrec .foot-links a.book{color:var(--ink);}
+.bbrec .foot-fine{padding-bottom:clamp(40px,6vw,60px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;color:var(--muted);}
+`;
+
+// One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
+// under reduced motion. Replaces candidate C's CSS .reveal so it obeys useReducedMotion.
+const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section' }> = ({ children, className, style, el = 'div' }) => {
+  const reduce = useReducedMotion();
+  const M = el === 'section' ? motion.section : motion.div;
+  return (
+    <M
+      className={className}
+      style={style}
+      initial={reduce ? false : { opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.7, ease: EASE }}
+    >
+      {children}
+    </M>
+  );
+};
+
+const RecordStyles: React.FC = () => <style dangerouslySetInnerHTML={{ __html: RECORD_CSS }} />;
+
+// Administrative document line: square · doc-type · scan date — rule — reference.
+const Docline: React.FC<{ docType: string; date: string; refLabel: string }> = ({ docType, date, refLabel }) => (
+  <div className="docline">
+    <span className="sq" aria-hidden />
+    <span>{docType}&nbsp;·&nbsp;{date}</span>
+    <span className="rule" aria-hidden />
+    <span>Ref&nbsp;&nbsp;{refLabel}</span>
+  </div>
+);
+
+// ISO-7200 data plate — the admin title block, ruled cells with clinical field labels.
+const DataPlate: React.FC<{ cells: { k: string; v: React.ReactNode }[] }> = ({ cells }) => (
+  <div className="plate">
+    <div className="plate-grid">
+      {cells.map((c, i) => (
+        <div className="cell" key={i}>
+          <div className="k">{c.k}</div>
+          <div className="v">{c.v}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Numbered section head — clinical label + straight display title (no serif italic in heads).
+const SecHead: React.FC<{ label: React.ReactNode; title: React.ReactNode; note?: React.ReactNode }> = ({ label, title, note }) => (
+  <>
+    <div className="sec-label"><span className="sq" aria-hidden /> {label}</div>
+    <h2 className="sec-title">{title}</h2>
+    {note ? <p className="sec-note">{note}</p> : null}
+  </>
+);
+
+// Lettered exhibit caption — Source Serif italic specimen line citing the real source.
+const FigLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="figlabel"><span className="sq" aria-hidden /> {children}</div>
+);
+
+// A depicted artifact (native chrome kept) framed as a Fig · exhibit with an italic caption.
+const Exhibit: React.FC<{ label: React.ReactNode; caption?: React.ReactNode; children: React.ReactNode }> = ({ label, caption, children }) => (
+  <div>
+    <FigLabel>{label}</FigLabel>
+    <div className="figframe">{children}</div>
+    {caption ? <p className="cap">{caption}</p> : null}
+  </div>
+);
+
+// Date helpers — every displayed date derives from the scan's own created/completed stamp.
+const recDateISO = (s: string | null | undefined, fallback?: string | null) => {
+  const d = new Date(s ?? fallback ?? Date.now());
+  return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+};
+const recDatePlusDaysISO = (s: string | null | undefined, days: number, fallback?: string | null) => {
+  const d = new Date(s ?? fallback ?? Date.now());
+  if (isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
 function CallIntelReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const ci = report.call_intel;
   if (!ci) return null;
@@ -1940,78 +2176,179 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
     <CIMagneticCTA href={bookUrl} label={label} small={small} />
   );
 
+  // ── Derived, honest figures (numbers trace to report_json / scan stamps) ──
+  const scanDate = recDateISO(scan.completed_at, scan.created_at);
+  const volRaw = (ci.volume_estimate?.value || '').trim();
+  const volNum = (volRaw.match(/[\d][\d,]*/) || [])[0] || '';
+  const volBasis = (ci.volume_estimate?.basis || '').trim();
+  const leaks = (ci.leaking_signals ?? []).slice(0, 3);
+  const cleanDomain = (scan.domain || companyName || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  const WARN: Record<CallIntel['archetype'], { effect: string; verdict: string }> = {
+    sales_demo_driven:   { effect: 'WARNING: DEALS LOST UNEXAMINED', verdict: 'The calls happen. Nobody reviews what lost the deal.' },
+    cs_retention_driven: { effect: 'WARNING: CHURN SEEN TOO LATE', verdict: 'The customer says it on the call. You hear it at renewal.' },
+    intake_driven:       { effect: 'WARNING: GOOD CASES SLIP AWAY', verdict: 'The right cases call in. Most are never looked at twice.' },
+  };
+  const warn = WARN[ci.archetype] ?? WARN.sales_demo_driven;
+  const reading = volNum
+    ? { open: false, k: 'As found · call volume', n: volNum, d: `${volBasis || 'calls a month'}, with no record of what happens on them.` }
+    : { open: true, k: 'As found', n: '[ open ]', d: 'call volume not on record yet. The cell is ruled and left open.' };
+  // ProvalTech case-study stat tiles — copy is a PLACEHOLDER per code comment; kept verbatim, given quiet body treatment (no figure-plate certification).
+  const provalStats = [
+    { v: '+$20K', label: 'a month in new revenue', sub: 'from the calls they already ran' }, // PLACEHOLDER: '+$20K/mo'
+    { v: '+27%', label: 'close rate', sub: 'after coaching on flagged calls' },              // PLACEHOLDER: '+27%'
+    { v: '20×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' },     // REAL
+  ];
+  const CI_REVIEWS = [
+    { q: 'Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.', n: 'Camille Haas', r: 'Head of Operations' },
+    { q: 'His solutions helped uncover opportunities we were missing, directly impacting our bottom line.', n: 'Rodrigo Ibañez', r: 'Managing Director' },
+    { q: 'You see how he uses AI and immediately feel like you’ve been doing things the hard way. Walked away with a completely different approach.', n: 'Cristian Trif', r: 'Salesforce Consultant · 9 yrs' },
+  ];
+
   return (
-    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
+    <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
+      <RecordStyles />
       <ScrollProgress />
-      <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+
+      {/* ── TOP REGISTER ─────────────────────── */}
+      <header className="reg">
+        <div className="wrap reg-row">
           <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Call Intelligence · {companyName}</span>
-          <BookButton label="Book a call" small />
+          <div className="reg-right">
+            <span className="reg-meta hidden md:inline">Call Intelligence&nbsp;·&nbsp;Confidential to recipient</span>
+            <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+          </div>
         </div>
       </header>
 
-      <CallIntelHero ci={ci} companyName={companyName} meta={meta} bookUrl={bookUrl} />
+      <main className="wrap">
+        {/* ── DOCLINE ─────────────────────────── */}
+        <Docline docType="Call Intelligence · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
-      <CallIntelPain ci={ci} companyName={companyName} receipts={receipts} scan={scan} />
+        {/* ── DATA PLATE ──────────────────────── */}
+        <DataPlate cells={[
+          { k: 'Prepared for', v: companyName },
+          { k: 'Scanned', v: <>Public presence{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
+          { k: 'Scan date', v: <span className="num">{scanDate}</span> },
+          { k: 'Operator of record', v: 'Ivan Manfredi' },
+          { k: 'Measured in', v: 'Revenue from calls you already run' },
+          { k: 'Scope', v: 'Every call transcribed, scored, routed' },
+        ]} />
 
-      {/* THE WHOLE SYSTEM — animated flow diagram */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl">
-          <Kicker>The whole system</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            Every call in. <Italic>The right output out.</Italic>
-          </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
-            Every call your team runs flows through one scoring engine, and comes back as something you can act on.
-          </p>
-        </div>
-        <div className="mt-10 lg:mt-14"><CallIntelSystemFlow /></div>
-      </section>
+        {/* ── FOLD ────────────────────────────── */}
+        <Rev el="section" className="fold">
+          <div>
+            <h1 className="company">{companyName}</h1>
+            <p className="lede">{ci.thesis || 'The calls already happen. Today nothing keeps the record of what wins or loses on them.'}</p>
+          </div>
+          <div className="reading">
+            <div className="rk">{reading.k}</div>
+            <div className="rn num" style={reading.open ? { fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(22px,3vw,30px)', color: MUTED } : undefined}>{reading.n}</div>
+            <div className="rd">{reading.d}</div>
+            <div className="rrow"><span>Scored today</span><span className="num">0</span></div>
+            <div className="rrow"><span>Record kept</span><span>None</span></div>
+          </div>
+        </Rev>
 
-      {/* WHAT YOU GET — the four deliverables, up close */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl">
-          <Kicker>What you get</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            Two kinds of calls. <Italic>Two kinds of output.</Italic>
-          </h2>
-          <p className="mt-4" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>
-            One improves the next deal. One saves the account before it's gone.
-          </p>
-        </div>
-        <div className="mt-10 grid gap-7 lg:grid-cols-2 items-stretch">
-          {surfaces.map((s, i) => (
-            <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="flex flex-col h-full scroll-mt-24">
-              <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: s === SURFACE_CHURN ? CI_CORAL : accentInk, fontWeight: 600 }}>{s.tag}</p>
-              <p className="mt-2.5 mb-5" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.45rem, 2.6vw, 1.9rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210', minHeight: '2.3em' }}>{s.head}</p>
-              <div className="flex-1">{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
+        {/* ── VERDICT · THE BOX (1 of 2) ──────── */}
+        <div className="boxwrap">
+          <Rev className="box tilt">
+            <div className="box-head">
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">{warn.effect}</span>
             </div>
-          ))}
-        </div>
-        {/* and the urgent ones land where your team already works */}
-        <div className="mt-12 max-w-2xl mx-auto text-center">
-          <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.4rem, 2.6vw, 1.85rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: '#131210' }}>
-            And the urgent ones ping you <Italic>where you already work.</Italic>
-          </p>
-          <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.5, color: '#6B675E' }}>No new dashboard to babysit. The flag lands in Slack the moment it happens.</p>
-        </div>
-        <div className="mt-7 max-w-xl mx-auto"><CISlackAlert /></div>
-        <div id="ci-digest" className="mt-14 max-w-3xl mx-auto scroll-mt-24">
-          <p className="mb-3.5 text-center" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Every Monday: the weekly digest</p>
-          <CallIntelProductMock ci={ci} companyName={companyName} />
-        </div>
-        <div id="ci-control" className="mt-14 scroll-mt-24">
-          <p className="mb-3.5" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>You stay in control</p>
-          <CIControlPanel companyName={companyName} />
+            <div className="box-body">{warn.verdict}</div>
+            <div className="afp">
+              <div className="afp-h">
+                <span>Parameter</span>
+                <span>As found · {scanDate}</span>
+                <span>Projected · scored</span>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Calls reviewed</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · none scored ]</div>
+                <div className="afp-v" data-l="Projected · scored">Every call scored on your rubric</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Deal-loss reasons</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · not on record ]</div>
+                <div className="afp-v" data-l="Projected · scored">Flagged per call, coached next time</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">At-risk accounts</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · surfaces at renewal ]</div>
+                <div className="afp-v" data-l="Projected · scored">Flagged the morning it happens</div>
+              </div>
+            </div>
+            <p className="box-note">The readings above have no before-state to record: the cells are ruled and left open, because nothing scores those calls today. Everything below this line is the record the engine would keep instead.</p>
+          </Rev>
         </div>
 
-        {/* MORE — extra capabilities, scannable, no heavy mocks */}
-        <div className="mt-16">
-          <p className="mb-7 text-center" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: '#131210' }}>
-            And it catches more than <Italic>you'd think.</Italic>
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* ── SECTION 03 · OBSERVATIONS LEDGER ── */}
+        {leaks.length > 0 && (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
+              title="What the scan read on your calls."
+              note="Read from your public presence on the scan date. The trailing rows stay ruled and open until the engine is running against your live calls."
+            />
+            <div className="ledger">
+              {leaks.map((l, i) => (
+                <div className="lrow" key={i}>
+                  <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+                  <div>
+                    <div className="lobs">{l.title}</div>
+                    {l.detail ? <div className="lbuild"><span className="bl">→ Reading</span><span className="bt">{l.detail}</span></div> : null}
+                  </div>
+                </div>
+              ))}
+              <div className="lrow open">
+                <div className="lmeta"><div className="lidx num">{String(leaks.length + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+                <div className="lobs">Ruled and left open. The next reading is entered once the engine is scoring your live calls.</div>
+              </div>
+            </div>
+            {receipts.length > 0 && (
+              <p className="cap" style={{ marginTop: 20 }}>Read from your public presence today: {receipts.map((r, i) => <span key={i}>{i ? '  ·  ' : ''}{r.label}: {r.value}</span>)}</p>
+            )}
+          </Rev>
+        )}
+
+        {/* ── SECTION 04 · THE INSTRUMENT ─────── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 04&nbsp;·&nbsp;The instrument</>}
+            title={<>Every call in. The right output out.</>}
+            note="Every call your team runs flows through one scoring engine, and comes back as something you can act on. The system keeps the record."
+          />
+          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;system flow&nbsp;·&nbsp;calls in, four outputs out</>} caption="Schematic of the scoring engine. Calls are transcribed, scored on your rubric, and routed to the right place.">
+              <CallIntelSystemFlow />
+            </Exhibit>
+          </div>
+          <div className="grid gap-7 lg:grid-cols-2" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            {surfaces.map((s, i) => (
+              <div key={i} id={s === SURFACE_SALES ? 'ci-analysis' : 'ci-alert'} className="scroll-mt-24">
+                <FigLabel>Fig&nbsp;·&nbsp;{s.tag}&nbsp;·&nbsp;{s === SURFACE_SALES ? 'scored call' : 'churn flag'}</FigLabel>
+                <p className="ph" style={{ marginBottom: 12 }}>{s.head}</p>
+                <div className="figframe" style={{ padding: 0 }}>{s === SURFACE_SALES ? <CICallAnalysis /> : <CIChurnAlert />}</div>
+              </div>
+            ))}
+          </div>
+          <div id="ci-alert-slack" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;where the flags land&nbsp;·&nbsp;your Slack</>} caption="The urgent ones ping you where you already work. No new dashboard to babysit.">
+              <div style={{ maxWidth: 560 }}><CISlackAlert /></div>
+            </Exhibit>
+          </div>
+          <div id="ci-digest" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;the weekly digest&nbsp;·&nbsp;every Monday</>} caption="One scroll, no meeting: the week's pattern, your reps ranked, the accounts at risk.">
+              <CallIntelProductMock ci={ci} companyName={companyName} />
+            </Exhibit>
+          </div>
+          <div id="ci-control" className="scroll-mt-24" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;the control panel&nbsp;·&nbsp;you set the rules</>} caption="You set the rubric, the thresholds, and who gets pinged. The system runs the way you sell.">
+              <CIControlPanel companyName={companyName} />
+            </Exhibit>
+          </div>
+          <div className="promises" style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
             {[
               { t: 'Rep performance', d: 'See who is improving and who is stalling, week over week.' },
               { t: 'Coverage gaps', d: 'Get flagged when calls or follow-ups slip through the cracks.' },
@@ -2019,173 +2356,100 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
               { t: 'Competitor mentions', d: 'Know every time a prospect names a rival on a call.' },
               { t: 'Talk-time ratio', d: 'Catch reps talking when they should be listening.' },
               { t: 'New-rep ramp', d: 'Watch how fast new hires get to your best rep’s bar.' },
-            ].map((f, i) => (
-              <motion.div key={f.t}
-                initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: (i % 3) * 0.07 }}
-                className="p-5 lg:p-6" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-                <div className="flex items-center gap-2.5">
-                  <span aria-hidden style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.2rem', lineHeight: 1.1, letterSpacing: '-0.01em', color: '#131210' }}>{f.t}</span>
-                </div>
-                <p className="mt-2.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.45, color: '#4A463E' }}>{f.d}</p>
-              </motion.div>
+            ].map((f) => (
+              <div className="pcell" key={f.t}><div className="ph">{f.t}</div><div className="pb">{f.d}</div></div>
             ))}
           </div>
-        </div>
-      </section>
+        </Rev>
 
-      {/* CASE STUDY — the proof: a system we already shipped */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Case study · ProvalTech</p>
-        <h3 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.4vw, 2.7rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-          How we turned ProvalTech's existing calls into <Italic>$20K more a month.</Italic>
-        </h3>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E' }}>
-          Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%.
-        </p>
-
-        {/* results stat tiles. ⚠️ PLACEHOLDER: '+$20K/mo' and '+27%' are placeholders — Ivan swaps
-            the real ProvalTech figures before sending. '20× more calls reviewed' (5%→100%) is real. */}
-        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3 overflow-hidden" style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
-          {[
-            { pre: '+$', fig: '20', suf: 'K', label: 'a month in new revenue', sub: 'from the calls they already ran', placeholder: true }, // PLACEHOLDER
-            { pre: '+', fig: '27', suf: '%', label: 'close rate', sub: 'after coaching on flagged calls', placeholder: true }, // PLACEHOLDER
-            { pre: '', fig: '20', suf: '×', label: 'more calls reviewed', sub: '5% sampled by hand → 100% scored' }, // REAL
-          ].map((s, i) => (
-            <motion.div key={i}
-              initial={reduce ? false : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.7, ease: EASE, delay: i * 0.1 }}
-              className={`px-7 py-8 ${i ? 'border-t sm:border-t-0 sm:border-l' : ''}`}
-              style={{ borderColor: hairline }}
-            >
-              <div style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.6rem, 4.8vw, 3.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: 'var(--color-accent)', fontVariantNumeric: 'tabular-nums' }}>
-                {s.pre}<Counter value={Number(s.fig)} />{s.suf}
+        {/* ── SECTION 05 · COMMISSIONING RECORD · PROVALTECH ── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 05&nbsp;·&nbsp;Commissioning record · ProvalTech</>}
+            title="How we turned ProvalTech's existing calls into $20K more a month."
+            note="Same team. Same calls. We scored every one and coached each rep on what lost the deal. Close rate moved 27%."
+          />
+          {/* quiet stat cells — placeholder figures kept verbatim, no figure-plate certification */}
+          <div className="kmet" style={{ marginTop: 'clamp(24px,3vw,36px)', borderTop: `1px solid ${HAIR}`, borderLeft: `1px solid ${HAIR}`, borderRight: `1px solid ${HAIR}`, borderBottom: `1px solid ${HAIR}` }}>
+            {provalStats.map((s, i) => (
+              <div className="m" key={i}><div className="mv num">{s.v}</div><div className="k" style={{ marginTop: 6 }}>{s.label}</div><div className="ml" style={{ marginTop: 4 }}>{s.sub}</div></div>
+            ))}
+          </div>
+          <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;ProvalTech · call performance dashboard</>} caption="The live board: per-call scores, per-rep trends, flagged moments.">
+              <div style={{ background: '#131210' }}>
+                <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
+                  <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
+                </div>
+                <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
               </div>
-              <p className="mt-3" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.6)' }}>{s.label}</p>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.4, color: '#6B675E' }}>{s.sub}</p>
-            </motion.div>
-          ))}
-        </div>
+            </Exhibit>
+          </div>
+          <p className="cap" style={{ marginTop: 14, letterSpacing: '0.14em', textTransform: 'uppercase', fontStyle: 'normal', fontFamily: MONO, fontSize: 11 }}>STACK · Fireflies · Airtable · n8n · Claude</p>
+        </Rev>
 
-        {/* the real product — the dashboard (wide) + a single scored call (narrow companion) */}
-        <div className="mt-10 grid gap-4 lg:grid-cols-[1.62fr_0.38fr] lg:items-stretch">
-          <motion.figure className="overflow-hidden"
-            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE }}
-            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: '#131210' }}>
-              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>ProvalTech · Call Performance Dashboard</span>
-            </div>
-            <img src="/cases/provaltech.png" alt="ProvalTech Call Performance Dashboard with per-call scores and trends" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto' }} />
-          </motion.figure>
-          <motion.figure className="overflow-hidden flex flex-col"
-            initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.85, ease: EASE, delay: 0.1 }}
-            style={{ border: `1px solid ${hairline}`, borderRadius: CI_R, boxShadow: CI_SHADOW }}>
-            <div className="flex items-center gap-2 px-3.5 py-3" style={{ background: '#131210' }}>
-              <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>A single scored call</span>
-            </div>
-            <div className="overflow-hidden flex-1" style={{ background: '#FFFFFF' }}>
-              <img src="/cases/provaltech-detail.png" alt="An individual scored call with per-criterion scores" loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', height: 'auto', objectFit: 'cover', objectPosition: 'top' }} />
-            </div>
-          </motion.figure>
-        </div>
-        <p className="mt-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', color: 'rgba(19,18,16,0.5)' }}>STACK · Fireflies · Airtable · n8n · Claude</p>
-      </section>
+        {/* ── SECTION 06 · REPORTED OUTCOMES ──── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 06&nbsp;·&nbsp;Reported outcomes</>}
+            title={<>The kind of work people rehire for.</>}
+          />
+          <div className="kyle" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+            <div className="kyle-q">&ldquo;As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.&rdquo;<span className="who">Adeeb Mohammed · Software Engineer · ex-Amazon · Meta</span></div>
+          </div>
+          <div className="revs">
+            {CI_REVIEWS.map((t, i) => (
+              <div className="rev" key={i}>
+                <div className="rev-q">&ldquo;{t.q}&rdquo;</div>
+                <div className="rev-w">{t.n}<small>{t.r}</small></div>
+              </div>
+            ))}
+          </div>
+        </Rev>
 
-      {/* REVIEWS — real client testimonials (from the landing page), softened-card styled */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-2xl mb-10">
-          <Kicker>What they say</Kicker>
-          <h2 className="mt-4" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 3.8vw, 2.9rem)', lineHeight: 1.06, letterSpacing: '-0.02em', color: '#131210' }}>
-            The kind of work people <Italic>rehire for.</Italic>
-          </h2>
-        </div>
-        {/* lead quote */}
-        <motion.figure initial={reduce ? false : { opacity: 0, y: 22 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }}
-          className="p-7 lg:p-10 mb-4" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <blockquote style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)', lineHeight: 1.22, letterSpacing: '-0.015em', color: '#131210' }}>
-            “As a current Meta developer, ex-Amazon, very few things surprise me with AI. Ivan did. One conversation and I already had three things to implement in my workflow.”
-          </blockquote>
-          <figcaption className="mt-6 flex items-baseline gap-3 flex-wrap">
-            <span style={{ fontFamily: BODY_SERIF, fontSize: '16px', fontWeight: 600, color: '#131210' }}>Adeeb Mohammed</span>
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E' }}>Software Engineer · ex-Amazon · Meta</span>
-          </figcaption>
-        </motion.figure>
-        {/* supporting quotes */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { q: 'Working with Ivan has been an absolute game-changer. He exceeded all expectations and saved our team countless hours.', a: 'Camille Haas', r: 'Head of Operations' },
-            { q: 'His solutions helped uncover opportunities we were missing, directly impacting our bottom line.', a: 'Rodrigo Ibañez', r: 'Managing Director' },
-            { q: 'You see how he uses AI and immediately feel like you’ve been doing things the hard way. Walked away with a completely different approach.', a: 'Cristian Trif', r: 'Salesforce Consultant · 9 yrs' },
-          ].map((t, i) => (
-            <motion.figure key={t.a}
-              initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.55, ease: EASE, delay: i * 0.08 }}
-              className="p-6 flex flex-col" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <blockquote className="flex-1" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.5, color: '#4A463E' }}>“{t.q}”</blockquote>
-              <figcaption className="mt-5 pt-4" style={{ borderTop: `1px solid ${hairline}` }}>
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', fontWeight: 600, color: '#131210' }}>{t.a}</p>
-                <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E', marginTop: 2 }}>{t.r}</p>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
-      </section>
-
-      {/* FOUNDER'S NOTE — the human close, right before the ask */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-3xl mx-auto">
-          <Kicker>Who's behind this</Kicker>
-          <div className="mt-7 flex flex-col sm:flex-row gap-6 sm:gap-8 sm:items-start">
-            <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" className="w-20 h-20 sm:w-24 sm:h-24 object-cover shrink-0" style={{ borderRadius: 18, boxShadow: CI_SHADOW_LG }} onError={fallbackOnError} />
+        {/* ── OPERATOR OF RECORD ──────────────── */}
+        <Rev el="section" className="sec">
+          <div className="sec-label"><span className="sq" aria-hidden /> Operator of record</div>
+          <div className="operator">
+            <div className="op-portrait">
+              <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
+            </div>
             <div>
-              <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.6rem, 3vw, 2.3rem)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#131210' }}>
-                I'm Ivan. I build the systems agencies <Italic>promise and never ship.</Italic>
-              </p>
-              <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.6, color: '#4A463E' }}>
-                Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I'll build yours, run it on your real calls first, and you'll see exactly what it catches before you commit to anything.
-              </p>
-              <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for agencies</p>
+              <div className="op-h">I&rsquo;m Ivan. I build the systems agencies promise and never ship.</div>
+              <p className="op-b">Call intelligence is the one I reach for most, because the money is always hiding in conversations nobody has time to review. I&rsquo;ll build yours, run it on your real calls first, and you&rsquo;ll see exactly what it catches before you commit to anything.</p>
+              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
           </div>
+        </Rev>
+
+        {/* ── FINAL CTA · THE BOX (2 of 2, RED) ─ */}
+        <div className="ctawrap">
+          <Rev className="box cta">
+            <div className="box-head" style={{ justifyContent: 'center' }}>
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">WARNING: REVENUE LEFT ON THE CALL</span>
+            </div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>See it running on your calls.</div>
+            <p className="cta-n">15 minutes. Bring a few of your real calls. I&rsquo;ll run them through the system live and show you what it scores, flags, and surfaces.</p>
+            <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call <span aria-hidden>→</span></a>
+            <div className="cta-fine">No deck. A working demo.</div>
+          </Rev>
         </div>
-      </section>
+      </main>
 
-      {/* CTA — soft rounded panel, centered */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
-        <motion.div className="px-7 py-14 lg:px-14 lg:py-20 text-center"
-          initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }}
-          style={{ background: CI_CARD, borderRadius: 30, boxShadow: CI_SHADOW_LG, border: `1px solid ${hairline}` }}>
-          <h2 className="mx-auto" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2.3rem, 4.6vw, 3.5rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: '#131210', maxWidth: '16ch' }}>
-            See it running on <Italic>your</Italic> calls.
-          </h2>
-          <p className="mt-5 mx-auto" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E', maxWidth: '40ch' }}>
-            15 minutes. Bring a few of your real calls. I'll run them through the system live and show you what it scores, flags, and surfaces.
-          </p>
-          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <BookButton label="Book a call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>No deck. A working demo.</span>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* FOOTER — closing context below the CTA */}
-      <footer style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="flex items-center gap-3">
-            <CIWaveform count={5} maxH={13} gap={2} barW={2} />
+      {/* ── FOOTER ──────────────────────────── */}
+      <footer className="foot">
+        <div className="wrap">
+          <div className="foot-row">
             <Wordmark size={16} />
-            <span aria-hidden style={{ color: 'rgba(19,18,16,0.25)' }}>·</span>
-            <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>Call Intelligence</span>
+            <div className="foot-links">
+              <a className="book" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+              <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
+            </div>
           </div>
-          <div className="flex items-center gap-5">
-            <a href={bookUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>Book a call</a>
-            <a href="https://ivanmanfredi.com" className="transition-colors hover:text-accent" style={{ fontFamily: BODY_SERIF, fontSize: '15px', color: '#4A463E' }}>ivanmanfredi.com</a>
-          </div>
+          <p className="foot-fine">Prepared for {companyName}. Built from a live scan of your public presence, scanned {scanDate}. The record above is projected; the open cells are honest.</p>
         </div>
-        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(19,18,16,0.35)' }}>Prepared for {companyName} · This page was built from a live scan of your site.</p>
       </footer>
     </div>
   );
@@ -3003,338 +3267,494 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     { q: 'We went from posting sometimes to showing up every day, in our voice.', n: 'Cristian Trif', r: 'Operator' },
   ];
 
+  // ── Derived, honest figures (every number traces to report_json / scan stamps) ──
+  const scanDate = recDateISO(scan.completed_at, scan.created_at);
+  const courseEnd = recDatePlusDaysISO(scan.completed_at, 90, scan.created_at);
+  const followers = ls?.followers ?? null;
+  const posts30 = ls?.posts_30d ?? null;
+  const winsCards = (cs.wins ?? []).filter((w) => (w.observation || '').trim());
+  // Any gated win is worth a ledger row: the open-row grammar absorbs a short count
+  // honestly, so 1-2 real observations must never be dropped for generic signals.
+  const hasWins = winsCards.length >= 1;
+  const winsWord = ['One reading', 'Two readings', 'Three readings'][Math.min(winsCards.length, 3) - 1] || 'Three readings';
+  const leaks = (cs.leaking_signals ?? []).slice(0, 3);
+  const lm = cs.sample_output?.lm;
+  const insideItems = (lm?.whats_inside ?? []).slice(0, 5);
+  // Voice provenance: one inspectable pairing, her sentence beside the drafted open built from it.
+  // Skip pairs where one side is a near-copy of the other: verbatim reuse proves nothing
+  // about voice; the pairing must show resemblance with difference.
+  const vnorm = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  const voicePair = (cs.sample_output?.posts ?? []).find((p) => {
+    const q = (p.source_quote || '').trim();
+    const d = ((p.hook || '').trim() || (p.body || '').split('\n')[0].trim());
+    if (q.length < 20 || !d) return false;
+    const nq = vnorm(q); const nd = vnorm(d);
+    return !nq.includes(nd) && !nd.includes(nq);
+  });
+  const voiceDrafted = voicePair ? ((voicePair.hook || '').trim() || (voicePair.body || '').split('\n')[0].trim()) : '';
+  const sourceQuotes = ((cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[])
+    .filter((q) => q !== voicePair?.source_quote).slice(0, 4);
+  const engagerNames = (cs.sample_output?.engager_outreach?.samples ?? [])
+    .map((s) => (s.engager?.name || '').trim()).filter(Boolean).slice(0, 3);
+  const cleanDomain = (scan.domain || companyName || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
+    silent_founder: { effect: 'WARNING: ATTENTION LEFT UNRECORDED', verdict: 'The audience is already there. Nothing keeps the record of it.' },
+    inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the record goes blank.' },
+    no_capture:     { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
+    invisible:      { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The record starts empty.' },
+  };
+  const warn = WARN[cs.archetype] ?? WARN.silent_founder;
+  const attnFound = followers != null ? `${followers.toLocaleString()} followers, nothing routing them` : '[ open · not visible in feed ]';
+  const proofFound = posts30 != null ? (posts30 === 0 ? '[ open · none in 30 days ]' : `${posts30} posts in 30 days, no capture behind them`) : '[ open · none in feed ]';
+  // Spike from the gated wins text — a number the prospect recognizes from their own feed.
+  // The observation strings are deterministically grounded upstream, so a figure lifted
+  // verbatim from them is a real reading, and its own sentence is the honest caption.
+  let spike: { n: string; d: string } | null = null;
+  for (const w of winsCards) {
+    const obs = (w.observation || '').trim();
+    const m = /(\d[\d,]{1,6})\s*\+?\s*(comments|reactions|likes|shares|reposts|views|followers|subscribers)/i.exec(obs);
+    if (m) {
+      const val = parseInt(m[1].replace(/,/g, ''), 10);
+      const cur = spike ? parseInt(spike.n.replace(/,/g, ''), 10) : -1;
+      // Floor: a fold panel proclaiming ONE SPIKE over a small number reads as reaching.
+      if (val >= 50 && val > cur) {
+        let d = obs;
+        if (d.length > 170) {
+          d = d.slice(0, 170);
+          d = d.slice(0, Math.max(d.lastIndexOf(' '), 120)) + '...';
+        }
+        spike = { n: m[1], d };
+      }
+    }
+  }
+  // Reading panel — the one honest as-found figure at the top fold. A recognizable spike
+  // from their own feed beats a profile stat beats an honest open cell.
+  const reading = spike
+    ? { open: false, k: 'As found · one spike', n: spike.n, d: spike.d }
+    : followers != null
+    ? { open: false, k: 'As found · audience', n: followers.toLocaleString(), d: 'followers already earned, with nothing on record to route them anywhere.' }
+    : posts30 != null
+    ? { open: false, k: 'As found · cadence', n: String(posts30), d: `posts in the last 30 days, and not one of them leaves you a name to follow up.` }
+    : { open: true, k: 'As found', n: '[ open ]', d: 'no owned attention on record yet. The cell is ruled and left open.' };
+
   return (
-    <div className="min-h-screen bg-paper text-ink" style={BLACKBOX_VARS}>
+    <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
+      <RecordStyles />
       <ScrollProgress />
-      <header className="sticky top-0 z-30 border-b" style={{ borderColor: hairline, background: '#FFFFFF' }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+
+      {/* ── TOP REGISTER ─────────────────────── */}
+      <header className="reg">
+        <div className="wrap reg-row">
           <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
-          <span className="hidden md:block" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.65)' }}>Inbound Engine · {founderFull}</span>
-          <BookButton label="Book a call" small />
+          <div className="reg-right">
+            <span className="reg-meta hidden md:inline">Operating Record&nbsp;·&nbsp;Confidential to recipient</span>
+            <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+          </div>
         </div>
       </header>
 
-      <CSHero cs={cs} who={who} companyName={companyName} meta={meta} bookUrl={bookUrl} />
-      <CSPain cs={cs} who={who} companyName={companyName} receipts={receipts} scan={scan} />
+      <main className="wrap">
+        {/* ── DOCLINE ─────────────────────────── */}
+        <Docline docType="Operating Record · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
-      {/* THE FULL ENGINE — one idea becomes a week across five channels (same loop as the
-          content-system page), sitting right above the prospect's own drafted week. */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <Kicker>The full engine</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>One idea in. <Italic>Five channels out.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>Every idea the engine picks becomes a week of presence across five channels, on its own, in your voice. You just approve.</p>
-        <div className="mt-10">
-          <FivePillarLoop />
-        </div>
-      </section>
+        {/* ── DATA PLATE ──────────────────────── */}
+        <DataPlate cells={[
+          { k: 'Prepared for', v: <>{founderFull}{companyName && founderFull !== companyName ? <><br />{companyName}</> : null}</> },
+          { k: 'Scanned', v: <>LinkedIn feed{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
+          { k: 'Scan date', v: <span className="num">{scanDate}</span> },
+          { k: 'Operator of record', v: 'Ivan Manfredi' },
+          { k: 'Measured in', v: 'Booked calls' },
+          { k: 'Course', v: <span className="num">90 days · through {courseEnd}</span> },
+        ]} />
 
-      {/* THE PAYOFF — the prospect's own branded week, surfaced high for engagement */}
-      {(feedSpec.posts.length > 0 || mockMetrics.length > 0) && (
-        <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-          <Kicker>Your week</Kicker>
-          <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>A week of content, <Italic>already drafted in your voice.</Italic></h2>
-          <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>Pulled from your latest episode and written the way you say it. Posts, a carousel, and a live interactive scorecard, ready for you to approve.</p>
-          <motion.div className="mt-10 overflow-hidden" initial={reduce ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.8, ease: EASE }} style={{ borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: CI_CARD, borderBottom: `1px solid ${hairline}` }}>
-              <span aria-hidden style={{ height: 7, width: 7, background: 'var(--color-accent)', flexShrink: 0 }} />
-              <span style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.68)' }}>{companyName} · {mock?.title || 'This week'}</span>
+        {/* ── FOLD ────────────────────────────── */}
+        <Rev el="section" className="fold">
+          <div>
+            <h1 className="company">{companyName}</h1>
+            <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
+          </div>
+          <div className="reading">
+            <div className="rk">{reading.k}</div>
+            <div className={`rn${reading.open ? ' num' : ' num'}`} style={reading.open ? { fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(22px,3vw,30px)', color: MUTED } : undefined}>{reading.n}</div>
+            <div className="rd">{reading.d}</div>
+            <div className="rrow"><span>Captured</span><span className="num">0</span></div>
+            <div className="rrow"><span>Record kept</span><span>None</span></div>
+          </div>
+        </Rev>
+
+        {/* ── VERDICT · THE BOX (1 of 2) ──────── */}
+        <div className="boxwrap">
+          <Rev className="box tilt">
+            <div className="box-head">
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">{warn.effect}</span>
             </div>
-            <div style={{ background: 'var(--color-paper, #FFFFFF)' }}>
-              {mockMetrics.length > 0 && (
-                <div className="grid grid-cols-3" style={{ borderBottom: `1px solid ${hairline}` }}>
-                  {mockMetrics.map((m, i) => (
-                    // px-3 at base (2026-07-10 audit #10): three px-5 cells left ~86px of copy at 390px
-                    <div key={i} className="px-3 py-4 sm:px-5 sm:py-5" style={{ borderLeft: i ? `1px solid ${hairline}` : 'none' }}>
-                      <CICountMetric value={m.value} style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(1.9rem, 3vw, 2.6rem)', lineHeight: 1, letterSpacing: '-0.02em', color: i === 0 ? 'var(--color-accent)' : '#131210', fontVariantNumeric: 'tabular-nums' }} />
-                      <p className="mt-2" style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>{m.label}</p>
-                      {m.delta && <p className="mt-0.5" style={{ fontFamily: MONO, fontSize: '10px', color: accentInk }}>{m.delta}</p>}
+            <div className="box-body">{warn.verdict}</div>
+            <div className="afp">
+              <div className="afp-h">
+                <span>Parameter</span>
+                <span>As found · {scanDate}</span>
+                <span>Projected · 90-day course</span>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Inbound attention</div>
+                {attnFound.startsWith('[')
+                  ? <div className="afp-open" data-l={`As found · ${scanDate}`}>{attnFound}</div>
+                  : <div className="afp-f" data-l={`As found · ${scanDate}`}>{attnFound}</div>}
+                <div className="afp-v" data-l="Projected · 90-day course">Every reader worked into a conversation</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Original proof-of-work</div>
+                {proofFound.startsWith('[')
+                  ? <div className="afp-open" data-l={`As found · ${scanDate}`}>{proofFound}</div>
+                  : <div className="afp-f" data-l={`As found · ${scanDate}`}>{proofFound}</div>}
+                <div className="afp-v" data-l="Projected · 90-day course">Dispensed daily, in your voice</div>
+              </div>
+              <div className="afp-r">
+                <div className="afp-p">Owned lead capture</div>
+                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · none on site ]</div>
+                <div className="afp-v" data-l="Projected · 90-day course">One gated asset, names every reader</div>
+              </div>
+            </div>
+            <p className="box-note">The readings above with no before-state are ruled and left open, because there is nothing there yet. Everything below this line is the record the engine would keep instead, entered against real dates, starting the first week after the scan.</p>
+          </Rev>
+        </div>
+
+        {/* ── SECTION 03 · OBSERVATIONS LEDGER ── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
+            title={hasWins ? `${winsWord}, and the build each one triggers.` : 'What the scan read, and what the engine opens against it.'}
+            note={hasWins
+              ? 'Each entry was observed on the scan date. The build is what the engine would open against it. The ledger runs longer than the readings; the trailing rows stay ruled and open until the course runs.'
+              : 'Read from your public presence on the scan date. The build is what the engine would open against each one. The trailing rows stay ruled and open until the course runs.'}
+          />
+          <div className="ledger">
+            {hasWins ? (
+              <>
+                {winsCards.slice(0, 3).map((w, i) => (
+                  <div className="lrow" key={i}>
+                    <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+                    <div>
+                      <div className="lobs">{w.observation}</div>
+                      {w.build ? <div className="lbuild"><span className="bl">→ Build</span><span className="bt">{w.build}</span></div> : null}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : leaks.length > 0 ? (
+              <>
+                {leaks.map((l, i) => (
+                  <div className="lrow" key={i}>
+                    <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+                    <div>
+                      <div className="lobs">{l.title}</div>
+                      {l.detail ? <div className="lbuild"><span className="bl">→ Reading</span><span className="bt">{l.detail}</span></div> : null}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : null}
+            <div className="lrow open">
+              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+              <div className="lobs">Ruled and left open. The next reading is entered once the engine is running against your live feed.</div>
+            </div>
+            <div className="lrow open">
+              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 2).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+              <div className="lobs">Ruled and left open.</div>
+            </div>
+          </div>
+        </Rev>
+
+        {/* ── SECTION 04 · THE DISPENSING LOG ─── */}
+        {feedSpec.posts.length > 0 && (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 04&nbsp;·&nbsp;The dispensing log&nbsp;·&nbsp;Projected · week 1</>}
+              title={<>Dispensed daily, in your voice.</>}
+              note="Drawn from your latest material and written the way you say it. The posts keep their native form; the log frames them, and the caption cites the line each one grew from."
+            />
+            {voicePair && voiceDrafted ? (
+              <div className="vpair">
+                <div className="vcell">
+                  <div className="k">Your words, on record</div>
+                  <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
+                </div>
+                <div className="vcell">
+                  <div className="k">The drafted open, built from them</div>
+                  <div className="vd">{voiceDrafted}</div>
+                </div>
+              </div>
+            ) : null}
+            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              <Exhibit
+                label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed</>}
+                caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
+              >
+                <div style={{ background: '#FFFFFF' }}>
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" />
+                </div>
+              </Exhibit>
+              {restOfWeek.length > 0 && (
+                <div className="promises" style={{ marginTop: 20 }}>
+                  {restOfWeek.map((p, i) => (
+                    <div className="pcell" key={i}>
+                      <div className="k" style={{ marginBottom: 6 }}>Also drafted&nbsp;·&nbsp;{isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}</div>
+                      <div className="ph">{p.hook || (p.body || '').split('\n')[0]}</div>
                     </div>
                   ))}
                 </div>
               )}
-              {feedSpec.posts.length > 0 && (
-                // px-2 at base (2026-07-10 audit #10): the 552px cards were double-inset at 390px
-                <div className="px-2 sm:px-4 lg:px-6 py-6" style={{ background: 'var(--color-paper-sunk, #FFFFFF)' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" />
-                  {restOfWeek.length > 0 && (
-                    <div className="mt-4 grid gap-2.5 sm:grid-cols-2 max-w-[552px] sm:max-w-none mx-auto">
-                      {restOfWeek.map((p, i) => (
-                        <div key={i} className="px-4 py-3.5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: '1px solid var(--color-hairline)' }}>
-                          <div className="mb-1.5 flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: 'rgba(19,18,16,0.5)' }}>
-                            <span aria-hidden style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} />
-                            Also drafted this week · {isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}
-                          </div>
-                          <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: '#131210' }}>{p.hook || (p.body || '').split('\n')[0]}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* Receipts (2026-07-10): the builder gates every post on a verbatim transcript
-                  quote; when those quotes exist, show them — proof we read, not mail-merged. */}
-              {(() => {
-                const receipts = (cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[];
-                if (!receipts.length) return null;
-                return (
-                  <div className="px-4 lg:px-6 py-5" style={{ borderTop: '1px solid var(--color-hairline)' }}>
-                    <p style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>Each post above grew from your own words</p>
-                    <ul className="mt-3 space-y-2">
-                      {receipts.slice(0, 4).map((q, i) => (
-                        <li key={i} style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#6B675E' }}>“{q}”</li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })()}
             </div>
-          </motion.div>
+            {/* mid-page CTA — the drafted week is the sell */}
+            <div style={{ marginTop: 'clamp(26px,3.2vw,40px)', paddingTop: 'clamp(20px,2.4vw,28px)', borderTop: `1px solid ${HAIR}`, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
+              <p style={{ fontFamily: SERIF, fontWeight: 800, letterSpacing: '-0.02em', fontSize: 'clamp(18px,2.4vw,24px)', lineHeight: 1.15, color: INK, maxWidth: '30ch' }}>This week is already drafted, {who}. The fit call is where it goes live.</p>
+              <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
+            </div>
+          </Rev>
+        )}
 
-          {/* THE LEAD-MAGNET SAMPLE — the single most important action, surfaced as a bold, unmissable CTA.
-              Renders for a live embeddable page (assessment) OR an in-page interactive simulation (calculator). */}
-          {lmHasSample && feedSpec.lmCard && (
-            <motion.button
-              type="button"
-              onClick={() => setLmOpen(true)}
-              className="group block w-full text-left mt-6 overflow-hidden"
-              initial={reduce ? false : { opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.7, ease: EASE }}
-              style={{ borderRadius: CI_R, boxShadow: CI_SHADOW_LG }}
-            >
-              <div className="grid sm:grid-cols-[300px_1fr] gap-8 sm:gap-11 items-center p-7 sm:p-11 transition-transform duration-300 group-hover:-translate-y-0.5" style={{ background: 'linear-gradient(135deg,#131210 0%,#131210 100%)' }}>
-                <div className="mx-auto sm:mx-0 transition-transform duration-300 group-hover:scale-[1.02]" style={{ transform: 'rotate(-2deg)' }}>
-                  <img src={feedSpec.lmCard.coverUrl} alt={feedSpec.lmCard.title} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxWidth: 300, borderRadius: 10, boxShadow: '0 26px 60px rgba(0,0,0,0.5)' }} />
+        {/* ── SECTION 05 · CAPTURED ASSET (LM) ── */}
+        {lm?.title && (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 05&nbsp;·&nbsp;Captured asset</>}
+              title="The asset that keeps the address."
+              note={lmEmbedUrl
+                ? 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. It is not a mockup: the asset is already built, embedded below in your brand. Take it the way a reader would.'
+                : 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. The cover is yours, in your brand; the record frames it as the exhibit.'}
+            />
+            {lmEmbedUrl && (
+              <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px 24px', marginBottom: 14 }}>
+                  <div className="lm-title" style={{ fontSize: 'clamp(20px,2.4vw,27px)' }}>{lm.title}</div>
+                  <div className="lm-gate" style={{ marginTop: 0 }}><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-accent-light, #131210)', fontWeight: 600 }}>
-                    <span aria-hidden className="animate-pulse" style={{ width: 7, height: 7, background: 'var(--color-accent)' }} /> {lmSim ? 'Your lead magnet · interactive sample' : lmStatic ? 'Your lead magnet · sample' : 'Your lead magnet sample · live'}
-                  </div>
-                  <h3 className="mt-2.5" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.6rem, 2.8vw, 2.15rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#FFFFFF' }}>{lmSim ? 'Try the tool it built.' : 'What your leads land on.'}</h3>
-                  <p className="mt-3 max-w-md" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: 'rgba(244,241,235,0.74)' }}>{lmSim ? `The system drafted this working calculator from your own posts. Your readers would get it as an interactive page on your site that captures every email. Try it the way one of them would, ${who}.` : lmStatic ? `The system drafted this lead magnet from your own posts, in your brand. Published on your domain, it captures every reader who opens it. Here's what yours looks like, ${who}.` : `The system builds this interactive scorecard, publishes it on your domain, and captures every email. Open it the way one of your leads would, ${who}.`}</p>
-                  <span className="mt-5 inline-flex items-center gap-2.5 group-hover:brightness-105" style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, color: '#131210', background: 'var(--color-accent)', borderRadius: 999, padding: '13px 24px' }}>
-                    {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'}
-                    <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                  </span>
+                <Exhibit
+                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
+                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                >
+                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                </Exhibit>
+                <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                  Open it full screen <span aria-hidden>→</span>
+                </button>
+              </div>
+            )}
+            {!lmEmbedUrl && (
+            <div className="lm">
+              <div>
+                <FigLabel>Fig&nbsp;·&nbsp;lead magnet cover&nbsp;·&nbsp;your brand</FigLabel>
+                <div className="lm-cover">
+                  {lmCover
+                    ? <img src={lmCover} alt={lm.title} loading="lazy" onError={fallbackOnError} />
+                    : <div style={{ padding: 40, fontFamily: BODY_SERIF, fontStyle: 'italic', color: MUTED, textAlign: 'center' }}>Cover · {lm.title}</div>}
                 </div>
               </div>
-            </motion.button>
-          )}
-
-          {/* Mid-page CTA (2026-07-10 audit #9): the drafted week is the sell — catch the
-              sold reader here instead of one appearing only ~12k px later at the footer. */}
-          <div className="mt-10 pt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5" style={{ borderTop: `1px solid ${hairline}` }}>
-            <p className="max-w-md" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.3rem, 2.4vw, 1.7rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#131210' }}>
-              This week is already drafted, {who}. The fit call is where it goes live.
-            </p>
-            <div className="shrink-0"><BookButton label="Book the free fit call" small /></div>
-          </div>
-        </section>
-      )}
-
-      {/* THE REST OF YOUR ENGINE — content feed captured the reader; now it nurtures,
-          converts, and books. Each pillar renders only when the builder emitted it. */}
-      {cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? (
-        <SectionIntro kicker="Then it nurtures" title={<>Your list hears from you, <Italic>in your voice.</Italic></>}>
-          <NewsletterMockup data={cs.sample_output.newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
-        </SectionIntro>
-      ) : null}
-      {cs.sample_output?.follow_ups?.length ? (
-        <SectionIntro kicker="Then it converts" title={<>Everyone who grabs the magnet <Italic>gets a sequence.</Italic></>}>
-          <FollowUpSequence data={cs.sample_output.follow_ups} accent={prospectAccent} who={who} />
-        </SectionIntro>
-      ) : null}
-      {cs.sample_output?.engager_outreach?.samples?.length ? (
-        <SectionIntro kicker="Then it books calls" title={<>Reactions to your posts <Italic>turn into conversations.</Italic></>}>
-          <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
-          {/* Governance strip: how the lane stays safe on the prospect's account.
-              Numbers are measurements from our own lanes, never a promised result. */}
-          <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-3">
-            {[
-              'Warm only · people who engaged you',
-              '~15 connect requests a week, capped',
-              '27% warm acceptance in our lanes · cold sits near 14%',
-              'Every first DM approved by you',
-              'DMs can carry a resource built for that prospect, like this one',
-            ].map((t) => (
-              <span key={t} className="flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.62)' }}>
-                <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                {t}
-              </span>
-            ))}
-          </div>
-        </SectionIntro>
-      ) : null}
-
-      {/* PROOF — real client case studies */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Already running</p>
-        <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#131210' }}>Built for real operators. <Italic>Running every day.</Italic></h2>
-        {/* overflowX clip: the ±80px slide-in initial states sit outside the viewport until
-            their reveal fires, widening the page 64px sideways on phones (2026-07-10 audit) */}
-        <div className="mt-12 space-y-20 lg:space-y-24" style={{ overflowX: 'clip' }}>
-          {cases.map((c, idx) => {
-            const two = c.portraits.length > 1;
-            const flip = idx % 2 === 1; // alternate sides: Kyle left, Lemonade right
-            return (
-              <div className={`grid ${flip ? 'lg:grid-cols-[1.08fr_0.92fr]' : 'lg:grid-cols-[0.92fr_1.08fr]'} gap-10 lg:gap-14 items-start`} key={c.client}>
-                {/* Portrait(s) — slide in from the OUTER edge (opposite sides per row), leading the reveal */}
-                <motion.div
-                  initial={reduce ? false : { opacity: 0, x: flip ? 80 : -80 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-90px' }}
-                  transition={{ duration: 0.85, ease: EASE }}
-                  className={`flex justify-center ${flip ? 'lg:justify-end lg:order-2' : 'lg:justify-start lg:order-1'} lg:pt-1`}
-                >
-                  {two ? (
-                    <div style={{ position: 'relative', width: '100%', maxWidth: 430, height: 360 }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, width: '55.3%', zIndex: 2 }}><ProofPortrait {...c.portraits[0]} rotate={-5} aspect="5 / 7" /></div>
-                      {/* % of the fluid wrapper (was px calibrated to maxWidth 430) — px offsets overflowed 65-85px past the 390px viewport on every scan (2026-07-10 audit) */}
-                      <div style={{ position: 'absolute', left: '46.5%', top: 34, width: '52.1%', zIndex: 1 }}><ProofPortrait {...c.portraits[1]} rotate={4} aspect="5 / 7" /></div>
-                    </div>
-                  ) : (
-                    <div style={{ width: '100%', maxWidth: 340 }}><ProofPortrait {...c.portraits[0]} rotate={-5} /></div>
-                  )}
-                </motion.div>
-
-                {/* Wording — fades in AFTER the portrait has slid in */}
-                <motion.div
-                  initial={reduce ? false : { opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-90px' }}
-                  transition={{ duration: 0.6, ease: EASE, delay: reduce ? 0 : 0.45 }}
-                  className={flip ? 'lg:order-1' : 'lg:order-2'}
-                >
-                  <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.5rem, 2.7vw, 2rem)', lineHeight: 1.14, letterSpacing: '-0.01em', color: '#131210' }}>
-                    &ldquo;{c.quote[0]}<span style={{ fontStyle: 'italic', color: 'var(--color-accent-ink)' }}>{c.quote[1]}</span>{c.quote[2]}&rdquo;
-                  </p>
-                  <div className="mt-4" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.55)' }}>
-                    <span style={{ color: '#131210', fontWeight: 600 }}>{c.client}</span> &nbsp;·&nbsp; {c.role}
-                  </div>
-                  <div className="mt-5 flex items-start gap-3">
-                    <span aria-hidden style={{ marginTop: 6, height: 15, width: 3, background: 'var(--color-accent)', flexShrink: 0 }} />
-                    <p style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.4, color: '#131210', maxWidth: '28rem' }}>{c.result}</p>
-                  </div>
-                  <figure className="m-0 mt-7 overflow-hidden" style={{ transform: 'rotate(1.2deg)', borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-                    <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ background: '#131210' }}>
-                      <span aria-hidden style={{ height: 6, width: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-                      <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.9)' }}>{c.client}</span>
-                    </div>
-                    <img src={c.src} alt={c.alt} loading="lazy" onError={fallbackOnError} style={{ display: 'block', width: '100%', maxHeight: 430, objectFit: 'cover', objectPosition: '50% 0%' }} />
-                  </figure>
-                  <div className="mt-8 flex flex-wrap gap-x-10 gap-y-6">
-                    {c.metrics.map((m) => (
-                      <div key={m.label}>
-                        <div style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2rem, 4vw, 2.9rem)', lineHeight: 1, color: 'var(--color-accent-ink)' }}>{m.value}</div>
-                        <div className="mt-2 max-w-[200px]" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.4, color: '#6B675E' }}>{m.label}</div>
-                      </div>
+              <div>
+                <div className="lm-title">{lm.title}</div>
+                {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
+                {insideItems.length > 0 && (
+                  <div className="inside">
+                    {insideItems.map((it, i) => (
+                      <div className="ir" key={i}><span className="ii num">{String(i + 1).padStart(2, '0')}</span><span className="it">{it}</span></div>
                     ))}
                   </div>
-                </motion.div>
+                )}
+                <div className="lm-gate"><span className="sq" aria-hidden /> Gated on {cleanDomain || 'your domain'}&nbsp;·&nbsp;captures every reader onto your list</div>
+                {lmHasSample && feedSpec.lmCard && (
+                  <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                    {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'} <span aria-hidden>→</span>
+                  </button>
+                )}
               </div>
-            );
-          })}
-        </div>
-      </section>
+            </div>
+            )}
+          </Rev>
+        )}
 
-      {/* REVIEWS — a continuous, hover-pausable marquee of shorter cards */}
-      <section className="py-16 lg:py-20" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6"><Kicker>And more results, in their words</Kicker></div>
-        <div className="mt-8 cs-marquee-mask" style={{ overflow: 'hidden' }}>
-          <div className="cs-marquee-track">
-            {[...REVIEWS, ...REVIEWS].map((t, i) => (
-              <div
-                key={i}
-                style={{ flex: '0 0 300px', marginRight: 18, padding: '18px 20px', background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}
+        {/* ── SECTION 06 · THE BROADCAST (NL) ─── */}
+        {cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 06&nbsp;·&nbsp;The broadcast</>}
+              title={<>Then the list hears from you.</>}
+              note="One newsletter a cycle, drafted from the same week's material and sent in your voice. Framed here as the exhibit; the email keeps its own chrome."
+            />
+            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+              <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent from your list</>}>
+                <NewsletterMockup data={cs.sample_output.newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
+              </Exhibit>
+            </div>
+          </Rev>
+        ) : null}
+
+        {/* ── SECTION 07 · SCHEDULED SEQUENCE ─── */}
+        {cs.sample_output?.follow_ups?.length ? (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 07&nbsp;·&nbsp;The scheduled sequence</>}
+              title={<>Everyone who grabs it gets a sequence.</>}
+              note="A fixed schedule of emails after the download, offsets logged from day zero. No dates invented; the clock starts when the reader opts in."
+            />
+            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+              <Exhibit label={<>Fig&nbsp;·&nbsp;post-download sequence&nbsp;·&nbsp;offsets from day zero</>}>
+                <FollowUpSequence data={cs.sample_output.follow_ups} accent={prospectAccent} who={who} />
+              </Exhibit>
+            </div>
+          </Rev>
+        ) : null}
+
+        {/* ── SECTION 08 · THE ENGAGER LOG ────── */}
+        {cs.sample_output?.engager_outreach?.samples?.length ? (
+          <Rev el="section" className="sec">
+            <SecHead
+              label={<>Section 08&nbsp;·&nbsp;The engager log</>}
+              title={<>Reactions turn into conversations.</>}
+              note="When someone reacts to or comments on one of your posts, a warm message follows that references the specific post and offers something useful without pitching. Each entry is keyed to the post that fired it."
+            />
+            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+              <Exhibit
+                label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
+                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
               >
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#4A463E' }}>"{t.q}"</p>
-                <p className="mt-3.5" style={{ fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#131210' }}>{t.n}</p>
-                <p style={{ fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6B675E', marginTop: 2 }}>{t.r}</p>
+                <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
+              </Exhibit>
+            </div>
+            <div className="gov">
+              <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
+              <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
+              <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
+              <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
+            </div>
+          </Rev>
+        ) : null}
+
+        {/* ── SECTION 09 · COMMISSIONING RECORD ─ */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 09&nbsp;·&nbsp;Commissioning record · already running</>}
+            title={<>Built for real operators. Running every day.</>}
+            note="The one before-and-after on record. Where a cell has no before-state it is left open, same as your own record above."
+          />
+          <div className="kyle">
+            <div className="kyle-h">
+              <div className="kyle-p">Agency MRR · Kyle Hunt</div>
+              <div className="kyle-af num">$30K/mo</div>
+              <div className="kyle-al num">$80K/mo <small>as left</small></div>
+            </div>
+            <div className="kyle-q">&ldquo;It writes every post and guide in my voice. I approve, and it ships.&rdquo;<span className="who">Kyle Hunt · Agency Operators, founder</span></div>
+            <div className="kmet">
+              {cases[0].metrics.map((m, i) => (
+                <div className="m" key={i}><div className="mv num">{m.value}</div><div className="ml">{m.label}</div></div>
+              ))}
+            </div>
+          </div>
+          <div className="lemon">
+            <div className="lemon-q">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
+            <div className="lemon-r num">5 new clients a month, on record.</div>
+          </div>
+          <div className="revs">
+            {REVIEWS.map((t, i) => (
+              <div className="rev" key={i}>
+                <div className="rev-q">&ldquo;{t.q}&rdquo;</div>
+                <div className="rev-w">{t.n}<small>{t.r}</small></div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Rev>
 
-      {/* THE FIX — the engine, as a live, animated product cockpit */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <Kicker>The system</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>
-          One system runs your <Italic>whole presence</Italic>, end to end.
-        </h2>
-        {cs.system?.summary && <SerifBody className="mt-4 max-w-2xl">{cs.system.summary}</SerifBody>}
-        <div className="mt-10">
-          <ContentSystemDashboardMock cs={cs} companyName={companyName} />
-        </div>
-        {/* the four reframe promises, compact under the cockpit */}
-        <div className="mt-9 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-7 gap-y-6">
-          {PROMISES.map((p, i) => (
-            <motion.div key={p.headline} initial={reduce ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.5, ease: EASE, delay: (i % 4) * 0.07 }}
-              className="pl-4" style={{ borderLeft: '2px solid var(--color-accent)' }}>
-              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, lineHeight: 1.2, color: '#131210' }}>{p.headline}</h3>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '13.5px', lineHeight: 1.5, color: '#4A463E' }}>{p.benefit}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* LEAD MAGNETS */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <Kicker>Lead magnets</Kicker>
-        <h2 className="mt-4 max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>Turn attention into <Italic>qualified leads.</Italic></h2>
-        <p className="mt-4 max-w-2xl" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.5, color: '#4A463E' }}>From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are.</p>
-        <div className="mt-9 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {LM_FORMATS.map((f) => (
-            <div key={f.name} className="p-5" style={{ background: CI_CARD, borderRadius: CI_R_SM, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW }}>
-              <h3 style={{ fontFamily: BODY_SERIF, fontSize: '15px', fontWeight: 600, color: '#131210' }}>{f.name}</h3>
-              <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.45, color: '#4A463E' }}>{f.blurb}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 grid md:grid-cols-3 gap-8">
-          {LM_PROMISES.map((p) => (
-            <div key={p.headline} className="pl-5" style={{ borderLeft: '2px solid var(--color-accent)' }}>
-              <h3 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: '1.25rem', lineHeight: 1.12, color: '#131210' }}>{p.headline}</h3>
-              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '14.5px', lineHeight: 1.5, color: '#4A463E' }}>{p.benefit}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FOUNDER NOTE */}
-      <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-8">
-          <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} className="w-28 h-28 sm:w-36 sm:h-36" style={{ objectFit: 'cover', borderRadius: 22, flexShrink: 0, boxShadow: CI_SHADOW_LG }} />
-          <div>
-            <h2 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#131210' }}>I'm Iván. I fill founders' LinkedIn with content and lead magnets, <Italic>on autopilot.</Italic></h2>
-            <p className="mt-5" style={{ fontFamily: BODY_SERIF, fontSize: '18px', lineHeight: 1.55, color: '#4A463E' }}>It's an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I'd build for you.</p>
-            <p className="mt-6" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Iván Manfredi · inbound engine for founders</p>
+        {/* ── SECTION 10 · THE INSTRUMENT ─────── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 10&nbsp;·&nbsp;The instrument</>}
+            title={<>One system keeps the whole record.</>}
+            note={cs.system?.summary || 'The same engine that would run this record. It finds the idea, writes it in your voice, publishes it, and works the funnel. The only thing left for you is to take the calls.'}
+          />
+          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;one idea, five channels</>}>
+              <FivePillarLoop />
+            </Exhibit>
           </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-6 pb-20 pt-6 lg:pb-28 lg:pt-10">
-        <div className="p-10 lg:p-16 text-center" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-          <h2 style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(2rem, 4vw, 3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: '#131210' }}>Be the sharpest voice in your space. <Italic>Without writing a word.</Italic></h2>
-          <p className="mx-auto mt-4 max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: '17px', lineHeight: 1.55, color: '#4A463E' }}>Book the free fit call. We'll scope it to your channels, formats, and voice, and you'll keep the audience, list, and every lead it builds.</p>
-          <div className="mt-8 flex flex-col items-center gap-3.5">
-            <BookButton label="Book the free fit call" />
-            <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>No deck. A working system.</span>
+          <div className="flow">
+            <div className="fstep"><div className="fn num">01</div><div><div className="ft">We find the idea</div><div className="fb">Pulled from your calls, the web, and your past winners, then ranked by what will actually land with your audience.</div></div></div>
+            <div className="fstep"><div className="fn num">02</div><div><div className="ft">We write it in your voice</div><div className="fb">Drafted from your real conversations and held to a standard before it ships, rewritten until it reads like you and not a model.</div></div></div>
+            <div className="fstep"><div className="fn num">03</div><div><div className="ft">We publish and capture</div><div className="fb">It posts to LinkedIn and builds the gated asset that captures every reader onto your list, on a live page at your own domain.</div></div></div>
+            <div className="fstep"><div className="fn num">04</div><div><div className="ft">We work the funnel</div><div className="fb">We follow up with everyone who fits and bring the leads in, named, to your inbox. It runs on auto-approve; a veto is there if you ever want it.</div></div></div>
           </div>
-        </div>
-      </section>
+          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
+            <Exhibit label={<>Fig&nbsp;·&nbsp;the operator board&nbsp;·&nbsp;this week</>}>
+              <ContentSystemDashboardMock cs={cs} companyName={companyName} />
+            </Exhibit>
+          </div>
+          <div className="promises">
+            {PROMISES.map((p) => (
+              <div className="pcell" key={p.headline}><div className="ph">{p.headline}</div><div className="pb">{p.benefit}</div></div>
+            ))}
+          </div>
+        </Rev>
 
-      <footer style={{ borderTop: `1px solid ${hairline}` }}>
-        <div className="max-w-5xl mx-auto px-5 sm:px-6 py-10 flex flex-wrap items-center justify-between gap-4">
-          <Wordmark size={16} />
-          <span className="flex items-center gap-5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em' }}>
-            <a href={bookUrl} target="_blank" rel="noopener noreferrer" style={{ color: accentInk, fontWeight: 600 }}>Book a call</a>
-            <a href="https://ivanmanfredi.com" style={{ color: 'rgba(19,18,16,0.55)' }}>ivanmanfredi.com</a>
-          </span>
+        {/* ── SECTION 11 · LEAD MAGNETS ───────── */}
+        <Rev el="section" className="sec">
+          <SecHead
+            label={<>Section 11&nbsp;·&nbsp;Lead magnets</>}
+            title={<>Turn attention into qualified leads.</>}
+            note="From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are."
+          />
+          <div className="promises" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+            {LM_FORMATS.map((f) => (
+              <div className="pcell" key={f.name}><div className="ph">{f.name}</div><div className="pb">{f.blurb}</div></div>
+            ))}
+          </div>
+          <div className="promises" style={{ marginTop: 20 }}>
+            {LM_PROMISES.map((p) => (
+              <div className="pcell" key={p.headline}><div className="ph">{p.headline}</div><div className="pb">{p.benefit}</div></div>
+            ))}
+          </div>
+        </Rev>
+
+        {/* ── OPERATOR OF RECORD ──────────────── */}
+        <Rev el="section" className="sec">
+          <div className="sec-label"><span className="sq" aria-hidden /> Operator of record</div>
+          <div className="operator">
+            <div className="op-portrait">
+              <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
+            </div>
+            <div>
+              <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets, on autopilot.</div>
+              <p className="op-b">It&rsquo;s an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I&rsquo;d build for you.</p>
+              <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
+            </div>
+          </div>
+        </Rev>
+
+        {/* ── FINAL CTA · THE BOX (2 of 2, RED) ─ */}
+        <div className="ctawrap">
+          <Rev className="box cta">
+            <div className="box-head" style={{ justifyContent: 'center' }}>
+              <span className="sqbig" aria-hidden />
+              <span className="lbl">WARNING: EXCESSIVE INBOUND</span>
+            </div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
+            <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
+            <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
+            <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
+          </Rev>
         </div>
-        <p className="max-w-5xl mx-auto px-5 sm:px-6 pb-8" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', color: 'rgba(19,18,16,0.35)' }}>Prepared for {founderFull} · This page was built from a live scan of your presence.</p>
+      </main>
+
+      {/* ── FOOTER ──────────────────────────── */}
+      <footer className="foot">
+        <div className="wrap">
+          <div className="foot-row">
+            <Wordmark size={16} />
+            <div className="foot-links">
+              <a className="book" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
+              <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
+            </div>
+          </div>
+          <p className="foot-fine">Prepared for {founderFull}. Built from a live scan of your presence, scanned {scanDate}. The record above is projected; the open cells are honest.</p>
+        </div>
       </footer>
 
       <AnimatePresence>
