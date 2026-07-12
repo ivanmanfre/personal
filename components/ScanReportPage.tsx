@@ -3266,7 +3266,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const followers = ls?.followers ?? null;
   const posts30 = ls?.posts_30d ?? null;
   const winsCards = (cs.wins ?? []).filter((w) => (w.observation || '').trim());
-  const hasWins = winsCards.length >= 3;
+  // Any gated win is worth a ledger row: the open-row grammar absorbs a short count
+  // honestly, so 1-2 real observations must never be dropped for generic signals.
+  const hasWins = winsCards.length >= 1;
+  const winsWord = ['One reading', 'Two readings', 'Three readings'][Math.min(winsCards.length, 3) - 1] || 'Three readings';
   const leaks = (cs.leaking_signals ?? []).slice(0, 3);
   const lm = cs.sample_output?.lm;
   const insideItems = (lm?.whats_inside ?? []).slice(0, 5);
@@ -3291,7 +3294,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     if (m) {
       const val = parseInt(m[1].replace(/,/g, ''), 10);
       const cur = spike ? parseInt(spike.n.replace(/,/g, ''), 10) : -1;
-      if (val > cur) {
+      // Floor: a fold panel proclaiming ONE SPIKE over a small number reads as reaching.
+      if (val >= 50 && val > cur) {
         let d = obs;
         if (d.length > 170) {
           d = d.slice(0, 170);
@@ -3398,9 +3402,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec">
           <SecHead
             label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
-            title={hasWins ? 'Three readings, and the build each one triggers.' : 'What the scan read, and what the engine opens against it.'}
+            title={hasWins ? `${winsWord}, and the build each one triggers.` : 'What the scan read, and what the engine opens against it.'}
             note={hasWins
-              ? 'Each entry was observed on the scan date. The build is what the engine would open against it. The ledger runs longer than three; the trailing rows stay ruled and open until the course runs.'
+              ? 'Each entry was observed on the scan date. The build is what the engine would open against it. The ledger runs longer than the readings; the trailing rows stay ruled and open until the course runs.'
               : 'Read from your public presence on the scan date. The build is what the engine would open against each one. The trailing rows stay ruled and open until the course runs.'}
           />
           <div className="ledger">
@@ -3430,11 +3434,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </>
             ) : null}
             <div className="lrow open">
-              <div className="lmeta"><div className="lidx num">{String((hasWins ? 3 : leaks.length) + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
               <div className="lobs">Ruled and left open. The next reading is entered once the engine is running against your live feed.</div>
             </div>
             <div className="lrow open">
-              <div className="lmeta"><div className="lidx num">{String((hasWins ? 3 : leaks.length) + 2).padStart(2, '0')}</div><div className="ldate">Open</div></div>
+              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 2).padStart(2, '0')}</div><div className="ldate">Open</div></div>
               <div className="lobs">Ruled and left open.</div>
             </div>
           </div>
