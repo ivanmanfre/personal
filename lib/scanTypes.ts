@@ -63,7 +63,7 @@ export interface ContentSystem {
     // Then it converts: the post-capture email sequence everyone who grabs the magnet gets.
     follow_ups?: { step: number; day: number; subject: string; body: string }[];
     // Then it books: reactions on the prospect's posts turned into personal DMs.
-    engager_outreach?: { explainer: string; samples: { trigger: string; dm: string }[] };
+    engager_outreach?: { explainer: string; samples: { trigger: string; dm: string; engager?: { name?: string; headline?: string } }[] };
     lm?: { title: string; cover_url: string; pages?: number; promise?: string; whats_inside?: string[]; slug?: string; seed_answers?: Record<string, number>;
       // Brand-mirror data — the prospect's own accent/logo/fonts, so the engine-tour
       // mockups (newsletter, follow-ups, outreach) read as THEIR asset, not a template.

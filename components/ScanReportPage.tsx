@@ -1973,6 +1973,13 @@ const RECORD_CSS = `
 .bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
 .bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
 /* lead-magnet exhibit */
+/* voice provenance pairing */
+.bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr 1fr;}
+.bbrec .vpair .vcell{padding:clamp(16px,2.2vw,24px) clamp(16px,2.2vw,26px) clamp(18px,2.4vw,26px) 0;}
+.bbrec .vpair .vcell+.vcell{border-left:1px solid var(--hair);padding-left:clamp(16px,2.2vw,26px);padding-right:0;}
+.bbrec .vpair .vq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:9px;}
+.bbrec .vpair .vd{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.015em;font-size:clamp(15px,1.6vw,18px);line-height:1.4;color:var(--ink);margin-top:9px;}
+@media(max-width:640px){.bbrec .vpair{grid-template-columns:1fr;}.bbrec .vpair .vcell{padding-right:0;}.bbrec .vpair .vcell+.vcell{border-left:none;border-top:1px solid var(--hair);padding-left:0;}}
 .bbrec .lm{margin-top:clamp(26px,3.2vw,40px);display:grid;grid-template-columns:300px 1fr;gap:clamp(26px,4vw,52px);align-items:center;}
 @media(max-width:760px){.bbrec .lm{grid-template-columns:1fr;gap:26px;}}
 .bbrec .lm-cover{border:1px solid var(--hair);background:#0e0e12;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -3273,7 +3280,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const leaks = (cs.leaking_signals ?? []).slice(0, 3);
   const lm = cs.sample_output?.lm;
   const insideItems = (lm?.whats_inside ?? []).slice(0, 5);
-  const sourceQuotes = ((cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[]).slice(0, 4);
+  // Voice provenance: one inspectable pairing, her sentence beside the drafted open built from it.
+  // Skip pairs where one side is a near-copy of the other: verbatim reuse proves nothing
+  // about voice; the pairing must show resemblance with difference.
+  const vnorm = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  const voicePair = (cs.sample_output?.posts ?? []).find((p) => {
+    const q = (p.source_quote || '').trim();
+    const d = ((p.hook || '').trim() || (p.body || '').split('\n')[0].trim());
+    if (q.length < 20 || !d) return false;
+    const nq = vnorm(q); const nd = vnorm(d);
+    return !nq.includes(nd) && !nd.includes(nq);
+  });
+  const voiceDrafted = voicePair ? ((voicePair.hook || '').trim() || (voicePair.body || '').split('\n')[0].trim()) : '';
+  const sourceQuotes = ((cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[])
+    .filter((q) => q !== voicePair?.source_quote).slice(0, 4);
+  const engagerNames = (cs.sample_output?.engager_outreach?.samples ?? [])
+    .map((s) => (s.engager?.name || '').trim()).filter(Boolean).slice(0, 3);
   const cleanDomain = (scan.domain || companyName || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
     silent_founder: { effect: 'WARNING: ATTENTION LEFT UNRECORDED', verdict: 'The audience is already there. Nothing keeps the record of it.' },
@@ -3452,6 +3474,18 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               title={<>Dispensed daily, in your voice.</>}
               note="Drawn from your latest material and written the way you say it. The posts keep their native form; the log frames them, and the caption cites the line each one grew from."
             />
+            {voicePair && voiceDrafted ? (
+              <div className="vpair">
+                <div className="vcell">
+                  <div className="k">Your words, on record</div>
+                  <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
+                </div>
+                <div className="vcell">
+                  <div className="k">The drafted open, built from them</div>
+                  <div className="vd">{voiceDrafted}</div>
+                </div>
+              </div>
+            ) : null}
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed</>}
@@ -3580,7 +3614,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               note="When someone reacts to or comments on one of your posts, a warm message follows that references the specific post and offers something useful without pitching. Each entry is keyed to the post that fired it."
             />
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
-              <Exhibit label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}>
+              <Exhibit
+                label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
+                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
+              >
                 <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
               </Exhibit>
             </div>
@@ -3701,7 +3738,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
-            <div className="cta-fine">No deck. A working system.</div>
+            <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
           </Rev>
         </div>
       </main>
