@@ -4,6 +4,7 @@ import type { OutreachProspect, FeedRollupRow, OutreachFeed, OutreachCampaign } 
 import { feedRollup, warmVsCold } from '../feedHelpers';
 import { NextUpCard } from '../NextUpCard';
 import { OutreachTimingHeatmap } from '../OutreachTimingHeatmap';
+import { MessagingLanes } from '../MessagingLanes';
 
 // ── Overview window constant ─────────────────────────────────────────────────
 // Fixed campaign-start date. All overview KPI tiles use prospects whose
@@ -195,6 +196,9 @@ export const OverviewTab: React.FC<Props> = ({
         onArchive={onArchiveProspect}
         onResolve={onResolveReply}
       />
+
+      {/* Which connection note each lane sends — live copy + A/B state */}
+      <MessagingLanes prospects={prospects} />
     </div>
   );
 };
