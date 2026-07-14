@@ -108,6 +108,23 @@ export interface ContentSystem {
     };
   };
   revenue_math?: string;
+  // Audience audit embed (scan-build audit, 2026-07-15). Counted numbers only:
+  // network_icp_count is buyers classified in the sample actually read, never extrapolated.
+  // Absent -> the "Who is actually in your room" section does not render.
+  audience?: {
+    engagers?: number;
+    posts?: number;
+    engager_icp_count?: number | null;
+    icp_density?: number | null;
+    buyer_pct?: number | null;
+    verdict?: string;
+    network_total?: number | null;
+    network_sample?: number | null;
+    network_icp_count?: number | null;
+    network_icp_density?: number | null;
+    named?: { name?: string; headline?: string; source?: string }[];
+    audited_at?: string;
+  };
   // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.
   og_image_url?: string;
 }

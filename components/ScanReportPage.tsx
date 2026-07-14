@@ -2063,6 +2063,20 @@ const RECORD_CSS = `
 @media(max-width:640px){.bbrec .pcell{border-right:none;}}
 .bbrec .ph{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.7vw,18px);letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .pb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:8px;}
+/* audience room read (content_system only) — counted figures, ruled rows, named-buyer cells */
+.bbrec .aud-top{margin-top:clamp(22px,2.8vw,34px);}
+.bbrec .aud-sub{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:12px;max-width:52ch;}
+.bbrec .aud-rows{margin-top:clamp(22px,2.8vw,32px);border-top:1px solid var(--ink);}
+.bbrec .aud-row{display:grid;grid-template-columns:170px 1fr;gap:clamp(14px,2.4vw,32px);padding:clamp(14px,2vw,20px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .aud-row:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .aud-row .ak{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .aud-row p{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);margin:0;}
+@media(max-width:640px){.bbrec .aud-row{grid-template-columns:1fr;gap:6px;}}
+.bbrec .aud-names{margin-top:clamp(18px,2.4vw,26px);display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+.bbrec .aud-name{padding:clamp(14px,2vw,18px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .aud-name .anm{font-family:var(--grotesk);font-weight:700;font-size:clamp(14px,1.6vw,16px);letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .aud-name .ahl{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.45;color:var(--sec);margin-top:6px;}
+.bbrec .aud-name .asrc{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--muted);margin-top:10px;}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -2089,7 +2103,7 @@ const RECORD_CSS = `
 /* ── mobile readability floor (scoped; lifts the smallest labels/captions to ~11px so nothing sits below the mobile floor; desktop sizes untouched) ── */
 @media(max-width:640px){
   .bbrec .sec-label,.bbrec .reg-meta,.bbrec .docline{font-size:11px;line-height:1.35;}
-  .bbrec .k,.bbrec .lm-gate,.bbrec .who,.bbrec .ldate,.bbrec .figlabel,.bbrec .lbuild .bl,.bbrec .gov span,.bbrec .op-sig,.bbrec .reading .rk,.bbrec .reading .rrow,.bbrec .foot-links,.bbrec .foot-links a,.bbrec .cta-fine,.bbrec .afp-h>span,.bbrec .inside .ii,.bbrec .kyle-p{font-size:11px;line-height:1.35;}
+  .bbrec .k,.bbrec .lm-gate,.bbrec .who,.bbrec .ldate,.bbrec .figlabel,.bbrec .lbuild .bl,.bbrec .gov span,.bbrec .op-sig,.bbrec .reading .rk,.bbrec .reading .rrow,.bbrec .foot-links,.bbrec .foot-links a,.bbrec .cta-fine,.bbrec .afp-h>span,.bbrec .inside .ii,.bbrec .kyle-p,.bbrec .aud-row .ak,.bbrec .aud-name .asrc{font-size:11px;line-height:1.35;}
   .bbrec .vpair .vlink,.bbrec .rev-w small{font-size:11px;}
   .bbrec .pf-face .nm{font-size:10px;}
   .bbrec .pf-figk{font-size:11px;}
@@ -2785,6 +2799,41 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const followUps = cs.sample_output?.follow_ups?.length ? cs.sample_output.follow_ups : null;
   const engager = cs.sample_output?.engager_outreach?.samples?.length ? cs.sample_output.engager_outreach : null;
 
+  // ── Audience room read (scan-build audit embed; PLAN-audit-in-scans, 2026-07-15) ──
+  // Framing guard: a cold prospect is being told about their own audience by a stranger, so
+  // the section leads with the gift (buyers already connected, real names) and renders ONLY
+  // when the audit counted something flattering: 3+ buyers in the connection sample, or a
+  // named buyer among their engagers. Thin or purely unflattering data hides it entirely.
+  // Every figure is counted from what was actually read, never extrapolated; the SN total
+  // estimate (audience.network_total) is unstable and deliberately never shown.
+  const aud = cs.audience;
+  const audClean = (t?: string) => (t || '').replace(/\s*—\s*/g, ', ').replace(/\s+/g, ' ').trim();
+  const audNamed = (aud?.named ?? []).filter((n) => (n?.name || '').trim()).slice(0, 3);
+  const audNetCount = aud?.network_icp_count ?? null;
+  const audNetSample = aud?.network_sample ?? null;
+  const audEngIcp = aud?.engager_icp_count ?? 0;
+  const audEngagers = aud?.engagers ?? 0;
+  const audPosts = aud?.posts ?? 0;
+  const audNetOk = audNetCount !== null && audNetSample !== null && audNetSample >= 30 && audNetCount >= 3;
+  const roomMode: 'network' | 'engager' | null = audNetOk ? 'network' : (audEngIcp >= 1 && audNamed.length > 0 ? 'engager' : null);
+  const room = aud && roomMode ? {
+    figure: roomMode === 'network' ? (audNetCount as number) : audEngIcp,
+    figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
+    figureSub: roomMode === 'network'
+      ? `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline.`
+      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline.`,
+    giftLine: roomMode === 'network'
+      ? `${audNetCount} decision makers at consumer brands already sit in your connections. Each of them said yes to you once.`
+      : `${audEngIcp} ${audEngIcp === 1 ? 'decision maker at a consumer brand shows' : 'decision makers at consumer brands show'} up in your own comments and reactions. They come to you already.`,
+    gapLine: audEngagers > 0
+      ? `Your last ${audPosts} posts drew ${audEngagers} ${audEngagers === 1 ? 'person' : 'people'}. ${audEngIcp === 0 ? 'Not one of them was a buyer.' : `${audEngIcp} ${audEngIcp === 1 ? 'was a buyer' : 'were buyers'}. The rest were not.`}`
+      : `Your last ${audPosts} posts drew no reactions or comments we could read. The buyers above never hear from you.`,
+    caveat: `Counted from what we actually read: ${[
+      audNetSample ? `${audNetSample} of your connections` : '',
+      audPosts ? `the reactions and comments on your last ${audPosts} posts` : '',
+    ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
+  } : null;
+
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
     silent_founder: { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
     inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
@@ -2932,6 +2981,38 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <p className="box-note">Read from your public presence on {scanDate}. Each pillar name opens its chapter below, with the work already drafted.</p>
           </Rev>
         </div>
+
+        {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
+        {room && (
+          <Rev el="section" className="sec" id="cs-room">
+            <SecHead
+              label={<>Evidence&nbsp;·&nbsp;Audience</>}
+              title={<>Who is actually in your room.</>}
+              note={<>We do not guess at audiences. We read yours, one profile at a time, before this page was built.</>}
+            />
+            <div className="aud-top">
+              <div className="pf-figk">{room.figureLabel}</div>
+              <div className="pf-fig">{room.figure}</div>
+              <p className="aud-sub">{room.figureSub}</p>
+            </div>
+            <div className="aud-rows">
+              <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
+              <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
+            </div>
+            {audNamed.length > 0 && (
+              <div className="aud-names">
+                {audNamed.map((n, i) => (
+                  <div className="aud-name" key={i}>
+                    <div className="anm">{audClean(n.name)}</div>
+                    {n.headline ? <div className="ahl">{audClean(n.headline).slice(0, 110)}</div> : null}
+                    <div className="asrc">{n.source === 'engager' ? 'Engaged your posts' : 'In your connections'}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="cap">{room.caveat}</p>
+          </Rev>
+        )}
 
         {/* ── CHAPTER 01 · CONTENT ────────────── */}
         <Rev el="section" className="sec" id="cs-ch-content" style={{ scrollMarginTop: 76 }}>
