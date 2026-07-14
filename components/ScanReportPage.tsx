@@ -1950,7 +1950,7 @@ const RECORD_CSS = `
 .bbrec .sec{padding-top:clamp(52px,8vw,94px);}
 .bbrec .sec-label{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--muted);flex-wrap:wrap;}
 .bbrec .sec-label .sq{width:8px;height:8px;}
-.bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
+.bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
 .bbrec .sec-note{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.4vw,18px);line-height:1.5;color:var(--sec);max-width:58ch;margin-top:clamp(14px,1.6vw,18px);}
 .bbrec .cl{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink);}
 /* ledger */
@@ -2075,7 +2075,7 @@ const RECORD_CSS = `
 /* final CTA box (RED lives here) */
 .bbrec .ctawrap{padding-top:clamp(52px,8vw,90px);padding-bottom:clamp(40px,6vw,70px);}
 .bbrec .box.cta{padding:clamp(30px,5vw,56px);text-align:center;}
-.bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(28px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
+.bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
 .bbrec .cta-n{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.6vw,18px);line-height:1.5;color:var(--sec);max-width:46ch;margin:clamp(16px,2vw,20px) auto 0;}
 .bbrec .cta-btn{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(22px,3vw,30px);background:var(--red);color:var(--paper);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(13px,1.5vw,15px);padding:16px 30px;text-decoration:none;}
 .bbrec .cta-fine{margin-top:16px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
@@ -2707,16 +2707,20 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const cs = report.content_system;
   if (!cs) return null;
   const [lmOpen, setLmOpen] = useState(false);
+  // Display name: strip a trailing parenthetical — "DiviUp Agency (an AMP Agency)" reads
+  // as "DiviUp Agency" on the h1/meta/carousel surfaces. The full legal-ish name stays in
+  // the data plate "Company" cell and the footer "Prepared for" line.
+  const displayCompany = companyName.replace(/\s*\(.*\)$/, '').trim() || companyName;
   // Founder-first: this offer runs on the founder's personal brand, so address them by name.
   const founder = cs.founder;
-  const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || companyName;
+  const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || displayCompany;
   const founderFull = founder?.name || companyName;
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('inbound engine')}`;
 
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
-    title: `An inbound engine for ${companyName}`,
+    title: `An inbound engine for ${displayCompany}`,
     description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
@@ -2742,7 +2746,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p)).filter((p) => (p.hook || '').trim());
   const feedSpec = buildFeedSpecFromContentSystem(
     cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: featuredPosts } } : cs,
-    { companyName },
+    { companyName: displayCompany },
   );
   // When the LM is a live, results-forward assessment we can embed, use it everywhere.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
@@ -2847,9 +2851,13 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   );
 
   // The gated wins that belong to a chapter, rendered as observed entries with the build.
-  const WinRows = ({ k }: { k: PillarKey }) => winsByPillar[k].length ? (
+  // A win whose observation already fills the pillar table's "found" cell (the fallback
+  // path when the builder emits no cs.pillars) is skipped here — never printed twice.
+  const WinRows = ({ k }: { k: PillarKey }) => {
+    const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
+    return rows.length ? (
     <div className="ledger">
-      {winsByPillar[k].slice(0, 3).map((w, i) => (
+      {rows.slice(0, 3).map((w, i) => (
         <div className="lrow" key={i}>
           <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
           <div>
@@ -2859,7 +2867,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         </div>
       ))}
     </div>
-  ) : null;
+    ) : null;
+  };
 
   return (
     <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
@@ -2893,7 +2902,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         {/* ── FOLD ────────────────────────────── */}
         <Rev el="section" className="fold">
           <div>
-            <h1 className="company">{companyName}</h1>
+            <h1 className="company">{displayCompany}</h1>
             <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
           </div>
         </Rev>
@@ -2929,7 +2938,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 01&nbsp;·&nbsp;Content</>}
             title={<>Once daily, in your voice.</>}
-            note={<>{pillars.content.found} Below is the week we drafted from your own material before this page was built.</>}
+            note={<>Below is the week we drafted from your own material before this page was built.</>}
           />
           <WinRows k="content" />
           {voicePair && voiceDrafted ? (
@@ -2952,7 +2961,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={companyName} />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
                 </div>
               </Exhibit>
               {restOfWeek.length > 0 && (
@@ -2975,7 +2984,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
             title={<>Every reader leaves a name.</>}
-            note={<>{pillars.inbound.found} The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
+            note={<>The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
           />
           <WinRows k="inbound" />
           {lm?.title && lmEmbedUrl && (
@@ -3058,7 +3067,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
             title={<>The people who engage get a message.</>}
-            note={<>{pillars.outbound.found} We work the reactions and comments on your posts: a warm message that references the specific post and offers something useful, without pitching.</>}
+            note={<>We work the reactions and comments on your posts: a warm message that references the specific post and offers something useful, without pitching.</>}
           />
           <WinRows k="outbound" />
           {engager && (
@@ -3130,7 +3139,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         </Rev>
 
         {/* ── OPERATOR OF RECORD ──────────────── */}
-        <Rev el="section" className="sec">
+        {/* No reveal wrapper: a fast scroll can outrun whileInView on cold cache, and the
+            operator + final CTA must never strand invisible. Static render, always visible. */}
+        <section className="sec">
           <div className="sec-label"><span className="sq" aria-hidden /> Operator of record</div>
           <div className="operator">
             <div className="op-portrait">
@@ -3142,11 +3153,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
           </div>
-        </Rev>
+        </section>
 
         {/* ── FINAL CTA · THE BOX (2 of 2, square; the page's single red button) ── */}
         <div className="ctawrap">
-          <Rev className="box cta">
+          <div className="box cta">
             <div className="box-head" style={{ justifyContent: 'center' }}>
               <span className="sqbig" aria-hidden />
               <span className="lbl">WARNING: EXCESSIVE INBOUND</span>
@@ -3155,7 +3166,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
             <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
-          </Rev>
+          </div>
         </div>
       </main>
 
