@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
+import type { BrandKitSpec, ImageCardSpec } from '../../lib/linkedinFeedSpec';
+import { useGoogleFonts } from '../../hooks/useGoogleFonts';
 
 /** First letters of the first two words, for the no-photo avatar fallback. */
 export function avatarInitials(name?: string): string {
@@ -7,6 +9,88 @@ export function avatarInitials(name?: string): string {
   if (!parts.length) return '·';
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
 }
+
+/** LinkedIn's fold, cut at a word boundary — never mid-word. Falls back to the raw cut
+ *  only when the visible window contains no space at all (one giant token). */
+export function foldAtWordBoundary(text: string, at: number): string {
+  const raw = text.slice(0, at);
+  const lastSpace = Math.max(raw.lastIndexOf(' '), raw.lastIndexOf('\n'));
+  return (lastSpace > at * 0.6 ? raw.slice(0, lastSpace) : raw).trimEnd();
+}
+
+/** Normalize a hex to #rrggbb, or undefined when invalid. */
+export function safeHex(h?: string): string | undefined {
+  if (!h || !/^#?[0-9a-fA-F]{6}$/.test(h)) return undefined;
+  return h[0] === '#' ? h : '#' + h;
+}
+
+/** Dark vs light ink for a given surface, so brand cards stay legible on any color. */
+export function inkOnSurface(hex?: string): string {
+  const h = (hex || '').replace(/[^0-9a-fA-F]/g, '');
+  if (h.length !== 6) return '#16181B';
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.55 ? '#16181B' : '#FFFFFF';
+}
+
+/** CSS family stack with the prospect font first and a safe fallback always present. */
+export function familyStack(fam?: string, fallback = 'system-ui, -apple-system, sans-serif'): string {
+  const first = (fam || '').split(',')[0].replace(/["']/g, '').trim();
+  return first ? `'${first}', ${fallback}` : fallback;
+}
+
+/** The designed media card for image posts: the prospect's brand surface, kicker,
+ *  headline in their heading font, an optional dominant figure, sub line and logo chip.
+ *  1200x1500 proportion (4:5), flat surfaces only. `captionFirstLine` lets the card
+ *  defensively hide its sub when the generator duplicated the caption opener. */
+export const BrandImageCard: React.FC<{ card: ImageCardSpec; brand?: BrandKitSpec; companyName?: string; captionFirstLine?: string }> = ({ card, brand, companyName, captionFirstLine }) => {
+  useGoogleFonts([brand?.font_heading, brand?.font_body]);
+  const surface = safeHex(brand?.surface_hex) ?? (brand?.is_dark ? (safeHex(brand?.ink_hex) ?? '#15181C') : '#FFFFFF');
+  const ink = inkOnSurface(surface);
+  const sub = ink === '#FFFFFF' ? 'rgba(255,255,255,0.72)' : 'rgba(22,24,27,0.68)';
+  const hair = ink === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(22,24,27,0.14)';
+  const accent = safeHex(brand?.accent_hex) ?? '#0a66c2';
+  const headingFont = familyStack(brand?.font_heading);
+  const bodyFont = familyStack(brand?.font_body);
+  const norm = (t?: string) => (t || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  const showSub = Boolean(card.sub) && norm(card.sub) !== norm(captionFirstLine);
+  const wordmark = companyName || '';
+  return (
+    <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4 / 5', background: surface }}>
+      <div className="absolute inset-0 flex flex-col justify-center" style={{ padding: 'clamp(24px, 8%, 56px)' }}>
+        {card.kicker && (
+          <div style={{ fontFamily: bodyFont, fontSize: 'clamp(10px, 2.6vw, 13px)', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: accent }}>
+            {card.kicker}
+          </div>
+        )}
+        <span aria-hidden style={{ display: 'block', width: 34, height: 3, background: accent, marginTop: card.kicker ? 12 : 0 }} />
+        {card.figure && (
+          <div style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2.6rem, 14vw, 5rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: ink, marginTop: 18 }}>
+            {card.figure}
+          </div>
+        )}
+        <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: card.figure ? 'clamp(1.1rem, 4.6vw, 1.7rem)' : 'clamp(1.4rem, 6.4vw, 2.4rem)', lineHeight: 1.12, letterSpacing: '-0.015em', color: ink, marginTop: card.figure ? 14 : 18 }}>
+          {card.headline}
+        </h4>
+        {showSub && (
+          <p style={{ fontFamily: bodyFont, fontSize: 'clamp(0.85rem, 3.2vw, 1.05rem)', lineHeight: 1.45, color: sub, marginTop: 12, maxWidth: '38ch' }}>
+            {card.sub}
+          </p>
+        )}
+      </div>
+      {/* logo chip — the prospect's mark; falls back to their name as a wordmark */}
+      {(brand?.logo_url || wordmark) && (
+        <div className="absolute flex items-center gap-2" style={{ left: 'clamp(24px, 8%, 56px)', bottom: 'clamp(18px, 6%, 40px)', borderTop: `1px solid ${hair}`, paddingTop: 10, right: 'clamp(24px, 8%, 56px)' }}>
+          {brand?.logo_url ? (
+            <img src={brand.logo_url} alt={wordmark || 'logo'} style={{ height: 22, width: 'auto', maxWidth: 150, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          ) : null}
+          {wordmark && (
+            <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 13, letterSpacing: '-0.01em', color: ink }}>{wordmark}</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /**
  * Pixel-accurate LinkedIn feed post preview. Renders the actual LinkedIn UI
@@ -75,6 +159,13 @@ interface Props {
   mediaUrl?: string | null;
   /** Optional video URL. When set, the media slot renders a player (cover = poster). */
   videoUrl?: string | null;
+  /** Designed brand media card (scan image posts). Takes the media slot over mediaUrl;
+   *  existing call sites that don't pass it render exactly as before. */
+  imageCard?: ImageCardSpec | null;
+  /** Prospect brand kit for the imageCard (surface, fonts, accent, logo). */
+  brand?: BrandKitSpec | null;
+  /** Company name — the imageCard's wordmark fallback when there's no logo. */
+  companyName?: string;
   /** When false, don't show the LinkedIn truncation fold. */
   showFold?: boolean;
   /** Optional fake stats to demo the strip. */
@@ -93,6 +184,9 @@ const LinkedInPostPreview: React.FC<Props> = ({
   avatarUrl = '/ivan-portrait.jpg',
   mediaUrl,
   videoUrl,
+  imageCard,
+  brand,
+  companyName,
   showFold = true,
   stats,
   compact = false,
@@ -101,7 +195,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
   const [expanded, setExpanded] = useState(false);
   // Compact cards are always clamped via CSS — skip the JS fold logic.
   const truncate = !compact && showFold && text.length > FOLD_AT && !expanded;
-  const visibleText = truncate ? text.slice(0, FOLD_AT).trimEnd() : text;
+  const visibleText = truncate ? foldAtWordBoundary(text, FOLD_AT) : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));
@@ -221,7 +315,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Media slot — video player when a videoUrl is present, else image */}
+      {/* Media slot — video player, else the designed brand card, else image */}
       {videoUrl ? (
         <div className="border-y border-[#dce6f1] bg-black">
           <video
@@ -231,6 +325,10 @@ const LinkedInPostPreview: React.FC<Props> = ({
             playsInline
             className="w-full max-h-[480px] object-contain bg-black"
           />
+        </div>
+      ) : imageCard?.headline ? (
+        <div className="border-y border-[#dce6f1]">
+          <BrandImageCard card={imageCard} brand={brand || undefined} companyName={companyName} captionFirstLine={(text || '').split('\n')[0]} />
         </div>
       ) : mediaUrl ? (
         <div className="border-y border-[#dce6f1] bg-[#f9fafb]">
@@ -259,10 +357,12 @@ const LinkedInPostPreview: React.FC<Props> = ({
         ].map((a) => (
           <button
             key={a.label}
+            aria-label={a.label}
             className="flex flex-1 min-w-0 items-center justify-center gap-1 px-1 py-2 rounded text-[#666] hover:bg-[#f3f2ef] transition-colors text-[12px] font-semibold sm:flex-none sm:gap-1.5 sm:px-3 sm:text-[13px]"
           >
             <a.icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-            <span className="truncate">{a.label}</span>
+            {/* Cramped widths drop the label entirely (icon-only) — never "Com…". */}
+            <span className="hidden min-[420px]:inline whitespace-nowrap">{a.label}</span>
           </button>
         ))}
       </div>

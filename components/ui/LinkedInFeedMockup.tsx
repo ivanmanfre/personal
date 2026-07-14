@@ -2,7 +2,7 @@
 import React from 'react';
 import LinkedInPostPreview from './LinkedInPostPreview';
 import LinkedInCarouselCard from './LinkedInCarouselCard';
-import { normalizeFeedSpec, type FeedSpec, type RenderMode } from '../../lib/linkedinFeedSpec';
+import { normalizeFeedSpec, type BrandKitSpec, type FeedSpec, type RenderMode } from '../../lib/linkedinFeedSpec';
 
 interface Props {
   spec: FeedSpec;
@@ -12,6 +12,10 @@ interface Props {
   /** Prospect brand, mirrored onto text-slide carousels so they read as the founder's own. */
   accentHex?: string;
   brandName?: string;
+  /** FULL prospect brand kit — threaded into carousel slides and designed image cards. */
+  brand?: BrandKitSpec | null;
+  /** Company name — wordmark fallback on branded artifacts when there's no logo. */
+  companyName?: string;
 }
 
 /**
@@ -21,7 +25,7 @@ interface Props {
  * render full-width and fully readable (a single post in a 3-col grid would sit cramped at
  * a third width). The lead magnet is surfaced separately by the page, not inside this feed.
  */
-const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', accentHex, brandName }) => {
+const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', accentHex, brandName, brand, companyName }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
@@ -39,7 +43,10 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
           <LinkedInPostPreview
             {...author}
             text={post.body}
-            mediaUrl={post.imageUrl}
+            mediaUrl={post.imageUrl ?? null}
+            imageCard={post.imageCard}
+            brand={brand}
+            companyName={companyName}
             showFold
             stats={{ reactions: post.reactions, comments: post.comments }}
           />
@@ -85,6 +92,8 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
             textSlides={post.textSlides}
             accentHex={accentHex}
             brandName={brandName}
+            brand={brand}
+            companyName={companyName}
             showFold
             stats={{ reactions: post.reactions, comments: post.comments }}
           />

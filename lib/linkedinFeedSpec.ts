@@ -13,12 +13,47 @@ export interface TextPostSpec {
   comments?: number;
 }
 
+/** Designed media card for an image post — brand-mirrored copy DISTINCT from the caption.
+ *  Rendered in the post media slot; the post falls back to imageUrl when absent. */
+export interface ImageCardSpec {
+  kicker?: string;
+  headline: string;
+  figure?: string;
+  sub?: string;
+}
+
+/** The prospect's brand kit, threaded into sample artifacts (carousel slides, image cards)
+ *  so they render in THEIR brand. Every field optional; renderers keep safe fallbacks. */
+export interface BrandKitSpec {
+  accent_hex?: string;
+  accent2?: string;
+  accent_secondary?: string;
+  logo_url?: string;
+  font_heading?: string;
+  font_body?: string;
+  surface_hex?: string;
+  ink_hex?: string;
+  is_dark?: boolean;
+}
+
 export interface ImagePostSpec {
   type: 'image';
   body: string;
-  imageUrl: string;
+  imageUrl?: string;
+  /** Designed brand card; when present it takes the media slot over imageUrl. */
+  imageCard?: ImageCardSpec;
   reactions?: number;
   comments?: number;
+}
+
+/** One drafted carousel slide. `role` picks the layout (fallback: first = cover,
+ *  last = action, rest = point); `figure` is a dominant numeral for proof slides. */
+export interface TextSlideSpec {
+  heading: string;
+  body: string;
+  role?: 'cover' | 'point' | 'proof' | 'action';
+  kicker?: string;
+  figure?: string;
 }
 
 export interface CarouselPostSpec {
@@ -27,7 +62,7 @@ export interface CarouselPostSpec {
   slides: string[];
   /** Text-slide cards (heading + body). When present, the card renders these styled
    *  text slides instead of images; `slides` may be empty in that case. */
-  textSlides?: { heading: string; body: string }[];
+  textSlides?: TextSlideSpec[];
   reactions?: number;
   comments?: number;
 }
@@ -81,8 +116,8 @@ export function normalizeFeedSpec(spec: FeedSpec, mode: RenderMode = 'tease'): N
     if (!post.body || !post.body.trim()) {
       throw new Error('normalizeFeedSpec: every post needs a non-empty body');
     }
-    if (post.type === 'image' && !post.imageUrl) {
-      throw new Error('normalizeFeedSpec: image posts need an imageUrl');
+    if (post.type === 'image' && !post.imageUrl && !post.imageCard?.headline) {
+      throw new Error('normalizeFeedSpec: image posts need an imageUrl or an imageCard');
     }
     if (
       post.type === 'carousel' &&

@@ -10,12 +10,10 @@ import { useMetadata } from '../hooks/useMetadata';
 import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
-import { PROMISES, LM_FORMATS, LM_PROMISES } from '../lib/contentSystemContent';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
-import { FivePillarLoop } from './FivePillarLoop';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -1978,8 +1976,8 @@ const RECORD_CSS = `
 .bbrec .vpair .vcell{padding:clamp(16px,2.2vw,24px) clamp(16px,2.2vw,26px) clamp(18px,2.4vw,26px) 0;}
 .bbrec .vpair .vcell:last-child{padding-left:clamp(16px,2.2vw,26px);padding-right:0;}
 .bbrec .vpair .vlink{display:flex;align-items:center;justify-content:center;padding:0 clamp(10px,1.6vw,18px);border-left:1px solid var(--hair);border-right:1px solid var(--hair);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:9.5px;color:var(--muted);white-space:nowrap;}
-.bbrec .vpair .vq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:9px;}
-.bbrec .vpair .vd{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.015em;font-size:clamp(15px,1.6vw,18px);line-height:1.4;color:var(--ink);margin-top:9px;}
+.bbrec .vpair .vq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(17px,2.1vw,23px);line-height:1.45;color:var(--sec);margin-top:10px;}
+.bbrec .vpair .vd{font-family:var(--grotesk);font-weight:600;letter-spacing:-0.018em;font-size:clamp(17px,2.1vw,23px);line-height:1.32;color:var(--ink);margin-top:10px;}
 @media(max-width:640px){.bbrec .vpair{grid-template-columns:1fr;}.bbrec .vpair .vcell{padding:clamp(14px,2.2vw,20px) 0;}.bbrec .vpair .vcell:last-child{padding-left:0;}.bbrec .vpair .vlink{justify-content:flex-start;border-left:none;border-right:none;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:9px 0;}}
 .bbrec .lm{margin-top:clamp(26px,3.2vw,40px);display:grid;grid-template-columns:300px 1fr;gap:clamp(26px,4vw,52px);align-items:center;}
 @media(max-width:760px){.bbrec .lm{grid-template-columns:1fr;gap:26px;}}
@@ -2019,20 +2017,23 @@ const RECORD_CSS = `
 .bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
 .bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
 @media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
-.bbrec .cmedia{display:grid;grid-template-columns:auto 1fr;gap:clamp(16px,2.4vw,28px);align-items:stretch;padding:clamp(16px,2.2vw,24px);border-bottom:1px solid var(--hair);}
-@media(max-width:600px){.bbrec .cmedia{grid-template-columns:1fr;gap:16px;}}
-.bbrec .cfaces{display:flex;gap:10px;align-items:flex-start;}
-.bbrec .cface{position:relative;width:clamp(94px,12vw,120px);flex-shrink:0;}
-.bbrec .cface img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 18%;border:1px solid var(--ink);background:var(--paper);}
-.bbrec .cface .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:8.5px;padding:3px 6px;white-space:nowrap;}
-.bbrec .csample{margin:0;border:1px solid var(--hair);overflow:hidden;background:#0e0e12;display:flex;align-items:center;min-height:0;}
-.bbrec .csample img{display:block;width:100%;height:100%;max-height:280px;object-fit:cover;object-position:center top;}
-.bbrec .lemon{margin-top:clamp(20px,2.6vw,30px);border:1px solid var(--ink);}
-.bbrec .lemon-body{display:grid;grid-template-columns:1fr auto;gap:clamp(14px,2vw,26px);align-items:center;padding:clamp(16px,2.2vw,24px);}
-@media(max-width:600px){.bbrec .lemon-body{grid-template-columns:1fr;gap:14px;}}
-.bbrec .lemon-q{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,19px);line-height:1.45;color:var(--ink);}
-.bbrec .lemon-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:10px;}
-.bbrec .lemon-r{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(16px,1.9vw,22px);line-height:1.1;max-width:14ch;color:var(--ink);}
+/* proof exhibits — two BIG stacked client records (content_system only) */
+.bbrec .pf{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
+.bbrec .pf-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,44px);align-items:end;padding:clamp(18px,2.6vw,28px);border-bottom:1px solid var(--hair);}
+@media(max-width:640px){.bbrec .pf-top{grid-template-columns:1fr;align-items:start;}}
+.bbrec .pf-faces{display:flex;gap:10px;align-items:flex-start;}
+.bbrec .pf-face{position:relative;width:clamp(104px,13vw,148px);flex-shrink:0;}
+.bbrec .pf-face img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 18%;border:1px solid var(--ink);background:var(--paper);}
+.bbrec .pf-face .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:8.5px;padding:3px 6px;white-space:nowrap;}
+.bbrec .pf-figwrap{min-width:0;}
+.bbrec .pf-figk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .pf-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,6.2vw,72px);line-height:0.95;color:var(--ink);margin-top:10px;}
+.bbrec .pf-fig .from{font-weight:500;color:var(--muted);}
+.bbrec .pf-quote{padding:clamp(18px,2.6vw,30px) clamp(18px,2.6vw,28px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(19px,2.6vw,29px);line-height:1.4;color:var(--ink);border-bottom:1px solid var(--hair);}
+.bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:14px;}
+.bbrec .pf-sample{margin:0;background:var(--paper);}
+.bbrec .pf-sample img{display:block;width:100%;height:auto;}
+.bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);border-top:1px solid var(--hair);}
 /* reported outcomes (static ruled grid — replaces the marquee) */
 .bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
 .bbrec .rev{display:grid;grid-template-columns:1fr 200px;gap:clamp(14px,2.4vw,32px);padding:clamp(16px,2.2vw,22px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
@@ -2041,13 +2042,20 @@ const RECORD_CSS = `
 .bbrec .rev-w{font-family:var(--grotesk);font-weight:700;font-size:12px;color:var(--ink);}
 .bbrec .rev-w small{display:block;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:9.5px;color:var(--muted);margin-top:4px;}
 @media(max-width:640px){.bbrec .rev{grid-template-columns:1fr;gap:8px;}}
-/* instrument / flow */
-.bbrec .flow{margin-top:clamp(26px,3.2vw,40px);border-top:1px solid var(--ink);}
-.bbrec .fstep{display:grid;grid-template-columns:70px 1fr;gap:clamp(16px,2.4vw,32px);padding:clamp(18px,2.4vw,26px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
-.bbrec .fstep:last-child{border-bottom:1px solid var(--ink);}
-.bbrec .fn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(20px,2.4vw,28px);color:var(--muted);}
-.bbrec .ft{font-family:var(--grotesk);font-weight:600;font-size:clamp(17px,2vw,22px);letter-spacing:-0.015em;line-height:1.2;color:var(--ink);}
-.bbrec .fb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.55;color:var(--sec);margin-top:8px;max-width:60ch;}
+/* pillar table — inside THE BOX (content_system only). Pillar names are anchor links. */
+.bbrec .ptab{margin-top:clamp(18px,2.4vw,24px);border-top:1px solid var(--ink);}
+.bbrec .ptab-h,.bbrec .ptab-r{display:grid;grid-template-columns:0.62fr 1.19fr 1.19fr;gap:clamp(10px,1.6vw,22px);}
+.bbrec .ptab-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
+.bbrec .ptab-r{padding:clamp(12px,1.6vw,16px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .ptab-r:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .ptab-a{font-family:var(--grotesk);font-weight:800;letter-spacing:0.01em;font-size:clamp(12px,1.5vw,15px);line-height:1.2;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;display:inline-block;}
+.bbrec .ptab-a:hover{color:var(--sec);border-color:var(--sec);}
+.bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.35;letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.5vw,15.5px);line-height:1.4;color:var(--sec);}
+@media(max-width:640px){.bbrec .ptab-h{display:none;}.bbrec .ptab-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .ptab-r>.ptab-f::before,.bbrec .ptab-r>.ptab-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
+/* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
+.bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
+.bbrec .chcta p{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(17px,2.2vw,22px);line-height:1.2;color:var(--ink);max-width:34ch;margin:0;}
 .bbrec .promises{margin-top:clamp(22px,2.8vw,34px);display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .promises{grid-template-columns:1fr;}}
 .bbrec .pcell{padding:clamp(16px,2.2vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
@@ -2083,7 +2091,8 @@ const RECORD_CSS = `
   .bbrec .sec-label,.bbrec .reg-meta,.bbrec .docline{font-size:11px;line-height:1.35;}
   .bbrec .k,.bbrec .lm-gate,.bbrec .who,.bbrec .ldate,.bbrec .figlabel,.bbrec .lbuild .bl,.bbrec .gov span,.bbrec .op-sig,.bbrec .reading .rk,.bbrec .reading .rrow,.bbrec .foot-links,.bbrec .foot-links a,.bbrec .cta-fine,.bbrec .afp-h>span,.bbrec .inside .ii,.bbrec .kyle-p{font-size:11px;line-height:1.35;}
   .bbrec .vpair .vlink,.bbrec .rev-w small{font-size:11px;}
-  .bbrec .cface .nm{font-size:10px;}
+  .bbrec .pf-face .nm{font-size:10px;}
+  .bbrec .pf-figk{font-size:11px;}
   .bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{font-size:10.5px;}
   /* small serif italic captions: hold the floor and open the leading */
   .bbrec .cap,.bbrec .kmet .ml,.bbrec .foot-fine{font-size:13px;line-height:1.5;}
@@ -2093,11 +2102,12 @@ const RECORD_CSS = `
 
 // One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
 // under reduced motion. Replaces candidate C's CSS .reveal so it obeys useReducedMotion.
-const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section' }> = ({ children, className, style, el = 'div' }) => {
+const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section'; id?: string }> = ({ children, className, style, el = 'div', id }) => {
   const reduce = useReducedMotion();
   const M = el === 'section' ? motion.section : motion.div;
   return (
     <M
+      id={id}
       className={className}
       style={style}
       initial={reduce ? false : { opacity: 0, y: 22 }}
@@ -2480,208 +2490,10 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
 
 // ── CONTENT SYSTEM REPORT ─────────────────────────────────────────────────────
 // Rendered IN PLACE OF the generic report when matched_offer === 'content_system'.
-// Bundled offer = organic content engine + lead-magnet capture. A personalized pitch:
-// benefit hero -> "Sound familiar?" (their organic gap) -> the fix (the engine) ->
-// one idea everywhere -> a content-week mock -> lead magnets -> real proof -> reviews ->
-// founder note -> book. Reuses the call-intel design tokens + the landing content modules.
-const CS_HERO: Record<ContentSystem['archetype'], { tag: string; pre: string; hero: string; sub: string; spec: string[] }> = {
-  silent_founder: { tag: 'Organic',  pre: 'From the audience you already earned,', hero: 'be heard.',     sub: 'Your content pulls them back, a lead magnet turns readers into named leads, and the newsletter, follow-ups and warm outreach book the calls. All in your voice. You just approve.', spec: ['Content + lead magnet', 'Newsletter + follow-ups', 'Warm-engager outreach', 'You just approve'] },
-  inconsistent:   { tag: 'Cadence',  pre: 'Instead of posting in bursts then going quiet,', hero: 'show up daily.', sub: 'A steady voice every day, and underneath it a lead magnet, a newsletter, follow-ups and warm outreach that turn attention into booked calls. All in your voice. You just approve.', spec: ['Content + lead magnet', 'Newsletter + follow-ups', 'Warm-engager outreach', 'You just approve'] },
-  no_capture:     { tag: 'Capture',  pre: 'From the readers you already reach,', hero: 'make leads.',     sub: 'Turn attention into booked calls. A lead magnet names every reader, then the newsletter, follow-ups and warm outreach do the nurturing and the asking. All in your voice. You just approve.', spec: ['Lead magnet + newsletter', 'Follow-ups + warm outreach', 'Every reader named', 'You just approve'] },
-  invisible:      { tag: 'Presence', pre: 'Starting from quiet on LinkedIn,', hero: 'own your space.',    sub: 'Become the sharpest voice in your niche, with the full engine underneath: a lead magnet, a newsletter, follow-ups and warm outreach turning readers into booked calls. All in your voice. You just approve.', spec: ['Content + lead magnet', 'Newsletter + follow-ups', 'Warm-engager outreach', 'You just approve'] },
-};
-const CS_PAIN: Record<ContentSystem['archetype'], string[]> = {
-  silent_founder: ["You've built a real audience.", 'But weeks go by with nothing from you.', 'Every quiet week, they forget you a little.', 'And the competitor who posts every day stays top of mind.'],
-  inconsistent:   ['You post when you find the time.', 'Then a busy week hits and you go quiet.', 'The momentum you built resets to zero.', 'And starting over every month is exhausting.'],
-  no_capture:     ['People read your posts and scroll on.', 'No email, no booking, no way to follow up.', 'You reach hundreds and hear back from none of them.', 'All that attention, and nothing to show for it.'],
-  invisible:      ['Your buyers are on LinkedIn every day.', "They're following someone in your space. Just not you.", 'Right now you are invisible where it counts.', 'And the gap grows wider every week you wait.'],
-};
-
-function CSHero({ cs, who, companyName, meta, bookUrl }: { cs: ContentSystem; who: string; companyName: string; meta: { tag: string }; bookUrl: string }) {
-  const reduce = useReducedMotion();
-  const h = CS_HERO[cs.archetype] ?? CS_HERO.silent_founder;
-  const hairline = 'var(--color-hairline)';
-  // The hero's "this week" panel renders the founder's ACTUAL drafted assets as
-  // believable mini-cards: real posts (with their brand images) AND the lead magnet
-  // (its real cover). Not a text list — the proof is that it looks finished.
-  const founder = cs.founder;
-  const avatar = (founder?.avatar_url || '').trim();
-  const fname = founder?.name || who;
-  const fhead = founder?.headline || '';
-  const lm = cs.sample_output?.lm;
-  const clamp2: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
-  const clamp3: React.CSSProperties = { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' };
-  type DraftItem = { kind: 'post' | 'lm'; format: string; text: string; img: string };
-  const postItems: DraftItem[] = (cs.sample_output?.posts ?? []).map((p) => ({
-    kind: 'post',
-    format: (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '') ? 'Carousel' : (p.image_url ? 'Image' : 'Post'),
-    text: p.hook || (p.body || '').slice(0, 110),
-    img: p.image_url || (Array.isArray(p.image_urls) ? p.image_urls[0] : '') || '',
-  }));
-  const lmItem: DraftItem[] = lm?.title ? [{ kind: 'lm', format: 'Lead magnet', text: lm.title, img: lm.cover_url || '' }] : [];
-  // Always show posts AND the lead magnet so the card proves the full output, not just posts.
-  const draftItems: DraftItem[] = postItems.length || lmItem.length
-    ? [...postItems.slice(0, 2), ...lmItem]
-    : [
-        { kind: 'post', format: 'Post', text: 'The one thing nobody tells you about…', img: '' },
-        { kind: 'post', format: 'Carousel', text: 'A 6-step teardown of…', img: '' },
-        { kind: 'lm', format: 'Lead magnet', text: 'The interactive assessment that qualifies every signup.', img: '' },
-      ];
-  const Reveal: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
-    <span style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.18em', marginBottom: '-0.18em' }}>
-      <motion.span style={{ display: 'block' }} initial={reduce ? false : { y: '120%' }} animate={{ y: 0 }} transition={{ delay, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}>{children}</motion.span>
-    </span>
-  );
-  return (
-    <section className="relative bg-paper overflow-hidden" style={{ borderBottom: `1px solid ${hairline}` }}>
-      <div className="absolute inset-0 pointer-events-none z-0" style={{ backgroundImage: 'linear-gradient(rgba(19,18,16,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(19,18,16,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <motion.div className="absolute inset-0 pointer-events-none z-0" style={{ opacity: 0.2, backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23n)%22 opacity=%220.3%22/></svg>")' }} animate={reduce ? {} : { backgroundPosition: ['0px 0px', '120px 120px'] }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }} />
-      <motion.div initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.1, duration: 1.6, ease: EASE }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--color-accent)', transformOrigin: 'left', opacity: 0.5, zIndex: 5 }} />
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-6 pt-12 pb-14 lg:pt-16 lg:pb-20 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:items-center">
-        <div>
-          <motion.div initial={reduce ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} className="mb-9 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6B675E' }}>
-            <span style={{ width: 6, height: 6, background: 'var(--color-accent)', display: 'inline-block' }} aria-hidden />
-            <span>Inbound Engine · {meta.tag}</span>
-            <span aria-hidden style={{ color: 'rgba(19,18,16,0.3)' }}>/</span>
-            <span style={{ color: 'rgba(19,18,16,0.5)' }}>for {who}{companyName && who !== companyName ? `, founder of ${companyName}` : ''}</span>
-          </motion.div>
-          <h1 className="mb-7" style={{ fontFamily: SERIF, fontWeight: 800, color: '#131210', letterSpacing: '-0.02em' }}>
-            <Reveal delay={0.12}><span style={{ display: 'block', fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', lineHeight: 1.1, color: '#4A463E' }}>{h.pre}</span></Reveal>
-            <Reveal delay={0.26}><span style={{ display: 'block', color: 'var(--color-accent)', fontSize: 'clamp(3.4rem, 8.5vw, 6.4rem)', lineHeight: 0.92, letterSpacing: '-0.045em', marginTop: '0.06em', marginLeft: '-0.015em' }}>{h.hero}</span></Reveal>
-          </h1>
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.9, ease: EASE }} className="max-w-xl" style={{ fontFamily: BODY_SERIF, fontSize: 'clamp(18px, 2.2vw, 21px)', lineHeight: 1.5, color: '#4A463E' }}>{h.sub}</motion.p>
-          <motion.ul initial={reduce ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.92, duration: 0.7, ease: EASE }} className="mt-7 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-0">
-            {h.spec.map((s, i) => (
-              <li key={s} className={`flex items-center gap-2.5 sm:px-5 ${i === 0 ? 'sm:pl-0' : 'sm:border-l'}`} style={{ fontFamily: MONO, fontSize: '12.5px', letterSpacing: '0.02em', color: '#131210', borderColor: hairline }}>
-                <span className={i === 0 ? '' : 'sm:hidden'} style={{ width: 5, height: 5, background: 'var(--color-accent)', flexShrink: 0 }} aria-hidden />{s}
-              </li>
-            ))}
-          </motion.ul>
-          <motion.div initial={reduce ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.02, duration: 0.6, ease: EASE }} className="mt-9"><CIMagneticCTA href={bookUrl} label="Book the free fit call" /></motion.div>
-          {/* One real receipt on screen 1 (2026-07-10 audit #11) — same verified Kyle number as the case study below. */}
-          <motion.p initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.18, duration: 0.7, ease: EASE }} className="mt-6 flex items-center gap-2.5" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.08em', color: 'rgba(19,18,16,0.62)' }}>
-            <span aria-hidden style={{ width: 6, height: 6, background: 'var(--color-accent)', flexShrink: 0 }} />
-            Kyle Hunt scaled $30k/mo to $80k/mo on this engine
-          </motion.p>
-        </div>
-        {/* RIGHT — the founder's actual drafted week, rendered: real posts + the real lead-magnet cover */}
-        <motion.div className="hidden lg:block" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.75, duration: 0.9, ease: EASE }}>
-          <div className="px-5 py-5" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${hairline}`, boxShadow: CI_SHADOW_LG }}>
-            <div className="flex items-center justify-between mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6B675E' }}>
-              <span className="flex items-center gap-2">
-                <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1] }} transition={{ duration: 1.6, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: 6, background: 'var(--color-accent)' }} />
-                This week
-              </span>
-              <span style={{ color: 'rgba(19,18,16,0.4)' }}>drafting</span>
-            </div>
-            <div className="space-y-2.5">
-              {draftItems.map((it, i) => it.kind === 'lm' ? (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="flex items-center gap-3.5 px-3.5 py-3.5" style={{ background: '#131210', borderRadius: CI_R_SM, border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 12px 30px rgba(0,0,0,0.28)' }}>
-                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 9, flexShrink: 0, border: '1px solid rgba(255,255,255,0.12)' }} />}
-                  <span className="min-w-0">
-                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700, marginBottom: 4 }}>Lead magnet · interactive</span>
-                    <span style={{ ...clamp2, fontFamily: SERIF, fontWeight: 800, fontSize: '17px', lineHeight: 1.22, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{it.text}</span>
-                    <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>Scores a reader → named lead</span>
-                  </span>
-                </motion.div>
-              ) : (
-                <motion.div key={i} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 + i * 0.18, duration: 0.6, ease: EASE }} className="px-4 py-3.5" style={{ background: 'var(--color-paper, #FFFFFF)', borderRadius: CI_R_SM, border: `1px solid ${hairline}` }}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    {avatar
-                      ? <img src={avatar} alt="" loading="lazy" onError={fallbackOnError} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                      : <span aria-hidden style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontFamily: MONO, fontSize: 11, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{(fname[0] || '·').toUpperCase()}</span>}
-                    <span className="min-w-0">
-                      <span style={{ display: 'block', fontFamily: BODY_SERIF, fontSize: '13px', fontWeight: 600, color: '#131210', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fname}</span>
-                      {fhead && <span style={{ display: 'block', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.04em', color: 'rgba(19,18,16,0.45)', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fhead}</span>}
-                    </span>
-                    <span style={{ marginLeft: 'auto', fontFamily: MONO, fontSize: '8.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600, border: `1px solid ${hairline}`, padding: '2px 6px', flexShrink: 0 }}>{it.format}</span>
-                  </div>
-                  <p style={{ ...clamp3, fontFamily: BODY_SERIF, fontSize: '14px', lineHeight: 1.5, color: '#131210' }}>{it.text}</p>
-                  {it.img && <img src={it.img} alt="" loading="lazy" onError={fallbackOnError} style={{ marginTop: 8, width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', objectPosition: 'center', borderRadius: 6, border: `1px solid ${hairline}`, background: '#fff' }} />}
-                </motion.div>
-              ))}
-            </div>
-            <div className="mt-4 pt-3.5 flex items-center justify-between" style={{ borderTop: `1px solid ${hairline}`, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', color: '#6B675E' }}>
-              <span>{lm?.title ? `${postItems.length || 4} posts + 1 lead magnet` : 'a week of posts'}</span>
-              <span style={{ color: 'var(--color-accent-ink)', fontWeight: 600 }}>in your voice</span>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function CSPain({ cs, who, companyName, receipts, scan }: { cs: ContentSystem; who: string; companyName: string; receipts: { label: string; value: string }[]; scan: Scan }) {
-  const reduce = useReducedMotion();
-  const hairline = 'var(--color-hairline)';
-  const accentInk = 'var(--color-accent-ink)';
-  const painLines = CS_PAIN[cs.archetype] ?? CS_PAIN.silent_founder;
-  // Wins weld (2026-07-10): when the outreach lane stored 3 gated wins for this prospect,
-  // the page opens with THOSE (the exact ones the note/DM promised) instead of the
-  // archetype pain template the audit flagged as ungrounded.
-  const winsCards = (cs.wins ?? []).filter((w) => (w.observation || '').trim());
-  const hasWins = winsCards.length >= 3;
-  const aud = (cs.audience_estimate?.value || '').trim();
-  const opener = aud ? `${who}, you've built ${aud}.` : `${who}, you've built a real audience.`;
-  // without an audience number the opener already says painLines[0] — skip it so the page doesn't repeat itself (4/6 live scans showed the dup, 2026-07-10 audit)
-  const shownPainLines = aud ? painLines : painLines.slice(1);
-  const leaks = (cs.leaking_signals ?? []).slice(0, 3);
-  return (
-    <section className="max-w-3xl mx-auto px-5 sm:px-6 py-16 lg:py-24">
-      <Kicker>{hasWins ? 'The three wins' : 'Sound familiar?'}</Kicker>
-      <motion.p className="mt-7" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.6, ease: EASE }} style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.7rem, 3.4vw, 2.5rem)', lineHeight: 1.12, letterSpacing: '-0.02em', color: '#131210' }}>{opener}</motion.p>
-      {hasWins ? (
-        <div className="mt-7 space-y-6">
-          {winsCards.slice(0, 3).map((w, i) => (
-            <motion.div key={i} className="flex gap-4 items-baseline" initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.08, 0.3) }}>
-              <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '1.6rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 24 }}>{i + 1}</span>
-              <div>
-                <p style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.22, letterSpacing: '-0.01em', color: '#131210' }}>{w.observation}</p>
-                {w.build && <p className="mt-1.5" style={{ fontFamily: BODY_SERIF, fontSize: '16.5px', lineHeight: 1.5, color: '#6B675E' }}>{w.build}</p>}
-              </div>
-            </motion.div>
-          ))}
-          <p style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>The three from my note. Pulled from your own material before this page was built.</p>
-        </div>
-      ) : (
-      <div className="mt-6 space-y-4">
-        {shownPainLines.map((l, i) => (
-          <motion.p key={i} initial={reduce ? false : { opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-30px' }} transition={{ duration: 0.5, ease: EASE, delay: Math.min(i * 0.06, 0.3) }} style={{ fontFamily: BODY_SERIF, fontWeight: 400, fontSize: 'clamp(19px, 2.4vw, 24px)', lineHeight: 1.45, color: '#4A463E' }}>{l}</motion.p>
-        ))}
-      </div>
-      )}
-      {leaks.length > 0 && (
-        <motion.div className="mt-12 p-7 lg:p-8" initial={reduce ? false : { opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-50px' }} transition={{ duration: 0.7, ease: EASE }} style={{ background: CI_CARD, borderRadius: CI_R, boxShadow: CI_SHADOW, border: `1px solid ${hairline}` }}>
-          <p style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>Looking at your LinkedIn, three things stood out</p>
-          <ul className="mt-5 space-y-4">
-            {leaks.map((l, i) => (
-              <li key={i} className="flex gap-4 items-baseline">
-                <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1, minWidth: 22 }}>{i + 1}</span>
-                <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.2rem, 2.4vw, 1.5rem)', lineHeight: 1.18, letterSpacing: '-0.01em', color: '#131210' }}>{l.title}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-      <motion.h2 className="mt-14" initial={reduce ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.7, ease: EASE }} style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', lineHeight: 1.04, letterSpacing: '-0.025em', color: 'var(--color-accent)' }}>There's a better way.</motion.h2>
-      <p className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: '18px', color: '#6B675E' }}>Here's how it works.</p>
-      {receipts.length > 0 && (
-        <div className="mt-12 pt-8" style={{ borderTop: `1px solid ${hairline}` }}>
-          <p className="mb-4" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(19,18,16,0.5)' }}>We didn't guess. Pulled from {scan.domain ?? companyName} today</p>
-          <div className="flex flex-wrap gap-2.5">
-            {receipts.map((r, i) => (
-              <span key={i} className="inline-flex items-baseline gap-2 px-3.5 py-2" style={{ background: CI_CARD, border: `1px solid ${hairline}`, borderRadius: CI_R_SM, boxShadow: CI_SHADOW }}>
-                <span style={{ fontFamily: MONO, fontSize: '9.5px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accentInk, fontWeight: 600 }}>{r.label}</span>
-                <span style={{ fontFamily: MONO, fontSize: '12px', color: '#4A463E' }}>{r.value}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
+// 2026-07-14 revamp: three pillar chapters (Content / Inbound / Warm outbound) under a
+// hero WARNING box that carries the 3-row pillar table; big stacked proof exhibits;
+// per-chapter CTA rows; final CTA box. v4 Black Box grammar, document metaphor demoted
+// to seasoning. CallIntelReport keeps its own copy of everything.
 
 type LmSim = { kind: string; accent?: string; seed: { aov: number; cogs: number; shipping: number; feePct: number; adSpend: number; roas: number } };
 
@@ -2891,325 +2703,15 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
   );
 }
 
-// The content-system product cockpit — a static, loyal reduction of Ivan's real client
-// operator board at /client/:slug ("This week" view). Left Content-Desk nav rail, center
-// week masthead + day pills + the founder's own drafted post, right up-next stack — so the
-// prospect sees THEIR operator board already running, not a generic dashboard. Visual
-// grammar lifted/mirrored from components/ClientBoardPage.tsx.
-function ContentSystemDashboardMock({ cs, companyName }: { cs: ContentSystem; companyName: string }) {
-  const reduce = useReducedMotion();
-  const line = 'var(--color-hairline)';
-  const accent = 'var(--color-accent)';
-  const accentInk = 'var(--color-accent-ink)';
-  const ink = '#131210';
-  const inkSoft = '#4A463E';
-  const inkMute = 'rgba(19,18,16,0.5)';
-  const accentWash = 'rgba(19,18,16,0.06)';
-  const paperRaise = '#FFFFFF';
-  const paperSunk = 'var(--color-paper-sunk, #FFFFFF)';
-  const HERO_SHADOW = '0 14px 40px rgba(19,18,16,0.12)';
-
-  const founder = cs.founder;
-  const founderName = (founder?.name || companyName || 'Founder').trim();
-  const founderFirst = (founder?.first_name || founderName.split(' ')[0] || companyName).trim();
-  const headline = (founder?.headline || `Founder, ${companyName}`).trim();
-  const initials = founderName.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'IM';
-
-  // Week scaffold — the upcoming Monday, so the board reads as "this week, ahead of you".
-  const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const TICKS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const monday = (() => { const d = new Date(); const day = d.getDay(); d.setDate(d.getDate() + ((day === 0 ? -6 : 1) - day)); return d; })();
-  const weekLabel = monday.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
-  const schedShort = monday.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-
-  const fmtLabel = (p?: { format?: string; image_url?: string; image_urls?: string[]; slides?: unknown[] }) => {
-    if (!p) return 'Text post';
-    const isCarousel = (Array.isArray(p.slides) && p.slides.length > 0) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || /carousel/i.test(p.format || '');
-    if (isCarousel) return 'Carousel';
-    if (p.image_url || /image/i.test(p.format || '')) return 'Image post';
-    return 'Text post';
-  };
-
-  // Believable placeholders only if the builder emitted no posts (mirrors old fallback).
-  const rawPosts = cs.sample_output?.posts ?? [];
-  const posts = rawPosts.length > 0 ? rawPosts : [
-    { format: 'Text post', hook: `The one number that quietly decides whether ${companyName}'s pipeline grows.`, body: `Most founders watch the metric that's easy to see. The one that actually moves revenue sits a layer down, and it rarely shows up until it stops.\n\nThat's the gap this engine closes: it turns what you already say into a week of content, in your voice, ready to approve.` },
-    { format: 'Carousel', hook: 'Five moves that turn a cold audience into booked calls.' },
-    { format: 'Image post', hook: 'What a week of content looks like when the system runs it for you.' },
-    { format: 'Text post', hook: 'The offer most founders bury on page two of their own site.' },
-  ];
-  const lead = posts[0];
-  const N = Math.max(posts.length, 4);
-  const upNext = posts.slice(1, 3);
-
-  const lm = cs.sample_output?.lm;
-  const newsletter = cs.sample_output?.newsletter;
-  const followUps = cs.sample_output?.follow_ups;
-  const engager = cs.sample_output?.engager_outreach;
-  let pipelineCount = posts.length;
-  if (lm?.title) pipelineCount += 1;
-  if (newsletter?.subject) pipelineCount += 1;
-  if (followUps?.length) pipelineCount += 1;
-  if (engager?.samples?.length) pipelineCount += 1;
-  pipelineCount = Math.max(pipelineCount, posts.length + 2);
-
-  // The hook is rendered on its own line above the body; LinkedIn bodies usually repeat it as
-  // their first line, so drop a leading body paragraph identical to the hook to avoid doubling it.
-  const _leadHookNorm = (lead?.hook || '').replace(/\s+/g, ' ').trim();
-  const leadBody = (lead?.body || '').split(/\n{2,}|\n/).map((s) => s.trim()).filter(Boolean)
-    .filter((para, i) => !(i === 0 && para.replace(/\s+/g, ' ').trim() === _leadHookNorm))
-    .slice(0, 4);
-
-  const NAV_GROUPS: { group: string; items: { label: string; hero?: boolean }[] }[] = [
-    { group: 'Content', items: [{ label: 'This week', hero: true }, { label: 'All content' }, { label: 'Calendar' }, { label: 'Lead magnets' }, { label: 'Newsletter' }] },
-    { group: 'Reports', items: [{ label: 'Leads' }, { label: 'Performance' }, { label: 'Strategy' }] },
-  ];
-
-  const Pulse = ({ color = accent, size = 7 }: { color?: string; size?: number }) => (
-    <motion.span aria-hidden animate={reduce ? {} : { opacity: [1, 0.3, 1], scale: [1, 0.7, 1] }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }} style={{ height: size, width: size, borderRadius: 999, background: color, flexShrink: 0, display: 'inline-block' }} />
-  );
-
-  return (
-    <motion.div
-      initial={reduce ? false : { opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.8, ease: EASE }}
-      className="overflow-hidden relative"
-      style={{ border: `1px solid ${line}`, borderRadius: CI_R, boxShadow: CI_SHADOW_LG, background: 'var(--color-paper, #FFFFFF)' }}
-    >
-      <CILoadShimmer />
-
-      {/* top status strip — mirrors the board's hairline top rule */}
-      <div className="flex items-center gap-2.5 px-4 py-2.5" style={{ borderBottom: `1px solid ${line}`, background: 'rgba(255,255,255,0.86)' }}>
-        <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: inkMute }}>This week</span>
-        <span className="ml-auto inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.12em', textTransform: 'uppercase', color: inkMute }}>
-          <Pulse size={6} /> Preview · built ahead
-        </span>
-        <span className="ml-4 hidden sm:inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: inkMute }}>
-          <span className="flex h-5 w-5 items-center justify-center rounded-full" style={{ background: ink, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: '8.5px', fontWeight: 700 }} aria-hidden>IM</span>
-          Operator · Ivan Manfredi
-        </span>
-      </div>
-
-      <div className="grid lg:grid-cols-[196px_minmax(0,1fr)_244px]">
-        {/* ── LEFT: Content-Desk nav rail ─────────────────────────────── */}
-        <aside className="flex flex-col border-b lg:border-b-0 lg:border-r border-[color:var(--color-hairline)]">
-          <div className="px-6 pb-4 pt-5" style={{ borderBottom: `1px solid ${line}` }}>
-            <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', color: ink }}>
-              {companyName}<span style={{ color: accent }}>.</span>
-            </span>
-            <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: inkMute }}>content desk</div>
-          </div>
-          <nav className="flex flex-col gap-4 py-4 lg:py-5" aria-label="Board sections">
-            {NAV_GROUPS.map((g) => (
-              <div key={g.group}>
-                <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: inkMute, opacity: 0.75 }}>{g.group}</div>
-                <div className="flex flex-wrap gap-1.5 px-4 lg:flex-col lg:gap-0 lg:px-0">
-                  {g.items.map((t) => (
-                    <span
-                      key={t.label}
-                      className="flex min-h-[36px] items-center justify-between gap-2 rounded lg:rounded-none px-3 py-1.5 lg:px-6 lg:py-2"
-                      style={{ borderLeft: `3px solid ${t.hero ? accent : 'transparent'}`, background: t.hero ? accentWash : 'transparent' }}
-                    >
-                      <span style={t.hero
-                        ? { fontFamily: SERIF, fontSize: 16, color: ink }
-                        : { fontFamily: MONO, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: inkMute }}>
-                        {t.label}
-                      </span>
-                      {t.hero && (
-                        <span className="leading-none tabular-nums" style={{ fontFamily: MONO, fontSize: 10, background: accentInk, color: '#FFFFFF', borderRadius: 999, padding: '2px 7px' }}>{N}</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
-          <div className="mt-auto flex flex-col gap-3.5 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${line}` }}>
-            <div>
-              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: inkMute }}>This week's story</div>
-              <div className="w-full rounded-md py-2.5 text-center uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: ink, color: '#FFFFFF' }}>◉ record 90 sec</div>
-            </div>
-            <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: ink }}>
-              <Pulse size={7} /> engine running
-            </div>
-            <div className="flex items-center gap-2" style={{ fontFamily: BODY_SERIF, fontSize: '11.5px', lineHeight: 1.4, color: inkMute }}>
-              <span aria-hidden style={{ height: 5, width: 5, borderRadius: 999, background: accent, flexShrink: 0 }} />
-              Preview built for {companyName}
-            </div>
-            <div className="flex items-center gap-2.5 pt-2.5" style={{ borderTop: `1px solid ${line}` }}>
-              {founder?.avatar_url ? (
-                <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-8 w-8 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
-              ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ background: accent, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: 11, fontWeight: 700 }} aria-hidden>{initials}</span>
-              )}
-              <span className="min-w-0">
-                <span className="block truncate" style={{ fontFamily: BODY_SERIF, fontSize: '12.5px', fontWeight: 600, color: ink }}>{founderName}</span>
-                <span className="block truncate" style={{ fontFamily: MONO, fontSize: '10px', color: inkMute }}>Run by Ivan Manfredi</span>
-              </span>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── CENTER: week masthead + the founder's own drafted post ─────── */}
-        <div className="min-w-0 px-5 py-6 lg:px-7">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div className="min-w-0">
-              <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: inkMute }}>
-                Week of {weekLabel} · piece 1 of {N} · {N - 1} to go
-              </div>
-              <div style={{ fontFamily: SERIF, fontSize: 'clamp(28px, 4.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: ink }}>
-                {WEEKDAYS[0]}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
-              </div>
-            </div>
-            <div className="hidden shrink-0 items-center gap-1.5 sm:flex" aria-hidden>
-              {TICKS.map((t, i) => {
-                const current = i === 0;
-                return (
-                  <span key={i} className="flex items-center justify-center rounded-full" style={{
-                    width: 26, height: 26, fontFamily: MONO, fontSize: 10,
-                    border: `1.5px solid ${current ? accent : 'rgba(19,18,16,0.25)'}`,
-                    background: current ? paperRaise : 'transparent',
-                    color: current ? accentInk : inkMute,
-                  }}>{t}</span>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* the drafted post card — front card over two rotated ghosts, like the board deck */}
-          <div className="relative">
-            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '10px -8px -10px 8px', background: paperRaise, border: `1px solid rgba(19,18,16,0.12)`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
-            <div className="pointer-events-none absolute hidden sm:block" style={{ inset: '5px -4px -5px 4px', background: paperRaise, border: `1px solid rgba(19,18,16,0.14)`, borderRadius: 14, transform: 'rotate(-.5deg)' }} aria-hidden />
-            <motion.div
-              initial={reduce ? false : { opacity: 0, x: 22, scale: 0.98 }}
-              whileInView={{ opacity: 1, x: 0, scale: 1 }}
-              viewport={{ once: true, margin: '-40px' }}
-              transition={{ duration: 0.55, ease: EASE, delay: 0.1 }}
-              className="relative"
-              style={{ background: paperRaise, border: `1px solid rgba(19,18,16,0.18)`, borderRadius: 14, boxShadow: HERO_SHADOW }}
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 px-5 pt-5 sm:px-6">
-                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: accentInk }}>{fmtLabel(lead)} · goes out {WEEKDAYS[0]}</span>
-                <span style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 13, color: inkMute }}>drafted from your voice, nothing invented</span>
-              </div>
-
-              {/* author row */}
-              <div className="flex items-center gap-3 px-5 pt-4 sm:px-6">
-                {founder?.avatar_url ? (
-                  <img src={founder.avatar_url} alt={founderName} loading="lazy" onError={fallbackOnError} className="h-11 w-11 shrink-0 rounded-full object-cover" style={{ background: paperSunk }} />
-                ) : (
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: accentInk, color: '#FFFFFF', fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700 }} aria-hidden>{initials}</span>
-                )}
-                <div className="min-w-0">
-                  <div className="truncate" style={{ fontFamily: BODY_SERIF, fontSize: 15, fontWeight: 700, color: ink }}>{founderName}</div>
-                  <div className="truncate" style={{ fontFamily: BODY_SERIF, fontSize: 12.5, color: inkMute }}>{headline} · 1st</div>
-                  <div style={{ fontFamily: MONO, fontSize: 10.5, color: inkMute }}>Scheduled · {schedShort} 🌐</div>
-                </div>
-              </div>
-
-              {/* post body */}
-              <div className="px-5 pt-4 sm:px-6">
-                <p style={{ fontFamily: BODY_SERIF, fontSize: 15, lineHeight: 1.55, color: ink }}>{lead?.hook}</p>
-                {leadBody.map((para, i) => (
-                  <p key={i} className="mt-3" style={{ fontFamily: BODY_SERIF, fontSize: 14.5, lineHeight: 1.55, color: inkSoft }}>{para}</p>
-                ))}
-              </div>
-
-              {/* contained image — never full-bleed */}
-              {lead?.image_url && (
-                <div className="mt-4 overflow-hidden px-5 pb-5 sm:px-6">
-                  <img
-                    src={lead.image_url}
-                    alt={lead.hook || 'Drafted post'}
-                    loading="lazy"
-                    onError={fallbackOnError}
-                    style={{ display: 'block', width: '100%', maxHeight: 340, objectFit: 'cover', objectPosition: '50% 20%', borderRadius: 10, background: paperSunk }}
-                  />
-                </div>
-              )}
-              {!lead?.image_url && <div className="pb-5" />}
-            </motion.div>
-          </div>
-        </div>
-
-        {/* ── RIGHT: up-next stack + behind-this-week ────────────────────── */}
-        <div className="min-w-0 border-t lg:border-t-0 lg:border-l border-[color:var(--color-hairline)] px-5 py-6 lg:px-6">
-          <div className="mb-4 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: inkMute }}>Up next in the stack</div>
-          <div className="flex flex-col gap-3.5">
-            {upNext.map((q, i) => (
-              <motion.div
-                key={i}
-                initial={reduce ? false : { opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-30px' }}
-                transition={{ duration: 0.5, ease: EASE, delay: 0.15 + i * 0.08 }}
-                className="rounded-[10px] px-4 py-3.5"
-                style={{ background: paperRaise, border: `1px solid ${line}` }}
-              >
-                <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: inkMute }}>{WEEKDAYS[i + 1]} · {fmtLabel(q)}</div>
-                <div style={{ fontFamily: BODY_SERIF, fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: ink }}>{q.hook || q.format}</div>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${line}` }}>
-            <div className="rounded-[10px] px-4 py-4" style={{ background: paperSunk, border: `1px solid ${line}` }}>
-              <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: inkMute }}>Behind this week</div>
-              <div style={{ fontFamily: BODY_SERIF, fontSize: 14, lineHeight: 1.5, color: ink }}>{pipelineCount} pieces in the pipeline: planned, drafting, queued.</div>
-              <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: accentInk }}>open the pipeline →</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/** An angled, framed portrait cut-out (magazine-collage look): paper frame, hard sage
- *  cast-shadow, name badge. One for a solo founder, two overlapping for a pair. */
-function ProofPortrait({ src, name, pos, rotate, aspect = '4 / 5' }: { src: string; name: string; pos?: string; rotate: number; aspect?: string }) {
-  return (
-    <div style={{ position: 'relative', transform: `rotate(${rotate}deg)` }}>
-      <div style={{ background: 'var(--color-paper-raise, #fff)', padding: '7px 7px 9px', boxShadow: '14px 16px 0 rgba(19,18,16,0.20)' }}>
-        <img
-          src={src} alt={name} loading="lazy"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-          style={{ display: 'block', width: '100%', aspectRatio: aspect, objectFit: 'cover', objectPosition: pos || '50% 20%', background: 'var(--color-paper-sunk, #FFFFFF)' }}
-        />
-      </div>
-      <span style={{ position: 'absolute', left: 8, bottom: -12, fontFamily: '"Schibsted Grotesk", system-ui, -apple-system, sans-serif', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', background: 'var(--color-accent-ink)', padding: '4px 8px', whiteSpace: 'nowrap' }}>{name}</span>
-    </div>
-  );
-}
-
-// Engine-tour section wrapper — matches the visual rhythm of the report's other sections
-// (top hairline, max-w-5xl, generous vertical padding), leading with a kicker + serif title.
-const SectionIntro: React.FC<{ kicker: string; title: React.ReactNode; children: React.ReactNode }> = ({ kicker, title, children }) => {
-  const hairline = 'var(--color-hairline)';
-  return (
-    <section className="max-w-5xl mx-auto px-5 sm:px-6 py-16 lg:py-24" style={{ borderTop: `1px solid ${hairline}` }}>
-      <p className="mb-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--color-accent-ink)', fontWeight: 600 }}>{kicker}</p>
-      <h2 className="max-w-3xl" style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 'clamp(1.9rem, 3.6vw, 2.8rem)', lineHeight: 1.07, letterSpacing: '-0.02em', color: '#131210' }}>{title}</h2>
-      <div className="mt-10">{children}</div>
-    </section>
-  );
-};
-
 function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const cs = report.content_system;
   if (!cs) return null;
-  const meta = CS_HERO[cs.archetype] ?? CS_HERO.silent_founder;
-  const hairline = 'var(--color-hairline)';
-  const accentInk = 'var(--color-accent-ink)';
-  const reduce = useReducedMotion();
   const [lmOpen, setLmOpen] = useState(false);
   // Founder-first: this offer runs on the founder's personal brand, so address them by name.
   const founder = cs.founder;
   const who = (founder?.first_name || (founder?.name || '').split(' ')[0] || '').trim() || companyName;
   const founderFull = founder?.name || companyName;
   const bookUrl = `${CALENDLY_BASE}?utm_source=scan&utm_content=${encodeURIComponent(companyName)}&a1=${encodeURIComponent('inbound engine')}`;
-  const BookButton = ({ label, small }: { label: string; small?: boolean }) => <CIMagneticCTA href={bookUrl} label={label} small={small} />;
 
   // Per-scan share metadata so the clean ivanmanfredi.com/scan/:slug link unfurls
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
@@ -3221,85 +2723,46 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     noindex: true,
   });
 
-  // Verified receipts — real organic signals that prove we looked at THEM.
-  const receipts: { label: string; value: string }[] = [];
-  const ls = report.linkedin_summary;
-  if (ls?.followers) receipts.push({ label: 'Audience', value: `${ls.followers.toLocaleString()} followers` });
-  if (ls?.posts_30d != null) receipts.push({ label: 'Cadence', value: `${ls.posts_30d} posts in 30 days` });
-  else if (ls?.last_post_days != null) receipts.push({ label: 'Last post', value: `${ls.last_post_days} days ago` });
-  const tools = (report.tech_stack_assessment?.confirmed_tools ?? []).slice(0, 3);
-  if (tools.length) receipts.push({ label: 'Verified stack', value: tools.join(' · ') });
+  // The prospect's full brand kit — threaded into every sample artifact (carousel slides,
+  // designed image cards, LM embed chrome) so each reads as THEIR asset, not a template.
+  const brand = cs.sample_output?.lm?.brand;
+  const prospectAccent = brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
+  const prospectLogo = brand?.logo_url || undefined;
 
-  const mock = cs.sample_output;
-  const mockMetrics = (mock?.metrics ?? []).slice(0, 3);
-  // Brand-mirror the engine-tour mockups (newsletter / follow-ups / outreach) in the
-  // prospect's own accent + logo so each reads as THEIR owned asset, not a template.
-  const prospectAccent = cs.sample_output?.lm?.brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
-  const prospectLogo = cs.sample_output?.lm?.brand?.logo_url || undefined;
-  // Attention budget (2026-07-10 audit #8): two posts run full-size in the feed — the first
-  // visual one (image/carousel) plus the next in week order — and the rest collapse to a
-  // hook strip under the feed. Same drafted week, roughly a screen and a half less scroll.
+  // Attention budget: two posts run full-size in the feed — the first visual one
+  // (image/carousel) plus the next in week order — and the rest collapse to hook cells.
   type CsPost = NonNullable<NonNullable<ContentSystem['sample_output']>['posts']>[number];
   const weekPosts: CsPost[] = (cs.sample_output?.posts ?? []).filter((p) => !/lead.?magnet/i.test(p.format || ''));
-  const isVisualPost = (p: CsPost) => Boolean(p.image_url) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2);
+  const isVisualPost = (p: CsPost) => Boolean(p.image_url) || Boolean(p.image_card?.headline) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2);
   const firstVisual = weekPosts.find(isVisualPost);
   const featuredPosts = (firstVisual ? [firstVisual, ...weekPosts.filter((p) => p !== firstVisual)] : weekPosts)
     .slice(0, 2)
     .sort((a, b) => weekPosts.indexOf(a) - weekPosts.indexOf(b));
-  const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p));
+  // "Also drafted" cells earn their place only with a real hook.
+  const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p)).filter((p) => (p.hook || '').trim());
   const feedSpec = buildFeedSpecFromContentSystem(
     cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: featuredPosts } } : cs,
     { companyName },
   );
-  // When the LM is a live, results-forward assessment we can embed, signal that everywhere
-  // (the card stops reading as a static PDF) and reuse the same URL in the modal.
+  // When the LM is a live, results-forward assessment we can embed, use it everywhere.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
-  // A working sample of the lead magnet: either a live embeddable page (assessment) or an
-  // in-page interactive simulation (calculator drafted from the prospect's posts). Either
-  // one surfaces the bold "open the sample" CTA below and drives the preview modal.
   const lmSim = cs.sample_output?.lm?.sim;
-  // Fallback: a partial builder run can emit the LM cover but no live slug/sim. Rather than
-  // dropping the whole LM sample (it silently vanishes), still surface the cover as a static
-  // sample. lmStatic drives honest copy (no "live"/"interactive" overpromise).
   const lmCover = cs.sample_output?.lm?.cover_url || '';
   const lmStatic = !lmEmbedUrl && !lmSim && Boolean(lmCover);
   const lmHasSample = Boolean(lmEmbedUrl) || Boolean(lmSim) || lmStatic;
 
-  const cases = [
-    {
-      client: 'Kyle Hunt', role: 'Agency Operators · founder',
-      portraits: [{ src: '/content-system/kyle-portrait.webp', name: 'Kyle Hunt', pos: '50% 24%' }],
-      quote: ['It writes every post and guide in ', 'my voice', '. I approve, and it ships.'],
-      result: 'Kyle scaled from $30k/mo to $80k/mo with us.',
-      src: '/content-system/kyle-guides.webp', alt: "Kyle Hunt's inbound engine running in the system",
-      metrics: [{ value: '30K', label: 'impressions per post' }, { value: '~300', label: 'comments on a lead-magnet post' }, { value: '100%', label: 'of his content, run by the system' }],
-    },
-    {
-      client: 'Lemonade', role: 'David Dinsmore & Billy Mackie · co-founders',
-      portraits: [{ src: '/content-system/david-dinsmore.webp', name: 'David Dinsmore', pos: '50% 14%' }, { src: '/content-system/billy-mackie.webp', name: 'Billy Mackie', pos: '50% 16%' }],
-      quote: ['The lead-magnet engine books our ', 'fit calls', ' for us. Gated funnel, running on autopilot.'],
-      result: 'Lemonade books 5 new clients a month through the system.',
-      src: '/content-system/lemonade-thankyou.webp', alt: "Lemonade's lead-capture page built by the system",
-      metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }],
-    },
-  ];
-
   // ── Derived, honest figures (every number traces to report_json / scan stamps) ──
   const scanDate = recDateISO(scan.completed_at, scan.created_at);
-  const courseEnd = recDatePlusDaysISO(scan.completed_at, 90, scan.created_at);
+  const ls = report.linkedin_summary;
   const followers = ls?.followers ?? null;
   const posts30 = ls?.posts_30d ?? null;
+  const lastPostDays = ls?.last_post_days ?? null;
   const winsCards = (cs.wins ?? []).filter((w) => (w.observation || '').trim());
-  // Any gated win is worth a ledger row: the open-row grammar absorbs a short count
-  // honestly, so 1-2 real observations must never be dropped for generic signals.
-  const hasWins = winsCards.length >= 1;
-  const winsWord = ['One reading', 'Two readings', 'Three readings'][Math.min(winsCards.length, 3) - 1] || 'Three readings';
-  const leaks = (cs.leaking_signals ?? []).slice(0, 3);
   const lm = cs.sample_output?.lm;
   const insideItems = (lm?.whats_inside ?? []).slice(0, 5);
-  // Voice provenance: one inspectable pairing, her sentence beside the drafted open built from it.
-  // Skip pairs where one side is a near-copy of the other: verbatim reuse proves nothing
-  // about voice; the pairing must show resemblance with difference.
+  // Voice provenance: one inspectable pairing, their sentence beside the drafted open built
+  // from it. Skip pairs where one side is a near-copy of the other: verbatim reuse proves
+  // nothing about voice; the pairing must show resemblance with difference.
   const vnorm = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
   const voicePair = (cs.sample_output?.posts ?? []).find((p) => {
     const q = (p.source_quote || '').trim();
@@ -3314,45 +2777,89 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const engagerNames = (cs.sample_output?.engager_outreach?.samples ?? [])
     .map((s) => (s.engager?.name || '').trim()).filter(Boolean).slice(0, 3);
   const cleanDomain = (scan.domain || companyName || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  const newsletter = cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? cs.sample_output.newsletter : null;
+  const followUps = cs.sample_output?.follow_ups?.length ? cs.sample_output.follow_ups : null;
+  const engager = cs.sample_output?.engager_outreach?.samples?.length ? cs.sample_output.engager_outreach : null;
+
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
-    silent_founder: { effect: 'WARNING: ATTENTION LEFT UNRECORDED', verdict: 'The audience is already there. Nothing keeps the record of it.' },
-    inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the record goes blank.' },
+    silent_founder: { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
+    inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
     no_capture:     { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
-    invisible:      { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The record starts empty.' },
+    invisible:      { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
   };
   const warn = WARN[cs.archetype] ?? WARN.silent_founder;
-  const attnFound = followers != null ? `${followers.toLocaleString()} followers, nothing routing them` : '[ open · not visible in feed ]';
-  const proofFound = posts30 != null ? (posts30 === 0 ? '[ open · none in 30 days ]' : `${posts30} posts in 30 days, no capture behind them`) : '[ open · none in feed ]';
-  // Spike from the gated wins text — a number the prospect recognizes from their own feed.
-  // The observation strings are deterministically grounded upstream, so a figure lifted
-  // verbatim from them is a real reading, and its own sentence is the honest caption.
-  let spike: { n: string; d: string } | null = null;
-  for (const w of winsCards) {
-    const obs = (w.observation || '').trim();
-    const m = /(\d[\d,]{1,6})\s*\+?\s*(comments|reactions|likes|shares|reposts|views|followers|subscribers)/i.exec(obs);
-    if (m) {
-      const val = parseInt(m[1].replace(/,/g, ''), 10);
-      const cur = spike ? parseInt(spike.n.replace(/,/g, ''), 10) : -1;
-      // Floor: a fold panel proclaiming ONE SPIKE over a small number reads as reaching.
-      if (val >= 50 && val > cur) {
-        let d = obs;
-        if (d.length > 170) {
-          d = d.slice(0, 170);
-          d = d.slice(0, Math.max(d.lastIndexOf(' '), 120)) + '...';
-        }
-        spike = { n: m[1], d };
-      }
-    }
-  }
-  // Reading panel — the one honest as-found figure at the top fold. A recognizable spike
-  // from their own feed beats a profile stat beats an honest open cell.
-  const reading = spike
-    ? { open: false, k: 'As found · one spike', n: spike.n, d: spike.d }
-    : followers != null
-    ? { open: false, k: 'As found · audience', n: followers.toLocaleString(), d: 'followers already earned, with nothing on record to route them anywhere.' }
+
+  // ── Pillars: the hero table + chapter seating ──────────────────────────────
+  // Ladder: builder-emitted cs.pillars → wins[].pillar tag → keyword heuristic on the
+  // win text → an honest plain-sentence fallback. Never a bracket glyph.
+  type PillarKey = 'content' | 'inbound' | 'outbound';
+  const winPillar = (w: NonNullable<ContentSystem['wins']>[number]): PillarKey => {
+    if (w.pillar === 'content' || w.pillar === 'inbound' || w.pillar === 'outbound') return w.pillar;
+    const t = `${w.observation || ''} ${w.build || ''}`.toLowerCase();
+    if (/(outreach|\bdms?\b|connection request|engager|commenter|comment(s|ed)?\b|reaction|warm message|warm lane)/.test(t)) return 'outbound';
+    if (/(lead.?magnet|captur|gated|newsletter|email list|mailing list|assessment|calculator|download|subscrib|opt.?in|funnel|landing page)/.test(t)) return 'inbound';
+    return 'content';
+  };
+  const winsByPillar: Record<PillarKey, typeof winsCards> = { content: [], inbound: [], outbound: [] };
+  for (const w of winsCards) winsByPillar[winPillar(w)].push(w);
+  const contentFoundFallback = followers != null && posts30 != null
+    ? `${followers.toLocaleString()} followers, ${posts30} post${posts30 === 1 ? '' : 's'} in the last 30 days.`
     : posts30 != null
-    ? { open: false, k: 'As found · cadence', n: String(posts30), d: `posts in the last 30 days, and not one of them leaves you a name to follow up.` }
-    : { open: true, k: 'As found', n: '[ open ]', d: 'no owned attention on record yet. The cell is ruled and left open.' };
+    ? (posts30 === 0 ? 'No posts on the feed in the last 30 days.' : `${posts30} post${posts30 === 1 ? '' : 's'} in the last 30 days.`)
+    : lastPostDays != null
+    ? `Last post ${lastPostDays} day${lastPostDays === 1 ? '' : 's'} ago.`
+    : followers != null
+    ? `${followers.toLocaleString()} followers, no posting pattern we could read.`
+    : 'No posting pattern we could read from the public feed.';
+  const FOUND_FALLBACK: Record<PillarKey, string> = {
+    content: contentFoundFallback,
+    inbound: 'No lead capture found behind any post in the last 30 days.',
+    outbound: 'No warm follow-up found. People who engage the posts are left there.',
+  };
+  const PROJECTED_FALLBACK: Record<PillarKey, string> = {
+    content: 'Once daily, in your voice, drafted from your own material.',
+    inbound: 'A gated asset in your brand names every reader. A newsletter and a follow-up sequence keep them.',
+    outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
+  };
+  const pillarCell = (k: PillarKey) => ({
+    found: (cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k],
+    projected: (cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k],
+  });
+  const PILLARS: { key: PillarKey; name: string; anchor: string }[] = [
+    { key: 'content', name: 'Content', anchor: 'cs-ch-content' },
+    { key: 'inbound', name: 'Inbound', anchor: 'cs-ch-inbound' },
+    { key: 'outbound', name: 'Warm outbound', anchor: 'cs-ch-outbound' },
+  ];
+  const pillars: Record<PillarKey, { found: string; projected: string }> = {
+    content: pillarCell('content'), inbound: pillarCell('inbound'), outbound: pillarCell('outbound'),
+  };
+  const jump = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // One-line CTA row closing each chapter — same ink button, red stays reserved for the end.
+  const ChapterCta = ({ line }: { line: React.ReactNode }) => (
+    <div className="chcta">
+      <p>{line}</p>
+      <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
+    </div>
+  );
+
+  // The gated wins that belong to a chapter, rendered as observed entries with the build.
+  const WinRows = ({ k }: { k: PillarKey }) => winsByPillar[k].length ? (
+    <div className="ledger">
+      {winsByPillar[k].slice(0, 3).map((w, i) => (
+        <div className="lrow" key={i}>
+          <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+          <div>
+            <div className="lobs">{w.observation}</div>
+            {w.build ? <div className="lbuild"><span className="bl">→ Build</span><span className="bt">{w.build}</span></div> : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : null;
 
   return (
     <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
@@ -3364,7 +2871,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <div className="wrap reg-row">
           <Link to="/" aria-label="InboundOnSteroids" className="inline-flex items-center hover:opacity-80 transition-opacity"><Wordmark size={20} /></Link>
           <div className="reg-right">
-            <span className="reg-meta hidden md:inline">Operating Record&nbsp;·&nbsp;Confidential to recipient</span>
+            <span className="reg-meta hidden md:inline">Scan report&nbsp;·&nbsp;Confidential to recipient</span>
             <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book a call</a>
           </div>
         </div>
@@ -3372,16 +2879,15 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <main className="wrap">
         {/* ── DOCLINE ─────────────────────────── */}
-        <Docline docType="Operating Record · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
+        <Docline docType="Scan report · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
         {/* ── DATA PLATE ──────────────────────── */}
         <DataPlate cells={[
-          { k: 'Prepared for', v: <>{founderFull}{companyName && founderFull !== companyName ? <><br />{companyName}</> : null}</> },
+          { k: 'Prepared for', v: founderFull },
+          ...(companyName && founderFull !== companyName ? [{ k: 'Company', v: companyName }] : []),
           { k: 'Scanned', v: <>LinkedIn feed{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
           { k: 'Scan date', v: <span className="num">{scanDate}</span> },
           { k: 'Operator of record', v: 'Ivan Manfredi' },
-          { k: 'Measured in', v: 'Booked calls' },
-          { k: 'Course', v: <span className="num">90 days · through {courseEnd}</span> },
         ]} />
 
         {/* ── FOLD ────────────────────────────── */}
@@ -3390,16 +2896,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <h1 className="company">{companyName}</h1>
             <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
           </div>
-          <div className="reading">
-            <div className="rk">{reading.k}</div>
-            <div className={`rn${reading.open ? ' num' : ' num'}`} style={reading.open ? { fontFamily: BODY_SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(22px,3vw,30px)', color: MUTED } : undefined}>{reading.n}</div>
-            <div className="rd">{reading.d}</div>
-            <div className="rrow"><span>Captured</span><span className="num">0</span></div>
-            <div className="rrow"><span>Record kept</span><span>None</span></div>
-          </div>
         </Rev>
 
-        {/* ── VERDICT · THE BOX (1 of 2) ──────── */}
+        {/* ── VERDICT · THE BOX (1 of 2, the page's one tilt) ── */}
         <div className="boxwrap">
           <Rev className="box tilt">
             <div className="box-head">
@@ -3407,102 +2906,53 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="lbl">{warn.effect}</span>
             </div>
             <div className="box-body">{warn.verdict}</div>
-            <div className="afp">
-              <div className="afp-h">
-                <span>Parameter</span>
-                <span>As found · {scanDate}</span>
-                <span>Projected · 90-day course</span>
+            <div className="ptab">
+              <div className="ptab-h">
+                <span>Pillar</span>
+                <span>On your feed today</span>
+                <span>After 90 days</span>
               </div>
-              <div className="afp-r">
-                <div className="afp-p">Inbound attention</div>
-                {attnFound.startsWith('[')
-                  ? <div className="afp-open" data-l={`As found · ${scanDate}`}>{attnFound}</div>
-                  : <div className="afp-f" data-l={`As found · ${scanDate}`}>{attnFound}</div>}
-                <div className="afp-v" data-l="Projected · 90-day course">Every reader worked into a conversation</div>
-              </div>
-              <div className="afp-r">
-                <div className="afp-p">Original proof-of-work</div>
-                {proofFound.startsWith('[')
-                  ? <div className="afp-open" data-l={`As found · ${scanDate}`}>{proofFound}</div>
-                  : <div className="afp-f" data-l={`As found · ${scanDate}`}>{proofFound}</div>}
-                <div className="afp-v" data-l="Projected · 90-day course">Dispensed daily, in your voice</div>
-              </div>
-              <div className="afp-r">
-                <div className="afp-p">Owned lead capture</div>
-                <div className="afp-open" data-l={`As found · ${scanDate}`}>[ open · none on site ]</div>
-                <div className="afp-v" data-l="Projected · 90-day course">One gated asset, names every reader</div>
-              </div>
+              {PILLARS.map((p) => (
+                <div className="ptab-r" key={p.key}>
+                  <div><a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a></div>
+                  <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
+                  <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
+                </div>
+              ))}
             </div>
-            <p className="box-note">The readings above with no before-state are ruled and left open, because there is nothing there yet. Everything below this line is the record the engine would keep instead, entered against real dates, starting the first week after the scan.</p>
+            <p className="box-note">Read from your public presence on {scanDate}. Each pillar name opens its chapter below, with the work already drafted.</p>
           </Rev>
         </div>
 
-        {/* ── SECTION 03 · OBSERVATIONS LEDGER ── */}
-        <Rev el="section" className="sec">
+        {/* ── CHAPTER 01 · CONTENT ────────────── */}
+        <Rev el="section" className="sec" id="cs-ch-content" style={{ scrollMarginTop: 76 }}>
           <SecHead
-            label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
-            title={hasWins ? `${winsWord}, and the build each one triggers.` : 'What the scan read, and what the engine opens against it.'}
-            note={hasWins
-              ? 'Each entry was observed on the scan date. The build is what the engine would open against it.'
-              : 'Read from your public presence on the scan date. The build is what the engine would open against each one.'}
+            label={<>Chapter 01&nbsp;·&nbsp;Content</>}
+            title={<>Once daily, in your voice.</>}
+            note={<>{pillars.content.found} Below is the week we drafted from your own material before this page was built.</>}
           />
-          <div className="ledger">
-            {hasWins ? (
-              <>
-                {winsCards.slice(0, 3).map((w, i) => (
-                  <div className="lrow" key={i}>
-                    <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
-                    <div>
-                      <div className="lobs">{w.observation}</div>
-                      {w.build ? <div className="lbuild"><span className="bl">→ Build</span><span className="bt">{w.build}</span></div> : null}
-                    </div>
-                  </div>
-                ))}
-              </>
-            ) : leaks.length > 0 ? (
-              <>
-                {leaks.map((l, i) => (
-                  <div className="lrow" key={i}>
-                    <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
-                    <div>
-                      <div className="lobs">{l.title}</div>
-                      {l.detail ? <div className="lbuild"><span className="bl">→ Reading</span><span className="bt">{l.detail}</span></div> : null}
-                    </div>
-                  </div>
-                ))}
-              </>
-            ) : null}
-          </div>
-        </Rev>
-
-        {/* ── SECTION 04 · THE DISPENSING LOG ─── */}
-        {feedSpec.posts.length > 0 && (
-          <Rev el="section" className="sec">
-            <SecHead
-              label={<>Section 04&nbsp;·&nbsp;The dispensing log&nbsp;·&nbsp;Projected · week 1</>}
-              title={<>Dispensed daily, in your voice.</>}
-              note="Drawn from your latest material and written the way you say it. The posts keep their native form; the log frames them, and the caption cites the line each one grew from."
-            />
-            {voicePair && voiceDrafted ? (
-              <div className="vpair">
-                <div className="vcell">
-                  <div className="k">Your words, on record</div>
-                  <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
-                </div>
-                <div className="vlink" aria-hidden><span>rewritten as →</span></div>
-                <div className="vcell">
-                  <div className="k">The drafted post open</div>
-                  <div className="vd">{voiceDrafted}</div>
-                </div>
+          <WinRows k="content" />
+          {voicePair && voiceDrafted ? (
+            <div className="vpair">
+              <div className="vcell">
+                <div className="k">Your words</div>
+                <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
               </div>
-            ) : null}
+              <div className="vlink" aria-hidden><span>rewritten as →</span></div>
+              <div className="vcell">
+                <div className="k">The post we drafted from them</div>
+                <div className="vd">{voiceDrafted}</div>
+              </div>
+            </div>
+          ) : null}
+          {feedSpec.posts.length > 0 && (
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               <Exhibit
-                label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed</>}
+                label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
                 caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={companyName} />
                 </div>
               </Exhibit>
               {restOfWeek.length > 0 && (
@@ -3510,60 +2960,54 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   {restOfWeek.map((p, i) => (
                     <div className="pcell" key={i}>
                       <div className="k" style={{ marginBottom: 6 }}>Also drafted&nbsp;·&nbsp;{isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}</div>
-                      <div className="ph">{p.hook || (p.body || '').split('\n')[0]}</div>
+                      <div className="ph">{p.hook}</div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            {/* mid-page CTA — the drafted week is the sell */}
-            <div style={{ marginTop: 'clamp(26px,3.2vw,40px)', paddingTop: 'clamp(20px,2.4vw,28px)', borderTop: `1px solid ${HAIR}`, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
-              <p style={{ fontFamily: SERIF, fontWeight: 800, letterSpacing: '-0.02em', fontSize: 'clamp(18px,2.4vw,24px)', lineHeight: 1.15, color: INK, maxWidth: '30ch' }}>This week is already drafted, {who}. The fit call is where it goes live.</p>
-              <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
-            </div>
-          </Rev>
-        )}
+          )}
+          <ChapterCta line={<>This week is already drafted, {who}. On the call we walk it live.</>} />
+        </Rev>
 
-        {/* ── SECTION 05 · CAPTURED ASSET (LM) ── */}
-        {lm?.title && (
-          <Rev el="section" className="sec">
-            <SecHead
-              label={<>Section 05&nbsp;·&nbsp;Captured asset</>}
-              title="The asset that keeps the address."
-              note={lmEmbedUrl
-                ? 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. It is not a mockup: the asset is already built, embedded below in your brand. Take it the way a reader would.'
-                : 'A lead magnet built around your most differentiated work, gated on your own domain, so a reader not ready to call still leaves a name. The cover is yours, in your brand; the record frames it as the exhibit.'}
-            />
-            {lmEmbedUrl && (
-              <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
-                {/* branded exhibit masthead — cover plate beside the title/promise band, so the live asset reads as a designed exhibit, not a bare iframe */}
-                <div className="lm-frame">
-                  {(lmCover || lm.brand?.logo_url) && (
-                    <div className="lm-frame-cover">
-                      <img src={lmCover || lm.brand?.logo_url} alt={lm.title} loading="lazy" onError={fallbackOnError} />
-                    </div>
-                  )}
-                  <div className="lm-frame-body">
-                    <FigLabel>Fig&nbsp;·&nbsp;lead magnet&nbsp;·&nbsp;your brand</FigLabel>
-                    <div className="lm-title" style={{ fontSize: 'clamp(22px,2.6vw,32px)' }}>{lm.title}</div>
-                    {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
-                    <div className="lm-gate"><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
+        {/* ── CHAPTER 02 · INBOUND ────────────── */}
+        <Rev el="section" className="sec" id="cs-ch-inbound" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
+            title={<>Every reader leaves a name.</>}
+            note={<>{pillars.inbound.found} The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
+          />
+          <WinRows k="inbound" />
+          {lm?.title && lmEmbedUrl && (
+            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              {/* branded exhibit masthead — cover plate beside the title/promise band */}
+              <div className="lm-frame">
+                {(lmCover || lm.brand?.logo_url) && (
+                  <div className="lm-frame-cover">
+                    <img src={lmCover || lm.brand?.logo_url} alt={lm.title} loading="lazy" onError={fallbackOnError} />
                   </div>
+                )}
+                <div className="lm-frame-body">
+                  <FigLabel>Fig&nbsp;·&nbsp;lead magnet&nbsp;·&nbsp;your brand</FigLabel>
+                  <div className="lm-title" style={{ fontSize: 'clamp(22px,2.6vw,32px)' }}>{lm.title}</div>
+                  {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
+                  <div className="lm-gate"><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
                 </div>
-                <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
-                  <Exhibit
-                    label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
-                    caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
-                  >
-                    <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
-                  </Exhibit>
-                </div>
-                <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
-                  Open it full screen <span aria-hidden>→</span>
-                </button>
               </div>
-            )}
-            {!lmEmbedUrl && (
+              <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
+                <Exhibit
+                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
+                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                >
+                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                </Exhibit>
+              </div>
+              <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                Open it full screen <span aria-hidden>→</span>
+              </button>
+            </div>
+          )}
+          {lm?.title && !lmEmbedUrl && (
             <div className="lm">
               <div>
                 <FigLabel>Fig&nbsp;·&nbsp;lead magnet cover&nbsp;·&nbsp;your brand</FigLabel>
@@ -3583,7 +3027,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                     ))}
                   </div>
                 )}
-                <div className="lm-gate"><span className="sq" aria-hidden /> Gated on {cleanDomain || 'your domain'}&nbsp;·&nbsp;captures every reader onto your list</div>
+                <div className="lm-gate"><span className="sq" aria-hidden /> Gated on {cleanDomain || 'your domain'}&nbsp;·&nbsp;names every reader onto a list you own</div>
                 {lmHasSample && feedSpec.lmCard && (
                   <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
                     {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'} <span aria-hidden>→</span>
@@ -3591,154 +3035,97 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 )}
               </div>
             </div>
-            )}
-          </Rev>
-        )}
-
-        {/* ── SECTION 06 · THE BROADCAST (NL) ─── */}
-        {cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? (
-          <Rev el="section" className="sec">
-            <SecHead
-              label={<>Section 06&nbsp;·&nbsp;The broadcast</>}
-              title={<>Then the list hears from you.</>}
-              note="One newsletter a cycle, drafted from the same week's material and sent in your voice. Framed here as the exhibit; the email keeps its own chrome."
-            />
-            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
-              <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent from your list</>}>
-                <NewsletterMockup data={cs.sample_output.newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
-              </Exhibit>
+          )}
+          {(newsletter || followUps) && (
+            <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              {newsletter && (
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, drafted from the same week's material, in your voice.">
+                  <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
+                </Exhibit>
+              )}
+              {followUps && (
+                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="A fixed schedule after the download. The clock starts when the reader opts in.">
+                  <FollowUpSequence data={followUps} accent={prospectAccent} who={who} />
+                </Exhibit>
+              )}
             </div>
-          </Rev>
-        ) : null}
+          )}
+          <ChapterCta line={<>The asset is built in your brand, {who}. The call decides where it lives.</>} />
+        </Rev>
 
-        {/* ── SECTION 07 · SCHEDULED SEQUENCE ─── */}
-        {cs.sample_output?.follow_ups?.length ? (
-          <Rev el="section" className="sec">
-            <SecHead
-              label={<>Section 07&nbsp;·&nbsp;The scheduled sequence</>}
-              title={<>Everyone who grabs it gets a sequence.</>}
-              note="A fixed schedule of emails after the download, offsets logged from day zero. No dates invented; the clock starts when the reader opts in."
-            />
-            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
-              <Exhibit label={<>Fig&nbsp;·&nbsp;post-download sequence&nbsp;·&nbsp;offsets from day zero</>}>
-                <FollowUpSequence data={cs.sample_output.follow_ups} accent={prospectAccent} who={who} />
-              </Exhibit>
-            </div>
-          </Rev>
-        ) : null}
-
-        {/* ── SECTION 08 · THE ENGAGER LOG ────── */}
-        {cs.sample_output?.engager_outreach?.samples?.length ? (
-          <Rev el="section" className="sec">
-            <SecHead
-              label={<>Section 08&nbsp;·&nbsp;The engager log</>}
-              title={<>Reactions turn into conversations.</>}
-              note="When someone reacts to or comments on one of your posts, a warm message follows that references the specific post and offers something useful without pitching. Each entry is keyed to the post that fired it."
-            />
+        {/* ── CHAPTER 03 · WARM OUTBOUND ──────── */}
+        <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
+            title={<>The people who engage get a message.</>}
+            note={<>{pillars.outbound.found} We work the reactions and comments on your posts: a warm message that references the specific post and offers something useful, without pitching.</>}
+          />
+          <WinRows k="outbound" />
+          {engager && (
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
                 caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
               >
-                <EngagerOutreachMockup data={cs.sample_output.engager_outreach} accent={prospectAccent} who={who} />
+                <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
               </Exhibit>
             </div>
-            <div className="gov">
-              <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
-              <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
-              <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
-              <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
-            </div>
-          </Rev>
-        ) : null}
+          )}
+          <div className="gov">
+            <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
+            <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
+            <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
+            <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
+          </div>
+          <ChapterCta line={<>The warm lane opens in week one. Effects observed in booked calls.</>} />
+        </Rev>
 
-        {/* ── SECTION 09 · COMMISSIONING RECORD ─ */}
+        {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
           <SecHead
-            label={<>Section 09&nbsp;·&nbsp;Commissioning record · already running</>}
-            title={<>Built for real operators. Running every day.</>}
-            note="The one before-and-after on record. Where a cell has no before-state it is left open, same as your own record above."
+            label={<>Effects observed&nbsp;·&nbsp;on the engine today</>}
+            title={<>Two founders run this engine already.</>}
+            note="Real operators, real numbers. Both run the same three pillars this page just walked."
           />
-          <div className="kyle">
-            <div className="cmedia">
-              <div className="cfaces">
-                <div className="cface"><img src="/content-system/kyle-portrait.webp" alt="Kyle Hunt" loading="lazy" onError={fallbackOnError} /><span className="nm">Kyle Hunt</span></div>
+          {/* Kyle Hunt — the before/after figure is the exhibit's dominant element */}
+          <div className="pf">
+            <div className="pf-top">
+              <div className="pf-faces">
+                <div className="pf-face"><img src="/content-system/kyle-portrait.webp" alt="Kyle Hunt" loading="lazy" onError={fallbackOnError} /><span className="nm">Kyle Hunt</span></div>
               </div>
-              <figure className="csample"><img src="/content-system/kyle-guides.webp" alt="Kyle Hunt's inbound engine running in the system" loading="lazy" onError={fallbackOnError} /></figure>
+              <div className="pf-figwrap">
+                <div className="pf-figk">Agency MRR · Kyle Hunt · Agency Operators</div>
+                <div className="pf-fig num"><span className="from">$30K/mo →</span> $80K/mo</div>
+              </div>
             </div>
-            <div className="kyle-h">
-              <div className="kyle-p">Agency MRR · Kyle Hunt</div>
-              <div className="kyle-af num">$30K/mo</div>
-              <div className="kyle-al num">$80K/mo <small>as left</small></div>
-            </div>
-            <div className="kyle-q">&ldquo;It writes every post and guide in my voice. I approve, and it ships.&rdquo;<span className="who">Kyle Hunt · Agency Operators, founder</span></div>
+            <div className="pf-quote">&ldquo;It writes every post and guide in my voice. I approve, and it ships.&rdquo;<span className="who">Kyle Hunt · Agency Operators, founder</span></div>
+            <figure className="pf-sample"><img src="/content-system/kyle-guides.webp" alt="Kyle Hunt's guide library, generated and shipped by the engine" loading="lazy" onError={fallbackOnError} /></figure>
+            <div className="pf-cap">Fig · Kyle&rsquo;s guide library, written and shipped by the engine, as it runs today.</div>
             <div className="kmet">
-              {cases[0].metrics.map((m, i) => (
+              {[
+                { value: '30K', label: 'impressions per post' },
+                { value: '~300', label: 'comments on a lead-magnet post' },
+                { value: '100%', label: 'of his content, run by the system' },
+              ].map((m, i) => (
                 <div className="m" key={i}><div className="mv num">{m.value}</div><div className="ml">{m.label}</div></div>
               ))}
             </div>
           </div>
-          <div className="lemon">
-            <div className="cmedia">
-              <div className="cfaces">
-                <div className="cface"><img src="/content-system/david-dinsmore.webp" alt="David Dinsmore" loading="lazy" onError={fallbackOnError} /><span className="nm">David Dinsmore</span></div>
-                <div className="cface"><img src="/content-system/billy-mackie.webp" alt="Billy Mackie" loading="lazy" onError={fallbackOnError} /><span className="nm">Billy Mackie</span></div>
+          {/* Lemonade — two founders, the monthly client figure dominant */}
+          <div className="pf">
+            <div className="pf-top">
+              <div className="pf-faces">
+                <div className="pf-face"><img src="/content-system/david-dinsmore.webp" alt="David Dinsmore" loading="lazy" onError={fallbackOnError} /><span className="nm">David Dinsmore</span></div>
+                <div className="pf-face"><img src="/content-system/billy-mackie.webp" alt="Billy Mackie" loading="lazy" onError={fallbackOnError} /><span className="nm">Billy Mackie</span></div>
               </div>
-              <figure className="csample"><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's lead-capture page built by the system" loading="lazy" onError={fallbackOnError} /></figure>
+              <div className="pf-figwrap">
+                <div className="pf-figk">New clients · Lemonade</div>
+                <div className="pf-fig num">5 <span className="from">new clients a month</span></div>
+              </div>
             </div>
-            <div className="lemon-body">
-              <div className="lemon-q">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
-              <div className="lemon-r num">5 new clients a month, on record.</div>
-            </div>
-          </div>
-        </Rev>
-
-        {/* ── SECTION 10 · THE INSTRUMENT ─────── */}
-        <Rev el="section" className="sec">
-          <SecHead
-            label={<>Section 10&nbsp;·&nbsp;The instrument</>}
-            title={<>One system keeps the whole record.</>}
-            note={cs.system?.summary || 'The same engine that would run this record. It finds the idea, writes it in your voice, publishes it, and works the funnel. The only thing left for you is to take the calls.'}
-          />
-          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
-            <Exhibit label={<>Fig&nbsp;·&nbsp;one idea, five channels</>}>
-              <FivePillarLoop />
-            </Exhibit>
-          </div>
-          <div className="flow">
-            <div className="fstep"><div className="fn num">01</div><div><div className="ft">We find the idea</div><div className="fb">Pulled from your calls, the web, and your past winners, then ranked by what will actually land with your audience.</div></div></div>
-            <div className="fstep"><div className="fn num">02</div><div><div className="ft">We write it in your voice</div><div className="fb">Drafted from your real conversations and held to a standard before it ships, rewritten until it reads like you and not a model.</div></div></div>
-            <div className="fstep"><div className="fn num">03</div><div><div className="ft">We publish and capture</div><div className="fb">It posts to LinkedIn and builds the gated asset that captures every reader onto your list, on a live page at your own domain.</div></div></div>
-            <div className="fstep"><div className="fn num">04</div><div><div className="ft">We work the funnel</div><div className="fb">We follow up with everyone who fits and bring the leads in, named, to your inbox. It runs on auto-approve; a veto is there if you ever want it.</div></div></div>
-          </div>
-          <div style={{ marginTop: 'clamp(26px,3.2vw,40px)' }}>
-            <Exhibit label={<>Fig&nbsp;·&nbsp;the operator board&nbsp;·&nbsp;this week</>}>
-              <ContentSystemDashboardMock cs={cs} companyName={companyName} />
-            </Exhibit>
-          </div>
-          <div className="promises">
-            {PROMISES.map((p) => (
-              <div className="pcell" key={p.headline}><div className="ph">{p.headline}</div><div className="pb">{p.benefit}</div></div>
-            ))}
-          </div>
-        </Rev>
-
-        {/* ── SECTION 11 · LEAD MAGNETS ───────── */}
-        <Rev el="section" className="sec">
-          <SecHead
-            label={<>Section 11&nbsp;·&nbsp;Lead magnets</>}
-            title={<>Turn attention into qualified leads.</>}
-            note="From one idea, the system builds an interactive lead magnet, publishes it as a live page, and routes every signup by how good a fit they are."
-          />
-          <div className="promises" style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
-            {LM_FORMATS.map((f) => (
-              <div className="pcell" key={f.name}><div className="ph">{f.name}</div><div className="pb">{f.blurb}</div></div>
-            ))}
-          </div>
-          <div className="promises" style={{ marginTop: 20 }}>
-            {LM_PROMISES.map((p) => (
-              <div className="pcell" key={p.headline}><div className="ph">{p.headline}</div><div className="pb">{p.benefit}</div></div>
-            ))}
+            <div className="pf-quote">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
+            <figure className="pf-sample"><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's gated lead-capture page, built by the engine" loading="lazy" onError={fallbackOnError} /></figure>
+            <div className="pf-cap">Fig · Lemonade&rsquo;s gated funnel page, built by the engine and live today.</div>
           </div>
         </Rev>
 
@@ -3757,7 +3144,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           </div>
         </Rev>
 
-        {/* ── FINAL CTA · THE BOX (2 of 2, RED) ─ */}
+        {/* ── FINAL CTA · THE BOX (2 of 2, square; the page's single red button) ── */}
         <div className="ctawrap">
           <Rev className="box cta">
             <div className="box-head" style={{ justifyContent: 'center' }}>
@@ -3782,7 +3169,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
             </div>
           </div>
-          <p className="foot-fine">Prepared for {founderFull}. Built from a live scan of your presence, scanned {scanDate}. The record above is projected; the open cells are honest.</p>
+          <p className="foot-fine">Prepared for {founderFull}. Read from a live scan of your public presence, {scanDate}. Every sample above was drafted from your own material and is ready to ship.</p>
         </div>
       </footer>
 
@@ -3794,7 +3181,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     </div>
   );
 }
-
 function AdCreativeCard({ creative, platform }: { creative: AdCreative; platform: 'google' | 'linkedin' | 'meta' }) {
   const isRenderableImage = (url: string | null | undefined): boolean => {
     if (!url) return false;

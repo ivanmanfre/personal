@@ -23,6 +23,9 @@ interface Props {
   ctaText?: string;
   /** Phone number shown before the CTA, like many agency navs. */
   phone?: string;
+  /** Load the engine immediately (loading="eager") so a scroll-through never meets a
+   *  white void. Default false keeps the lazy behavior for existing call sites. */
+  eager?: boolean;
 }
 
 const Lock: React.FC = () => (
@@ -52,7 +55,7 @@ function inkOn(hex?: string): string {
 const LiveAssessmentEmbed: React.FC<Props> = ({
   src, title, height = 1100, domain, urlPath, logoUrl, accentHex, companyName,
   navLinks = ['Home', 'About', 'Services', 'Contact'],
-  headerBg, ctaText, phone,
+  headerBg, ctaText, phone, eager = false,
 }) => {
   const cleanDomain = (domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   const showBar = !!cleanDomain;
@@ -152,7 +155,7 @@ const LiveAssessmentEmbed: React.FC<Props> = ({
       <iframe
         src={src}
         title={title || 'Your live assessment'}
-        loading="lazy"
+        loading={eager ? 'eager' : 'lazy'}
         onLoad={() => setLoaded(true)}
         style={{ width: '100%', height: showFallback ? 0 : height, border: 'none', display: 'block' }}
         sandbox="allow-scripts allow-forms allow-popups allow-same-origin"

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ThumbsUp, MessageSquare, Repeat2, Send, Globe, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
-import { avatarInitials } from './LinkedInPostPreview';
+import { avatarInitials, foldAtWordBoundary, safeHex, inkOnSurface, familyStack } from './LinkedInPostPreview';
+import type { BrandKitSpec, TextSlideSpec } from '../../lib/linkedinFeedSpec';
+import { useGoogleFonts } from '../../hooks/useGoogleFonts';
 
 const URL_RE = /(\bhttps?:\/\/[^\s]+)/g;
 const HASHTAG_RE = /(?:^|\s)(#[\p{L}\p{N}_-]+)/gu;
@@ -45,15 +47,20 @@ function tokenize(line: string): React.ReactNode[] {
 interface Props {
   text: string;
   slides: string[];
-  /** Text-slide cards (heading + body). When present, the media area renders styled text
-   *  slides instead of images — used for carousels the builder drafts as copy, not artwork. */
-  textSlides?: { heading: string; body: string }[];
+  /** Text-slide cards (heading + body[, role/kicker/figure]). When present, the media area
+   *  renders styled text slides instead of images — carousels drafted as copy, not artwork. */
+  textSlides?: TextSlideSpec[];
   author?: string;
   headline?: string;
   avatarUrl?: string;
-  /** Prospect brand, mirrored onto text-slide carousels so they read as the founder's own. */
+  /** Prospect brand accent, mirrored onto text-slide carousels (legacy single-value prop). */
   accentHex?: string;
   brandName?: string;
+  /** FULL prospect brand kit (fonts, surface, logo, secondary accents). Supersedes
+   *  accentHex when present; existing call sites without it render as before. */
+  brand?: BrandKitSpec | null;
+  /** Company name — wordmark fallback on cover/action slides when there's no logo. */
+  companyName?: string;
   showFold?: boolean;
   stats?: { reactions?: number; comments?: number };
 }
@@ -72,18 +79,31 @@ const LinkedInCarouselCard: React.FC<Props> = ({
   avatarUrl = '/ivan-portrait.jpg',
   accentHex,
   brandName,
+  brand,
+  companyName,
   showFold = true,
   stats,
 }) => {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const accent = accentHex && /^#?[0-9a-fA-F]{6}$/.test(accentHex) ? (accentHex[0] === '#' ? accentHex : '#' + accentHex) : '#0a66c2';
+  // Prospect brand tokens — the brand kit governs INSIDE the media area (the platform-
+  // artifact exception: LinkedIn chrome stays LinkedIn; the slides are the prospect's).
+  useGoogleFonts([brand?.font_heading, brand?.font_body]);
+  const accent = safeHex(brand?.accent_hex) ?? safeHex(accentHex) ?? '#0a66c2';
+  const accent2 = safeHex(brand?.accent2) ?? safeHex(brand?.accent_secondary) ?? accent;
+  const surface = safeHex(brand?.surface_hex) ?? (brand?.is_dark ? (safeHex(brand?.ink_hex) ?? '#15181C') : '#FFFFFF');
+  const slideInk = inkOnSurface(surface);
+  const slideSub = slideInk === '#FFFFFF' ? 'rgba(255,255,255,0.74)' : 'rgba(22,24,27,0.68)';
+  const slideHair = slideInk === '#FFFFFF' ? 'rgba(255,255,255,0.18)' : 'rgba(22,24,27,0.14)';
+  const headingFont = familyStack(brand?.font_heading);
+  const bodyFont = familyStack(brand?.font_body);
+  const wordmark = companyName || brandName || author;
 
   const hasTextSlides = Array.isArray(textSlides) && textSlides.length > 0;
   const total = hasTextSlides ? textSlides!.length : slides.length;
   const clampedIndex = Math.min(index, Math.max(0, total - 1));
   const truncate = showFold && text.length > FOLD_AT && !expanded;
-  const visibleText = truncate ? text.slice(0, FOLD_AT).trimEnd() : text;
+  const visibleText = truncate ? foldAtWordBoundary(text, FOLD_AT) : text;
   const paragraphs = visibleText.replace(/\r\n/g, '\n').split(/\n\s*\n/);
   const reactionCount = stats?.reactions ?? Math.max(48, Math.floor(text.length / 22));
   const commentCount = stats?.comments ?? Math.max(3, Math.floor(text.length / 180));
@@ -151,26 +171,84 @@ const LinkedInCarouselCard: React.FC<Props> = ({
       {/* Carousel media area */}
       {total > 0 && (
         <div className="border-y border-[#dce6f1] bg-[#f0f2f5] relative">
-          {/* Slide media — 4:5 portrait aspect. Text carousels render styled copy cards. */}
+          {/* Slide media — 4:5 portrait aspect. Text carousels render designed brand slides.
+              Content is inset 48px horizontally so the chevron overlays never sit on text. */}
           <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
-            {hasTextSlides ? (
-              <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-8 pb-14" style={{ background: 'linear-gradient(150deg,#1d2733 0%,#0f1620 100%)' }}>
-                <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: accent }} />
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>
-                  {clampedIndex + 1} / {total}
+            {hasTextSlides ? (() => {
+              const slide = textSlides![clampedIndex];
+              const role: NonNullable<TextSlideSpec['role']> = slide.role
+                ?? (clampedIndex === 0 ? 'cover' : clampedIndex === total - 1 ? 'action' : 'point');
+              const pad = 'clamp(44px, 12%, 64px)';
+              const LogoChip = ({ size = 22 }: { size?: number }) => (
+                <span className="flex items-center gap-2 min-w-0">
+                  {brand?.logo_url ? (
+                    <img src={brand.logo_url} alt={wordmark || 'logo'} style={{ height: size, width: 'auto', maxWidth: 140, objectFit: 'contain', display: 'block' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                  ) : null}
+                  <span className="truncate" style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 13, letterSpacing: '-0.01em', color: slideInk }}>{wordmark}</span>
+                </span>
+              );
+              if (role === 'cover') {
+                return (
+                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
+                    <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(10px, 2.8vw, 13px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>
+                      {slide.kicker || headline}
+                    </div>
+                    <span aria-hidden style={{ display: 'block', width: 36, height: 3, background: accent, marginTop: 12 }} />
+                    <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(1.45rem, 6.8vw, 2.3rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: slideInk, marginTop: 16 }}>
+                      {slide.heading}
+                    </h4>
+                    {slide.body && (
+                      <p style={{ fontFamily: bodyFont, fontSize: 'clamp(0.85rem, 3.2vw, 1rem)', lineHeight: 1.5, color: slideSub, marginTop: 12, maxWidth: '36ch' }}>{slide.body}</p>
+                    )}
+                    <div className="absolute flex items-center" style={{ left: pad, right: pad, bottom: 20, borderTop: `1px solid ${slideHair}`, paddingTop: 10 }}>
+                      <LogoChip />
+                    </div>
+                  </div>
+                );
+              }
+              if (role === 'action') {
+                return (
+                  <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
+                    {slide.kicker && (
+                      <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(10px, 2.8vw, 12px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>{slide.kicker}</div>
+                    )}
+                    <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(1.35rem, 6vw, 2rem)', lineHeight: 1.1, letterSpacing: '-0.018em', color: slideInk, marginTop: slide.kicker ? 14 : 0 }}>
+                      {slide.heading}
+                    </h4>
+                    {slide.body && (
+                      <p style={{ fontFamily: bodyFont, fontSize: 'clamp(0.85rem, 3.2vw, 1rem)', lineHeight: 1.5, color: slideSub, marginTop: 12, maxWidth: '36ch' }}>{slide.body}</p>
+                    )}
+                    <span aria-hidden style={{ display: 'block', width: 36, height: 3, background: accent, marginTop: 18 }} />
+                    <div className="flex items-center" style={{ marginTop: 14 }}>
+                      <LogoChip size={24} />
+                    </div>
+                  </div>
+                );
+              }
+              // point / proof
+              const isProof = role === 'proof' || (role === 'point' && Boolean(slide.figure));
+              return (
+                <div className="absolute inset-0 flex flex-col justify-center" style={{ background: surface, padding: `28px ${pad} 56px` }}>
+                  <div style={{ fontFamily: bodyFont, fontWeight: 700, fontSize: 'clamp(10px, 2.8vw, 12px)', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent2 }}>
+                    {slide.kicker || `${clampedIndex + 1} / ${total}`}
+                  </div>
+                  {isProof && slide.figure && (
+                    <div style={{ fontFamily: headingFont, fontWeight: 800, fontSize: 'clamp(2.6rem, 15vw, 4.6rem)', lineHeight: 0.95, letterSpacing: '-0.02em', color: accent, marginTop: 14 }}>
+                      {slide.figure}
+                    </div>
+                  )}
+                  <h4 style={{ fontFamily: headingFont, fontWeight: 800, fontSize: isProof ? 'clamp(1.05rem, 4.4vw, 1.5rem)' : 'clamp(1.2rem, 5.2vw, 1.75rem)', lineHeight: 1.14, letterSpacing: '-0.015em', color: slideInk, marginTop: 12 }}>
+                    {slide.heading}
+                  </h4>
+                  {slide.body && (
+                    <p style={{ fontFamily: bodyFont, fontSize: 'clamp(0.85rem, 3.3vw, 1rem)', lineHeight: 1.5, color: slideSub, marginTop: 12 }}>{slide.body}</p>
+                  )}
+                  <div className="absolute flex items-center" style={{ left: pad, right: pad, bottom: 20, borderTop: `1px solid ${slideHair}`, paddingTop: 10 }}>
+                    <LogoChip size={18} />
+                  </div>
                 </div>
-                <h4 className="mt-3 text-white font-bold leading-[1.15]" style={{ fontSize: 'clamp(1.15rem, 5vw, 1.6rem)' }}>
-                  {textSlides![clampedIndex].heading}
-                </h4>
-                <p className="mt-3 text-white/80 leading-[1.5]" style={{ fontSize: 'clamp(0.85rem, 3.4vw, 1rem)' }}>
-                  {textSlides![clampedIndex].body}
-                </p>
-                <div className="absolute left-6 sm:left-8 bottom-4 flex items-center gap-2">
-                  <span aria-hidden style={{ width: 8, height: 8, background: accent, display: 'inline-block' }} />
-                  <span className="text-white/85 font-semibold" style={{ fontSize: 12, letterSpacing: '-0.01em' }}>{brandName || author}</span>
-                </div>
-              </div>
-            ) : (
+              );
+            })() : (
               <img
                 src={slides[clampedIndex]}
                 alt={`Slide ${clampedIndex + 1} of ${total}`}
@@ -247,10 +325,12 @@ const LinkedInCarouselCard: React.FC<Props> = ({
         ].map((a) => (
           <button
             key={a.label}
-            className="flex items-center gap-1.5 px-3 py-2 rounded text-[#666] hover:bg-[#f3f2ef] transition-colors text-[13px] font-semibold"
+            aria-label={a.label}
+            className="flex items-center gap-1.5 px-2 py-2 rounded text-[#666] hover:bg-[#f3f2ef] transition-colors text-[13px] font-semibold sm:px-3"
           >
-            <a.icon className="w-5 h-5" />
-            <span>{a.label}</span>
+            <a.icon className="w-5 h-5 shrink-0" />
+            {/* Cramped widths drop the label entirely (icon-only) — never "Com…". */}
+            <span className="hidden min-[420px]:inline whitespace-nowrap">{a.label}</span>
           </button>
         ))}
       </div>

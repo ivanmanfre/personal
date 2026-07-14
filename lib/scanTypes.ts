@@ -42,8 +42,18 @@ export interface ContentSystem {
   //  invisible      — barely on LinkedIn / no owned attention at all
   archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible';
   // The outreach lane's fabrication-gated "3 first wins" (gift note / DM1); when present the
-  // page opens with these instead of the archetype pain template.
-  wins?: { observation: string; build: string }[];
+  // page opens with these instead of the archetype pain template. `pillar` tags each win to
+  // one of the three offer pillars so the report can seat it in the right chapter.
+  wins?: { observation: string; build: string; pillar?: 'content' | 'inbound' | 'outbound' }[];
+  // Per-pillar hero-table cells (2026-07-14 revamp). `found` is one specific observation
+  // from THEIR public presence (plain sentence, real numbers only); `projected` is what
+  // ships weekly. When absent the template derives cells from wins[].pillar, then a
+  // keyword heuristic, then an honest plain-sentence fallback.
+  pillars?: {
+    content?: { found?: string; projected?: string };
+    inbound?: { found?: string; projected?: string };
+    outbound?: { found?: string; projected?: string };
+  };
   // The content engine + lead magnets run off the FOUNDER's personal brand (this offer only
   // routes when the prospect is the owner/founder), so the page speaks to them personally.
   founder?: { name: string; first_name?: string; headline?: string; avatar_url?: string } | null;
@@ -55,8 +65,14 @@ export interface ContentSystem {
   sample_output?: {
     title: string;
     posts?: { format: string; hook: string; body?: string; source_quote?: string; image_url?: string; image_urls?: string[]; image_kind?: 'brand' | 'carousel';
-      // Text-carousel slides (heading + body cards) drafted for a Carousel-format post.
-      slides?: { heading: string; body: string }[] }[];
+      // Text-carousel slides drafted for a Carousel-format post. `role` selects the slide
+      // layout (fallback: first = cover, last = action, rest = point); `kicker` is a small
+      // caps line above the heading; `figure` is a dominant numeral for proof slides.
+      slides?: { heading: string; body: string; role?: 'cover' | 'point' | 'proof' | 'action'; kicker?: string; figure?: string }[];
+      // Designed media card for image posts (2026-07-14 revamp) — copy DISTINCT from the
+      // caption. Rendered as a branded 1200x1500-proportion card in the post media slot;
+      // falls back to image_url, then plain text.
+      image_card?: { kicker?: string; headline: string; figure?: string; sub?: string } }[];
     metrics?: { label: string; value: string; delta?: string | null }[];
     // Then it nurtures: a newsletter drafted from the prospect's own content.
     newsletter?: { subject: string; preview?: string; sections: { h: string; body: string }[]; cta: string };
@@ -68,7 +84,19 @@ export interface ContentSystem {
       // Brand-mirror data — the prospect's own accent/logo/fonts, so the engine-tour
       // mockups (newsletter, follow-ups, outreach) read as THEIR asset, not a template.
       accent_hex?: string;
-      brand?: { accent_hex?: string; logo_url?: string; font_heading?: string; font_body?: string };
+      brand?: {
+        accent_hex?: string;
+        // Secondary accents from the brand profiler (either key may be emitted).
+        accent2?: string;
+        accent_secondary?: string;
+        logo_url?: string;
+        font_heading?: string;
+        font_body?: string;
+        // Surface/ink of the prospect's site so sample artifacts sit on THEIR canvas.
+        surface_hex?: string;
+        ink_hex?: string;
+        is_dark?: boolean;
+      };
       // An in-page, interactive SIMULATION of the lead magnet the system drafted — shown when
       // the LM is a working sample (not a live published page). Seeded with the prospect's own
       // numbers so it reads as their real tool. `kind` selects the model + formula.
