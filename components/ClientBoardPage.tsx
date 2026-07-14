@@ -3667,13 +3667,13 @@ export default function ClientBoardPage() {
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
   // Visual skin. An explicit ?skin= param wins in BOTH directions (so a blackbox-default
   // board can be forced back to editorial for review); else a board.skin / brand.skin
-  // field; else editorial.
+  // field; else blackbox (site default — override per-client with skin:'editorial').
   const skinParam = params.get('skin');
   const skin: 'editorial' | 'blackbox' =
     skinParam === 'blackbox' ? 'blackbox'
     : skinParam === 'editorial' ? 'editorial'
-    : (board as any)?.skin === 'blackbox' || (board?.brand as any)?.skin === 'blackbox' ? 'blackbox'
-    : 'editorial';
+    : (board as any)?.skin === 'editorial' || (board?.brand as any)?.skin === 'editorial' ? 'editorial'
+    : 'blackbox';
   // Blackbox loads Schibsted Grotesk (display/labels/body) + Source Serif 4 italic (clinical
   // asides only). Courier Prime is NOT loaded; it is dispensed-label-artifact only, never UI.
   useEffect(() => {
