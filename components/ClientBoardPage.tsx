@@ -94,6 +94,9 @@ interface QueueItem {
   live_step?: string;
   /** Seeded alternate angles for this slot (the "different idea" bench). */
   alt_angles?: AltAngle[];
+  /** Post style label (text, quote_image, selfie, carousel, newsjack) — drives the
+   *  style chip so the deck shows the range of formats, not one look. */
+  style?: string;
 }
 interface CalendarItem { date: string; kind: string; pillar?: string; label: string; ref?: string }
 interface Pillar { key: string; label: string; count: number; pct: number; blurb?: string }
@@ -133,6 +136,20 @@ interface Board {
   newsletter?: NewsletterSpec;
   performance?: PerformanceSpec;
   engine_updates?: EngineUpdate[];
+  /** Voice engine panel: how the engine learns the founder's voice + register + do/avoid
+   *  markers + real sample posts (pulled from generated bodies, never invented). */
+  voice?: {
+    traits?: string[];
+    register?: string;
+    do?: string[];
+    avoid?: string[];
+    sources?: { label: string; detail: string }[];
+    note?: string;
+    samples?: { style?: string; hook?: string; body?: string }[];
+  };
+  /** Standardized showcase of the post styles the engine ships (text, quote image,
+   *  selfie/lifestyle, carousel, reactive newsjack). Rendered on the Voice surface. */
+  content_styles?: { key: string; label: string; blurb: string; needs_photo?: boolean }[];
   auto_publish_days?: number;
 }
 
@@ -745,7 +762,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || 'drafted from your voice, nothing invented')
+    const provenance = stage === 'review' ? (q.promise || '')
       : q.generating ? 'reactive: drafting began after the news broke'
       : (q.promise || '');
     return (
@@ -1394,7 +1411,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     return { letter: TICK_LETTER[i], done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || 'drafted from your voice, nothing invented') : '';
+  const provenance = focused ? (focused.promise || '') : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -2075,6 +2092,130 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
           {live ? 'On your domain' : entry.date_label || ''}
         </span>
       </div>
+    </div>
+  );
+}
+
+// ---------- Voice surface ----------
+const VOICE_STYLE_LABEL: Record<string, string> = {
+  text: 'Text post', quote_image: 'Quote image', selfie: 'Selfie', carousel: 'Carousel', newsjack: 'Newsjack',
+};
+
+/** The "voice engine" panel: how the engine learns the founder's voice, the register it
+ *  models, the do/avoid guardrails, and REAL sample posts drafted in that voice. Reads
+ *  like the other surfaces (SectionHead + white cards + mono eyebrows, accent as
+ *  punctuation, sharp square markers). Falls back cleanly if a field is absent. */
+function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: string; fontStack: string }) {
+  const v = board.voice || {};
+  const sources = v.sources || [];
+  const dos = v.do || [];
+  const avoid = v.avoid || [];
+  const samples = (v.samples || []).filter((s) => s.body).slice(0, 3);
+  const founder = board.founder?.name || board.company_name;
+  const initials = initialsOf(founder);
+  const styles = board.content_styles || [];
+  const sq = (color: string) => (
+    <span className="mt-[6px] inline-block shrink-0" style={{ width: 6, height: 6, background: color }} aria-hidden />
+  );
+  return (
+    <div>
+      <SectionHead
+        eyebrow="Learned, not guessed"
+        title={<>Your voice, <Accent>modeled.</Accent></>}
+        sub="The engine learns how you actually talk before it writes a word, then holds every draft to it. Here is where it learns from, the register it keeps, and what it will never let the copy do."
+      />
+
+      {/* How we learn it */}
+      <div className="mb-8 rounded-xl bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+        <CardHead>How the engine learns your voice</CardHead>
+        <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+          {sources.map((s, i) => (
+            <div key={i} className="flex gap-3">
+              {sq(accent)}
+              <div>
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.14em', color: INK }}>{s.label}</div>
+                <div className="mt-1" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.55, color: INK_SOFT }}>{s.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {v.note && (
+          <p className="mt-5 pt-4" style={{ borderTop: `1px solid ${LINE}`, fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, color: INK_MUTE }}>{v.note}</p>
+        )}
+      </div>
+
+      {/* Register — pulled statement */}
+      {v.register && (
+        <div className="mb-8 rounded-xl bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}`, borderLeft: `3px solid ${accent}` }}>
+          <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>The register</div>
+          <p style={{ fontFamily: SERIF, fontSize: 'clamp(19px, 2.2vw, 25px)', lineHeight: 1.32, letterSpacing: '-0.01em', color: INK }}>{v.register}</p>
+        </div>
+      )}
+
+      {/* Keeps / Never */}
+      {(dos.length > 0 || avoid.length > 0) && (
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl bg-white p-5" style={{ border: `1px solid ${LINE}` }}>
+            <div className="mb-3 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK }}>What it keeps</div>
+            <ul className="flex flex-col gap-2.5">
+              {dos.map((d, i) => (
+                <li key={i} className="flex gap-2.5">{sq(accent)}<span style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.5, color: INK_SOFT }}>{d}</span></li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-xl bg-white p-5" style={{ border: `1px solid ${LINE}` }}>
+            <div className="mb-3 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>What it never does</div>
+            <ul className="flex flex-col gap-2.5">
+              {avoid.map((a, i) => (
+                <li key={i} className="flex gap-2.5">{sq('rgba(26,26,26,0.25)')}<span style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.5, color: INK_MUTE }}>{a}</span></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Sample posts in the modeled voice */}
+      {samples.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-1 flex items-baseline gap-2.5"><CardHead>The voice, in a post</CardHead></div>
+          <div className="mt-3 grid gap-4 lg:grid-cols-3">
+            {samples.map((s, i) => (
+              <div key={i} className="flex flex-col rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                <div className="mb-2.5 flex items-center gap-2.5">
+                  <span className="flex shrink-0 items-center justify-center" style={{ width: 30, height: 30, background: accent, color: '#fff', fontFamily: fontStack, fontWeight: 700, fontSize: 12 }} aria-hidden>{initials}</span>
+                  <div className="leading-tight">
+                    <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: INK }}>{founder}</div>
+                    <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: FAINT }}>{VOICE_STYLE_LABEL[s.style || 'text'] || 'Post'}</div>
+                  </div>
+                </div>
+                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT, whiteSpace: 'pre-line' }}>{(s.body || '').slice(0, 320)}{(s.body || '').length > 320 ? '…' : ''}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* The formats the engine ships (standardized showcase) */}
+      {styles.length > 0 && (
+        <div className="rounded-xl bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+          <div className="mb-1"><CardHead>The formats your feed runs on</CardHead></div>
+          <p className="mb-4 max-w-[62ch] text-[13px]" style={{ color: DIM }}>The same voice, shipped in the mix that performs: written takes, branded quote images, your real photos, carousels, and same-day reactions.</p>
+          <div className="grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
+            {styles.map((st) => (
+              <div key={st.key} className="flex gap-3">
+                {sq(accent)}
+                <div>
+                  <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>
+                    {st.label}
+                    {st.needs_photo && <span className="ml-2 uppercase" style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '0.1em', color: FAINT }}>from your photo pool</span>}
+                  </div>
+                  <div className="mt-0.5" style={{ fontFamily: BODY, fontSize: 12.5, lineHeight: 1.5, color: INK_SOFT }}>{st.blurb}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3007,6 +3148,7 @@ const TABS = [
   { id: 'calendar', label: 'Calendar', group: 'Content' },
   { id: 'lm', label: 'Lead magnets', group: 'Content' },
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
+  { id: 'voice', label: 'Voice', group: 'Content' },
   { id: 'leads', label: 'Leads', group: 'Reports' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
@@ -3041,6 +3183,7 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
       <path d="m3.5 7 8.5 6 8.5-6" />
     </>
   ),
+  voice: <path d="M4 10v4M8 7.5v9M12 4v16M16 7.5v9M20 10v4" />,
   leads: <path d="M3.5 5.5h17l-6.5 7.7v5.6l-4 2v-7.6z" />,
   performance: <path d="M18 20V10M12 20V4M6 20v-6" />,
   strategy: (
@@ -3597,6 +3740,7 @@ export default function ClientBoardPage() {
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
+    voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
@@ -3668,14 +3812,15 @@ export default function ClientBoardPage() {
         </nav>
         <div className="mt-auto flex flex-col gap-4 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
           <div>
-            <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>This week's story</div>
+            <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>Drop an idea</div>
             <button
               onClick={() => goTab('week')}
               className="w-full rounded-md py-2.5 uppercase transition-colors duration-150 hover:opacity-90"
               style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none' }}
             >
-              ◉ record 90 sec
+              ◉ record a voice note
             </button>
+            <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
             <PulseDot color={accent} size={7} /> engine running

@@ -19,10 +19,21 @@ export const offerLadder: OfferLadderRung[] = [
     priceLabel: '$2K/mo',
     priceTier: 'high',
     status: 'live',
-    description: 'Managed LinkedIn content engine in the client voice: ~26 posts + ~12 lead magnets + weekly newsletter/mo. Tokens and tools included. The only cold front-door offer.',
+    description: "Managed LinkedIn content engine in the client voice: ~26 posts + ~12 lead magnets + weekly newsletter/mo, plus warm outreach to the client's own audience run end to end to a booked call (we draft, send, handle the back-and-forth, and book; off-script asks escalate). Tokens and tools included. The only public front-door offer.",
     stripeUrl: null,
     resourceUrl: 'https://inboundonsteroids.com',
     visibility: 'public',
+  },
+  {
+    id: 'inbound-outbound-3k',
+    name: 'Inbound + Outbound Engine (in-call upsell)',
+    priceLabel: '$3K/mo',
+    priceTier: 'high',
+    status: 'internal',
+    description: "Everything in the $2k engine, plus the differentiator: cold acquisition of net-new prospects (connections + DMs + InMail on the client's own Sales Nav seat), each touch carrying a personalized resource, run end to end to a call booked on their calendar. Adds shared Slack + weekly digest + monthly review. Locked 2026-07-13 (both prices reconfirmed by advisor); warm full-handling moved into the $2k base 2026-07-14, so COLD is the only $2k-to-$3k differentiator. PRIVATE in-call upsell only, never website or social, until the 2026-09-14 lock review. Cold is additive call volume, never a guaranteed quota.",
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'private',
   },
 ];
 
@@ -339,6 +350,11 @@ export const positioningObjections: Objection[] = [
   {
     objection: 'Does content actually produce pipeline?',
     answer: 'The lead-magnet capture turns reach into named leads and booked calls. Reach on its own is applause.',
+  },
+  {
+    objection: 'How many calls will I actually get?',
+    answer: 'Inbound compounds, so I hold to calls not deals: a few in month one building to roughly 8-12/mo by month three, and I will not fix a number on it because it rides on your audience. The $3k outbound tier is the one I put hard numbers on. A Sales Nav seat is 50 InMails plus ~400 safe connection requests a month, which lands ~4-8 booked calls/mo from month one on top of the inbound ramp. Batch one calibrates the real reply rate for your niche.',
+    isNew: true,
   },
 ];
 

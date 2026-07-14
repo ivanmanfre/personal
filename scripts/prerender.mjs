@@ -185,6 +185,17 @@ if (SCAN_MIRROR) {
   console.log(`[prerender] SCAN_MIRROR: ${ROUTES.length} scan routes only`);
 }
 
+// CLIENT_MIRROR=1: the build (VITE_BASE=/client/) is destined for the
+// inboundonsteroids-site repo's client/ dir, served at inboundonsteroids.com/client/.
+// Only /client routes render, and the on-disk path strips the leading /client so dist/
+// copies 1:1 into that repo's client/ directory (dist/<slug>/ -> /client/<slug>/).
+// Parallels SCAN_MIRROR exactly; additive.
+const CLIENT_MIRROR = process.env.CLIENT_MIRROR === '1';
+if (CLIENT_MIRROR) {
+  ROUTES.splice(0, ROUTES.length, ...ROUTES.filter((r) => r.startsWith('/client/')));
+  console.log(`[prerender] CLIENT_MIRROR: ${ROUTES.length} client routes only`);
+}
+
 const PORT = 4178;
 const BASE = `http://${HOST}:${PORT}`;
 
@@ -321,6 +332,8 @@ process.on('SIGTERM', () => shutdown(143));
       // dist/<path>/index.html and the token stays out of the directory name.
       const outPath = SCAN_MIRROR
         ? (route.split('?')[0].replace(/^\/scan/, '') || '/')
+        : CLIENT_MIRROR
+        ? (route.split('?')[0].replace(/^\/client/, '') || '/')
         : route.split('?')[0];
       const outDir = join(DIST, outPath.replace(/^\//, ''));
       mkdirSync(outDir, { recursive: true });

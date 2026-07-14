@@ -103,3 +103,48 @@ jobs:
           if git diff --cached --quiet; then echo "scan mirror unchanged"; exit 0; fi
           git -c user.name="scan-mirror-bot" -c user.email="noreply@ivanmanfredi.com" commit -m "scan mirror: sync from personal-site $GITHUB_SHA"
           git push origin main
+
+  # Client mirror: token-gated demo boards are a product surface too, served at
+  # inboundonsteroids.com/client/ (real files in the inboundonsteroids-site repo —
+  # no redirects). Same source, second build with base=/client/, client routes
+  # prerendered only, pushed cross-repo. Parallels scan-mirror exactly; additive.
+  client-mirror:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: client-mirror
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install chromium --with-deps
+
+      - run: npm run build && CLIENT_MIRROR=1 node scripts/prerender.mjs
+        env:
+          VITE_BASE: /client/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DASHBOARD_HASH: ${{ secrets.VITE_DASHBOARD_HASH }}
+          VITE_CLAUDE_CODE_URL: ${{ secrets.VITE_CLAUDE_CODE_URL }}
+          # client_boards is RLS deny-all; prerender enumerates finished preview boards
+          # via the board-generator service (bearer BOARD_GEN_TOKEN) to bake per-board OG.
+          BOARD_GEN_URL: ${{ secrets.BOARD_GEN_URL }}
+          BOARD_GEN_TOKEN: ${{ secrets.BOARD_GEN_TOKEN }}
+
+      - name: Push client mirror to inboundonsteroids-site
+        env:
+          MIRROR_PUSH_TOKEN: ${{ secrets.MIRROR_PUSH_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${MIRROR_PUSH_TOKEN}@github.com/ivanmanfre/inboundonsteroids-site.git" /tmp/product-site-client
+          rsync -a --delete --exclude CNAME dist/ /tmp/product-site-client/client/
+          cd /tmp/product-site-client
+          git add client/
+          if git diff --cached --quiet; then echo "client mirror unchanged"; exit 0; fi
+          git -c user.name="client-mirror-bot" -c user.email="noreply@ivanmanfredi.com" commit -m "client mirror: sync from personal-site $GITHUB_SHA"
+          git push origin main

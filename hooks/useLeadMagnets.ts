@@ -90,6 +90,8 @@ export function useLeadMagnets() {
       const { data, error } = await supabase
         .from('lm_drafts_v2')
         .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
+        // hypertarget prospect-demo LMs are traceability rows, not Ivan's ideas, so keep them off the board
+        .or('source.is.null,source.neq.hypertarget_demo')
         .order('updated_at', { ascending: false });
       if (error) throw error;
       const mapped = (data || []).map(mapDraft);

@@ -1,5 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+// Canonical LM verticals — source of truth is outreach_campaigns.vertical_slug.
+const LM_VERTICALS: { slug: string; label: string }[] = [
+  { slug: '', label: 'Broad / reach (no vertical)' },
+  { slug: 'creative-agencies', label: 'Creative & brand agencies' },
+  { slug: 'paid-media-agencies', label: 'Paid-media / performance agencies' },
+  { slug: 'accounting-firms', label: 'Accounting & tax firms' },
+  { slug: 'consultancies', label: 'Consultancies & strategy' },
+  { slug: 'coaches-advisors', label: 'Coaches & advisors' },
+  { slug: 'research-insights', label: 'Research & insights' },
+];
+
 const FEED_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-feed';
 const DECIDE_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/lm-curator-decide';
 const ANGLES_URL = 'https://bjbvqvzbzczjbatgmccb.supabase.co/functions/v1/idea-angles';
@@ -113,6 +124,7 @@ export default function LmIdeasPanel({ contentType, focusCandidateId }: { conten
   const [activeIdx, setActiveIdx] = useState(0);
   const [reasonInput, setReasonInput] = useState<Record<string, string>>({});
   const [editTopic, setEditTopic] = useState<Record<string, string>>({});
+  const [verticalInput, setVerticalInput] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [angleBusy, setAngleBusy] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
@@ -176,6 +188,7 @@ export default function LmIdeasPanel({ contentType, focusCandidateId }: { conten
       const body: any = { candidate_id: c.id, decision };
       const r = reasonInput[c.id]; if (r) body.reason = r;
       const e = editTopic[c.id]; if (e && e !== c.raw_topic) body.edited_topic = e;
+      const vs = verticalInput[c.id]; if (vs) body.vertical_slug = vs;
       const res = await fetch(DECIDE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ANON_KEY },
@@ -213,7 +226,7 @@ export default function LmIdeasPanel({ contentType, focusCandidateId }: { conten
     } finally {
       setBusyId(null);
     }
-  }, [busyId, reasonInput, editTopic, reload]);
+  }, [busyId, reasonInput, editTopic, verticalInput, reload]);
 
   // Call the on-demand angle generator. No `custom` → generates 3 angles + PATCHes
   // angle_options, then reload so they render. With `custom` → the edge fn sets
@@ -440,6 +453,17 @@ export default function LmIdeasPanel({ contentType, focusCandidateId }: { conten
                 )}
 
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    value={verticalInput[c.id] ?? ''}
+                    onChange={e => setVerticalInput(m => ({ ...m, [c.id]: e.target.value }))}
+                    onClick={e => e.stopPropagation()}
+                    title="Target vertical for this lead magnet"
+                    style={{ fontSize: 12, padding: '6px 10px', background: 'rgba(0,0,0,0.3)', color: 'inherit', border: '1px solid #444', borderRadius: 6 }}
+                  >
+                    {LM_VERTICALS.map(v => (
+                      <option key={v.slug} value={v.slug}>{v.label}</option>
+                    ))}
+                  </select>
                   <button disabled={busyId === c.id} onClick={(e) => { e.stopPropagation(); decide(c, 'approve'); }}
                     style={{ padding: '6px 12px', border: '1px solid #2A8F65', background: '#2A8F65', color: '#fff', borderRadius: 6, fontWeight: 600, cursor: 'pointer', fontSize: 12 }}>
                     {busyId === c.id ? '…' : '✓ Approve'}
