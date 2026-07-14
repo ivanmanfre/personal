@@ -151,39 +151,46 @@ interface Board {
    *  selfie/lifestyle, carousel, reactive newsjack). Rendered on the Voice surface. */
   content_styles?: { key: string; label: string; blurb: string; needs_photo?: boolean }[];
   auto_publish_days?: number;
+  /** Visual skin. 'editorial' (default) = the warm-paper editorial look, unchanged.
+   *  'blackbox' = the InboundOnSteroids product look. Also togglable via ?skin=blackbox. */
+  skin?: 'editorial' | 'blackbox';
 }
 
 // ---------- small utils ----------
 // V9 "Margin Rail" editorial token system: warm-paper neutrals, ink ramp, hairline
 // rules, DM Serif / Source Serif / IBM Plex Mono. The accent is punctuation only —
 // it is NEVER a panel background or body text (see the derivation helpers below).
-const INK = '#1A1A1A';        // text, primary button
-const INK_SOFT = '#4A4A48';   // body copy
-const INK_MUTE = '#5A5752';   // labels, meta, eyebrows
+/** CSS-var indirection: every token reads a `--cb-*` var with the editorial literal as
+ *  fallback. Editorial sets NONE of these vars (falls back to the literal, byte-for-byte
+ *  unchanged); the blackbox skin spreads a var map on the root div so every inline usage
+ *  site re-skins automatically without renaming consts or touching usage sites. */
+const INK = 'var(--cb-ink, #1A1A1A)';        // text, primary button
+const INK_SOFT = 'var(--cb-ink-soft, #4A4A48)';   // body copy
+const INK_MUTE = 'var(--cb-ink-mute, #5A5752)';   // labels, meta, eyebrows
 /** Back-compat aliases: the whole file styles with DIM (body) / FAINT (meta). Pointing
  *  them at the paper ink ramp moves every existing usage onto the editorial neutrals. */
 const DIM = INK_SOFT;
 const FAINT = INK_MUTE;
-const PAPER = '#F7F4EF';       // app background
-const PAPER_SUNK = '#EFEBE3';  // side cards, teasers
-const PAPER_RAISE = '#FFFFFF'; // raised cards, previews
-const DESK_BG = '#EDEAE3';     // desk behind the whole board
+const PAPER = 'var(--cb-paper, #F7F4EF)';       // app background
+const PAPER_SUNK = 'var(--cb-paper-sunk, #EFEBE3)';  // side cards, teasers
+const PAPER_RAISE = 'var(--cb-paper-raise, #FFFFFF)'; // raised cards, previews
+const DESK_BG = 'var(--cb-desk, #EDEAE3)';     // desk behind the whole board
 /** Hairlines, not boxes: 26,26,26 alpha so rules composite on paper or white. */
-const LINE = 'rgba(26,26,26,0.15)';
-const LINE_BOLD = 'rgba(26,26,26,0.25)'; // table heads / section rules
-const DIVIDE = 'rgba(26,26,26,0.12)';    // soft divider inside grouped containers
+const LINE = 'var(--cb-line, rgba(26,26,26,0.15))';
+const LINE_BOLD = 'var(--cb-line-bold, rgba(26,26,26,0.25))'; // table heads / section rules
+const DIVIDE = 'var(--cb-divide, rgba(26,26,26,0.12))';    // soft divider inside grouped containers
 /** Back-compat: the shell frame is now paper, not a tinted SaaS canvas. */
 const FRAME_BG = PAPER;
-/** One shadow, reserved for raised paper. Hero cards get a touch more. */
-const CARD_SHADOW = '0 10px 30px rgba(26,26,26,0.10)';
-const HERO_SHADOW = '0 14px 40px rgba(26,26,26,0.12)';
+/** One shadow, reserved for raised paper. Hero cards get a touch more. Blackbox → none. */
+const CARD_SHADOW = 'var(--cb-card-shadow, 0 10px 30px rgba(26,26,26,0.10))';
+const HERO_SHADOW = 'var(--cb-hero-shadow, 0 14px 40px rgba(26,26,26,0.12))';
 /** Single easing token — every quiet transition on the board uses it. */
 const EASE = [0.25, 1, 0.5, 1] as const;
 /** Interactive-card affordance: paper-shadow lift on hover, no color shift. */
 const LIFT = `transition-[box-shadow,transform] duration-150 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-px hover:shadow-[0_10px_30px_rgba(26,26,26,0.10)]`;
-const SERIF = '"DM Serif Display", Georgia, serif';   // display headlines + large numerals
-const BODY = '"Source Serif 4", Georgia, serif';       // body copy, row titles
-const MONO = '"IBM Plex Mono", ui-monospace, SFMono-Regular, monospace'; // data, eyebrows, nav
+const SERIF = 'var(--cb-serif, "DM Serif Display", Georgia, serif)';   // display headlines + large numerals
+const BODY = 'var(--cb-body, "Source Serif 4", Georgia, serif)';       // body copy, row titles
+const MONO = 'var(--cb-mono, "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace)'; // data, eyebrows, nav
 const UISANS = '"Instrument Sans", system-ui, sans-serif';               // LinkedIn preview interior only
 
 /** The accent is a variable; every use is a derivation. These are the ONLY legal forms. */
@@ -432,7 +439,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
   const titlePx = size === 'lg' ? 24 : 18;
   const showCover = cover !== 'none' && (item.kind === 'post' || item.kind === 'carousel' || cover === 'render');
   return (
-    <div style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
+    <div className="cb-linkedin-preview" style={{ fontFamily: UISANS, border: `1px solid ${LINE}`, borderRadius: 10, padding: size === 'lg' ? '18px 20px' : '15px 17px', background: PAPER_RAISE }}>
       <div className="flex gap-2.5" style={{ marginBottom: 12 }}>
         <span className="flex shrink-0 items-center justify-center rounded-full" style={{ width: av, height: av, background: accent, color: inkOn(accent), fontFamily: fontStack, fontWeight: 700, fontSize: size === 'lg' ? 17 : 14 }} aria-hidden>
           {initialsOf(name)}
@@ -454,7 +461,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.14em', color: INK_MUTE }}>cover rendering…</span>
         </div>
       ) : showCover ? (
-        <div className="flex flex-col justify-end" style={{ background: accent, borderRadius: 6, aspectRatio: '1200/500', padding: size === 'lg' ? '20px 22px' : '15px 17px' }}>
+        <div className="cb-cover-plate flex flex-col justify-end" style={{ background: accent, borderRadius: 6, aspectRatio: '1200/500', padding: size === 'lg' ? '20px 22px' : '15px 17px' }}>
           <div style={{ fontFamily: fontStack, fontWeight: 700, fontSize: titlePx, lineHeight: 1.13, color: '#fff', maxWidth: '20ch' }}>{item.title || item.hook}</div>
           <div style={{ fontFamily: fontStack, fontWeight: 500, fontSize: size === 'lg' ? 12 : 10.5, color: 'rgba(255,255,255,.75)', marginTop: 9 }}>{wordmark}. / field notes</div>
         </div>
@@ -977,7 +984,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           </div>
           <div className="flex flex-col">
             {feedItems.map((q) => (
-              <div key={q.id} className="mx-auto w-full max-w-[552px]">
+              <div key={q.id} className="cb-linkedin-preview mx-auto w-full max-w-[552px]">
                 <div className="mb-1.5 mt-4 px-1 text-[11px] font-semibold uppercase tracking-[0.08em] tabular-nums first:mt-0" style={{ color: FAINT }}>
                   {fmtDay(q.publish_date)}
                 </div>
@@ -1444,7 +1451,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {doneState || total === 0 ? (
             <div className="mb-2">
               <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Week of {fmtDay(days[0])} · {total} of {total}</div>
-              <div style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
+              <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
                 You're set <Accent>for the week.</Accent>
               </div>
             </div>
@@ -1454,7 +1461,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
                   Week of {fmtDay(days[0])} · piece {Math.min(done + 1, total)} of {total} · {total - done} to go
                 </div>
-                <div style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK, whiteSpace: 'nowrap' }}>
+                <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK, whiteSpace: 'nowrap' }}>
                   {weekdayName(focused?.publish_date)}<span style={{ fontStyle: 'italic', color: accent }}>.</span>
                 </div>
               </div>
@@ -1499,7 +1506,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                 </p>
               )}
               {/* The card deck: front card over two rotated ghosts; flings on approve. */}
-              <div className="relative">
+              <div className="relative cb-hero-deck">
                 <div className="pointer-events-none absolute" style={{ inset: '10px -8px -10px 8px', background: PAPER_RAISE, border: `1px solid ${DIVIDE}`, borderRadius: 14, transform: 'rotate(.8deg)' }} aria-hidden />
                 <div className="pointer-events-none absolute" style={{ inset: '5px -4px -5px 4px', background: PAPER_RAISE, border: `1px solid ${caBorder('#1a1a1a', 14)}`, borderRadius: 14, transform: 'rotate(-.5deg)' }} aria-hidden />
                 {/* swipe hint layers (mobile) */}
@@ -1515,7 +1522,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                       initial={reduce ? false : { opacity: 0, x: 28, rotate: 1, scale: 0.98 }}
                       animate={{ opacity: 1, x: 0, rotate: 0, scale: 1, transition: { duration: 0.45, ease: [0.2, 0.8, 0.3, 1] } }}
                       exit={reduce ? { opacity: 0 } : { opacity: 0, x: '130%', rotate: 9, transition: { duration: 0.36, ease: [0.5, 0, 0.9, 0.4] } }}
-                      className="relative"
+                      className="relative cb-hero-card"
                       style={{ background: PAPER_RAISE, border: `1px solid ${caBorder('#1a1a1a', 18)}`, borderRadius: 14, padding: '22px 26px', boxShadow: HERO_SHADOW, touchAction: coarseWeek ? 'pan-y' : undefined }}
                     >
                       <div className="mb-3.5 flex items-baseline justify-between gap-3">
@@ -1775,7 +1782,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                 </div>
               </div>
             ) : (
-              <div>
+              <div className="cb-linkedin-preview">
                 {item.body ? (
                   <LinkedInPostPreview
                     text={body || item.body || ''}
@@ -2529,13 +2536,13 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
       {/* Operator note: why this mix, signed. */}
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3 flex items-center gap-2.5">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>IM</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>ON</span>
           <CardHead>Why this mix, from your operator</CardHead>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
           {board.company_name}'s first month is weighted toward demand. Your buyers move when they see what the problem is costing them, so the feed leads with that. Authority ramps as the audience warms, and proof takes a bigger share of the mix as client results come in. We review the weights together every month.
         </p>
-        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>Ivan Manfredi · Operator</p>
+        <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids · Operator</p>
       </div>
 
       {/* Your plan: the money card. Deliverables derived from THIS board's own calendar,
@@ -3520,6 +3527,36 @@ export default function ClientBoardPage() {
 
   const accent = cleanHex(board?.brand?.accent_hex);
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
+  // Visual skin. ?skin=blackbox wins; else a board.skin / brand.skin field; else editorial.
+  const skin: 'editorial' | 'blackbox' =
+    params.get('skin') === 'blackbox' ? 'blackbox'
+    : (board as any)?.skin === 'blackbox' || (board?.brand as any)?.skin === 'blackbox' ? 'blackbox'
+    : 'editorial';
+  // Blackbox loads Schibsted Grotesk (display/labels/body) + Source Serif 4 italic (clinical
+  // asides only). Courier Prime is NOT loaded; it is dispensed-label-artifact only, never UI.
+  useEffect(() => {
+    if (skin !== 'blackbox') return;
+    const id = 'client-board-blackbox-font';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800;900&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap';
+    document.head.appendChild(link);
+  }, [skin]);
+  // The blackbox var map: paper white, ink black, grotesk everywhere, no shadows. Editorial
+  // sets NONE of these (falls back to the literals in the token block), so it is untouched.
+  const SKIN_VARS: Record<string, string> = skin === 'blackbox' ? {
+    '--cb-ink': '#131210', '--cb-paper': '#FFFFFF', '--cb-paper-raise': '#FFFFFF',
+    '--cb-paper-sunk': '#F5F3EF', '--cb-desk': '#FFFFFF',
+    '--cb-ink-soft': '#3A3833', '--cb-ink-mute': '#6B675E',
+    '--cb-line': 'rgba(19,18,16,0.16)', '--cb-line-bold': 'rgba(19,18,16,0.28)', '--cb-divide': 'rgba(19,18,16,0.09)',
+    '--cb-serif': '"Schibsted Grotesk", system-ui, sans-serif',
+    '--cb-body': '"Schibsted Grotesk", system-ui, sans-serif',
+    '--cb-mono': '"Schibsted Grotesk", system-ui, sans-serif',
+    '--cb-clinical': '"Source Serif 4", Georgia, serif',
+    '--cb-card-shadow': 'none', '--cb-hero-shadow': 'none', '--cb-lift': 'none',
+  } : {};
   // Integrity rule: a still-generating card is never approvable — it renders in Drafted
   // regardless of its stored stage, and never counts toward the review badge. An item
   // whose angle was swapped goes back to Drafted too: picking a different idea queues a
@@ -3764,8 +3801,45 @@ export default function ClientBoardPage() {
 .cb-pulse { animation: cb-pulse 1.6s ease-in-out infinite; }
 @keyframes cb-rowgrow { 0% { opacity:0; transform:translateY(-10px) scaleY(.92) } 100% { opacity:1; transform:translateY(0) scaleY(1) } }
 @media (prefers-reduced-motion: reduce) { .cb-pulse { animation: none !important } }
+
+/* ============ BLACK BOX skin composition overrides (scoped) ============ */
+/* Tailwind rounded and shadow utilities plus inline radii are compiled, so CSS vars
+   cannot neutralize them. These scoped rules enforce Black Box structure without editing
+   hundreds of class strings: sharp corners everywhere, planes not cards, no shadows. */
+[data-skin="blackbox"] * { border-radius: 0 !important; }
+[data-skin="blackbox"] [class*="shadow"] { box-shadow: none !important; }
+/* Black Box labels + eyebrows: uppercase 700 grotesk. */
+[data-skin="blackbox"] .uppercase { font-weight: 700 !important; }
+/* Display headings: Schibsted Grotesk 800, tight tracking. */
+[data-skin="blackbox"] h1, [data-skin="blackbox"] h2, [data-skin="blackbox"] h3,
+[data-skin="blackbox"] .cb-display { font-weight: 800 !important; letter-spacing: -0.035em; }
+/* Platform-artifact exception: the LinkedIn post preview keeps its own look: round
+   author avatar, rounded reaction badges, platform card corner. Everything ELSE squares. */
+[data-skin="blackbox"] .cb-linkedin-preview { border-radius: 10px !important; }
+[data-skin="blackbox"] .cb-linkedin-preview .rounded-full { border-radius: 9999px !important; }
+[data-skin="blackbox"] .cb-linkedin-preview [class*="shadow"] { box-shadow: 0 1px 2px rgba(19,18,16,0.06) !important; }
+/* THE BOX: the single This Week hero card is the house component: heavy printed rule,
+   hairline offset outside it, one subtle human tilt. Printed, never floating. */
+[data-skin="blackbox"] .cb-hero-deck { transform: rotate(-0.35deg); }
+[data-skin="blackbox"] .cb-hero-card {
+  border: 4px solid var(--cb-ink) !important;
+  outline: 1px solid var(--cb-ink);
+  outline-offset: 3px;
+  box-shadow: none !important;
+}
+/* Statement plate: the post "image"/quote cover renders paper-on-ink with one accent
+   rule, never a flat accent fill plane (which would break the once-per-composition law). */
+[data-skin="blackbox"] .cb-cover-plate {
+  background: var(--cb-ink) !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+[data-skin="blackbox"] .cb-cover-plate::before {
+  content: ""; position: absolute; top: 18px; left: 20px;
+  width: 44px; height: 4px; background: var(--cb-accent);
+}
 `}</style>
-    <div className="min-h-screen" style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint }}>
+    <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
       {/* The margin rail — 216px, hairline right border, never a gray panel. Wordmark in
           the client heading font + accent period; "This week" the one serif nav item, the
           rest mono caps; record button the rail's only ink-filled element. */}
@@ -3835,7 +3909,7 @@ export default function ClientBoardPage() {
             <span className="mt-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: accent, color: inkOn(accent) }} aria-hidden>{initialsOf(founderName)}</span>
             <span className="mt-2.5 min-w-0">
               <span className="block truncate text-[12.5px] font-semibold" style={{ color: INK }}>{founderName}</span>
-              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>Run by Ivan Manfredi</span>
+              <span className="block truncate text-[10.5px]" style={{ fontFamily: MONO, color: INK_MUTE }}>Run by InboundOnSteroids</span>
             </span>
           </div>
         </div>
@@ -3866,8 +3940,8 @@ export default function ClientBoardPage() {
             {isPreview ? 'Preview · built ahead' : 'Live'}
           </span>
           <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>IM</span>
-            OPERATOR · IVAN MANFREDI
+            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
+            OPERATED BY INBOUNDONSTEROIDS
           </span>
         </div>
 
