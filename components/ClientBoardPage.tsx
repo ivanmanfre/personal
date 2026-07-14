@@ -762,7 +762,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
     const isOpen = openRow === q.id;
     const mark = stageMark(q, stage, autoDays);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
-    const provenance = stage === 'review' ? (q.promise || 'drafted from your voice, nothing invented')
+    const provenance = stage === 'review' ? (q.promise || '')
       : q.generating ? 'reactive: drafting began after the news broke'
       : (q.promise || '');
     return (
@@ -1411,7 +1411,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
     return { letter: TICK_LETTER[i], done: handledDay, current: isCurrent };
   });
   const swapChip = focused && angleSwaps[focused.id];
-  const provenance = focused ? (focused.promise || 'drafted from your voice, nothing invented') : '';
+  const provenance = focused ? (focused.promise || '') : '';
   const curPanel = focused && angle?.id === focused.id ? angle : null;
 
   const rightRail = (
@@ -2177,8 +2177,7 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
       {/* Sample posts in the modeled voice */}
       {samples.length > 0 && (
         <div className="mb-8">
-          <div className="mb-1 flex items-baseline gap-2.5"><CardHead>The voice, in a post</CardHead>
-            <span className="text-[12px]" style={{ color: FAINT }}>drafted from your voice, nothing invented</span></div>
+          <div className="mb-1 flex items-baseline gap-2.5"><CardHead>The voice, in a post</CardHead></div>
           <div className="mt-3 grid gap-4 lg:grid-cols-3">
             {samples.map((s, i) => (
               <div key={i} className="flex flex-col rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
@@ -3813,14 +3812,15 @@ export default function ClientBoardPage() {
         </nav>
         <div className="mt-auto flex flex-col gap-4 px-6 pb-6 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
           <div>
-            <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>This week's story</div>
+            <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>Drop an idea</div>
             <button
               onClick={() => goTab('week')}
               className="w-full rounded-md py-2.5 uppercase transition-colors duration-150 hover:opacity-90"
               style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none' }}
             >
-              ◉ record 90 sec
+              ◉ record a voice note
             </button>
+            <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
             <PulseDot color={accent} size={7} /> engine running
