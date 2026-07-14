@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2, AlertTriangle } from 'lucide-react';
+import { Zap, Eye, FileText, Heart, MessageCircle, Repeat2, AlertTriangle, Users } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   BarChart, Bar, Cell, LabelList,
@@ -18,10 +18,12 @@ import { PanelIntro } from '../dashboard-v2/primitives';
 import { normalizePillar } from '../../lib/pillarTaxonomy';
 import { minSampleRanking, dedupeTicks } from '../../lib/perfRankings';
 import { seedIdeaFromPost } from '../../lib/runItBack';
+import { isPostScraped } from '../../lib/scrapeStatus';
 import type { OwnPost } from '../../types/dashboard';
 
 type Metric = 'impressions' | 'likes' | 'comments';
 type Range = '7d' | '30d' | '90d';
+type Segment = 'reach' | 'capture';
 
 const CHART = {
   primary: '#047857',   // --ds-ok    (own posts / main series)
@@ -49,6 +51,7 @@ const tooltipStyle = {
 const PerformancePanel: React.FC = () => {
   const [metric, setMetric] = useState<Metric>('impressions');
   const [range, setRange] = useState<Range>('30d');
+  const [segment, setSegment] = useState<Segment>('reach');
   const days = range === '7d' ? 7 : range === '30d' ? 30 : 90;
   const { userTimezone } = useDashboard();
 
@@ -61,17 +64,51 @@ const PerformancePanel: React.FC = () => {
   const loading = postsLoading || compLoading;
   const error = postsError || compError;
 
-  const chartData = useMemo(() => [...posts].reverse().map((p) => ({
+  // Two jobs, scored differently: reach posts by impressions, capture posts by named leads.
+  // They are never cross-ranked — each segment computes off its own slice.
+  const reachPosts = useMemo(() => posts.filter((p) => p.post_kind === 'reach'), [posts]);
+  const capturePosts = useMemo(() => posts.filter((p) => p.post_kind === 'capture'), [posts]);
+
+  // Reach KPIs — scoped to reach only (mirrors useOwnPosts stats logic on the filtered slice).
+  const reachStats = useMemo(() => {
+    const scraped = reachPosts.filter(isPostScraped);
+    const scrapedImpr = scraped.reduce((s, p) => s + p.impressions, 0);
+    const scrapedEng = scraped.reduce((s, p) => s + p.likes + p.comments + p.shares, 0);
+    return {
+      count: reachPosts.length,
+      totalLikes: reachPosts.reduce((s, p) => s + p.likes, 0),
+      avgImpressions: scraped.length ? Math.round(scrapedImpr / scraped.length) : 0,
+      engagementRate: scrapedImpr > 0 ? (scrapedEng / scrapedImpr * 100).toFixed(2) : '0',
+    };
+  }, [reachPosts]);
+
+  // Capture leaderboard — sorted DESC by named_leads, nulls last (never by impressions).
+  const captureLeaderboard = useMemo(() =>
+    [...capturePosts].sort((a, b) => (b.named_leads ?? -1) - (a.named_leads ?? -1)),
+  [capturePosts]);
+
+  const captureStats = useMemo(() => {
+    const totalNamedLeads = capturePosts.reduce((s, p) => s + (p.named_leads ?? 0), 0);
+    let bestMagnet: { slug: string; leads: number } | null = null;
+    for (const p of capturePosts) {
+      if (p.named_leads != null && (!bestMagnet || p.named_leads > bestMagnet.leads)) {
+        bestMagnet = { slug: p.lead_magnet_slug ?? '—', leads: p.named_leads };
+      }
+    }
+    return { totalNamedLeads, count: capturePosts.length, bestMagnet };
+  }, [capturePosts]);
+
+  const chartData = useMemo(() => [...reachPosts].reverse().map((p) => ({
     date: formatDate(p.postedAt, { month: 'short', day: 'numeric' }, userTimezone),
     impressions: p.impressions,
     likes: p.likes,
     comments: p.comments,
     shares: p.shares,
-  })), [posts, userTimezone]);
+  })), [reachPosts, userTimezone]);
 
   const typeData = useMemo(() => {
     const typeMap: Record<string, { count: number; impressions: number; likes: number }> = {};
-    posts.forEach((p) => {
+    reachPosts.forEach((p) => {
       const t = p.postType || 'unknown';
       if (!typeMap[t]) typeMap[t] = { count: 0, impressions: 0, likes: 0 };
       typeMap[t].count++;
@@ -81,15 +118,15 @@ const PerformancePanel: React.FC = () => {
     return Object.entries(typeMap).map(([name, d]) => ({
       name, count: d.count, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0,
     }));
-  }, [posts]);
+  }, [reachPosts]);
 
   const topPosts = useMemo(() =>
-    [...posts].sort((a, b) => (b[metric] || 0) - (a[metric] || 0)).slice(0, 5),
-  [posts, metric]);
+    [...reachPosts].sort((a, b) => (b[metric] || 0) - (a[metric] || 0)).slice(0, 5),
+  [reachPosts, metric]);
 
   const topicData = useMemo(() => {
     const topicMap: Record<string, { count: number; impressions: number; likes: number; comments: number }> = {};
-    posts.forEach((p) => {
+    reachPosts.forEach((p) => {
       const t = p.topicCategory || 'Uncategorized';
       if (!topicMap[t]) topicMap[t] = { count: 0, impressions: 0, likes: 0, comments: 0 };
       topicMap[t].count++;
@@ -100,11 +137,11 @@ const PerformancePanel: React.FC = () => {
     return Object.entries(topicMap)
       .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
       .sort((a, b) => b.avgImpressions - a.avgImpressions);
-  }, [posts]);
+  }, [reachPosts]);
 
   const hookData = useMemo(() => {
     const hookMap: Record<string, { count: number; impressions: number; likes: number }> = {};
-    posts.forEach((p) => {
+    reachPosts.forEach((p) => {
       const h = p.hookPattern || 'Unknown';
       if (!hookMap[h]) hookMap[h] = { count: 0, impressions: 0, likes: 0 };
       hookMap[h].count++;
@@ -114,12 +151,12 @@ const PerformancePanel: React.FC = () => {
     return Object.entries(hookMap)
       .map(([name, d]) => ({ name, ...d, avgImpressions: d.count ? Math.round(d.impressions / d.count) : 0 }))
       .sort((a, b) => b.avgImpressions - a.avgImpressions);
-  }, [posts]);
+  }, [reachPosts]);
   // Which content PILLAR lands — only pipeline-generated posts carry a pillar (matched from
   // carousel_drafts via own_posts.pillar, refreshed nightly). Manual/lifestyle posts are null.
   const pillarData = useMemo(() => {
     const m: Record<string, { count: number; impressions: number; eng: number; imprForRate: number }> = {};
-    posts.forEach((p) => {
+    reachPosts.forEach((p) => {
       if (!p.pillar) return;
       if (!m[p.pillar]) m[p.pillar] = { count: 0, impressions: 0, eng: 0, imprForRate: 0 };
       m[p.pillar].count++;
@@ -137,10 +174,10 @@ const PerformancePanel: React.FC = () => {
         };
       })
       .sort((a, b) => b.avgImpressions - a.avgImpressions);
-  }, [posts]);
+  }, [reachPosts]);
 
   const benchmarkData = useMemo(() => {
-    const yourAvgLikes = posts.length ? Math.round(stats.totalLikes / posts.length) : 0;
+    const yourAvgLikes = reachPosts.length ? Math.round(reachStats.totalLikes / reachPosts.length) : 0;
     // Only competitors with at least one post inside the selected window count —
     // a competitor with 0 in-window posts would otherwise show a misleading 0 bar.
     const inWindow = competitorStats.filter((c) => c.recentPostCount > 0);
@@ -148,7 +185,7 @@ const PerformancePanel: React.FC = () => {
       { name: 'You', avgLikes: yourAvgLikes },
       ...inWindow.slice(0, 6).map((c) => ({ name: c.competitorName.split(' ')[0], avgLikes: c.avgLikes })),
     ];
-  }, [posts, stats.totalLikes, competitorStats]);
+  }, [reachPosts, reachStats.totalLikes, competitorStats]);
 
   // Deduped date ticks so a post-indexed chart doesn't print "Jun 8, Jun 8".
   const chartTicks = useMemo(() => dedupeTicks(chartData.map((d) => d.date)), [chartData]);
@@ -222,11 +259,23 @@ const PerformancePanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Reach / Capture — two content jobs, scored on different currencies (impressions vs named leads) */}
+      <div className="flex gap-1.5">
+        {(['reach', 'capture'] as Segment[]).map((s) => (
+          <button key={s} onClick={() => setSegment(s)}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${segment === s ? 'bg-[var(--d-accent-bg)] text-[var(--ds-accent)] ring-1 ring-inset ring-[var(--d-rule-strong)]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30'}`}>
+            {s === 'reach' ? <><Eye className="w-4 h-4" />Reach</> : <><Users className="w-4 h-4" />Capture</>}
+          </button>
+        ))}
+      </div>
+
+      {segment === 'reach' && (
+      <>
       {/* KPI row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard label="Engagement Rate" value={`${stats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" />
-        <StatCard label="Avg Impressions" value={formatNum(stats.avgImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
-        <StatCard label="Total Posts" value={stats.count} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />
+        <StatCard label="Engagement Rate" value={`${reachStats.engagementRate}%`} icon={<Zap className="w-5 h-5" />} color="text-violet-400" />
+        <StatCard label="Avg Impressions" value={formatNum(reachStats.avgImpressions)} icon={<Eye className="w-5 h-5" />} color="text-blue-400" />
+        <StatCard label="Total Posts" value={reachStats.count} icon={<FileText className="w-5 h-5" />} color="text-emerald-400" />
       </div>
 
       {/* Audience strip — LinkedIn follower block (moved in from the retired Site Audience tab) + scrape coverage */}
@@ -249,7 +298,7 @@ const PerformancePanel: React.FC = () => {
         </div>
       </div>
 
-      {posts.length === 0 ? (
+      {reachPosts.length === 0 ? (
         <div className="h-72 panel-surface shadow-sm shadow-black/10 flex items-center justify-center text-zinc-600">No data for this period</div>
       ) : (
         <>
@@ -455,6 +504,70 @@ const PerformancePanel: React.FC = () => {
             </div>
           </div>
         </>
+      )}
+      </>
+      )}
+
+      {segment === 'capture' && (
+        capturePosts.length === 0 ? (
+          <div className="panel-surface shadow-sm shadow-black/10 p-8 text-center">
+            <div className="mx-auto mb-3 w-10 h-10 rounded-full bg-zinc-800/60 flex items-center justify-center text-zinc-500">
+              <Users className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-zinc-200">No capture posts tagged yet</h3>
+            <p className="mt-1.5 text-[13px] text-zinc-500 max-w-md mx-auto">Capture posts carry a lead-magnet CTA and are scored by named leads — not impressions — once tagging is live.</p>
+          </div>
+        ) : (
+          <>
+            {/* Capture KPIs — scored by named leads, never impressions */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <StatCard label="Named Leads" value={formatNum(captureStats.totalNamedLeads)} icon={<Users className="w-5 h-5" />} color="text-emerald-400" />
+              <StatCard label="Capture Posts" value={captureStats.count} icon={<FileText className="w-5 h-5" />} color="text-blue-400" />
+              <StatCard label="Best magnet" value={captureStats.bestMagnet ? formatNum(captureStats.bestMagnet.leads) : '—'} subValue={captureStats.bestMagnet?.slug} icon={<Zap className="w-5 h-5" />} color="text-violet-400" />
+            </div>
+
+            {/* Capture leaderboard — DESC by named leads (nulls last); impressions shown muted, never the sort key */}
+            <div className="panel-surface shadow-sm shadow-black/10 overflow-hidden">
+              <div className="px-4 py-3 border-b border-zinc-800/40 bg-zinc-800/20 flex items-center gap-2">
+                <Users className="w-3.5 h-3.5 text-zinc-500" />
+                <h3 className="text-[13px] font-semibold text-zinc-200">Top capture posts <span className="font-normal text-zinc-500">· by named leads</span></h3>
+              </div>
+              <div className="divide-y divide-zinc-800/40">
+                {captureLeaderboard.map((post, i) => (
+                  <div key={post.id} className="px-4 py-3 flex items-start gap-3 hover:bg-zinc-800/30 transition-colors">
+                    <span className="text-[11px] font-bold text-zinc-600 w-5 pt-0.5 text-center">#{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-zinc-300 truncate">{post.text.slice(0, 100)}</p>
+                      <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                        <span className="flex items-center gap-1 text-[11px] text-zinc-500"><Eye className="w-3 h-3" />{formatNum(post.impressions)}</span>
+                        {post.lead_magnet_slug && (
+                          <span className="text-[11px] text-zinc-500 truncate max-w-[180px]">→ {post.lead_magnet_slug}</span>
+                        )}
+                        {post.also_promoted_by > 0 && (
+                          <span className="text-[11px] text-zinc-500 italic">also promoted by {post.also_promoted_by} other post{post.also_promoted_by > 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0 text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-base font-bold text-emerald-300 tabular-nums">{post.named_leads != null ? formatNum(post.named_leads) : '—'}</span>
+                        <span className="text-[10px] uppercase tracking-wide text-zinc-500">named leads</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-semibold text-zinc-300 tabular-nums">{post.named_leads_30d != null ? formatNum(post.named_leads_30d) : '—'}</span>
+                        <span className="text-[10px] uppercase tracking-wide text-zinc-500">30d</span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-semibold text-zinc-400 tabular-nums">{post.capture_rate_pct != null ? `${post.capture_rate_pct}%` : '—'}</span>
+                        <span className="text-[10px] uppercase tracking-wide text-zinc-500">rate</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )
       )}
     </div>
   );

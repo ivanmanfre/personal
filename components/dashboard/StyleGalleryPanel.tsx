@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, Plus, ImageUp, Sparkles, X, ExternalLink, MessageCircle, Type as TypeIcon } from 'lucide-react';
+import { Loader2, Plus, ImageUp, Sparkles, X, ExternalLink, MessageCircle, Type as TypeIcon, Layers } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toastError } from '../../lib/dashboardActions';
 import { useCarouselStyles, CarouselStyle } from '../../hooks/useCarouselStyles';
+import { useContentArchetypes, ContentArchetype } from '../../hooks/useContentArchetypes';
 import { useStylePrompts, StylePrompt } from '../../hooks/useStylePrompts';
 import { useStyleUsage } from '../../hooks/useStyleUsage';
 import { StyleUsage } from '../../lib/styleUsage';
@@ -88,6 +89,18 @@ const ASSET_STYLES: AssetStyle[] = [
   { id: '86afhgf1e', name: 'Quote Card', category: 'single_image', blurb: 'Single quote rendered as a typographic card (no portrait). Tactical hook for quote-cold-open posts.' },
 ];
 
+// content_archetypes (kind='carousel_style') slugs match `promptSlug` for the
+// 9 carousel layouts and a kebab of `name` for the 6 single-image intents
+// (seeded that way in Phase A3). Same kebab rule the "new style" slug field
+// below uses, so it stays consistent if either list grows.
+const kebab = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const assetStyleSlug = (s: AssetStyle) => s.promptSlug || kebab(s.name);
+
+// Some carousel_style best_for values were seeded from the "Best for ..."
+// clause of the old blurb text, so the sentence already carries the label —
+// strip a leading "best for" so the card's own "BEST FOR" label doesn't repeat it.
+const stripBestForPrefix = (s: string) => s.replace(/^best\s+for\s+/i, '');
+
 // ─── Text-post style patterns ─────────────────────────────────────────────────
 // Text posts have NO image style — their "style" lives in two taxonomy axes:
 // hook_type (the opening pattern) and pillar (the content angle). Both come
@@ -131,9 +144,20 @@ const LM_FORMATS: { name: string; blurb: string; icon: string }[] = [
 
 const StyleGalleryPanel: React.FC = () => {
   const { styles, loading, error, refresh } = useCarouselStyles();
+  const { archetypes, loading: archetypesLoading, error: archetypesError } = useContentArchetypes();
   const { prompts: stylePrompts } = useStylePrompts();
   const { imageStyleStats } = useStyleUsage();
   const [newOpen, setNewOpen] = useState(false);
+
+  const postStructures = useMemo(
+    () => archetypes.filter((a) => a.kind === 'post_structure'),
+    [archetypes],
+  );
+  const carouselArchetypeBySlug = useMemo(() => {
+    const m: Record<string, ContentArchetype> = {};
+    archetypes.filter((a) => a.kind === 'carousel_style').forEach((a) => { m[a.slug] = a; });
+    return m;
+  }, [archetypes]);
 
   return (
     <div className="space-y-8">
@@ -183,7 +207,7 @@ const StyleGalleryPanel: React.FC = () => {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {ASSET_STYLES.filter((s) => s.category === 'carousel').map((s) => (
-            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} />
+            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} archetype={carouselArchetypeBySlug[assetStyleSlug(s)]} />
           ))}
         </div>
       </section>
@@ -196,7 +220,7 @@ const StyleGalleryPanel: React.FC = () => {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {ASSET_STYLES.filter((s) => s.category === 'single_image').map((s) => (
-            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} usage={imageStyleStats[s.name]} />
+            <AssetStyleCard key={s.id} style={s} prompt={s.promptSlug ? stylePrompts[s.promptSlug] : undefined} usage={imageStyleStats[s.name]} archetype={carouselArchetypeBySlug[assetStyleSlug(s)]} />
           ))}
         </div>
       </section>
@@ -221,6 +245,32 @@ const StyleGalleryPanel: React.FC = () => {
               {TEXT_STYLES.filter((s) => s.axis === 'pillar').map((s) => <TextStyleCard key={s.name} style={s} />)}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ─── Post structures (content_archetypes, kind='post_structure') ── */}
+      <section>
+        <h2 className="dv-section-h">Post structures</h2>
+        <p className="text-[12px] text-[color:var(--d-paper-dimmer)] mt-0.5 mb-3">
+          The 7 whole-post shapes the generator rotates through, fit-routed per idea. Canonical in Supabase (<code className="text-[10.5px]">content_archetypes</code>) — the n8n router reads the same rows.
+        </p>
+
+        {archetypesLoading && postStructures.length === 0 && (
+          <div className="text-[12px] text-zinc-500 italic flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading structures…
+          </div>
+        )}
+        {archetypesError && (
+          <div className="text-[12px] text-red-300 rounded-md border border-red-900/50 bg-red-950/30 px-3 py-2">
+            Failed to load: {archetypesError}
+          </div>
+        )}
+        {!archetypesLoading && !archetypesError && postStructures.length === 0 && (
+          <div className="text-[12px] text-zinc-500 italic">No post structures found in content_archetypes.</div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {postStructures.map((s) => <PostStructureCard key={s.id} structure={s} />)}
         </div>
       </section>
 
@@ -255,10 +305,19 @@ const StyleGalleryPanel: React.FC = () => {
 };
 
 // ─── Asset Style card (ClickUp-backed layout archetypes + image intents) ─────
-const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?: StyleUsage }> = ({ style, prompt, usage }) => {
+// `archetype` = the matching content_archetypes row (kind='carousel_style'),
+// when the seed has one for this style's slug. The main blurb ALWAYS stays the
+// original hardcoded `style.blurb` — the catalog's `one_liner` is only the FIRST
+// SENTENCE of that same blurb (Phase A seed), so swapping it in would truncate
+// an already-legible card. The catalog is used purely ADDITIVELY here: render an
+// extra "Best for" line for the 2 carousel rows that carry a non-null best_for.
+// (The Post structures section below DOES use one_liner + best_for from the
+// catalog directly — those are authored full sentences, not truncations.)
+const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?: StyleUsage; archetype?: ContentArchetype }> = ({ style, prompt, usage, archetype }) => {
   const [open, setOpen] = useState(false);
   const [imgOk, setImgOk] = useState(true);
   const hasPrompt = !!prompt && !!prompt.body;
+  const bestFor = archetype?.bestFor || null;
   return (
     <Card className="space-y-2 group">
       {usage?.cover && imgOk ? (
@@ -291,6 +350,11 @@ const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?
         </a>
       </div>
       <p className="text-[11.5px] leading-snug text-zinc-400">{style.blurb}</p>
+      {bestFor && (
+        <p className="text-[10.5px] leading-snug text-emerald-400/70">
+          <span className="uppercase tracking-wider text-zinc-500">Best for </span>{stripBestForPrefix(bestFor)}
+        </p>
+      )}
 
       {hasPrompt && (
         <div className="pt-1 border-t border-zinc-900/60">
@@ -326,6 +390,24 @@ const TextStyleCard: React.FC<{ style: TextStyle }> = ({ style }) => (
       <span className="text-[13px] font-medium text-zinc-100">{style.name}</span>
     </div>
     <p className="text-[11.5px] leading-snug text-zinc-400">{style.blurb}</p>
+  </Card>
+);
+
+// ─── Post structure card (content_archetypes, kind='post_structure') ─────────
+const PostStructureCard: React.FC<{ structure: ContentArchetype }> = ({ structure }) => (
+  <Card className="space-y-1.5">
+    <div className="flex items-center gap-2">
+      <Layers className="w-3.5 h-3.5 text-emerald-400/80" />
+      <span className="text-[13px] font-medium text-zinc-100">{structure.name}</span>
+    </div>
+    {structure.oneLiner && (
+      <p className="text-[11.5px] leading-snug text-zinc-400">{structure.oneLiner}</p>
+    )}
+    {structure.bestFor && (
+      <p className="text-[10.5px] leading-snug text-emerald-400/70">
+        <span className="uppercase tracking-wider text-zinc-500">Best for </span>{stripBestForPrefix(structure.bestFor)}
+      </p>
+    )}
   </Card>
 );
 
