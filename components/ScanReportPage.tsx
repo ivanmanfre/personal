@@ -2988,7 +2988,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <SecHead
               label={<>Evidence&nbsp;·&nbsp;Audience</>}
               title={<>Who is actually in your room.</>}
-              note={<>We do not guess at audiences. We read yours, one profile at a time, before this page was built.</>}
+              note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
             />
             <div className="aud-top">
               <div className="pf-figk">{room.figureLabel}</div>
