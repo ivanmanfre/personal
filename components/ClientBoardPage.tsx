@@ -2807,7 +2807,15 @@ type PipelineLead = {
   source: 'comment' | 'optin' | 'like';
   steps: PipelineStep[];
   in_newsletter?: boolean;
-  last_touch?: string; next_action?: string;
+  last_touch?: string;
+  /** Prospect-record fields (all optional, back-compat). Rendered by LeadDetailModal
+   *  as a realistic record: who they are, why the engine flagged them, the signal that
+   *  triggered capture, and the queued next warm touch. */
+  headline?: string;   // one-line title/tagline, e.g. "Scaling Bloome past $2M in DTC skincare"
+  location?: string;   // e.g. "Austin, TX"
+  signal?: string;     // what triggered capture (post topic + the commenter's own words)
+  why_fit?: string[];  // 1-3 grounded ICP reasons the engine surfaced (real Wins-Builder findings)
+  next_action?: { label: string; when: string; text?: string }; // queued next warm touch; omit once they replied
   /** The actual conversation — powers the click-a-lead reveal. */
   thread?: ThreadMsg[];
 };
@@ -2828,47 +2836,95 @@ const RE_STEPS = ['ICP match', 'connect sent', 'connected', 'DM sent', 'follow-u
 /** LABELED example deck — only ever rendered on a demo/preview board, behind the
  *  "example data" chip. A live board renders board.lead_pipeline or a clean empty-state. */
 const SAMPLE_LEAD_PIPELINE: PipelineLead[] = [
-  { name: 'Marcus Webb', role: 'Founder', company: 'Northbeam Studio', icp: 9, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 3), thread: [
+  { name: 'Marcus Webb', role: 'Founder', company: 'Northbeam Studio', icp: 9, track: 'handraiser', source: 'comment', in_newsletter: true,
+    headline: 'Building Northbeam Studio, a boutique brand practice', location: 'Denver, CO',
+    signal: 'Commented on your post on where client hand-offs quietly lose hours',
+    why_fit: ['Team past ten people, delivery still routes through the founder', 'Hand-off gaps between strategy and production eating margin'],
+    steps: mkSteps(HR_STEPS('commented'), 3), thread: [
     { from: 'lead', label: 'commented on your post', when: 'day 0', text: 'This is exactly the problem we keep hitting. Can you send it over?' },
     { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hey Marcus, here’s the teardown you asked for: [link]. The section on hand-off gaps is the part most teams miss. Happy to walk you through how it maps to Northbeam if useful.' },
     { from: 'engine', label: 'follow-up', when: 'day 2', text: 'Did the framework land? Curious whether the scoring section matched what you’re seeing on your side.' },
     { from: 'lead', label: 'replied', when: 'day 3', text: 'It did, the scoring part especially. We should talk. What does working together look like?' },
   ] },
-  { name: 'Dana Okafor', role: 'Head of Ops', company: 'Litmus Legal', icp: 8, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 2), thread: [
+  { name: 'Dana Okafor', role: 'Head of Ops', company: 'Litmus Legal', icp: 8, track: 'handraiser', source: 'optin', in_newsletter: true,
+    headline: 'Head of ops at Litmus Legal, mid-size firm', location: 'Chicago, IL',
+    signal: 'Opted into the operations capacity assessment',
+    why_fit: ['Ops team stretched, intake and scheduling still manual', 'Growth outpacing the process they built two years ago'],
+    next_action: { label: 'follow-up', when: 'day 4', text: 'Dana, did the assessment flag anything on intake? That is usually the first place hours leak once a firm scales. Happy to walk through the weakest-area section on a quick call.' },
+    steps: mkSteps(HR_STEPS('opted in'), 2), thread: [
     { from: 'lead', label: 'opted in', when: 'day 0', text: 'Downloaded the assessment.' },
     { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hi Dana, sent the assessment to your inbox. Question 4 is the one that trips up most ops leads. Let me know what it flagged for you.' },
     { from: 'engine', label: 'follow-up', when: 'day 2', text: 'Any surprises in the results? Happy to unpack the weakest-area section with you.' },
   ] },
-  { name: 'Priya Nair', role: 'Managing Partner', company: 'Cedar & Vale', icp: 8, track: 'handraiser', source: 'comment', in_newsletter: true, steps: mkSteps(HR_STEPS('commented'), 2), thread: [
+  { name: 'Priya Nair', role: 'Managing Partner', company: 'Cedar & Vale', icp: 8, track: 'handraiser', source: 'comment', in_newsletter: true,
+    headline: 'Managing partner at Cedar & Vale', location: 'Boston, MA',
+    signal: 'Commented on your post on partner-level workflow bottlenecks',
+    why_fit: ['Partners still doing work an associate could own', 'Utilization high, senior time is the real constraint'],
+    next_action: { label: 'follow-up', when: 'day 5', text: 'Priya, did the partner-workflow piece land? The section on delegating review work is where most firms your size recover senior hours. Glad to compare notes on how Cedar & Vale is structured now.' },
+    steps: mkSteps(HR_STEPS('commented'), 2), thread: [
     { from: 'lead', label: 'commented on your post', when: 'day 0', text: 'Would love a copy of this.' },
     { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Here you go, Priya: [link]. The part on partner-level workflows is written for firms like Cedar & Vale.' },
     { from: 'engine', label: 'follow-up', when: 'day 3', text: 'Did it spark anything? Glad to compare notes on how partners are handling this.' },
   ] },
-  { name: 'Tom Reilly', role: 'Founder', company: 'Reilly Advisory', icp: 7, track: 'handraiser', source: 'optin', in_newsletter: true, steps: mkSteps(HR_STEPS('opted in'), 1), thread: [
+  { name: 'Tom Reilly', role: 'Founder', company: 'Reilly Advisory', icp: 7, track: 'handraiser', source: 'optin', in_newsletter: true,
+    headline: 'Founder of Reilly Advisory', location: 'Austin, TX',
+    signal: 'Opted into the ROI planning guide',
+    why_fit: ['Solo founder scaling into a small team', 'Pricing set before recent cost increases'],
+    next_action: { label: 'follow-up', when: 'day 3', text: 'Tom, did the ROI math in the second half hold up against your numbers? If pricing has not moved since costs went up, that is usually the fastest thing to fix. Happy to look at it with you.' },
+    steps: mkSteps(HR_STEPS('opted in'), 1), thread: [
     { from: 'lead', label: 'opted in', when: 'day 0', text: 'Downloaded the guide.' },
     { from: 'engine', label: 'resource DM', when: 'day 0', text: 'Hi Tom, the guide’s in your inbox. Start with the second half, that’s where the ROI math is. Shout if anything’s unclear.' },
   ] },
-  { name: 'Grace Lin', role: 'Ops Lead', company: 'Vantage Group', icp: 8, track: 'handraiser', source: 'comment', steps: mkSteps(HR_STEPS('commented'), 0), thread: [
+  { name: 'Grace Lin', role: 'Ops Lead', company: 'Vantage Group', icp: 8, track: 'handraiser', source: 'comment',
+    headline: 'Ops lead at Vantage Group', location: 'Seattle, WA',
+    signal: 'Commented asking for the workflow teardown',
+    why_fit: ['Running ops for a growing team', 'Process built for launch, never re-tuned since'],
+    next_action: { label: 'resource DM', when: 'day 0', text: 'Grace, sending the teardown now. The middle section on scheduling hand-offs is the part most ops leads bookmark. Curious which stage is costing you the most time right now.' },
+    steps: mkSteps(HR_STEPS('commented'), 0), thread: [
     { from: 'lead', label: 'commented on your post', when: 'just now', text: 'Sounds useful, send it my way?' },
   ] },
-  { name: 'Elena Vasquez', role: 'VP Marketing', company: 'Summit Partners', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 5), thread: [
+  { name: 'Elena Vasquez', role: 'VP Marketing', company: 'Summit Partners', icp: 9, track: 'reactor', source: 'like',
+    headline: 'VP marketing at Summit Partners', location: 'New York, NY',
+    signal: 'Liked your post on attribution across a multi-channel funnel',
+    why_fit: ['Marketing team scaling spend across channels', 'Attribution still fuzzy past first touch'],
+    steps: mkSteps(RE_STEPS, 5), thread: [
     { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Elena, saw you following the thread on attribution. Sending a connect, I think what we’re building is right up Summit’s alley.' },
     { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for connecting. Put together a short teardown on the exact problem you were reacting to, want me to send it?' },
     { from: 'lead', label: 'replied', when: 'day 2', text: 'Yes please. And if you have time this week, I’d take a call.' },
   ] },
-  { name: 'Sarah Chen', role: 'Head of Growth', company: 'Fathom Consulting', icp: 9, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 4), thread: [
+  { name: 'Sarah Chen', role: 'Head of Growth', company: 'Fathom Consulting', icp: 9, track: 'reactor', source: 'like',
+    headline: 'Head of growth at Fathom Consulting', location: 'San Francisco, CA',
+    signal: 'Liked your post on building a repeatable growth system',
+    why_fit: ['Growth relying on a handful of manual plays', 'No system yet to make the wins repeat'],
+    next_action: { label: 'follow-up', when: 'day 5', text: 'Sarah, did the breakdown fit how Fathom runs growth? The second half maps to your stack pretty directly. Want me to tailor it and send the full version?' },
+    steps: mkSteps(RE_STEPS, 4), thread: [
     { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Sarah, noticed you engaging with the growth-systems posts. Connecting, I think there’s overlap with what Fathom’s working on.' },
     { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for the connect. Made a quick breakdown of the workflow you reacted to, sending it over: [link].' },
     { from: 'engine', label: 'follow-up', when: 'day 3', text: 'Did the breakdown help? Happy to tailor the second half to Fathom’s stack.' },
   ] },
-  { name: 'Nina Alvarez', role: 'Director', company: 'BrightPath Agency', icp: 8, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 3), thread: [
+  { name: 'Nina Alvarez', role: 'Director', company: 'BrightPath Agency', icp: 8, track: 'reactor', source: 'like',
+    headline: 'Director at BrightPath Agency', location: 'Atlanta, GA',
+    signal: 'Liked your post on agency delivery bottlenecks',
+    why_fit: ['Agency scaling accounts faster than the delivery team', 'Founder still sits in every project'],
+    next_action: { label: 'follow-up', when: 'day 4', text: 'Nina, following up on the write-up. The pattern with agencies your size is that delivery capacity caps growth before demand does. I mapped how it plays out for teams like BrightPath. Want it?' },
+    steps: mkSteps(RE_STEPS, 3), thread: [
     { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Nina, saw you reacting to the agency-ops thread. Sending a connect.' },
     { from: 'engine', label: 'DM', when: 'day 1', text: 'Thanks for connecting. The thing you reacted to, I wrote up how it plays out for agencies like BrightPath. Want it?' },
   ] },
-  { name: 'Devon Clarke', role: 'Principal', company: 'Clarke & Co', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 2), thread: [
+  { name: 'Devon Clarke', role: 'Principal', company: 'Clarke & Co', icp: 7, track: 'reactor', source: 'like',
+    headline: 'Principal at Clarke & Co', location: 'Toronto, ON',
+    signal: 'Liked your post on where senior hours actually go',
+    why_fit: ['Small firm, principal time is the bottleneck', 'Junior team underused on billable work'],
+    next_action: { label: 'DM', when: 'day 2', text: 'Devon, thanks for the connect. The thing you reacted to, I wrote up how it applies to firms that run the way Clarke & Co does. Happy to send it over if useful.' },
+    steps: mkSteps(RE_STEPS, 2), thread: [
     { from: 'engine', label: 'connection note', when: 'day 0', text: 'Hi Devon, noticed you following the thread. Connecting, I think there’s a fit with how Clarke & Co runs.' },
   ] },
-  { name: 'Raj Patel', role: 'Founder', company: 'Meridian Ops', icp: 7, track: 'reactor', source: 'like', steps: mkSteps(RE_STEPS, 0) },
+  { name: 'Raj Patel', role: 'Founder', company: 'Meridian Ops', icp: 7, track: 'reactor', source: 'like',
+    headline: 'Founder of Meridian Ops', location: 'Phoenix, AZ',
+    signal: 'Liked your post on the operations capacity ceiling',
+    why_fit: ['Founder-led ops shop at an early scaling stage'],
+    next_action: { label: 'connection note', when: 'day 0', text: 'Raj, saw you react to the capacity post. Meridian looks like it is at the stage where process starts to matter. Sending a connect.' },
+    steps: mkSteps(RE_STEPS, 0) },
 ];
 
 const stepFilled = (s: PipelineStep) => s.done || !!s.current;
@@ -2924,6 +2980,14 @@ function LeadRow({ lead, accent, onOpen }: { lead: PipelineLead; accent: string;
           </svg>
         </span>
       </div>
+      {(() => {
+        // Signal preview: shows the warm context at a glance so the list reads as more
+        // than names. Falls back to the first thread line when no signal is set.
+        const preview = lead.signal || lead.thread?.[0]?.text;
+        return preview ? (
+          <div className="mt-1.5 truncate" style={{ fontFamily: BODY, fontSize: 12.5, lineHeight: 1.5, color: FAINT }}>{preview}</div>
+        ) : null;
+      })()}
       <div className="mt-2.5">
         <StepTrail steps={lead.steps} accent={accent} />
       </div>
@@ -3025,6 +3089,8 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
   const first = (lead.name.split(/\s+/)[0]) || lead.name;
   const trackLabel = lead.track === 'handraiser' ? 'hand-raiser' : 'ICP reactor';
   const thread = lead.thread || [];
+  const hasReplied = lead.steps.some(isReplied);
+  const whyFit = lead.why_fit || [];
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
@@ -3039,11 +3105,31 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
           </button>
         </div>
         <div className="px-5 pb-6 sm:px-6">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{lead.name}</h3>
-            <span style={{ fontFamily: BODY, fontSize: 13.5, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
+          {/* Profile header: avatar (accent-filled, sharp in blackbox / rounded in editorial
+           *  via the skin auto-reset) + name + headline + location, reads as a real record. */}
+          <div className="flex items-start gap-3.5">
+            <span
+              className="flex shrink-0 items-center justify-center rounded-lg"
+              style={{ width: 46, height: 46, background: accent, color: inkOn(accent), fontFamily: MONO, fontWeight: 700, fontSize: 15, letterSpacing: '0.02em' }}
+              aria-hidden
+            >
+              {initialsOf(lead.name)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{lead.name}</h3>
+                <span style={{ fontFamily: BODY, fontSize: 13.5, color: DIM }}>{[lead.role, lead.company].filter(Boolean).join(' · ')}</span>
+              </div>
+              {lead.headline && (
+                <p className="mt-1" style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.5, color: DIM }}>{lead.headline}</p>
+              )}
+              {lead.location && (
+                <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: FAINT }}>{lead.location}</div>
+              )}
+            </div>
           </div>
-          <div className="mt-2.5 flex items-center gap-2.5">
+
+          <div className="mt-4 flex items-center gap-2.5">
             <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
             {lead.in_newsletter && (
               <span className="inline-flex items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>
@@ -3052,7 +3138,30 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
             )}
           </div>
 
-          <div className="mt-5">
+          {/* Why the engine flagged them: the grounded ICP findings, sharp-square accent ticks. */}
+          {whyFit.length > 0 && (
+            <div className="mt-6">
+              <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>why the engine flagged them</div>
+              <ul className="flex flex-col gap-2">
+                {whyFit.map((w, i) => (
+                  <li key={i} className="flex gap-2.5">
+                    <span className="mt-[7px] shrink-0" style={{ width: 6, height: 6, background: caText(accent) }} aria-hidden />
+                    <span style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.55, color: INK_SOFT }}>{w}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Signal: the one line that triggered capture. */}
+          {lead.signal && (
+            <div className="mt-6">
+              <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>signal</div>
+              <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.55, color: INK_SOFT }}>{lead.signal}</p>
+            </div>
+          )}
+
+          <div className="mt-6">
             <StepTrail steps={lead.steps} accent={accent} />
           </div>
 
@@ -3089,6 +3198,35 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
               </div>
             )}
           </div>
+
+          {/* Next: either the drafted upcoming touch (ghost/pending engine message, dashed
+           *  rule + reduced emphasis so it reads as not-yet-sent) or, once they replied, a
+           *  quiet hand-raiser cue. Reinforces "the engine keeps working each lead." */}
+          {hasReplied ? (
+            <div className="mt-6 flex items-center gap-2.5 rounded-[10px] px-4 py-3" style={{ background: caWash(accent, 7), border: `1px solid ${caBorder(accent, 35)}` }}>
+              <span className="shrink-0" style={{ width: 7, height: 7, background: caText(accent) }} aria-hidden />
+              <span style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.5, color: INK_SOFT }}>
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: caText(accent) }}>hand-raiser</span>
+                {' '}ready for you. {first} replied, so the cadence pauses here for your call.
+              </span>
+            </div>
+          ) : lead.next_action ? (
+            <div className="mt-6">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>next · queued</span>
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.1em', color: FAINT }}>{lead.next_action.label} · {lead.next_action.when}</span>
+              </div>
+              <div className="relative pl-4" style={{ opacity: 0.82 }}>
+                <span className="absolute bottom-1 left-0 top-1" style={{ width: 2, borderLeft: `2px dashed ${caBorder(accent, 55)}` }} aria-hidden />
+                {lead.next_action.text ? (
+                  <p style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, lineHeight: 1.6, color: INK_SOFT }}>{lead.next_action.text}</p>
+                ) : (
+                  <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: DIM }}>Drafted and waiting on the cadence.</p>
+                )}
+                <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.13em', color: FAINT }}>awaiting the cadence · not sent yet</div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -3527,9 +3665,13 @@ export default function ClientBoardPage() {
 
   const accent = cleanHex(board?.brand?.accent_hex);
   const mint = cleanHex(board?.brand?.accent_secondary || board?.brand?.accent_hex);
-  // Visual skin. ?skin=blackbox wins; else a board.skin / brand.skin field; else editorial.
+  // Visual skin. An explicit ?skin= param wins in BOTH directions (so a blackbox-default
+  // board can be forced back to editorial for review); else a board.skin / brand.skin
+  // field; else editorial.
+  const skinParam = params.get('skin');
   const skin: 'editorial' | 'blackbox' =
-    params.get('skin') === 'blackbox' ? 'blackbox'
+    skinParam === 'blackbox' ? 'blackbox'
+    : skinParam === 'editorial' ? 'editorial'
     : (board as any)?.skin === 'blackbox' || (board?.brand as any)?.skin === 'blackbox' ? 'blackbox'
     : 'editorial';
   // Blackbox loads Schibsted Grotesk (display/labels/body) + Source Serif 4 italic (clinical
