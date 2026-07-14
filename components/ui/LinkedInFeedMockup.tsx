@@ -9,6 +9,9 @@ interface Props {
   /** 'tease' (reply: posts only) or 'full' (call). Default 'tease'. */
   mode?: RenderMode;
   className?: string;
+  /** Prospect brand, mirrored onto text-slide carousels so they read as the founder's own. */
+  accentHex?: string;
+  brandName?: string;
 }
 
 /**
@@ -18,7 +21,7 @@ interface Props {
  * render full-width and fully readable (a single post in a 3-col grid would sit cramped at
  * a third width). The lead magnet is surfaced separately by the page, not inside this feed.
  */
-const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '' }) => {
+const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className = '', accentHex, brandName }) => {
   const feed = normalizeFeedSpec(spec, mode);
   const { profile, posts } = feed;
 
@@ -80,6 +83,8 @@ const LinkedInFeedMockup: React.FC<Props> = ({ spec, mode = 'tease', className =
             text={post.body}
             slides={post.slides}
             textSlides={post.textSlides}
+            accentHex={accentHex}
+            brandName={brandName}
             showFold
             stats={{ reactions: post.reactions, comments: post.comments }}
           />

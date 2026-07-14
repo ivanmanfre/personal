@@ -1974,12 +1974,13 @@ const RECORD_CSS = `
 .bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
 /* lead-magnet exhibit */
 /* voice provenance pairing */
-.bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr 1fr;}
+.bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;}
 .bbrec .vpair .vcell{padding:clamp(16px,2.2vw,24px) clamp(16px,2.2vw,26px) clamp(18px,2.4vw,26px) 0;}
-.bbrec .vpair .vcell+.vcell{border-left:1px solid var(--hair);padding-left:clamp(16px,2.2vw,26px);padding-right:0;}
+.bbrec .vpair .vcell:last-child{padding-left:clamp(16px,2.2vw,26px);padding-right:0;}
+.bbrec .vpair .vlink{display:flex;align-items:center;justify-content:center;padding:0 clamp(10px,1.6vw,18px);border-left:1px solid var(--hair);border-right:1px solid var(--hair);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:9.5px;color:var(--muted);white-space:nowrap;}
 .bbrec .vpair .vq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:9px;}
 .bbrec .vpair .vd{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.015em;font-size:clamp(15px,1.6vw,18px);line-height:1.4;color:var(--ink);margin-top:9px;}
-@media(max-width:640px){.bbrec .vpair{grid-template-columns:1fr;}.bbrec .vpair .vcell{padding-right:0;}.bbrec .vpair .vcell+.vcell{border-left:none;border-top:1px solid var(--hair);padding-left:0;}}
+@media(max-width:640px){.bbrec .vpair{grid-template-columns:1fr;}.bbrec .vpair .vcell{padding:clamp(14px,2.2vw,20px) 0;}.bbrec .vpair .vcell:last-child{padding-left:0;}.bbrec .vpair .vlink{justify-content:flex-start;border-left:none;border-right:none;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:9px 0;}}
 .bbrec .lm{margin-top:clamp(26px,3.2vw,40px);display:grid;grid-template-columns:300px 1fr;gap:clamp(26px,4vw,52px);align-items:center;}
 @media(max-width:760px){.bbrec .lm{grid-template-columns:1fr;gap:26px;}}
 .bbrec .lm-cover{border:1px solid var(--hair);background:#0e0e12;min-height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
@@ -1992,6 +1993,12 @@ const RECORD_CSS = `
 .bbrec .inside .ii{font-family:var(--grotesk);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:0.04em;}
 .bbrec .inside .it{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,16px);letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+/* embedded-LM exhibit masthead — cover plate beside the branded title band (sharp, hairline, no shadow/radius) */
+.bbrec .lm-frame{display:grid;grid-template-columns:200px 1fr;gap:clamp(20px,3vw,40px);align-items:start;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair);padding:clamp(18px,2.4vw,26px) 0;}
+.bbrec .lm-frame-cover{border:1px solid var(--ink);background:#0e0e12;overflow:hidden;align-self:start;}
+.bbrec .lm-frame-cover img{display:block;width:100%;}
+.bbrec .lm-frame-body{min-width:0;}
+@media(max-width:640px){.bbrec .lm-frame{grid-template-columns:1fr;gap:16px;}.bbrec .lm-frame-cover{max-width:220px;}}
 /* governance strip */
 .bbrec .gov{margin-top:clamp(24px,3vw,34px);display:flex;flex-wrap:wrap;gap:10px 26px;}
 .bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
@@ -2012,8 +2019,17 @@ const RECORD_CSS = `
 .bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
 .bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
 @media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
-.bbrec .lemon{margin-top:clamp(20px,2.6vw,30px);border:1px solid var(--ink);display:grid;grid-template-columns:1fr auto;gap:clamp(14px,2vw,26px);align-items:center;padding:clamp(16px,2.2vw,24px);}
-@media(max-width:600px){.bbrec .lemon{grid-template-columns:1fr;gap:14px;}}
+.bbrec .cmedia{display:grid;grid-template-columns:auto 1fr;gap:clamp(16px,2.4vw,28px);align-items:stretch;padding:clamp(16px,2.2vw,24px);border-bottom:1px solid var(--hair);}
+@media(max-width:600px){.bbrec .cmedia{grid-template-columns:1fr;gap:16px;}}
+.bbrec .cfaces{display:flex;gap:10px;align-items:flex-start;}
+.bbrec .cface{position:relative;width:clamp(94px,12vw,120px);flex-shrink:0;}
+.bbrec .cface img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 18%;border:1px solid var(--ink);background:var(--paper);}
+.bbrec .cface .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:8.5px;padding:3px 6px;white-space:nowrap;}
+.bbrec .csample{margin:0;border:1px solid var(--hair);overflow:hidden;background:#0e0e12;display:flex;align-items:center;min-height:0;}
+.bbrec .csample img{display:block;width:100%;height:100%;max-height:280px;object-fit:cover;object-position:center top;}
+.bbrec .lemon{margin-top:clamp(20px,2.6vw,30px);border:1px solid var(--ink);}
+.bbrec .lemon-body{display:grid;grid-template-columns:1fr auto;gap:clamp(14px,2vw,26px);align-items:center;padding:clamp(16px,2.2vw,24px);}
+@media(max-width:600px){.bbrec .lemon-body{grid-template-columns:1fr;gap:14px;}}
 .bbrec .lemon-q{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,19px);line-height:1.45;color:var(--ink);}
 .bbrec .lemon-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:10px;}
 .bbrec .lemon-r{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(16px,1.9vw,22px);line-height:1.1;max-width:14ch;color:var(--ink);}
@@ -2062,6 +2078,17 @@ const RECORD_CSS = `
 .bbrec .foot-links a{text-decoration:none;color:var(--sec);}
 .bbrec .foot-links a.book{color:var(--ink);}
 .bbrec .foot-fine{padding-bottom:clamp(40px,6vw,60px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;color:var(--muted);}
+/* ── mobile readability floor (scoped; lifts the smallest labels/captions to ~11px so nothing sits below the mobile floor; desktop sizes untouched) ── */
+@media(max-width:640px){
+  .bbrec .sec-label,.bbrec .reg-meta,.bbrec .docline{font-size:11px;line-height:1.35;}
+  .bbrec .k,.bbrec .lm-gate,.bbrec .who,.bbrec .ldate,.bbrec .figlabel,.bbrec .lbuild .bl,.bbrec .gov span,.bbrec .op-sig,.bbrec .reading .rk,.bbrec .reading .rrow,.bbrec .foot-links,.bbrec .foot-links a,.bbrec .cta-fine,.bbrec .afp-h>span,.bbrec .inside .ii,.bbrec .kyle-p{font-size:11px;line-height:1.35;}
+  .bbrec .vpair .vlink,.bbrec .rev-w small{font-size:11px;}
+  .bbrec .cface .nm{font-size:10px;}
+  .bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{font-size:10.5px;}
+  /* small serif italic captions: hold the floor and open the leading */
+  .bbrec .cap,.bbrec .kmet .ml,.bbrec .foot-fine{font-size:13px;line-height:1.5;}
+  .bbrec .reading .rd{font-size:14px;line-height:1.5;}
+}
 `;
 
 // One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
@@ -2289,7 +2316,7 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
             <SecHead
               label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
               title="What the scan read on your calls."
-              note="Read from your public presence on the scan date. The trailing rows stay ruled and open until the engine is running against your live calls."
+              note="Read from your public presence on the scan date."
             />
             <div className="ledger">
               {leaks.map((l, i) => (
@@ -2301,10 +2328,6 @@ function CallIntelReport({ report, scan, companyName }: { report: ReportJson; sc
                   </div>
                 </div>
               ))}
-              <div className="lrow open">
-                <div className="lmeta"><div className="lidx num">{String(leaks.length + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
-                <div className="lobs">Ruled and left open. The next reading is entered once the engine is scoring your live calls.</div>
-              </div>
             </div>
             {receipts.length > 0 && (
               <p className="cap" style={{ marginTop: 20 }}>Read from your public presence today: {receipts.map((r, i) => <span key={i}>{i ? '  ·  ' : ''}{r.label}: {r.value}</span>)}</p>
@@ -3260,12 +3283,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       metrics: [{ value: '5', label: 'new clients a month from the lead-magnet system' }, { value: 'Live', label: 'gated funnel, on autopilot' }],
     },
   ];
-  const REVIEWS = [
-    { q: 'Ivan is one of those rare builders who actually ships. The system runs exactly as promised and the output sounds like me, not a robot.', n: 'Adeeb Mohammed', r: 'Software Engineer · ex-Amazon · Meta' },
-    { q: 'He turned our content into a real pipeline. The lead magnets alone book us calls every week.', n: 'Camille Haas', r: 'Founder' },
-    { q: 'Fast, clear, and genuinely good taste. The work looks premium and it just works.', n: 'Rodrigo Ibañez', r: 'Agency owner' },
-    { q: 'We went from posting sometimes to showing up every day, in our voice.', n: 'Cristian Trif', r: 'Operator' },
-  ];
 
   // ── Derived, honest figures (every number traces to report_json / scan stamps) ──
   const scanDate = recDateISO(scan.completed_at, scan.created_at);
@@ -3426,8 +3443,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             label={<>Section 03&nbsp;·&nbsp;Observations on record</>}
             title={hasWins ? `${winsWord}, and the build each one triggers.` : 'What the scan read, and what the engine opens against it.'}
             note={hasWins
-              ? 'Each entry was observed on the scan date. The build is what the engine would open against it. The ledger runs longer than the readings; the trailing rows stay ruled and open until the course runs.'
-              : 'Read from your public presence on the scan date. The build is what the engine would open against each one. The trailing rows stay ruled and open until the course runs.'}
+              ? 'Each entry was observed on the scan date. The build is what the engine would open against it.'
+              : 'Read from your public presence on the scan date. The build is what the engine would open against each one.'}
           />
           <div className="ledger">
             {hasWins ? (
@@ -3455,14 +3472,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 ))}
               </>
             ) : null}
-            <div className="lrow open">
-              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 1).padStart(2, '0')}</div><div className="ldate">Open</div></div>
-              <div className="lobs">Ruled and left open. The next reading is entered once the engine is running against your live feed.</div>
-            </div>
-            <div className="lrow open">
-              <div className="lmeta"><div className="lidx num">{String((hasWins ? Math.min(winsCards.length, 3) : leaks.length) + 2).padStart(2, '0')}</div><div className="ldate">Open</div></div>
-              <div className="lobs">Ruled and left open.</div>
-            </div>
           </div>
         </Rev>
 
@@ -3480,8 +3489,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   <div className="k">Your words, on record</div>
                   <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
                 </div>
+                <div className="vlink" aria-hidden><span>rewritten as →</span></div>
                 <div className="vcell">
-                  <div className="k">The drafted open, built from them</div>
+                  <div className="k">The drafted post open</div>
                   <div className="vd">{voiceDrafted}</div>
                 </div>
               </div>
@@ -3492,7 +3502,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" />
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} />
                 </div>
               </Exhibit>
               {restOfWeek.length > 0 && (
@@ -3526,16 +3536,28 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             />
             {lmEmbedUrl && (
               <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px 24px', marginBottom: 14 }}>
-                  <div className="lm-title" style={{ fontSize: 'clamp(20px,2.4vw,27px)' }}>{lm.title}</div>
-                  <div className="lm-gate" style={{ marginTop: 0 }}><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
+                {/* branded exhibit masthead — cover plate beside the title/promise band, so the live asset reads as a designed exhibit, not a bare iframe */}
+                <div className="lm-frame">
+                  {(lmCover || lm.brand?.logo_url) && (
+                    <div className="lm-frame-cover">
+                      <img src={lmCover || lm.brand?.logo_url} alt={lm.title} loading="lazy" onError={fallbackOnError} />
+                    </div>
+                  )}
+                  <div className="lm-frame-body">
+                    <FigLabel>Fig&nbsp;·&nbsp;lead magnet&nbsp;·&nbsp;your brand</FigLabel>
+                    <div className="lm-title" style={{ fontSize: 'clamp(22px,2.6vw,32px)' }}>{lm.title}</div>
+                    {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
+                    <div className="lm-gate"><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
+                  </div>
                 </div>
-                <Exhibit
-                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
-                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
-                >
-                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
-                </Exhibit>
+                <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
+                  <Exhibit
+                    label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
+                    caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                  >
+                    <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                  </Exhibit>
+                </div>
                 <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
                   Open it full screen <span aria-hidden>→</span>
                 </button>
@@ -3638,6 +3660,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             note="The one before-and-after on record. Where a cell has no before-state it is left open, same as your own record above."
           />
           <div className="kyle">
+            <div className="cmedia">
+              <div className="cfaces">
+                <div className="cface"><img src="/content-system/kyle-portrait.webp" alt="Kyle Hunt" loading="lazy" onError={fallbackOnError} /><span className="nm">Kyle Hunt</span></div>
+              </div>
+              <figure className="csample"><img src="/content-system/kyle-guides.webp" alt="Kyle Hunt's inbound engine running in the system" loading="lazy" onError={fallbackOnError} /></figure>
+            </div>
             <div className="kyle-h">
               <div className="kyle-p">Agency MRR · Kyle Hunt</div>
               <div className="kyle-af num">$30K/mo</div>
@@ -3651,16 +3679,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
           </div>
           <div className="lemon">
-            <div className="lemon-q">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
-            <div className="lemon-r num">5 new clients a month, on record.</div>
-          </div>
-          <div className="revs">
-            {REVIEWS.map((t, i) => (
-              <div className="rev" key={i}>
-                <div className="rev-q">&ldquo;{t.q}&rdquo;</div>
-                <div className="rev-w">{t.n}<small>{t.r}</small></div>
+            <div className="cmedia">
+              <div className="cfaces">
+                <div className="cface"><img src="/content-system/david-dinsmore.webp" alt="David Dinsmore" loading="lazy" onError={fallbackOnError} /><span className="nm">David Dinsmore</span></div>
+                <div className="cface"><img src="/content-system/billy-mackie.webp" alt="Billy Mackie" loading="lazy" onError={fallbackOnError} /><span className="nm">Billy Mackie</span></div>
               </div>
-            ))}
+              <figure className="csample"><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's lead-capture page built by the system" loading="lazy" onError={fallbackOnError} /></figure>
+            </div>
+            <div className="lemon-body">
+              <div className="lemon-q">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
+              <div className="lemon-r num">5 new clients a month, on record.</div>
+            </div>
           </div>
         </Rev>
 

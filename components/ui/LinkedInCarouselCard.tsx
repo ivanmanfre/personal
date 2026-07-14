@@ -51,6 +51,9 @@ interface Props {
   author?: string;
   headline?: string;
   avatarUrl?: string;
+  /** Prospect brand, mirrored onto text-slide carousels so they read as the founder's own. */
+  accentHex?: string;
+  brandName?: string;
   showFold?: boolean;
   stats?: { reactions?: number; comments?: number };
 }
@@ -67,11 +70,14 @@ const LinkedInCarouselCard: React.FC<Props> = ({
   author = 'Iván Manfredi',
   headline = 'AI content systems for agencies',
   avatarUrl = '/ivan-portrait.jpg',
+  accentHex,
+  brandName,
   showFold = true,
   stats,
 }) => {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const accent = accentHex && /^#?[0-9a-fA-F]{6}$/.test(accentHex) ? (accentHex[0] === '#' ? accentHex : '#' + accentHex) : '#0a66c2';
 
   const hasTextSlides = Array.isArray(textSlides) && textSlides.length > 0;
   const total = hasTextSlides ? textSlides!.length : slides.length;
@@ -148,8 +154,9 @@ const LinkedInCarouselCard: React.FC<Props> = ({
           {/* Slide media — 4:5 portrait aspect. Text carousels render styled copy cards. */}
           <div className="relative w-full" style={{ aspectRatio: '4 / 5' }}>
             {hasTextSlides ? (
-              <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-8" style={{ background: 'linear-gradient(150deg,#1d2733 0%,#0f1620 100%)' }}>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+              <div className="absolute inset-0 flex flex-col justify-center p-6 sm:p-8 pb-14" style={{ background: 'linear-gradient(150deg,#1d2733 0%,#0f1620 100%)' }}>
+                <span aria-hidden style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: accent }} />
+                <div className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: accent }}>
                   {clampedIndex + 1} / {total}
                 </div>
                 <h4 className="mt-3 text-white font-bold leading-[1.15]" style={{ fontSize: 'clamp(1.15rem, 5vw, 1.6rem)' }}>
@@ -158,6 +165,10 @@ const LinkedInCarouselCard: React.FC<Props> = ({
                 <p className="mt-3 text-white/80 leading-[1.5]" style={{ fontSize: 'clamp(0.85rem, 3.4vw, 1rem)' }}>
                   {textSlides![clampedIndex].body}
                 </p>
+                <div className="absolute left-6 sm:left-8 bottom-4 flex items-center gap-2">
+                  <span aria-hidden style={{ width: 8, height: 8, background: accent, display: 'inline-block' }} />
+                  <span className="text-white/85 font-semibold" style={{ fontSize: 12, letterSpacing: '-0.01em' }}>{brandName || author}</span>
+                </div>
               </div>
             ) : (
               <img
@@ -205,10 +216,9 @@ const LinkedInCarouselCard: React.FC<Props> = ({
                   onClick={() => setIndex(i)}
                   aria-label={`Go to slide ${i + 1}`}
                   className={`rounded-full transition-all ${
-                    i === clampedIndex
-                      ? 'w-2 h-2 bg-[#0a66c2]'
-                      : 'w-1.5 h-1.5 bg-[#b0b8c1] hover:bg-[#666]'
+                    i === clampedIndex ? 'w-2 h-2' : 'w-1.5 h-1.5 bg-[#b0b8c1] hover:bg-[#666]'
                   }`}
+                  style={i === clampedIndex ? { background: accent } : undefined}
                 />
               ))}
             </div>
