@@ -1467,7 +1467,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
               </div>
               <div className="hidden shrink-0 items-center gap-2 sm:flex" aria-hidden>
                 {ticks.map((tk, i) => (
-                  <span key={i} className="flex items-center justify-center rounded-full" style={{
+                  <span key={i} className="cb-daytick flex items-center justify-center rounded-full" data-state={tk.done ? 'done' : tk.current ? 'current' : 'idle'} style={{
                     width: 28, height: 28,
                     fontFamily: MONO, fontSize: 10,
                     border: `1.5px solid ${tk.current ? accent : tk.done ? accent : LINE_BOLD}`,
@@ -2536,7 +2536,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
       {/* Operator note: why this mix, signed. */}
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3 flex items-center gap-2.5">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>ON</span>
+          <span className="cb-operator-on flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: INK, color: '#fff' }} aria-hidden>ON</span>
           <CardHead>Why this mix, from your operator</CardHead>
         </div>
         <p className="text-[14px] leading-relaxed" style={{ color: DIM }}>
@@ -3807,7 +3807,10 @@ export default function ClientBoardPage() {
    cannot neutralize them. These scoped rules enforce Black Box structure without editing
    hundreds of class strings: sharp corners everywhere, planes not cards, no shadows. */
 [data-skin="blackbox"] * { border-radius: 0 !important; }
-[data-skin="blackbox"] [class*="shadow"] { box-shadow: none !important; }
+/* Planes, not cards: kill every drop shadow on chrome (compiled Tailwind shadow-* and
+   inline shadows both). The LinkedIn preview card is re-granted a subtle platform shadow. */
+[data-skin="blackbox"] * { box-shadow: none !important; }
+[data-skin="blackbox"] .cb-linkedin-preview { box-shadow: 0 1px 2px rgba(19,18,16,0.06) !important; }
 /* Black Box labels + eyebrows: uppercase 700 grotesk. */
 [data-skin="blackbox"] .uppercase { font-weight: 700 !important; }
 /* Display headings: Schibsted Grotesk 800, tight tracking. */
@@ -3817,10 +3820,12 @@ export default function ClientBoardPage() {
    author avatar, rounded reaction badges, platform card corner. Everything ELSE squares. */
 [data-skin="blackbox"] .cb-linkedin-preview { border-radius: 10px !important; }
 [data-skin="blackbox"] .cb-linkedin-preview .rounded-full { border-radius: 9999px !important; }
-[data-skin="blackbox"] .cb-linkedin-preview [class*="shadow"] { box-shadow: 0 1px 2px rgba(19,18,16,0.06) !important; }
 /* THE BOX: the single This Week hero card is the house component: heavy printed rule,
    hairline offset outside it, one subtle human tilt. Printed, never floating. */
 [data-skin="blackbox"] .cb-hero-deck { transform: rotate(-0.35deg); }
+/* The tilt is a desktop-poster flourish; on narrow screens the near-full-width tall card
+   would bleed a few px past the viewport, so it sits square (no horizontal overflow). */
+@media (max-width: 640px) { [data-skin="blackbox"] .cb-hero-deck { transform: none; } }
 [data-skin="blackbox"] .cb-hero-card {
   border: 4px solid var(--cb-ink) !important;
   outline: 1px solid var(--cb-ink);
@@ -3837,6 +3842,27 @@ export default function ClientBoardPage() {
 [data-skin="blackbox"] .cb-cover-plate::before {
   content: ""; position: absolute; top: 18px; left: 20px;
   width: 44px; height: 4px; background: var(--cb-accent);
+}
+/* The ON operator mark is fixed anatomy per canon v4.2: always weight 900, always Signal
+   red. It does NOT consume the composition's accent budget (the client accent stays gold).
+   Paper ground + ink box rule keeps red legible at this small tile size (canon light default). */
+[data-skin="blackbox"] .cb-operator-on {
+  background: var(--cb-paper) !important;
+  color: #C8361B !important;
+  font-weight: 900 !important;
+  border: 1px solid var(--cb-ink);
+}
+/* Active day marker: ink-filled with a Signal-accent underbar, so the current day reads at a
+   glance instead of a thin outline. Sharp corners (the universal reset already squares it). */
+[data-skin="blackbox"] .cb-daytick[data-state="current"] {
+  background: var(--cb-ink) !important;
+  color: var(--cb-paper) !important;
+  border-color: var(--cb-ink) !important;
+  position: relative;
+}
+[data-skin="blackbox"] .cb-daytick[data-state="current"]::after {
+  content: ""; position: absolute; left: -1px; right: -1px; bottom: -4px;
+  height: 3px; background: var(--cb-accent);
 }
 `}</style>
     <div className="min-h-screen" data-skin={skin} style={{ background: PAPER, color: INK, fontFamily: BODY, ['--cb-accent' as any]: accent, ['--cb-mint' as any]: mint, ...SKIN_VARS }}>
@@ -3940,7 +3966,7 @@ export default function ClientBoardPage() {
             {isPreview ? 'Preview · built ahead' : 'Live'}
           </span>
           <span className="ml-4 inline-flex items-center gap-2" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', color: INK_MUTE }}>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
+            <span className="cb-operator-on flex h-5 w-5 items-center justify-center rounded-full text-[8.5px] font-bold" style={{ background: INK, color: PAPER, fontFamily: BODY }} aria-hidden>ON</span>
             OPERATED BY INBOUNDONSTEROIDS
           </span>
         </div>
