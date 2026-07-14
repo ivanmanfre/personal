@@ -3056,7 +3056,7 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
               <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
                 <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>hand-raisers</span>
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{handRaisers.length}</span>
-                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>commented or opted in — they asked for it</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>commented or opted in, they asked for it</span>
               </div>
               {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
             </section>
@@ -3067,7 +3067,7 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
               <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
                 <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>ICP reactors</span>
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
-                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post — we reached out</span>
+                <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post, we reached out</span>
               </div>
               {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
             </section>
