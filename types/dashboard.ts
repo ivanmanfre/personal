@@ -13,7 +13,6 @@ export interface OwnPost {
   pillar: string | null;
   metricsUpdatedAt: string | null;
   post_kind: 'reach' | 'capture';
-  lead_magnet_id: string | null;
   lead_magnet_slug: string | null;
   named_leads: number | null;
   named_leads_30d: number | null;
