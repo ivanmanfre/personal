@@ -24,6 +24,17 @@ export const offerLadder: OfferLadderRung[] = [
     resourceUrl: 'https://ivanmanfredi.com/content-system',
     visibility: 'public',
   },
+  {
+    id: 'inbound-outbound-3k',
+    name: 'Inbound + Outbound Engine (in-call upsell)',
+    priceLabel: '$3K/mo',
+    priceTier: 'high',
+    status: 'internal',
+    description: "Everything in the $2k engine, plus fully-managed cold outreach (connections + DMs + InMail on the client's own Sales Nav seat), each touch carrying a personalized resource, run end to end to a call booked on their calendar. Adds shared Slack + weekly digest + monthly review. Locked 2026-07-13 (both prices reconfirmed by advisor). PRIVATE in-call upsell only, never website or social, until the 2026-09-14 lock review. Cold is additive call volume, never a guaranteed quota.",
+    stripeUrl: null,
+    resourceUrl: null,
+    visibility: 'private',
+  },
 ];
 
 // Funnel touchpoints — 2026-04-19 strategy doc, 4-touchpoint architecture
@@ -339,6 +350,11 @@ export const positioningObjections: Objection[] = [
   {
     objection: 'Does content actually produce pipeline?',
     answer: 'The lead-magnet capture turns reach into named leads and booked calls. Reach on its own is applause.',
+  },
+  {
+    objection: 'How many calls will I actually get?',
+    answer: 'Inbound compounds, so I hold to calls not deals: a few in month one building to roughly 8-12/mo by month three, and I will not fix a number on it because it rides on your audience. The $3k outbound tier is the one I put hard numbers on. A Sales Nav seat is 50 InMails plus ~400 safe connection requests a month, which lands ~4-8 booked calls/mo from month one on top of the inbound ramp. Batch one calibrates the real reply rate for your niche.',
+    isNew: true,
   },
 ];
 
