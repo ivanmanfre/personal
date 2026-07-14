@@ -19,6 +19,13 @@ function mapPost(row: any): OwnPost {
     hookPattern: row.hook_pattern,
     pillar: row.pillar ?? null,
     metricsUpdatedAt: row.metrics_updated_at ?? null,
+    post_kind: row.post_kind === 'capture' ? 'capture' : 'reach',
+    lead_magnet_id: row.lead_magnet_id ?? null,
+    lead_magnet_slug: row.lead_magnet_slug ?? null,
+    named_leads: row.named_leads ?? null,
+    named_leads_30d: row.named_leads_30d ?? null,
+    capture_rate_pct: row.capture_rate_pct ?? null,
+    also_promoted_by: row.also_promoted_by ?? 0,
   };
 }
 
@@ -33,8 +40,8 @@ export function useOwnPosts(days: number = 30) {
     try {
       const since = new Date(Date.now() - days * 86400000).toISOString();
       const { data, error: qErr } = await supabase
-        .from('own_posts')
-        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar, metrics_updated_at')
+        .from('own_posts_scored')
+        .select('id, post_text, post_type, num_likes, num_comments, num_shares, num_impressions, posted_at, linkedin_url, topic_category, hook_pattern, pillar, metrics_updated_at, post_kind, lead_magnet_id, lead_magnet_slug, named_leads, named_leads_30d, capture_rate_pct, also_promoted_by')
         .gte('posted_at', since)
         .order('posted_at', { ascending: false });
       if (qErr) throw qErr;

@@ -12,6 +12,13 @@ export interface OwnPost {
   hookPattern: string | null;
   pillar: string | null;
   metricsUpdatedAt: string | null;
+  post_kind: 'reach' | 'capture';
+  lead_magnet_id: string | null;
+  lead_magnet_slug: string | null;
+  named_leads: number | null;
+  named_leads_30d: number | null;
+  capture_rate_pct: number | null;
+  also_promoted_by: number;
 }
 
 export interface WorkflowStat {
