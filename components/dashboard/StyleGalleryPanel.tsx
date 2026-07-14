@@ -306,14 +306,17 @@ const StyleGalleryPanel: React.FC = () => {
 
 // ─── Asset Style card (ClickUp-backed layout archetypes + image intents) ─────
 // `archetype` = the matching content_archetypes row (kind='carousel_style'),
-// when the seed has one for this style's slug. Prefer its one_liner/best_for;
-// fall back to the hardcoded blurb when there's no matching row (13/15 seeded
-// rows also have best_for=null — that's expected, one_liner still applies).
+// when the seed has one for this style's slug. The main blurb ALWAYS stays the
+// original hardcoded `style.blurb` — the catalog's `one_liner` is only the FIRST
+// SENTENCE of that same blurb (Phase A seed), so swapping it in would truncate
+// an already-legible card. The catalog is used purely ADDITIVELY here: render an
+// extra "Best for" line for the 2 carousel rows that carry a non-null best_for.
+// (The Post structures section below DOES use one_liner + best_for from the
+// catalog directly — those are authored full sentences, not truncations.)
 const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?: StyleUsage; archetype?: ContentArchetype }> = ({ style, prompt, usage, archetype }) => {
   const [open, setOpen] = useState(false);
   const [imgOk, setImgOk] = useState(true);
   const hasPrompt = !!prompt && !!prompt.body;
-  const blurb = archetype?.oneLiner || style.blurb;
   const bestFor = archetype?.bestFor || null;
   return (
     <Card className="space-y-2 group">
@@ -346,7 +349,7 @@ const AssetStyleCard: React.FC<{ style: AssetStyle; prompt?: StylePrompt; usage?
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </div>
-      <p className="text-[11.5px] leading-snug text-zinc-400">{blurb}</p>
+      <p className="text-[11.5px] leading-snug text-zinc-400">{style.blurb}</p>
       {bestFor && (
         <p className="text-[10.5px] leading-snug text-emerald-400/70">
           <span className="uppercase tracking-wider text-zinc-500">Best for </span>{stripBestForPrefix(bestFor)}
