@@ -2077,6 +2077,13 @@ const RECORD_CSS = `
 .bbrec .aud-name .anm{font-family:var(--grotesk);font-weight:700;font-size:clamp(14px,1.6vw,16px);letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .aud-name .ahl{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.45;color:var(--sec);margin-top:6px;}
 .bbrec .aud-name .asrc{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--muted);margin-top:10px;}
+.bbrec .aud-scale{margin-top:clamp(18px,2.4vw,26px);display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
+@media(max-width:640px){.bbrec .aud-scale{grid-template-columns:1fr;}}
+.bbrec .aud-band{padding:clamp(12px,1.8vw,16px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .aud-band.on{background:var(--flash);}
+.bbrec .aud-band .abr{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);color:var(--ink);}
+.bbrec .aud-band .abw{font-family:var(--serif);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.4;color:var(--sec);margin-top:4px;}
+.bbrec .aud-band .abys{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--ink);margin-top:8px;}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -3012,6 +3019,28 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="pf-fig">{room.figure}</div>
               <p className="aud-sub">{room.figureSub}</p>
             </div>
+            {/* Grade scale: bands are OUR scale from the rooms we read for this buyer type
+                (consumer-brand sellers only, enforced upstream by the audit's vertical gate;
+                a different ICP would need re-based bands). ~1% is the background rate of DTC
+                decision-makers in a generic network; the flagship good room read 4.6%. */}
+            {roomMode === 'network' && audNetDensity !== null && (
+              <div>
+                <div className="pf-figk" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>How rooms grade, share of connections that are buyers</div>
+                <div className="aud-scale">
+                  {[
+                    { r: 'Under 1%', w: 'Background noise. Almost every room starts here.', on: audNetDensity < 1 },
+                    { r: '1 to 2%', w: 'A typical room. Some buyers, mostly peers.', on: audNetDensity >= 1 && audNetDensity < 2 },
+                    { r: 'Above 2%', w: 'Raw material worth working.', on: audNetDensity >= 2 },
+                  ].map((b, i) => (
+                    <div className={`aud-band${b.on ? ' on' : ''}`} key={i}>
+                      <div className="abr">{b.r}</div>
+                      <div className="abw">{b.w}</div>
+                      {b.on ? <div className="abys">Yours · {audNetDensity}%</div> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="aud-rows">
               <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
               <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
