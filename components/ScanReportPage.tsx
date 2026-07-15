@@ -2811,27 +2811,44 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const audNamed = (aud?.named ?? []).filter((n) => (n?.name || '').trim()).slice(0, 3);
   const audNetCount = aud?.network_icp_count ?? null;
   const audNetSample = aud?.network_sample ?? null;
+  const audNetTotal = aud?.network_total ?? null;
   const audEngIcp = aud?.engager_icp_count ?? 0;
   const audEngagers = aud?.engagers ?? 0;
   const audPosts = aud?.posts ?? 0;
-  const audNetOk = audNetCount !== null && audNetSample !== null && audNetSample >= 30 && audNetCount >= 3;
+  // Floor: >=3 counted buyers AND >=2% of the read sample. 2% sits clearly above the ~1%
+  // background rate of DTC decision-makers in a generic professional network (the flagship
+  // good room read 4.6%); below it "buyers in your room" stops being a gift.
+  const audNetDensity = aud?.network_icp_density ?? (audNetCount !== null && audNetSample ? Math.round((audNetCount / audNetSample) * 1000) / 10 : null);
+  const audNetOk = audNetCount !== null && audNetSample !== null && audNetSample >= 30 && audNetCount >= 3 && (audNetDensity ?? 0) >= 2;
+  // Extrapolate over the full list only when the real connections_count is known (never the
+  // unstable SN search total) and the sample covers at least a tenth of it. The counted
+  // number stays on the page as the receipt either way.
+  const audEst = audNetOk && audNetTotal && audNetTotal > (audNetSample as number) && (audNetSample as number) * 10 >= audNetTotal
+    ? (() => { const x = ((audNetCount as number) / (audNetSample as number)) * audNetTotal; return x >= 100 ? Math.round(x / 10) * 10 : Math.round(x / 5) * 5; })()
+    : null;
   const roomMode: 'network' | 'engager' | null = audNetOk ? 'network' : (audEngIcp >= 1 && audNamed.length > 0 ? 'engager' : null);
   const room = aud && roomMode ? {
-    figure: roomMode === 'network' ? (audNetCount as number) : audEngIcp,
+    figure: roomMode === 'network' ? (audEst ? `~${audEst}` : String(audNetCount)) : String(audEngIcp),
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
-      ? `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline.`
+      ? (audEst
+        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}.`
+        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline.`)
       : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline.`,
     giftLine: roomMode === 'network'
-      ? `${audNetCount} decision makers at consumer brands already sit in your connections. Each of them said yes to you once.`
+      ? (audEst
+        ? `${audNetCount} buyers verified by name in the ${audNetSample} connections we read; the full list likely holds around ${audEst}. Each of them said yes to you once.`
+        : `${audNetCount} decision makers at consumer brands already sit in your connections. Each of them said yes to you once.`)
       : `${audEngIcp} ${audEngIcp === 1 ? 'decision maker at a consumer brand shows' : 'decision makers at consumer brands show'} up in your own comments and reactions. They come to you already.`,
     gapLine: audEngagers > 0
       ? `Your last ${audPosts} posts drew ${audEngagers} ${audEngagers === 1 ? 'person' : 'people'}. ${audEngIcp === 0 ? 'Not one of them was a buyer.' : `${audEngIcp} ${audEngIcp === 1 ? 'was a buyer' : 'were buyers'}. The rest were not.`}`
       : `Your last ${audPosts} posts drew no reactions or comments we could read. The buyers above never hear from you.`,
-    caveat: `Counted from what we actually read: ${[
-      audNetSample ? `${audNetSample} of your connections` : '',
-      audPosts ? `the reactions and comments on your last ${audPosts} posts` : '',
-    ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
+    caveat: audEst
+      ? `Counted from what we actually read: ${audNetSample} of your connections and the reactions and comments on your last ${audPosts} posts, one headline at a time. The ~${audEst} averages that count over your full ${audNetTotal.toLocaleString('en-US')}; every name above is verified.`
+      : `Counted from what we actually read: ${[
+          audNetSample ? `${audNetSample} of your connections` : '',
+          audPosts ? `the reactions and comments on your last ${audPosts} posts` : '',
+        ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
   } : null;
 
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
