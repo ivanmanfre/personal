@@ -14,6 +14,7 @@ import { ArrowRight, Linkedin, Mail, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LandingHero from './LandingHero';
 import LiveEngineProof from './LiveEngineProof';
+import { HeroVideo } from './HeroVideo';
 
 import BuildCardDiagram from './landing/diagrams/BuildCardDiagram';
 import ProcessAssembly, { StageSnapshot } from './landing/diagrams/ProcessAssembly';
@@ -272,6 +273,15 @@ const METRICS = [
 // Compact credential strip — refined, not gigantic. Figures sit at a calm
 // editorial scale in ink (the old 6rem sage numerals read garish); the sage
 // lives only on the small mono label. A quiet receipt under each.
+const FilmSection: React.FC = () => (
+  <section className="py-16 md:py-24 border-t" style={DIVIDER}>
+    <div className="container mx-auto px-8 max-w-5xl">
+      <h2 className="sr-only">Watch the system run</h2>
+      <HeroVideo src="/film/the-desk.mp4" poster="/film/the-desk-poster.webp" />
+    </div>
+  </section>
+);
+
 const ProofBand: React.FC = () => (
   <section className="border-t border-b" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-6xl">
@@ -1776,6 +1786,7 @@ const LandingPage: React.FC = () => {
             beat (AgentReady). */}
         <LandingHero />
         <ProofBand />
+        <FilmSection />
         <ProblemSection />
         <EngineSection />
         <PromisesSection />
