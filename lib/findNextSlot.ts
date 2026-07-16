@@ -4,12 +4,13 @@ import { supabase } from './supabase';
  * Finds the next available posting slot.
  *
  * Strategy:
- *   - Default cadence: 2 slots per day at 09:00 + 14:00 in Ivan's local TZ
- *     (Buenos Aires) — morning window for global + early-afternoon for US East/Central.
+ *   - Cadence: ONE post per calendar day (BA-local) — system-wide decision
+ *     2026-07-03; the time window rotates by day (morning / early-afternoon).
  *     Weekends included (audience engages on Sat/Sun too).
- *   - Scan from tomorrow forward, fills each day before moving on
- *   - Skip any slot that collides with an already-scheduled scheduled_post (±2h window)
+ *   - Scan from tomorrow forward; skip any day that already has a post
  *   - Cap the scan at 30 days out
+ *   - Calls are serialized + slots reserved in-session so scheduling several
+ *     posts back-to-back can't land two on the same day
  *
  * Returns a Date in UTC representing the chosen slot. Use toDatetimeLocalString()
  * to render in the BA-aware <input type="datetime-local"> field.
@@ -24,7 +25,6 @@ const SLOT_WINDOWS = [
   { startMin: 8 * 60 + 30, spreadMin: 75 },  // 08:30–09:45 BA
   { startMin: 13 * 60 + 30, spreadMin: 75 }, // 13:30–14:45 BA
 ];
-const COLLISION_WINDOW_HOURS = 2;
 
 // Pick a random hour:minute inside a window.
 function pickSlotTime(w: { startMin: number; spreadMin: number }): { hour: number; minute: number } {
@@ -56,39 +56,64 @@ function buildSlot(year: number, month: number, day: number, hour: number, minut
   return attempt;
 }
 
-export async function findNextSlot(): Promise<Date> {
-  // Pull all upcoming scheduled posts
-  const { data } = await supabase
-    .from('scheduled_posts')
-    .select('scheduled_at')
-    .gte('scheduled_at', new Date().toISOString())
-    .in('status', ['scheduled', 'pending', 'posting']);
-  const taken = (data || []).map((r: any) => new Date(r.scheduled_at).getTime()).sort((a, b) => a - b);
+// Slots handed out this browser session but possibly not yet written back to
+// scheduled_posts (the insert happens after the caller returns). Without this,
+// scheduling two posts back-to-back races: both reads see the same `taken` list
+// and both land on the same day (observed 2026-07-16: two posts 8 min apart).
+const reservedSlots: number[] = [];
+// Serialize concurrent findNextSlot calls for the same reason.
+let slotQueue: Promise<unknown> = Promise.resolve();
 
-  const now = new Date();
-  const todayLocal = ymdInTz(now, TZ);
-  const nowMs = now.getTime();
-  for (let offset = 1; offset <= 30; offset++) {
-    // Anchor at 12:00 UTC (not midnight) so when we convert to BA we land on
-    // the intended local day. Midnight UTC = 21:00 BA the PREVIOUS day, which
-    // was making us pick today's already-past 9am slot.
-    const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
-    const cl = ymdInTz(candidate, TZ);
-    // Weekends are intentionally NOT skipped — post every day, incl. Sat/Sun.
-    // Try each window for this day in order — fill the day before moving on.
-    for (const w of SLOT_WINDOWS) {
+export async function findNextSlot(): Promise<Date> {
+  const run = slotQueue.then(async () => {
+    // Pull all upcoming scheduled posts
+    const { data } = await supabase
+      .from('scheduled_posts')
+      .select('scheduled_at')
+      .gte('scheduled_at', new Date().toISOString())
+      .in('status', ['scheduled', 'pending', 'posting']);
+    const taken = (data || [])
+      .map((r: any) => new Date(r.scheduled_at).getTime())
+      .concat(reservedSlots)
+      .sort((a, b) => a - b);
+
+    // ONE post per calendar day (BA-local), system-wide decision 2026-07-03:
+    // a same-day second post closes the first post's distribution window.
+    const occupiedDays = new Set(
+      taken.map((t) => {
+        const d = ymdInTz(new Date(t), TZ);
+        return `${d.y}-${d.m}-${d.d}`;
+      }),
+    );
+
+    const now = new Date();
+    const todayLocal = ymdInTz(now, TZ);
+    const nowMs = now.getTime();
+    for (let offset = 1; offset <= 30; offset++) {
+      // Anchor at 12:00 UTC (not midnight) so when we convert to BA we land on
+      // the intended local day. Midnight UTC = 21:00 BA the PREVIOUS day, which
+      // was making us pick today's already-past 9am slot.
+      const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
+      const cl = ymdInTz(candidate, TZ);
+      // Weekends are intentionally NOT skipped — post every day, incl. Sat/Sun.
+      if (occupiedDays.has(`${cl.y}-${cl.m}-${cl.d}`)) continue; // day already has a post
+      // Rotate the time window by day-of-month so timing still varies day to day.
+      const w = SLOT_WINDOWS[cl.d % SLOT_WINDOWS.length];
       const { hour, minute } = pickSlotTime(w);
       const slot = buildSlot(cl.y, cl.m, cl.d, hour, minute, TZ);
-      const slotMs = slot.getTime();
-      if (slotMs <= nowMs) continue;
-      const collides = taken.some((t) => Math.abs(t - slotMs) < COLLISION_WINDOW_HOURS * 3600_000);
-      if (!collides) return slot;
+      if (slot.getTime() <= nowMs) continue;
+      reservedSlots.push(slot.getTime());
+      return slot;
     }
-  }
-  // Fallback: 36h from now in BA in the first window, guaranteed future
-  const t = ymdInTz(new Date(Date.now() + 36 * 3600_000), TZ);
-  const f = pickSlotTime(SLOT_WINDOWS[0]);
-  return buildSlot(t.y, t.m, t.d, f.hour, f.minute, TZ);
+    // Fallback: 36h from now in BA in the first window, guaranteed future
+    const t = ymdInTz(new Date(Date.now() + 36 * 3600_000), TZ);
+    const f = pickSlotTime(SLOT_WINDOWS[0]);
+    const fb = buildSlot(t.y, t.m, t.d, f.hour, f.minute, TZ);
+    reservedSlots.push(fb.getTime());
+    return fb;
+  });
+  slotQueue = run.catch(() => {});
+  return run;
 }
 
 /**
