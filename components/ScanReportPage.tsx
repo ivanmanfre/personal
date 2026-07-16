@@ -3234,7 +3234,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 <div className="pf-fig num"><span className="from">$30K/mo →</span> $80K/mo</div>
               </div>
             </div>
-            <div className="pf-quote">&ldquo;It writes every post and guide in my voice. I approve, and it ships.&rdquo;<span className="who">Kyle Hunt · Agency Operators, founder</span></div>
+            <div className="pf-quote">&ldquo;Leads come in with a name and the guide they pulled. By the time we talk, they already know the offer.&rdquo;<span className="who">Kyle Hunt · Agency Operators, founder</span></div>
             <figure className="pf-sample"><img src="/content-system/kyle-guides.webp" alt="Kyle Hunt's guide library, generated and shipped by the engine" loading="lazy" onError={fallbackOnError} /></figure>
             <div className="pf-cap">Fig · Kyle&rsquo;s guide library, written and shipped by the engine, as it runs today.</div>
             <div className="kmet">
@@ -3259,7 +3259,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 <div className="pf-fig num">5 <span className="from">new clients a month</span></div>
               </div>
             </div>
-            <div className="pf-quote">&ldquo;The lead-magnet engine books our fit calls for us. Gated funnel, running on autopilot.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
+            <div className="pf-quote">&ldquo;Calls keep landing from the guides while we&rsquo;re heads-down with clients. Five a month, give or take.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
             <figure className="pf-sample"><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's gated lead-capture page, built by the engine" loading="lazy" onError={fallbackOnError} /></figure>
             <div className="pf-cap">Fig · Lemonade&rsquo;s gated funnel page, built by the engine and live today.</div>
           </div>
