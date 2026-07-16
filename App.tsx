@@ -53,6 +53,7 @@ const PublishedBlueprint = lazy(() => import('./components/PublishedBlueprint'))
 const VideoViewer = lazy(() => import('./components/VideoViewer'));
 const Walkthrough = lazy(() => import('./components/Walkthrough'));
 const ScanReportPage = lazy(() => import('./components/ScanReportPage'));
+const ScanGradePage = lazy(() => import('./components/ScanGradePage'));
 const ClientBoardPage = lazy(() => import('./components/ClientBoardPage'));
 const LandingPage = lazy(() => import('./components/LandingPage'));
 const LinkedInFeedMockupPreview = lazy(() => import('./components/dev/LinkedInFeedMockupPreview'));
@@ -149,6 +150,11 @@ function App() {
     return (
       <Suspense fallback={<div className="min-h-screen bg-paper" />}>
         <Routes>
+          {/* Interactive Hook Grader instrument. Static segment outranks :slug in v7 route
+              ranking. Not prerendered (SPA 404 fallback serves it) — do NOT add to prerender
+              ROUTES; the scan OG-title wait would flag it. */}
+          <Route path="/scan/grade" element={<ScanGradePage />} />
+          <Route path="/scan/grade/*" element={<ScanGradePage />} />
           <Route path="/scan/:slug" element={<ScanReportPage />} />
           {/* GitHub Pages serves the prerendered scan at a trailing-slash URL (and 301s the
               bare URL to it), so the router must match the trailing slash too — without this,
