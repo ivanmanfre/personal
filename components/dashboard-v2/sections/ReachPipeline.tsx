@@ -12,12 +12,13 @@ const LeadsPanel = lazy(() => import('../../dashboard/LeadsPanel'));
 const CompetitorIntelPanel = lazy(() => import('../../dashboard/CompetitorIntelPanel'));
 const UpworkPanel = lazy(() => import('../../dashboard/UpworkPanel'));
 const MeetingsPanel = lazy(() => import('../../dashboard/MeetingsPanel'));
+const CallReportsPanel = lazy(() => import('../../dashboard/CallReportsPanel'));
 const AgentReadyPanel = lazy(() => import('../../dashboard/AgentReadyPanel'));
 const CrmPanel = lazy(() => import('../../dashboard/crm/CrmPanel'));
 const AudiencePanel = lazy(() => import('../../dashboard/AudiencePanel'));
 const AudienceAuditsPanel = lazy(() => import('../../dashboard/AudienceAuditsPanel'));
 const ClientBoardGeneratorPanel = lazy(() => import('../../dashboard/ClientBoardGeneratorPanel'));
-type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'audits' | 'audience' | 'boards' | 'upwork' | 'meetings' | 'agentready';
+type SubKey = 'crm' | 'outreach' | 'leads' | 'competitors' | 'audits' | 'audience' | 'boards' | 'upwork' | 'meetings' | 'callreports' | 'agentready';
 
 const SUB_LABELS: Record<SubKey, string> = {
   crm: 'CRM',
@@ -29,10 +30,11 @@ const SUB_LABELS: Record<SubKey, string> = {
   boards: 'Boards',
   upwork: 'Upwork',
   meetings: 'Meetings',
+  callreports: 'Call Reports',
   agentready: 'Agent-Ready',
 };
 
-const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'audits', 'audience', 'boards', 'upwork', 'meetings', 'agentready'];
+const SUB_ORDER: SubKey[] = ['crm', 'outreach', 'leads', 'competitors', 'audits', 'audience', 'boards', 'upwork', 'meetings', 'callreports', 'agentready'];
 
 export function resolveSub(raw: string | null): { sub: SubKey; corrected: boolean } {
   if (raw && (SUB_ORDER as string[]).includes(raw)) return { sub: raw as SubKey, corrected: false };
@@ -75,6 +77,7 @@ export function ReachPipeline() {
       case 'boards':       return <ClientBoardGeneratorPanel />;
       case 'upwork':       return <UpworkPanel />;
       case 'meetings':     return <MeetingsPanel />;
+      case 'callreports':  return <CallReportsPanel />;
       case 'agentready':   return <AgentReadyPanel />;
     }
   };
