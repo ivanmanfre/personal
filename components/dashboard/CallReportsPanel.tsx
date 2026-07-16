@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
 import { useCallReports, type CallReport } from '../../hooks/useCallReports';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useDashboard } from '../../contexts/DashboardContext';
 import LoadingSkeleton from './shared/LoadingSkeleton';
 import EmptyState from './shared/EmptyState';
 import RefreshIndicator from './shared/RefreshIndicator';
@@ -36,9 +37,9 @@ const ReportCard: React.FC<{ report: CallReport }> = ({ report }) => {
           <div className="text-sm font-medium text-zinc-100 truncate">{report.meetingTitle}</div>
           <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-0.5">
             <Calendar className="w-3 h-3" />
-            {formatDate(dateStr, { month: 'short', day: 'numeric', year: 'numeric' })}
+            {dateStr ? formatDate(dateStr, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
             <span className="text-zinc-700">·</span>
-            {timeAgo(report.createdAt)}
+            {timeAgo(report.createdAt ?? null)}
           </div>
         </div>
         <span className={`text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full border flex-shrink-0 ${outcomeStyle(report.outcome)}`}>
@@ -72,6 +73,10 @@ const ReportCard: React.FC<{ report: CallReport }> = ({ report }) => {
 
 const CallReportsPanel: React.FC = () => {
   const { reports, loading, refresh } = useCallReports();
+  // lastRefreshed comes from DashboardContext, same as every other panel —
+  // RefreshIndicator's prop is a required Date and it calls .getTime() on it
+  // unconditionally (omitting it blanked the whole section: TypeError on undefined).
+  const { lastRefreshed } = useDashboard();
   useAutoRefresh(refresh, { realtimeTables: ['call_reports'] });
 
   if (loading && reports.length === 0) return <LoadingSkeleton cards={0} rows={5} />;
@@ -83,7 +88,7 @@ const CallReportsPanel: React.FC = () => {
           <h3 className="text-sm font-semibold text-zinc-200">Call Reports</h3>
           <p className="text-[11px] text-zinc-500 mt-0.5">Auto-generated post-call reports, newest first.</p>
         </div>
-        <RefreshIndicator onRefresh={refresh} />
+        <RefreshIndicator lastRefreshed={lastRefreshed} onRefresh={refresh} />
       </div>
 
       {reports.length === 0 ? (
