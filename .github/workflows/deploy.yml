@@ -107,6 +107,12 @@ jobs:
           git add scan/ content-system/ ivan-portrait-400.webp
           if git diff --cached --quiet; then echo "scan mirror unchanged"; exit 0; fi
           git -c user.name="scan-mirror-bot" -c user.email="noreply@ivanmanfredi.com" commit -m "scan mirror: sync from personal-site $GITHUB_SHA"
+          # scan-mirror and client-mirror both push to this repo (disjoint dirs);
+          # rebase-and-retry so the second pusher doesn't fail non-fast-forward.
+          for i in 1 2 3 4 5; do
+            git push origin main && exit 0
+            git pull --rebase origin main
+          done
           git push origin main
 
   # Client mirror: token-gated demo boards are a product surface too, served at
@@ -152,4 +158,9 @@ jobs:
           git add client/
           if git diff --cached --quiet; then echo "client mirror unchanged"; exit 0; fi
           git -c user.name="client-mirror-bot" -c user.email="noreply@ivanmanfredi.com" commit -m "client mirror: sync from personal-site $GITHUB_SHA"
+          # see scan-mirror note: rebase-and-retry against the sibling mirror job
+          for i in 1 2 3 4 5; do
+            git push origin main && exit 0
+            git pull --rebase origin main
+          done
           git push origin main
