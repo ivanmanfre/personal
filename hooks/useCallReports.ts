@@ -36,7 +36,7 @@ export function useCallReports() {
       const { data } = await supabase
         .from('call_reports')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('meeting_date', { ascending: false, nullsFirst: false })
         .limit(200);
       setReports((data || []).map(mapCallReport));
     } catch (err) {
