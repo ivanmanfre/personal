@@ -553,6 +553,11 @@ export interface CommentDraft {
   commentText: string;
   status: string;
   draftedAt: string | null;
+  // Live comment engine (comment_feed, 2026-07-17): drafts+approve-to-post.
+  targetClass?: string | null;
+  hook?: string | null;
+  approveToken?: string | null;
+  postError?: string | null;
 }
 
 export interface CommentingTarget {

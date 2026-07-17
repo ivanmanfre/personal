@@ -723,23 +723,33 @@ export function useOutreachPipeline(timezone?: string) {
   // Comment drafts (commenting_log where status='draft')
   const [commentDrafts, setCommentDrafts] = useState<CommentDraft[]>([]);
 
+  // Repointed 2026-07-17: commenting_log (dead legacy lane) -> comment_feed, the live
+  // drafts+approve-to-post engine. Pending rows carry the machine draft + a per-row
+  // approve token; recent non-pending rows (3d) ride along so outcomes show inline.
   const fetchCommentDrafts = useCallback(async () => {
     try {
+      const since = new Date(Date.now() - 3 * 86400_000).toISOString();
       const { data } = await supabase
-        .from('commenting_log')
-        .select('id, target_id, post_excerpt, post_url, post_social_id, comment_text, status, drafted_at, commenting_targets(name)')
-        .eq('status', 'draft')
-        .order('drafted_at', { ascending: false });
+        .from('comment_feed')
+        .select('id, target_id, target_name, target_class, hook, post_url, post_social_id, manual_comment_text, status, post_error, approve_token, created_at')
+        .not('manual_comment_text', 'is', null)
+        .in('status', ['pending', 'approved', 'posting', 'posted', 'failed'])
+        .gte('created_at', since)
+        .order('created_at', { ascending: false });
       setCommentDrafts((data || []).map((r: any) => ({
         id: r.id,
         targetId: r.target_id,
-        targetName: r.commenting_targets?.name || null,
-        postExcerpt: r.post_excerpt || null,
+        targetName: r.target_name || null,
+        postExcerpt: r.hook || null,
         postUrl: r.post_url || null,
         postSocialId: r.post_social_id || null,
-        commentText: r.comment_text,
+        commentText: r.manual_comment_text,
         status: r.status,
-        draftedAt: r.drafted_at || null,
+        draftedAt: r.created_at || null,
+        targetClass: r.target_class || null,
+        hook: r.hook || null,
+        approveToken: r.approve_token || null,
+        postError: r.post_error || null,
       })));
     } catch (err) {
       toastError('load comment drafts', err);
@@ -748,28 +758,50 @@ export function useOutreachPipeline(timezone?: string) {
 
   useEffect(() => { fetchCommentDrafts(); }, [fetchCommentDrafts]);
 
+  // Approve/skip fire the Comment Approval Poster webhook with the row's secret token.
+  // The webhook replies with a plain-text verdict ("approved: X - posting in ~N min",
+  // a cap/cooldown refusal, "skipped: X") — surface it verbatim. If the browser can't
+  // read the response (CORS), fall back to a no-cors fire: the webhook still executes,
+  // the refetch shows the row's real status.
+  const fireCommentFeedWebhook = useCallback(async (draftId: string, token: string, dismiss: boolean) => {
+    const url = `https://n8n.ivanmanfredi.com/webhook/comment-approve?id=${draftId}&k=${token}${dismiss ? '&dismiss=1' : ''}`;
+    try {
+      const res = await window.fetch(url);
+      const msg = (await res.text()).trim();
+      if (res.ok && msg) toastSuccess(msg);
+      else if (msg) toastError('comment engine', new Error(msg));
+    } catch {
+      try { await window.fetch(url, { mode: 'no-cors' }); } catch { /* request may still have landed */ }
+      toastSuccess(dismiss ? 'Skip sent' : 'Approve sent, status updates shortly');
+    }
+    setTimeout(() => { fetchCommentDrafts(); }, 1500);
+    await fetchCommentDrafts();
+  }, [fetchCommentDrafts]);
+
   const approveCommentDraft = useCallback(async (draftId: string, commentText: string) => {
     try {
-      await supabase.from('commenting_log').update({
-        status: 'approved',
-        approved_at: new Date().toISOString(),
-        comment_text: commentText,
-      }).eq('id', draftId);
-      toastSuccess('Comment approved — sender picks it up within 30 min');
-      await fetchCommentDrafts();
+      const draft = commentDrafts.find((d) => d.id === draftId);
+      if (!draft?.approveToken) { toastError('approve comment', new Error('missing approve token, refresh the page')); return; }
+      // Edited before approving: persist the edit first, the poster posts whatever
+      // manual_comment_text holds at post time (it re-reads the row after the jitter).
+      if (commentText && commentText !== draft.commentText) {
+        await supabase.from('comment_feed').update({ manual_comment_text: commentText }).eq('id', draftId);
+      }
+      await fireCommentFeedWebhook(draftId, draft.approveToken, false);
     } catch (err) {
       toastError('approve comment', err);
     }
-  }, [fetchCommentDrafts]);
+  }, [commentDrafts, fireCommentFeedWebhook]);
 
   const rejectCommentDraft = useCallback(async (draftId: string) => {
     try {
-      await supabase.from('commenting_log').update({ status: 'skipped' }).eq('id', draftId);
-      await fetchCommentDrafts();
+      const draft = commentDrafts.find((d) => d.id === draftId);
+      if (!draft?.approveToken) { toastError('skip comment', new Error('missing approve token, refresh the page')); return; }
+      await fireCommentFeedWebhook(draftId, draft.approveToken, true);
     } catch (err) {
       toastError('reject comment', err);
     }
-  }, [fetchCommentDrafts]);
+  }, [commentDrafts, fireCommentFeedWebhook]);
 
   // Proposed commenting targets (commenting_targets where status='proposed')
   const [proposedTargets, setProposedTargets] = useState<CommentingTarget[]>([]);

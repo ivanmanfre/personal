@@ -898,8 +898,8 @@ const OutreachPanel: React.FC = () => {
         <div className="bg-zinc-900/90 border border-purple-500/20 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <MessageSquare className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-semibold text-purple-400">{commentDrafts.length} Comment Draft{commentDrafts.length > 1 ? 's' : ''} Awaiting Review</span>
-            <span className="text-[9px] text-zinc-500">seed commenting_targets to generate drafts automatically</span>
+            <span className="text-sm font-semibold text-purple-400">{commentDrafts.length} Comment Draft{commentDrafts.length > 1 ? 's' : ''}</span>
+            <span className="text-[9px] text-zinc-500">approve posts it on LinkedIn as-is, 2 to 9 min later. skip dismisses.</span>
           </div>
           <div className="space-y-3">
             {commentDrafts.map((draft) => (
@@ -907,7 +907,16 @@ const OutreachPanel: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-zinc-200">{draft.targetName || 'Unknown target'}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">LinkedIn Comment</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">{draft.targetClass || 'LinkedIn Comment'}</span>
+                    {draft.status !== 'pending' && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                        draft.status === 'posted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : draft.status === 'failed' ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                      }`} title={draft.postError || undefined}>
+                        {draft.status === 'posted' ? 'posted' : draft.status === 'failed' ? `failed${draft.postError ? ': ' + draft.postError.slice(0, 60) : ''}` : 'posting soon'}
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-zinc-500">{draft.draftedAt ? timeAgo(draft.draftedAt) : ''}</span>
                 </div>
@@ -918,11 +927,13 @@ const OutreachPanel: React.FC = () => {
                 )}
                 <textarea
                   defaultValue={draft.commentText}
+                  readOnly={draft.status !== 'pending'}
                   id={`comment-draft-${draft.id}`}
                   rows={Math.min(5, Math.max(2, draft.commentText.split('\n').length + 1))}
                   className="w-full text-xs text-zinc-300 mb-3 whitespace-pre-wrap leading-relaxed bg-zinc-900/60 border border-zinc-700/30 rounded-lg p-2.5 resize-y focus:outline-none focus:border-zinc-600"
                 />
                 <div className="flex items-center gap-2">
+                  {draft.status === 'pending' && (<>
                   <button
                     onClick={async (e) => {
                       const btn = e.currentTarget;
@@ -953,6 +964,7 @@ const OutreachPanel: React.FC = () => {
                   >
                     Skip
                   </button>
+                  </>)}
                   {draft.postUrl && (
                     <a href={draft.postUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-zinc-500 hover:text-zinc-300 ml-auto transition-colors">
                       View post ↗
