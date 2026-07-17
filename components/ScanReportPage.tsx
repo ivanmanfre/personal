@@ -2087,6 +2087,12 @@ const RECORD_CSS = `
 /* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
 .bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
 .bbrec .chcta p{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(17px,2.2vw,22px);line-height:1.2;color:var(--ink);max-width:34ch;margin:0;}
+/* mid-proof ask — quieter than a chapter CTA, closes each exhibit GROUP so no proof stretch
+   runs more than ~1.5 viewports without a booking lever (content_system only) */
+.bbrec .midask{margin-top:clamp(18px,2.4vw,28px);padding-top:clamp(13px,1.7vw,18px);border-top:1px solid var(--hair);display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;}
+.bbrec .midask p{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.5vw,17px);line-height:1.45;color:var(--sec);margin:0;max-width:50ch;}
+.bbrec .midask a{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(11px,1.2vw,13px);color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;white-space:nowrap;flex-shrink:0;}
+.bbrec .midask a:hover{color:var(--sec);border-color:var(--sec);}
 .bbrec .promises{margin-top:clamp(22px,2.8vw,34px);display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .promises{grid-template-columns:1fr;}}
 .bbrec .pcell{padding:clamp(16px,2.2vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
@@ -2152,8 +2158,13 @@ const RECORD_CSS = `
 }
 `;
 
-// One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
-// under reduced motion. Replaces candidate C's CSS .reveal so it obeys useReducedMotion.
+// One-time reveal per section — the canon motion: rise ≤26px, ~0.7s, once. Settled under
+// reduced motion. Transform-ONLY (no opacity): per the lesson at line ~298, animating opacity
+// on a whileInView reveal leaves below-fold content stuck invisible/ghosted whenever the
+// IntersectionObserver never fires (full-page capture, instant-jump, prefers-reduced-motion,
+// or a fast scroll past a tall section). Animating y alone guarantees the resting state is
+// always full-ink at opacity 1 — the reveal still rises on scroll, but can never break the ink
+// law. Matches RevealHeadline / SCROLL_REVEAL, which are transform-only for the same reason.
 const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section'; id?: string }> = ({ children, className, style, el = 'div', id }) => {
   const reduce = useReducedMotion();
   const M = el === 'section' ? motion.section : motion.div;
@@ -2162,8 +2173,8 @@ const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: Rea
       id={id}
       className={className}
       style={style}
-      initial={reduce ? false : { opacity: 0, y: 22 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduce ? false : { y: 22 }}
+      whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.7, ease: EASE }}
     >
@@ -2961,10 +2972,19 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   };
 
   // One-line CTA row closing each chapter — same ink button, red stays reserved for the end.
-  const ChapterCta = ({ line }: { line: React.ReactNode }) => (
+  const ChapterCta = ({ line, cta = 'Book the free fit call' }: { line: React.ReactNode; cta?: string }) => (
     <div className="chcta">
       <p>{line}</p>
-      <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
+      <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">{cta} <span aria-hidden>→</span></a>
+    </div>
+  );
+
+  // Quieter mid-proof ask — closes an individual exhibit GROUP so no proof stretch runs more
+  // than ~1.5 viewports without a booking lever. Ink underline, not the full chapter button.
+  const MidAsk = ({ line, cta }: { line: React.ReactNode; cta: string }) => (
+    <div className="midask">
+      <p>{line}</p>
+      <a href={bookUrl} target="_blank" rel="noopener noreferrer">{cta} <span aria-hidden>→</span></a>
     </div>
   );
 
@@ -3068,6 +3088,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   ))}
                 </div>
               )}
+              <MidAsk
+                line={<>That is one week in {who}&rsquo;s voice. We run it every week, on auto-approve.</>}
+                cta="See the full month on the call"
+              />
             </div>
           )}
 
@@ -3129,6 +3153,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
             </div>
           )}
+          {(lm?.title || newsletter || followUps) && (
+            <MidAsk
+              line={<>The gated asset, the newsletter, and the sequence all go live on {cleanDomain || 'your domain'} in week one.</>}
+              cta="Walk it live with me"
+            />
+          )}
           </div>{/* /cs-x-inbound */}
 
           {/* Warm outbound */}
@@ -3151,7 +3181,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             </div>
           </div>{/* /cs-x-outbound */}
 
-          <ChapterCta line={<>The whole system opens in week one, {who}. Effects observed in booked calls.</>} />
+          <ChapterCta line={<>The whole system opens in week one, {who}. Effects observed in booked calls.</>} cta="Start with the fit call" />
         </Rev>
 
         {/* ── DIAGNOSIS · the closing argument, read from their own feed ── */}
@@ -3168,6 +3198,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
             ))}
           </div>
+          <MidAsk
+            line={<>That is the gap as we read it today. The prescription above closes all three lines at once.</>}
+            cta="Scope it with me"
+          />
         </Rev>
 
         {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
@@ -3251,6 +3285,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               ))}
             </div>
           </div>
+          <MidAsk
+            line={<>Same three pillars, run for {who} from week one.</>}
+            cta="Take the fit call"
+          />
           {/* Lemonade — two founders, the monthly client figure dominant */}
           <div className="pf">
             <div className="pf-top">

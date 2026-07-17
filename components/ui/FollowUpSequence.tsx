@@ -46,8 +46,8 @@ const FollowUpSequence: React.FC<Props> = ({ data, accent }) => {
             <motion.div
               key={`${f.step}-${f.day}-${i}`}
               className="relative pl-10"
-              initial={reduce ? false : { opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={reduce ? false : { y: 16 }}
+              whileInView={{ y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.55, ease: EASE, delay: reduce ? 0 : i * 0.08 }}
             >

@@ -36,8 +36,8 @@ const NewsletterMockup: React.FC<Props> = ({ data, accent, who, logoUrl }) => {
   return (
     <motion.div
       className="w-full max-w-[640px] mx-auto overflow-hidden"
-      initial={reduce ? false : { opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduce ? false : { y: 20 }}
+      whileInView={{ y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.7, ease: EASE }}
       style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${HAIRLINE}`, boxShadow: CI_SHADOW }}
