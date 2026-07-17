@@ -1993,11 +1993,11 @@ const RECORD_CSS = `
 .bbrec .inside .it{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,16px);letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
 /* embedded-LM exhibit masthead — cover plate beside the branded title band (sharp, hairline, no shadow/radius) */
-.bbrec .lm-frame{display:grid;grid-template-columns:200px 1fr;gap:clamp(20px,3vw,40px);align-items:start;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair);padding:clamp(18px,2.4vw,26px) 0;}
+.bbrec .lm-frame{display:grid;grid-template-columns:clamp(280px,32%,420px) 1fr;gap:clamp(20px,3vw,40px);align-items:start;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair);padding:clamp(18px,2.4vw,26px) 0;}
 .bbrec .lm-frame-cover{border:1px solid var(--ink);background:#0e0e12;overflow:hidden;align-self:start;}
 .bbrec .lm-frame-cover img{display:block;width:100%;}
 .bbrec .lm-frame-body{min-width:0;}
-@media(max-width:640px){.bbrec .lm-frame{grid-template-columns:1fr;gap:16px;}.bbrec .lm-frame-cover{max-width:220px;}}
+@media(max-width:640px){.bbrec .lm-frame{grid-template-columns:1fr;gap:16px;}.bbrec .lm-frame-cover{max-width:340px;}}
 /* governance strip */
 .bbrec .gov{margin-top:clamp(24px,3vw,34px);display:flex;flex-wrap:wrap;gap:10px 26px;}
 .bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;color:var(--sec);}
@@ -2854,6 +2854,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     : null;
   const roomMode: 'network' | 'engager' | null = audNetOk ? 'network' : (audEngIcp >= 1 && audNamed.length > 0 ? 'engager' : null);
   const room = aud && roomMode ? {
+    foldLine: roomMode === 'network'
+      ? `${audEst ? `~${audEst}` : String(audNetCount)} buyers already sit in your network, ${who}.`
+      : `${audEngIcp} ${audEngIcp === 1 ? 'buyer is' : 'buyers are'} already in your comments, ${who}.`,
     figure: roomMode === 'network' ? (audEst ? `~${audEst}` : String(audNetCount)) : String(audEngIcp),
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
@@ -2876,16 +2879,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           audPosts ? `the reactions and comments on your last ${audPosts} posts` : '',
         ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
   } : null;
-
-  const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
-    silent_founder:    { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
-    inconsistent:      { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
-    no_capture:        { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
-    invisible:         { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
-    uncaptured_feed:   { effect: 'WARNING: THE FEED CAPTURES NOBODY', verdict: 'The posting happens. Not one reader is named or kept.' },
-    unworked_audience: { effect: 'WARNING: THE ROOM GOES UNWORKED', verdict: 'The audience is built. Nobody works a single name in it.' },
-  };
-  const warn = WARN[cs.archetype] ?? WARN.silent_founder;
 
   // ── Pillars: the hero table + chapter seating ──────────────────────────────
   // Ladder: builder-emitted cs.pillars → wins[].pillar tag → keyword heuristic on the
@@ -2982,22 +2975,26 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
       <main className="wrap">
         {/* ── DOCLINE ─────────────────────────── */}
-        <Docline docType="Scan report · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
+        {/* One provenance line; the reader's first viewport goes to the gift, never to chrome. */}
+        <div className="docline">
+          <span>Prepared for {founderFull}{displayCompany && founderFull !== displayCompany ? ` · ${displayCompany}` : ''} · by Ivan Manfredi</span>
+        </div>
 
-        {/* ── DATA PLATE ──────────────────────── */}
-        <DataPlate cells={[
-          { k: 'Prepared for', v: founderFull },
-          ...(companyName && founderFull !== companyName ? [{ k: 'Company', v: companyName }] : []),
-          { k: 'Scanned', v: <>LinkedIn feed{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
-          { k: 'Scan date', v: <span className="num">{scanDate}</span> },
-          { k: 'Operator of record', v: 'Ivan Manfredi' },
-        ]} />
-
-        {/* ── FOLD ────────────────────────────── */}
+        {/* ── FOLD ── leads with the counted gift when the audit produced one ── */}
         <Rev el="section" className="fold">
           <div>
-            <h1 className="company">{displayCompany}</h1>
-            <p className="lede">{cs.thesis ? scrubApproval(cs.thesis) : 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
+            {room ? (
+              <>
+                <div className="sec-label" style={{ marginBottom: 16 }}><span className="sq" aria-hidden /> {displayCompany}</div>
+                <h1 className="company" style={{ fontSize: 'clamp(32px,5vw,62px)', lineHeight: 1.05, letterSpacing: '-0.025em', maxWidth: '20ch' }}>{room.foldLine}</h1>
+                <p className="lede">{cs.thesis ? scrubApproval(cs.thesis) : 'This page shows the machine that works them.'}</p>
+              </>
+            ) : (
+              <>
+                <h1 className="company">{displayCompany}</h1>
+                <p className="lede">{cs.thesis ? scrubApproval(cs.thesis) : 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
+              </>
+            )}
           </div>
         </Rev>
 
@@ -3006,9 +3003,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev className="box tilt">
             <div className="box-head">
               <span className="sqbig" aria-hidden />
-              <span className="lbl">{warn.effect}</span>
+              <span className="lbl">What runs today, and what we&rsquo;d run.</span>
             </div>
-            <div className="box-body">{warn.verdict}</div>
             <div className="ptab">
               <div className="ptab-h">
                 <span>Pillar</span>
@@ -3023,7 +3019,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
               ))}
             </div>
-            <p className="box-note">Read from your public presence on {scanDate}. Tap a pillar to jump to it.</p>
+            <p className="box-note">Read from your public presence. Tap a pillar to jump to it.</p>
           </Rev>
         </div>
 
@@ -3040,27 +3036,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="pf-fig">{room.figure}</div>
               <p className="aud-sub">{room.figureSub}</p>
             </div>
-            {/* Grade scale: bands are OUR scale from the rooms we read for this buyer type
-                (consumer-brand sellers only, enforced upstream by the audit's vertical gate;
-                a different ICP would need re-based bands). ~1% is the background rate of DTC
-                decision-makers in a generic network; the flagship good room read 4.6%. */}
             {roomMode === 'network' && audNetDensity !== null && (
-              <div>
-                <div className="pf-figk" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>How rooms grade, share of connections that are buyers</div>
-                <div className="aud-scale">
-                  {[
-                    { r: 'Under 1%', w: 'Background noise. Almost every room starts here.', on: audNetDensity < 1 },
-                    { r: '1 to 2%', w: 'A typical room. Some buyers, mostly peers.', on: audNetDensity >= 1 && audNetDensity < 2 },
-                    { r: 'Above 2%', w: 'Raw material worth working.', on: audNetDensity >= 2 },
-                  ].map((b, i) => (
-                    <div className={`aud-band${b.on ? ' on' : ''}`} key={i}>
-                      <div className="abr">{b.r}</div>
-                      <div className="abw">{b.w}</div>
-                      {b.on ? <div className="abys">Yours · {audNetDensity}%</div> : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <p className="aud-sub" style={{ marginTop: 'clamp(14px,1.8vw,20px)' }}>A typical room reads 1 to 2% buyers. Yours reads {audNetDensity}%.</p>
             )}
             <div className="aud-rows">
               <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
@@ -3086,7 +3063,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 01&nbsp;·&nbsp;Content</>}
             title={<>Once daily, in your voice.</>}
-            note={<>Built from your own material before this page existed.</>}
           />
           <WinRows k="content" />
           {feedSpec.posts.length > 0 && (
@@ -3095,27 +3071,27 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
                 caption={sourceQuotes.length ? <>From your own words: {sourceQuotes.slice(0, 2).map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
-                <div style={{ background: '#FFFFFF' }}>
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-4 items-start" style={{ background: '#FFFFFF', padding: 'clamp(10px,1.4vw,16px)' }}>
                   <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
+                  {restSpec && restSpec.posts.length > 0 && (
+                    <div className="grid gap-3 content-start">
+                      {restSpec.posts.map((p, i) => (
+                        <LinkedInPostPreview
+                          key={i}
+                          compact
+                          clampLines={6}
+                          author={restSpec.profile.name}
+                          headline={restSpec.profile.headline}
+                          avatarUrl={restSpec.profile.avatarUrl}
+                          text={p.body}
+                          mediaUrl={null}
+                          stats={{ reactions: p.reactions, comments: p.comments }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Exhibit>
-              {restSpec && restSpec.posts.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start" style={{ marginTop: 16 }}>
-                  {restSpec.posts.map((p, i) => (
-                    <LinkedInPostPreview
-                      key={i}
-                      compact
-                      clampLines={9}
-                      author={restSpec.profile.name}
-                      headline={restSpec.profile.headline}
-                      avatarUrl={restSpec.profile.avatarUrl}
-                      text={p.body}
-                      mediaUrl={null}
-                      stats={{ reactions: p.reactions, comments: p.comments }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           )}
           <ChapterCta line={<>This week is already written, {who}. On the call we walk it live.</>} />
@@ -3228,13 +3204,13 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
             <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
           </div>
-          <ChapterCta line={<>The warm lane opens in week one. Effects observed in booked calls.</>} />
+          <ChapterCta line={<>This lane opens in week one, {who}.</>} />
         </Rev>
 
         {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
           <SecHead
-            label={<>Effects observed&nbsp;·&nbsp;on the engine today</>}
+            label={<>Running today&nbsp;·&nbsp;on the engine</>}
             title={<>Two founders run this engine already.</>}
             note="Real operators, real numbers. Both run the same three pillars this page just walked."
           />
@@ -3275,7 +3251,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
             </div>
             <div className="pf-quote">&ldquo;Calls keep landing from the guides while we&rsquo;re heads-down with clients. Five a month, give or take.&rdquo;<span className="who">Lemonade · David Dinsmore &amp; Billy Mackie, co-founders</span></div>
-            <figure className="pf-sample"><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's gated lead-capture page, built by the engine" loading="lazy" onError={fallbackOnError} /></figure>
+            <figure className="pf-sample" style={{ maxHeight: 420, overflow: 'hidden' }}><img src="/content-system/lemonade-thankyou.webp" alt="Lemonade's gated lead-capture page, built by the engine" loading="lazy" style={{ objectFit: 'cover', objectPosition: 'top', width: '100%' }} onError={fallbackOnError} /></figure>
             <div className="pf-cap">Fig · Lemonade&rsquo;s gated funnel page, built by the engine and live today.</div>
           </div>
         </Rev>
@@ -3284,7 +3260,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         {/* No reveal wrapper: a fast scroll can outrun whileInView on cold cache, and the
             operator + final CTA must never strand invisible. Static render, always visible. */}
         <section className="sec">
-          <div className="sec-label"><span className="sq" aria-hidden /> Operator of record</div>
+          <div className="sec-label"><span className="sq" aria-hidden /> Who runs it</div>
           <div className="operator">
             <div className="op-portrait">
               <img src="/ivan-portrait-400.webp" alt="Ivan Manfredi" loading="lazy" onError={fallbackOnError} />
@@ -3302,7 +3278,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <div className="box cta">
             <div className="box-head" style={{ justifyContent: 'center' }}>
               <span className="sqbig" aria-hidden />
-              <span className="lbl">WARNING: EXCESSIVE INBOUND</span>
+              <span className="lbl">Next step</span>
             </div>
             <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
