@@ -3285,6 +3285,165 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
   );
 }
 
+/** Client photo pool — the one surface the client writes TO. Uploads land in the public
+ *  `client-photos` bucket under the board slug; the engine pulls from here for real-face
+ *  post images. Same anon trust posture as the post-stills library: the upload runs with
+ *  the anon client from inside the token-gated page (bucket has anon insert+select). */
+type PhotoItem = { name: string; url: string; createdAt: string };
+type PhotoUpload = { key: string; name: string; status: 'uploading' | 'done' | 'error'; error?: string };
+
+function PhotosSurface({ board: _board, accent, slug }: { board: Board; accent: string; slug: string }) {
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploads, setUploads] = useState<PhotoUpload[]>([]);
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const clearTimer = useRef<number>(0);
+
+  const loadPhotos = async () => {
+    if (!slug) { setLoading(false); return; }
+    const { data, error } = await supabase.storage
+      .from('client-photos')
+      .list(slug, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+    if (!error && data) {
+      setPhotos(
+        data
+          .filter((f) => f.id !== null && !/^\./.test(f.name))
+          .map((f) => ({
+            name: f.name,
+            url: supabase.storage.from('client-photos').getPublicUrl(`${slug}/${f.name}`).data.publicUrl,
+            createdAt: f.created_at || f.updated_at || '',
+          })),
+      );
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadPhotos();
+    return () => window.clearTimeout(clearTimer.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !slug) return;
+    window.clearTimeout(clearTimer.current);
+    setBusy(true);
+    setUploads(files.map((f, i) => ({ key: `${Date.now()}-${i}`, name: f.name, status: 'uploading' as const })));
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const safe = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').toLowerCase();
+      const path = `${slug}/${Date.now()}-${i}-${safe}`;
+      const { error } = await supabase.storage
+        .from('client-photos')
+        .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      setUploads((prev) => prev.map((u, idx) => (idx === i ? { ...u, status: error ? 'error' : 'done', error: error?.message } : u)));
+    }
+    setBusy(false);
+    if (inputRef.current) inputRef.current.value = '';
+    await loadPhotos();
+    // Clear the per-file chips after a beat once everything settled.
+    clearTimer.current = window.setTimeout(() => setUploads([]), 5000);
+  };
+
+  const count = photos.length;
+
+  return (
+    <div>
+      <SectionHead
+        eyebrow="Your photo pool"
+        title="Photos"
+        sub="Candid shots of you doing real things, plus a few founder, family and friends photos. Real faces pull harder than stock. These feed your post images."
+      />
+
+      {/* Upload control + counter */}
+      <div className="mb-7 rounded-xl bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div style={{ fontFamily: SERIF, fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>
+              {count} {count === 1 ? 'photo' : 'photos'} uploaded
+            </div>
+            <div className="mt-1.5 text-[12.5px]" style={{ color: FAINT }}>20 to 30 is the sweet spot.</div>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13.5px] font-semibold"
+              style={{ background: accent, color: inkOn(accent), fontFamily: BODY, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {busy ? 'Uploading…' : 'Upload photos'}
+            </button>
+            <span className="text-[11px]" style={{ color: FAINT }}>JPG or PNG, any number at once.</span>
+          </div>
+        </div>
+        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onPick} />
+
+        {/* Per-file progress chips */}
+        {uploads.length > 0 && (
+          <div className="mt-4 flex flex-col gap-1.5 border-t pt-4" style={{ borderColor: DIVIDE }}>
+            {uploads.map((u) => (
+              <div key={u.key} className="flex items-center gap-2.5 text-[12.5px]">
+                <span
+                  className="inline-block shrink-0"
+                  style={{ width: 7, height: 7, borderRadius: 999, background: u.status === 'done' ? accent : u.status === 'error' ? '#c0392b' : 'rgba(19,18,16,0.25)' }}
+                  aria-hidden
+                />
+                <span className="truncate" style={{ color: INK_SOFT, maxWidth: '32ch' }}>{u.name}</span>
+                <span style={{ color: u.status === 'error' ? '#c0392b' : FAINT }}>
+                  {u.status === 'uploading' ? 'uploading…' : u.status === 'done' ? 'added' : (u.error || 'failed')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Grid of already-uploaded photos */}
+      {loading ? (
+        <div className="py-10 text-center text-[13px]" style={{ color: FAINT }}>Loading your photos…</div>
+      ) : count === 0 ? (
+        <div
+          className="flex flex-col items-center justify-center rounded-xl px-6 py-12 text-center"
+          style={{ border: `1px dashed ${LINE_BOLD}`, background: PAPER_SUNK }}
+        >
+          <div style={{ fontFamily: BODY, fontSize: 14, color: INK_SOFT }}>No photos yet.</div>
+          <div className="mt-1.5 max-w-[42ch] text-[12.5px]" style={{ color: FAINT }}>
+            Drop in 20 to 30 real shots and the engine starts pulling your face into the feed.
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+          {photos.map((p) => (
+            <a
+              key={p.name}
+              href={p.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative block aspect-square overflow-hidden rounded-lg"
+              style={{ border: `1px solid ${LINE}`, background: PAPER_SUNK }}
+            >
+              <img
+                src={p.url}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+                style={{ display: 'block' }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
+              />
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- page ----------
 // One vocabulary on every viewport: mobile shows the same words, sized down, never renamed.
 const TABS = [
@@ -3294,6 +3453,7 @@ const TABS = [
   { id: 'lm', label: 'Lead magnets', group: 'Content' },
   { id: 'newsletter', label: 'Newsletter', group: 'Content' },
   { id: 'voice', label: 'Voice', group: 'Content' },
+  { id: 'photos', label: 'Photos', group: 'Content' },
   { id: 'leads', label: 'Leads', group: 'Reports' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
@@ -3329,6 +3489,13 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
     </>
   ),
   voice: <path d="M4 10v4M8 7.5v9M12 4v16M16 7.5v9M20 10v4" />,
+  photos: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+      <circle cx="9" cy="10.5" r="1.6" />
+      <path d="m4.5 17 4.5-4.5 3 3 3-3.5 5 5" />
+    </>
+  ),
   leads: <path d="M3.5 5.5h17l-6.5 7.7v5.6l-4 2v-7.6z" />,
   performance: <path d="M18 20V10M12 20V4M6 20v-6" />,
   strategy: (
@@ -3920,6 +4087,7 @@ export default function ClientBoardPage() {
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
+    photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
@@ -4131,7 +4299,7 @@ export default function ClientBoardPage() {
 
       {/* Mobile bottom tabs */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/85 px-1 pt-1 backdrop-blur-md lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
-        <nav className="grid w-full grid-cols-8" aria-label="Board sections">
+        <nav className="grid w-full grid-cols-5" aria-label="Board sections">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
