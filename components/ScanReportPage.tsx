@@ -11,6 +11,9 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
+import NewsletterMockup from './ui/NewsletterMockup';
+import FollowUpSequence from './ui/FollowUpSequence';
+import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -1900,11 +1903,11 @@ const RECORD_CSS = `
 .bbrec .reg-right{display:flex;align-items:center;gap:16px;}
 .bbrec .btn-ink{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--paper);background:var(--ink);padding:9px 16px;text-decoration:none;white-space:nowrap;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
 /* docline */
-.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(18px,3vw,32px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
+.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(28px,5vw,52px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
 .bbrec .sq{width:9px;height:9px;background:var(--ink);flex-shrink:0;}
 .bbrec .docline .rule{flex:1;height:1px;background:var(--hair);min-width:24px;}
 /* data plate */
-.bbrec .plate{margin-top:clamp(12px,2vw,20px);border:1px solid var(--ink);}
+.bbrec .plate{margin-top:clamp(18px,2.6vw,26px);border:1px solid var(--ink);}
 .bbrec .plate-grid{display:grid;grid-template-columns:repeat(3,1fr);}
 .bbrec .cell{padding:clamp(12px,1.7vw,17px) clamp(13px,1.7vw,19px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .plate-grid .cell:nth-child(3n){border-right:none;}
@@ -1913,18 +1916,18 @@ const RECORD_CSS = `
 .bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
 @media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
 @media(max-width:430px){.bbrec .plate-grid .cell{padding:10px 11px;}.bbrec .v{font-size:13px;}}
-/* masthead (compact — the offer box comes immediately after) */
-.bbrec .fold{padding-top:clamp(18px,2.8vw,30px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(20px,4vw,44px);align-items:end;}
-@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:14px;align-items:start;}}
-.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(30px,5.6vw,58px);line-height:0.94;color:var(--ink);}
-.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.4vw,18px);line-height:1.45;color:var(--sec);max-width:44ch;margin-top:clamp(10px,1.4vw,16px);}
+/* fold */
+.bbrec .fold{padding-top:clamp(34px,6vw,60px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(26px,5vw,56px);align-items:end;}
+@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:26px;align-items:start;}}
+.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(38px,8vw,86px);line-height:0.92;color:var(--ink);}
+.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,19px);line-height:1.5;color:var(--sec);max-width:40ch;margin-top:clamp(16px,2vw,22px);}
 .bbrec .reading{border:1px solid var(--ink);padding:clamp(15px,2vw,20px);}
 .bbrec .reading .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
 .bbrec .reading .rn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(40px,6vw,58px);line-height:0.9;margin-top:6px;color:var(--ink);}
 .bbrec .reading .rd{font-family:var(--serif);font-style:italic;font-weight:400;font-size:14px;line-height:1.4;color:var(--muted);margin-top:10px;}
 .bbrec .reading .rrow{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--hair);margin-top:12px;padding-top:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
 /* THE BOX */
-.bbrec .boxwrap{padding-top:clamp(16px,2.4vw,26px);}
+.bbrec .boxwrap{padding-top:clamp(34px,5vw,58px);}
 .bbrec .box{border:4px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;background:var(--paper);padding:clamp(20px,3vw,34px) clamp(20px,3vw,36px) clamp(24px,3.4vw,38px);}
 .bbrec .box.tilt{transform:rotate(-0.6deg);}
 .bbrec .box-head{display:flex;align-items:center;gap:12px;padding-bottom:clamp(13px,1.8vw,17px);border-bottom:2px solid var(--ink);}
@@ -1944,7 +1947,7 @@ const RECORD_CSS = `
 .bbrec .afp-v{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);line-height:1.25;letter-spacing:-0.01em;color:var(--ink);}
 @media(max-width:640px){.bbrec .afp-h{display:none;}.bbrec .afp-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .afp-p{font-size:15px;}.bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
 /* section scaffold */
-.bbrec .sec{padding-top:clamp(38px,5.6vw,66px);}
+.bbrec .sec{padding-top:clamp(52px,8vw,94px);}
 .bbrec .sec-label{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--muted);flex-wrap:wrap;}
 .bbrec .sec-label .sq{width:8px;height:8px;}
 .bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
@@ -1966,29 +1969,7 @@ const RECORD_CSS = `
 .bbrec .figlabel{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
 .bbrec .figlabel .sq{width:7px;height:7px;}
 .bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
-.bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
-/* punctuation kern — Schibsted Grotesk seats periods/commas on a wide left sidebearing that
-   reads as a floating space at display sizes ("built . Nobody"). Terminal punctuation is
-   wrapped in .pk at render (kp()) and pulled flush. Not literal whitespace — the DOM text
-   stays clean; this only closes the optical gap. */
-.bbrec .pk{margin-left:-0.13em;}
-/* clinical specimen cards — the compressed exhibit rendering (ported from dir-a): mono
-   metadata row + headline + a source-clamped 2-line excerpt, BB grammar only (ink, hairline,
-   no radius/shadow/accent). Replaces the full newsletter/follow-up/engager mockups in C. */
-.bbrec .spec{margin-top:clamp(16px,2.2vw,22px);border-top:1px solid var(--ink);}
-.bbrec .spec-r{padding:clamp(13px,1.8vw,17px) 0;border-bottom:1px solid var(--hair);}
-.bbrec .spec-r:last-child{border-bottom:1px solid var(--ink);}
-.bbrec .spec-m{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
-.bbrec .spec-m .sq{width:8px;height:8px;flex-shrink:0;}
-.bbrec .spec-m .day{color:var(--ink);}
-.bbrec .spec-t{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.015em;font-size:clamp(16px,1.85vw,20px);line-height:1.25;color:var(--ink);margin-top:8px;}
-.bbrec .spec-x{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:6px;}
-@media(max-width:640px){.bbrec .spec-m{font-size:11px;}}
-/* quiet ask under the live LM iframe — caption register, ink underline link, never a button.
-   Keeps the ~820px embed stretch from running without a booking lever (item 7). */
-.bbrec .iask{margin-top:14px;font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.5;color:var(--muted);max-width:58ch;}
-.bbrec .iask a{font-family:var(--grotesk);font-style:normal;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(10.5px,1.1vw,12px);color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:1px;white-space:nowrap;}
-.bbrec .iask a:hover{color:var(--sec);border-color:var(--sec);}
+.bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(14.5px,1.45vw,16px);line-height:1.5;color:var(--sec);margin-top:14px;max-width:58ch;}
 /* lead-magnet exhibit */
 /* voice provenance pairing */
 .bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;}
@@ -2034,11 +2015,11 @@ const RECORD_CSS = `
 .bbrec .kmet .m{padding:clamp(14px,2vw,20px) clamp(14px,2vw,22px);border-right:1px solid var(--hair);}
 .bbrec .kmet .m:last-child{border-right:none;}
 .bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
-.bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
+.bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:14.5px;line-height:1.4;color:var(--muted);margin-top:8px;}
 @media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
 /* proof exhibits — two BIG stacked client records (content_system only) */
-.bbrec .pf{margin-top:clamp(22px,2.8vw,32px);border:1px solid var(--ink);}
-.bbrec .pf-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,44px);align-items:end;padding:clamp(15px,2.2vw,22px);border-bottom:1px solid var(--hair);}
+.bbrec .pf{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
+.bbrec .pf-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,44px);align-items:end;padding:clamp(18px,2.6vw,28px);border-bottom:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .pf-top{grid-template-columns:1fr;align-items:start;}}
 .bbrec .pf-faces{display:flex;gap:10px;align-items:flex-start;}
 .bbrec .pf-face{position:relative;width:clamp(104px,13vw,148px);flex-shrink:0;}
@@ -2048,13 +2029,11 @@ const RECORD_CSS = `
 .bbrec .pf-figk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .pf-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,6.2vw,72px);line-height:0.95;color:var(--ink);margin-top:10px;}
 .bbrec .pf-fig .from{font-weight:500;color:var(--muted);}
-.bbrec .pf-quote{padding:clamp(14px,2vw,22px) clamp(15px,2.2vw,24px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(17px,2.2vw,24px);line-height:1.38;color:var(--ink);border-bottom:1px solid var(--hair);}
+.bbrec .pf-quote{padding:clamp(18px,2.6vw,30px) clamp(18px,2.6vw,28px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(19px,2.6vw,29px);line-height:1.4;color:var(--ink);border-bottom:1px solid var(--hair);}
 .bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:14px;}
-/* reserved-space proof sample (kills the ~2,400px CLS from late-loading proof images;
-   caps the tall funnel screenshot to a wide 5:2 crop anchored at its top) */
-.bbrec .pf-sample{margin:0;background:var(--paper);aspect-ratio:5/2;overflow:hidden;}
-.bbrec .pf-sample img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 0;}
-.bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);border-top:1px solid var(--hair);}
+.bbrec .pf-sample{margin:0;background:var(--paper);}
+.bbrec .pf-sample img{display:block;width:100%;height:auto;}
+.bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(14.5px,1.45vw,16px);line-height:1.5;color:var(--sec);border-top:1px solid var(--hair);}
 /* reported outcomes (static ruled grid — replaces the marquee) */
 .bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
 .bbrec .rev{display:grid;grid-template-columns:1fr 200px;gap:clamp(14px,2.4vw,32px);padding:clamp(16px,2.2vw,22px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
@@ -2074,49 +2053,9 @@ const RECORD_CSS = `
 .bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.35;letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.5vw,15.5px);line-height:1.4;color:var(--sec);}
 @media(max-width:640px){.bbrec .ptab-h{display:none;}.bbrec .ptab-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .ptab-r>.ptab-f::before,.bbrec .ptab-r>.ptab-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
-/* ADMINISTRATION TABLE — the prescription inside THE BOX (pillar / what we do / cadence / measured in). Sanctioned FDA prescribing-info grammar (detector §10). Pillar names anchor to exhibits. */
-.bbrec .adtab{margin-top:clamp(16px,2.2vw,22px);border-top:1px solid var(--ink);}
-.bbrec .adtab-h,.bbrec .adtab-r{display:grid;grid-template-columns:0.52fr 1.7fr 0.92fr 0.86fr;gap:clamp(8px,1.4vw,20px);}
-.bbrec .adtab-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:9px 0;border-bottom:1px solid var(--hair);}
-.bbrec .adtab-r{padding:clamp(11px,1.5vw,15px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
-.bbrec .adtab-r:last-child{border-bottom:1px solid var(--ink);}
-.bbrec .adtab-a{font-family:var(--grotesk);font-weight:800;letter-spacing:0.01em;font-size:clamp(12px,1.5vw,15px);line-height:1.15;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;display:inline-block;}
-.bbrec .adtab-a:hover{color:var(--sec);border-color:var(--sec);}
-.bbrec .adtab-d{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.32;letter-spacing:-0.01em;color:var(--ink);}
-.bbrec .adtab-c{font-family:var(--grotesk);font-weight:500;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.3;color:var(--sec);}
-.bbrec .adtab-m{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.4vw,15px);line-height:1.35;color:var(--ink);}
-/* mobile: each pillar becomes a stacked block — name (heading) / what we do (own line) /
-   cadence + measured as one small mono pair (item 4). The pair sits on a single line and can
-   only break at the middot separator, so neither phrase ever wraps mid-word. Cadence reads in
-   ink, the measured outcome in serif italic, differentiating them without column headers. */
-@media(max-width:720px){
-  .bbrec .adtab-h{display:none;}
-  .bbrec .adtab-r{display:block;padding:12px 0;}
-  .bbrec .adtab-p{margin-bottom:6px;}
-  .bbrec .adtab-d{display:block;font-size:14px;line-height:1.36;margin-bottom:6px;}
-  .bbrec .adtab-c,.bbrec .adtab-m{display:inline;font-size:12.5px;}
-  .bbrec .adtab-c{color:var(--ink);}
-  .bbrec .adtab-r>.adtab-m::before{content:"  ·  ";color:var(--muted);font-style:normal;}
-}
-/* primary CTA row under the admin table, inside the box */
-.bbrec .box-cta{margin-top:clamp(16px,2.2vw,22px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;}
-.bbrec .box-cta .box-note{margin-top:0;font-size:clamp(12.5px,1.3vw,15px);max-width:46ch;}
-/* diagnosis rows — what we read on their feed (closing argument) */
-.bbrec .dxrows{margin-top:clamp(22px,2.8vw,32px);border-top:1px solid var(--ink);}
-.bbrec .dxrow{display:grid;grid-template-columns:150px 1fr;gap:clamp(14px,2.4vw,32px);padding:clamp(14px,2vw,20px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
-.bbrec .dxrow:last-child{border-bottom:1px solid var(--ink);}
-.bbrec .dxrow .ak{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
-.bbrec .dxrow p{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);margin:0;}
-@media(max-width:640px){.bbrec .dxrow{grid-template-columns:1fr;gap:6px;}}
 /* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
 .bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
 .bbrec .chcta p{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(17px,2.2vw,22px);line-height:1.2;color:var(--ink);max-width:34ch;margin:0;}
-/* mid-proof ask — quieter than a chapter CTA, closes each exhibit GROUP so no proof stretch
-   runs more than ~1.5 viewports without a booking lever (content_system only) */
-.bbrec .midask{margin-top:clamp(18px,2.4vw,28px);padding-top:clamp(13px,1.7vw,18px);border-top:1px solid var(--hair);display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;}
-.bbrec .midask p{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.5vw,17px);line-height:1.45;color:var(--sec);margin:0;max-width:50ch;}
-.bbrec .midask a{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(11px,1.2vw,13px);color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;white-space:nowrap;flex-shrink:0;}
-.bbrec .midask a:hover{color:var(--sec);border-color:var(--sec);}
 .bbrec .promises{margin-top:clamp(22px,2.8vw,34px);display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .promises{grid-template-columns:1fr;}}
 .bbrec .pcell{padding:clamp(16px,2.2vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
@@ -2143,20 +2082,20 @@ const RECORD_CSS = `
 .bbrec .aud-band{padding:clamp(12px,1.8vw,16px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .aud-band.on{background:var(--flash);}
 .bbrec .aud-band .abr{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);color:var(--ink);}
-.bbrec .aud-band .abw{font-family:var(--serif);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.4;color:var(--sec);margin-top:4px;}
+.bbrec .aud-band .abw{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15px);line-height:1.4;color:var(--sec);margin-top:4px;}
 .bbrec .aud-band .abys{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--ink);margin-top:8px;}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
 .bbrec .op-portrait{border:1px solid var(--ink);background:var(--flash);}
-.bbrec .op-portrait img{width:100%;display:block;aspect-ratio:400/536;object-fit:cover;filter:grayscale(100%) contrast(1.02);}
+.bbrec .op-portrait img{width:100%;display:block;filter:grayscale(100%) contrast(1.02);}
 .bbrec .op-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,3vw,36px);line-height:1.08;color:var(--ink);}
 .bbrec .op-b{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.55;color:var(--sec);margin-top:16px;max-width:56ch;}
 .bbrec .op-sig{margin-top:18px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .bbrec .op-sig a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair);}
 /* final CTA box (RED lives here) */
-.bbrec .ctawrap{padding-top:clamp(34px,5vw,58px);padding-bottom:clamp(26px,4vw,44px);}
-.bbrec .box.cta{padding:clamp(26px,4vw,44px);text-align:center;}
+.bbrec .ctawrap{padding-top:clamp(52px,8vw,90px);padding-bottom:clamp(40px,6vw,70px);}
+.bbrec .box.cta{padding:clamp(30px,5vw,56px);text-align:center;}
 .bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
 .bbrec .cta-n{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.6vw,18px);line-height:1.5;color:var(--sec);max-width:46ch;margin:clamp(16px,2vw,20px) auto 0;}
 .bbrec .cta-btn{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(22px,3vw,30px);background:var(--red);color:var(--paper);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(13px,1.5vw,15px);padding:16px 30px;text-decoration:none;}
@@ -2180,34 +2119,10 @@ const RECORD_CSS = `
   .bbrec .cap,.bbrec .kmet .ml,.bbrec .foot-fine{font-size:13px;line-height:1.5;}
   .bbrec .reading .rd{font-size:14px;line-height:1.5;}
 }
-/* ── mobile offer-depth compression (item 3): tighten the data plate + masthead + box so the
-   whole 3-pillar prescription (through its CTA row) lands inside ~1.2 viewports on a 375px
-   screen. Scoped to <=480px; desktop metrics untouched. Comes last so it wins the cascade. ── */
-@media(max-width:480px){
-  .bbrec .docline{padding-top:13px;}
-  .bbrec .plate{margin-top:9px;}
-  .bbrec .plate-grid .cell{padding:7px 10px;}
-  .bbrec .plate .v{font-size:12px;line-height:1.12;margin-top:3px;}
-  .bbrec .fold{padding-top:11px;gap:6px;}
-  .bbrec .company{font-size:26px;}
-  .bbrec .lede{margin-top:6px;font-size:13.5px;line-height:1.34;}
-  .bbrec .boxwrap{padding-top:9px;}
-  .bbrec .box{padding:13px 14px 16px;}
-  .bbrec .box-head{padding-bottom:10px;}
-  .bbrec .box-body{margin-top:9px;font-size:22px;line-height:1.05;}
-  .bbrec .adtab{margin-top:10px;}
-  .bbrec .adtab-r{padding:9px 0;}
-  .bbrec .box-cta{margin-top:10px;gap:9px 16px;}
-}
 `;
 
-// One-time reveal per section — the canon motion: rise ≤26px, ~0.7s, once. Settled under
-// reduced motion. Transform-ONLY (no opacity): per the lesson at line ~298, animating opacity
-// on a whileInView reveal leaves below-fold content stuck invisible/ghosted whenever the
-// IntersectionObserver never fires (full-page capture, instant-jump, prefers-reduced-motion,
-// or a fast scroll past a tall section). Animating y alone guarantees the resting state is
-// always full-ink at opacity 1 — the reveal still rises on scroll, but can never break the ink
-// law. Matches RevealHeadline / SCROLL_REVEAL, which are transform-only for the same reason.
+// One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
+// under reduced motion. Replaces candidate C's CSS .reveal so it obeys useReducedMotion.
 const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties; el?: 'div' | 'section'; id?: string }> = ({ children, className, style, el = 'div', id }) => {
   const reduce = useReducedMotion();
   const M = el === 'section' ? motion.section : motion.div;
@@ -2216,8 +2131,8 @@ const Rev: React.FC<{ children: React.ReactNode; className?: string; style?: Rea
       id={id}
       className={className}
       style={style}
-      initial={reduce ? false : { y: 22 }}
-      whileInView={{ y: 0 }}
+      initial={reduce ? false : { opacity: 0, y: 22 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.7, ease: EASE }}
     >
@@ -2252,29 +2167,11 @@ const DataPlate: React.FC<{ cells: { k: string; v: React.ReactNode }[] }> = ({ c
   </div>
 );
 
-// Punctuation kern (item 1). Schibsted Grotesk seats "." and "," on a wide left sidebearing;
-// at display sizes that reads as a floating space before the mark ("built . Nobody"). This
-// wraps every terminal/mid-sentence mark that directly follows a non-space glyph in a .pk span
-// pulled flush (-0.13em). It is optical only: the DOM text stays clean, so a grep of rendered
-// innerText for " ." / " ," is still zero. Passes strings through untouched otherwise.
-const kp = (t: React.ReactNode): React.ReactNode => {
-  if (typeof t !== 'string' || !/[.,;:]/.test(t)) return t;
-  const parts = t.split(/([.,;:]+)/);
-  return parts.map((p, i) => {
-    if (i % 2 === 1) {
-      const prev = parts[i - 1];
-      if (prev && !/\s$/.test(prev)) return <span key={i} className="pk">{p}</span>;
-    }
-    return <React.Fragment key={i}>{p}</React.Fragment>;
-  });
-};
-
 // Numbered section head — clinical label + straight display title (no serif italic in heads).
-// A plain-string title is passed through kp() so its terminal period seats flush at display size.
 const SecHead: React.FC<{ label: React.ReactNode; title: React.ReactNode; note?: React.ReactNode }> = ({ label, title, note }) => (
   <>
     <div className="sec-label"><span className="sq" aria-hidden /> {label}</div>
-    <h2 className="sec-title">{typeof title === 'string' ? kp(title) : title}</h2>
+    <h2 className="sec-title">{title}</h2>
     {note ? <p className="sec-note">{note}</p> : null}
   </>
 );
@@ -2845,7 +2742,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
     title: `An inbound engine for ${displayCompany}`,
-    description: `A week of LinkedIn posts and a lead magnet we run in ${who}'s voice. Built before this page.`,
+    description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
     noindex: true,
@@ -2881,6 +2778,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
   // ── Derived, honest figures (every number traces to report_json / scan stamps) ──
   const scanDate = recDateISO(scan.completed_at, scan.created_at);
+  // Approval-language scrubber (defensive display cleanup for builder-emitted copy — the
+  // engine writes and runs; the prospect is never framed as an approver, and "drafted"
+  // over-claims are folded to "written"). Live rows were data-cleaned 07-17; this guards
+  // every future n8n-emitted row at render time.
+  const scrubApproval = (t?: string) => (t || '')
+    .replace(/,?\s*(?:sent|dispatched|queued|prepared|drafted|written)?\s*for (?:your|her|his|their|the)?\s*(?:approval|review|sign[- ]?off)\b[^.!?]*/gi, '')
+    .replace(/\bready to approve\b/gi, 'ready')
+    .replace(/\byour only job is to approve\b/gi, 'we run it')
+    .replace(/\byou (?:review and |just )?approve\b/gi, 'we handle it')
+    .replace(/\bdrafted\b/gi, 'written')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/,(?=\s*[.,;:])/g, '')
+    .trim()
+    .replace(/[,;:]\s*$/, '')
+    .replace(/([^.!?…])$/, '$1.');
   const ls = report.linkedin_summary;
   const followers = ls?.followers ?? null;
   const posts30 = ls?.posts_30d ?? null;
@@ -2907,34 +2820,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const newsletter = cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? cs.sample_output.newsletter : null;
   const followUps = cs.sample_output?.follow_ups?.length ? cs.sample_output.follow_ups : null;
   const engager = cs.sample_output?.engager_outreach?.samples?.length ? cs.sample_output.engager_outreach : null;
-
-  // P0-1 defense-in-depth (item 6): approval-as-duty and over-claim phrasing are banned by
-  // v4.11, but they can still arrive in ROW DATA (builder- or hand-emitted pillar cells, wins,
-  // exhibit subjects/bodies, thesis) that the deploy cleanup script never touches. A prospect
-  // must never read it regardless of source, so every data-sourced string is scrubbed at render.
-  // The engine runs on auto-approve; a veto exists but is never framed as the buyer's job.
-  const scrubApproval = (t?: string) => (t || '')
-    .replace(/,?\s*(?:sent|dispatched|queued|prepared|drafted|written)?\s*for (?:your|her|his|their|the)?\s*(?:approval|review|sign[- ]?off)\b[^.!?]*/gi, '')
-    .replace(/\bready to approve\b/gi, 'ready')
-    .replace(/\byour only job is to approve\b/gi, 'we run it')
-    .replace(/\byou (?:review and |just )?approve\b/gi, 'we handle it')
-    // "drafted" is a banned over-claim; WE write.
-    .replace(/\bdrafted\b/gi, 'written')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([.,;:])/g, '$1')
-    .replace(/,(?=\s*[.,;:])/g, '')
-    .trim()
-    .replace(/[,;:]\s*$/, '')
-    .replace(/([^.!?…])$/, '$1.');
-  // Specimen excerpt (item 5): clamp an exhibit body to a scannable line at the source and scrub
-  // it, so the DOM word count drops with the ink and no excerpt can surface banned copy.
-  const excerpt = (t?: string, n = 150) => {
-    const s = scrubApproval(t).replace(/\s+/g, ' ').trim();
-    return s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, '').trimEnd() + '…';
-  };
-  const newsletterFirst = newsletter?.sections?.[0];
-  const followUpSpecs = (followUps ?? []).slice(0, 4).sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
-  const engagerSpecs = (engager?.samples ?? []).slice(0, 3);
 
   // ── Audience room read (scan-build audit embed; PLAN-audit-in-scans, 2026-07-15) ──
   // Framing guard: a cold prospect is being told about their own audience by a stranger, so
@@ -2988,8 +2873,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
   } : null;
 
-  // Six-key WARN map covering both vocabularies (dashboard + n8n scout). Effect head in the
-  // label register, verdict in clinical deadpan. No em dashes. Fallback kept for safety.
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
     silent_founder:    { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
     inconsistent:      { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
@@ -3036,22 +2919,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     found: scrubApproval((cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k]),
     projected: scrubApproval((cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k]),
   });
-  // The administration table — the prescription itself, stated once, up top. WE carry every
-  // verb; no buyer labor, no approval duty. It reads clean with zero prospect data (thin
-  // scans) because it names what the engine does, not what their feed shows. Pillar names
-  // anchor to the matching exhibit below. House lexicon: Five a week Mon-Fri, Measured in booked calls.
-  const ADMIN: { key: PillarKey; name: string; does: string; cadence: string; measured: string; anchor: string }[] = [
-    { key: 'content',  name: 'Content',       anchor: 'cs-x-content',
-      does: 'We write your posts in your voice and publish them for you.',
-      cadence: 'Five a week, Mon-Fri', measured: 'Reach and replies' },
-    { key: 'inbound',  name: 'Inbound',       anchor: 'cs-x-inbound',
-      does: 'We build one gated asset in your brand. Every reader who finishes it lands on a list you own.',
-      cadence: 'One asset, always live', measured: 'Named leads captured' },
-    { key: 'outbound', name: 'Warm outbound', anchor: 'cs-x-outbound',
-      does: 'Everyone who engages a post gets a warm message about that exact post.',
-      cadence: 'Around 15 a week, capped', measured: 'Booked calls' },
+  const PILLARS: { key: PillarKey; name: string; anchor: string }[] = [
+    { key: 'content', name: 'Content', anchor: 'cs-ch-content' },
+    { key: 'inbound', name: 'Inbound', anchor: 'cs-ch-inbound' },
+    { key: 'outbound', name: 'Warm outbound', anchor: 'cs-ch-outbound' },
   ];
-  const PILLARS: { key: PillarKey; name: string; anchor: string }[] = ADMIN.map((a) => ({ key: a.key, name: a.name, anchor: a.anchor }));
   const pillars: Record<PillarKey, { found: string; projected: string }> = {
     content: pillarCell('content'), inbound: pillarCell('inbound'), outbound: pillarCell('outbound'),
   };
@@ -3061,21 +2933,32 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   };
 
   // One-line CTA row closing each chapter — same ink button, red stays reserved for the end.
-  const ChapterCta = ({ line, cta = 'Book the free fit call' }: { line: React.ReactNode; cta?: string }) => (
+  const ChapterCta = ({ line }: { line: React.ReactNode }) => (
     <div className="chcta">
       <p>{line}</p>
-      <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">{cta} <span aria-hidden>→</span></a>
+      <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
     </div>
   );
 
-  // Quieter mid-proof ask — closes an individual exhibit GROUP so no proof stretch runs more
-  // than ~1.5 viewports without a booking lever. Ink underline, not the full chapter button.
-  const MidAsk = ({ line, cta }: { line: React.ReactNode; cta: string }) => (
-    <div className="midask">
-      <p>{line}</p>
-      <a href={bookUrl} target="_blank" rel="noopener noreferrer">{cta} <span aria-hidden>→</span></a>
+  // The gated wins that belong to a chapter, rendered as observed entries with the build.
+  // A win whose observation already fills the pillar table's "found" cell (the fallback
+  // path when the builder emits no cs.pillars) is skipped here — never printed twice.
+  const WinRows = ({ k }: { k: PillarKey }) => {
+    const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
+    return rows.length ? (
+    <div className="ledger">
+      {rows.slice(0, 3).map((w, i) => (
+        <div className="lrow" key={i}>
+          <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
+          <div>
+            <div className="lobs">{w.observation}</div>
+            {w.build ? <div className="lbuild"><span className="bl">→ Build</span><span className="bt">{w.build}</span></div> : null}
+          </div>
+        </div>
+      ))}
     </div>
-  );
+    ) : null;
+  };
 
   return (
     <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
@@ -3097,15 +2980,16 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         {/* ── DOCLINE ─────────────────────────── */}
         <Docline docType="Scan report · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
-        {/* ── DATA PLATE (compact admin title block) ── */}
+        {/* ── DATA PLATE ──────────────────────── */}
         <DataPlate cells={[
           { k: 'Prepared for', v: founderFull },
+          ...(companyName && founderFull !== companyName ? [{ k: 'Company', v: companyName }] : []),
           { k: 'Scanned', v: <>LinkedIn feed{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
           { k: 'Scan date', v: <span className="num">{scanDate}</span> },
           { k: 'Operator of record', v: 'Ivan Manfredi' },
         ]} />
 
-        {/* ── MASTHEAD (compact; the box comes immediately) ── */}
+        {/* ── FOLD ────────────────────────────── */}
         <Rev el="section" className="fold">
           <div>
             <h1 className="company">{displayCompany}</h1>
@@ -3113,216 +2997,38 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           </div>
         </Rev>
 
-        {/* ── PRESCRIPTION · THE BOX (offer-first: warning head, the administration table,
-             and the primary CTA, all inside one viewport) ── */}
+        {/* ── VERDICT · THE BOX (1 of 2, the page's one tilt) ── */}
         <div className="boxwrap">
           <Rev className="box tilt">
             <div className="box-head">
               <span className="sqbig" aria-hidden />
               <span className="lbl">{warn.effect}</span>
             </div>
-            <div className="box-body">{kp(warn.verdict)}</div>
-            {/* The administration table: what we do, at what cadence, measured in what. */}
-            <div className="adtab" role="table" aria-label="What we run for you">
-              <div className="adtab-h" role="row">
-                <span role="columnheader">Pillar</span>
-                <span role="columnheader">What we do</span>
-                <span role="columnheader">Cadence</span>
-                <span role="columnheader">Measured in</span>
+            <div className="box-body">{warn.verdict}</div>
+            <div className="ptab">
+              <div className="ptab-h">
+                <span>Pillar</span>
+                <span>On your feed today</span>
+                <span>After 90 days</span>
               </div>
-              {ADMIN.map((a) => (
-                <div className="adtab-r" role="row" key={a.key}>
-                  <div className="adtab-p" role="cell"><a className="adtab-a" href={`#${a.anchor}`} onClick={(e) => jump(e, a.anchor)}>{a.name}</a></div>
-                  <div className="adtab-d" role="cell" data-l="What we do">{kp(a.does)}</div>
-                  <div className="adtab-c" role="cell" data-l="Cadence">{kp(a.cadence)}</div>
-                  <div className="adtab-m" role="cell" data-l="Measured in">{a.measured}</div>
+              {PILLARS.map((p) => (
+                <div className="ptab-r" key={p.key}>
+                  <div><a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a></div>
+                  <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
+                  <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
                 </div>
               ))}
             </div>
-            <div className="box-cta">
-              <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
-              <span className="box-note">Full prescribing information on the call. Read from your public presence on {scanDate}.</span>
-            </div>
+            <p className="box-note">Read from your public presence on {scanDate}. Tap a pillar to jump to it.</p>
           </Rev>
         </div>
-
-        {/* Audience room relocated below the exhibits + diagnosis (offer-first order). */}
-
-        {/* ── EXHIBITS · prove the prescription in their brand (tight, excerpted) ── */}
-        <Rev el="section" className="sec" id="cs-exhibits">
-          <SecHead
-            label={<>Exhibits&nbsp;·&nbsp;In your brand</>}
-            title="We built the week before this page."
-            note={<>Every artifact below is seeded with {who}&rsquo;s own material and brand. On the call we walk it live.</>}
-          />
-
-          {/* Content */}
-          {feedSpec.posts.length > 0 && (
-            <div id="cs-x-content" style={{ scrollMarginTop: 76, marginTop: 'clamp(26px,3.2vw,40px)' }}>
-              <Exhibit
-                label={<>Content&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed</>}
-                caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
-              >
-                <div style={{ background: '#FFFFFF' }}>
-                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
-                </div>
-              </Exhibit>
-              {restOfWeek.length > 0 && (
-                <div className="promises" style={{ marginTop: 20 }}>
-                  {restOfWeek.map((p, i) => (
-                    <div className="pcell" key={i}>
-                      <div className="k" style={{ marginBottom: 6 }}>Also this week</div>
-                      <div className="ph">{p.hook}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <MidAsk
-                line={<>That is one week in {who}&rsquo;s voice. We run it every week, on auto-approve.</>}
-                cta="See the full month on the call"
-              />
-            </div>
-          )}
-
-          {/* Inbound */}
-          <div id="cs-x-inbound" style={{ scrollMarginTop: 76 }}>
-          {lm?.title && lmEmbedUrl && (
-            <div style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
-              <Exhibit
-                label={<>Inbound&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;live in your brand</>}
-                caption={<><strong style={{ fontWeight: 700, fontStyle: 'normal' }}>{lm.title}.</strong> {lm.promise ? lm.promise + ' ' : ''}Interactive and gated on {cleanDomain || 'your domain'}. Every completion lands a named address on a list you own.</>}
-              >
-                <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
-              </Exhibit>
-              <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 18 }}>
-                Open it full screen <span aria-hidden>→</span>
-              </button>
-              {/* Quiet ask under the ~820px embed (item 7): caption register, no button, so this
-                  long proof stretch never runs without a booking lever. Copy varies from the group ask. */}
-              <p className="iask">This one is already running, seeded with {who}&rsquo;s brand. <a href={bookUrl} target="_blank" rel="noopener noreferrer">Point it at your domain <span aria-hidden>→</span></a></p>
-            </div>
-          )}
-          {lm?.title && !lmEmbedUrl && (
-            <div className="lm">
-              <div>
-                <FigLabel>Fig&nbsp;·&nbsp;lead magnet cover&nbsp;·&nbsp;your brand</FigLabel>
-                <div className="lm-cover">
-                  {lmCover
-                    ? <img src={lmCover} alt={lm.title} loading="lazy" onError={fallbackOnError} />
-                    : <div style={{ padding: 40, fontFamily: BODY_SERIF, fontStyle: 'italic', color: MUTED, textAlign: 'center' }}>Cover · {lm.title}</div>}
-                </div>
-              </div>
-              <div>
-                <div className="lm-title">{lm.title}</div>
-                {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
-                {insideItems.length > 0 && (
-                  <div className="inside">
-                    {insideItems.map((it, i) => (
-                      <div className="ir" key={i}><span className="ii num">{String(i + 1).padStart(2, '0')}</span><span className="it">{it}</span></div>
-                    ))}
-                  </div>
-                )}
-                <div className="lm-gate"><span className="sq" aria-hidden /> Gated on {cleanDomain || 'your domain'}&nbsp;·&nbsp;names every reader onto a list you own</div>
-                {lmHasSample && feedSpec.lmCard && (
-                  <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
-                    {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'} <span aria-hidden>→</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          {/* Newsletter + follow-ups as clinical specimen cards (item 5, ported from dir-a):
-              mono metadata row + serif-adjacent headline + a source-clamped excerpt. Tighter
-              than the full mockups, purest BB grammar. */}
-          {(newsletter || followUpSpecs.length > 0) && (
-            <div style={{ marginTop: 'clamp(20px,2.6vw,30px)' }}>
-              <FigLabel>Fig&nbsp;·&nbsp;inbound cadence&nbsp;·&nbsp;newsletter + follow-ups, in your voice</FigLabel>
-              <div className="spec">
-                {newsletter && (
-                  <div className="spec-r">
-                    <div className="spec-m"><span className="sq" aria-hidden /> Newsletter&nbsp;·&nbsp;one a cycle&nbsp;·&nbsp;to the list you own</div>
-                    <div className="spec-t">{kp(scrubApproval(newsletter.subject))}</div>
-                    {(newsletter.preview || newsletterFirst?.body) && (
-                      <div className="spec-x">{excerpt(newsletter.preview || newsletterFirst?.body, 160)}</div>
-                    )}
-                  </div>
-                )}
-                {followUpSpecs.map((f, i) => (
-                  <div className="spec-r" key={i}>
-                    <div className="spec-m"><span className="sq" aria-hidden /> <span className="day">Day {f.day}</span>&nbsp;·&nbsp;follow-up email</div>
-                    <div className="spec-t">{kp(scrubApproval(f.subject))}</div>
-                    {f.body ? <div className="spec-x">{excerpt(f.body, 140)}</div> : null}
-                  </div>
-                ))}
-              </div>
-              <p className="cap">The sequence fires after the download, in your voice. The clock starts when the reader opts in.</p>
-            </div>
-          )}
-          {(lm?.title || newsletter || followUps) && (
-            <MidAsk
-              line={<>The gated asset, the newsletter, and the sequence all go live on {cleanDomain || 'your domain'} in week one.</>}
-              cta="Walk it live with me"
-            />
-          )}
-          </div>{/* /cs-x-inbound */}
-
-          {/* Warm outbound */}
-          <div id="cs-x-outbound" style={{ scrollMarginTop: 76, marginTop: 'clamp(34px,4vw,52px)' }}>
-            {/* Warm-engager exhibits as specimen cards (item 5, ported from dir-a): the trigger
-                they reacted to + the message keyed to it, both source-clamped. */}
-            {engagerSpecs.length > 0 && (
-              <div>
-                <FigLabel>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</FigLabel>
-                <div className="spec">
-                  {engagerSpecs.map((s, i) => (
-                    <div className="spec-r" key={i}>
-                      <div className="spec-m"><span className="sq" aria-hidden /> Reacted&nbsp;·&nbsp;{excerpt(s.trigger, 64)}</div>
-                      <div className="spec-x" style={{ marginTop: 8 }}>{excerpt(s.dm, 150)}</div>
-                    </div>
-                  ))}
-                </div>
-                {engagerNames.length ? (
-                  <p className="cap">First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</p>
-                ) : null}
-              </div>
-            )}
-            <div className="gov" style={{ marginTop: engager ? undefined : 0 }}>
-              <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
-              <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
-              <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
-              <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
-            </div>
-          </div>{/* /cs-x-outbound */}
-
-          <ChapterCta line={<>The whole system opens in week one, {who}. Effects observed in booked calls.</>} cta="Start with the fit call" />
-        </Rev>
-
-        {/* ── DIAGNOSIS · the closing argument, read from their own feed ── */}
-        <Rev el="section" className="sec" id="cs-diagnosis">
-          <SecHead
-            label={<>Diagnosis&nbsp;·&nbsp;Read on {scanDate}</>}
-            title="What your feed shows today."
-          />
-          <div className="dxrows">
-            {PILLARS.map((p) => (
-              <div className="dxrow" key={p.key}>
-                <span className="ak">{p.name}</span>
-                <p>{pillars[p.key].found}</p>
-              </div>
-            ))}
-          </div>
-          <MidAsk
-            line={<>That is the gap as we read it today. The prescription above closes all three lines at once.</>}
-            cta="Scope it with me"
-          />
-        </Rev>
 
         {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
         {room && (
           <Rev el="section" className="sec" id="cs-room">
             <SecHead
               label={<>Evidence&nbsp;·&nbsp;Audience</>}
-              title="Who is actually in your room."
+              title={<>Who is actually in your room.</>}
               note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
             />
             <div className="aud-top">
@@ -3330,6 +3036,10 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="pf-fig">{room.figure}</div>
               <p className="aud-sub">{room.figureSub}</p>
             </div>
+            {/* Grade scale: bands are OUR scale from the rooms we read for this buyer type
+                (consumer-brand sellers only, enforced upstream by the audit's vertical gate;
+                a different ICP would need re-based bands). ~1% is the background rate of DTC
+                decision-makers in a generic network; the flagship good room read 4.6%. */}
             {roomMode === 'network' && audNetDensity !== null && (
               <div>
                 <div className="pf-figk" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>How rooms grade, share of connections that are buyers</div>
@@ -3367,11 +3077,154 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           </Rev>
         )}
 
+        {/* ── CHAPTER 01 · CONTENT ────────────── */}
+        <Rev el="section" className="sec" id="cs-ch-content" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 01&nbsp;·&nbsp;Content</>}
+            title={<>Once daily, in your voice.</>}
+            note={<>Below is the week we drafted from your own material before this page was built.</>}
+          />
+          <WinRows k="content" />
+          {feedSpec.posts.length > 0 && (
+            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              <Exhibit
+                label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
+                caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
+              >
+                <div style={{ background: '#FFFFFF' }}>
+                  <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
+                </div>
+              </Exhibit>
+              {restOfWeek.length > 0 && (
+                <div className="promises" style={{ marginTop: 20 }}>
+                  {restOfWeek.map((p, i) => (
+                    <div className="pcell" key={i}>
+                      <div className="k" style={{ marginBottom: 6 }}>Also this week</div>
+                      <div className="ph">{p.hook}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <ChapterCta line={<>This week is already drafted, {who}. On the call we walk it live.</>} />
+        </Rev>
+
+        {/* ── CHAPTER 02 · INBOUND ────────────── */}
+        <Rev el="section" className="sec" id="cs-ch-inbound" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
+            title={<>Every reader leaves a name.</>}
+            note={<>The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
+          />
+          <WinRows k="inbound" />
+          {lm?.title && lmEmbedUrl && (
+            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              {/* branded exhibit masthead — cover plate beside the title/promise band */}
+              <div className="lm-frame">
+                {(lmCover || lm.brand?.logo_url) && (
+                  <div className="lm-frame-cover">
+                    <img src={lmCover || lm.brand?.logo_url} alt={lm.title} loading="lazy" onError={fallbackOnError} />
+                  </div>
+                )}
+                <div className="lm-frame-body">
+                  <FigLabel>Fig&nbsp;·&nbsp;lead magnet&nbsp;·&nbsp;your brand</FigLabel>
+                  <div className="lm-title" style={{ fontSize: 'clamp(22px,2.6vw,32px)' }}>{lm.title}</div>
+                  {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
+                  <div className="lm-gate"><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
+                <Exhibit
+                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
+                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                >
+                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+                </Exhibit>
+              </div>
+              <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                Open it full screen <span aria-hidden>→</span>
+              </button>
+            </div>
+          )}
+          {lm?.title && !lmEmbedUrl && (
+            <div className="lm">
+              <div>
+                <FigLabel>Fig&nbsp;·&nbsp;lead magnet cover&nbsp;·&nbsp;your brand</FigLabel>
+                <div className="lm-cover">
+                  {lmCover
+                    ? <img src={lmCover} alt={lm.title} loading="lazy" onError={fallbackOnError} />
+                    : <div style={{ padding: 40, fontFamily: BODY_SERIF, fontStyle: 'italic', color: MUTED, textAlign: 'center' }}>Cover · {lm.title}</div>}
+                </div>
+              </div>
+              <div>
+                <div className="lm-title">{lm.title}</div>
+                {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
+                {insideItems.length > 0 && (
+                  <div className="inside">
+                    {insideItems.map((it, i) => (
+                      <div className="ir" key={i}><span className="ii num">{String(i + 1).padStart(2, '0')}</span><span className="it">{it}</span></div>
+                    ))}
+                  </div>
+                )}
+                <div className="lm-gate"><span className="sq" aria-hidden /> Gated on {cleanDomain || 'your domain'}&nbsp;·&nbsp;names every reader onto a list you own</div>
+                {lmHasSample && feedSpec.lmCard && (
+                  <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+                    {lmSim ? 'Open the calculator' : lmStatic ? 'See the sample' : 'Take the live sample'} <span aria-hidden>→</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {(newsletter || followUps) && (
+            <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+              {newsletter && (
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, drafted from the same week's material, in your voice.">
+                  <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
+                </Exhibit>
+              )}
+              {followUps && (
+                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="A fixed schedule after the download. The clock starts when the reader opts in.">
+                  <FollowUpSequence data={followUps} accent={prospectAccent} who={who} />
+                </Exhibit>
+              )}
+            </div>
+          )}
+          <ChapterCta line={<>The asset is built in your brand, {who}. The call decides where it lives.</>} />
+        </Rev>
+
+        {/* ── CHAPTER 03 · WARM OUTBOUND ──────── */}
+        <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
+          <SecHead
+            label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
+            title={<>The people who engage get a message.</>}
+            note={<>The people who like and comment on your posts are buyers showing interest. We message them while the post is still live, about that exact post, with something useful and no pitch.</>}
+          />
+          <WinRows k="outbound" />
+          {engager && (
+            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
+              <Exhibit
+                label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
+                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
+              >
+                <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
+              </Exhibit>
+            </div>
+          )}
+          <div className="gov">
+            <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
+            <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
+            <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
+            <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
+          </div>
+          <ChapterCta line={<>The warm lane opens in week one. Effects observed in booked calls.</>} />
+        </Rev>
+
         {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
           <SecHead
             label={<>Effects observed&nbsp;·&nbsp;on the engine today</>}
-            title="Two founders run this engine already."
+            title={<>Two founders run this engine already.</>}
             note="Real operators, real numbers. Both run the same three pillars this page just walked."
           />
           {/* Kyle Hunt — the before/after figure is the exhibit's dominant element */}
@@ -3398,10 +3251,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               ))}
             </div>
           </div>
-          <MidAsk
-            line={<>Same three pillars, run for {who} from week one.</>}
-            cta="Take the fit call"
-          />
           {/* Lemonade — two founders, the monthly client figure dominant */}
           <div className="pf">
             <div className="pf-top">
@@ -3444,7 +3293,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="sqbig" aria-hidden />
               <span className="lbl">WARNING: EXCESSIVE INBOUND</span>
             </div>
-            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>{kp('Be the sharpest voice in your space. Without writing a word.')}</div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
             <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
@@ -3462,7 +3311,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
             </div>
           </div>
-          <p className="foot-fine">Read from your public presence, {scanDate}. Confidential to the recipient.</p>
+          <p className="foot-fine">Prepared for {founderFull}. Read from a live scan of your public presence, {scanDate}. Every sample above was drafted from your own material and is ready to ship.</p>
         </div>
       </footer>
 
