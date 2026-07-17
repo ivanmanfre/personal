@@ -77,7 +77,7 @@ const EngagerOutreachMockup: React.FC<Props> = ({ data, accent, who }) => {
                   {trigger && (
                     <div className="mt-1.5 flex items-center gap-1.5">
                       <span aria-hidden className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] shrink-0" style={{ background: accent, color: '#fff' }}>♥</span>
-                      <span className="truncate" style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{trigger}</span>
+                      <span className="truncate" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.55)' }}>{trigger}</span>
                     </div>
                   )}
                 </div>
@@ -91,7 +91,7 @@ const EngagerOutreachMockup: React.FC<Props> = ({ data, accent, who }) => {
                 </div>
                 {who && (
                   <div className="mt-2 flex justify-end">
-                    <span style={{ fontFamily: MONO, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>{who} · within 48h of the comment</span>
+                    <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>{who} · within 48h of the comment</span>
                   </div>
                 )}
               </div>

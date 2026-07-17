@@ -58,7 +58,7 @@ const FollowUpSequence: React.FC<Props> = ({ data, accent }) => {
               <div className="p-4 sm:p-5" style={{ background: CI_CARD, borderRadius: CI_R, border: `1px solid ${HAIRLINE}`, boxShadow: CI_SHADOW }}>
                 <span
                   className="inline-flex items-center"
-                  style={{ fontFamily: MONO, fontSize: '10.5px', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, color: '#fff', background: accent, borderRadius: 999, padding: '4px 11px' }}
+                  style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600, color: '#fff', background: accent, borderRadius: 999, padding: '4px 11px' }}
                 >
                   Day {f.day}
                 </span>
