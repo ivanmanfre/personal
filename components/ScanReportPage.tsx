@@ -1903,11 +1903,11 @@ const RECORD_CSS = `
 .bbrec .reg-right{display:flex;align-items:center;gap:16px;}
 .bbrec .btn-ink{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--paper);background:var(--ink);padding:9px 16px;text-decoration:none;white-space:nowrap;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
 /* docline */
-.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(28px,5vw,52px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
+.bbrec .docline{display:flex;align-items:center;gap:12px;padding-top:clamp(18px,3vw,32px);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--sec);flex-wrap:wrap;}
 .bbrec .sq{width:9px;height:9px;background:var(--ink);flex-shrink:0;}
 .bbrec .docline .rule{flex:1;height:1px;background:var(--hair);min-width:24px;}
 /* data plate */
-.bbrec .plate{margin-top:clamp(18px,2.6vw,26px);border:1px solid var(--ink);}
+.bbrec .plate{margin-top:clamp(12px,2vw,20px);border:1px solid var(--ink);}
 .bbrec .plate-grid{display:grid;grid-template-columns:repeat(3,1fr);}
 .bbrec .cell{padding:clamp(12px,1.7vw,17px) clamp(13px,1.7vw,19px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .plate-grid .cell:nth-child(3n){border-right:none;}
@@ -1916,18 +1916,18 @@ const RECORD_CSS = `
 .bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
 @media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
 @media(max-width:430px){.bbrec .plate-grid .cell{padding:10px 11px;}.bbrec .v{font-size:13px;}}
-/* fold */
-.bbrec .fold{padding-top:clamp(34px,6vw,60px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(26px,5vw,56px);align-items:end;}
-@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:26px;align-items:start;}}
-.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(38px,8vw,86px);line-height:0.92;color:var(--ink);}
-.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,19px);line-height:1.5;color:var(--sec);max-width:40ch;margin-top:clamp(16px,2vw,22px);}
+/* masthead (compact — the offer box comes immediately after) */
+.bbrec .fold{padding-top:clamp(18px,2.8vw,30px);display:grid;grid-template-columns:1.5fr 0.5fr;gap:clamp(20px,4vw,44px);align-items:end;}
+@media(max-width:820px){.bbrec .fold{grid-template-columns:1fr;gap:14px;align-items:start;}}
+.bbrec .company{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(30px,5.6vw,58px);line-height:0.94;color:var(--ink);}
+.bbrec .lede{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.4vw,18px);line-height:1.45;color:var(--sec);max-width:44ch;margin-top:clamp(10px,1.4vw,16px);}
 .bbrec .reading{border:1px solid var(--ink);padding:clamp(15px,2vw,20px);}
 .bbrec .reading .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
 .bbrec .reading .rn{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(40px,6vw,58px);line-height:0.9;margin-top:6px;color:var(--ink);}
 .bbrec .reading .rd{font-family:var(--serif);font-style:italic;font-weight:400;font-size:14px;line-height:1.4;color:var(--muted);margin-top:10px;}
 .bbrec .reading .rrow{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--hair);margin-top:12px;padding-top:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
 /* THE BOX */
-.bbrec .boxwrap{padding-top:clamp(34px,5vw,58px);}
+.bbrec .boxwrap{padding-top:clamp(16px,2.4vw,26px);}
 .bbrec .box{border:4px solid var(--ink);outline:1px solid var(--ink);outline-offset:3px;background:var(--paper);padding:clamp(20px,3vw,34px) clamp(20px,3vw,36px) clamp(24px,3.4vw,38px);}
 .bbrec .box.tilt{transform:rotate(-0.6deg);}
 .bbrec .box-head{display:flex;align-items:center;gap:12px;padding-bottom:clamp(13px,1.8vw,17px);border-bottom:2px solid var(--ink);}
@@ -1947,7 +1947,7 @@ const RECORD_CSS = `
 .bbrec .afp-v{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);line-height:1.25;letter-spacing:-0.01em;color:var(--ink);}
 @media(max-width:640px){.bbrec .afp-h{display:none;}.bbrec .afp-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .afp-p{font-size:15px;}.bbrec .afp-r>.afp-f::before,.bbrec .afp-r>.afp-open::before,.bbrec .afp-r>.afp-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
 /* section scaffold */
-.bbrec .sec{padding-top:clamp(52px,8vw,94px);}
+.bbrec .sec{padding-top:clamp(38px,5.6vw,66px);}
 .bbrec .sec-label{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(9px,1.1vw,11px);color:var(--muted);flex-wrap:wrap;}
 .bbrec .sec-label .sq{width:8px;height:8px;}
 .bbrec .sec-title{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,48px);line-height:1.0;margin-top:14px;max-width:24ch;color:var(--ink);}
@@ -2018,8 +2018,8 @@ const RECORD_CSS = `
 .bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
 @media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
 /* proof exhibits — two BIG stacked client records (content_system only) */
-.bbrec .pf{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
-.bbrec .pf-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,44px);align-items:end;padding:clamp(18px,2.6vw,28px);border-bottom:1px solid var(--hair);}
+.bbrec .pf{margin-top:clamp(22px,2.8vw,32px);border:1px solid var(--ink);}
+.bbrec .pf-top{display:grid;grid-template-columns:auto 1fr;gap:clamp(18px,3vw,44px);align-items:end;padding:clamp(15px,2.2vw,22px);border-bottom:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .pf-top{grid-template-columns:1fr;align-items:start;}}
 .bbrec .pf-faces{display:flex;gap:10px;align-items:flex-start;}
 .bbrec .pf-face{position:relative;width:clamp(104px,13vw,148px);flex-shrink:0;}
@@ -2029,10 +2029,12 @@ const RECORD_CSS = `
 .bbrec .pf-figk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .pf-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,6.2vw,72px);line-height:0.95;color:var(--ink);margin-top:10px;}
 .bbrec .pf-fig .from{font-weight:500;color:var(--muted);}
-.bbrec .pf-quote{padding:clamp(18px,2.6vw,30px) clamp(18px,2.6vw,28px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(19px,2.6vw,29px);line-height:1.4;color:var(--ink);border-bottom:1px solid var(--hair);}
+.bbrec .pf-quote{padding:clamp(14px,2vw,22px) clamp(15px,2.2vw,24px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(17px,2.2vw,24px);line-height:1.38;color:var(--ink);border-bottom:1px solid var(--hair);}
 .bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:14px;}
-.bbrec .pf-sample{margin:0;background:var(--paper);}
-.bbrec .pf-sample img{display:block;width:100%;height:auto;}
+/* reserved-space proof sample (kills the ~2,400px CLS from late-loading proof images;
+   caps the tall funnel screenshot to a wide 5:2 crop anchored at its top) */
+.bbrec .pf-sample{margin:0;background:var(--paper);aspect-ratio:5/2;overflow:hidden;}
+.bbrec .pf-sample img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 0;}
 .bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);border-top:1px solid var(--hair);}
 /* reported outcomes (static ruled grid — replaces the marquee) */
 .bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
@@ -2053,6 +2055,35 @@ const RECORD_CSS = `
 .bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.35;letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.5vw,15.5px);line-height:1.4;color:var(--sec);}
 @media(max-width:640px){.bbrec .ptab-h{display:none;}.bbrec .ptab-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .ptab-r>.ptab-f::before,.bbrec .ptab-r>.ptab-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
+/* ADMINISTRATION TABLE — the prescription inside THE BOX (pillar / what we do / cadence / measured in). Sanctioned FDA prescribing-info grammar (detector §10). Pillar names anchor to exhibits. */
+.bbrec .adtab{margin-top:clamp(16px,2.2vw,22px);border-top:1px solid var(--ink);}
+.bbrec .adtab-h,.bbrec .adtab-r{display:grid;grid-template-columns:0.52fr 1.7fr 0.92fr 0.86fr;gap:clamp(8px,1.4vw,20px);}
+.bbrec .adtab-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:9px 0;border-bottom:1px solid var(--hair);}
+.bbrec .adtab-r{padding:clamp(11px,1.5vw,15px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .adtab-r:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .adtab-a{font-family:var(--grotesk);font-weight:800;letter-spacing:0.01em;font-size:clamp(12px,1.5vw,15px);line-height:1.15;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;display:inline-block;}
+.bbrec .adtab-a:hover{color:var(--sec);border-color:var(--sec);}
+.bbrec .adtab-d{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.32;letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .adtab-c{font-family:var(--grotesk);font-weight:500;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.3;color:var(--sec);}
+.bbrec .adtab-m{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.4vw,15px);line-height:1.35;color:var(--ink);}
+@media(max-width:720px){
+  .bbrec .adtab-h{display:none;}
+  .bbrec .adtab-r{grid-template-columns:1fr;gap:2px;padding:13px 0;}
+  .bbrec .adtab-p{margin-bottom:3px;}
+  .bbrec .adtab-c,.bbrec .adtab-m{display:inline;font-size:12.5px;}
+  .bbrec .adtab-r>.adtab-c::before{content:attr(data-l) " · ";font-family:var(--grotesk);font-weight:700;text-transform:none;color:var(--muted);}
+  .bbrec .adtab-r>.adtab-m::before{content:" · " attr(data-l) " ";font-family:var(--grotesk);font-weight:700;text-transform:none;color:var(--muted);}
+}
+/* primary CTA row under the admin table, inside the box */
+.bbrec .box-cta{margin-top:clamp(16px,2.2vw,22px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;}
+.bbrec .box-cta .box-note{margin-top:0;font-size:clamp(12.5px,1.3vw,15px);max-width:46ch;}
+/* diagnosis rows — what we read on their feed (closing argument) */
+.bbrec .dxrows{margin-top:clamp(22px,2.8vw,32px);border-top:1px solid var(--ink);}
+.bbrec .dxrow{display:grid;grid-template-columns:150px 1fr;gap:clamp(14px,2.4vw,32px);padding:clamp(14px,2vw,20px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
+.bbrec .dxrow:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .dxrow .ak{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .dxrow p{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);margin:0;}
+@media(max-width:640px){.bbrec .dxrow{grid-template-columns:1fr;gap:6px;}}
 /* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
 .bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
 .bbrec .chcta p{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(17px,2.2vw,22px);line-height:1.2;color:var(--ink);max-width:34ch;margin:0;}
@@ -2088,14 +2119,14 @@ const RECORD_CSS = `
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
 .bbrec .op-portrait{border:1px solid var(--ink);background:var(--flash);}
-.bbrec .op-portrait img{width:100%;display:block;filter:grayscale(100%) contrast(1.02);}
+.bbrec .op-portrait img{width:100%;display:block;aspect-ratio:400/536;object-fit:cover;filter:grayscale(100%) contrast(1.02);}
 .bbrec .op-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,3vw,36px);line-height:1.08;color:var(--ink);}
 .bbrec .op-b{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.5vw,18px);line-height:1.55;color:var(--sec);margin-top:16px;max-width:56ch;}
 .bbrec .op-sig{margin-top:18px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 .bbrec .op-sig a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--hair);}
 /* final CTA box (RED lives here) */
-.bbrec .ctawrap{padding-top:clamp(52px,8vw,90px);padding-bottom:clamp(40px,6vw,70px);}
-.bbrec .box.cta{padding:clamp(30px,5vw,56px);text-align:center;}
+.bbrec .ctawrap{padding-top:clamp(34px,5vw,58px);padding-bottom:clamp(26px,4vw,44px);}
+.bbrec .box.cta{padding:clamp(26px,4vw,44px);text-align:center;}
 .bbrec .cta-h{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.8vw,52px);line-height:1.0;max-width:20ch;margin:0 auto;color:var(--ink);}
 .bbrec .cta-n{font-family:var(--serif);font-weight:400;font-size:clamp(16px,1.6vw,18px);line-height:1.5;color:var(--sec);max-width:46ch;margin:clamp(16px,2vw,20px) auto 0;}
 .bbrec .cta-btn{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(22px,3vw,30px);background:var(--red);color:var(--paper);font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(13px,1.5vw,15px);padding:16px 30px;text-decoration:none;}
@@ -2742,7 +2773,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   // (baked into static HTML by scripts/prerender.mjs for prerendered scan slugs).
   useMetadata({
     title: `An inbound engine for ${displayCompany}`,
-    description: `A week of LinkedIn posts and a lead magnet, in ${who}'s voice, ready to approve.`,
+    description: `A week of LinkedIn posts and a lead magnet we run in ${who}'s voice. Built before this page.`,
     canonical: `${import.meta.env.VITE_SCAN_ORIGIN || 'https://ivanmanfredi.com'}/scan/${scan.company_slug}`,
     ogImage: cs.og_image_url || undefined,
     noindex: true,
@@ -2857,11 +2888,15 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
   } : null;
 
+  // Six-key WARN map covering both vocabularies (dashboard + n8n scout). Effect head in the
+  // label register, verdict in clinical deadpan. No em dashes. Fallback kept for safety.
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
-    silent_founder: { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
-    inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
-    no_capture:     { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
-    invisible:      { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
+    silent_founder:    { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
+    inconsistent:      { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
+    no_capture:        { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
+    invisible:         { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
+    uncaptured_feed:   { effect: 'WARNING: THE FEED CAPTURES NOBODY', verdict: 'The posting happens. Not one reader is named or kept.' },
+    unworked_audience: { effect: 'WARNING: THE ROOM GOES UNWORKED', verdict: 'The audience is built. Nobody works a single name in it.' },
   };
   const warn = WARN[cs.archetype] ?? WARN.silent_founder;
 
@@ -2901,11 +2936,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     found: (cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k],
     projected: (cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k],
   });
-  const PILLARS: { key: PillarKey; name: string; anchor: string }[] = [
-    { key: 'content', name: 'Content', anchor: 'cs-ch-content' },
-    { key: 'inbound', name: 'Inbound', anchor: 'cs-ch-inbound' },
-    { key: 'outbound', name: 'Warm outbound', anchor: 'cs-ch-outbound' },
+  // The administration table — the prescription itself, stated once, up top. WE carry every
+  // verb; no buyer labor, no approval duty. It reads clean with zero prospect data (thin
+  // scans) because it names what the engine does, not what their feed shows. Pillar names
+  // anchor to the matching exhibit below. House lexicon: Once daily, Measured in booked calls.
+  const ADMIN: { key: PillarKey; name: string; does: string; cadence: string; measured: string; anchor: string }[] = [
+    { key: 'content',  name: 'Content',       anchor: 'cs-x-content',
+      does: 'We write your posts in your voice and publish them for you.',
+      cadence: 'Once daily, five a week', measured: 'Reach and replies' },
+    { key: 'inbound',  name: 'Inbound',       anchor: 'cs-x-inbound',
+      does: 'We build one gated asset in your brand. Every reader who finishes it lands on a list you own.',
+      cadence: 'One asset, always live', measured: 'Named leads captured' },
+    { key: 'outbound', name: 'Warm outbound', anchor: 'cs-x-outbound',
+      does: 'Everyone who engages a post gets a warm message about that exact post.',
+      cadence: 'Around 15 a week, capped', measured: 'Booked calls' },
   ];
+  const PILLARS: { key: PillarKey; name: string; anchor: string }[] = ADMIN.map((a) => ({ key: a.key, name: a.name, anchor: a.anchor }));
   const pillars: Record<PillarKey, { found: string; projected: string }> = {
     content: pillarCell('content'), inbound: pillarCell('inbound'), outbound: pillarCell('outbound'),
   };
@@ -2921,26 +2967,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
     </div>
   );
-
-  // The gated wins that belong to a chapter, rendered as observed entries with the build.
-  // A win whose observation already fills the pillar table's "found" cell (the fallback
-  // path when the builder emits no cs.pillars) is skipped here — never printed twice.
-  const WinRows = ({ k }: { k: PillarKey }) => {
-    const rows = winsByPillar[k].filter((w) => (w.observation || '').trim() !== pillars[k].found);
-    return rows.length ? (
-    <div className="ledger">
-      {rows.slice(0, 3).map((w, i) => (
-        <div className="lrow" key={i}>
-          <div className="lmeta"><div className="lidx num">{String(i + 1).padStart(2, '0')}</div><div className="ldate">Observed {scanDate}</div></div>
-          <div>
-            <div className="lobs">{w.observation}</div>
-            {w.build ? <div className="lbuild"><span className="bl">→ Build</span><span className="bt">{w.build}</span></div> : null}
-          </div>
-        </div>
-      ))}
-    </div>
-    ) : null;
-  };
 
   return (
     <div className="bbrec min-h-screen" style={BLACKBOX_VARS}>
@@ -2962,16 +2988,15 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         {/* ── DOCLINE ─────────────────────────── */}
         <Docline docType="Scan report · Projected · Scanned" date={scanDate} refLabel={scan.company_slug} />
 
-        {/* ── DATA PLATE ──────────────────────── */}
+        {/* ── DATA PLATE (compact admin title block) ── */}
         <DataPlate cells={[
           { k: 'Prepared for', v: founderFull },
-          ...(companyName && founderFull !== companyName ? [{ k: 'Company', v: companyName }] : []),
           { k: 'Scanned', v: <>LinkedIn feed{cleanDomain ? <><br />{cleanDomain}</> : null}</> },
           { k: 'Scan date', v: <span className="num">{scanDate}</span> },
           { k: 'Operator of record', v: 'Ivan Manfredi' },
         ]} />
 
-        {/* ── FOLD ────────────────────────────── */}
+        {/* ── MASTHEAD (compact; the box comes immediately) ── */}
         <Rev el="section" className="fold">
           <div>
             <h1 className="company">{displayCompany}</h1>
@@ -2979,7 +3004,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           </div>
         </Rev>
 
-        {/* ── VERDICT · THE BOX (1 of 2, the page's one tilt) ── */}
+        {/* ── PRESCRIPTION · THE BOX (offer-first: warning head, the administration table,
+             and the primary CTA, all inside one viewport) ── */}
         <div className="boxwrap">
           <Rev className="box tilt">
             <div className="box-head">
@@ -2987,90 +3013,45 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="lbl">{warn.effect}</span>
             </div>
             <div className="box-body">{warn.verdict}</div>
-            <div className="ptab">
-              <div className="ptab-h">
-                <span>Pillar</span>
-                <span>On your feed today</span>
-                <span>After 90 days</span>
+            {/* The administration table: what we do, at what cadence, measured in what. */}
+            <div className="adtab" role="table" aria-label="What we run for you">
+              <div className="adtab-h" role="row">
+                <span role="columnheader">Pillar</span>
+                <span role="columnheader">What we do</span>
+                <span role="columnheader">Cadence</span>
+                <span role="columnheader">Measured in</span>
               </div>
-              {PILLARS.map((p) => (
-                <div className="ptab-r" key={p.key}>
-                  <div><a className="ptab-a" href={`#${p.anchor}`} onClick={(e) => jump(e, p.anchor)}>{p.name}</a></div>
-                  <div className="ptab-f" data-l="On your feed today">{pillars[p.key].found}</div>
-                  <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
+              {ADMIN.map((a) => (
+                <div className="adtab-r" role="row" key={a.key}>
+                  <div className="adtab-p" role="cell"><a className="adtab-a" href={`#${a.anchor}`} onClick={(e) => jump(e, a.anchor)}>{a.name}</a></div>
+                  <div className="adtab-d" role="cell" data-l="What we do">{a.does}</div>
+                  <div className="adtab-c" role="cell" data-l="Cadence">{a.cadence}</div>
+                  <div className="adtab-m" role="cell" data-l="Measured in">{a.measured}</div>
                 </div>
               ))}
             </div>
-            <p className="box-note">Read from your public presence on {scanDate}. Tap a pillar to jump to it.</p>
+            <div className="box-cta">
+              <a className="btn-ink" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
+              <span className="box-note">Full prescribing information on the call. Read from your public presence on {scanDate}.</span>
+            </div>
           </Rev>
         </div>
 
-        {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
-        {room && (
-          <Rev el="section" className="sec" id="cs-room">
-            <SecHead
-              label={<>Evidence&nbsp;·&nbsp;Audience</>}
-              title={<>Who is actually in your room.</>}
-              note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
-            />
-            <div className="aud-top">
-              <div className="pf-figk">{room.figureLabel}</div>
-              <div className="pf-fig">{room.figure}</div>
-              <p className="aud-sub">{room.figureSub}</p>
-            </div>
-            {/* Grade scale: bands are OUR scale from the rooms we read for this buyer type
-                (consumer-brand sellers only, enforced upstream by the audit's vertical gate;
-                a different ICP would need re-based bands). ~1% is the background rate of DTC
-                decision-makers in a generic network; the flagship good room read 4.6%. */}
-            {roomMode === 'network' && audNetDensity !== null && (
-              <div>
-                <div className="pf-figk" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>How rooms grade, share of connections that are buyers</div>
-                <div className="aud-scale">
-                  {[
-                    { r: 'Under 1%', w: 'Background noise. Almost every room starts here.', on: audNetDensity < 1 },
-                    { r: '1 to 2%', w: 'A typical room. Some buyers, mostly peers.', on: audNetDensity >= 1 && audNetDensity < 2 },
-                    { r: 'Above 2%', w: 'Raw material worth working.', on: audNetDensity >= 2 },
-                  ].map((b, i) => (
-                    <div className={`aud-band${b.on ? ' on' : ''}`} key={i}>
-                      <div className="abr">{b.r}</div>
-                      <div className="abw">{b.w}</div>
-                      {b.on ? <div className="abys">Yours · {audNetDensity}%</div> : null}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="aud-rows">
-              <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
-              <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
-            </div>
-            {audNamed.length > 0 && (
-              <div className="aud-names">
-                {audNamed.map((n, i) => (
-                  <div className="aud-name" key={i}>
-                    <div className="anm">{audClean(n.name)}</div>
-                    {n.headline ? <div className="ahl">{audClean(n.headline).slice(0, 110)}</div> : null}
-                    <div className="asrc">{n.source === 'engager' ? 'Engaged your posts' : 'In your connections'}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="cap">{room.caveat}</p>
-          </Rev>
-        )}
+        {/* Audience room relocated below the exhibits + diagnosis (offer-first order). */}
 
-        {/* ── CHAPTER 01 · CONTENT ────────────── */}
-        <Rev el="section" className="sec" id="cs-ch-content" style={{ scrollMarginTop: 76 }}>
+        {/* ── EXHIBITS · prove the prescription in their brand (tight, excerpted) ── */}
+        <Rev el="section" className="sec" id="cs-exhibits">
           <SecHead
-            label={<>Chapter 01&nbsp;·&nbsp;Content</>}
-            title={<>Once daily, in your voice.</>}
-            note={<>Below is the week we drafted from your own material before this page was built.</>}
+            label={<>Exhibits&nbsp;·&nbsp;In your brand</>}
+            title={<>We built the week before this page.</>}
+            note={<>Every artifact below is seeded with {who}&rsquo;s own material and brand. On the call we walk it live.</>}
           />
-          <WinRows k="content" />
+
+          {/* Content */}
           {feedSpec.posts.length > 0 && (
-            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
+            <div id="cs-x-content" style={{ scrollMarginTop: 76, marginTop: 'clamp(26px,3.2vw,40px)' }}>
               <Exhibit
-                label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
+                label={<>Content&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed</>}
                 caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
@@ -3089,42 +3070,18 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
             </div>
           )}
-          <ChapterCta line={<>This week is already drafted, {who}. On the call we walk it live.</>} />
-        </Rev>
 
-        {/* ── CHAPTER 02 · INBOUND ────────────── */}
-        <Rev el="section" className="sec" id="cs-ch-inbound" style={{ scrollMarginTop: 76 }}>
-          <SecHead
-            label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
-            title={<>Every reader leaves a name.</>}
-            note={<>The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
-          />
-          <WinRows k="inbound" />
+          {/* Inbound */}
+          <div id="cs-x-inbound" style={{ scrollMarginTop: 76 }}>
           {lm?.title && lmEmbedUrl && (
-            <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
-              {/* branded exhibit masthead — cover plate beside the title/promise band */}
-              <div className="lm-frame">
-                {(lmCover || lm.brand?.logo_url) && (
-                  <div className="lm-frame-cover">
-                    <img src={lmCover || lm.brand?.logo_url} alt={lm.title} loading="lazy" onError={fallbackOnError} />
-                  </div>
-                )}
-                <div className="lm-frame-body">
-                  <FigLabel>Fig&nbsp;·&nbsp;lead magnet&nbsp;·&nbsp;your brand</FigLabel>
-                  <div className="lm-title" style={{ fontSize: 'clamp(22px,2.6vw,32px)' }}>{lm.title}</div>
-                  {lm.promise ? <p className="lm-promise">{lm.promise}</p> : null}
-                  <div className="lm-gate"><span className="sq" aria-hidden /> Live&nbsp;·&nbsp;gated on {cleanDomain || 'your domain'}</div>
-                </div>
-              </div>
-              <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
-                <Exhibit
-                  label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
-                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
-                >
-                  <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
-                </Exhibit>
-              </div>
-              <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 'clamp(28px,3.4vw,44px)' }}>
+              <Exhibit
+                label={<>Inbound&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;live in your brand</>}
+                caption={<><strong style={{ fontWeight: 700, fontStyle: 'normal' }}>{lm.title}.</strong> {lm.promise ? lm.promise + ' ' : ''}Interactive and gated on {cleanDomain || 'your domain'}. Every completion lands a named address on a list you own.</>}
+              >
+                <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
+              </Exhibit>
+              <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 18 }}>
                 Open it full screen <span aria-hidden>→</span>
               </button>
             </div>
@@ -3161,7 +3118,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {(newsletter || followUps) && (
             <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               {newsletter && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, drafted from the same week's material, in your voice.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, written from the same week's material, in your voice.">
                   <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
                 </Exhibit>
               )}
@@ -3172,35 +3129,96 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               )}
             </div>
           )}
-          <ChapterCta line={<>The asset is built in your brand, {who}. The call decides where it lives.</>} />
+          </div>{/* /cs-x-inbound */}
+
+          {/* Warm outbound */}
+          <div id="cs-x-outbound" style={{ scrollMarginTop: 76, marginTop: 'clamp(34px,4vw,52px)' }}>
+            {engager && (
+              <div>
+                <Exhibit
+                  label={<>Warm outbound&nbsp;·&nbsp;keyed to your posts</>}
+                  caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
+                >
+                  <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
+                </Exhibit>
+              </div>
+            )}
+            <div className="gov" style={{ marginTop: engager ? undefined : 0 }}>
+              <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
+              <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
+              <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
+              <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
+            </div>
+          </div>{/* /cs-x-outbound */}
+
+          <ChapterCta line={<>The whole system opens in week one, {who}. Effects observed in booked calls.</>} />
         </Rev>
 
-        {/* ── CHAPTER 03 · WARM OUTBOUND ──────── */}
-        <Rev el="section" className="sec" id="cs-ch-outbound" style={{ scrollMarginTop: 76 }}>
+        {/* ── DIAGNOSIS · the closing argument, read from their own feed ── */}
+        <Rev el="section" className="sec" id="cs-diagnosis">
           <SecHead
-            label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
-            title={<>The people who engage get a message.</>}
-            note={<>The people who like and comment on your posts are buyers showing interest. We message them while the post is still live, about that exact post, with something useful and no pitch.</>}
+            label={<>Diagnosis&nbsp;·&nbsp;Read on {scanDate}</>}
+            title={<>What your feed shows today.</>}
           />
-          <WinRows k="outbound" />
-          {engager && (
-            <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
-              <Exhibit
-                label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
-                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
-              >
-                <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
-              </Exhibit>
-            </div>
-          )}
-          <div className="gov">
-            <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
-            <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
-            <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
-            <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
+          <div className="dxrows">
+            {PILLARS.map((p) => (
+              <div className="dxrow" key={p.key}>
+                <span className="ak">{p.name}</span>
+                <p>{pillars[p.key].found}</p>
+              </div>
+            ))}
           </div>
-          <ChapterCta line={<>The warm lane opens in week one. Effects observed in booked calls.</>} />
         </Rev>
+
+        {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
+        {room && (
+          <Rev el="section" className="sec" id="cs-room">
+            <SecHead
+              label={<>Evidence&nbsp;·&nbsp;Audience</>}
+              title={<>Who is actually in your room.</>}
+              note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
+            />
+            <div className="aud-top">
+              <div className="pf-figk">{room.figureLabel}</div>
+              <div className="pf-fig">{room.figure}</div>
+              <p className="aud-sub">{room.figureSub}</p>
+            </div>
+            {roomMode === 'network' && audNetDensity !== null && (
+              <div>
+                <div className="pf-figk" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>How rooms grade, share of connections that are buyers</div>
+                <div className="aud-scale">
+                  {[
+                    { r: 'Under 1%', w: 'Background noise. Almost every room starts here.', on: audNetDensity < 1 },
+                    { r: '1 to 2%', w: 'A typical room. Some buyers, mostly peers.', on: audNetDensity >= 1 && audNetDensity < 2 },
+                    { r: 'Above 2%', w: 'Raw material worth working.', on: audNetDensity >= 2 },
+                  ].map((b, i) => (
+                    <div className={`aud-band${b.on ? ' on' : ''}`} key={i}>
+                      <div className="abr">{b.r}</div>
+                      <div className="abw">{b.w}</div>
+                      {b.on ? <div className="abys">Yours · {audNetDensity}%</div> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="aud-rows">
+              <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
+              <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
+            </div>
+            {audNamed.length > 0 && (
+              <div className="aud-names">
+                {audNamed.map((n, i) => (
+                  <div className="aud-name" key={i}>
+                    <div className="anm">{audClean(n.name)}</div>
+                    {n.headline ? <div className="ahl">{audClean(n.headline).slice(0, 110)}</div> : null}
+                    <div className="asrc">{n.source === 'engager' ? 'Engaged your posts' : 'In your connections'}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="cap">{room.caveat}</p>
+          </Rev>
+        )}
 
         {/* ── PROOF · EFFECTS OBSERVED (unnumbered) ── */}
         <Rev el="section" className="sec">
@@ -3293,7 +3311,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a>
             </div>
           </div>
-          <p className="foot-fine">Prepared for {founderFull}. Read from a live scan of your public presence, {scanDate}. Every sample above was drafted from your own material and is ready to ship.</p>
+          <p className="foot-fine">Read from your public presence, {scanDate}. Confidential to the recipient.</p>
         </div>
       </footer>
 

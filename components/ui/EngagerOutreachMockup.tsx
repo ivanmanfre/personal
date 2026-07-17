@@ -37,14 +37,17 @@ const EngagerOutreachMockup: React.FC<Props> = ({ data, accent }) => {
   if (!data || !Array.isArray(data.samples) || data.samples.length === 0) return null;
 
   const bubbleBg = tint(accent, 0.12);
+  // Excerpt, not essay: cap the visible DM pairs and clamp each bubble to three lines.
+  const samples = data.samples.slice(0, 3);
+  const remaining = data.samples.length - samples.length;
 
   return (
     <div className="w-full max-w-[640px] mx-auto">
       {data.explainer && (
-        <p className="mb-6" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>{data.explainer}</p>
+        <p className="mb-6 line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '16px', lineHeight: 1.55, color: '#3D3D3B' }}>{data.explainer}</p>
       )}
       <div className="space-y-5">
-        {data.samples.map((s, i) => (
+        {samples.map((s, i) => (
           <motion.div
             key={i}
             className="p-4 sm:p-5"
@@ -67,11 +70,14 @@ const EngagerOutreachMockup: React.FC<Props> = ({ data, accent }) => {
                 className="max-w-[85%] px-4 py-3"
                 style={{ background: bubbleBg, border: `1px solid ${accent}`, borderRadius: '16px 16px 4px 16px' }}
               >
-                <p style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A' }}>{s.dm}</p>
+                <p className="line-clamp-3" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: '#1A1A1A' }}>{s.dm}</p>
               </div>
             </div>
           </motion.div>
         ))}
+        {remaining > 0 && (
+          <p style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>+{remaining} more keyed to your posts</p>
+        )}
       </div>
     </div>
   );

@@ -30,7 +30,11 @@ const FollowUpSequence: React.FC<Props> = ({ data, accent }) => {
   const reduce = useReducedMotion();
   if (!Array.isArray(data) || data.length === 0) return null;
 
-  const items = [...data].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
+  const sorted = [...data].sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
+  // Excerpt, not essay: the sequence reads as a schedule, so cap the visible steps and
+  // clamp each body to two lines. The full sequence ships; the exhibit proves the cadence.
+  const items = sorted.slice(0, 3);
+  const remaining = sorted.length - items.length;
 
   return (
     <div className="w-full max-w-[640px] mx-auto">
@@ -59,10 +63,18 @@ const FollowUpSequence: React.FC<Props> = ({ data, accent }) => {
                   Day {f.day}
                 </span>
                 <h4 className="mt-3" style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 'clamp(1.05rem, 3vw, 1.35rem)', lineHeight: 1.15, letterSpacing: '-0.01em', color: '#1A1A1A' }}>{f.subject}</h4>
-                <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B' }}>{f.body}</p>
+                <p className="mt-2 line-clamp-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.55, color: '#3D3D3B' }}>{f.body}</p>
               </div>
             </motion.div>
           ))}
+          {remaining > 0 && (
+            <div className="relative pl-10">
+              <span aria-hidden className="absolute left-0 top-1 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: '#fff', border: `1px solid ${HAIRLINE}` }}>
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: HAIRLINE }} />
+              </span>
+              <div className="pt-2" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.45)' }}>+{remaining} more in the sequence</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

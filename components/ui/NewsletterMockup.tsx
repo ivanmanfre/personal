@@ -75,13 +75,18 @@ const NewsletterMockup: React.FC<Props> = ({ data, accent, who, logoUrl }) => {
           <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15px', lineHeight: 1.5, color: 'rgba(26,26,26,0.55)' }}>{data.preview}</p>
         )}
 
-        <div className="mt-6 space-y-6">
-          {data.sections.map((s, i) => (
+        {/* Excerpt, not essay: two sections, each body clamped to three lines. The full
+            copy ships in the buyer's own brand; the exhibit only has to read as theirs. */}
+        <div className="mt-6 space-y-5">
+          {data.sections.slice(0, 2).map((s, i) => (
             <div key={i}>
               <div style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: accent, fontWeight: 600 }}>{s.h}</div>
-              <p className="mt-2" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>{s.body}</p>
+              <p className="mt-2 line-clamp-3" style={{ fontFamily: BODY_SERIF, fontSize: '15.5px', lineHeight: 1.55, color: '#3D3D3B' }}>{s.body}</p>
             </div>
           ))}
+          {data.sections.length > 2 && (
+            <div style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(26,26,26,0.4)' }}>+{data.sections.length - 2} more in the issue</div>
+          )}
         </div>
 
         <div className="mt-7">
