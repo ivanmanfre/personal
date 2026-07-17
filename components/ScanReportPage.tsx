@@ -11,6 +11,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
+import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
@@ -2754,21 +2755,24 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const prospectAccent = brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
   const prospectLogo = brand?.logo_url || undefined;
 
-  // Attention budget: two posts run full-size in the feed — the first visual one
-  // (image/carousel) plus the next in week order — and the rest collapse to hook cells.
+  // Attention budget: ONE post runs full-size in the feed — the first visual one
+  // (image/carousel) — and every other full post renders as a compact clamped card
+  // (real body + small thumb) so the whole written week reads in one screenful.
   type CsPost = NonNullable<NonNullable<ContentSystem['sample_output']>['posts']>[number];
   const weekPosts: CsPost[] = (cs.sample_output?.posts ?? []).filter((p) => !/lead.?magnet/i.test(p.format || ''));
   const isVisualPost = (p: CsPost) => Boolean(p.image_url) || Boolean(p.image_card?.headline) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2);
   const firstVisual = weekPosts.find(isVisualPost);
-  const featuredPosts = (firstVisual ? [firstVisual, ...weekPosts.filter((p) => p !== firstVisual)] : weekPosts)
-    .slice(0, 2)
-    .sort((a, b) => weekPosts.indexOf(a) - weekPosts.indexOf(b));
-  // "Also drafted" cells earn their place only with a real hook.
-  const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p)).filter((p) => (p.hook || '').trim());
+  const heroPosts = firstVisual ? [firstVisual] : weekPosts.slice(0, 1);
   const feedSpec = buildFeedSpecFromContentSystem(
-    cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: featuredPosts } } : cs,
+    cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: heroPosts } } : cs,
     { companyName: displayCompany },
   );
+  const restSpec = cs.sample_output
+    ? buildFeedSpecFromContentSystem(
+        { ...cs, sample_output: { ...cs.sample_output, posts: weekPosts.filter((p) => !heroPosts.includes(p)) } },
+        { companyName: displayCompany },
+      )
+    : null;
   // When the LM is a live, results-forward assessment we can embed, use it everywhere.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
   const lmSim = cs.sample_output?.lm?.sim;
@@ -3082,32 +3086,39 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 01&nbsp;·&nbsp;Content</>}
             title={<>Once daily, in your voice.</>}
-            note={<>Below is the week we drafted from your own material before this page was built.</>}
+            note={<>Built from your own material before this page existed.</>}
           />
           <WinRows k="content" />
           {feedSpec.posts.length > 0 && (
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
-                caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
+                caption={sourceQuotes.length ? <>From your own words: {sourceQuotes.slice(0, 2).map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
                   <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
                 </div>
               </Exhibit>
-              {restOfWeek.length > 0 && (
-                <div className="promises" style={{ marginTop: 20 }}>
-                  {restOfWeek.map((p, i) => (
-                    <div className="pcell" key={i}>
-                      <div className="k" style={{ marginBottom: 6 }}>Also this week</div>
-                      <div className="ph">{p.hook}</div>
-                    </div>
+              {restSpec && restSpec.posts.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch" style={{ marginTop: 16 }}>
+                  {restSpec.posts.map((p, i) => (
+                    <LinkedInPostPreview
+                      key={i}
+                      compact
+                      clampLines={4}
+                      author={restSpec.profile.name}
+                      headline={restSpec.profile.headline}
+                      avatarUrl={restSpec.profile.avatarUrl}
+                      text={p.body}
+                      mediaUrl={p.type === 'image' ? (p.imageUrl ?? null) : p.type === 'carousel' && p.slides?.length ? p.slides[0] : null}
+                      stats={{ reactions: p.reactions, comments: p.comments }}
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
-          <ChapterCta line={<>This week is already drafted, {who}. On the call we walk it live.</>} />
+          <ChapterCta line={<>This week is already written, {who}. On the call we walk it live.</>} />
         </Rev>
 
         {/* ── CHAPTER 02 · INBOUND ────────────── */}
@@ -3115,7 +3126,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
             title={<>Every reader leaves a name.</>}
-            note={<>The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
+            note={<>One gated asset on your domain. Every reader who finishes it lands on your list.</>}
           />
           <WinRows k="inbound" />
           {lm?.title && lmEmbedUrl && (
@@ -3137,7 +3148,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
                 <Exhibit
                   label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
-                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                  caption={<>Live and working, in your brand. Every completion lands a named email on your list.</>}
                 >
                   <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
                 </Exhibit>
@@ -3179,12 +3190,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {(newsletter || followUps) && (
             <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               {newsletter && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, drafted from the same week's material, in your voice.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="Written from the same week's material, in your voice.">
                   <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
                 </Exhibit>
               )}
               {followUps && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="A fixed schedule after the download. The clock starts when the reader opts in.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="Runs on a fixed clock after the download.">
                   <FollowUpSequence data={followUps} accent={prospectAccent} who={who} />
                 </Exhibit>
               )}
@@ -3198,14 +3209,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
             title={<>The people who engage get a message.</>}
-            note={<>The people who like and comment on your posts are buyers showing interest. We message them while the post is still live, about that exact post, with something useful and no pitch.</>}
+            note={<>Everyone who engages a post gets a message about that exact post. Useful, no pitch.</>}
           />
           <WinRows k="outbound" />
           {engager && (
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
-                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
+                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from your comments.</> : undefined}
               >
                 <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
               </Exhibit>

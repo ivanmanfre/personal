@@ -172,6 +172,8 @@ interface Props {
   stats?: { reactions?: number; comments?: number };
   /** When true, renders a smaller condensed card suitable for a 2-column grid. */
   compact?: boolean;
+  /** Compact caption clamp, in lines. Default 6. */
+  clampLines?: number;
   /** Replaces the "1d · Edited" timestamp with a neutral marker (e.g. "Preview") —
    *  for future/example posts that were never actually published. */
   timeLabel?: string;
@@ -190,6 +192,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
   showFold = true,
   stats,
   compact = false,
+  clampLines = 6,
   timeLabel,
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -225,7 +228,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
         <div className="px-3 pb-2">
           <div
             className="text-[13px] text-[#1d2226] leading-snug"
-            style={{ display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+            style={{ display: '-webkit-box', WebkitLineClamp: clampLines, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {paragraphs.map((para, pi) => (
               <p key={pi} className={pi > 0 ? 'mt-2' : ''}>
@@ -239,6 +242,18 @@ const LinkedInPostPreview: React.FC<Props> = ({
             ))}
           </div>
         </div>
+
+        {/* Compact media thumb — existing call sites pass mediaUrl={null}, unchanged */}
+        {mediaUrl && (
+          <img
+            src={mediaUrl}
+            alt=""
+            loading="lazy"
+            className="w-full object-cover"
+            style={{ maxHeight: 132, objectPosition: 'top', borderTop: '1px solid #dce6f1' }}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+        )}
 
         {/* Compact reaction strip */}
         <div className="px-3 pt-1 pb-1.5 text-[11px] text-[#666] flex items-center gap-1 border-t border-[#dce6f1]">
