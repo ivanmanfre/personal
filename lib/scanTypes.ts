@@ -36,11 +36,13 @@ export interface CallIntel {
 // the audit reasons about THIS prospect's organic content gap and frames it as a leak.
 export interface ContentSystem {
   // The dominant gap the audit picks for this prospect:
-  //  silent_founder — has audience/title but rarely posts (leaking attention)
-  //  inconsistent   — posts in bursts then goes quiet (no momentum)
-  //  no_capture     — posts but nothing converts readers to leads (leaking demand)
-  //  invisible      — barely on LinkedIn / no owned attention at all
-  archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible';
+  //  silent_founder   — has audience/title but rarely posts (leaking attention)
+  //  inconsistent     — posts in bursts then goes quiet (no momentum)
+  //  no_capture       — posts but nothing converts readers to leads (leaking demand)
+  //  invisible        — barely on LinkedIn / no owned attention at all
+  //  uncaptured_feed  — posting happens but nothing captures the readers (n8n vocab)
+  //  unworked_audience— the audience exists and nobody works it (n8n vocab)
+  archetype: 'silent_founder' | 'inconsistent' | 'no_capture' | 'invisible' | 'uncaptured_feed' | 'unworked_audience';
   // The outreach lane's fabrication-gated "3 first wins" (gift note / DM1); when present the
   // page opens with these instead of the archetype pain template. `pillar` tags each win to
   // one of the three offer pillars so the report can seat it in the right chapter.

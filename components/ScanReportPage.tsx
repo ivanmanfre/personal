@@ -11,6 +11,7 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
+import LinkedInPostPreview from './ui/LinkedInPostPreview';
 import NewsletterMockup from './ui/NewsletterMockup';
 import FollowUpSequence from './ui/FollowUpSequence';
 import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
@@ -1892,7 +1893,7 @@ const RECORD_CSS = `
   --grotesk:'Schibsted Grotesk',system-ui,-apple-system,sans-serif;
   --serif:'Source Serif 4',Georgia,serif;
   color:var(--ink);font-family:var(--grotesk);font-weight:400;line-height:1.5;
-  font-variant-numeric:tabular-nums;background:var(--paper);overflow-x:hidden;
+  background:var(--paper);overflow-x:hidden;
 }
 .bbrec .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(20px,5vw,64px);}
 .bbrec .num{font-variant-numeric:tabular-nums;}
@@ -1912,7 +1913,7 @@ const RECORD_CSS = `
 .bbrec .cell{padding:clamp(12px,1.7vw,17px) clamp(13px,1.7vw,19px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .plate-grid .cell:nth-child(3n){border-right:none;}
 .bbrec .plate-grid .cell:nth-child(n+4){border-bottom:none;}
-.bbrec .k{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .k{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .v{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.01em;font-size:clamp(14px,1.7vw,17px);margin-top:6px;color:var(--ink);line-height:1.2;}
 @media(max-width:720px){.bbrec .plate-grid{grid-template-columns:1fr 1fr;}.bbrec .plate-grid .cell{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}.bbrec .plate-grid .cell:nth-child(2n){border-right:none;}}
 @media(max-width:430px){.bbrec .plate-grid .cell{padding:10px 11px;}.bbrec .v{font-size:13px;}}
@@ -1938,7 +1939,7 @@ const RECORD_CSS = `
 /* AS-FOUND / PROJECTED table */
 .bbrec .afp{margin-top:clamp(18px,2.4vw,24px);border-top:1px solid var(--ink);}
 .bbrec .afp-h,.bbrec .afp-r{display:grid;grid-template-columns:1.1fr 1fr 1.1fr;gap:clamp(10px,1.6vw,22px);}
-.bbrec .afp-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
+.bbrec .afp-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
 .bbrec .afp-r{padding:clamp(12px,1.6vw,15px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
 .bbrec .afp-r:last-child{border-bottom:1px solid var(--ink);}
 .bbrec .afp-p{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15px);letter-spacing:-0.01em;line-height:1.2;color:var(--ink);}
@@ -1958,18 +1959,18 @@ const RECORD_CSS = `
 .bbrec .lrow{display:grid;grid-template-columns:132px 1fr;gap:clamp(16px,2.4vw,34px);padding:clamp(20px,2.8vw,30px) 0;border-bottom:1px solid var(--hair);}
 .bbrec .lrow:last-child{border-bottom:1px solid var(--ink);}
 .bbrec .lidx{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(22px,2.6vw,30px);line-height:1;color:var(--ink);}
-.bbrec .ldate{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:8px;}
+.bbrec .ldate{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-top:8px;}
 .bbrec .lobs{font-family:var(--grotesk);font-weight:500;letter-spacing:-0.012em;font-size:clamp(17px,2vw,22px);line-height:1.28;color:var(--ink);}
 .bbrec .lbuild{margin-top:14px;padding-top:12px;border-top:1px solid var(--hair);display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;}
-.bbrec .lbuild .bl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);white-space:nowrap;}
-.bbrec .lbuild .bt{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,16px);line-height:1.5;color:var(--sec);}
+.bbrec .lbuild .bl{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);white-space:nowrap;}
+.bbrec .lbuild .bt{font-family:var(--grotesk);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.55;color:var(--sec);}
 .bbrec .lrow.open .lobs{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--muted);font-size:clamp(15px,1.5vw,17px);}
 @media(max-width:620px){.bbrec .lrow{grid-template-columns:1fr;gap:12px;}.bbrec .lmeta{display:flex;align-items:baseline;gap:14px;}.bbrec .lmeta .ldate{margin-top:0;}}
 /* figures / exhibits */
-.bbrec .figlabel{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
+.bbrec .figlabel{display:flex;align-items:center;gap:10px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap;}
 .bbrec .figlabel .sq{width:7px;height:7px;}
 .bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
-.bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
+.bbrec .cap{font-family:var(--grotesk);font-weight:400;font-size:clamp(13.5px,1.35vw,14.5px);line-height:1.55;color:var(--sec);margin-top:14px;max-width:58ch;}
 /* lead-magnet exhibit */
 /* voice provenance pairing */
 .bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;}
@@ -1990,7 +1991,7 @@ const RECORD_CSS = `
 .bbrec .inside .ir:last-child{border-bottom:none;}
 .bbrec .inside .ii{font-family:var(--grotesk);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:0.04em;}
 .bbrec .inside .it{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,16px);letter-spacing:-0.01em;color:var(--ink);}
-.bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.bbrec .lm-gate{margin-top:20px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;color:var(--sec);display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
 /* embedded-LM exhibit masthead — cover plate beside the branded title band (sharp, hairline, no shadow/radius) */
 .bbrec .lm-frame{display:grid;grid-template-columns:200px 1fr;gap:clamp(20px,3vw,40px);align-items:start;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair);padding:clamp(18px,2.4vw,26px) 0;}
 .bbrec .lm-frame-cover{border:1px solid var(--ink);background:#0e0e12;overflow:hidden;align-self:start;}
@@ -1999,7 +2000,7 @@ const RECORD_CSS = `
 @media(max-width:640px){.bbrec .lm-frame{grid-template-columns:1fr;gap:16px;}.bbrec .lm-frame-cover{max-width:220px;}}
 /* governance strip */
 .bbrec .gov{margin-top:clamp(24px,3vw,34px);display:flex;flex-wrap:wrap;gap:10px 26px;}
-.bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:10px;color:var(--sec);}
+.bbrec .gov span{display:flex;align-items:center;gap:9px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;color:var(--sec);}
 .bbrec .gov .sq{width:6px;height:6px;flex-shrink:0;}
 /* commissioning record */
 .bbrec .kyle{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
@@ -2010,12 +2011,12 @@ const RECORD_CSS = `
 .bbrec .kyle-al{font-family:var(--grotesk);font-weight:800;font-size:clamp(30px,4.4vw,52px);letter-spacing:-0.035em;line-height:0.9;color:var(--ink);}
 .bbrec .kyle-al small{font-family:var(--grotesk);font-weight:700;font-size:0.34em;letter-spacing:0.02em;color:var(--muted);}
 .bbrec .kyle-q{padding:clamp(16px,2.2vw,24px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(16px,1.7vw,20px);line-height:1.45;color:var(--ink);}
-.bbrec .kyle-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:12px;}
+.bbrec .kyle-q .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-top:12px;}
 .bbrec .kmet{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);}
 .bbrec .kmet .m{padding:clamp(14px,2vw,20px) clamp(14px,2vw,22px);border-right:1px solid var(--hair);}
 .bbrec .kmet .m:last-child{border-right:none;}
 .bbrec .kmet .mv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.03em;font-size:clamp(22px,2.8vw,34px);line-height:1;color:var(--ink);}
-.bbrec .kmet .ml{font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px;}
+.bbrec .kmet .ml{font-family:var(--grotesk);font-weight:400;font-size:13.5px;line-height:1.4;color:var(--muted);margin-top:8px;}
 @media(max-width:560px){.bbrec .kmet{grid-template-columns:1fr;}.bbrec .kmet .m{border-right:none;border-bottom:1px solid var(--hair);}.bbrec .kmet .m:last-child{border-bottom:none;}}
 /* proof exhibits — two BIG stacked client records (content_system only) */
 .bbrec .pf{margin-top:clamp(26px,3.2vw,40px);border:1px solid var(--ink);}
@@ -2024,16 +2025,16 @@ const RECORD_CSS = `
 .bbrec .pf-faces{display:flex;gap:10px;align-items:flex-start;}
 .bbrec .pf-face{position:relative;width:clamp(104px,13vw,148px);flex-shrink:0;}
 .bbrec .pf-face img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 18%;border:1px solid var(--ink);background:var(--paper);}
-.bbrec .pf-face .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:8.5px;padding:3px 6px;white-space:nowrap;}
+.bbrec .pf-face .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:10px;padding:3px 7px;white-space:nowrap;}
 .bbrec .pf-figwrap{min-width:0;}
 .bbrec .pf-figk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .pf-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,6.2vw,72px);line-height:0.95;color:var(--ink);margin-top:10px;}
 .bbrec .pf-fig .from{font-weight:500;color:var(--muted);}
 .bbrec .pf-quote{padding:clamp(18px,2.6vw,30px) clamp(18px,2.6vw,28px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(19px,2.6vw,29px);line-height:1.4;color:var(--ink);border-bottom:1px solid var(--hair);}
-.bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);margin-top:14px;}
+.bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-top:14px;}
 .bbrec .pf-sample{margin:0;background:var(--paper);}
 .bbrec .pf-sample img{display:block;width:100%;height:auto;}
-.bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);border-top:1px solid var(--hair);}
+.bbrec .pf-cap{padding:12px clamp(18px,2.6vw,28px) clamp(16px,2.2vw,22px);font-family:var(--grotesk);font-weight:400;font-size:clamp(13.5px,1.35vw,14.5px);line-height:1.55;color:var(--sec);border-top:1px solid var(--hair);}
 /* reported outcomes (static ruled grid — replaces the marquee) */
 .bbrec .revs{margin-top:clamp(24px,3vw,36px);border-top:1px solid var(--ink);}
 .bbrec .rev{display:grid;grid-template-columns:1fr 200px;gap:clamp(14px,2.4vw,32px);padding:clamp(16px,2.2vw,22px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
@@ -2045,7 +2046,7 @@ const RECORD_CSS = `
 /* pillar table — inside THE BOX (content_system only). Pillar names are anchor links. */
 .bbrec .ptab{margin-top:clamp(18px,2.4vw,24px);border-top:1px solid var(--ink);}
 .bbrec .ptab-h,.bbrec .ptab-r{display:grid;grid-template-columns:0.62fr 1.19fr 1.19fr;gap:clamp(10px,1.6vw,22px);}
-.bbrec .ptab-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
+.bbrec .ptab-h>span{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--hair);}
 .bbrec .ptab-r{padding:clamp(12px,1.6vw,16px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
 .bbrec .ptab-r:last-child{border-bottom:1px solid var(--ink);}
 .bbrec .ptab-a{font-family:var(--grotesk);font-weight:800;letter-spacing:0.01em;font-size:clamp(12px,1.5vw,15px);line-height:1.2;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;display:inline-block;}
@@ -2062,28 +2063,28 @@ const RECORD_CSS = `
 .bbrec .promises .pcell:nth-child(2n){border-right:none;}
 @media(max-width:640px){.bbrec .pcell{border-right:none;}}
 .bbrec .ph{font-family:var(--grotesk);font-weight:700;font-size:clamp(15px,1.7vw,18px);letter-spacing:-0.01em;color:var(--ink);}
-.bbrec .pb{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:8px;}
+.bbrec .pb{font-family:var(--grotesk);font-weight:400;font-size:clamp(14px,1.4vw,15px);line-height:1.55;color:var(--sec);margin-top:8px;}
 /* audience room read (content_system only) — counted figures, ruled rows, named-buyer cells */
 .bbrec .aud-top{margin-top:clamp(22px,2.8vw,34px);}
-.bbrec .aud-sub{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--sec);margin-top:12px;max-width:52ch;}
+.bbrec .aud-sub{font-family:var(--grotesk);font-weight:400;font-size:clamp(15px,1.5vw,16.5px);line-height:1.55;color:var(--sec);margin-top:12px;max-width:56ch;}
 .bbrec .aud-rows{margin-top:clamp(22px,2.8vw,32px);border-top:1px solid var(--ink);}
 .bbrec .aud-row{display:grid;grid-template-columns:170px 1fr;gap:clamp(14px,2.4vw,32px);padding:clamp(14px,2vw,20px) 0;border-bottom:1px solid var(--hair);align-items:baseline;}
 .bbrec .aud-row:last-child{border-bottom:1px solid var(--ink);}
-.bbrec .aud-row .ak{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
-.bbrec .aud-row p{font-family:var(--serif);font-weight:400;font-size:clamp(15px,1.6vw,18px);line-height:1.5;color:var(--ink);margin:0;}
+.bbrec .aud-row .ak{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .aud-row p{font-family:var(--grotesk);font-weight:400;font-size:clamp(15px,1.5vw,16.5px);line-height:1.55;color:var(--ink);margin:0;max-width:68ch;}
 @media(max-width:640px){.bbrec .aud-row{grid-template-columns:1fr;gap:6px;}}
 .bbrec .aud-names{margin-top:clamp(18px,2.4vw,26px);display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
 .bbrec .aud-name{padding:clamp(14px,2vw,18px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .aud-name .anm{font-family:var(--grotesk);font-weight:700;font-size:clamp(14px,1.6vw,16px);letter-spacing:-0.01em;color:var(--ink);}
-.bbrec .aud-name .ahl{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.45;color:var(--sec);margin-top:6px;}
-.bbrec .aud-name .asrc{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--muted);margin-top:10px;}
+.bbrec .aud-name .ahl{font-family:var(--grotesk);font-weight:400;font-size:clamp(12.5px,1.3vw,13.5px);line-height:1.5;color:var(--sec);margin-top:6px;}
+.bbrec .aud-name .asrc{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-top:10px;}
 .bbrec .aud-scale{margin-top:clamp(18px,2.4vw,26px);display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);}
 @media(max-width:640px){.bbrec .aud-scale{grid-template-columns:1fr;}}
 .bbrec .aud-band{padding:clamp(12px,1.8vw,16px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
 .bbrec .aud-band.on{background:var(--flash);}
 .bbrec .aud-band .abr{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);color:var(--ink);}
-.bbrec .aud-band .abw{font-family:var(--serif);font-weight:400;font-size:clamp(12.5px,1.3vw,14px);line-height:1.4;color:var(--sec);margin-top:4px;}
-.bbrec .aud-band .abys{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:9.5px;color:var(--ink);margin-top:8px;}
+.bbrec .aud-band .abw{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.3vw,14px);line-height:1.5;color:var(--sec);margin-top:4px;}
+.bbrec .aud-band .abys{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--ink);margin-top:8px;}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -2106,7 +2107,7 @@ const RECORD_CSS = `
 .bbrec .foot-links{display:flex;align-items:center;gap:22px;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;}
 .bbrec .foot-links a{text-decoration:none;color:var(--sec);}
 .bbrec .foot-links a.book{color:var(--ink);}
-.bbrec .foot-fine{padding-bottom:clamp(40px,6vw,60px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px;color:var(--muted);}
+.bbrec .foot-fine{padding-bottom:clamp(40px,6vw,60px);font-family:var(--grotesk);font-weight:400;font-size:13px;line-height:1.55;color:var(--muted);max-width:88ch;}
 /* ── mobile readability floor (scoped; lifts the smallest labels/captions to ~11px so nothing sits below the mobile floor; desktop sizes untouched) ── */
 @media(max-width:640px){
   .bbrec .sec-label,.bbrec .reg-meta,.bbrec .docline{font-size:11px;line-height:1.35;}
@@ -2754,21 +2755,24 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const prospectAccent = brand?.accent_hex || cs.sample_output?.lm?.accent_hex || '#1F6FEB';
   const prospectLogo = brand?.logo_url || undefined;
 
-  // Attention budget: two posts run full-size in the feed — the first visual one
-  // (image/carousel) plus the next in week order — and the rest collapse to hook cells.
+  // Attention budget: ONE post runs full-size in the feed — the first visual one
+  // (image/carousel) — and every other full post renders as a compact clamped card
+  // (real body + small thumb) so the whole written week reads in one screenful.
   type CsPost = NonNullable<NonNullable<ContentSystem['sample_output']>['posts']>[number];
   const weekPosts: CsPost[] = (cs.sample_output?.posts ?? []).filter((p) => !/lead.?magnet/i.test(p.format || ''));
   const isVisualPost = (p: CsPost) => Boolean(p.image_url) || Boolean(p.image_card?.headline) || (Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2);
   const firstVisual = weekPosts.find(isVisualPost);
-  const featuredPosts = (firstVisual ? [firstVisual, ...weekPosts.filter((p) => p !== firstVisual)] : weekPosts)
-    .slice(0, 2)
-    .sort((a, b) => weekPosts.indexOf(a) - weekPosts.indexOf(b));
-  // "Also drafted" cells earn their place only with a real hook.
-  const restOfWeek = weekPosts.filter((p) => !featuredPosts.includes(p)).filter((p) => (p.hook || '').trim());
+  const heroPosts = firstVisual ? [firstVisual] : weekPosts.slice(0, 1);
   const feedSpec = buildFeedSpecFromContentSystem(
-    cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: featuredPosts } } : cs,
+    cs.sample_output ? { ...cs, sample_output: { ...cs.sample_output, posts: heroPosts } } : cs,
     { companyName: displayCompany },
   );
+  const restSpec = cs.sample_output
+    ? buildFeedSpecFromContentSystem(
+        { ...cs, sample_output: { ...cs.sample_output, posts: weekPosts.filter((p) => !heroPosts.includes(p)) } },
+        { companyName: displayCompany },
+      )
+    : null;
   // When the LM is a live, results-forward assessment we can embed, use it everywhere.
   const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
   const lmSim = cs.sample_output?.lm?.sim;
@@ -2778,6 +2782,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
   // ── Derived, honest figures (every number traces to report_json / scan stamps) ──
   const scanDate = recDateISO(scan.completed_at, scan.created_at);
+  // Approval-language scrubber (defensive display cleanup for builder-emitted copy — the
+  // engine writes and runs; the prospect is never framed as an approver, and "drafted"
+  // over-claims are folded to "written"). Live rows were data-cleaned 07-17; this guards
+  // every future n8n-emitted row at render time.
+  const scrubApproval = (t?: string) => (t || '')
+    .replace(/,?\s*(?:sent|dispatched|queued|prepared|drafted|written)?\s*for (?:your|her|his|their|the)?\s*(?:approval|review|sign[- ]?off)\b[^.!?]*/gi, '')
+    .replace(/\bready to approve\b/gi, 'ready')
+    .replace(/\byour only job is to approve\b/gi, 'we run it')
+    .replace(/\byou (?:review and |just )?approve\b/gi, 'we handle it')
+    .replace(/\bdrafted\b/gi, 'written')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/,(?=\s*[.,;:])/g, '')
+    .trim()
+    .replace(/[,;:]\s*$/, '')
+    .replace(/([^.!?…])$/, '$1.');
   const ls = report.linkedin_summary;
   const followers = ls?.followers ?? null;
   const posts30 = ls?.posts_30d ?? null;
@@ -2858,10 +2878,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   } : null;
 
   const WARN: Record<ContentSystem['archetype'], { effect: string; verdict: string }> = {
-    silent_founder: { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
-    inconsistent:   { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
-    no_capture:     { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
-    invisible:      { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
+    silent_founder:    { effect: 'WARNING: ATTENTION LEFT UNWORKED', verdict: 'The audience is already there. Nothing routes it anywhere.' },
+    inconsistent:      { effect: 'WARNING: PRESENCE RESETS TO ZERO', verdict: 'The presence comes in bursts. Between them, the feed goes quiet.' },
+    no_capture:        { effect: 'WARNING: READERS LEAVE UNNAMED', verdict: 'The readers arrive. Not one of them is named.' },
+    invisible:         { effect: 'WARNING: ABSENT WHERE BUYERS LOOK', verdict: 'The buyers are looking. The feed gives them nothing.' },
+    uncaptured_feed:   { effect: 'WARNING: THE FEED CAPTURES NOBODY', verdict: 'The posting happens. Not one reader is named or kept.' },
+    unworked_audience: { effect: 'WARNING: THE ROOM GOES UNWORKED', verdict: 'The audience is built. Nobody works a single name in it.' },
   };
   const warn = WARN[cs.archetype] ?? WARN.silent_founder;
 
@@ -2898,8 +2920,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
   };
   const pillarCell = (k: PillarKey) => ({
-    found: (cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k],
-    projected: (cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k],
+    found: scrubApproval((cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k]),
+    projected: scrubApproval((cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k]),
   });
   const PILLARS: { key: PillarKey; name: string; anchor: string }[] = [
     { key: 'content', name: 'Content', anchor: 'cs-ch-content' },
@@ -2975,7 +2997,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="fold">
           <div>
             <h1 className="company">{displayCompany}</h1>
-            <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
+            <p className="lede">{cs.thesis ? scrubApproval(cs.thesis) : 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
           </div>
         </Rev>
 
@@ -3064,32 +3086,39 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 01&nbsp;·&nbsp;Content</>}
             title={<>Once daily, in your voice.</>}
-            note={<>Below is the week we drafted from your own material before this page was built.</>}
+            note={<>Built from your own material before this page existed.</>}
           />
           <WinRows k="content" />
           {feedSpec.posts.length > 0 && (
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;this week&rsquo;s posts&nbsp;·&nbsp;your feed, your brand</>}
-                caption={sourceQuotes.length ? <>Drawn from your own words: {sourceQuotes.map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
+                caption={sourceQuotes.length ? <>From your own words: {sourceQuotes.slice(0, 2).map((q, i) => <span key={i}>{i ? '  ·  ' : ''}&ldquo;{q}&rdquo;</span>)}</> : undefined}
               >
                 <div style={{ background: '#FFFFFF' }}>
                   <LinkedInFeedMockup spec={feedSpec} mode="full" accentHex={prospectAccent} brandName={who} brand={brand} companyName={displayCompany} />
                 </div>
               </Exhibit>
-              {restOfWeek.length > 0 && (
-                <div className="promises" style={{ marginTop: 20 }}>
-                  {restOfWeek.map((p, i) => (
-                    <div className="pcell" key={i}>
-                      <div className="k" style={{ marginBottom: 6 }}>Also this week</div>
-                      <div className="ph">{p.hook}</div>
-                    </div>
+              {restSpec && restSpec.posts.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch" style={{ marginTop: 16 }}>
+                  {restSpec.posts.map((p, i) => (
+                    <LinkedInPostPreview
+                      key={i}
+                      compact
+                      clampLines={4}
+                      author={restSpec.profile.name}
+                      headline={restSpec.profile.headline}
+                      avatarUrl={restSpec.profile.avatarUrl}
+                      text={p.body}
+                      mediaUrl={p.type === 'image' ? (p.imageUrl ?? null) : p.type === 'carousel' && p.slides?.length ? p.slides[0] : null}
+                      stats={{ reactions: p.reactions, comments: p.comments }}
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
-          <ChapterCta line={<>This week is already drafted, {who}. On the call we walk it live.</>} />
+          <ChapterCta line={<>This week is already written, {who}. On the call we walk it live.</>} />
         </Rev>
 
         {/* ── CHAPTER 02 · INBOUND ────────────── */}
@@ -3097,7 +3126,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 02&nbsp;·&nbsp;Inbound</>}
             title={<>Every reader leaves a name.</>}
-            note={<>The fix is one gated asset in your brand, on your domain. A reader who finishes it lands on a list you own.</>}
+            note={<>One gated asset on your domain. Every reader who finishes it lands on your list.</>}
           />
           <WinRows k="inbound" />
           {lm?.title && lmEmbedUrl && (
@@ -3119,7 +3148,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div style={{ marginTop: 'clamp(18px,2.2vw,26px)' }}>
                 <Exhibit
                   label={<>Fig&nbsp;·&nbsp;the gated asset&nbsp;·&nbsp;running, in your brand</>}
-                  caption={<>Interactive: this is the working asset, seeded with your brand and your services. Every completion lands a named address on a list you own.</>}
+                  caption={<>Live and working, in your brand. Every completion lands a named email on your list.</>}
                 >
                   <LiveAssessmentEmbed src={lmEmbedUrl} title={lm.title} height={820} eager domain={scan?.domain || companyName} urlPath={(lm.title || 'assessment').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().split(/\s+/).slice(-3).join('-')} logoUrl={lm.brand?.logo_url} accentHex={lm.brand?.accent_hex || lm.accent_hex} companyName={companyName} />
                 </Exhibit>
@@ -3161,12 +3190,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           {(newsletter || followUps) && (
             <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               {newsletter && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, drafted from the same week's material, in your voice.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="Written from the same week's material, in your voice.">
                   <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
                 </Exhibit>
               )}
               {followUps && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="A fixed schedule after the download. The clock starts when the reader opts in.">
+                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="Runs on a fixed clock after the download.">
                   <FollowUpSequence data={followUps} accent={prospectAccent} who={who} />
                 </Exhibit>
               )}
@@ -3180,14 +3209,14 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
             title={<>The people who engage get a message.</>}
-            note={<>The people who like and comment on your posts are buyers showing interest. We message them while the post is still live, about that exact post, with something useful and no pitch.</>}
+            note={<>Everyone who engages a post gets a message about that exact post. Useful, no pitch.</>}
           />
           <WinRows k="outbound" />
           {engager && (
             <div style={{ marginTop: 'clamp(24px,3vw,36px)' }}>
               <Exhibit
                 label={<>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</>}
-                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
+                caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from your comments.</> : undefined}
               >
                 <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
               </Exhibit>
