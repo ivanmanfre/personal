@@ -2796,7 +2796,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     const nq = vnorm(q); const nd = vnorm(d);
     return !nq.includes(nd) && !nd.includes(nq);
   });
-  const voiceDrafted = voicePair ? ((voicePair.hook || '').trim() || (voicePair.body || '').split('\n')[0].trim()) : '';
   const sourceQuotes = ((cs.sample_output?.posts ?? []).map((p) => p.source_quote).filter(Boolean) as string[])
     .filter((q) => q !== voicePair?.source_quote).slice(0, 4);
   const engagerNames = (cs.sample_output?.engager_outreach?.samples ?? [])
@@ -2894,7 +2893,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     outbound: 'No warm follow-up found. People who engage the posts are left there.',
   };
   const PROJECTED_FALLBACK: Record<PillarKey, string> = {
-    content: 'Once daily, in your voice, drafted from your own material.',
+    content: 'Five posts a week, in your voice.',
     inbound: 'A gated asset in your brand names every reader. A newsletter and a follow-up sequence keep them.',
     outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
   };
@@ -3002,7 +3001,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
               ))}
             </div>
-            <p className="box-note">Read from your public presence on {scanDate}. Each pillar name opens its chapter below, with the work already drafted.</p>
+            <p className="box-note">Read from your public presence on {scanDate}. Tap a pillar to jump to it.</p>
           </Rev>
         </div>
 
@@ -3068,19 +3067,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             note={<>Below is the week we drafted from your own material before this page was built.</>}
           />
           <WinRows k="content" />
-          {voicePair && voiceDrafted ? (
-            <div className="vpair">
-              <div className="vcell">
-                <div className="k">Your words</div>
-                <div className="vq">&ldquo;{voicePair.source_quote}&rdquo;</div>
-              </div>
-              <div className="vlink" aria-hidden><span>rewritten as →</span></div>
-              <div className="vcell">
-                <div className="k">The post we drafted from them</div>
-                <div className="vd">{voiceDrafted}</div>
-              </div>
-            </div>
-          ) : null}
           {feedSpec.posts.length > 0 && (
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               <Exhibit
@@ -3095,7 +3081,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 <div className="promises" style={{ marginTop: 20 }}>
                   {restOfWeek.map((p, i) => (
                     <div className="pcell" key={i}>
-                      <div className="k" style={{ marginBottom: 6 }}>Also drafted&nbsp;·&nbsp;{isVisualPost(p) ? ((Array.isArray(p.image_urls) && p.image_urls.length >= 2) || (Array.isArray(p.slides) && p.slides.length >= 2) ? 'carousel' : 'image post') : 'text post'}</div>
+                      <div className="k" style={{ marginBottom: 6 }}>Also this week</div>
                       <div className="ph">{p.hook}</div>
                     </div>
                   ))}
@@ -3194,7 +3180,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <SecHead
             label={<>Chapter 03&nbsp;·&nbsp;Warm outbound</>}
             title={<>The people who engage get a message.</>}
-            note={<>We work the reactions and comments on your posts: a warm message that references the specific post and offers something useful, without pitching.</>}
+            note={<>The people who like and comment on your posts are buyers showing interest. We message them while the post is still live, about that exact post, with something useful and no pitch.</>}
           />
           <WinRows k="outbound" />
           {engager && (
