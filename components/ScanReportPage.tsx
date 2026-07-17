@@ -11,9 +11,6 @@ import { ScoreBar } from './scan/ScoreBar';
 import { OpportunityCard } from './scan/OpportunityCard';
 import type { ReportJson, AdCreative, Opportunity, CallIntel, ContentSystem, Scan } from '../lib/scanTypes';
 import LinkedInFeedMockup from './ui/LinkedInFeedMockup';
-import NewsletterMockup from './ui/NewsletterMockup';
-import FollowUpSequence from './ui/FollowUpSequence';
-import EngagerOutreachMockup from './ui/EngagerOutreachMockup';
 import { buildFeedSpecFromContentSystem } from '../lib/contentSystemFeed';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LiveAssessmentEmbed from './ui/LiveAssessmentEmbed';
@@ -1970,6 +1967,28 @@ const RECORD_CSS = `
 .bbrec .figlabel .sq{width:7px;height:7px;}
 .bbrec .figframe{border:1px solid var(--hair);padding:clamp(12px,1.6vw,18px);background:var(--paper);}
 .bbrec .cap{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.45;color:var(--muted);margin-top:14px;max-width:58ch;}
+/* punctuation kern — Schibsted Grotesk seats periods/commas on a wide left sidebearing that
+   reads as a floating space at display sizes ("built . Nobody"). Terminal punctuation is
+   wrapped in .pk at render (kp()) and pulled flush. Not literal whitespace — the DOM text
+   stays clean; this only closes the optical gap. */
+.bbrec .pk{margin-left:-0.13em;}
+/* clinical specimen cards — the compressed exhibit rendering (ported from dir-a): mono
+   metadata row + headline + a source-clamped 2-line excerpt, BB grammar only (ink, hairline,
+   no radius/shadow/accent). Replaces the full newsletter/follow-up/engager mockups in C. */
+.bbrec .spec{margin-top:clamp(16px,2.2vw,22px);border-top:1px solid var(--ink);}
+.bbrec .spec-r{padding:clamp(13px,1.8vw,17px) 0;border-bottom:1px solid var(--hair);}
+.bbrec .spec-r:last-child{border-bottom:1px solid var(--ink);}
+.bbrec .spec-m{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10px;color:var(--muted);}
+.bbrec .spec-m .sq{width:8px;height:8px;flex-shrink:0;}
+.bbrec .spec-m .day{color:var(--ink);}
+.bbrec .spec-t{font-family:var(--grotesk);font-weight:700;letter-spacing:-0.015em;font-size:clamp(16px,1.85vw,20px);line-height:1.25;color:var(--ink);margin-top:8px;}
+.bbrec .spec-x{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.4vw,15.5px);line-height:1.5;color:var(--sec);margin-top:6px;}
+@media(max-width:640px){.bbrec .spec-m{font-size:11px;}}
+/* quiet ask under the live LM iframe — caption register, ink underline link, never a button.
+   Keeps the ~820px embed stretch from running without a booking lever (item 7). */
+.bbrec .iask{margin-top:14px;font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.35vw,15px);line-height:1.5;color:var(--muted);max-width:58ch;}
+.bbrec .iask a{font-family:var(--grotesk);font-style:normal;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(10.5px,1.1vw,12px);color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:1px;white-space:nowrap;}
+.bbrec .iask a:hover{color:var(--sec);border-color:var(--sec);}
 /* lead-magnet exhibit */
 /* voice provenance pairing */
 .bbrec .vpair{margin-top:clamp(24px,3vw,34px);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;}
@@ -2066,13 +2085,18 @@ const RECORD_CSS = `
 .bbrec .adtab-d{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.32;letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .adtab-c{font-family:var(--grotesk);font-weight:500;font-size:clamp(12.5px,1.4vw,14.5px);line-height:1.3;color:var(--sec);}
 .bbrec .adtab-m{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(13px,1.4vw,15px);line-height:1.35;color:var(--ink);}
+/* mobile: each pillar becomes a stacked block — name (heading) / what we do (own line) /
+   cadence + measured as one small mono pair (item 4). The pair sits on a single line and can
+   only break at the middot separator, so neither phrase ever wraps mid-word. Cadence reads in
+   ink, the measured outcome in serif italic, differentiating them without column headers. */
 @media(max-width:720px){
   .bbrec .adtab-h{display:none;}
-  .bbrec .adtab-r{grid-template-columns:1fr;gap:2px;padding:13px 0;}
-  .bbrec .adtab-p{margin-bottom:3px;}
+  .bbrec .adtab-r{display:block;padding:12px 0;}
+  .bbrec .adtab-p{margin-bottom:6px;}
+  .bbrec .adtab-d{display:block;font-size:14px;line-height:1.36;margin-bottom:6px;}
   .bbrec .adtab-c,.bbrec .adtab-m{display:inline;font-size:12.5px;}
-  .bbrec .adtab-r>.adtab-c::before{content:attr(data-l) " · ";font-family:var(--grotesk);font-weight:700;text-transform:none;color:var(--muted);}
-  .bbrec .adtab-r>.adtab-m::before{content:" · " attr(data-l) " ";font-family:var(--grotesk);font-weight:700;text-transform:none;color:var(--muted);}
+  .bbrec .adtab-c{color:var(--ink);}
+  .bbrec .adtab-r>.adtab-m::before{content:"  ·  ";color:var(--muted);font-style:normal;}
 }
 /* primary CTA row under the admin table, inside the box */
 .bbrec .box-cta{margin-top:clamp(16px,2.2vw,22px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;}
@@ -2156,6 +2180,25 @@ const RECORD_CSS = `
   .bbrec .cap,.bbrec .kmet .ml,.bbrec .foot-fine{font-size:13px;line-height:1.5;}
   .bbrec .reading .rd{font-size:14px;line-height:1.5;}
 }
+/* ── mobile offer-depth compression (item 3): tighten the data plate + masthead + box so the
+   whole 3-pillar prescription (through its CTA row) lands inside ~1.2 viewports on a 375px
+   screen. Scoped to <=480px; desktop metrics untouched. Comes last so it wins the cascade. ── */
+@media(max-width:480px){
+  .bbrec .docline{padding-top:13px;}
+  .bbrec .plate{margin-top:9px;}
+  .bbrec .plate-grid .cell{padding:7px 10px;}
+  .bbrec .plate .v{font-size:12px;line-height:1.12;margin-top:3px;}
+  .bbrec .fold{padding-top:11px;gap:6px;}
+  .bbrec .company{font-size:26px;}
+  .bbrec .lede{margin-top:6px;font-size:13.5px;line-height:1.34;}
+  .bbrec .boxwrap{padding-top:9px;}
+  .bbrec .box{padding:13px 14px 16px;}
+  .bbrec .box-head{padding-bottom:10px;}
+  .bbrec .box-body{margin-top:9px;font-size:22px;line-height:1.05;}
+  .bbrec .adtab{margin-top:10px;}
+  .bbrec .adtab-r{padding:9px 0;}
+  .bbrec .box-cta{margin-top:10px;gap:9px 16px;}
+}
 `;
 
 // One-time reveal per section — the canon motion: rise ≤26px, ~0.7s, once. Settled under
@@ -2209,11 +2252,29 @@ const DataPlate: React.FC<{ cells: { k: string; v: React.ReactNode }[] }> = ({ c
   </div>
 );
 
+// Punctuation kern (item 1). Schibsted Grotesk seats "." and "," on a wide left sidebearing;
+// at display sizes that reads as a floating space before the mark ("built . Nobody"). This
+// wraps every terminal/mid-sentence mark that directly follows a non-space glyph in a .pk span
+// pulled flush (-0.13em). It is optical only: the DOM text stays clean, so a grep of rendered
+// innerText for " ." / " ," is still zero. Passes strings through untouched otherwise.
+const kp = (t: React.ReactNode): React.ReactNode => {
+  if (typeof t !== 'string' || !/[.,;:]/.test(t)) return t;
+  const parts = t.split(/([.,;:]+)/);
+  return parts.map((p, i) => {
+    if (i % 2 === 1) {
+      const prev = parts[i - 1];
+      if (prev && !/\s$/.test(prev)) return <span key={i} className="pk">{p}</span>;
+    }
+    return <React.Fragment key={i}>{p}</React.Fragment>;
+  });
+};
+
 // Numbered section head — clinical label + straight display title (no serif italic in heads).
+// A plain-string title is passed through kp() so its terminal period seats flush at display size.
 const SecHead: React.FC<{ label: React.ReactNode; title: React.ReactNode; note?: React.ReactNode }> = ({ label, title, note }) => (
   <>
     <div className="sec-label"><span className="sq" aria-hidden /> {label}</div>
-    <h2 className="sec-title">{title}</h2>
+    <h2 className="sec-title">{typeof title === 'string' ? kp(title) : title}</h2>
     {note ? <p className="sec-note">{note}</p> : null}
   </>
 );
@@ -2847,6 +2908,34 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const followUps = cs.sample_output?.follow_ups?.length ? cs.sample_output.follow_ups : null;
   const engager = cs.sample_output?.engager_outreach?.samples?.length ? cs.sample_output.engager_outreach : null;
 
+  // P0-1 defense-in-depth (item 6): approval-as-duty and over-claim phrasing are banned by
+  // v4.11, but they can still arrive in ROW DATA (builder- or hand-emitted pillar cells, wins,
+  // exhibit subjects/bodies, thesis) that the deploy cleanup script never touches. A prospect
+  // must never read it regardless of source, so every data-sourced string is scrubbed at render.
+  // The engine runs on auto-approve; a veto exists but is never framed as the buyer's job.
+  const scrubApproval = (t?: string) => (t || '')
+    .replace(/,?\s*(?:sent|dispatched|queued|prepared|drafted|written)?\s*for (?:your|her|his|their|the)?\s*(?:approval|review|sign[- ]?off)\b[^.!?]*/gi, '')
+    .replace(/\bready to approve\b/gi, 'ready')
+    .replace(/\byour only job is to approve\b/gi, 'we run it')
+    .replace(/\byou (?:review and |just )?approve\b/gi, 'we handle it')
+    // "drafted" is a banned over-claim; WE write.
+    .replace(/\bdrafted\b/gi, 'written')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/,(?=\s*[.,;:])/g, '')
+    .trim()
+    .replace(/[,;:]\s*$/, '')
+    .replace(/([^.!?…])$/, '$1.');
+  // Specimen excerpt (item 5): clamp an exhibit body to a scannable line at the source and scrub
+  // it, so the DOM word count drops with the ink and no excerpt can surface banned copy.
+  const excerpt = (t?: string, n = 150) => {
+    const s = scrubApproval(t).replace(/\s+/g, ' ').trim();
+    return s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, '').trimEnd() + '…';
+  };
+  const newsletterFirst = newsletter?.sections?.[0];
+  const followUpSpecs = (followUps ?? []).slice(0, 4).sort((a, b) => (a.day ?? 0) - (b.day ?? 0));
+  const engagerSpecs = (engager?.samples ?? []).slice(0, 3);
+
   // ── Audience room read (scan-build audit embed; PLAN-audit-in-scans, 2026-07-15) ──
   // Framing guard: a cold prospect is being told about their own audience by a stranger, so
   // the section leads with the gift (buyers already connected, real names) and renders ONLY
@@ -2944,17 +3033,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     outbound: 'Everyone who engages a post gets a warm message that references it. Around 15 a week, capped.',
   };
   const pillarCell = (k: PillarKey) => ({
-    found: (cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k],
-    projected: (cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k],
+    found: scrubApproval((cs.pillars?.[k]?.found || '').trim() || (winsByPillar[k][0]?.observation || '').trim() || FOUND_FALLBACK[k]),
+    projected: scrubApproval((cs.pillars?.[k]?.projected || '').trim() || PROJECTED_FALLBACK[k]),
   });
   // The administration table — the prescription itself, stated once, up top. WE carry every
   // verb; no buyer labor, no approval duty. It reads clean with zero prospect data (thin
   // scans) because it names what the engine does, not what their feed shows. Pillar names
-  // anchor to the matching exhibit below. House lexicon: Once daily, Measured in booked calls.
+  // anchor to the matching exhibit below. House lexicon: Five a week Mon-Fri, Measured in booked calls.
   const ADMIN: { key: PillarKey; name: string; does: string; cadence: string; measured: string; anchor: string }[] = [
     { key: 'content',  name: 'Content',       anchor: 'cs-x-content',
       does: 'We write your posts in your voice and publish them for you.',
-      cadence: 'Once daily, five a week', measured: 'Reach and replies' },
+      cadence: 'Five a week, Mon-Fri', measured: 'Reach and replies' },
     { key: 'inbound',  name: 'Inbound',       anchor: 'cs-x-inbound',
       does: 'We build one gated asset in your brand. Every reader who finishes it lands on a list you own.',
       cadence: 'One asset, always live', measured: 'Named leads captured' },
@@ -3020,7 +3109,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="fold">
           <div>
             <h1 className="company">{displayCompany}</h1>
-            <p className="lede">{cs.thesis || 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
+            <p className="lede">{cs.thesis ? scrubApproval(cs.thesis) : 'The attention is real. The mechanism that keeps it is the part that was never built.'}</p>
           </div>
         </Rev>
 
@@ -3032,7 +3121,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="sqbig" aria-hidden />
               <span className="lbl">{warn.effect}</span>
             </div>
-            <div className="box-body">{warn.verdict}</div>
+            <div className="box-body">{kp(warn.verdict)}</div>
             {/* The administration table: what we do, at what cadence, measured in what. */}
             <div className="adtab" role="table" aria-label="What we run for you">
               <div className="adtab-h" role="row">
@@ -3044,8 +3133,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               {ADMIN.map((a) => (
                 <div className="adtab-r" role="row" key={a.key}>
                   <div className="adtab-p" role="cell"><a className="adtab-a" href={`#${a.anchor}`} onClick={(e) => jump(e, a.anchor)}>{a.name}</a></div>
-                  <div className="adtab-d" role="cell" data-l="What we do">{a.does}</div>
-                  <div className="adtab-c" role="cell" data-l="Cadence">{a.cadence}</div>
+                  <div className="adtab-d" role="cell" data-l="What we do">{kp(a.does)}</div>
+                  <div className="adtab-c" role="cell" data-l="Cadence">{kp(a.cadence)}</div>
                   <div className="adtab-m" role="cell" data-l="Measured in">{a.measured}</div>
                 </div>
               ))}
@@ -3063,7 +3152,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec" id="cs-exhibits">
           <SecHead
             label={<>Exhibits&nbsp;·&nbsp;In your brand</>}
-            title={<>We built the week before this page.</>}
+            title="We built the week before this page."
             note={<>Every artifact below is seeded with {who}&rsquo;s own material and brand. On the call we walk it live.</>}
           />
 
@@ -3108,6 +3197,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <button type="button" className="btn-ink" onClick={() => setLmOpen(true)} style={{ marginTop: 18 }}>
                 Open it full screen <span aria-hidden>→</span>
               </button>
+              {/* Quiet ask under the ~820px embed (item 7): caption register, no button, so this
+                  long proof stretch never runs without a booking lever. Copy varies from the group ask. */}
+              <p className="iask">This one is already running, seeded with {who}&rsquo;s brand. <a href={bookUrl} target="_blank" rel="noopener noreferrer">Point it at your domain <span aria-hidden>→</span></a></p>
             </div>
           )}
           {lm?.title && !lmEmbedUrl && (
@@ -3139,18 +3231,31 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </div>
             </div>
           )}
-          {(newsletter || followUps) && (
-            <div className="grid gap-7 lg:grid-cols-2 items-start" style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
-              {newsletter && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;newsletter&nbsp;·&nbsp;sent to the list you own</>} caption="One a cycle, written from the same week's material, in your voice.">
-                  <NewsletterMockup data={newsletter} accent={prospectAccent} who={who} logoUrl={prospectLogo} />
-                </Exhibit>
-              )}
-              {followUps && (
-                <Exhibit label={<>Fig&nbsp;·&nbsp;follow-up sequence&nbsp;·&nbsp;offsets from day zero</>} caption="A fixed schedule after the download. The clock starts when the reader opts in.">
-                  <FollowUpSequence data={followUps} accent={prospectAccent} who={who} />
-                </Exhibit>
-              )}
+          {/* Newsletter + follow-ups as clinical specimen cards (item 5, ported from dir-a):
+              mono metadata row + serif-adjacent headline + a source-clamped excerpt. Tighter
+              than the full mockups, purest BB grammar. */}
+          {(newsletter || followUpSpecs.length > 0) && (
+            <div style={{ marginTop: 'clamp(20px,2.6vw,30px)' }}>
+              <FigLabel>Fig&nbsp;·&nbsp;inbound cadence&nbsp;·&nbsp;newsletter + follow-ups, in your voice</FigLabel>
+              <div className="spec">
+                {newsletter && (
+                  <div className="spec-r">
+                    <div className="spec-m"><span className="sq" aria-hidden /> Newsletter&nbsp;·&nbsp;one a cycle&nbsp;·&nbsp;to the list you own</div>
+                    <div className="spec-t">{kp(scrubApproval(newsletter.subject))}</div>
+                    {(newsletter.preview || newsletterFirst?.body) && (
+                      <div className="spec-x">{excerpt(newsletter.preview || newsletterFirst?.body, 160)}</div>
+                    )}
+                  </div>
+                )}
+                {followUpSpecs.map((f, i) => (
+                  <div className="spec-r" key={i}>
+                    <div className="spec-m"><span className="sq" aria-hidden /> <span className="day">Day {f.day}</span>&nbsp;·&nbsp;follow-up email</div>
+                    <div className="spec-t">{kp(scrubApproval(f.subject))}</div>
+                    {f.body ? <div className="spec-x">{excerpt(f.body, 140)}</div> : null}
+                  </div>
+                ))}
+              </div>
+              <p className="cap">The sequence fires after the download, in your voice. The clock starts when the reader opts in.</p>
             </div>
           )}
           {(lm?.title || newsletter || followUps) && (
@@ -3163,14 +3268,22 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
 
           {/* Warm outbound */}
           <div id="cs-x-outbound" style={{ scrollMarginTop: 76, marginTop: 'clamp(34px,4vw,52px)' }}>
-            {engager && (
+            {/* Warm-engager exhibits as specimen cards (item 5, ported from dir-a): the trigger
+                they reacted to + the message keyed to it, both source-clamped. */}
+            {engagerSpecs.length > 0 && (
               <div>
-                <Exhibit
-                  label={<>Warm outbound&nbsp;·&nbsp;keyed to your posts</>}
-                  caption={engagerNames.length ? <>First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</> : undefined}
-                >
-                  <EngagerOutreachMockup data={engager} accent={prospectAccent} who={who} />
-                </Exhibit>
+                <FigLabel>Fig&nbsp;·&nbsp;warm engager outreach&nbsp;·&nbsp;keyed to your posts</FigLabel>
+                <div className="spec">
+                  {engagerSpecs.map((s, i) => (
+                    <div className="spec-r" key={i}>
+                      <div className="spec-m"><span className="sq" aria-hidden /> Reacted&nbsp;·&nbsp;{excerpt(s.trigger, 64)}</div>
+                      <div className="spec-x" style={{ marginTop: 8 }}>{excerpt(s.dm, 150)}</div>
+                    </div>
+                  ))}
+                </div>
+                {engagerNames.length ? (
+                  <p className="cap">First in line: {engagerNames.join('  ·  ')}. Real people from the comments on your feed; each message opens with the post they engaged.</p>
+                ) : null}
               </div>
             )}
             <div className="gov" style={{ marginTop: engager ? undefined : 0 }}>
@@ -3188,7 +3301,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec" id="cs-diagnosis">
           <SecHead
             label={<>Diagnosis&nbsp;·&nbsp;Read on {scanDate}</>}
-            title={<>What your feed shows today.</>}
+            title="What your feed shows today."
           />
           <div className="dxrows">
             {PILLARS.map((p) => (
@@ -3209,7 +3322,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec" id="cs-room">
             <SecHead
               label={<>Evidence&nbsp;·&nbsp;Audience</>}
-              title={<>Who is actually in your room.</>}
+              title="Who is actually in your room."
               note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
             />
             <div className="aud-top">
@@ -3258,7 +3371,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
         <Rev el="section" className="sec">
           <SecHead
             label={<>Effects observed&nbsp;·&nbsp;on the engine today</>}
-            title={<>Two founders run this engine already.</>}
+            title="Two founders run this engine already."
             note="Real operators, real numbers. Both run the same three pillars this page just walked."
           />
           {/* Kyle Hunt — the before/after figure is the exhibit's dominant element */}
@@ -3331,7 +3444,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <span className="sqbig" aria-hidden />
               <span className="lbl">WARNING: EXCESSIVE INBOUND</span>
             </div>
-            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
+            <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>{kp('Be the sharpest voice in your space. Without writing a word.')}</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
             <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
