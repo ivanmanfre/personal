@@ -22,9 +22,14 @@ function outcomeLabel(outcome: string | null): string {
   return outcome.replace(/_/g, ' ');
 }
 
-const ReportCard: React.FC<{ report: CallReport }> = ({ report }) => {
-  const [expanded, setExpanded] = useState(false);
+type DocKind = 'report' | 'onboarding';
+
+const ReportCard: React.FC<{ report: CallReport; initialDoc?: DocKind }> = ({ report, initialDoc }) => {
+  // initialDoc (deep-link ?doc=onboarding) pre-expands the card on the requested doc.
+  const [expanded, setExpanded] = useState(initialDoc != null);
+  const [doc, setDoc] = useState<DocKind>(initialDoc ?? 'report');
   const dateStr = report.meetingDate || report.createdAt;
+  const activeHtml = doc === 'onboarding' ? report.onboardingHtml : report.reportHtml;
 
   return (
     <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl overflow-hidden">
@@ -50,12 +55,30 @@ const ReportCard: React.FC<{ report: CallReport }> = ({ report }) => {
 
       {expanded && (
         <div className="border-t border-zinc-800/50">
-          {report.reportHtml ? (
+          {report.onboardingHtml && (
+            // Doc switcher — only rendered when this call also has an onboarding spec.
+            <div className="flex items-center gap-1.5 px-4 py-2 border-b border-zinc-800/50">
+              {(['report', 'onboarding'] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setDoc(k)}
+                  className={`text-[10px] uppercase tracking-wider font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                    doc === k
+                      ? 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                      : 'bg-zinc-800/40 text-zinc-400 border-zinc-700/40 hover:text-zinc-200'
+                  }`}
+                >
+                  {k === 'report' ? 'Call report' : 'Onboarding spec'}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeHtml ? (
             // Sandboxed iframe — report HTML is fully isolated (no scripts, no
             // same-origin access) so it can never touch the dashboard session.
             <iframe
-              title={`Call report — ${report.meetingTitle}`}
-              srcDoc={report.reportHtml}
+              title={`${doc === 'onboarding' ? 'Onboarding spec' : 'Call report'} — ${report.meetingTitle}`}
+              srcDoc={activeHtml}
               sandbox=""
               className="w-full bg-white"
               style={{ height: '70vh', border: 'none' }}
@@ -79,6 +102,14 @@ const CallReportsPanel: React.FC = () => {
   const { lastRefreshed } = useDashboard();
   useAutoRefresh(refresh, { realtimeTables: ['call_reports'] });
 
+  // Deep-link: ?doc=onboarding pre-opens the newest report that carries an
+  // onboarding spec (menubar tap-through). Read once — sub-tab state already
+  // lives in the URL (see ReachPipeline), this just extends that idiom.
+  const [wantsOnboardingDoc] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('doc') === 'onboarding',
+  );
+  const deepLinkId = wantsOnboardingDoc ? reports.find((r) => r.onboardingHtml)?.id : undefined;
+
   if (loading && reports.length === 0) return <LoadingSkeleton cards={0} rows={5} />;
 
   return (
@@ -99,7 +130,9 @@ const CallReportsPanel: React.FC = () => {
         />
       ) : (
         <div className="space-y-2.5">
-          {reports.map((r) => <ReportCard key={r.id} report={r} />)}
+          {reports.map((r) => (
+            <ReportCard key={r.id} report={r} initialDoc={r.id === deepLinkId ? 'onboarding' : undefined} />
+          ))}
         </div>
       )}
     </div>

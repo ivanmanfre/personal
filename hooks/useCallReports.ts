@@ -9,6 +9,7 @@ export interface CallReport {
   meetingDate: string | null;
   outcome: string | null;
   reportHtml: string | null;
+  onboardingHtml: string | null;
   reportJson: any;
   createdAt: string;
 }
@@ -21,6 +22,7 @@ function mapCallReport(row: any): CallReport {
     meetingDate: row.meeting_date ?? null,
     outcome: row.outcome ?? null,
     reportHtml: row.report_html ?? null,
+    onboardingHtml: row.onboarding_html ?? null,
     reportJson: row.report_json ?? null,
     createdAt: row.created_at,
   };
