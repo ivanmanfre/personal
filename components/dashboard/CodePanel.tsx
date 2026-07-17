@@ -127,7 +127,7 @@ const CodePanel: React.FC = () => {
                 src={`${CLAUDE_CODE_URL}?pane=${pane.id}${pane.fresh ? '&fresh=1' : ''}`}
                 className="w-full h-full border-0"
                 title={`Claude Code ${i + 1}`}
-                allow="clipboard-read; clipboard-write"
+                allow="clipboard-read; clipboard-write; microphone; autoplay"
                 style={{ pointerEvents: isDragging ? 'none' : 'auto' }}
               />
             </div>
