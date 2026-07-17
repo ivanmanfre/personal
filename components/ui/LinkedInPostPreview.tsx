@@ -205,7 +205,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
 
   if (compact) {
     return (
-      <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full">
+      <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full" style={{ fontFamily: '-apple-system, "Segoe UI", "Helvetica Neue", Roboto, Arial, sans-serif' }}>
         {/* Compact header */}
         <div className="flex items-start gap-2 px-3 py-2">
           {avatarUrl ? (
@@ -227,7 +227,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
         {/* Compact caption — clamped to 6 lines */}
         <div className="px-3 pb-2">
           <div
-            className="text-[13px] text-[#1d2226] leading-snug"
+            className="text-[14px] text-[#1d2226] leading-normal"
             style={{ display: '-webkit-box', WebkitLineClamp: clampLines, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {paragraphs.map((para, pi) => (
@@ -268,7 +268,7 @@ const LinkedInPostPreview: React.FC<Props> = ({
   }
 
   return (
-    <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
+    <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto" style={{ fontFamily: '-apple-system, "Segoe UI", "Helvetica Neue", Roboto, Arial, sans-serif' }}>
       {/* Header */}
       <div className="flex items-start gap-2 px-4 py-3">
         {avatarUrl ? (

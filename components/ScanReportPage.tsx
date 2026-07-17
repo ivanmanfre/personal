@@ -3100,17 +3100,17 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                 </div>
               </Exhibit>
               {restSpec && restSpec.posts.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-stretch" style={{ marginTop: 16 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start" style={{ marginTop: 16 }}>
                   {restSpec.posts.map((p, i) => (
                     <LinkedInPostPreview
                       key={i}
                       compact
-                      clampLines={4}
+                      clampLines={9}
                       author={restSpec.profile.name}
                       headline={restSpec.profile.headline}
                       avatarUrl={restSpec.profile.avatarUrl}
                       text={p.body}
-                      mediaUrl={p.type === 'image' ? (p.imageUrl ?? null) : p.type === 'carousel' && p.slides?.length ? p.slides[0] : null}
+                      mediaUrl={null}
                       stats={{ reactions: p.reactions, comments: p.comments }}
                     />
                   ))}

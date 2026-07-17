@@ -137,7 +137,7 @@ const LinkedInCarouselCard: React.FC<Props> = ({
   const next = () => setIndex((i) => Math.min(total - 1, i + 1));
 
   return (
-    <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto">
+    <div className="rounded-lg bg-white text-[#1d2226] shadow-sm border border-[#dce6f1] overflow-hidden font-sans w-full max-w-[552px] mx-auto" style={{ fontFamily: '-apple-system, "Segoe UI", "Helvetica Neue", Roboto, Arial, sans-serif' }}>
       {/* Header */}
       <div className="flex items-start gap-2 px-4 py-3">
         {avatarUrl ? (
