@@ -422,9 +422,41 @@ const ScanGradePage: React.FC = () => {
             {/* capture */}
             <div style={{ border: `1.5px solid ${INK}`, padding: '22px 22px 24px', marginTop: 30 }}>
               {captureState === 'done' ? (
-                <p style={{ fontFamily: BODY_SERIF, fontSize: 15.5, color: INK, margin: 0 }}>
-                  On its way. Check your inbox in the next day or so.
-                </p>
+                <div>
+                  <p style={{ fontFamily: BODY_SERIF, fontSize: 15.5, color: INK, margin: 0 }}>
+                    On its way. Check your inbox in the next day or so.
+                  </p>
+                  <div style={{ height: 1, background: HAIR, margin: '18px 0' }} />
+                  <Label style={{ marginBottom: 8 }}>While you wait. The engine behind this grader</Label>
+                  <p style={{ fontFamily: BODY_SERIF, fontSize: 15.5, lineHeight: 1.55, color: SEC, margin: '0 0 14px' }}>
+                    The grader reads one hook. The full system writes the posts, builds the lead
+                    magnets and runs the warm outreach, in your name. Sixty seconds shows it running.
+                  </p>
+                  <video
+                    controls
+                    playsInline
+                    preload="none"
+                    poster="/film/the-desk-poster.webp"
+                    src="/film/the-desk.mp4"
+                    style={{ display: 'block', width: '100%', border: `1.5px solid ${INK}` }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginTop: 16 }}>
+                    <a
+                      href={`https://calendly.com/im-ivanmanfredi/30min?utm_source=grade${email ? `&email=${encodeURIComponent(email.trim())}` : ''}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        fontFamily: SERIF, fontWeight: 800, fontSize: 14, letterSpacing: '0.1em',
+                        background: INK, color: PAPER, textDecoration: 'none', padding: '12px 24px', display: 'inline-block',
+                      }}
+                    >
+                      BOOK THE FREE FIT CALL
+                    </a>
+                    <p style={{ fontFamily: BODY_SERIF, fontStyle: 'italic', fontSize: 14, color: MUTED, margin: 0 }}>
+                      If the film reads like your situation.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <>
                   <p style={{ fontFamily: BODY_SERIF, fontSize: 15.5, lineHeight: 1.55, color: INK, margin: '0 0 14px' }}>

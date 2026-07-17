@@ -169,12 +169,17 @@ function App() {
   // Both / and /landing render LandingPage; /landing kept as alias.
   if (isLanding) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/landing" element={<LandingPage />} />
-        </Routes>
-      </Suspense>
+      <>
+        {/* Hash links from the pre-call emails (/#film) need the scroll handler here
+            too — this branch returns before the main tree's ScrollToTop mounts. */}
+        <ScrollToTop />
+        <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/landing" element={<LandingPage />} />
+          </Routes>
+        </Suspense>
+      </>
     );
   }
 

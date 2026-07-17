@@ -274,7 +274,7 @@ const METRICS = [
 // editorial scale in ink (the old 6rem sage numerals read garish); the sage
 // lives only on the small mono label. A quiet receipt under each.
 const FilmSection: React.FC = () => (
-  <section className="py-16 md:py-24 border-t" style={DIVIDER}>
+  <section id="film" className="py-16 md:py-24 border-t" style={DIVIDER}>
     <div className="container mx-auto px-8 max-w-5xl">
       <h2 className="sr-only">Watch the system run</h2>
       <HeroVideo src="/film/the-desk.mp4" poster="/film/the-desk-poster.webp" />

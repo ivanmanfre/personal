@@ -51,6 +51,17 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = JSON.parse(raw); } catch { return jr({ error: "invalid_json" }, 400); }
 
+  // ── Pre-call gate forward (2026-07-17): mirror verified events to the n8n
+  // warming-sequence webhook. Calendly's plan caps webhook subscriptions at one,
+  // so this fn is the fan-out point. Additive and fail-soft.
+  try {
+    await fetch("https://n8n.ivanmanfredi.com/webhook/precall-gate?k=b3ada39c0d4906c7395fc0806d3282d2", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: raw,
+    });
+  } catch (_) { /* never block the pipeline */ }
+
   // ── LM attribution (W-B.2, 2026-07-10): LM-tagged bookings → lm_attribution ──
   // utm_campaign = lm_slug, utm_content = lm_events.session_id (R1-verified round-trip).
   // Additive and fail-soft; the paid-assessment pipeline below is untouched.
