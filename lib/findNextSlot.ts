@@ -4,9 +4,10 @@ import { supabase } from './supabase';
  * Finds the next available posting slot.
  *
  * Strategy:
- *   - Cadence: ONE post per calendar day (BA-local) — system-wide decision
- *     2026-07-03; the time window rotates by day (morning / early-afternoon).
- *     Weekends included (audience engages on Sat/Sun too).
+ *   - Cadence: ONE post per calendar day (BA-local), Mon-Fri ONLY — the
+ *     2026-07-17 storefront step-down (5 dense posts/wk, Play 4 of the
+ *     engagement playbook) layered on the 2026-07-03 one-per-day decision.
+ *     The time window rotates by day (morning / early-afternoon).
  *   - Scan from tomorrow forward; skip any day that already has a post
  *   - Cap the scan at 30 days out
  *   - Calls are serialized + slots reserved in-session so scheduling several
@@ -95,7 +96,10 @@ export async function findNextSlot(): Promise<Date> {
       // was making us pick today's already-past 9am slot.
       const candidate = new Date(Date.UTC(todayLocal.y, todayLocal.m - 1, todayLocal.d + offset, 12, 0, 0));
       const cl = ymdInTz(candidate, TZ);
-      // Weekends are intentionally NOT skipped — post every day, incl. Sat/Sun.
+      // Step-down cadence (2026-07-17): 5 dense posts/wk = 1/day Mon-Fri. Weekend
+      // days are skipped; density + the weekly flagship carry the reach instead.
+      const dow = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short' }).format(candidate);
+      if (dow === 'Sat' || dow === 'Sun') continue;
       if (occupiedDays.has(`${cl.y}-${cl.m}-${cl.d}`)) continue; // day already has a post
       // Rotate the time window by day-of-month so timing still varies day to day.
       const w = SLOT_WINDOWS[cl.d % SLOT_WINDOWS.length];

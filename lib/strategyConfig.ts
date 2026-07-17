@@ -217,14 +217,15 @@ export const preconditionEpisodes: PrecondictionEpisode[] = [
   },
 ];
 
-// Pillar mix — target from 2026-06-10 taxonomy rework (35/30/15/10/10)
-// actualPct stays null here; live actuals are computed from carousel_drafts
-// (published, taxonomy.pillar) in ContentStrategySection.
+// Pillar mix — 2026-07-17 storefront cutover (30/25/15/20/10): Case Study is the
+// weekly public-case-study FLAGSHIP (one episode/wk, the storefront's proof pillar).
+// Mirrors content_prompts post-generation v26. actualPct stays null here; live
+// actuals are computed from carousel_drafts (published, taxonomy.pillar).
 export const pillarMixTargets: PillarTarget[] = [
-  { pillar: 'Translator',  targetPct: 35, actualPct: null },
-  { pillar: 'Methodology', targetPct: 30, actualPct: null },
+  { pillar: 'Translator',  targetPct: 30, actualPct: null },
+  { pillar: 'Methodology', targetPct: 25, actualPct: null },
   { pillar: 'Teardown',    targetPct: 15, actualPct: null },
-  { pillar: 'Case Study',  targetPct: 10, actualPct: null },
+  { pillar: 'Case Study',  targetPct: 20, actualPct: null },
   { pillar: 'Personal',    targetPct: 10, actualPct: null },
 ];
 
