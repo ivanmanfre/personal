@@ -59,6 +59,13 @@ export function buildAssessmentEmbedUrl(
   const params = new URLSearchParams();
   params.set('src', opts?.src ?? 'scan_embed');
   if (opts?.prospectId) params.set('pid', opts.prospectId);
+  // UTM attribution (P0.2, 2026-07-17): the embed's beacon events now persist scalar utm
+  // columns in lm_events; 'scan' per the locked taxonomy, content = the prospect this scan
+  // renders for, so embed engagement attributes to a named prospect.
+  params.set('utm_source', 'scan');
+  params.set('utm_medium', opts?.src ?? 'scan_embed');
+  params.set('utm_campaign', lm.slug);
+  if (opts?.prospectId) params.set('utm_content', opts.prospectId);
   // The lead's brand rides into the embed so the live assessment matches their site: color +
   // their real fonts (heading + body). The logo is NOT passed here — the wrapping site-header
   // mockup (LiveAssessmentEmbed) renders it in the nav, so the assessment hero stays logo-free.
