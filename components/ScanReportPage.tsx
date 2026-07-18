@@ -373,6 +373,41 @@ const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ val
   return <span ref={ref} style={style}>{displayed}</span>;
 };
 
+// Receipt count-up (R10): a real report_json figure counts up ONCE on enter, landing with its
+// source caption, then still. Formats with locale + optional prefix/suffix/decimals so the
+// number reads as a receipt, not a raw int. Reduced-motion shows the settled value immediately.
+const Tally: React.FC<{ value: number; prefix?: string; suffix?: string; decimals?: number; className?: string; style?: React.CSSProperties }> = ({ value, prefix = '', suffix = '', decimals = 0, className, style }) => {
+  const [displayed, setDisplayed] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const reduceMotion = useReducedMotion();
+  const done = useRef(false);
+  const fmt = (n: number) => prefix + n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
+  useEffect(() => {
+    if (reduceMotion) { setDisplayed(value); return; }
+    const el = ref.current;
+    if (!el) return;
+    let controls: ReturnType<typeof animate> | undefined;
+    const run = () => {
+      if (done.current) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight || 800;
+      if (r.top < vh * 0.92 && r.bottom > 0) {
+        done.current = true;
+        window.removeEventListener('scroll', run);
+        controls = animate(0, value, {
+          duration: 1.1,
+          ease: EASE as unknown as [number, number, number, number],
+          onUpdate: (v) => setDisplayed(v),
+        });
+      }
+    };
+    run();
+    window.addEventListener('scroll', run, { passive: true });
+    return () => { window.removeEventListener('scroll', run); controls?.stop(); };
+  }, [value, reduceMotion]);
+  return <span ref={ref} className={className} style={style}>{fmt(displayed)}</span>;
+};
+
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <h2
     style={{
@@ -2085,6 +2120,16 @@ const RECORD_CSS = `
 .bbrec .aud-band .abr{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.01em;font-size:clamp(14px,1.6vw,16px);color:var(--ink);}
 .bbrec .aud-band .abw{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.3vw,14px);line-height:1.5;color:var(--sec);margin-top:4px;}
 .bbrec .aud-band .abys{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--ink);margin-top:8px;}
+/* receipt strip — the raw material, staged as counted evidence cards (R6+R10). Ruled/hairline
+   plate grammar, ink figures, grotesk captions (no serif/italic added). The winning density
+   cell is highlighted with the sanctioned figure-flash tone — the one staged annotation. */
+.bbrec .rstrip{margin-top:clamp(22px,2.8vw,32px);display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--ink);border-left:1px solid var(--hair);}
+@media(max-width:720px){.bbrec .rstrip{grid-template-columns:1fr;}}
+.bbrec .ritem{padding:clamp(14px,1.9vw,20px) clamp(14px,1.9vw,20px) clamp(16px,2.1vw,22px);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);}
+.bbrec .ritem.mark{background:var(--flash);}
+.bbrec .ritem .rk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
+.bbrec .ritem .rv{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.6vw,54px);line-height:0.92;color:var(--ink);margin-top:10px;}
+.bbrec .ritem .rc{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14.5px);line-height:1.5;color:var(--sec);margin-top:10px;max-width:30ch;}
 /* operator block */
 .bbrec .operator{margin-top:clamp(28px,3.4vw,44px);display:grid;grid-template-columns:150px 1fr;gap:clamp(22px,3.4vw,44px);align-items:start;border-top:1px solid var(--ink);padding-top:clamp(26px,3.2vw,40px);}
 @media(max-width:600px){.bbrec .operator{grid-template-columns:1fr;gap:22px;}}
@@ -2858,6 +2903,8 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       ? `${audEst ? `~${audEst}` : String(audNetCount)} buyers already sit in your network, ${who}.`
       : `${audEngIcp} ${audEngIcp === 1 ? 'buyer is' : 'buyers are'} already in your comments, ${who}.`,
     figure: roomMode === 'network' ? (audEst ? `~${audEst}` : String(audNetCount)) : String(audEngIcp),
+    figureNum: roomMode === 'network' ? (audEst ?? audNetCount ?? 0) : audEngIcp,
+    figurePrefix: roomMode === 'network' && audEst ? '~' : '',
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
       ? (audEst
@@ -2879,6 +2926,25 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           audPosts ? `the reactions and comments on your last ${audPosts} posts` : '',
         ].filter(Boolean).join(' and ')}, classified one headline at a time. No estimates on this page.`,
   } : null;
+
+  // ── Receipt strip: the raw material behind the room figure, staged as counted evidence
+  // cards (R6 artifact-as-proof + R10 count-up). Every value is a figure the audit actually
+  // counted from report_json.audience — nulls drop out, so the strip only shows real receipts.
+  type Receipt = { key: string; label: string; value: number; prefix?: string; suffix?: string; decimals?: number; cap: string; mark?: boolean };
+  const receipts: Receipt[] = room
+    ? (roomMode === 'network'
+      ? [
+          audNetSample != null && { key: 'read', label: 'Connections read', value: audNetSample, cap: audNetTotal ? `of ${audNetTotal.toLocaleString('en-US')}, one headline at a time` : 'one headline at a time' },
+          audNetCount != null && { key: 'buyers', label: 'Buyers verified', value: audNetCount, cap: 'decision makers at consumer brands, named' },
+          audNetDensity != null && { key: 'density', label: 'Buyer density', value: audNetDensity, suffix: '%', decimals: 1, mark: true, cap: 'a typical room reads 1 to 2%' },
+        ]
+      : [
+          audEngIcp > 0 && { key: 'buyers', label: 'Buyers in your comments', value: audEngIcp, mark: true, cap: 'decision makers, named from their own headline' },
+          audEngagers > 0 && { key: 'reached', label: 'People reached', value: audEngagers, cap: audPosts ? `across your last ${audPosts} posts` : 'across your recent posts' },
+          audPosts > 0 && { key: 'posts', label: 'Posts read', value: audPosts, cap: 'reactions and comments, one at a time' },
+        ]
+      ).filter(Boolean) as Receipt[]
+    : [];
 
   // ── Pillars: the hero table + chapter seating ──────────────────────────────
   // Ladder: builder-emitted cs.pillars → wins[].pillar tag → keyword heuristic on the
@@ -3033,21 +3099,37 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             />
             <div className="aud-top">
               <div className="pf-figk">{room.figureLabel}</div>
-              <div className="pf-fig">{room.figure}</div>
+              <div className="pf-fig"><Tally value={room.figureNum} prefix={room.figurePrefix} /></div>
               <p className="aud-sub">{room.figureSub}</p>
             </div>
             {roomMode === 'network' && audNetDensity !== null && (
-              <p className="aud-sub" style={{ marginTop: 'clamp(14px,1.8vw,20px)' }}>A typical room reads 1 to 2% buyers. Yours reads {audNetDensity}%.</p>
+              <p className="aud-sub" style={{ marginTop: 'clamp(14px,1.8vw,20px)' }}>A typical room reads 1 to 2% buyers. Yours reads <Tally value={audNetDensity} suffix="%" decimals={1} />.</p>
             )}
-            <div className="aud-rows">
-              <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
+            {/* Raw material, staged as counted receipts (R6+R10). Falls back to the prose row
+                when fewer than two real figures were counted. */}
+            {receipts.length >= 2 ? (
+              <div className="rstrip">
+                {receipts.map((r) => (
+                  <div className={r.mark ? 'ritem rcard mark' : 'ritem rcard'} key={r.key}>
+                    <div className="rk">{r.label}</div>
+                    <div className="rv"><Tally value={r.value} prefix={r.prefix} suffix={r.suffix} decimals={r.decimals} /></div>
+                    <div className="rc">{r.cap}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="aud-rows">
+                <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
+              </div>
+            )}
+            <div className="aud-rows" style={{ marginTop: 'clamp(18px,2.2vw,24px)' }}>
               <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
             </div>
             <ChapterCta line={<>That is the read on {displayCompany}, {who}.</>} />
             {audNamed.length > 0 && (
               <div className="aud-names">
                 {audNamed.map((n, i) => (
-                  <div className="aud-name" key={i}>
+                  <div className="aud-name rcard" key={i}>
                     <div className="anm">{audClean(n.name)}</div>
                     {n.headline ? <div className="ahl">{audClean(n.headline).slice(0, 110)}</div> : null}
                     <div className="asrc">{n.source === 'engager' ? 'Engaged your posts' : 'In your connections'}</div>
