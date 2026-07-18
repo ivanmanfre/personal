@@ -2,6 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, LayoutGroup, MotionConfig, useReducedMotion, useMotionValue, useTransform, animate } from 'framer-motion';
 import { supabase } from '../lib/supabase';
+import {
+  loadBoardSession,
+  saveBoardSession,
+  clearBoardSession,
+  readMagicLinkFragment,
+  stripMagicLinkFragment,
+  type BoardSession,
+} from '../lib/boardSession';
 import { useMetadata } from '../hooks/useMetadata';
 import { buildAssessmentEmbedUrl } from '../lib/assessmentEmbed';
 import LinkedInPostPreview from './ui/LinkedInPostPreview';
@@ -4335,6 +4343,126 @@ function BoardSkeleton() {
   );
 }
 
+/** Magic-link sign-in screen (shown only when there is NO ?k= token and no valid
+ *  stored session). Matches the blackbox board grammar: Schibsted Grotesk, ink on
+ *  paper, hairline rules, uppercase mono-weight labels, one ink-filled action.
+ *  No client accent is known pre-board, so the screen is operator-branded
+ *  (InboundOnSteroids). Tokens travel only in RPC / edge-fn bodies. */
+function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSession) => void }) {
+  const [phase, setPhase] = useState<'email' | 'code'>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
+  const codeValid = code.replace(/\D/g, '').length === 6;
+
+  // Load Schibsted Grotesk for the pre-board screen (the skin's font map only
+  // spreads once the board renders).
+  useEffect(() => {
+    const id = 'client-board-blackbox-font';
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id; link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800;900&display=swap';
+    document.head.appendChild(link);
+  }, []);
+
+  const GK = '"Schibsted Grotesk", system-ui, sans-serif';
+  const INKC = '#131210', PAPERC = '#ffffff', MUTE = '#6b675e', SOFT = '#3a3833', HAIR = 'rgba(19,18,16,0.16)', RED = '#C8361B';
+
+  const requestLink = async () => {
+    if (!emailValid || busy) return;
+    setBusy(true); setErr('');
+    try {
+      // Fire the mint+send. The edge fn ALWAYS returns ok (no enumeration oracle),
+      // so we advance to the code screen regardless of allow-list outcome.
+      await supabase.functions.invoke('board-magic-link', { body: { slug, email: email.trim().toLowerCase() } });
+    } catch { /* uniform outcome — still advance */ }
+    setBusy(false);
+    setPhase('code');
+  };
+
+  const submitCode = async () => {
+    const c = code.replace(/\D/g, '');
+    if (c.length !== 6 || busy) return;
+    setBusy(true); setErr('');
+    try {
+      const { data, error } = await supabase.rpc('redeem_board_login', { p_slug: slug, p_secret: c, p_kind: 'code' });
+      const res = (data as any) || null;
+      if (!error && res?.ok && res.session_token) {
+        onAuthed({ token: res.session_token, email: res.email, expires_at: res.expires_at });
+        return;
+      }
+      setErr('That code did not match. Check the latest email, or request a new link.');
+    } catch {
+      setErr('Something went wrong. Try again.');
+    }
+    setBusy(false);
+  };
+
+  const inputStyle: React.CSSProperties = { fontFamily: GK, color: INKC, background: PAPERC, border: `1px solid ${HAIR}`, outline: 'none' };
+  const btnStyle = (enabled: boolean): React.CSSProperties => ({
+    fontFamily: GK, fontWeight: 700, fontSize: 12, letterSpacing: '0.14em',
+    background: INKC, color: PAPERC, border: 'none', padding: '13px 20px',
+    cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.5,
+  });
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6" style={{ background: PAPERC, color: INKC, fontFamily: GK }}>
+      <div className="w-full max-w-[380px]">
+        <div className="uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 10, letterSpacing: '0.22em', color: MUTE }}>Content board</div>
+        <h1 className="mt-4" style={{ fontFamily: GK, fontWeight: 800, fontSize: 27, lineHeight: 1.12, letterSpacing: '-0.03em', color: INKC }}>
+          {phase === 'email' ? 'Sign in to your board' : 'Check your email'}
+        </h1>
+
+        {phase === 'email' ? (
+          <>
+            <p className="mt-3" style={{ fontFamily: GK, fontSize: 14.5, lineHeight: 1.6, color: SOFT }}>
+              Enter the email your operator has on file. We'll send a one-tap link and a backup code.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); void requestLink(); }} className="mt-6">
+              <input
+                type="email" inputMode="email" autoComplete="email" autoFocus
+                value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
+                className="w-full px-3.5 py-3" style={{ ...inputStyle, fontSize: 15 }}
+              />
+              <button type="submit" disabled={!emailValid || busy} className="mt-3 w-full uppercase" style={btnStyle(emailValid && !busy)}>
+                {busy ? 'Sending…' : 'Send my link'}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="mt-3" style={{ fontFamily: GK, fontSize: 14.5, lineHeight: 1.6, color: SOFT }}>
+              We sent a sign-in link and a 6-digit code to <span style={{ color: INKC, fontWeight: 600 }}>{email.trim().toLowerCase()}</span>. Tap the link, or enter the code below. Both expire in 15 minutes.
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); void submitCode(); }} className="mt-6">
+              <input
+                type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6}
+                value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000"
+                className="w-full px-3.5 py-3 tabular-nums" style={{ ...inputStyle, fontSize: 22, letterSpacing: '0.4em' }}
+              />
+              <button type="submit" disabled={!codeValid || busy} className="mt-3 w-full uppercase" style={btnStyle(codeValid && !busy)}>
+                {busy ? 'Checking…' : 'Open my board'}
+              </button>
+            </form>
+            <button
+              onClick={() => { setPhase('email'); setCode(''); setErr(''); }}
+              className="mt-3.5" style={{ fontFamily: GK, fontSize: 12.5, color: MUTE, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+            >
+              Use a different email
+            </button>
+          </>
+        )}
+
+        {err && <p className="mt-3" style={{ fontFamily: GK, fontSize: 12.5, lineHeight: 1.5, color: RED }}>{err}</p>}
+        <div className="mt-9 uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 9.5, letterSpacing: '0.2em', color: '#a5a29a' }}>InboundOnSteroids</div>
+      </div>
+    </div>
+  );
+}
+
 export default function ClientBoardPage() {
   const { slug } = useParams<{ slug: string }>();
   const [params] = useSearchParams();
@@ -4345,7 +4473,15 @@ export default function ClientBoardPage() {
   const approvalsKey = `cb-approvals-${slug || ''}`;
   const [board, setBoard] = useState<Board | null>(null);
   const [mode, setMode] = useState<string>('demo');
-  const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'invalid' | 'generating' | 'failed' | 'signin'>('loading');
+  // Magic-link session (additive path). The ?k= token flow above is unchanged and
+  // takes precedence whenever a ?k= is present. Session auth only engages when
+  // there is NO ?k= token: a #ml= link fragment redeems into a session, or a
+  // previously-stored session loads the board. Read synchronously so act() and the
+  // fetch effect see it on the very first render.
+  const [session, setSession] = useState<BoardSession | null>(() => loadBoardSession(slug));
+  const sessionRef = useRef<BoardSession | null>(session);
+  sessionRef.current = session;
   // Company name for the pre-render states (generating / failed): the placeholder row
   // carries it before the full board jsonb exists, so the building screen can name it.
   const [pendingCompany, setPendingCompany] = useState<string>('');
@@ -4420,15 +4556,28 @@ export default function ClientBoardPage() {
   };
   // Real, token-gated board action. Same anon-key RPC posture as get_client_board.
   // Returns {ok:true} or {ok:false,error}. Never throws to the caller.
+  // Routing: a ?k= token uses client_board_action (v1, byte-identical); a
+  // magic-link session uses client_board_action_v2 (session-authenticated, with
+  // the expires_at guard v1 misses). The session token only travels in the RPC
+  // body — never a query param, log, or title.
   const act = async (
     action: 'approve' | 'edit_copy' | 'request_changes' | 'shift_request' | 'note',
     ref?: string | null,
     payload?: Record<string, unknown> | null,
   ): Promise<{ ok: boolean; error?: string }> => {
-    if (!slug || !token) return { ok: false, error: 'missing token' };
+    if (!slug) return { ok: false, error: 'missing slug' };
     try {
-      const { data, error } = await supabase.rpc('client_board_action', {
-        p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
+      if (token) {
+        const { data, error } = await supabase.rpc('client_board_action', {
+          p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
+        });
+        if (error) return { ok: false, error: error.message };
+        return (data as any) ?? { ok: true };
+      }
+      const sess = sessionRef.current;
+      if (!sess?.token) return { ok: false, error: 'missing session' };
+      const { data, error } = await supabase.rpc('client_board_action_v2', {
+        p_slug: slug, p_session: sess.token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
       });
       if (error) return { ok: false, error: error.message };
       return (data as any) ?? { ok: true };
@@ -4531,30 +4680,23 @@ export default function ClientBoardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      if (!slug || !token) { setState('invalid'); return; }
-      if (forceIntro) {
-        // Replay support: drop the played flag (and any stale approval/angle/skip of the
-        // intro card) BEFORE the board mounts, so the choreography runs again from the top.
-        try { localStorage.removeItem(introKey); } catch { /* private mode */ }
-        setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
-        setAngleSwaps((s) => { const { d1: _drop, ...rest } = s; return rest; });
-        setWeekSkips((s) => { const { d1: _drop, ...rest } = s; return rest; });
-      }
-      const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
-      if (cancelled) return;
-      if (error || !data) { setState('invalid'); return; }
-      const rowMode = (data as any).mode || 'demo';
+
+    // Shared: turn a get_client_board / get_client_board_by_session response into
+    // board state. Returns true if it produced a renderable / pre-render state,
+    // false if the payload was empty (caller decides the fallback).
+    const applyBoardData = (data: any): boolean => {
+      if (!data) return false;
+      const rowMode = data.mode || 'demo';
       // The board-generator service reserves the row in 'generating' before the full
       // jsonb exists, then flips it to 'preview' (done) or 'failed'. In those pre-render
       // states the board is a minimal placeholder — show a dedicated screen instead of
       // trying to render an empty board (which would read as the invalid-link error).
       if (rowMode === 'generating' || rowMode === 'failed') {
-        setPendingCompany(((data as any).board?.company_name as string) || '');
+        setPendingCompany((data.board?.company_name as string) || '');
         setState(rowMode);
-        return;
+        return true;
       }
-      let b = (data as any).board as Board;
+      let b = data.board as Board;
       // Once the intro has played (or motion is reduced and it never will), the choreography
       // card must land as a normal completed review card — never a stuck "Generating…" row.
       const introPlayed = (() => {
@@ -4571,8 +4713,64 @@ export default function ClientBoardPage() {
       }
       if (b.logo_url) { const img = new Image(); img.src = b.logo_url; }
       setBoard(b);
-      setMode((data as any).mode || 'demo');
+      setMode(data.mode || 'demo');
       setState('ready');
+      return true;
+    };
+
+    // Load a board using a magic-link session token. On failure clears the stored
+    // session and returns false so the caller can drop to the sign-in screen.
+    const loadBySession = async (sessSlug: string, sessionToken: string): Promise<boolean> => {
+      const { data, error } = await supabase.rpc('get_client_board_by_session', { p_slug: sessSlug, p_session: sessionToken });
+      if (cancelled) return true; // unmounted — treat as handled
+      if (error || !data) { clearBoardSession(sessSlug); setSession(null); return false; }
+      return applyBoardData(data);
+    };
+
+    (async () => {
+      if (!slug) { setState('invalid'); return; }
+      if (forceIntro) {
+        // Replay support: drop the played flag (and any stale approval/angle/skip of the
+        // intro card) BEFORE the board mounts, so the choreography runs again from the top.
+        try { localStorage.removeItem(introKey); } catch { /* private mode */ }
+        setStageOverride((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setAngleSwaps((s) => { const { d1: _drop, ...rest } = s; return rest; });
+        setWeekSkips((s) => { const { d1: _drop, ...rest } = s; return rest; });
+      }
+
+      // (a) ?k= token present → existing RPC path, BYTE-IDENTICAL. Session code
+      // never runs while a ?k= is in the URL.
+      if (token) {
+        const { data, error } = await supabase.rpc('get_client_board', { p_slug: slug, p_token: token });
+        if (cancelled) return;
+        if (error || !data || !applyBoardData(data)) { setState('invalid'); return; }
+        return;
+      }
+
+      // (b) #ml=<token> fragment → redeem into a session, strip the fragment, load.
+      const ml = readMagicLinkFragment();
+      if (ml) {
+        const { data, error } = await supabase.rpc('redeem_board_login', { p_slug: slug, p_secret: ml, p_kind: 'link' });
+        stripMagicLinkFragment();
+        if (cancelled) return;
+        const res = (data as any) || null;
+        if (!error && res?.ok && res.session_token) {
+          const sess: BoardSession = { token: res.session_token, email: res.email, expires_at: res.expires_at };
+          saveBoardSession(slug, sess);
+          setSession(sess);
+          if (await loadBySession(slug, sess.token)) return;
+        }
+        // redeem failed (expired / already used) → fall through to stored session / sign-in.
+      }
+
+      // (c) stored session → load by session; on failure fall to sign-in.
+      const stored = sessionRef.current ?? loadBoardSession(slug);
+      if (stored?.token) {
+        if (await loadBySession(slug, stored.token)) return;
+      }
+
+      // (d) no ?k=, no valid session → the sign-in screen.
+      if (!cancelled) setState('signin');
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4841,6 +5039,20 @@ export default function ClientBoardPage() {
           </p>
         </div>
       </div>
+    );
+  }
+  if (state === 'signin') {
+    return (
+      <BoardSignIn
+        slug={slug || ''}
+        onAuthed={(sess) => {
+          if (slug) saveBoardSession(slug, sess);
+          setSession(sess);
+          // Reload so the stored-session load path (c) renders the board cleanly
+          // (full remount, same as the generating→ready reload).
+          window.location.reload();
+        }}
+      />
     );
   }
   if (state === 'invalid' || !board || !viewBoard) {
