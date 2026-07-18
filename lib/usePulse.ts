@@ -43,8 +43,8 @@ const DAY = 24 * HOUR;
 
 /** Expected-write windows per cadence (dormant is not window-checked). */
 const CADENCE_WINDOW_MS: Record<Exclude<PulseCadence, 'dormant'>, number> = {
-  realtime: 24 * HOUR,
-  daily: 36 * HOUR,
+  realtime: 12 * HOUR,
+  daily: 26 * HOUR,
   weekly: 10 * DAY,
   event: 30 * DAY,
 };
@@ -79,7 +79,9 @@ async function probeEntry(entry: PulseEntry): Promise<PulseResult> {
     const { data, error } = await supabase
       .from(entry.table)
       .select(entry.tsColumn)
-      .order(entry.tsColumn, { ascending: false })
+      // Postgres DESC sorts NULLs first — without this a single NULL row masks a live feed as 'empty'
+      .not(entry.tsColumn, 'is', null)
+      .order(entry.tsColumn, { ascending: false, nullsFirst: false })
       .limit(1);
 
     if (error) {
