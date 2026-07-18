@@ -127,6 +127,18 @@ export interface ContentSystem {
     named?: { name?: string; headline?: string; source?: string }[];
     audited_at?: string;
   };
+  // Profile audit embed (scan-build audit, 2026-07-18). Optional, additive. When present the
+  // report renders a PROFILE row in THE BOX pillar table and a compact `cs-profile` section of
+  // measured check chips. Diagnosis-only register (findings, never fix prescriptions). `found`
+  // is the measured "on your feed today" diagnosis line; `projected` is the after-90-days
+  // end-state line. `checks` drives the chip strip; empty checks -> table row only, no section.
+  profile?: {
+    found: string;
+    projected: string;
+    checks: { tag: string; state: 'pass' | 'flag' | 'fail' | 'unverified'; reading: string }[];
+    verified_note?: string;
+    audited_at?: string;
+  };
   // 1200x630 share/OG card URL (hosted); set on hypertarget scans so the link unfurls.
   og_image_url?: string;
 }

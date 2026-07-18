@@ -2089,6 +2089,23 @@ const RECORD_CSS = `
 .bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,15.5px);line-height:1.55;letter-spacing:-0.01em;color:var(--ink);}
 .bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.5vw,15.5px);line-height:1.55;color:var(--sec);}
 @media(max-width:640px){.bbrec .ptab-h{display:none;}.bbrec .ptab-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .ptab-r>.ptab-f::before,.bbrec .ptab-r>.ptab-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
+/* profile audit: measured check chips (content_system only, optional cs.profile). Diagnosis
+   register: findings, never prescriptions. 11px label floor, grotesk body (commit f27dcf9). */
+.bbrec .pchips{margin-top:clamp(22px,2.8vw,32px);display:flex;flex-wrap:wrap;gap:clamp(10px,1.4vw,14px);border-top:1px solid var(--ink);padding-top:clamp(20px,2.6vw,28px);}
+.bbrec .pchip{flex:1 1 210px;min-width:188px;border:1px solid var(--hair);border-left:3px solid var(--muted);background:var(--paper);padding:clamp(12px,1.6vw,15px) clamp(13px,1.7vw,16px);}
+.bbrec .pchip-top{display:flex;align-items:center;gap:9px;}
+.bbrec .pchip-mark{font-family:var(--grotesk);font-weight:800;font-size:13px;line-height:1;width:15px;text-align:center;flex-shrink:0;color:var(--muted);}
+.bbrec .pchip-tag{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;line-height:1.25;color:var(--ink);}
+.bbrec .pchip-read{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.4vw,14.5px);line-height:1.5;color:var(--sec);margin-top:8px;}
+.bbrec .pchip--pass{border-left-color:#2F7D4F;}
+.bbrec .pchip--pass .pchip-mark{color:#2F7D4F;}
+.bbrec .pchip--flag{border-left-color:#B8791C;}
+.bbrec .pchip--flag .pchip-mark{color:#B8791C;}
+.bbrec .pchip--fail{border-left-color:var(--red);}
+.bbrec .pchip--fail .pchip-mark{color:var(--red);}
+.bbrec .pchip--unverified{border-left-color:var(--muted);background-image:repeating-linear-gradient(45deg,transparent,transparent 6px,var(--flash) 6px,var(--flash) 7px);}
+.bbrec .pchip-vnote{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;line-height:1.35;color:var(--muted);margin-top:clamp(16px,2vw,22px);}
+@media(max-width:640px){.bbrec .pchip{flex:1 1 100%;min-width:0;}}
 /* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
 .bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
 .bbrec .chcta p{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(17px,2.2vw,22px);line-height:1.2;color:var(--ink);max-width:34ch;margin:0;}
@@ -3084,10 +3101,43 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
                   <div className="ptab-v" data-l="After 90 days">{pillars[p.key].projected}</div>
                 </div>
               ))}
+              {cs.profile && (
+                <div className="ptab-r" key="profile">
+                  <div><a className="ptab-a" href="#cs-profile" onClick={(e) => jump(e, 'cs-profile')}>Profile</a></div>
+                  <div className="ptab-f" data-l="On your feed today">{cs.profile.found}</div>
+                  <div className="ptab-v" data-l="After 90 days">{cs.profile.projected}</div>
+                </div>
+              )}
             </div>
             <p className="box-note">Read from your public presence. Tap a pillar to jump to it.</p>
           </Rev>
         </div>
+
+        {/* ── EVIDENCE · PROFILE (additive; renders only measured checks; unverified/blind states are never shown client-facing) ── */}
+        {cs.profile && cs.profile.checks.filter((c) => c.state !== 'unverified').length > 0 && (
+          <Rev el="section" className="sec" id="cs-profile">
+            <SecHead
+              label={<>Evidence&nbsp;·&nbsp;Profile</>}
+              title={<>What your profile reads as today.</>}
+              note={<>The page your posts send readers to, measured the same way. Findings only.</>}
+            />
+            <div className="pchips">
+              {cs.profile.checks.filter((c) => c.state !== 'unverified').map((c, i) => {
+                const mark = c.state === 'pass' ? '✓' : c.state === 'flag' ? '!' : '✕';
+                return (
+                  <div className={`pchip pchip--${c.state}`} key={i}>
+                    <div className="pchip-top">
+                      <span className="pchip-mark" aria-hidden>{mark}</span>
+                      <span className="pchip-tag">{c.tag}</span>
+                    </div>
+                    <div className="pchip-read">{c.reading}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {cs.profile.verified_note ? <p className="pchip-vnote">{cs.profile.verified_note}</p> : null}
+          </Rev>
+        )}
 
         {/* ── EVIDENCE · THE ROOM (framing-guarded: renders only with a flattering counted fact) ── */}
         {room && (
