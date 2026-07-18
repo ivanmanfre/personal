@@ -116,7 +116,8 @@ interface NewsletterSpec {
   nurture?: NurtureStep[];
 }
 interface PerfIndicator { key: string; label: string; source?: string }
-interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[] }
+interface PerfPost { url?: string; title?: string; published_at?: string; impressions?: number | null; reactions?: number | null; comments?: number | null; captured_at?: string }
+interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[]; posts?: PerfPost[]; posts_updated_at?: string }
 /** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
  *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
 interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number }
@@ -3918,6 +3919,8 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
   const updates = board.engine_updates || [];
   const indicators = perf?.indicators || [];
   const outreachInds = perf?.outreach_indicators || [];
+  const posts = (perf?.posts || []).slice(0, 20);
+  const fmtNum = (n?: number | null) => (n === null || n === undefined ? '—' : n.toLocaleString());
   // Shared ghost card: awaiting-first-data treatment, identical for both groups. The
   // content group keeps its per-indicator expectation line; outreach carries one group note.
   const ghostCard = (ind: PerfIndicator, i: number, expectation?: string) => (
@@ -3965,6 +3968,57 @@ function PerformanceSurface({ board, accent, live = false }: { board: Board; acc
           </div>
         </div>
       )}
+
+      {/* Per-post performance: real numbers per published post, refreshed daily. Zero-state
+          until the first post goes live (the board row carries no performance.posts yet). */}
+      <div className="mt-8">
+        <div className="mb-1 flex items-baseline gap-3">
+          <CardHead>Per-post performance</CardHead>
+          {posts.length > 0 && perf?.posts_updated_at && (
+            <span className="text-[11px] tabular-nums" style={{ color: FAINT }}>updated {fmtDay(perf.posts_updated_at)}</span>
+          )}
+        </div>
+        {posts.length === 0 ? (
+          <div className="mt-2 rounded-xl bg-white p-4 sm:p-5" style={{ boxShadow: CARD_SHADOW }}>
+            <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>
+              Per-post numbers land here after each post goes live on your feed. Impressions, reactions and comments per post, refreshed daily.
+            </p>
+            <div className="mt-3 text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: MONO, color: FAINT }}>No data yet</div>
+          </div>
+        ) : (
+          <div className="mt-2 rounded-xl bg-white p-4 sm:p-5" style={{ boxShadow: CARD_SHADOW }}>
+            {/* Column labels: three mono metric heads, aligned right over the numerals. */}
+            <div className="hidden sm:flex items-baseline gap-3 pb-2" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+              <span className="min-w-0 flex-1" />
+              <span className="w-16 shrink-0 text-right uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Impr.</span>
+              <span className="w-14 shrink-0 text-right uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>React.</span>
+              <span className="w-14 shrink-0 text-right uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Comm.</span>
+            </div>
+            <div className="flex flex-col">
+              {posts.map((p, i) => {
+                const inner = (
+                  <>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13.5px] leading-snug" style={{ fontFamily: BODY, color: INK }}>{p.title || 'Untitled post'}</span>
+                      {p.published_at && <span className="block text-[11px] tabular-nums" style={{ color: FAINT }}>{fmtDay(p.published_at)}</span>}
+                    </span>
+                    <span className="w-16 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.impressions)}</span>
+                    <span className="w-14 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.reactions)}</span>
+                    <span className="w-14 shrink-0 text-right tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 17, color: INK }}>{fmtNum(p.comments)}</span>
+                  </>
+                );
+                const rowClass = 'flex items-baseline gap-3 py-2.5';
+                const rowStyle = { borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' } as React.CSSProperties;
+                return p.url ? (
+                  <a key={i} href={p.url} target="_blank" rel="noopener noreferrer" className={rowClass} style={rowStyle}>{inner}</a>
+                ) : (
+                  <div key={i} className={rowClass} style={rowStyle}>{inner}</div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {updates.length > 0 && (
         <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
