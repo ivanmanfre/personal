@@ -14,6 +14,7 @@ export type SectionId =
   | 'ideas'
   | 'opsideas'
   | 'system'
+  | 'pulse'
   | 'personal';
 
 export type Severity = 'good' | 'warn' | 'bad' | 'neutral';

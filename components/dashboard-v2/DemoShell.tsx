@@ -12,6 +12,7 @@ import { Clients } from './sections/Clients';
 import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
 import { SystemOverview } from './sections/SystemOverview';
+import { SystemPulse } from './sections/SystemPulse';
 import { Personal } from './sections/Personal';
 import { StealBox } from './sections/StealBox';
 import { useScheduledChecks } from '../../hooks/useScheduledChecks';
@@ -36,6 +37,7 @@ function ShellInner() {
     { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
     { id: 'opsideas', name: 'Ops Ideas', num: '07', group: 'knowledge' },
     { id: 'system', name: 'System', num: '08', group: 'knowledge' },
+    { id: 'pulse', name: 'Pulse', num: '⊙', group: 'knowledge' },
     { id: 'personal', name: 'Personal', num: '09', group: 'personal' },
   ];
 
@@ -62,6 +64,7 @@ function ShellInner() {
     agent: () => <Agent />,
     opsideas: () => <StealBox />,
     system: () => <SystemOverview />,
+    pulse: () => <SystemPulse />,
     personal: () => <Personal />,
   };
 
