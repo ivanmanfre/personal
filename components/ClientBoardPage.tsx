@@ -71,6 +71,12 @@ interface LeadMagnetEntry {
   format: 'assessment' | 'calculator' | 'worksheet' | 'checklist' | string;
   status: 'live' | 'in_production' | 'planned' | string;
   date_label?: string;
+  /** Live tool URL on the client domain (present on live entries). */
+  url?: string;
+  /** Captured-lead count for this asset, when available. */
+  captured?: number;
+  cover_url?: string;
+  promise?: string;
 }
 /** Idea-bank entry: an upcoming topic the engine holds but has NOT drafted yet. It has
  *  no date and no metrics — it drafts when it reaches its calendar slot. Rendered as the
@@ -2146,8 +2152,9 @@ const LM_FORMAT_LABEL: Record<string, string> = {
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
-function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
+function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen }: {
   entry: LeadMagnetEntry; accent: string; mint: string; brand?: BoardBrand; fontStack: string; i: number;
+  onOpen?: (e: LeadMagnetEntry) => void;
 }) {
   const live = entry.status === 'live';
   const heroBg = live ? (brand?.header_bg || INK) : `color-mix(in srgb, ${accent} ${[9, 6, 12, 7, 5][i % 5]}%, white)`;
@@ -2166,7 +2173,15 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
     ? { label: 'In production', bg: `color-mix(in srgb, ${accent} 9%, white)`, color: INK, dot: null }
     : { label: 'Planned', bg: 'rgba(2,49,47,0.05)', color: DIM, dot: null };
   return (
-    <div className={`overflow-hidden rounded-xl bg-white ${LIFT}`} style={{ border: `1px solid ${LINE}` }}>
+    <div
+      className={`overflow-hidden rounded-xl bg-white ${LIFT} ${onOpen ? 'cursor-pointer' : ''}`}
+      style={{ border: `1px solid ${LINE}` }}
+      role={onOpen ? 'button' : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `Open ${entry.title}` : undefined}
+      onClick={onOpen ? () => onOpen(entry) : undefined}
+      onKeyDown={onOpen ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(entry); } } : undefined}
+    >
       <div className="flex aspect-[16/10] flex-col justify-between p-4" style={{ background: heroBg }}>
         <span
           className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
@@ -2187,6 +2202,107 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
           {live ? 'On your domain' : entry.date_label || ''}
         </span>
       </div>
+    </div>
+  );
+}
+
+/** Lead-magnet detail drawer (same right-anchored grammar as the post drawer). Client depth
+ *  only: title, format, status, cover/live link, captured-leads count, date. No internals. */
+function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, onClose }: {
+  entry: LeadMagnetEntry; board: Board; accent: string; mint: string; fontStack: string; live?: boolean; onClose: () => void;
+}) {
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  const isLiveLm = entry.status === 'live';
+  const liveHeaderHex = cleanHex(board.brand?.header_bg, '#131210');
+  const heroBg = isLiveLm ? (board.brand?.header_bg || INK) : `color-mix(in srgb, ${accent} 9%, white)`;
+  const onHero = isLiveLm ? inkOn(liveHeaderHex) : `color-mix(in srgb, ${accent} 72%, ${INK})`;
+  const statusLabel = isLiveLm ? 'Live' : 'Concept';
+  const url = entry.url;
+  return (
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+      <motion.div className="fixed inset-0 bg-black/40" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose} aria-hidden />
+      <motion.div
+        className="fixed inset-y-0 right-0 flex w-full flex-col bg-white"
+        style={{ maxWidth: 'min(760px, 95vw)', boxShadow: '-24px 0 80px rgba(2,32,32,.28)' }}
+        initial={reduce ? false : { x: '100%' }}
+        animate={reduce ? {} : { x: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 36 }}
+      >
+        <div className="flex shrink-0 items-start gap-3 px-5 pb-4 pt-5 sm:px-7 sm:pt-6" style={{ borderBottom: `1px solid ${LINE}` }}>
+          <button onClick={onClose} aria-label="Close" className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.16em', color: INK_MUTE }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</div>
+            <h2 className="truncate" style={{ fontFamily: SERIF, fontSize: 21, lineHeight: 1.2, letterSpacing: '-0.01em', color: INK }}>{entry.title}</h2>
+          </div>
+          <span className="hidden shrink-0 items-center gap-2 rounded-full px-3 py-1 sm:inline-flex" style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.06em', color: isLiveLm ? INK : INK_MUTE, border: `1px solid ${isLiveLm ? caBorder(mint, 45) : LINE}`, background: isLiveLm ? `color-mix(in srgb, ${mint} 12%, white)` : 'transparent' }}>
+            {isLiveLm && <StatusDot color={mint} size={5} />}{statusLabel}
+          </span>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">
+          {/* Cover: real cover image when present, else a typographic plate in the brand tones. */}
+          {entry.cover_url ? (
+            <img src={entry.cover_url} alt="" className="w-full rounded-xl object-cover" style={{ border: `1px solid ${LINE}` }} />
+          ) : (
+            <div className="flex aspect-[16/9] flex-col justify-between rounded-xl p-6" style={{ background: heroBg, border: `1px solid ${LINE}` }}>
+              <span className="w-fit uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: onHero, opacity: 0.85 }}>{LM_FORMAT_LABEL[entry.format] || entry.format}</span>
+              <span style={{ fontFamily: fontStack, fontWeight: 700, fontSize: 26, lineHeight: 1.12, color: onHero }}>{entry.title}</span>
+            </div>
+          )}
+
+          {entry.promise && (
+            <p className="mt-5 max-w-[58ch]" style={{ fontFamily: BODY, fontSize: 14.5, lineHeight: 1.6, color: INK_SOFT }}>{entry.promise}</p>
+          )}
+
+          <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl sm:grid-cols-3" style={{ background: LINE, border: `1px solid ${LINE}` }}>
+            <div className="bg-white px-4 py-3.5">
+              <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Status</div>
+              <div className="mt-1 text-[14px] font-semibold" style={{ color: INK }}>{statusLabel}</div>
+            </div>
+            {typeof entry.captured === 'number' && (
+              <div className="bg-white px-4 py-3.5">
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Captured</div>
+                <div className="mt-1 text-[14px] font-semibold tabular-nums" style={{ color: INK }}>{entry.captured}</div>
+              </div>
+            )}
+            {(entry.date_label || isLiveLm) && (
+              <div className="bg-white px-4 py-3.5">
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>{isLiveLm ? 'Where' : 'On the calendar'}</div>
+                <div className="mt-1 text-[14px] font-semibold" style={{ color: INK }}>{isLiveLm ? 'On your domain' : entry.date_label}</div>
+              </div>
+            )}
+          </div>
+
+          <p className="mt-6" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE }}>
+            {isLiveLm
+              ? 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.'
+              : (live ? 'In build. It lands on the calendar and goes live on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
+          </p>
+        </div>
+
+        {isLiveLm && url && (
+          <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-7" style={{ borderColor: LINE }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-[7px] px-6 text-[13.5px] font-semibold"
+              style={{ background: accent, color: inkOn(accent) }}
+            >
+              View live ↗
+            </a>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
@@ -2315,8 +2431,9 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
   );
 }
 
-function LeadMagnetSurface({ board, accent, mint, fontStack }: { board: Board; accent: string; mint: string; fontStack: string }) {
+function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { board: Board; accent: string; mint: string; fontStack: string; live?: boolean }) {
   const lm = board.lm;
+  const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
   // Default src (scan_embed) keeps the engine's embed mode: Ivan's chrome/greeting
   // stripped + the client's accent/fonts applied. bname/blogo/cta/ctaurl rebrand the
   // engine's identity + end-screen CTA to the CLIENT (not Ivan's Calendly).
@@ -2373,7 +2490,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack }: { board: Board; a
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {(board.lead_magnets || []).map((entry, i) => (
-              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} />
+              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} />
             ))}
           </div>
         </div>
@@ -2415,6 +2532,10 @@ function LeadMagnetSurface({ board, accent, mint, fontStack }: { board: Board; a
           </div>
         )}
       </div>
+
+      {lmDetail && (
+        <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
+      )}
     </div>
   );
 }
@@ -2575,8 +2696,9 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
         })}
       </div>
 
-      {/* Voice model: what the drafts are trained on. Sources named, no post counts claimed. */}
-      {(() => {
+      {/* Voice model: what the drafts are trained on. Sources named, no post counts claimed.
+          Preview-only: hidden in live mode so the client board doesn't expose the model panel. */}
+      {!isLive && (() => {
         const domain = (board.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
         const traits: string[] = (board as any).voice?.traits || ['Plain spoken', 'Numbers on the page', 'No hype'];
         return (
@@ -3065,7 +3187,7 @@ function StepTrail({ steps, accent }: { steps: PipelineStep[]; accent: string })
 }
 
 /** A clickable lead row. Opens the detail modal with the full message thread. */
-function LeadRow({ lead, accent, onOpen }: { lead: PipelineLead; accent: string; onOpen: (l: PipelineLead) => void }) {
+function LeadRow({ lead, accent, onOpen, live = false }: { lead: PipelineLead; accent: string; onOpen: (l: PipelineLead) => void; live?: boolean }) {
   return (
     <button
       onClick={() => onOpen(lead)}
@@ -3082,7 +3204,7 @@ function LeadRow({ lead, accent, onOpen }: { lead: PipelineLead; accent: string;
               <span style={{ width: 6, height: 6, background: caText(accent) }} />newsletter
             </span>
           )}
-          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>{live ? 'Fit' : 'ICP'} {lead.icp}</span>
           {/* Affordance: chevron nudges right on hover so rows read as openable. */}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={FAINT} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden>
             <path d="M9 6l6 6-6 6" />
@@ -3104,7 +3226,7 @@ function LeadRow({ lead, accent, onOpen }: { lead: PipelineLead; accent: string;
   );
 }
 
-function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void }) {
+function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board: Board; accent: string; preview: boolean; onOpen: (l: PipelineLead) => void; live?: boolean }) {
   const real = board.lead_pipeline && board.lead_pipeline.length > 0 ? board.lead_pipeline : null;
   const usingSample = !real && preview;
   const leads: PipelineLead[] = real ?? (usingSample ? SAMPLE_LEAD_PIPELINE : []);
@@ -3144,7 +3266,9 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
       {leads.length === 0 ? (
         <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
           <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
-            Every ICP-matched person who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit reactors get a connection request and a DM. Yours to keep.
+            {live
+              ? 'Everyone matched to your buyer profile who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit engagers get a connection request and a DM. Yours to keep.'
+              : 'Every ICP-matched person who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit reactors get a connection request and a DM. Yours to keep.'}
           </p>
         </div>
       ) : (
@@ -3167,18 +3291,18 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{handRaisers.length}</span>
                 <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>commented or opted in, they asked for it</span>
               </div>
-              {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
+              {handRaisers.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} live={live} />)}
             </section>
           )}
 
           {reactors.length > 0 && (
             <section>
               <div className="mb-1 flex items-baseline gap-2.5 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
-                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>ICP reactors</span>
+                <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>{live ? 'High-fit engagers' : 'ICP reactors'}</span>
                 <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{reactors.length}</span>
                 <span style={{ fontFamily: BODY, fontSize: 12.5, color: FAINT }}>engaged your post, we reached out</span>
               </div>
-              {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} />)}
+              {reactors.map((l) => <LeadRow key={l.name} lead={l} accent={accent} onOpen={onOpen} live={live} />)}
             </section>
           )}
         </>
@@ -3189,14 +3313,14 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
 
 /** Click-a-lead reveal: the person's journey + the actual message thread the pipeline
  *  ran. Engine-sent messages carry the accent rule; the lead's own words stay neutral. */
-function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent: string; onClose: () => void }) {
+function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: PipelineLead; accent: string; onClose: () => void; live?: boolean }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
   const first = (lead.name.split(/\s+/)[0]) || lead.name;
-  const trackLabel = lead.track === 'handraiser' ? 'hand-raiser' : 'ICP reactor';
+  const trackLabel = lead.track === 'handraiser' ? 'hand-raiser' : (live ? 'high-fit engager' : 'ICP reactor');
   const thread = lead.thread || [];
   const hasReplied = lead.steps.some(isReplied);
   const whyFit = lead.why_fit || [];
@@ -3239,7 +3363,7 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
           </div>
 
           <div className="mt-4 flex items-center gap-2.5">
-            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>ICP {lead.icp}</span>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.04em', color: caText(accent), border: `1px solid ${caBorder(accent, 40)}`, background: caWash(accent, 6), padding: '2px 6px' }}>{live ? 'Fit' : 'ICP'} {lead.icp}</span>
             {lead.in_newsletter && (
               <span className="inline-flex items-center gap-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: INK_MUTE }}>
                 <span style={{ width: 6, height: 6, background: caText(accent) }} />newsletter
@@ -4235,11 +4359,11 @@ export default function ClientBoardPage() {
     ),
     review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
-    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} />,
+    leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
   };
@@ -4518,7 +4642,7 @@ export default function ClientBoardPage() {
         <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} />
       )}
       {leadDetail && (
-        <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} />
+        <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
       )}
     </div>
     </MotionConfig>
