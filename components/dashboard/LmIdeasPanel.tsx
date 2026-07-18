@@ -74,7 +74,10 @@ function evidenceSummary(c: Candidate): string {
     const top = c.evidence[0] || {};
     return `${top.platform || 'search'} · seed: "${top.seed || ''}" · vol ${top.volume || 0}`;
   }
-  return '';
+  // Generic fallback (manual / competitor-gate mined rows): surface provenance
+  // from the first evidence item instead of a blank "Source:" line.
+  const top = c.evidence[0] || {};
+  return [top.who, top.platform, top.date].filter(Boolean).join(' · ');
 }
 
 // Call-sourced candidates (kyle_call / calls / ivan_call) carry the real moment in
@@ -83,8 +86,16 @@ function evidenceSummary(c: Candidate): string {
 // headline with no quote reads as "out of context".
 function callContext(c: Candidate): { quote?: string; persona?: string; clickupUrl?: string } | null {
   const isCall = c.source === 'kyle_call' || c.source === 'calls' || c.source === 'ivan_call';
-  if (!isCall || !Array.isArray(c.evidence) || c.evidence.length === 0) return null;
+  if (!Array.isArray(c.evidence) || c.evidence.length === 0) return null;
   const e = c.evidence[0] || {};
+  if (!isCall) {
+    // Mined/manual evidence (competitor-gate etc.) carries excerpt + who. Surface
+    // the attribution inline so a third-party win never reads as Ivan's own.
+    if (typeof e.excerpt === 'string' && e.excerpt) {
+      return { quote: e.excerpt, persona: [e.who, e.platform, e.date].filter(Boolean).join(' · ') || undefined };
+    }
+    return null;
+  }
   const taskId = e.task_id || e.taskId || null;
   const ctx = {
     quote: typeof e.quote === 'string' ? e.quote : undefined,
@@ -420,7 +431,13 @@ export default function LmIdeasPanel({ contentType, focusCandidateId }: { conten
                   </pre>
                 </details>
 
-                {Array.isArray(c.angle_options) && c.angle_options.length === 3 ? (
+                {c.content_type === 'lead_magnet' ? (
+                  // LM ideas get no post-angle picker: Approve routes them to the
+                  // LM build pipeline (the idea-angles edge fn rejects them too).
+                  <div style={{ marginBottom: 10, fontSize: 11, color: 'var(--d-paper-dim)' }}>
+                    Lead magnet idea · ✓ Approve sends it to the LM build pipeline
+                  </div>
+                ) : Array.isArray(c.angle_options) && c.angle_options.length === 3 ? (
                   <div style={{ marginBottom: 10, display: 'grid', gap: 6 }}>
                     <div style={{ fontSize: 11, color: 'var(--d-paper-dim)', fontWeight: 600 }}>Pick an angle → generates the post</div>
                     {c.angle_options.map((a) => (
