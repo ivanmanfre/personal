@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const outDir = process.env.OUT || '/private/tmp/claude-501/-Users-ivanmanfredi-Desktop-Ivan---Content-System/57419fed-9afa-4817-9406-b8390f6a34d1/scratchpad';
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const page = await ctx.newPage();
+const errors = [];
+page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+await page.goto('https://inboundonsteroids.com/client/risedtc-com', { waitUntil: 'networkidle', timeout: 45000 });
+await page.waitForTimeout(2500);
+const url = page.url();
+const body = await page.evaluate(() => document.body.innerText.slice(0, 600));
+await page.screenshot({ path: `${outDir}/ios-route-signin-1440.png`, fullPage: false });
+console.log(JSON.stringify({ finalUrl: url, consoleErrors: errors, bodyStart: body }, null, 2));
+await browser.close();
