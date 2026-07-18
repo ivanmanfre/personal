@@ -1,0 +1,402 @@
+/*
+ * Split-lane Desk — Direction B working surface (Posts + LM Studio).
+ * Black Box v4 register, scoped under `.ec` (reuses editorial-cockpit.css
+ * tokens: --ec-ink #131210, --ec-red #C8361B, --ec-mutedc #6B675E, Schibsted
+ * Grotesk). Two stacked lanes tuned to two activities: a dense ideas TABLE
+ * (scan-in-bulk kill/promote) above a one-at-a-time reader (read/judge). The
+ * lanes make the two activities physically distinct. Red appears ONCE per
+ * composition: the single load-bearing count in the focused-lane header.
+ *
+ * All rules live under `.ec` so they never leak into the slate v2 chrome.
+ */
+
+/* ── Surface header row: page label + lane toggle + tools ─────────────────── */
+.ec .ws-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+.ec .ws-tools { margin-left: auto; display: flex; align-items: center; gap: 0.4rem; }
+.ec .ws-tool {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  background: transparent;
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.ec .ws-tool:hover { color: var(--ec-ink); border-color: var(--ec-ink); }
+.ec .ws-tool[aria-pressed='true'] { color: var(--ec-paper); background: var(--ec-ink); border-color: var(--ec-ink); }
+.ec .ws-tool-icon { border: 0; padding: 0.4rem; color: var(--ec-mutedc); background: transparent; cursor: pointer; display: inline-flex; }
+.ec .ws-tool-icon:hover { color: var(--ec-ink); }
+
+/* ── Signals line: native error / stuck-scheduled triage counts ───────────── */
+.ec .ws-signals {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--ec-rule);
+  border-bottom: 1px solid var(--ec-rule);
+  padding: 0.55rem 0;
+  margin-bottom: 1.4rem;
+}
+.ec .ws-signal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--ec-sans);
+}
+.ec .ws-signal-num { font-weight: 800; font-size: 15px; letter-spacing: -0.02em; color: var(--ec-ink); font-variant-numeric: tabular-nums; }
+.ec .ws-signal-num--zero { color: var(--ec-dim); }
+.ec .ws-signal-lbl { font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-mutedc); }
+.ec .ws-signal:hover .ws-signal-lbl { color: var(--ec-ink); }
+.ec .ws-signal-note { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); margin-left: auto; }
+
+/* ── Lane bar: the visible focus control, one pill per lane ────────────────── */
+.ec .ws-lanebar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--ec-rule-strong);
+  margin-bottom: 0.2rem;
+}
+.ec .ws-lane-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 1rem;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.ec .ws-lane-pill[aria-selected='true'] { color: var(--ec-ink); border-bottom-color: var(--ec-ink); }
+.ec .ws-lane-pill:hover:not([aria-selected='true']) { color: var(--ec-ink); }
+.ec .ws-lane-count { font-weight: 800; font-size: 13px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+/* the single red: the focused-lane's load-bearing pending count */
+.ec .ws-lane-count--live { color: var(--ec-red); }
+
+/* ── Lane container: dims when not the active scope ───────────────────────── */
+.ec .ws-lane { transition: opacity 0.2s ease; }
+.ec .ws-lane--idle { opacity: 0.62; }
+.ec .ws-lane-cap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.9rem 0 0.5rem;
+}
+.ec .ws-lane-cap-h {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ec .ws-lane-cap-h::before { content: ''; width: 9px; height: 9px; background: var(--ec-ink); }
+.ec .ws-lane--idle .ws-lane-cap-h::before { background: var(--ec-dim); }
+.ec .ws-lane-cap-hint { font-family: var(--ec-sans); font-size: 11px; color: var(--ec-mutedc); margin-left: auto; }
+.ec .ws-lane-cap-hint kbd {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0 0.25rem;
+  color: var(--ec-ink);
+}
+
+/* ── TOP LANE: dense ideas table ──────────────────────────────────────────── */
+.ec .ws-idt { border-top: 3px solid var(--ec-ink); }
+.ec .ws-idt-head,
+.ec .ws-idt-row {
+  display: grid;
+  grid-template-columns: 26px 92px minmax(0, 1fr) 148px 108px 128px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.4rem;
+}
+.ec .ws-idt-head {
+  border-bottom: 1px solid var(--ec-rule-strong);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.ec .ws-idt-hcell {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+}
+.ec .ws-idt-row {
+  border-bottom: 1px solid var(--ec-rule);
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.ec .ws-idt-row:hover { background: rgba(19, 18, 16, 0.035); }
+.ec .ws-idt-row--cur { background: rgba(19, 18, 16, 0.05); box-shadow: inset 2px 0 0 var(--ec-ink); }
+.ec .ws-idt-row--sel { background: rgba(19, 18, 16, 0.06); }
+
+.ec .ws-idt-topic { min-width: 0; }
+.ec .ws-idt-title {
+  font-family: var(--ec-sans);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ec-ink);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec .ws-idt-why {
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.1rem;
+}
+.ec .ws-strength {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.ec .ws-strength small { font-weight: 500; color: var(--ec-mutedc); font-size: 10.5px; }
+.ec .ws-strength--low { color: var(--ec-mutedc); }
+.ec .ws-scores {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--ec-body);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.ec .ws-src {
+  font-family: var(--ec-sans);
+  font-size: 11px;
+  color: var(--ec-mutedc);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec .ws-idt-acts { display: inline-flex; gap: 0.35rem; justify-content: flex-end; }
+
+/* ink checkbox */
+.ec .ws-check {
+  width: 15px; height: 15px;
+  border: 1px solid var(--ec-rule-strong);
+  background: var(--ec-paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  color: var(--ec-paper);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.ec .ws-check:hover { border-color: var(--ec-ink); }
+.ec .ws-check--on { background: var(--ec-ink); border-color: var(--ec-ink); }
+
+/* bulk bar */
+.ec .ws-bulk {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-bottom: 1px solid var(--ec-rule-strong);
+  padding: 0.5rem 0.4rem;
+  font-family: var(--ec-sans);
+}
+.ec .ws-bulk-count { font-weight: 700; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); }
+.ec .ws-bulk-clear { font-size: 11px; color: var(--ec-mutedc); background: 0; border: 0; cursor: pointer; }
+.ec .ws-bulk-clear:hover { color: var(--ec-ink); }
+
+/* tiny inline action button (promote / defer) */
+.ec .ws-mini {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--ec-ink);
+  background: transparent;
+  color: var(--ec-ink);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+.ec .ws-mini:hover { background: var(--ec-ink); color: var(--ec-paper); }
+.ec .ws-mini:active { transform: scale(0.96); }
+.ec .ws-mini--ghost { border-color: var(--ec-rule-strong); color: var(--ec-mutedc); }
+.ec .ws-mini--ghost:hover { border-color: var(--ec-ink); background: transparent; color: var(--ec-ink); }
+.ec .ws-mini:disabled { opacity: 0.5; cursor: default; }
+
+/* ── BOTTOM LANE: one-at-a-time reader ────────────────────────────────────── */
+.ec .ws-reader { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: clamp(1.2rem, 2.4vw, 2.2rem); align-items: start; }
+.ec .ws-rail { border-right: 1px solid var(--ec-rule); padding-right: 1rem; max-height: 62vh; overflow-y: auto; }
+.ec .ws-rail-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ec-rule);
+  padding: 0.6rem 0.4rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.ec .ws-rail-row:hover { background: rgba(19, 18, 16, 0.035); }
+.ec .ws-rail-row--cur { background: rgba(19, 18, 16, 0.05); box-shadow: inset 2px 0 0 var(--ec-ink); }
+.ec .ws-rail-title { font-family: var(--ec-sans); font-size: 12.5px; font-weight: 500; color: var(--ec-ink); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ec .ws-rail-row--cur .ws-rail-title { font-weight: 700; }
+.ec .ws-rail-meta { font-family: var(--ec-sans); font-size: 10.5px; color: var(--ec-mutedc); margin-top: 0.2rem; letter-spacing: 0.02em; }
+
+.ec .ws-read-main { min-width: 0; max-width: 640px; }
+.ec .ws-read-cap { display: flex; align-items: baseline; gap: 0.6rem; padding-bottom: 0.7rem; font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); letter-spacing: 0.02em; }
+.ec .ws-read-cap b { color: var(--ec-ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10.5px; }
+.ec .ws-read-pos { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.ec .ws-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.ec .ws-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--ec-ink);
+  background: transparent;
+  color: var(--ec-ink);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+.ec .ws-key:hover { background: rgba(19, 18, 16, 0.06); }
+.ec .ws-key:active { transform: scale(0.98); }
+.ec .ws-key--primary { background: var(--ec-ink); color: var(--ec-paper); }
+.ec .ws-key--primary:hover { background: #000; }
+.ec .ws-key:disabled { opacity: 0.5; cursor: default; }
+.ec .ws-key kbd {
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  border: 1px solid currentColor;
+  opacity: 0.6;
+  padding: 0 0.28rem;
+  line-height: 1.4;
+}
+.ec .ws-move-hint { margin-left: auto; font-family: var(--ec-sans); font-size: 10.5px; color: var(--ec-mutedc); }
+.ec .ws-move-hint kbd { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; border: 1px solid var(--ec-rule-strong); padding: 0 0.25rem; }
+
+/* edit textarea */
+.ec .ws-edit {
+  width: 100%;
+  font-family: var(--ec-sans);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ec-ink);
+  background: var(--ec-paper);
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.8rem;
+  resize: vertical;
+}
+.ec .ws-edit:focus { outline: 2px solid var(--ec-ink); outline-offset: -1px; }
+
+/* slide strip (carousel review) */
+.ec .ws-slides { display: flex; gap: 0.5rem; overflow-x: auto; padding-top: 0.7rem; }
+.ec .ws-slides img { height: 148px; width: 148px; flex: 0 0 auto; object-fit: cover; border: 1px solid var(--ec-rule); background: rgba(19,18,16,0.04); }
+
+/* ── LM approve view: resource + cover + email, all in view ───────────────── */
+.ec .ws-lm { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(1.2rem, 2.6vw, 2.4rem); align-items: start; }
+.ec .ws-lm-col { min-width: 0; }
+.ec .ws-lm-block { margin-bottom: 1.5rem; }
+.ec .ws-lm-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+.ec .ws-lm-lbl::before { content: ''; width: 8px; height: 8px; background: var(--ec-ink); }
+.ec .ws-lm-lbl small { margin-left: auto; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ec-mutedc); font-size: 11px; }
+.ec .ws-lm-frame { width: 100%; height: 460px; border: 1px solid var(--ec-rule-strong); background: var(--ec-paper); display: block; }
+.ec .ws-lm-cover { width: 100%; border: 1px solid var(--ec-rule); background: rgba(19,18,16,0.04); display: block; object-fit: cover; }
+.ec .ws-lm-email {
+  font-family: var(--ec-sans);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ec-body);
+  white-space: pre-wrap;
+  border-left: 2px solid var(--ec-rule-strong);
+  padding-left: 0.8rem;
+}
+.ec .ws-lm-launch { font-family: var(--ec-sans); font-size: 13.5px; line-height: 1.6; color: var(--ec-ink); white-space: pre-wrap; }
+.ec .ws-lm-missing { font-family: var(--ec-clinical); font-style: italic; font-size: 13px; color: var(--ec-mutedc); }
+.ec .ws-lm-resurl { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: var(--ec-mutedc); word-break: break-all; margin-top: 0.4rem; }
+
+/* explicit empty state (kills the silent board fallback) */
+.ec .ws-empty { border: 4px solid var(--ec-ink); outline: 1px solid var(--ec-ink); outline-offset: 3px; padding: 1.4rem 1.4rem 1.5rem; margin: 6px; max-width: 560px; }
+.ec .ws-empty-h { font-family: var(--ec-sans); font-weight: 700; font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); display: flex; align-items: center; gap: 0.55rem; }
+.ec .ws-empty-h::before { content: ''; width: 13px; height: 13px; background: var(--ec-ink); }
+.ec .ws-empty-note { font-family: var(--ec-sans); font-size: 13px; line-height: 1.55; color: var(--ec-body); margin-top: 0.7rem; }
+.ec .ws-empty-tally { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ec-mutedc); margin-top: 0.7rem; }
+
+/* client-muted note */
+.ec .ws-clientnote { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); display: inline-flex; align-items: center; gap: 0.4rem; }
+.ec .ws-clientnote::before { content: ''; width: 8px; height: 8px; border: 1px solid var(--ec-dim); display: inline-block; }
+
+.ec .ws-loading { font-family: var(--ec-sans); font-size: 13px; color: var(--ec-mutedc); padding: 2.4rem 0; }
+
+/* stuck / error triage drawer */
+.ec .ws-drawer { border-bottom: 1px solid var(--ec-rule); margin-bottom: 1.4rem; }
+.ec .ws-drawer-row { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.45rem 0.4rem; border-top: 1px solid var(--ec-rule); cursor: pointer; background: transparent; border-left: 0; border-right: 0; width: 100%; text-align: left; }
+.ec .ws-drawer-row:hover { background: rgba(19,18,16,0.035); }
+.ec .ws-drawer-date { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: var(--ec-mutedc); flex: 0 0 auto; }
+.ec .ws-drawer-title { font-family: var(--ec-sans); font-size: 12.5px; color: var(--ec-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Responsive: collapse lanes gracefully ────────────────────────────────── */
+@media (max-width: 1080px) {
+  .ec .ws-lm { grid-template-columns: 1fr; }
+  .ec .ws-reader { grid-template-columns: 1fr; }
+  .ec .ws-rail { border-right: 0; border-bottom: 1px solid var(--ec-rule); padding-right: 0; max-height: 34vh; }
+}
+@media (max-width: 900px) {
+  .ec .ws-idt-head { display: none; }
+  .ec .ws-idt-row { grid-template-columns: 26px 78px minmax(0, 1fr) auto; }
+  .ec .ws-idt-scores-cell, .ec .ws-idt-src-cell { display: none; }
+}

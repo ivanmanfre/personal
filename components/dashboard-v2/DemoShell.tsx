@@ -58,10 +58,11 @@ const PanelLoading = () => (
 // rebuild.
 const host = (node: React.ReactNode) => () => <Suspense fallback={<PanelLoading />}>{node}</Suspense>;
 
-// Round 3: reading-first review flows (each carries its own Review/Board
-// toggle and lazy-loads the classic panel internally).
-const PostReviewFlow = lazy(() => import('./review/PostReviewFlow'));
-const LmReviewFlow = lazy(() => import('./review/LmReviewFlow'));
+// Direction B (worksurf): Split-lane Desk working surfaces. Each carries its
+// own Desk/Board (or Approve/Studio) toggle and lazy-loads the classic panel
+// internally, keeping every classic capability reachable.
+const PostWorkSurface = lazy(() => import('./review/PostWorkSurface'));
+const LmWorkSurface = lazy(() => import('./review/LmWorkSurface'));
 
 // ── Nav model: [group] → visible subsection entries. Every one of the 11
 // legacy section ids resolves here (see notes.md mapping table). ────────────
@@ -75,8 +76,8 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
   {
     group: 'content',
     items: [
-      { id: 'posts', name: 'Posts', render: host(<PostReviewFlow />) },
-      { id: 'lmstudio', name: 'LM Studio', render: host(<LmReviewFlow />) },
+      { id: 'posts', name: 'Posts', render: host(<PostWorkSurface />) },
+      { id: 'lmstudio', name: 'LM Studio', render: host(<LmWorkSurface />) },
       { id: 'styles', name: 'Styles', render: () => <StylesLive /> },
       { id: 'prompts', name: 'Prompts', render: host(<PromptLibraryPanel />) },
     ],
