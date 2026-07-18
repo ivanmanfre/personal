@@ -837,6 +837,211 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
   );
 }
 
+/** Voice-note recorder behind the sidebar "record a voice note" button. Mic-only
+ *  MediaRecorder; the clip uploads to the public `client-photos` bucket under
+ *  <slug>/voicenotes/ (same anon trust posture as the photo pool), then a note action
+ *  tells the operator where it landed. Preview boards keep the whole flow as local
+ *  theater: same states, no upload, no RPC (mirrors the other preview actions). */
+function VoiceNoteModal({ accent, slug, live, act, onClose }: {
+  accent: string; slug: string; live: boolean;
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+  onClose: () => void;
+}) {
+  const [phase, setPhase] = useState<'idle' | 'recording' | 'preview' | 'sending' | 'sent'>('idle');
+  const [err, setErr] = useState('');
+  const [elapsed, setElapsed] = useState(0);
+  const [clip, setClip] = useState<{ blob: Blob; url: string; duration: number; mime: string } | null>(null);
+  const recRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<number>(0);
+  const startedAtRef = useRef(0);
+  const clipUrlRef = useRef('');
+
+  const stopTracks = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+  useEffect(() => () => {
+    window.clearInterval(timerRef.current);
+    try { if (recRef.current && recRef.current.state !== 'inactive') recRef.current.stop(); } catch { /* already stopped */ }
+    stopTracks();
+    if (clipUrlRef.current) URL.revokeObjectURL(clipUrlRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  const startRecording = async () => {
+    setErr('');
+    if (clip) { URL.revokeObjectURL(clip.url); clipUrlRef.current = ''; setClip(null); }
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      const name = e instanceof DOMException ? e.name : '';
+      setErr(name === 'NotAllowedError' || name === 'PermissionDeniedError'
+        ? 'Mic access is blocked. Allow the microphone in your browser and hit record again.'
+        : 'Could not reach a microphone on this device.');
+      return;
+    }
+    streamRef.current = stream;
+    // Preferred container; older Safari needs the browser default instead.
+    const preferred = 'audio/webm;codecs=opus';
+    const mime = typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(preferred) ? preferred : '';
+    let rec: MediaRecorder;
+    try {
+      rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    } catch {
+      stopTracks();
+      setErr('Recording is not supported in this browser.');
+      return;
+    }
+    chunksRef.current = [];
+    rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    rec.onstop = () => {
+      const type = rec.mimeType || mime || 'audio/webm';
+      const blob = new Blob(chunksRef.current, { type });
+      const url = URL.createObjectURL(blob);
+      clipUrlRef.current = url;
+      const duration = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
+      setClip({ blob, url, duration, mime: type });
+      stopTracks();
+      window.clearInterval(timerRef.current);
+      setPhase('preview');
+    };
+    recRef.current = rec;
+    startedAtRef.current = Date.now();
+    setElapsed(0);
+    rec.start();
+    setPhase('recording');
+    timerRef.current = window.setInterval(() => setElapsed(Math.round((Date.now() - startedAtRef.current) / 1000)), 500);
+  };
+
+  const stopRecording = () => {
+    try { recRef.current?.stop(); } catch { /* already stopped */ }
+  };
+
+  const sendClip = async () => {
+    if (!clip || phase === 'sending') return;
+    // Preview board: confirm locally, demo theater (no upload, no RPC).
+    if (!live || !act) { setPhase('sent'); return; }
+    setPhase('sending'); setErr('');
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `${slug}/voicenotes/vn-${Date.now()}-${rand}.webm`;
+    const { error } = await supabase.storage
+      .from('client-photos')
+      .upload(path, clip.blob, { upsert: false, contentType: clip.mime || 'audio/webm' });
+    if (error) { setPhase('preview'); setErr(error.message || 'Upload failed. Try again.'); return; }
+    const r = await act('note', null, { event: 'voice_note', path, duration_s: clip.duration });
+    if (!r.ok) { setPhase('preview'); setErr(r.error || 'Could not send that. Try again.'); return; }
+    setPhase('sent');
+  };
+
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
+      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-md flex-col bg-white sm:my-24 sm:min-h-0 sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+        <div className="flex items-center gap-2.5 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Voice note</span>
+          <button onClick={onClose} aria-label="Close" className="ml-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-5 pb-6 sm:px-6">
+          {phase === 'sent' ? (
+            <div>
+              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Sent to your operator.</h3>
+              <p className="mt-2.5 max-w-[42ch]" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+                A rough idea in, a drafted post or lead magnet back.
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-5 inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
+                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <div>
+              <h3 style={{ fontFamily: SERIF, fontSize: 24, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>Talk it out.</h3>
+              <p className="mt-2 max-w-[44ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+                Hit record and say the rough idea. Your operator turns it into a drafted post or a lead magnet.
+              </p>
+
+              {phase === 'idle' && (
+                <button
+                  onClick={() => { void startRecording(); }}
+                  className="mt-5 inline-flex min-h-[42px] items-center gap-2 rounded-[7px] px-5 uppercase transition-colors duration-150"
+                  style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                >
+                  ◉ Record
+                </button>
+              )}
+
+              {phase === 'recording' && (
+                <div className="mt-5 flex flex-wrap items-center gap-4 rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                  <span className="flex items-center gap-2.5">
+                    <PulseDot color="#c0392b" size={8} />
+                    <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 16, color: INK }}>{mmss(elapsed)}</span>
+                    <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Recording</span>
+                  </span>
+                  <button
+                    onClick={stopRecording}
+                    className="ml-auto inline-flex min-h-[38px] items-center rounded-[6px] px-4 uppercase"
+                    style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: 'pointer' }}
+                  >
+                    Stop
+                  </button>
+                </div>
+              )}
+
+              {(phase === 'preview' || phase === 'sending') && clip && (
+                <div className="mt-5">
+                  <div className="rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                    <div className="mb-2.5 flex items-baseline gap-2.5">
+                      <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>Your note</span>
+                      <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 11, color: FAINT }}>{mmss(clip.duration)}</span>
+                    </div>
+                    <audio controls src={clip.url} className="w-full" style={{ height: 40 }} />
+                  </div>
+                  <div className="mt-3.5 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => { void sendClip(); }}
+                      disabled={phase === 'sending'}
+                      className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
+                      style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: accent, color: inkOn(accent), border: 'none', cursor: phase === 'sending' ? 'default' : 'pointer', opacity: phase === 'sending' ? 0.6 : 1 }}
+                    >
+                      {phase === 'sending' ? 'Sending…' : 'Send to your operator'}
+                    </button>
+                    <button
+                      onClick={() => { void startRecording(); }}
+                      disabled={phase === 'sending'}
+                      style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: phase === 'sending' ? 'default' : 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                    >
+                      re-record
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {err && <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: '#c0392b' }}>{err}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos, live = false }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
@@ -1070,28 +1275,34 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         </div>
       </div>
 
-      {view === 'list' && (
-        <div className="max-w-[980px]">
-          {/* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */}
-          {ideas.length > 0 && (
-            <section>
-              <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
-              {ideas.map(renderIdeaRow)}
+      {view === 'list' && (() => {
+        /* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */
+        const ideasSection = ideas.length > 0 ? (
+          <section>
+            <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
+            {ideas.map(renderIdeaRow)}
+          </section>
+        ) : null;
+        /* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */
+        const stageSections = listSections.map(({ stage, label, blurb }) => {
+          const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
+          if (rows.length === 0) return null;
+          return (
+            <section key={stage}>
+              <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
+              {rows.map(renderLedgerRow)}
             </section>
-          )}
-          {/* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */}
-          {listSections.map(({ stage, label, blurb }) => {
-            const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
-            if (rows.length === 0) return null;
-            return (
-              <section key={stage}>
-                <LedgerSectionHead eyebrow={label} count={rows.length} blurb={blurb} accent={accent} />
-                {rows.map(renderLedgerRow)}
-              </section>
-            );
-          })}
-        </div>
-      )}
+          );
+        });
+        /* Live boards lead with the work that needs the client (Your review first); a wall
+           of ideas above the review stack made the drafts look missing. Preview boards keep
+           ideas first, since the sales-funnel boards are built around that order. */
+        return (
+          <div className="max-w-[980px]">
+            {live ? <>{stageSections}{ideasSection}</> : <>{ideasSection}{stageSections}</>}
+          </div>
+        );
+      })()}
 
       {view === 'board' && (
         <LayoutGroup id="cb-board">
@@ -2428,6 +2639,69 @@ function LmIdeaRow({ idea, accent, live, act }: {
   );
 }
 
+/** Client-proposed LM concept, live boards only: one line in, a note action out. Sits
+ *  under the idea bank so the bank reads as two-way, the engine's concepts plus theirs. */
+function LmSuggestRow({ accent, act }: {
+  accent: string;
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState('');
+  const send = async () => {
+    const t = text.trim();
+    if (!t || busy) return;
+    setBusy(true); setErr('');
+    if (act) {
+      const r = await act('note', null, { event: 'lm_idea_propose', text: t });
+      if (!r.ok) { setBusy(false); setErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setBusy(false); setSent(true); setText('');
+  };
+  return (
+    <div className="px-3.5 py-[15px]" style={{ margin: '0 -14px' }}>
+      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>Suggest a lead magnet</div>
+      {sent ? (
+        <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
+          Sent.{' '}
+          <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
+            Your operator sizes it up and it shows up here if it makes the cut.
+          </span>
+          {' '}
+          <button
+            onClick={() => setSent(false)}
+            style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, fontSize: 12.5, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+          >
+            suggest another
+          </button>
+        </span>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void send(); } }}
+            placeholder="An idea of yours: a tool, a checklist, a report…"
+            aria-label="Suggest a lead magnet"
+            className="min-w-0 flex-1 rounded-[6px] px-3 py-2 text-[13.5px] outline-none"
+            style={{ fontFamily: BODY, border: `1px solid ${LINE}`, background: '#fff', color: INK }}
+          />
+          <button
+            onClick={() => { void send(); }}
+            disabled={busy || !text.trim()}
+            className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
+            style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy || !text.trim() ? 'default' : 'pointer', opacity: busy || !text.trim() ? 0.55 : 1 }}
+          >
+            {busy ? 'Sending…' : 'Send'}
+          </button>
+          {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
 function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, boardLive = false }: {
@@ -2838,15 +3112,19 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }
           </div>
         )}
 
-        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas. */}
-        {lmIdeas.length > 0 && (
-          <section className="mt-8 max-w-[880px]">
-            <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
-            {lmIdeas.map((li) => (
-              <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
-            ))}
-          </section>
-        )}
+        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas.
+            The suggest row keeps the bank two-way: the client can pitch a concept of their own. */}
+        <section className="mt-8 max-w-[880px]">
+          {lmIdeas.length > 0 && (
+            <>
+              <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
+              {lmIdeas.map((li) => (
+                <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
+              ))}
+            </>
+          )}
+          <LmSuggestRow accent={accent} act={act} />
+        </section>
 
         {/* 3. The live tool itself, real URL chrome. */}
         <div className="mt-8">
@@ -4683,6 +4961,8 @@ export default function ClientBoardPage() {
   // full DetailModal approve flow.
   const [ideaPreview, setIdeaPreview] = useState<Idea | null>(null);
   const [leadDetail, setLeadDetail] = useState<PipelineLead | null>(null);
+  // Sidebar voice-note recorder. Live boards record + upload for real; preview theater.
+  const [voiceOpen, setVoiceOpen] = useState(false);
   // Demo interaction state survives a reload: approvals persist per-slug.
   const [stageOverride, setStageOverride] = useState<Record<string, Stage>>(() => {
     try {
@@ -5435,7 +5715,7 @@ export default function ClientBoardPage() {
           <div>
             <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE }}>Drop an idea</div>
             <button
-              onClick={() => goTab('week')}
+              onClick={() => setVoiceOpen(true)}
               className="w-full rounded-md py-2.5 uppercase transition-colors duration-150 hover:opacity-90"
               style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none' }}
             >
@@ -5575,6 +5855,9 @@ export default function ClientBoardPage() {
       )}
       {leadDetail && (
         <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
+      )}
+      {voiceOpen && (
+        <VoiceNoteModal accent={accent} slug={slug || ''} live={isLive} act={act} onClose={() => setVoiceOpen(false)} />
       )}
     </div>
     </MotionConfig>
