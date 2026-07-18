@@ -1,5 +1,5 @@
 // components/ScanReportPage.tsx — build-id: nudge-2026-05-12-1
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, animate, AnimatePresence, useInView, useReducedMotion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import {
@@ -338,10 +338,13 @@ const useMediaQuery = (query: string): boolean => {
 
 // Animated counter — counts from 0 to value when in view
 const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ value, style }) => {
-  const [displayed, setDisplayed] = useState(0);
+  // Prerender-safe: initial render carries the final value; the browser rewinds to 0 before
+  // paint only when motion will play (same class fix as Tally, 00-ground.md).
+  const [displayed, setDisplayed] = useState(value);
   const ref = useRef<HTMLSpanElement>(null);
   const reduceMotion = useReducedMotion();
   const done = useRef(false);
+  useIsoLayout(() => { if (!reduceMotion && !done.current) setDisplayed(0); }, [reduceMotion]);
 
   // Plain rect-based trigger. framer-motion's useInView margin proved flaky on narrow
   // viewports here (counters stuck at 0 on mobile) — a direct getBoundingClientRect + scroll
@@ -373,15 +376,24 @@ const Counter: React.FC<{ value: number; style?: React.CSSProperties }> = ({ val
   return <span ref={ref} style={style}>{displayed}</span>;
 };
 
+// Isomorphic layout effect — real useLayoutEffect in the browser (rewind before paint, no
+// flash), a no-op useEffect during SSG prerender (so the static markup keeps its final value).
+const useIsoLayout = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 // Receipt count-up (R10): a real report_json figure counts up ONCE on enter, landing with its
-// source caption, then still. Formats with locale + optional prefix/suffix/decimals so the
-// number reads as a receipt, not a raw int. Reduced-motion shows the settled value immediately.
+// source caption, then still. PRERENDER-SAFE (00-ground.md fix): the initial render carries the
+// FINAL value, so the SSG prerender/no-JS/reduced-motion state shows the real number, never 0.
+// Only in the browser, and only when the animation will actually run, do we rewind to 0 (in a
+// layout effect, before paint) and count up once on enter. Fixes the floor's flash-of-zero.
 const Tally: React.FC<{ value: number; prefix?: string; suffix?: string; decimals?: number; className?: string; style?: React.CSSProperties }> = ({ value, prefix = '', suffix = '', decimals = 0, className, style }) => {
-  const [displayed, setDisplayed] = useState(0);
+  const [displayed, setDisplayed] = useState(value);
   const ref = useRef<HTMLSpanElement>(null);
   const reduceMotion = useReducedMotion();
   const done = useRef(false);
   const fmt = (n: number) => prefix + n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + suffix;
+  // Rewind to 0 before first browser paint — only when motion will play. Reduced-motion and
+  // prerender skip this, so the final value stays on the page.
+  useIsoLayout(() => { if (!reduceMotion && !done.current) setDisplayed(0); }, [reduceMotion]);
   useEffect(() => {
     if (reduceMotion) { setDisplayed(value); return; }
     const el = ref.current;
@@ -2182,6 +2194,33 @@ const RECORD_CSS = `
   .bbrec .cap,.bbrec .kmet .ml,.bbrec .foot-fine{font-size:13px;line-height:1.5;}
   .bbrec .reading .rd{font-size:14px;line-height:1.5;}
 }
+/* ── D2 Isotype comparison waffles (buyer density, ink-only, M5 self-fill) ── */
+.bbrec .rmwaffle{margin-top:clamp(6px,1vw,10px);display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3.4vw,48px);border-top:1px solid var(--ink);padding-top:clamp(20px,2.6vw,28px);}
+@media(max-width:640px){.bbrec .rmwaffle{grid-template-columns:1fr;gap:clamp(26px,6vw,34px);}}
+.bbrec .rmw-col{min-width:0;}
+.bbrec .rmw-h{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(11px,1.2vw,12px);color:var(--muted);}
+.bbrec .rmw-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(30px,4.4vw,52px);line-height:0.95;color:var(--ink);margin-top:8px;}
+.bbrec .rmw-fig .rmw-unit{font-weight:700;font-size:clamp(12px,1.3vw,15px);letter-spacing:0.02em;color:var(--muted);}
+.bbrec .rmw-col--you .rmw-fig{color:var(--ink);}
+.bbrec .wgrid{margin-top:clamp(12px,1.6vw,16px);display:grid;grid-template-columns:repeat(10,1fr);gap:clamp(3px,0.5vw,5px);max-width:340px;}
+.bbrec .wc{aspect-ratio:1/1;display:block;opacity:1;}
+.bbrec .wc--off{background:transparent;border:1px solid var(--hair);}
+.bbrec .wc--on{background:var(--ink);border:1px solid var(--ink);}
+.bbrec .rmwaffle[data-phase="armed"] .wc{opacity:0;transition:none;}
+.bbrec .rmwaffle[data-phase="playing"] .wc{opacity:1;transition:opacity .26s ease;}
+.bbrec .rmw-cap{font-family:var(--grotesk);font-weight:400;font-size:clamp(13px,1.35vw,14px);line-height:1.5;color:var(--sec);margin-top:14px;max-width:38ch;}
+/* ── D4 split before/after ledger (hard rule, right settles once, M1) ── */
+.bbrec .ledger2{margin-top:clamp(6px,1vw,10px);display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ink);}
+.bbrec .l2-col{padding:clamp(18px,2.4vw,26px) clamp(16px,2.2vw,26px);}
+.bbrec .l2-col--after{border-left:1px solid var(--ink);}
+@media(max-width:600px){.bbrec .ledger2{grid-template-columns:1fr;}.bbrec .l2-col--after{border-left:none;border-top:1px solid var(--ink);}}
+.bbrec .l2-h{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:clamp(11px,1.2vw,12px);color:var(--muted);padding-bottom:clamp(12px,1.6vw,16px);border-bottom:1px solid var(--hair);}
+.bbrec .l2-row{padding-top:clamp(14px,1.9vw,20px);}
+.bbrec .l2-v{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,4.8vw,58px);line-height:0.92;color:var(--ink);}
+.bbrec .l2-l{font-family:var(--grotesk);font-weight:400;font-size:clamp(13.5px,1.4vw,15px);line-height:1.4;color:var(--sec);margin-top:8px;max-width:26ch;}
+.bbrec .ledger2[data-phase="armed"] .l2-anim{opacity:0;transform:translateY(24px);transition:none;}
+.bbrec .ledger2[data-phase="playing"] .l2-anim{opacity:1;transform:translateY(0);transition:opacity .6s cubic-bezier(.2,1,.2,1),transform .6s cubic-bezier(.2,1,.2,1);}
+.bbrec .l2-foot{grid-column:1/-1;border-top:1px solid var(--ink);padding:clamp(14px,1.8vw,18px) clamp(16px,2.2vw,26px);font-family:var(--grotesk);font-weight:800;letter-spacing:-0.02em;font-size:clamp(16px,1.9vw,20px);line-height:1.2;color:var(--ink);}
 `;
 
 // One-time reveal per section — the canon motion: rise ≤26px + fade, ~0.7s, once. Settled
@@ -2787,6 +2826,120 @@ function LmPreviewModal({ lm, who, bookUrl, embedUrl, domain, logoUrl, accentHex
   );
 }
 
+// ── RoomWaffle (D2 Isotype + D5 small-multiples + M5 sequential cell-fill) ──────────────
+// The counted room, rendered as two comparison waffles: a typical network beside theirs, each
+// 100 cells where one cell = one-in-a-hundred and shaded cells are buyers. The buyer isolation
+// spends INK weight, never the composition's red (that stays on the terminal CTA). On entry the
+// cells fill in reading order once (the machine reading the room in front of them), then still.
+// Prerender-safe: static markup renders every cell at its final classified state; only the
+// browser, only when motion will play, rewinds cells to invisible (layout effect, before paint)
+// and plays the staggered fill. Reduced-motion and no-JS keep the settled field.
+const WaffleGrid: React.FC<{ shaded: number; total?: number; startDelay?: number; playing: boolean }> = ({ shaded, total = 100, startDelay = 0, playing }) => {
+  const cells = Array.from({ length: total }, (_, i) => i < shaded);
+  return (
+    <div className="wgrid" aria-hidden>
+      {cells.map((on, i) => (
+        <span key={i} className={on ? 'wc wc--on' : 'wc wc--off'} style={{ transitionDelay: `${startDelay + i * 12}ms` }} />
+      ))}
+    </div>
+  );
+};
+
+const RoomWaffle: React.FC<{ density: number; typicalPct: number; buyersCounted: number; sampleRead: number; company: string }> = ({ density, typicalPct, buyersCounted, sampleRead, company }) => {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
+  const [phase, setPhase] = useState<'static' | 'armed' | 'playing'>('static');
+  // Rewind to the invisible pre-roll state before first browser paint — only when motion plays.
+  useIsoLayout(() => { if (!reduce && !done.current) setPhase('armed'); }, [reduce]);
+  useEffect(() => {
+    if (reduce) { setPhase('static'); return; }
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !done.current) {
+        done.current = true;
+        io.disconnect();
+        setPhase('playing');
+      }
+    }, { threshold: 0.35 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduce]);
+  const yoursShaded = Math.max(1, Math.min(100, Math.round(density)));
+  const typShaded = Math.max(1, Math.min(100, Math.round(typicalPct)));
+  return (
+    <div className="rmwaffle" ref={ref} data-phase={phase}>
+      <div className="rmw-col">
+        <div className="rmw-h">A typical network</div>
+        <div className="rmw-fig num">{typicalPct <= 2 ? '1 to 2' : String(typShaded)}<span className="rmw-unit"> in 100</span></div>
+        <WaffleGrid shaded={typShaded} playing={phase === 'playing'} />
+        <div className="rmw-cap">The background rate of buyers in a professional network.</div>
+      </div>
+      <div className="rmw-col rmw-col--you">
+        <div className="rmw-h">{company}&rsquo;s network, read</div>
+        <div className="rmw-fig num">{yoursShaded}<span className="rmw-unit"> in 100</span></div>
+        <WaffleGrid shaded={yoursShaded} startDelay={220} playing={phase === 'playing'} />
+        <div className="rmw-cap">Each square is one in a hundred; {density.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% rounds to {yoursShaded} shaded. Counted exactly: {buyersCounted} buyers in the {sampleRead.toLocaleString('en-US')} connections we read.</div>
+      </div>
+    </div>
+  );
+};
+
+// ── LedgerBeforeAfter (D4 split ledger + M1 threshold settle) ────────────────────────────
+// Two locked columns divided by a hard rule: what each post already earns (today, static) and
+// what the mechanism keeps from that same post (projected, settles in on entry). Every figure
+// is a report_json metric; the "0 leave a name" is the inbound finding (no capture step), not an
+// invented number. Right column settles once on entry (the projection arriving); left is fixed.
+type LedgerMetric = { label: string; value: string };
+const LedgerBeforeAfter: React.FC<{ metrics: LedgerMetric[]; who: string }> = ({ metrics, who }) => {
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
+  const [phase, setPhase] = useState<'static' | 'armed' | 'playing'>('static');
+  useIsoLayout(() => { if (!reduce && !done.current) setPhase('armed'); }, [reduce]);
+  useEffect(() => {
+    if (reduce) { setPhase('static'); return; }
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !done.current) {
+        done.current = true; io.disconnect(); setPhase('playing');
+      }
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduce]);
+  const find = (kw: RegExp) => metrics.find((m) => kw.test(m.label || ''));
+  const reactions = find(/reaction/i);
+  const readers = find(/reader/i);
+  const leads = find(/lead/i);
+  const today: { v: string; l: string }[] = [];
+  if (reactions) today.push({ v: reactions.value, l: 'reactions on an average post' });
+  if (leads) today.push({ v: '0', l: 'of those readers leave you a name' });
+  const after: { v: string; l: string }[] = [];
+  if (readers) after.push({ v: readers.value, l: 'readers reached by that same post' });
+  if (leads) after.push({ v: leads.value, l: 'named leads a month, on a list you own' });
+  if (!today.length || !after.length) return null;
+  return (
+    <div className="ledger2" ref={ref} data-phase={phase}>
+      <div className="l2-col">
+        <div className="l2-h">As it runs today</div>
+        {today.map((r, i) => (
+          <div className="l2-row" key={i}><div className="l2-v num">{r.v}</div><div className="l2-l">{r.l}</div></div>
+        ))}
+      </div>
+      <div className="l2-col l2-col--after">
+        <div className="l2-h">With the mechanism</div>
+        {after.map((r, i) => (
+          <div className="l2-row l2-anim" style={{ transitionDelay: `${i * 90}ms` }} key={i}><div className="l2-v num">{r.v}</div><div className="l2-l">{r.l}</div></div>
+        ))}
+      </div>
+      <div className="l2-foot">Same posts, {who}. The difference is a capture step.</div>
+    </div>
+  );
+};
+
 function ContentSystemReport({ report, scan, companyName }: { report: ReportJson; scan: Scan; companyName: string }) {
   const cs = report.content_system;
   if (!cs) return null;
@@ -2886,6 +3039,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
   const newsletter = cs.sample_output?.newsletter?.subject && cs.sample_output?.newsletter?.sections?.length ? cs.sample_output.newsletter : null;
   const followUps = cs.sample_output?.follow_ups?.length ? cs.sample_output.follow_ups : null;
   const engager = cs.sample_output?.engager_outreach?.samples?.length ? cs.sample_output.engager_outreach : null;
+  // Numeric before/after ledger source (D4): the LM metrics band. Every value is a report_json
+  // figure. Rendered only when at least two metrics were emitted; dormant-safe otherwise.
+  const ledgerMetrics = (cs.sample_output?.metrics ?? []).filter((m) => (m?.value || '').toString().trim());
 
   // ── Audience room read (scan-build audit embed; PLAN-audit-in-scans, 2026-07-15) ──
   // Framing guard: a cold prospect is being told about their own audience by a stranger, so
@@ -3081,13 +3237,16 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           </div>
         </Rev>
 
-        {/* ── VERDICT · THE BOX (1 of 2, the page's one tilt) ── */}
+        {/* ── VERDICT · THE BOX (1 of 2, the page's one tilt) — D1 boxed warning + R7 verdict-first ── */}
         <div className="boxwrap">
           <Rev className="box tilt">
             <div className="box-head">
               <span className="sqbig" aria-hidden />
-              <span className="lbl">What runs today, and what we&rsquo;d run.</span>
+              <span className="lbl">{room ? (roomMode === 'network' ? <>Warning&nbsp;·&nbsp;a room of buyers, no mechanism</> : <>Warning&nbsp;·&nbsp;buyers in your comments, no follow-up</>) : <>What runs today, and what we&rsquo;d run.</>}</span>
             </div>
+            {room && (
+              <div className="box-body">{roomMode === 'network' ? <>They are already connected to you. Today, nothing you run reaches them.</> : <>They already show up in your comments. Today, nothing you run follows up.</>}</div>
+            )}
             <div className="ptab">
               <div className="ptab-h">
                 <span>Pillar</span>
@@ -3144,7 +3303,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
           <Rev el="section" className="sec" id="cs-room">
             <SecHead
               label={<>Evidence&nbsp;·&nbsp;Audience</>}
-              title={<>Who is actually in your room.</>}
+              title={roomMode === 'network' && audNetDensity !== null
+                ? <>{audNetDensity.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% of your room can buy from you. Most rooms run 1 to 2%.</>
+                : <>Who is actually in your room.</>}
               note={<>We read your audience the slow way before this page was built. Here is who was in it.</>}
             />
             <div className="aud-top">
@@ -3152,8 +3313,11 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="pf-fig"><Tally value={room.figureNum} prefix={room.figurePrefix} /></div>
               <p className="aud-sub">{room.figureSub}</p>
             </div>
-            {roomMode === 'network' && audNetDensity !== null && (
-              <p className="aud-sub" style={{ marginTop: 'clamp(14px,1.8vw,20px)' }}>A typical room reads 1 to 2% buyers. Yours reads <Tally value={audNetDensity} suffix="%" decimals={1} />.</p>
+            {roomMode === 'network' && audNetDensity !== null && audNetCount !== null && audNetSample !== null && (
+              <div style={{ marginTop: 'clamp(20px,2.6vw,30px)' }}>
+                <FigLabel>Fig&nbsp;·&nbsp;buyer density&nbsp;·&nbsp;your room against a typical one</FigLabel>
+                <RoomWaffle density={audNetDensity} typicalPct={2} buyersCounted={audNetCount} sampleRead={audNetSample} company={displayCompany} />
+              </div>
             )}
             {/* Raw material, staged as counted receipts (R6+R10). Falls back to the prose row
                 when fewer than two real figures were counted. */}
@@ -3238,6 +3402,12 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             note={<>One gated asset on your domain. Every reader who finishes it lands on your list.</>}
           />
           <WinRows k="inbound" />
+          {ledgerMetrics.length >= 2 && (
+            <div style={{ marginTop: 'clamp(24px,3vw,34px)' }}>
+              <FigLabel>Fig&nbsp;·&nbsp;what one post earns&nbsp;·&nbsp;today, and kept</FigLabel>
+              <LedgerBeforeAfter metrics={ledgerMetrics} who={who} />
+            </div>
+          )}
           {lm?.title && lmEmbedUrl && (
             <div style={{ marginTop: 'clamp(26px,3.2vw,38px)' }}>
               {/* branded exhibit masthead — cover plate beside the title/promise band */}
