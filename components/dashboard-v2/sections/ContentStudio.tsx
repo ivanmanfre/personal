@@ -26,8 +26,11 @@ const RecordingsPanel = lazy(() => import('../../dashboard/RecordingsPanel'));
 const VideoIdeasPanel = lazy(() => import('../../dashboard/VideoIdeasPanel'));
 const CallClipsPanel = lazy(() => import('../../dashboard/CallClipsPanel'));
 const VideoStudioPanel = lazy(() => import('../../dashboard/VideoStudioPanel'));
-const PostStudioPanel = lazy(() => import('../../dashboard/PostStudioPanel'));
-const LeadMagnetStudioPanel = lazy(() => import('../../dashboard/LeadMagnetStudioPanel'));
+// Round-3 reading-first review flows. They own the Posts / Lead Magnets sub-tab
+// by default (Review mode when drafts are pending) and carry their own toggle
+// back to the classic board/studio panel above. No shell/data-layer changes.
+const PostReviewFlow = lazy(() => import('../review/PostReviewFlow'));
+const LmReviewFlow = lazy(() => import('../review/LmReviewFlow'));
 const StyleGalleryPanel = lazy(() => import('../../dashboard/StyleGalleryPanel'));
 const PromptLibraryPanel = lazy(() => import('../../dashboard/PromptLibraryPanel'));
 const CalendarSection = lazy(() => import('./Calendar').then((m) => ({ default: m.Calendar })));
@@ -104,8 +107,8 @@ export function ContentStudio() {
 
   const renderSub = () => {
     switch (sub) {
-      case 'posts':       return <PostStudioPanel />;
-      case 'leadmagnets': return <LeadMagnetStudioPanel />;
+      case 'posts':       return <PostReviewFlow />;
+      case 'leadmagnets': return <LmReviewFlow />;
       case 'styles':      return <StyleGalleryPanel />;
       case 'prompts':     return <PromptLibraryPanel />;
       case 'calendar':    return <CalendarSection />;

@@ -15,6 +15,13 @@ export interface CarouselDraft {
   topic: string | null;
   type: string | null;
   status: string;
+  // Non-null on drafts that belong to a client board. Ivan's review queue must
+  // EXCLUDE these — a Studio approve schedules to Ivan's own feed, and client
+  // drafts are owned by their client board's own action path (client_board_action
+  // RPC), never by carousel_drafts.status. Documented trap.
+  // Optional so idea-stage projections (lib/ideaProjection.ts) needn't set it —
+  // idea rows are never client rows, so `undefined` reads the same as null.
+  clientId?: string | null;
   imageUrls: string[];
   postBody: string | null;
   igCaption: string | null;
@@ -51,7 +58,7 @@ export interface CarouselDraft {
   ideaEvidence?: Array<{ quote?: string; persona?: string; source?: string }>;
 }
 
-const SELECT_COLS = 'id, title, topic, type, status, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description, video_url, video_spec, video_status, video_style, video_feedback';
+const SELECT_COLS = 'id, title, topic, type, status, client_id, image_urls, post_body, ig_caption, qa, taxonomy, style_id, scheduled_at, updated_at, agent_log, topic_strength, render_engine, source_post_id, slides, description, video_url, video_spec, video_status, video_style, video_feedback';
 
 function mapDraft(row: any): CarouselDraft {
   return {
@@ -60,6 +67,7 @@ function mapDraft(row: any): CarouselDraft {
     topic: row.topic,
     type: row.type,
     status: row.status || 'draft',
+    clientId: row.client_id ?? null,
     imageUrls: row.image_urls || [],
     postBody: row.post_body,
     igCaption: row.ig_caption,
