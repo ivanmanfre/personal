@@ -5,6 +5,7 @@ import { useLeadMagnets, type LeadMagnetDraft } from '../../hooks/useLeadMagnets
 import { useLeadMagnetIdeas } from '../../hooks/useLeadMagnetIdeas';
 import LmIdeasPanel from './LmIdeasPanel';
 import { generateLMContent } from '../../lib/studioActions';
+import { decideIdea } from '../../lib/ideaProjection';
 import { toastError, GENERATION_ERROR_FALLBACK } from '../../lib/dashboardActions';
 import { generatingChipLabel, isStuckGenerating } from './genAge';
 import { supabase } from '../../lib/supabase';
@@ -78,7 +79,7 @@ const LeadMagnetStudioPanel: React.FC = () => {
   // status='idea' rows alongside the real drafts (mirrors the Posts board).
   // Clicking one opens the review panel; approving there promotes it to a real
   // draft and it leaves the Idea stage. See lmIdeaProjection.ts.
-  const { ideas, refreshIdeas } = useLeadMagnetIdeas();
+  const { ideas, refreshIdeas, removeIdea } = useLeadMagnetIdeas();
   const [reviewCandidateId, setReviewCandidateId] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
   const [format, setFormat] = useState(FORMATS[0]);
@@ -506,6 +507,22 @@ const LeadMagnetStudioPanel: React.FC = () => {
           pinnedStatuses={view === 'table' ? [] : ['idea', 'generating', 'generating_assets', 'review', 'scheduled', 'published', 'error']}
           statusChoices={STATUS_ORDER}
           onStatusChange={async (id, next) => {
+            // Idea-stage rows aren't lm_drafts_v2 — route their status moves
+            // through the curator decide path. Forward (anything but 'idea') =
+            // approve & generate; 'disqualified' = reject. (Mirrors PostStudioPanel;
+            // an idea:<uuid> id passed to a uuid column 400s and nothing happens.)
+            if (id.startsWith('idea:')) {
+              const cid = id.slice(5);
+              if (next === 'idea') return;
+              const decision = next === 'disqualified' ? 'reject' : 'approve';
+              try {
+                await decideIdea(cid, decision);
+                removeIdea(cid);
+                await refresh();
+                toast.success(decision === 'approve' ? 'Approved — generating' : 'Rejected');
+              } catch (err) { toastError('idea ' + decision, err); }
+              return;
+            }
             try {
               const { error } = await supabase.from('lm_drafts_v2').update({ status: next }).eq('id', id);
               if (error) throw error;
@@ -514,6 +531,18 @@ const LeadMagnetStudioPanel: React.FC = () => {
             } catch (err) { toastError('update status', err); }
           }}
           onBulkAction={async (action, ids) => {
+            // Peel off idea-stage rows — they reject via the curator, not an
+            // lm_drafts_v2 delete/disqualify (mirrors PostStudioPanel).
+            const ideaIds = ids.filter((i) => i.startsWith('idea:'));
+            ids = ids.filter((i) => !i.startsWith('idea:'));
+            if (ideaIds.length) {
+              await Promise.allSettled(ideaIds.map(async (i) => {
+                const cid = i.slice(5);
+                await decideIdea(cid, 'reject');
+                removeIdea(cid);
+              }));
+              if (!ids.length) { toast.success(`Removed ${ideaIds.length} idea${ideaIds.length === 1 ? '' : 's'}`); return; }
+            }
             try {
               if (action === 'disqualify') {
                 const { error } = await supabase.from('lm_drafts_v2').update({ status: 'disqualified' }).in('id', ids);
