@@ -136,7 +136,7 @@ interface OutreachSpec {
   lanes?: OutreachLane[];
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
-interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string }
+interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
 interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
@@ -2272,6 +2272,7 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
             {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
             {(() => {
               const n = cal.items.filter((it) => ['post', 'carousel', 'lm', 'newsletter'].includes(it.kind)).length;
+              if (n === 0) return null;
               return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>{n} content piece{n === 1 ? '' : 's'} scheduled</span>;
             })()}
             <span className="ml-auto hidden items-center gap-4 md:inline-flex">
@@ -2367,6 +2368,17 @@ function LmIdeaRow({ idea, accent, live, act }: {
   };
   return (
     <div className="px-3.5 py-[15px]" style={{ borderBottom: `1px solid ${LINE}`, margin: '0 -14px' }}>
+      <div className="flex gap-3.5">
+      {idea.cover_url && (
+        <img
+          src={idea.cover_url}
+          alt=""
+          loading="lazy"
+          className="h-[84px] w-[84px] shrink-0 rounded-[8px] object-cover"
+          style={{ border: `1px solid ${LINE}` }}
+        />
+      )}
+      <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
         <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{idea.title}</span>
@@ -2409,6 +2421,8 @@ function LmIdeaRow({ idea, accent, live, act }: {
             {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
           </span>
         )}
+      </div>
+      </div>
       </div>
     </div>
   );
