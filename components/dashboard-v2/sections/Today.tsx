@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import '../editorial-cockpit.css';
 import { useTodayFeeds, type TriageFeed } from '../../../lib/useCockpitData';
 import { usePulse } from '../../../lib/usePulse';
+import { useCountUp } from '../primitives/useCountUp';
 import type { SectionId } from '../types';
 
 /**
@@ -37,10 +38,13 @@ function Lockup({ value, label, sub, tone = 'ink', onClick }: LockupProps) {
   const offline = value.state === 'offline';
   const loading = value.state === 'loading';
   const numClass = tone === 'muted' ? 'ec-lockup-num--muted' : '';
+  // Numeral settle: count-up once on load, respects prefers-reduced-motion
+  // (handled inside useCountUp).
+  const animated = useCountUp(offline || loading ? 0 : (value.count ?? 0));
   return (
     <button type="button" className="ec-lockup" onClick={onClick}>
       <span className={`ec-lockup-num ${offline || loading ? 'ec-lockup-num--muted' : numClass}`}>
-        {offline ? '-' : loading ? '·' : value.count}
+        {offline ? '-' : loading ? '·' : animated}
       </span>
       <span className="ec-lockup-label">{label}</span>
       {offline ? (
@@ -66,7 +70,8 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
 
   const firstTitle = (f: TriageFeed) => (f.items[0] ? f.items[0].slice(0, 22) + (f.items[0].length > 22 ? '…' : '') : '');
 
-  // Build the "Needs you" lead list from the real pending items.
+  // Build the "Needs you" lead list from the real pending items. `meta` is
+  // provenance — shown on hover only (feedback #4: no caption under every row).
   const lead: { idx: string; title: string; meta: string; tag: string; alarm?: boolean }[] = [];
   feeds.postsReview.items.slice(0, 3).forEach((t) =>
     lead.push({ idx: '↳', title: t, meta: 'carousel_drafts · status=review', tag: 'approve post', alarm: false }),
@@ -80,9 +85,10 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
 
   return (
     <div className="ec">
-      {/* Topline: compressed document header (the dark masthead band is cut) */}
+      {/* Functional header: "Today" at display scale + the date as quiet meta.
+          No narrative headline (feedback #2). */}
       <div className="ec-topline">
-        <span className="ec-topline-brand">Operator console · Today</span>
+        <span className="ec-topline-brand">Today</span>
         <span className="ec-topline-meta">
           {nowLabel()}
           {' · '}
@@ -90,41 +96,40 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
         </span>
       </div>
 
-      <h1 className="ec-hed">The work waiting on your judgment.</h1>
+      <h1 className="ec-hed ec-hed--today">Today</h1>
 
       {/* Above-the-fold triage strip — stat lockups over real feeds */}
       <div className="ec-strip">
-        <Lockup value={feeds.postsReview} label={<>Posts in<br />review</>} sub={firstTitle(feeds.postsReview)} onClick={go('content', 'posts')} />
-        <Lockup value={feeds.commentDrafts} label={<>Comment<br />drafts</>} sub={feeds.commentDrafts.items[0] || undefined} onClick={go('pipeline')} />
-        <Lockup value={feeds.warmFollowups} label={<>Warm<br />follow-ups</>} sub={feeds.warmFollowups.items[0] || undefined} onClick={go('pipeline')} />
-        <Lockup value={feeds.workflowsRed} label={<>Workflows<br />red / stuck</>} sub={firstTitle(feeds.workflowsRed)} onClick={go('system')} />
-        <Lockup value={feeds.scheduledToday} label={<>Scheduled<br />today</>} tone="muted" sub={firstTitle(feeds.scheduledToday)} onClick={go('content', 'calendar')} />
+        <Lockup value={feeds.postsReview} label={<>Posts in<br />review</>} sub={firstTitle(feeds.postsReview)} onClick={go('posts')} />
+        <Lockup value={feeds.commentDrafts} label={<>Comment<br />drafts</>} sub={feeds.commentDrafts.items[0] || undefined} onClick={go('warm')} />
+        <Lockup value={feeds.warmFollowups} label={<>Warm<br />follow-ups</>} sub={feeds.warmFollowups.items[0] || undefined} onClick={go('warm')} />
+        <Lockup value={feeds.workflowsRed} label={<>Workflows<br />red / stuck</>} sub={firstTitle(feeds.workflowsRed)} onClick={go('health')} />
+        <Lockup value={feeds.scheduledToday} label={<>Scheduled<br />today</>} tone="muted" sub={firstTitle(feeds.scheduledToday)} onClick={go('posts')} />
         <Lockup
           value={{ state: pulse.length ? 'ok' : 'loading', count: drift.length }}
           label={<>Drift<br />alarms</>}
           tone={drift.length ? 'ink' : 'muted'}
           sub={drift[0]?.entry.label}
-          onClick={go('system')}
+          onClick={go('pulse')}
         />
       </div>
 
       <div className="ec-cols">
-        {/* Lead column — Needs you */}
+        {/* Lead column — Needs you. Row provenance lives in a hover tooltip
+            (title), not a caption under every row (feedback #4). */}
         <div className="ec-col-lead">
           <div className="ec-kicker">Needs you</div>
-          <h2 className="ec-subhead">{feeds.loading ? '…' : lead.length} items are one click from done.</h2>
           {feeds.loading ? (
             <p className="ec-note">Reading the pipeline…</p>
           ) : lead.length === 0 ? (
-            <p className="ec-note">Queues clear. Nothing waiting on your approval right now.</p>
+            <p className="ec-note">Queues clear.</p>
           ) : (
             <div className="ec-list">
               {lead.map((it, i) => (
-                <div className="ec-item" key={i}>
+                <div className="ec-item ec-item--hover" key={i} title={it.meta}>
                   <span className="ec-item-idx">{String(i + 1).padStart(2, '0')}</span>
                   <div className="ec-item-body">
                     <div className="ec-item-title">{it.title}</div>
-                    <div className="ec-item-meta">{it.meta}</div>
                   </div>
                   <span className={`ec-item-tag ${it.alarm ? 'ec-item-tag--alarm' : ''}`}>{it.tag}</span>
                 </div>
@@ -135,20 +140,19 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
           <hr className="ec-rule" />
 
           {/* n8n red — real workflow names */}
-          <div className="ec-kicker">System desk · n8n</div>
-          <h2 className="ec-subhead">
-            {feeds.workflowsRed.state === 'offline' ? 'Workflow health unreadable' : `${feeds.workflowsRed.count} workflows last ran red.`}
-          </h2>
+          <div className="ec-kicker">
+            System · n8n
+            <span className="ec-kicker-count">{feeds.workflowsRed.state === 'offline' ? '—' : feeds.workflowsRed.count}</span>
+          </div>
           {feeds.workflowsRed.state === 'offline' ? (
-            <span className="ec-offline">source offline: {feeds.workflowsRed.error?.slice(0, 60)}</span>
+            <span className="ec-offline" title={feeds.workflowsRed.error || undefined}>source offline</span>
           ) : (
             <div className="ec-list">
               {feeds.workflowsRed.items.slice(0, 5).map((w, i) => (
-                <div className="ec-item" key={i}>
+                <div className="ec-item ec-item--hover" key={i} title="dashboard_workflow_stats · last_execution_status=error">
                   <span className="ec-item-idx">✕</span>
                   <div className="ec-item-body">
                     <div className="ec-item-title">{w}</div>
-                    <div className="ec-item-meta">dashboard_workflow_stats · last_execution_status=error</div>
                   </div>
                 </div>
               ))}
@@ -172,12 +176,8 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
               </>
             ) : (
               <>
-                <div className="ec-card-headline">Registry present, anon-blocked.</div>
-                <p className="ec-note" style={{ marginTop: '0.5rem' }}>
-                  <span className="ec-mono">client_registry</span> returns 0 rows to the dashboard's public
-                  key. Rise DTC, the first paying client, lives here; the rebuild reads it server-side.
-                </p>
-                <span className="ec-offline" style={{ marginTop: '0.5rem' }}>anon RLS · 0 rows</span>
+                <div className="ec-card-headline">Rise DTC</div>
+                <span className="ec-offline" style={{ marginTop: '0.5rem' }} title="client_registry returns 0 rows to the dashboard anon key; the rebuild reads it server-side">anon RLS · 0 rows</span>
               </>
             )}
           </div>
@@ -211,7 +211,7 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
                     </div>
                   ))}
                 </div>
-                <div className="ec-data" style={{ marginTop: '0.6rem' }}>{pulse.length} sources probed · effects observed above</div>
+                <div className="ec-data" style={{ marginTop: '0.6rem' }}>{pulse.length} sources probed</div>
               </>
             )}
           </div>
@@ -234,11 +234,6 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
           </div>
         </div>
       </div>
-
-      <p className="ec-footnote">
-        Direction A · born-dead tournament branch. All figures read live from Supabase via the
-        dashboard's anon client; nothing writes. A blocked feed reads "source offline", never a faked number.
-      </p>
     </div>
   );
 }

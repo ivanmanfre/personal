@@ -166,13 +166,16 @@ body.dashboard-v2-light * {
 .dv-nav { flex: 1; padding: 0 0.5rem; }
 .dv-nav-item {
   display: flex; align-items: center; gap: 0.7rem;
-  padding: 0.55rem 0.9rem; margin-bottom: 0.1rem;
+  /* Round 2: denser rhythm so all ~25 grouped entries fit the rail (feedback #1). */
+  padding: 0.4rem 0.9rem; margin-bottom: 0.05rem;
   cursor: pointer; border-radius: 8px;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease, padding-left 0.15s ease;
   user-select: none; position: relative;
   background: transparent; border: none; width: 100%; text-align: left;
-  color: var(--d-paper); font: inherit;
+  color: var(--d-paper-dim); font: inherit;
 }
+/* Row hover: background + a small settle shift (feedback #5). */
+.dv-nav-item:hover { color: var(--d-paper); padding-left: 1.05rem; }
 .dv-nav-item:hover { background: rgba(231, 231, 234, 0.055); }
 .dv-nav-item:hover .dv-nav-num { color: var(--d-paper-dim); }
 .dv-nav-item:active { transform: scale(0.98); }
@@ -188,12 +191,14 @@ body.dashboard-v2-light * {
 }
 .dv-nav-item.dv-briefing[aria-current="page"] { background: rgba(42, 143, 101, 0.06); }
 .dv-nav-item.dv-briefing[aria-current="page"]::before { background: var(--d-good); }
-.dv-nav-name { flex: 1; font-size: 13.5px; font-weight: 500; }
+.dv-nav-item[aria-current="page"] .dv-nav-name { color: var(--d-paper); }
+.dv-nav-name { flex: 1; font-size: 13px; font-weight: 500; line-height: 1.2; }
 .dv-nav-name em { font-style: normal; font-weight: 700; color: var(--d-good); }
 .dv-nav-num { font-size: 11px; font-weight: 600; color: var(--d-paper-dimmer); width: 16px; font-variant-numeric: tabular-nums; }
-.dv-nav-icon { display: none; }   /* expanded uses numbers; icons appear only in the rail */
+.dv-nav-icon { display: none; }   /* expanded uses labels; icons appear only in the rail */
 .dv-nav-short { display: none; }  /* compact label, rail only */
-.dv-nav-divider { font-size: 10.5px; letter-spacing: 0.04em; color: var(--d-paper-dimmer); padding: 1rem 1.4rem 0.4rem; font-weight: 600; }
+.dv-nav-divider { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--d-paper-dimmer); padding: 0.85rem 1.4rem 0.35rem; font-weight: 700; }
+.dv-nav-divider:first-child { padding-top: 0.2rem; }
 .dv-nav-badge {
   font-size: 10px; font-weight: 700; padding: 0.1rem 0.4rem;
   background: var(--d-bad); color: var(--d-ink); letter-spacing: 0.04em;
@@ -1100,4 +1105,17 @@ body.dashboard-v2-light * {
   .dashboard-v2 .dv-live { animation: none; }
   .dashboard-v2 .dv-live-beat::after { animation: none; opacity: 0; }
   .dashboard-v2 .dv-live-spin { animation: none; }
+}
+
+/* ============== ROUND 2 (A-seed) — section fade-in on switch ============== */
+/* .dv-panel is keyed by active:navNonce, so it remounts on every section
+ * change; this replays the fade each time (feedback #5: restore interaction
+ * polish). Neutralized under the reduced-motion block above. */
+@keyframes dv-section-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: none; }
+}
+.dashboard-v2 .dv-panel { animation: dv-section-in 0.22s var(--d-ease) both; }
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-v2 .dv-panel { animation: none; }
 }

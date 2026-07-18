@@ -33,12 +33,8 @@ const CARDS: { idx: string; title: string; body: string; tag: string }[] = [
 export function ClientsRoadmap() {
   return (
     <div className="ec">
-      <div className="ec-dateline">Section 03 · Clients</div>
-      <h1 className="ec-hed">The client desk, rebuilt from the real registry.</h1>
-      <p className="ec-dek">
-        This section is roadmap for the tournament build. When it lands it reads client_registry and
-        client_boards directly. Here is exactly what ships, named honestly rather than mocked.
-      </p>
+      <div className="ec-dateline">Clients · Rise DTC</div>
+      <h1 className="ec-hed ec-hed--today">Rise DTC</h1>
       <div className="ec-roadmap">
         {CARDS.map((c) => (
           <div className="ec-roadmap-card" key={c.idx}>
@@ -49,10 +45,6 @@ export function ClientsRoadmap() {
           </div>
         ))}
       </div>
-      <p className="ec-footnote">
-        Per 03-ia-decision.md, Clients (rebuilt). Build-now scope is Today + Warm Pipeline + embedded
-        Posts board + System Pulse; this rebuild is in the post-vote apply plan.
-      </p>
     </div>
   );
 }

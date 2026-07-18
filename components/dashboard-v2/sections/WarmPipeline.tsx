@@ -42,7 +42,7 @@ export function WarmPipeline() {
         </span>
       </div>
 
-      <h1 className="ec-hed">From a cold list to a booked call.</h1>
+      <h1 className="ec-hed ec-hed--today">Warm pipeline</h1>
 
       <div className="ec-tabs" role="tablist">
         <button role="tab" aria-selected={mode === 'funnel'} className="ec-tab" onClick={() => setMode('funnel')}>The funnel</button>
@@ -54,9 +54,8 @@ export function WarmPipeline() {
           {/* Funnel data-spread */}
           <div className="ec-col-lead">
             <div className="ec-kicker">The spread</div>
-            <h2 className="ec-subhead">Every stage, counted off the real timestamps.</h2>
-            <div className="ec-data" style={{ marginTop: '0.3rem' }}>
-              bar width: sqrt scale (a 938 to 2 spread; linear would flatten every stage past the first)
+            <div className="ec-data" title="bar width uses a sqrt scale so a 938→2 spread stays honestly ordered; linear would flatten every stage past the first">
+              cumulative reach · sqrt-scaled bars
             </div>
             <div className="ec-funnel" style={{ marginTop: '1.2rem' }}>
               {data.stages.map((s) => (
@@ -77,14 +76,6 @@ export function WarmPipeline() {
                 <span className="ec-fun-num ec-fun-num--tail">{fmt(data.callBooked)}</span>
               </div>
             </div>
-            <p className="ec-footnote">
-              Cumulative reach: each stage counts prospects that have ever reached it
-              (<span className="ec-mono">connection_sent_at</span>, <span className="ec-mono">connected_at</span>,
-              <span className="ec-mono"> last_dm_sent_at</span>, <span className="ec-mono">reply_count&gt;0</span>). DM'd
-              exceeds Connected because it counts InMail + email beyond first-degree. Call-booked reads{' '}
-              <span className="ec-mono">call_reports</span>; the tail is thin on purpose (real client calls only),
-              and calendar sync is dead, so it is not inflated.
-            </p>
           </div>
 
           {/* Pull-quote rail */}
@@ -142,10 +133,6 @@ export function WarmPipeline() {
                   </div>
                 </div>
               ))}
-              <p className="ec-footnote">
-                Born-dead branch: approve, edit, and skip are staged, not wired. The apply plan points these at the
-                existing followup_drafts write path.
-              </p>
             </div>
           )}
         </div>

@@ -3,21 +3,10 @@
  * Section IDs are stable URL slugs — used in `?section=...&sub=...`.
  */
 
-export type SectionId =
-  | 'briefing'
-  | 'today'
-  | 'pipeline'
-  | 'content'
-  | 'reach'
-  | 'ops'
-  | 'clients'
-  | 'knowledge'
-  | 'agent'
-  | 'ideas'
-  | 'opsideas'
-  | 'system'
-  | 'pulse'
-  | 'personal';
+// Round 2 (A-seed) widens section ids to arbitrary slugs so every legacy
+// category and its subsections can each own a distinct, clickable nav home
+// (Ivan feedback #1). Legacy literals are documented in LEGACY_SECTION_REMAP.
+export type SectionId = string;
 
 export type Severity = 'good' | 'warn' | 'bad' | 'neutral';
 
@@ -27,7 +16,9 @@ export interface NavItem {
   emphasis?: string;       // <em> portion of name, sage-colored
   badge?: { count: number; severity: Severity };
   num?: string;            // sidebar marker (01, 02, ⊙, etc.)
-  group?: 'briefing' | 'operate' | 'knowledge' | 'personal';
+  // Round 2: grouped nav. `group` is a group KEY; the divider label + order
+  // come from the groups config in Sidebar. Legacy 4-bucket values still work.
+  group?: string;
 }
 
 export interface PaletteItem {

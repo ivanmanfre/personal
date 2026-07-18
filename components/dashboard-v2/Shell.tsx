@@ -10,20 +10,25 @@ import { LiveStatus } from './live/LiveStatus';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
-const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'today', 'pipeline', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'opsideas', 'system', 'pulse', 'personal',
-];
+// Round 2 (A-seed) legacy slug remap. Every one of the 11 legacy section ids —
+// plus the retired standalone slugs — points at its new round-2 home so old
+// ?section= deeplinks never dead-end (Ivan feedback #1: nothing disappears).
+const LEGACY_SECTION_REMAP: Record<string, SectionId> = {
+  briefing: 'today',
+  content: 'posts',    // Content group opens on the Posts board
+  reach: 'warm',       // Pipeline group opens on Warm
+  ops: 'health',       // System health absorbs Overview + Workflows + Scheduled Ops
+  clients: 'risedtc',  // Clients group opens on the Rise DTC desk
+  knowledge: 'brain',  // Brain is the knowledge home (Prompts lives under Content)
+  system: 'health',    // legacy "system" = System health
+  ideas: 'posts',      // content ideas are the Idea STAGE on the Posts board
+  steal: 'opsideas',
+};
 
-// Legacy slug remap: the standalone Ideas section was retired — content ideas
-// are now the Idea STAGE on the Posts board. The Steal lane is now its own
-// top-level "Ops Ideas" section, so old ?section=ideas links land on Content
-// Studio, and old ?section=steal links land on Ops Ideas.
-const LEGACY_SECTION_REMAP: Record<string, SectionId> = { ideas: 'content', steal: 'opsideas' };
-
-function resolveSection(raw: string | null): SectionId | null {
+function resolveSection(raw: string | null, valid: Set<string>): SectionId | null {
   if (!raw) return null;
-  const mapped = (LEGACY_SECTION_REMAP[raw] ?? raw) as SectionId;
-  return ALL_SECTIONS.includes(mapped) ? mapped : null;
+  const mapped = LEGACY_SECTION_REMAP[raw] ?? raw;
+  return valid.has(mapped) ? mapped : null;
 }
 
 interface ShellProps {
@@ -47,10 +52,12 @@ function TourTrigger() {
  * Does NOT own: data fetching (handled per-section), realtime subscriptions (per-hook).
  */
 export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellProps) {
+  const validKeys = useMemo(() => new Set(Object.keys(sectionRenderers)), [sectionRenderers]);
+
   const [active, setActive] = useState<SectionId>(() => {
     if (typeof window === 'undefined') return 'today';
     const params = new URLSearchParams(window.location.search);
-    return resolveSection(params.get('section')) ?? 'today';
+    return resolveSection(params.get('section'), new Set(Object.keys(sectionRenderers))) ?? 'today';
   });
 
   // Nav bus — lets TourProvider (and any other caller) drive section changes
@@ -82,14 +89,14 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
     if (typeof window === 'undefined') return;
     const onPop = () => {
       const params = new URLSearchParams(window.location.search);
-      const s = resolveSection(params.get('section'));
+      const s = resolveSection(params.get('section'), validKeys);
       if (s && s !== active) {
         setActive(s);
       }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [active]);
+  }, [active, validKeys]);
 
   // Deeplink navigation (e.g. the notification bell) remounts the active panel so
   // the target section re-reads its `sub`/`otab` from the URL — sections only read

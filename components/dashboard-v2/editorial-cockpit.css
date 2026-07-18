@@ -88,6 +88,9 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   margin: 0 0 1.4rem;
   max-width: 18ch;
 }
+/* Round 2: functional page label (feedback #2 — kill narrative headlines).
+   One big Schibsted word, tighter bottom margin than a statement headline. */
+.ec-hed--today { margin-bottom: 1.6rem; max-width: none; }
 .ec-dek {
   font-family: var(--ec-sans);
   font-size: 16px;
@@ -189,6 +192,15 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   color: var(--ec-ink);
   margin: 0 0 0.8rem;
 }
+/* Round 2: a live count riding the section label, in place of a prose subhead. */
+.ec-kicker-count {
+  margin-left: auto;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ledger list rows */
 .ec-list { border-top: 1px solid var(--ec-rule); }
@@ -199,6 +211,16 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   padding: 0.7rem 0;
   border-bottom: 1px solid var(--ec-rule);
 }
+/* Round 2: row hover background + settle shift (feedback #5). Negative margin
+   + matching padding keeps the hover wash flush to the content edge. */
+.ec-item--hover {
+  cursor: default;
+  margin: 0 -0.6rem;
+  padding-left: 0.6rem;
+  padding-right: 0.6rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.ec-item--hover:hover { background: rgba(19, 18, 16, 0.045); transform: translateX(2px); }
 .ec-item-idx {
   font-family: var(--ec-sans);
   font-weight: 700;
@@ -224,26 +246,30 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   color: var(--ec-mutedc);
   margin-top: 0.15rem;
 }
+/* Round 2: borderless status label — a plain row needs no bordered chip
+   (feedback #3). The alarm variant carries an ink tick instead of a box. */
 .ec-item-tag {
   font-family: var(--ec-sans);
   font-weight: 700;
   font-size: 10.5px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-ink);
+  color: var(--ec-mutedc);
   flex: 0 0 auto;
   align-self: center;
-  border: 1px solid var(--ec-rule-strong);
-  padding: 0.14rem 0.42rem;
+  padding: 0.14rem 0;
+  transition: color 0.15s ease;
 }
-.ec-item-tag--alarm { border-color: var(--ec-ink); }
+.ec-item--hover:hover .ec-item-tag { color: var(--ec-ink); }
+.ec-item-tag--alarm { color: var(--ec-ink); }
+.ec-item-tag--alarm::before { content: '● '; color: var(--ec-ink); }
 
-/* rail receipt block: heavy top rule, ledger-entry grammar (not a card) */
+/* Round 2: rail receipt block separated by whitespace + a single hairline top
+   rule (feedback #3 — the heavy 2px rule read as a box). */
 .ec-card {
-  border-top: 2px solid var(--ec-ink);
-  border-bottom: 1px solid var(--ec-rule);
-  padding: 0.85rem 0 1.05rem;
-  margin-bottom: 1.4rem;
+  border-top: 1px solid var(--ec-rule-strong);
+  padding: 0.85rem 0 0.4rem;
+  margin-bottom: 1.6rem;
   background: transparent;
 }
 .ec-card-lbl {
@@ -328,6 +354,7 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   padding: 0.6rem 1.1rem;
   cursor: pointer;
   margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 .ec-tab[aria-selected='true'] { color: var(--ec-ink); border-bottom-color: var(--ec-ink); }
 .ec-tab:hover:not([aria-selected='true']) { color: var(--ec-ink); }
@@ -343,11 +370,14 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   text-transform: uppercase;
   color: var(--ec-ink);
 }
+.ec-fun-row { transition: transform 0.15s ease; }
+.ec-fun-row:hover { transform: translateX(2px); }
 .ec-fun-track { height: 30px; background: rgba(19, 18, 16, 0.06); position: relative; }
 /* display:block is load-bearing — .ec-fun-fill is a <span>; without it the
    inline-style width= percentage (magnitude encoding) is silently ignored
    and every bar renders as the same (invisible) width. */
-.ec-fun-fill { display: block; height: 100%; background: var(--ec-ink); }
+.ec-fun-fill { display: block; height: 100%; background: var(--ec-ink); transition: filter 0.15s ease; }
+.ec-fun-row:hover .ec-fun-fill { filter: brightness(1.25); }
 .ec-fun-fill--tail { background: var(--ec-ink); }
 .ec-fun-fill--off { background: repeating-linear-gradient(45deg, rgba(107,103,94,0.3), rgba(107,103,94,0.3) 6px, transparent 6px, transparent 12px); }
 .ec-fun-num {
@@ -366,7 +396,7 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
 
 /* ── Latest reply: clinical annotation register (Source Serif 4 italic) ───── */
 .ec-pull {
-  border-top: 2px solid var(--ec-ink);
+  border-top: 1px solid var(--ec-rule-strong);
   padding: 0.9rem 0 0.2rem;
   margin: 0;
   text-align: left;
@@ -391,7 +421,8 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
 .ec-pull-attr span { color: var(--ec-mutedc); }
 
 /* ── Approval queue rows ──────────────────────────────────────────────────── */
-.ec-q-row { border-bottom: 1px solid var(--ec-rule); padding: 1rem 0; }
+.ec-q-row { border-bottom: 1px solid var(--ec-rule); padding: 1rem 0.6rem; margin: 0 -0.6rem; transition: background 0.15s ease; }
+.ec-q-row:hover { background: rgba(19, 18, 16, 0.03); }
 .ec-q-head { display: flex; align-items: baseline; gap: 0.7rem; }
 .ec-q-name { font-family: var(--ec-sans); font-weight: 700; letter-spacing: -0.01em; font-size: 19px; color: var(--ec-ink); }
 .ec-q-subject { font-family: var(--ec-sans); font-size: 14px; font-weight: 500; color: var(--ec-ink); margin: 0.4rem 0 0.2rem; }
@@ -408,17 +439,23 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   background: transparent;
   color: var(--ec-ink);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
+.ec-btn:not(:disabled):hover { background: rgba(19, 18, 16, 0.06); }
+.ec-btn:not(:disabled):active { transform: scale(0.97); }
 .ec-btn--primary { background: var(--ec-ink); color: var(--ec-paper); border-color: var(--ec-ink); }
+.ec-btn--primary:not(:disabled):hover { background: #000; }
 .ec-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Roadmap stubs (Clients / other IA slots) ─────────────────────────────── */
 .ec-roadmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; margin-top: 1.4rem; }
-.ec-roadmap-card { border-top: 2px solid var(--ec-ink); border-bottom: 1px solid var(--ec-rule); padding: 0.9rem 0 1.2rem; }
+/* Round 2: hairline top rule, no bottom border, hover settle (feedback #3/#5). */
+.ec-roadmap-card { border-top: 1px solid var(--ec-rule-strong); padding: 0.9rem 0 0.8rem; transition: transform 0.15s ease, border-color 0.15s ease; }
+.ec-roadmap-card:hover { transform: translateY(-2px); border-color: var(--ec-ink); }
 .ec-roadmap-idx { font-family: var(--ec-sans); font-weight: 700; font-size: 11px; letter-spacing: 0.05em; color: var(--ec-mutedc); }
 .ec-roadmap-title { font-family: var(--ec-sans); font-weight: 700; letter-spacing: -0.01em; font-size: 20px; line-height: 1.1; color: var(--ec-ink); margin: 0.3rem 0 0.5rem; }
 .ec-roadmap-body { font-family: var(--ec-sans); font-size: 13.5px; line-height: 1.5; color: var(--ec-body); }
-.ec-roadmap-tag { display: inline-block; margin-top: 0.7rem; font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); border: 1px solid var(--ec-rule-strong); padding: 0.15rem 0.45rem; }
+.ec-roadmap-tag { display: inline-block; margin-top: 0.7rem; font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-mutedc); padding: 0.15rem 0; }
 
 .ec-footnote { font-family: var(--ec-sans); font-size: 11.5px; line-height: 1.6; color: var(--ec-mutedc); margin-top: 1.6rem; letter-spacing: 0.01em; }
 
