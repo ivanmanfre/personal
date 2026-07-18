@@ -1,13 +1,16 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { RefreshCw } from 'lucide-react';
 import { useLeadMagnets, type LeadMagnetDraft } from '../../../hooks/useLeadMagnets';
-import { saveLMDraft, buildLMAssets } from '../../../lib/studioActions';
+import { saveLMDraft, buildLMAssets, generateLMContent } from '../../../lib/studioActions';
 import { toastError } from '../../../lib/dashboardActions';
 import { supabase } from '../../../lib/supabase';
 import { driveThumbUrl, versionedAssetUrl } from '../../../lib/driveThumb';
 import { ageLabel, REVIEW_FADE_CSS } from './reviewShared';
 import Sheet from '../../ui/Sheet';
+// Native backend-depth panels — REUSED verbatim in the LM review rail.
+import QAVerdictPanel from '../../dashboard/QAVerdictPanel';
+import AgentLogFeed from '../../dashboard/AgentLogFeed';
 import './worksurface.css';
 
 // Full editor (S-DETAIL) — REUSED unmodified. Carries AgentLogFeed, QA checks,
@@ -56,18 +59,31 @@ const LmWorkSurface: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  // Native inspect rail (QA verdict + agent log) — desktop.
+  const [inspectOpen, setInspectOpen] = useState(true);
 
   const queue = useMemo(
     () =>
       drafts
-        .filter((d) => d.status === 'review' && isLmFormat(d.format) && !acted.has(d.id))
+        .filter((d) => d.status === 'review' && !d.clientId && isLmFormat(d.format) && !acted.has(d.id))
         .sort((a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()),
     [drafts, acted],
   );
   // Rows in review whose format casing/name is off-roster — surfaced honestly
   // rather than silently hidden (the classic board drops them entirely).
   const offRosterCount = useMemo(
-    () => drafts.filter((d) => d.status === 'review' && !isLmFormat(d.format) && !acted.has(d.id)).length,
+    () => drafts.filter((d) => d.status === 'review' && !d.clientId && !isLmFormat(d.format) && !acted.has(d.id)).length,
+    [drafts, acted],
+  );
+  // Client-owned LMs in review — NEVER approvable here (their client board owns
+  // the approve/build path). Shown as a muted count only.
+  const clientReviewCount = useMemo(
+    () => drafts.filter((d) => d.status === 'review' && !!d.clientId).length,
+    [drafts],
+  );
+  // Errored LMs (client-excluded) — surfaced in an attention strip with retry.
+  const errorRows = useMemo(
+    () => drafts.filter((d) => d.status === 'error' && !d.clientId && !acted.has(d.id)),
     [drafts, acted],
   );
 
@@ -77,6 +93,36 @@ const LmWorkSurface: React.FC = () => {
   const current: LeadMagnetDraft | null = queue[clamped] || null;
 
   useEffect(() => { setEditing(false); setEditText(current?.postBody || ''); }, [current?.id]);
+
+  // ── ?open=<id> deeplink (race-safe): stash the initial param, apply once the
+  // row is present, and write it back on Sheet open/close. ──────────────────
+  const initialOpenRef = useRef<string | null>(
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open'),
+  );
+  const initialRestoredRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!initialRestoredRef.current && initialOpenRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (detailId !== params.get('open')) {
+      if (detailId) params.set('open', detailId); else params.delete('open');
+      const q = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${q ? `?${q}` : ''}${window.location.hash}`);
+    }
+  }, [detailId]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const target = initialOpenRef.current;
+    if (!target) { initialRestoredRef.current = true; return; }
+    if (drafts.some((d) => d.id === target)) {
+      setDetailId(target);
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    } else if (!loading) {
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    }
+  }, [drafts, loading]);
 
   const advance = useCallback(() => setCursor((c) => Math.max(0, Math.min(c, queue.length - 1))), [queue.length]);
 
@@ -92,9 +138,24 @@ const LmWorkSurface: React.FC = () => {
       await buildLMAssets({ draft_id: id, topic: current.topic || '', format: current.format || 'Checklist' });
       toast.success('Approved, building assets (~5 min)');
       await refresh();
-    } catch (err) { toastError('approve & build assets', err); refresh(); }
+    } catch (err) {
+      // Un-act on failure: the optimistic hide + approved tally must roll back
+      // so the row returns to the queue instead of silently vanishing.
+      setActed((s) => { const n = new Set(s); n.delete(id); return n; });
+      setTally((t) => ({ ...t, approved: Math.max(0, t.approved - 1) }));
+      toastError('approve & build assets', err);
+    }
     finally { setBusy(false); }
   }, [current, advance, refresh]);
+
+  // Retry a failed LM generation (content phase) — clears the error by re-firing.
+  const retryLM = useCallback(async (d: LeadMagnetDraft) => {
+    try {
+      await generateLMContent({ draft_id: d.id, topic: d.topic || '', format: d.format || 'Checklist' });
+      toast.success('Retrying generation');
+      await refresh();
+    } catch (err) { toastError('retry lead magnet', err); }
+  }, [refresh]);
 
   // SECONDARY explicit status-only approve.
   const approveStatus = useCallback(async () => {
@@ -201,7 +262,31 @@ const LmWorkSurface: React.FC = () => {
                 Off-roster in review <span className="ws-lane-count">{offRosterCount}</span>
               </span>
             )}
+            {clientReviewCount > 0 && (
+              <span className="ws-clientnote" style={{ marginLeft: '0.4rem' }}>
+                {clientReviewCount} client LM{clientReviewCount === 1 ? '' : 's'} in review · client boards own these
+              </span>
+            )}
           </div>
+
+          {/* Attention strip: errored LMs with one-click retry (client-excluded). */}
+          {errorRows.length > 0 && (
+            <div className="ws-drawer">
+              <div className="ws-drawer-row" style={{ cursor: 'default', borderTop: 0 }}>
+                <span className="ws-drawer-title" style={{ fontWeight: 700 }}>
+                  {errorRows.length} lead magnet{errorRows.length === 1 ? '' : 's'} errored — retry generation
+                </span>
+              </div>
+              {errorRows.slice(0, 30).map((d) => (
+                <div key={d.id} className="ws-drawer-row" style={{ cursor: 'default' }}>
+                  <button className="ws-drawer-title" style={{ background: 'transparent', border: 0, textAlign: 'left', cursor: 'pointer', flex: 1 }} onClick={() => setDetailId(d.id)}>
+                    {lmTitle(d)}
+                  </button>
+                  <button className="ws-mini" onClick={() => retryLM(d)}>Retry</button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {loading && drafts.length === 0 ? (
             <div className="ws-loading">Loading lead magnets…</div>
@@ -213,7 +298,7 @@ const LmWorkSurface: React.FC = () => {
               <div className="ws-empty-tally">{tally.approved} approved · {tally.rejected} rejected · {tally.skipped} skipped this session</div>
             </div>
           ) : (
-            <div className="ws-reader" style={{ gridTemplateColumns: '218px minmax(0,1fr)' }}>
+            <div className="ws-reader" style={{ gridTemplateColumns: inspectOpen ? '218px minmax(0,1fr) minmax(300px,340px)' : '218px minmax(0,1fr)' }}>
               {/* Queue rail */}
               <aside className="ws-rail">
                 {queue.map((d, i) => (
@@ -232,6 +317,9 @@ const LmWorkSurface: React.FC = () => {
                     <span>· {current.format || 'Lead magnet'}</span>
                     <span>· {ageLabel(current.updatedAt)} old</span>
                     <span className="ws-read-pos">{position} of {total}</span>
+                    <button className="ws-inspect-toggle" style={{ marginLeft: '0.6rem' }} onClick={() => setInspectOpen((o) => !o)}>
+                      {inspectOpen ? 'Hide inspect' : 'Inspect'}
+                    </button>
                   </div>
 
                   <h2 className="ec-subhead" style={{ marginBottom: '1.2rem' }}>{lmTitle(current)}</h2>
@@ -307,6 +395,18 @@ const LmWorkSurface: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {/* Native inspect rail — QA verdict + agent log, reused verbatim. */}
+              {inspectOpen && (
+                <aside className="ws-inspect">
+                  <div className="ws-inspect-head">
+                    <span className="ws-inspect-h">Backend depth</span>
+                    <button className="ws-inspect-toggle" onClick={() => setInspectOpen(false)}>Hide</button>
+                  </div>
+                  <QAVerdictPanel entries={current.agentLog} />
+                  <AgentLogFeed entries={current.agentLog} table="lm_drafts_v2" rowId={current.id} onNoteAdded={refresh} />
+                </aside>
+              )}
             </div>
           )}
         </>

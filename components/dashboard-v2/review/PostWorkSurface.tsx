@@ -10,6 +10,12 @@ import { driveThumbUrl } from '../../../lib/driveThumb';
 import { supabase } from '../../../lib/supabase';
 import Sheet from '../../ui/Sheet';
 import IdeaDetail from '../../dashboard/IdeaDetail';
+// Native backend-depth panels — REUSED verbatim from the classic detail view so
+// the review lane carries QA verdict + agent log + source briefing without
+// opening the full editor.
+import QAVerdictPanel from '../../dashboard/QAVerdictPanel';
+import AgentLogFeed from '../../dashboard/AgentLogFeed';
+import SourceBriefing from '../../dashboard/SourceBriefing';
 import { LinkedInPost, ageLabel, REVIEW_FADE_CSS } from './reviewShared';
 import './worksurface.css';
 
@@ -79,6 +85,8 @@ const PostWorkSurface: React.FC = () => {
 
   // Shared detail slide-over
   const [detailId, setDetailId] = useState<string | null>(null);
+  // Native inspect rail (QA verdict + agent log + source briefing) — desktop.
+  const [inspectOpen, setInspectOpen] = useState(true);
   // Triage drawer
   const [drawer, setDrawer] = useState<null | 'error' | 'stuck'>(null);
   const [confirmStuck, setConfirmStuck] = useState(false);
@@ -97,11 +105,11 @@ const PostWorkSurface: React.FC = () => {
   );
 
   // ── Native triage: error + stuck-scheduled counts (RELOCATE + mission-named)
-  const errorRows = useMemo(() => drafts.filter((d) => d.status === 'error'), [drafts]);
+  const errorRows = useMemo(() => drafts.filter((d) => d.status === 'error' && !d.clientId), [drafts]);
   const stuckRows = useMemo(
     () =>
       drafts.filter(
-        (d) => d.status === 'scheduled' && d.scheduledAt && new Date(d.scheduledAt).getTime() < Date.now() && !d.sourcePostId,
+        (d) => d.status === 'scheduled' && !d.clientId && d.scheduledAt && new Date(d.scheduledAt).getTime() < Date.now() && !d.sourcePostId,
       ),
     [drafts],
   );
@@ -117,40 +125,83 @@ const PostWorkSurface: React.FC = () => {
     setEditText(current?.postBody || '');
   }, [current?.id]);
 
+  // ── ?open=<id> deeplink (race-safe: the param arrives before drafts load, so
+  // stash it and apply once the row is present; write it back on open/close). ─
+  const initialOpenRef = useRef<string | null>(
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('open'),
+  );
+  const initialRestoredRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!initialRestoredRef.current && initialOpenRef.current) return; // wait for restore
+    const params = new URLSearchParams(window.location.search);
+    if (detailId !== params.get('open')) {
+      if (detailId) params.set('open', detailId); else params.delete('open');
+      const q = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${q ? `?${q}` : ''}${window.location.hash}`);
+    }
+  }, [detailId]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const target = initialOpenRef.current;
+    if (!target) { initialRestoredRef.current = true; return; }
+    if (ideaRows.some((d) => d.id === target) || drafts.some((d) => d.id === target)) {
+      setDetailId(target);
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    } else if (!loading) {
+      initialOpenRef.current = null;
+      initialRestoredRef.current = true;
+    }
+  }, [drafts, ideaRows, loading]);
+
   // ── Idea actions (curator decide ONLY) ───────────────────────────────────
+  // Write FIRST, hide only on confirmed success. The row must not vanish before
+  // the curator-decide write lands — a failed decide left the queue lying.
   const promoteIdea = useCallback(async (d: CarouselDraft) => {
     const cid = d.ideaCandidateId;
     if (!cid) return;
-    removeIdea(cid);
     try {
       await decideIdea(cid, 'approve');
+      removeIdea(cid);
       toast.success('Promoted, generating now');
       refresh();
-    } catch (err) { toastError('promote idea', err); refreshIdeas(); }
-  }, [removeIdea, refresh, refreshIdeas]);
+    } catch (err) { toastError('promote idea', err); }
+  }, [removeIdea, refresh]);
 
   const deferIdea = useCallback(async (d: CarouselDraft) => {
     const cid = d.ideaCandidateId;
     if (!cid) return;
-    removeIdea(cid);
     try {
       await decideIdea(cid, 'defer');
+      removeIdea(cid);
       toast.success('Kept for later');
-    } catch (err) { toastError('defer idea', err); refreshIdeas(); }
-  }, [removeIdea, refreshIdeas]);
+    } catch (err) { toastError('defer idea', err); }
+  }, [removeIdea]);
 
+  // Bulk reject — decide per id, hide ONLY the ids whose write succeeded, and
+  // report honestly. The old path removed every row up front and used a catch
+  // that allSettled can never trigger, so it always toasted success even when
+  // every write failed.
   const killSelected = useCallback(async () => {
-    const ids = ideaRows.filter((d) => selected.has(d.id));
+    const ids = ideaRows.filter((d) => selected.has(d.id) && d.ideaCandidateId);
     if (!ids.length) return;
     setKilling(true);
-    ids.forEach((d) => d.ideaCandidateId && removeIdea(d.ideaCandidateId));
-    setSelected(new Set());
     try {
-      await Promise.allSettled(ids.map((d) => d.ideaCandidateId ? decideIdea(d.ideaCandidateId, 'reject') : Promise.resolve()));
-      toast.success(`Rejected ${ids.length} idea${ids.length === 1 ? '' : 's'}`);
-    } catch (err) { toastError('bulk reject', err); refreshIdeas(); }
-    finally { setKilling(false); }
-  }, [ideaRows, selected, removeIdea, refreshIdeas]);
+      const results = await Promise.allSettled(
+        ids.map((d) => decideIdea(d.ideaCandidateId!, 'reject')),
+      );
+      const okIds: string[] = [];
+      ids.forEach((d, i) => { if (results[i].status === 'fulfilled') okIds.push(d.ideaCandidateId!); });
+      okIds.forEach((cid) => removeIdea(cid));
+      setSelected((s) => { const n = new Set(s); ids.forEach((d, i) => { if (results[i].status === 'fulfilled') n.delete(d.id); }); return n; });
+      const ok = okIds.length;
+      const failed = ids.length - ok;
+      if (failed === 0) toast.success(`${ok} rejected`);
+      else if (ok === 0) toastError('bulk reject', new Error(`all ${failed} still in queue`));
+      else toast.warning(`${ok} rejected, ${failed} failed — still in queue`);
+    } finally { setKilling(false); }
+  }, [ideaRows, selected, removeIdea]);
 
   const toggleSel = useCallback((id: string) => {
     setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -407,7 +458,7 @@ const PostWorkSurface: React.FC = () => {
                 <div className="ws-empty-tally">{tally.approved} approved · {tally.rejected} rejected · {tally.skipped} skipped this session</div>
               </div>
             ) : (
-              <div className="ws-reader">
+              <div className={`ws-reader ${inspectOpen ? 'ws-reader--insp' : ''}`}>
                 <aside className="ws-rail">
                   {reviewQueue.map((d, i) => (
                     <button key={d.id} className={`ws-rail-row ${i === rClamped ? 'ws-rail-row--cur' : ''}`}
@@ -425,6 +476,9 @@ const PostWorkSurface: React.FC = () => {
                       <span>· {typeKicker(current.type)}</span>
                       <span>· {ageLabel(current.updatedAt)} old</span>
                       <span className="ws-read-pos">{reviewPos} of {reviewTotal}</span>
+                      <button className="ws-inspect-toggle" style={{ marginLeft: '0.6rem' }} onClick={() => setInspectOpen((o) => !o)}>
+                        {inspectOpen ? 'Hide inspect' : 'Inspect'}
+                      </button>
                     </div>
 
                     {editing ? (
@@ -458,6 +512,20 @@ const PostWorkSurface: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Native inspect rail — QA verdict + agent log + source
+                    briefing, reused verbatim. No full-editor detour needed. */}
+                {inspectOpen && (
+                  <aside className="ws-inspect">
+                    <div className="ws-inspect-head">
+                      <span className="ws-inspect-h">Backend depth</span>
+                      <button className="ws-inspect-toggle" onClick={() => setInspectOpen(false)}>Hide</button>
+                    </div>
+                    <SourceBriefing description={current.description} defaultOpen={false} />
+                    <QAVerdictPanel entries={current.agentLog} />
+                    <AgentLogFeed entries={current.agentLog} table="carousel_drafts" rowId={current.id} onNoteAdded={refresh} />
+                  </aside>
+                )}
               </div>
             )}
           </section>

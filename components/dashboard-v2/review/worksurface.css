@@ -262,6 +262,9 @@
 
 /* ── BOTTOM LANE: one-at-a-time reader ────────────────────────────────────── */
 .ec .ws-reader { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: clamp(1.2rem, 2.4vw, 2.2rem); align-items: start; }
+/* Inspect rail open — reader gains a third column carrying the native backend
+ * depth (QA verdict timeline + agent log + source briefing). */
+.ec .ws-reader--insp { grid-template-columns: 232px minmax(0, 1fr) minmax(300px, 340px); }
 .ec .ws-rail { border-right: 1px solid var(--ec-rule); padding-right: 1rem; max-height: 62vh; overflow-y: auto; }
 .ec .ws-rail-row {
   display: block;
@@ -285,6 +288,17 @@
 .ec .ws-read-cap b { color: var(--ec-ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10.5px; }
 .ec .ws-read-pos { margin-left: auto; font-variant-numeric: tabular-nums; }
 
+/* ── Inspect rail: native QA verdict + agent log + source briefing ────────── */
+.ec .ws-inspect { border-left: 1px solid var(--ec-rule); padding-left: 1.1rem; max-height: 82vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; }
+.ec .ws-inspect-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ec .ws-inspect-h { font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); }
+.ec .ws-inspect-toggle {
+  font-family: var(--ec-sans); font-size: 10.5px; letter-spacing: 0.03em; text-transform: uppercase;
+  color: var(--ec-mutedc); background: transparent; border: 1px solid var(--ec-rule-strong);
+  padding: 0.2rem 0.5rem; cursor: pointer; transition: color 0.12s ease, border-color 0.12s ease;
+}
+.ec .ws-inspect-toggle:hover { color: var(--ec-ink); border-color: var(--ec-ink); }
+
 .ec .ws-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 1rem; }
 .ec .ws-key {
   display: inline-flex;
@@ -305,7 +319,7 @@
 .ec .ws-key:hover { background: rgba(19, 18, 16, 0.06); }
 .ec .ws-key:active { transform: scale(0.98); }
 .ec .ws-key--primary { background: var(--ec-ink); color: var(--ec-paper); }
-.ec .ws-key--primary:hover { background: #000; }
+.ec .ws-key--primary:hover { background: #2a2723; }
 .ec .ws-key:disabled { opacity: 0.5; cursor: default; }
 .ec .ws-key kbd {
   font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
@@ -392,8 +406,11 @@
 /* ── Responsive: collapse lanes gracefully ────────────────────────────────── */
 @media (max-width: 1080px) {
   .ec .ws-lm { grid-template-columns: 1fr; }
-  .ec .ws-reader { grid-template-columns: 1fr; }
+  .ec .ws-reader, .ec .ws-reader--insp { grid-template-columns: 1fr; }
   .ec .ws-rail { border-right: 0; border-bottom: 1px solid var(--ec-rule); padding-right: 0; max-height: 34vh; }
+  /* Below 1024 the inspect rail collapses out of the reader; the toggle stays
+   * available and re-opening stacks it under the reader. */
+  .ec .ws-inspect { border-left: 0; border-top: 1px solid var(--ec-rule); padding-left: 0; padding-top: 1rem; max-height: none; }
 }
 @media (max-width: 900px) {
   .ec .ws-idt-head { display: none; }

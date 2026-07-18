@@ -44,6 +44,7 @@ export function candidateToLmIdeaDraft(c: IdeaCandidate): LeadMagnetDraft {
     topic: c.normalized_topic || c.raw_topic || null,
     format: mapCuratorFormat(c.format_recommendation),
     status: 'idea',
+    clientId: null,
     postBody: null,
     resourceHtml: null,
     resourceUrl: null,

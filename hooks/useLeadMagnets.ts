@@ -8,6 +8,9 @@ export interface LeadMagnetDraft {
   topic: string | null;
   format: string | null;
   status: string;
+  /** Non-null on LMs owned by a client board. Ivan's approve queue must EXCLUDE
+   *  these — client boards own their own approve/build path, not this surface. */
+  clientId: string | null;
   postBody: string | null;
   resourceHtml: string | null;
   resourceUrl: string | null;
@@ -61,6 +64,7 @@ function mapDraft(row: any): LeadMagnetDraft {
     topic: row.topic,
     format: row.format,
     status: normalizeLmStatus(row.status),
+    clientId: row.client_id ?? null,
     postBody: row.post_body,
     resourceHtml: row.resource_html,
     resourceUrl: row.resource_url,
@@ -89,7 +93,7 @@ export function useLeadMagnets() {
     try {
       const { data, error } = await supabase
         .from('lm_drafts_v2')
-        .select('id, topic, format, status, post_body, resource_html, resource_url, email_copy, cover_url, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
+        .select('id, topic, format, status, client_id, post_body, resource_html, resource_url, email_copy, cover_url, video_url, og_url, slug, spec, qa, updated_at, agent_log, topic_strength, notes, source, description')
         // hypertarget prospect-demo LMs are traceability rows, not Ivan's ideas, so keep them off the board
         .or('source.is.null,source.neq.hypertarget_demo')
         .order('updated_at', { ascending: false });
