@@ -19,13 +19,13 @@ const CARDS: { idx: string; title: string; body: string; tag: string }[] = [
   {
     idx: '02',
     title: 'Client-draft approvals',
-    body: "Separate from Ivan's own Posts board — client_id rows are excluded from the Studio approve queue so a client draft can never auto-post to Ivan's feed.",
+    body: "Separate from Ivan's own Posts board: client_id rows are excluded from the Studio approve queue so a client draft can never auto-post to Ivan's feed.",
     tag: 'roadmap · guardrail',
   },
   {
     idx: '03',
     title: 'Prospect demo boards',
-    body: 'The bootstrap-client-board demos (client_boards preview rows) listed as demos, not clients — token-gated live URLs at ivanmanfredi.com/client/<slug>.',
+    body: 'The bootstrap-client-board demos (client_boards preview rows) listed as demos, not clients: token-gated live URLs at ivanmanfredi.com/client/<slug>.',
     tag: 'roadmap · demos',
   },
 ];
@@ -37,7 +37,7 @@ export function ClientsRoadmap() {
       <h1 className="ec-hed">The client desk, rebuilt from the real registry.</h1>
       <p className="ec-dek">
         This section is roadmap for the tournament build. When it lands it reads client_registry and
-        client_boards directly — here is exactly what ships, named honestly rather than mocked.
+        client_boards directly. Here is exactly what ships, named honestly rather than mocked.
       </p>
       <div className="ec-roadmap">
         {CARDS.map((c) => (
@@ -50,7 +50,7 @@ export function ClientsRoadmap() {
         ))}
       </div>
       <p className="ec-footnote">
-        Per 03-ia-decision.md — Clients (rebuilt). Build-now scope is Today + Warm Pipeline + embedded
+        Per 03-ia-decision.md, Clients (rebuilt). Build-now scope is Today + Warm Pipeline + embedded
         Posts board + System Pulse; this rebuild is in the post-vote apply plan.
       </p>
     </div>

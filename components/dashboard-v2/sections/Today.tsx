@@ -5,12 +5,15 @@ import { usePulse } from '../../../lib/usePulse';
 import type { SectionId } from '../types';
 
 /**
- * Today — the Editorial Cockpit opening screen (Direction A).
+ * Today — Direction A opening screen, Black Box v4 register (founder
+ * correction 2026-07-18: editorial register replaced by brand canon).
  *
- * Front-page hierarchy: a masthead (the one dark band), an above-the-fold
- * triage strip built from §5f numeral lockups over REAL feeds, then a lead
- * "Needs you" column and a marginalia rail (client tile + freshness + n8n red).
- * Every count is live; a blocked feed shows an honest `offline` state.
+ * Front-page hierarchy kept: statement headline (Schibsted 800, very big),
+ * an above-the-fold triage strip of stat lockups over REAL feeds, then the
+ * "Needs you" lead queue and a receipts rail (client tile + drift warning
+ * box + schedule). The drift alarm is the boxed warning; the drift count is
+ * this screen's single red. Every count is live; a blocked feed shows an
+ * honest offline state.
  */
 
 type NavFn = (section: SectionId, sub?: string) => void;
@@ -26,22 +29,18 @@ interface LockupProps {
   value: TriageFeed | { state: string; count: number };
   label: React.ReactNode;
   sub?: string;
-  tone?: 'ink' | 'sage' | 'alarm' | 'muted';
+  tone?: 'ink' | 'muted';
   onClick?: () => void;
 }
 
 function Lockup({ value, label, sub, tone = 'ink', onClick }: LockupProps) {
   const offline = value.state === 'offline';
   const loading = value.state === 'loading';
-  const numClass =
-    tone === 'sage' ? 'ec-lockup-num--sage'
-    : tone === 'alarm' ? 'ec-lockup-num--alarm'
-    : tone === 'muted' ? 'ec-lockup-num--muted'
-    : '';
+  const numClass = tone === 'muted' ? 'ec-lockup-num--muted' : '';
   return (
     <button type="button" className="ec-lockup" onClick={onClick}>
       <span className={`ec-lockup-num ${offline || loading ? 'ec-lockup-num--muted' : numClass}`}>
-        {offline ? '—' : loading ? '·' : value.count}
+        {offline ? '-' : loading ? '·' : value.count}
       </span>
       <span className="ec-lockup-label">{label}</span>
       {offline ? (
@@ -81,34 +80,29 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
 
   return (
     <div className="ec">
-      {/* Masthead — the single dark band */}
-      <div className="ec-masthead">
-        <div className="ec-masthead-name">The <em>Cockpit</em></div>
-        <div className="ec-masthead-meta">
-          <span className="ec-edition">TODAY · EDITION</span>
-          <span>{nowLabel()}</span>
-          <span>{probedAt ? `PROBED ${new Date(probedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'PROBING…'}</span>
-        </div>
+      {/* Topline: compressed document header (the dark masthead band is cut) */}
+      <div className="ec-topline">
+        <span className="ec-topline-brand">Operator console · Today</span>
+        <span className="ec-topline-meta">
+          {nowLabel()}
+          {' · '}
+          {probedAt ? `Probed ${new Date(probedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Probing'}
+        </span>
       </div>
 
-      <div className="ec-dateline">Front page · what needs you now</div>
       <h1 className="ec-hed">The work waiting on your judgment.</h1>
-      <p className="ec-dek">
-        Six live queues, read straight off the pipeline. Taste is the moat, so nothing here
-        auto-fires — every number is a decision you still <span className="ec-sage-sweep">own</span>.
-      </p>
 
-      {/* Above-the-fold triage strip — §5f numeral lockups */}
+      {/* Above-the-fold triage strip — stat lockups over real feeds */}
       <div className="ec-strip">
         <Lockup value={feeds.postsReview} label={<>Posts in<br />review</>} sub={firstTitle(feeds.postsReview)} onClick={go('content', 'posts')} />
-        <Lockup value={feeds.commentDrafts} label={<>Comment<br />drafts</>} tone="sage" sub={feeds.commentDrafts.items[0] || undefined} onClick={go('pipeline')} />
-        <Lockup value={feeds.warmFollowups} label={<>Warm<br />follow-ups</>} tone="sage" sub={feeds.warmFollowups.items[0] || undefined} onClick={go('pipeline')} />
-        <Lockup value={feeds.workflowsRed} label={<>Workflows<br />red / stuck</>} tone="alarm" sub={firstTitle(feeds.workflowsRed)} onClick={go('system')} />
+        <Lockup value={feeds.commentDrafts} label={<>Comment<br />drafts</>} sub={feeds.commentDrafts.items[0] || undefined} onClick={go('pipeline')} />
+        <Lockup value={feeds.warmFollowups} label={<>Warm<br />follow-ups</>} sub={feeds.warmFollowups.items[0] || undefined} onClick={go('pipeline')} />
+        <Lockup value={feeds.workflowsRed} label={<>Workflows<br />red / stuck</>} sub={firstTitle(feeds.workflowsRed)} onClick={go('system')} />
         <Lockup value={feeds.scheduledToday} label={<>Scheduled<br />today</>} tone="muted" sub={firstTitle(feeds.scheduledToday)} onClick={go('content', 'calendar')} />
         <Lockup
           value={{ state: pulse.length ? 'ok' : 'loading', count: drift.length }}
           label={<>Drift<br />alarms</>}
-          tone={drift.length ? 'alarm' : 'muted'}
+          tone={drift.length ? 'ink' : 'muted'}
           sub={drift[0]?.entry.label}
           onClick={go('system')}
         />
@@ -118,7 +112,7 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
         {/* Lead column — Needs you */}
         <div className="ec-col-lead">
           <div className="ec-kicker">Needs you</div>
-          <h2 className="ec-subhead">The lead: {feeds.loading ? '…' : lead.length} items are one click from done.</h2>
+          <h2 className="ec-subhead">{feeds.loading ? '…' : lead.length} items are one click from done.</h2>
           {feeds.loading ? (
             <p className="ec-note">Reading the pipeline…</p>
           ) : lead.length === 0 ? (
@@ -146,12 +140,12 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
             {feeds.workflowsRed.state === 'offline' ? 'Workflow health unreadable' : `${feeds.workflowsRed.count} workflows last ran red.`}
           </h2>
           {feeds.workflowsRed.state === 'offline' ? (
-            <span className="ec-offline">source offline — {feeds.workflowsRed.error?.slice(0, 60)}</span>
+            <span className="ec-offline">source offline: {feeds.workflowsRed.error?.slice(0, 60)}</span>
           ) : (
             <div className="ec-list">
               {feeds.workflowsRed.items.slice(0, 5).map((w, i) => (
                 <div className="ec-item" key={i}>
-                  <span className="ec-item-idx" style={{ color: 'var(--ec-red)' }}>✕</span>
+                  <span className="ec-item-idx">✕</span>
                   <div className="ec-item-body">
                     <div className="ec-item-title">{w}</div>
                     <div className="ec-item-meta">dashboard_workflow_stats · last_execution_status=error</div>
@@ -181,26 +175,31 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
                 <div className="ec-card-headline">Registry present, anon-blocked.</div>
                 <p className="ec-note" style={{ marginTop: '0.5rem' }}>
                   <span className="ec-mono">client_registry</span> returns 0 rows to the dashboard's public
-                  key. Rise DTC — the first paying client — lives here; the rebuild reads it server-side.
+                  key. Rise DTC, the first paying client, lives here; the rebuild reads it server-side.
                 </p>
                 <span className="ec-offline" style={{ marginTop: '0.5rem' }}>anon RLS · 0 rows</span>
               </>
             )}
           </div>
 
-          {/* Freshness / drift */}
-          <div className="ec-card">
-            <div className="ec-card-lbl">Freshness watch</div>
+          {/* Drift alarm: the boxed warning, played straight. The drift count
+              is this composition's single red. */}
+          <div className={`ec-box${drift.length ? ' ec-box--tilt' : ''}`}>
             {pulse.length === 0 ? (
-              <div className="ec-note">probing sources…</div>
+              <>
+                <div className="ec-box-head">Freshness watch</div>
+                <div className="ec-note" style={{ marginTop: '0.5rem' }}>probing sources…</div>
+              </>
             ) : drift.length === 0 ? (
               <>
-                <div className="ec-card-headline">All live feeds fresh.</div>
-                <div className="ec-data" style={{ marginTop: '0.4rem' }}>{pulse.length} sources probed · 0 drifting</div>
+                <div className="ec-box-head">Freshness: 0 feeds drifting</div>
+                <div className="ec-data" style={{ marginTop: '0.5rem' }}>{pulse.length} sources probed · all live feeds fresh</div>
               </>
             ) : (
               <>
-                <div className="ec-card-headline">{drift.length} feed{drift.length === 1 ? '' : 's'} drifting.</div>
+                <div className="ec-box-head">
+                  Warning: <span className="ec-red">{drift.length}</span> feed{drift.length === 1 ? '' : 's'} drifting
+                </div>
                 <div className="ec-list" style={{ marginTop: '0.6rem' }}>
                   {drift.slice(0, 5).map((r) => (
                     <div className="ec-item" key={r.entry.id} style={{ padding: '0.5rem 0' }}>
@@ -212,6 +211,7 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
                     </div>
                   ))}
                 </div>
+                <div className="ec-data" style={{ marginTop: '0.6rem' }}>{pulse.length} sources probed · effects observed above</div>
               </>
             )}
           </div>
@@ -236,8 +236,8 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
       </div>
 
       <p className="ec-footnote">
-        Editorial Cockpit · Direction A — born-dead tournament branch. All figures read live from Supabase
-        via the dashboard's anon client; nothing writes. Blocked feeds are shown as “source offline,” never faked.
+        Direction A · born-dead tournament branch. All figures read live from Supabase via the
+        dashboard's anon client; nothing writes. A blocked feed reads "source offline", never a faked number.
       </p>
     </div>
   );

@@ -3,18 +3,19 @@ import '../editorial-cockpit.css';
 import { useWarmPipeline } from '../../../lib/useCockpitData';
 
 /**
- * Warm Pipeline — the born surface (Direction A: magazine data-spread).
+ * Warm Pipeline — the born surface (Direction A, Black Box v4 register).
  *
  * Two modes: a funnel (engaged→DM'd→replied→call-booked from real outreach
  * timestamps, the call-booked tail honestly thin) and an approval queue
- * (followup_drafts pending). A real pull-quote is rendered live from the
- * latest genuine inbound reply — never hardcoded.
+ * (followup_drafts pending). The latest genuine inbound reply renders live
+ * as a clinical annotation, never hardcoded. This screen's single red is the
+ * call-booked figure: the one number the whole funnel exists to move.
  */
 
 type Mode = 'funnel' | 'queue';
 
 function fmt(n: number | null): string {
-  return n === null ? '—' : n.toLocaleString();
+  return n === null ? '-' : n.toLocaleString();
 }
 
 export function WarmPipeline() {
@@ -33,17 +34,14 @@ export function WarmPipeline() {
 
   return (
     <div className="ec">
-      {/* Masthead — one dark band */}
-      <div className="ec-masthead">
-        <div className="ec-masthead-name">Warm <em>Pipeline</em></div>
-        <div className="ec-masthead-meta">
-          <span className="ec-edition">PIPELINE · SPREAD</span>
-          <span>OUTREACH_PROSPECTS</span>
-          <span>{data.loading ? 'READING…' : `${fmt(data.stages[0]?.count ?? null)} EVER CONTACTED`}</span>
-        </div>
+      {/* Topline: compressed document header (the dark masthead band is cut) */}
+      <div className="ec-topline">
+        <span className="ec-topline-brand">Operator console · Warm pipeline</span>
+        <span className="ec-topline-meta">
+          outreach_prospects · {data.loading ? 'Reading' : `${fmt(data.stages[0]?.count ?? null)} ever contacted`}
+        </span>
       </div>
 
-      <div className="ec-dateline">The desk · warm outbound</div>
       <h1 className="ec-hed">From a cold list to a booked call.</h1>
 
       <div className="ec-tabs" role="tablist">
@@ -57,8 +55,8 @@ export function WarmPipeline() {
           <div className="ec-col-lead">
             <div className="ec-kicker">The spread</div>
             <h2 className="ec-subhead">Every stage, counted off the real timestamps.</h2>
-            <div className="ec-mono" style={{ fontSize: '11px', letterSpacing: '0.06em', opacity: 0.6, marginTop: '0.3rem' }}>
-              bar width — sqrt scale (938 → 2 spread; linear would flatten every stage past the first)
+            <div className="ec-data" style={{ marginTop: '0.3rem' }}>
+              bar width: sqrt scale (a 938 to 2 spread; linear would flatten every stage past the first)
             </div>
             <div className="ec-funnel" style={{ marginTop: '1.2rem' }}>
               {data.stages.map((s) => (
@@ -80,12 +78,12 @@ export function WarmPipeline() {
               </div>
             </div>
             <p className="ec-footnote">
-              Cumulative reach: each stage counts prospects that have <em>ever</em> reached it
+              Cumulative reach: each stage counts prospects that have ever reached it
               (<span className="ec-mono">connection_sent_at</span>, <span className="ec-mono">connected_at</span>,
               <span className="ec-mono"> last_dm_sent_at</span>, <span className="ec-mono">reply_count&gt;0</span>). DM'd
               exceeds Connected because it counts InMail + email beyond first-degree. Call-booked reads{' '}
-              <span className="ec-mono">call_reports</span> — the tail is thin on purpose (real client calls only);
-              calendar sync is dead, so it is not inflated.
+              <span className="ec-mono">call_reports</span>; the tail is thin on purpose (real client calls only),
+              and calendar sync is dead, so it is not inflated.
             </p>
           </div>
 
@@ -95,7 +93,7 @@ export function WarmPipeline() {
             {reply.state === 'loading' ? (
               <div className="ec-note">reading outreach_messages…</div>
             ) : reply.state === 'offline' ? (
-              <span className="ec-offline">source offline{reply.error ? ` — ${reply.error.slice(0, 50)}` : ''}</span>
+              <span className="ec-offline">source offline{reply.error ? `: ${reply.error.slice(0, 50)}` : ''}</span>
             ) : reply.text ? (
               <blockquote className="ec-pull">
                 <div className="ec-pull-q">“{reply.text.slice(0, 220)}{reply.text.length > 220 ? '…' : ''}”</div>
@@ -124,7 +122,7 @@ export function WarmPipeline() {
                 : `${data.queue.items.length} warm draft${data.queue.items.length === 1 ? '' : 's'} pending approval.`}
           </h2>
           {data.queue.state === 'offline' ? (
-            <span className="ec-offline">source offline{data.queue.error ? ` — ${data.queue.error.slice(0, 60)}` : ''}</span>
+            <span className="ec-offline">source offline{data.queue.error ? `: ${data.queue.error.slice(0, 60)}` : ''}</span>
           ) : data.queue.items.length === 0 && !data.loading ? (
             <p className="ec-note">No warm follow-ups awaiting approval. The war-room table is a roadmap source for this queue.</p>
           ) : (
@@ -145,7 +143,7 @@ export function WarmPipeline() {
                 </div>
               ))}
               <p className="ec-footnote">
-                Born-dead branch — approve / edit / skip are staged, not wired. The apply plan points these at the
+                Born-dead branch: approve, edit, and skip are staged, not wired. The apply plan points these at the
                 existing followup_drafts write path.
               </p>
             </div>

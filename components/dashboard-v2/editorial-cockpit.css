@@ -1,180 +1,156 @@
 /*
- * Editorial Cockpit — Direction A visual register.
- * Warm-paper editorial magazine language carried into the working cockpit.
- * Scoped under `.ec`; breaks out of the v2 light-slate chrome to paint paper.
+ * Direction A cockpit — BLACK BOX v4 register (founder correction 2026-07-18).
+ * The editorial warm-paper register is dead: this file now speaks Brand System
+ * v4 "Black Box" (inboundonsteroids-brand/03-brand-system.md).
  *
- * Brand floor (brand-visual-system.md): paper #F7F4EF, DM Serif Display roman
- * headlines, Source Serif body, IBM Plex Mono for DATA, §5f numeral lockups,
- * sage as punctuation only, sharp corners, thin borders, max one dark band.
+ * Law applied here: paper #FFFFFF production surfaces; ink #131210 for text,
+ * rules and boxes; Signal red #C8361B once per composition; muted #6B675E
+ * captions only; ink-family neutral ramp for tones. Schibsted Grotesk roster:
+ * display 800 tracked -0.035em (never under 48px), labels 700 uppercase
+ * tracked +0.05em, body 400. Source Serif 4 italic = clinical asides only.
+ * THE BOX = heavy 4px rule + 1px hairline offset 3px outside. No gradients,
+ * no shadows, sharp corners. Zero em dashes in copy.
+ *
+ * Structural thesis unchanged: statement headline, stat lockup strip, lead
+ * queue, honest sidebar receipts. Scoped under `.ec`.
  */
 
-/* Break the editorial sections out of the slate panel: full-bleed paper. */
+/* Break the cockpit sections out of the v2 slate chrome: full-bleed paper. */
 body.dashboard-v2-light .dashboard-v2 .dv-panel:has(.ec) {
   max-width: none;
   padding: 0;
 }
 body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
-  background: #F7F4EF;
+  background: #FFFFFF;
 }
 
 .ec {
-  --ec-paper: #F7F4EF;
-  --ec-ink: #1A1A1A;
-  --ec-body: #52525b;
-  --ec-sage: #2A8F65;
-  --ec-sage-ink: #1F6B4B;
-  --ec-red: #b0413e;      /* failure register only — muted, not neon */
-  --ec-rule: rgba(26, 26, 26, 0.12);
-  --ec-rule-strong: rgba(26, 26, 26, 0.22);
-  --ec-serif: 'Source Serif 4', Georgia, serif;
-  --ec-display: 'DM Serif Display', 'Bodoni Moda', Georgia, serif;
-  --ec-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --ec-paper: #FFFFFF;
+  --ec-ink: #131210;
+  --ec-body: #4A463E;        /* sanctioned neutral ramp: secondary body */
+  --ec-mutedc: #6B675E;      /* captions only */
+  --ec-dim: #9A958A;         /* sanctioned: disabled / comparison strokes */
+  --ec-red: #C8361B;         /* Signal red. ONCE per composition. */
+  --ec-rule: rgba(19, 18, 16, 0.14);
+  --ec-rule-strong: rgba(19, 18, 16, 0.28);
+  --ec-sans: 'Schibsted Grotesk', system-ui, sans-serif;
+  --ec-clinical: 'Source Serif 4', Georgia, serif;
 
   background: var(--ec-paper);
   color: var(--ec-ink);
-  font-family: var(--ec-serif);
+  font-family: var(--ec-sans);
+  font-weight: 400;
   min-height: 100%;
-  padding: 2.4rem clamp(1.6rem, 4vw, 3.4rem) 4rem;
+  padding: 2.2rem clamp(1.6rem, 4vw, 3.4rem) 4rem;
   max-width: 1500px;
   margin: 0 auto;
 }
 
-/* subtle print grid texture */
-.ec::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(26, 26, 26, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(26, 26, 26, 0.025) 1px, transparent 1px);
-  background-size: 40px 40px;
-  z-index: 0;
-}
-.ec > * { position: relative; z-index: 1; }
+/* Red is a budget, not a color. One element per screen wears this. */
+.ec-red { color: var(--ec-red); }
 
-/* ── Masthead (the one dark band) ─────────────────────────────────────────── */
-.ec-masthead {
+/* ── Topline: compressed document header (replaces the dark masthead band) ── */
+.ec-topline {
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  background: var(--ec-ink);
-  color: var(--ec-paper);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 2px solid var(--ec-ink);
+  padding-bottom: 0.55rem;
   margin-bottom: 1.6rem;
 }
-.ec-masthead-name {
-  font-family: var(--ec-display);
-  font-size: clamp(30px, 4.4vw, 52px);
-  line-height: 0.98;
-  padding: 0.55rem 1.2rem 0.7rem;
-  letter-spacing: -0.01em;
-}
-.ec-masthead-name em { font-style: italic; color: #4FB286; }
-.ec-masthead-meta {
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 0.25rem;
-  padding: 0 1.2rem;
-  border-left: 1px solid rgba(247, 244, 239, 0.18);
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+.ec-topline-brand {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: rgba(247, 244, 239, 0.72);
+  color: var(--ec-ink);
+}
+.ec-topline-meta {
+  font-family: var(--ec-sans);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
   text-align: right;
 }
-.ec-masthead-meta .ec-edition { color: #4FB286; }
 
-/* ── Dateline / lead headline ─────────────────────────────────────────────── */
-.ec-dateline {
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ec-body);
-  margin-bottom: 0.5rem;
-}
+/* ── Statement headline: display register, very big ──────────────────────── */
 .ec-hed {
-  font-family: var(--ec-display);
-  font-weight: 400;
-  font-style: normal;
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  letter-spacing: -0.035em;
   color: var(--ec-ink);
-  line-height: 0.98;
-  letter-spacing: -0.005em;
-  font-size: clamp(30px, 4vw, 46px);
-  margin: 0 0 0.4rem;
+  line-height: 0.96;
+  font-size: clamp(48px, 5.4vw, 78px);
+  margin: 0 0 1.4rem;
+  max-width: 18ch;
 }
 .ec-dek {
-  font-family: var(--ec-serif);
-  font-size: 17px;
-  line-height: 1.5;
+  font-family: var(--ec-sans);
+  font-size: 16px;
+  line-height: 1.55;
   color: var(--ec-body);
-  max-width: 60ch;
+  max-width: 62ch;
   margin: 0 0 1.4rem;
-}
-.ec-sage-sweep {
-  background: linear-gradient(transparent 62%, rgba(42, 143, 101, 0.22) 62%);
-  padding: 0 0.06em;
 }
 
 /* rules */
-.ec-rule { height: 1px; background: var(--ec-rule); border: 0; margin: 1.4rem 0; }
+.ec-rule { height: 1px; background: var(--ec-rule); border: 0; margin: 1.5rem 0; }
 .ec-rule--strong { background: var(--ec-rule-strong); }
-.ec-rule--sage { height: 2px; background: var(--ec-sage); }
 
-/* ── Numeral lockup strip (§5f) — the above-the-fold triage ───────────────── */
+/* ── Stat lockup strip: the above-the-fold triage, admin-table grammar ────── */
 .ec-strip {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  border-top: 2px solid var(--ec-ink);
+  border-top: 3px solid var(--ec-ink);
   border-bottom: 1px solid var(--ec-rule-strong);
 }
 .ec-lockup {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 1rem 1rem 1.1rem;
+  gap: 0.3rem;
+  padding: 1.05rem 1rem 1.15rem;
   border-left: 1px solid var(--ec-rule);
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: inherit;
-  transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.15s ease;
 }
 .ec-lockup:first-child { border-left: 0; }
-.ec-lockup:hover { background: rgba(42, 143, 101, 0.06); }
-.ec-lockup:focus-visible { outline: 2px solid var(--ec-sage); outline-offset: -2px; }
+.ec-lockup:hover { background: rgba(19, 18, 16, 0.04); }
+.ec-lockup:focus-visible { outline: 2px solid var(--ec-ink); outline-offset: -2px; }
 .ec-lockup-num {
-  font-family: var(--ec-display);
-  font-style: italic;
-  font-size: clamp(38px, 5vw, 60px);
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  font-size: clamp(48px, 4.4vw, 62px);
   line-height: 0.9;
   color: var(--ec-ink);
-  font-variant-numeric: lining-nums;
+  font-variant-numeric: lining-nums tabular-nums;
 }
-.ec-lockup-num--sage { color: var(--ec-sage); }
-.ec-lockup-num--alarm { color: var(--ec-red); }
-.ec-lockup-num--muted { color: rgba(26, 26, 26, 0.4); }
+.ec-lockup-num--muted { color: var(--ec-dim); }
 .ec-lockup-label {
-  font-family: var(--ec-mono);
+  font-family: var(--ec-sans);
+  font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-body);
+  color: var(--ec-ink);
   line-height: 1.35;
 }
 .ec-lockup-sub {
-  font-family: var(--ec-mono);
+  font-family: var(--ec-sans);
   font-size: 11px;
-  letter-spacing: 0.05em;
-  color: rgba(26, 26, 26, 0.42);
-  margin-top: 0.1rem;
+  letter-spacing: 0.01em;
+  color: var(--ec-mutedc);
+  margin-top: 0.05rem;
 }
-.ec-lockup-sub--offline { color: var(--ec-red); }
+.ec-lockup-sub--offline { color: var(--ec-body); }
 
 /* ── Below-the-fold columns ───────────────────────────────────────────────── */
 .ec-cols {
@@ -185,12 +161,14 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
 }
 .ec-col-rail { border-left: 1px solid var(--ec-rule); padding-left: clamp(1.2rem, 2.4vw, 2.4rem); }
 
+/* section label: solid ink square + label register (field-label grammar) */
 .ec-kicker {
-  font-family: var(--ec-mono);
+  font-family: var(--ec-sans);
+  font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-sage-ink);
+  color: var(--ec-ink);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -198,19 +176,21 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
 }
 .ec-kicker::before {
   content: '';
-  width: 8px; height: 8px;
-  background: var(--ec-sage);
+  width: 9px; height: 9px;
+  background: var(--ec-ink);
   display: inline-block;
 }
 .ec-subhead {
-  font-family: var(--ec-display);
-  font-size: 24px;
-  line-height: 1.05;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
   color: var(--ec-ink);
   margin: 0 0 0.8rem;
 }
 
-/* editorial list rows */
+/* ledger list rows */
 .ec-list { border-top: 1px solid var(--ec-rule); }
 .ec-item {
   display: flex;
@@ -220,83 +200,128 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   border-bottom: 1px solid var(--ec-rule);
 }
 .ec-item-idx {
-  font-family: var(--ec-mono);
-  font-size: 12px;
-  color: var(--ec-sage-ink);
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ec-mutedc);
   flex: 0 0 auto;
   min-width: 1.6rem;
+  font-variant-numeric: tabular-nums;
 }
 .ec-item-body { flex: 1 1 auto; min-width: 0; }
 .ec-item-title {
-  font-family: var(--ec-serif);
+  font-family: var(--ec-sans);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ec-ink);
   line-height: 1.35;
 }
 .ec-item-meta {
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  color: var(--ec-body);
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  color: var(--ec-mutedc);
   margin-top: 0.15rem;
 }
 .ec-item-tag {
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-body);
+  color: var(--ec-ink);
   flex: 0 0 auto;
   align-self: center;
   border: 1px solid var(--ec-rule-strong);
-  padding: 0.12rem 0.4rem;
+  padding: 0.14rem 0.42rem;
 }
-.ec-item-tag--alarm { color: var(--ec-red); border-color: rgba(176, 65, 62, 0.4); }
+.ec-item-tag--alarm { border-color: var(--ec-ink); }
 
-/* rail marginalia card */
+/* rail receipt block: heavy top rule, ledger-entry grammar (not a card) */
 .ec-card {
-  border: 1px solid var(--ec-rule-strong);
-  padding: 1rem 1.1rem 1.15rem;
-  margin-bottom: 1.2rem;
-  background: rgba(255, 255, 255, 0.4);
+  border-top: 2px solid var(--ec-ink);
+  border-bottom: 1px solid var(--ec-rule);
+  padding: 0.85rem 0 1.05rem;
+  margin-bottom: 1.4rem;
+  background: transparent;
 }
 .ec-card-lbl {
-  font-family: var(--ec-mono);
+  font-family: var(--ec-sans);
+  font-weight: 700;
   font-size: 11px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-body);
+  color: var(--ec-ink);
   margin-bottom: 0.5rem;
 }
 .ec-card-headline {
-  font-family: var(--ec-display);
-  font-size: 22px;
-  line-height: 1.05;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
   color: var(--ec-ink);
 }
-.ec-mono { font-family: var(--ec-mono); }
-.ec-data { font-family: var(--ec-mono); font-size: 12px; color: var(--ec-body); letter-spacing: 0.03em; }
-.ec-note { font-family: var(--ec-serif); font-size: 13px; line-height: 1.5; color: var(--ec-body); }
+.ec-data {
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  letter-spacing: 0.01em;
+}
+.ec-note { font-family: var(--ec-sans); font-size: 13px; line-height: 1.5; color: var(--ec-body); }
+.ec-mono { font-family: var(--ec-sans); font-weight: 500; }
 .ec-offline {
-  font-family: var(--ec-mono);
-  font-size: 11px;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
   letter-spacing: 0.05em;
-  color: var(--ec-red);
+  text-transform: uppercase;
+  color: var(--ec-body);
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
 }
-.ec-offline::before { content: ''; width: 7px; height: 7px; border: 1px solid var(--ec-red); display: inline-block; }
+.ec-offline::before { content: ''; width: 8px; height: 8px; border: 1px solid var(--ec-ink); display: inline-block; }
+
+/* ── THE BOX: the house component. Heavy rule + hairline offset outside. ──── */
+.ec-box {
+  border: 4px solid var(--ec-ink);
+  outline: 1px solid var(--ec-ink);
+  outline-offset: 3px;
+  padding: 0.95rem 1.05rem 1.1rem;
+  margin: 6px 6px 1.6rem;
+  background: var(--ec-paper);
+}
+/* the one sanctioned human move: a single box per page may sit off square */
+.ec-box--tilt { transform: rotate(-0.4deg); }
+.ec-box-head {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.ec-box-head::before {
+  content: '';
+  width: 13px; height: 13px;
+  background: var(--ec-ink);
+  flex: 0 0 auto;
+}
 
 /* ── Mode tabs (Warm Pipeline) ────────────────────────────────────────────── */
 .ec-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--ec-rule-strong); margin-bottom: 1.6rem; }
 .ec-tab {
-  font-family: var(--ec-mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-body);
+  color: var(--ec-mutedc);
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -304,76 +329,109 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   cursor: pointer;
   margin-bottom: -1px;
 }
-.ec-tab[aria-selected='true'] { color: var(--ec-ink); border-bottom-color: var(--ec-sage); }
+.ec-tab[aria-selected='true'] { color: var(--ec-ink); border-bottom-color: var(--ec-ink); }
 .ec-tab:hover:not([aria-selected='true']) { color: var(--ec-ink); }
 
-/* ── Funnel (magazine data-spread) ────────────────────────────────────────── */
+/* ── Funnel: admin-table figure plot ──────────────────────────────────────── */
 .ec-funnel { display: flex; flex-direction: column; gap: 0.5rem; }
 .ec-fun-row { display: grid; grid-template-columns: 190px 1fr auto; align-items: center; gap: 1rem; }
-.ec-fun-label { font-family: var(--ec-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ec-body); }
-.ec-fun-track { height: 30px; background: rgba(26,26,26,0.05); position: relative; }
+.ec-fun-label {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-ink);
+}
+.ec-fun-track { height: 30px; background: rgba(19, 18, 16, 0.06); position: relative; }
 /* display:block is load-bearing — .ec-fun-fill is a <span>; without it the
    inline-style width= percentage (magnitude encoding) is silently ignored
    and every bar renders as the same (invisible) width. */
 .ec-fun-fill { display: block; height: 100%; background: var(--ec-ink); }
-.ec-fun-fill--tail { background: var(--ec-sage); }
-.ec-fun-fill--off { background: repeating-linear-gradient(45deg, rgba(176,65,62,0.25), rgba(176,65,62,0.25) 6px, transparent 6px, transparent 12px); }
-.ec-fun-num { font-family: var(--ec-display); font-style: italic; font-size: 28px; line-height: 1; color: var(--ec-ink); min-width: 3.5rem; text-align: right; }
-.ec-fun-num--tail { color: var(--ec-sage); }
-
-/* ── Pull-quote (right-rule, 2px sage — §4 move 3) ────────────────────────── */
-.ec-pull {
-  border-right: 2px solid var(--ec-sage);
-  padding: 0.2rem 1.4rem 0.2rem 0;
-  margin: 0;
+.ec-fun-fill--tail { background: var(--ec-ink); }
+.ec-fun-fill--off { background: repeating-linear-gradient(45deg, rgba(107,103,94,0.3), rgba(107,103,94,0.3) 6px, transparent 6px, transparent 12px); }
+.ec-fun-num {
+  font-family: var(--ec-sans);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 27px;
+  line-height: 1;
+  color: var(--ec-ink);
+  min-width: 3.5rem;
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* the highlighted figure: this screen's single red */
+.ec-fun-num--tail { color: var(--ec-red); }
+
+/* ── Latest reply: clinical annotation register (Source Serif 4 italic) ───── */
+.ec-pull {
+  border-top: 2px solid var(--ec-ink);
+  padding: 0.9rem 0 0.2rem;
+  margin: 0;
+  text-align: left;
 }
 .ec-pull-q {
-  font-family: var(--ec-display);
-  font-size: clamp(20px, 2.4vw, 30px);
-  line-height: 1.15;
+  font-family: var(--ec-clinical);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(19px, 2vw, 25px);
+  line-height: 1.25;
   color: var(--ec-ink);
 }
 .ec-pull-attr {
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--ec-sage-ink);
+  color: var(--ec-ink);
   margin-top: 0.7rem;
 }
-.ec-pull-attr span { color: var(--ec-body); }
+.ec-pull-attr span { color: var(--ec-mutedc); }
 
 /* ── Approval queue rows ──────────────────────────────────────────────────── */
 .ec-q-row { border-bottom: 1px solid var(--ec-rule); padding: 1rem 0; }
 .ec-q-head { display: flex; align-items: baseline; gap: 0.7rem; }
-.ec-q-name { font-family: var(--ec-display); font-size: 20px; color: var(--ec-ink); }
-.ec-q-subject { font-family: var(--ec-serif); font-size: 14px; font-weight: 600; color: var(--ec-ink); margin: 0.4rem 0 0.2rem; }
-.ec-q-preview { font-family: var(--ec-serif); font-size: 13px; line-height: 1.5; color: var(--ec-body); }
+.ec-q-name { font-family: var(--ec-sans); font-weight: 700; letter-spacing: -0.01em; font-size: 19px; color: var(--ec-ink); }
+.ec-q-subject { font-family: var(--ec-sans); font-size: 14px; font-weight: 500; color: var(--ec-ink); margin: 0.4rem 0 0.2rem; }
+.ec-q-preview { font-family: var(--ec-sans); font-size: 13px; line-height: 1.5; color: var(--ec-body); }
 .ec-q-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
 .ec-btn {
-  font-family: var(--ec-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--ec-rule-strong);
+  padding: 0.42rem 0.85rem;
+  border: 1px solid var(--ec-ink);
   background: transparent;
   color: var(--ec-ink);
   cursor: pointer;
 }
 .ec-btn--primary { background: var(--ec-ink); color: var(--ec-paper); border-color: var(--ec-ink); }
-.ec-btn:disabled { opacity: 0.55; cursor: default; }
+.ec-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ── Roadmap stubs (Clients / other IA slots) ─────────────────────────────── */
 .ec-roadmap { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; margin-top: 1.4rem; }
-.ec-roadmap-card { border: 1px solid var(--ec-rule-strong); border-top: 2px solid var(--ec-ink); padding: 1.1rem 1.2rem 1.3rem; }
-.ec-roadmap-idx { font-family: var(--ec-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ec-sage-ink); }
-.ec-roadmap-title { font-family: var(--ec-display); font-size: 21px; line-height: 1.05; color: var(--ec-ink); margin: 0.3rem 0 0.5rem; }
-.ec-roadmap-body { font-family: var(--ec-serif); font-size: 13.5px; line-height: 1.5; color: var(--ec-body); }
-.ec-roadmap-tag { display: inline-block; margin-top: 0.7rem; font-family: var(--ec-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ec-body); border: 1px solid var(--ec-rule-strong); padding: 0.15rem 0.45rem; }
+.ec-roadmap-card { border-top: 2px solid var(--ec-ink); border-bottom: 1px solid var(--ec-rule); padding: 0.9rem 0 1.2rem; }
+.ec-roadmap-idx { font-family: var(--ec-sans); font-weight: 700; font-size: 11px; letter-spacing: 0.05em; color: var(--ec-mutedc); }
+.ec-roadmap-title { font-family: var(--ec-sans); font-weight: 700; letter-spacing: -0.01em; font-size: 20px; line-height: 1.1; color: var(--ec-ink); margin: 0.3rem 0 0.5rem; }
+.ec-roadmap-body { font-family: var(--ec-sans); font-size: 13.5px; line-height: 1.5; color: var(--ec-body); }
+.ec-roadmap-tag { display: inline-block; margin-top: 0.7rem; font-family: var(--ec-sans); font-weight: 700; font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ec-ink); border: 1px solid var(--ec-rule-strong); padding: 0.15rem 0.45rem; }
 
-.ec-footnote { font-family: var(--ec-mono); font-size: 11px; line-height: 1.6; color: rgba(26,26,26,0.42); margin-top: 1.6rem; letter-spacing: 0.02em; }
+.ec-footnote { font-family: var(--ec-sans); font-size: 11.5px; line-height: 1.6; color: var(--ec-mutedc); margin-top: 1.6rem; letter-spacing: 0.01em; }
+
+/* legacy section label used by ClientsRoadmap */
+.ec-dateline {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-bottom: 0.5rem;
+}
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 1080px) {
@@ -382,6 +440,11 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
   .ec-cols { grid-template-columns: 1fr; }
   .ec-col-rail { border-left: 0; padding-left: 0; border-top: 1px solid var(--ec-rule); padding-top: 1.4rem; }
   .ec-fun-row { grid-template-columns: 130px 1fr auto; }
+}
+@media (max-width: 768px) {
+  /* responsive amendment: display may clamp below 48px only under 768px */
+  .ec-hed { font-size: clamp(34px, 9vw, 48px); }
+  .ec-lockup-num { font-size: clamp(34px, 7vw, 48px); }
 }
 @media (max-width: 640px) {
   .ec-strip { grid-template-columns: repeat(2, 1fr); }
