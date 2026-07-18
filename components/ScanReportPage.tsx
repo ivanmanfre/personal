@@ -2025,11 +2025,11 @@ const RECORD_CSS = `
 .bbrec .pf-faces{display:flex;gap:10px;align-items:flex-start;}
 .bbrec .pf-face{position:relative;width:clamp(104px,13vw,148px);flex-shrink:0;}
 .bbrec .pf-face img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 18%;border:1px solid var(--ink);background:var(--paper);}
-.bbrec .pf-face .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:10px;padding:3px 7px;white-space:nowrap;}
+.bbrec .pf-face .nm{position:absolute;left:6px;bottom:6px;background:var(--ink);color:#fff;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;font-size:11px;padding:3px 7px;white-space:nowrap;}
 .bbrec .pf-figwrap{min-width:0;}
 .bbrec .pf-figk{font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);}
 .bbrec .pf-fig{font-family:var(--grotesk);font-weight:800;letter-spacing:-0.035em;font-size:clamp(34px,6.2vw,72px);line-height:0.95;color:var(--ink);margin-top:10px;}
-.bbrec .pf-fig .from{font-weight:500;color:var(--muted);}
+.bbrec .pf-fig .from{font-weight:500;color:var(--muted);font-variant-numeric:normal;}
 .bbrec .pf-quote{padding:clamp(18px,2.6vw,30px) clamp(18px,2.6vw,28px);font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(19px,2.6vw,29px);line-height:1.4;color:var(--ink);border-bottom:1px solid var(--hair);}
 .bbrec .pf-quote .who{display:block;font-style:normal;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:11px;color:var(--muted);margin-top:14px;}
 .bbrec .pf-sample{margin:0;background:var(--paper);}
@@ -2051,8 +2051,8 @@ const RECORD_CSS = `
 .bbrec .ptab-r:last-child{border-bottom:1px solid var(--ink);}
 .bbrec .ptab-a{font-family:var(--grotesk);font-weight:800;letter-spacing:0.01em;font-size:clamp(12px,1.5vw,15px);line-height:1.2;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:2px;display:inline-block;}
 .bbrec .ptab-a:hover{color:var(--sec);border-color:var(--sec);}
-.bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(13px,1.5vw,15.5px);line-height:1.35;letter-spacing:-0.01em;color:var(--ink);}
-.bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(13px,1.5vw,15.5px);line-height:1.4;color:var(--sec);}
+.bbrec .ptab-f{font-family:var(--grotesk);font-weight:500;font-size:clamp(14px,1.5vw,15.5px);line-height:1.55;letter-spacing:-0.01em;color:var(--ink);}
+.bbrec .ptab-v{font-family:var(--serif);font-weight:400;font-size:clamp(14px,1.5vw,15.5px);line-height:1.55;color:var(--sec);}
 @media(max-width:640px){.bbrec .ptab-h{display:none;}.bbrec .ptab-r{grid-template-columns:1fr;gap:4px;padding:16px 0;}.bbrec .ptab-r>.ptab-f::before,.bbrec .ptab-r>.ptab-v::before{content:attr(data-l);display:block;font-family:var(--grotesk);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;color:var(--muted);margin-top:8px;margin-bottom:2px;}}
 /* chapter CTA row — one line + the ink button, closing each chapter (content_system only) */
 .bbrec .chcta{margin-top:clamp(26px,3.2vw,40px);padding-top:clamp(18px,2.2vw,26px);border-top:1px solid var(--ink);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;}
@@ -3043,6 +3043,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               <div className="aud-row"><span className="ak">The raw material</span><p>{room.giftLine}</p></div>
               <div className="aud-row"><span className="ak">As it runs today</span><p>{room.gapLine}</p></div>
             </div>
+            <ChapterCta line={<>That is the read on {displayCompany}, {who}.</>} />
             {audNamed.length > 0 && (
               <div className="aud-names">
                 {audNamed.map((n, i) => (
@@ -3232,6 +3233,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               ))}
             </div>
           </div>
+          <ChapterCta line={<>The same engine, ready for {displayCompany}.</>} />
           {/* Lemonade — two founders, the monthly client figure dominant */}
           <div className="pf">
             <div className="pf-top">
@@ -3262,6 +3264,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <div>
               <div className="op-h">I&rsquo;m Iván. I fill founders&rsquo; LinkedIn with content and lead magnets, on autopilot.</div>
               <p className="op-b">It&rsquo;s an inbound engine that writes your posts and lead magnets in your voice, publishes them, and brings leads in without you writing a thing. I run my own LinkedIn on the same setup I&rsquo;d build for you.</p>
+              <p className="cap">The same setup, built for {displayCompany}.</p>
               <div className="op-sig"><span className="sq" aria-hidden /> Iván Manfredi · operator · <a href="https://ivanmanfredi.com" target="_blank" rel="noopener noreferrer">ivanmanfredi.com</a></div>
             </div>
           </div>
@@ -3277,7 +3280,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
             <div className="cta-h" style={{ marginTop: 'clamp(18px,2.4vw,26px)' }}>Be the sharpest voice in your space. Without writing a word.</div>
             <p className="cta-n">Book the free fit call. We&rsquo;ll scope it to your channels, formats, and voice, and you&rsquo;ll keep the audience, list, and every lead it builds.</p>
             <a className="cta-btn" href={bookUrl} target="_blank" rel="noopener noreferrer">Book the free fit call <span aria-hidden>→</span></a>
-            <div className="cta-fine">Or just reply to the message this arrived in. The same operator answers.</div>
+            <div className="cta-fine">Or just reply to the message this arrived in, {who}. The same operator answers.</div>
           </div>
         </div>
       </main>
