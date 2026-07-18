@@ -81,7 +81,7 @@ interface LeadMagnetEntry {
 /** Idea-bank entry: an upcoming topic the engine holds but has NOT drafted yet. It has
  *  no date and no metrics — it drafts when it reaches its calendar slot. Rendered as the
  *  IDEAS stage at the top of the All content ledger; opens a lightweight preview only. */
-interface Idea { id: string; title: string; pillar?: string; hook?: string; status?: 'idea' | string }
+interface Idea { id: string; title: string; pillar?: string; hook?: string; status?: 'idea' | string; kind?: string; source_label?: string }
 interface QueueItem {
   id: string;
   kind: 'post' | 'carousel' | 'lm' | 'newsletter';
@@ -116,7 +116,18 @@ interface NewsletterSpec {
   nurture?: NurtureStep[];
 }
 interface PerfIndicator { key: string; label: string; source?: string }
-interface PerformanceSpec { note?: string; indicators?: PerfIndicator[] }
+interface PerformanceSpec { note?: string; indicators?: PerfIndicator[]; outreach_indicators?: PerfIndicator[] }
+/** Outreach program panel (live boards): the ICP bar, the funnel grammar, and the four
+ *  staged lanes with their real counts. Rendered on the Leads tab above the pipeline. */
+interface OutreachLane { key?: string; name: string; status?: string; arms?: string; detail?: string; count?: number; scanned?: number; fits?: number }
+interface OutreachSpec {
+  note?: string;
+  icp?: { label?: string; bar?: string[]; note?: string };
+  funnel?: { step: string; detail?: string }[];
+  lanes?: OutreachLane[];
+}
+/** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
+interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string }
 interface EngineUpdate { date: string; note: string }
 interface Board {
   company_name: string;
@@ -137,6 +148,8 @@ interface Board {
    *  pipeline; demo/preview boards fall back to a LABELED sample deck (see LeadsSurface).
    *  A live board with no data shows a clean empty-state, never a staged sample. */
   lead_pipeline?: PipelineLead[];
+  outreach?: OutreachSpec;
+  lm_ideas?: LmIdea[];
   strategy?: { total: number; period?: string; pillars: Pillar[] };
   calendar?: { start: string; weeks: number; items: CalendarItem[] };
   newsletter?: NewsletterSpec;
@@ -657,11 +670,29 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
   idea: Idea; accent: string; onClose: () => void; live?: boolean;
   /** Board action recorder (same RPC posture as DetailModal). Live boards record the
    *  client's call on the idea; preview keeps buttons as local theater. */
-  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+  act?: (action: 'note' | 'edit_copy', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const [busy, setBusy] = useState<'draft' | 'pass' | null>(null);
   const [sent, setSent] = useState<'draft' | 'pass' | null>(null);
   const [err, setErr] = useState('');
+  // Direct idea editing (live): the idea text opens into a textarea; Save records a real
+  // edit_copy action tagged kind:'idea'. Confirmation only after ok:true.
+  const [editing, setEditing] = useState(false);
+  const [ideaText, setIdeaText] = useState(idea.hook || '');
+  const [editBusy, setEditBusy] = useState(false);
+  const [editSaved, setEditSaved] = useState(false);
+  const [editErr, setEditErr] = useState('');
+  const saveIdeaEdit = async () => {
+    if (editBusy) return;
+    if (live && act) {
+      setEditBusy(true); setEditErr('');
+      const r = await act('edit_copy', idea.id, { body: ideaText, kind: 'idea', title: idea.title });
+      setEditBusy(false);
+      if (!r.ok) { setEditErr(r.error || 'Could not save that. Try again.'); return; }
+    }
+    setEditSaved(true);
+    setEditing(false);
+  };
   // Same confirmation discipline as approve/edit/request: the confirmation renders only
   // after the RPC lands ok:true. Preview (no act wired) confirms locally, demo theater.
   const send = async (kind: 'draft' | 'pass') => {
@@ -689,6 +720,10 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
       <div className="relative mx-auto my-0 flex min-h-full w-full max-w-lg flex-col bg-white sm:my-16 sm:min-h-0 sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
         <div className="flex items-center gap-2.5 px-5 pb-3 pt-5 sm:px-6 sm:pt-6">
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Idea</span>
+          {/* Type chip: what format this idea drafts into. */}
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>
+            {KIND_LABEL[idea.kind || 'post'] || 'Post'}
+          </span>
           {idea.pillar && <span className="capitalize" style={{ fontFamily: MONO, fontSize: 11, color: caText(accent) }}>{idea.pillar}</span>}
           <button onClick={onClose} aria-label="Close" className="ml-auto flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -698,7 +733,49 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
         </div>
         <div className="px-5 pb-6 sm:px-6">
           <h3 style={{ fontFamily: SERIF, fontSize: 25, lineHeight: 1.14, letterSpacing: '-0.01em', color: INK }}>{idea.title}</h3>
-          {idea.hook && <p className="mt-3 max-w-[46ch]" style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.6, color: INK_SOFT }}>{idea.hook}</p>}
+          {idea.source_label && (
+            <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: FAINT }}>{idea.source_label}</div>
+          )}
+          {live && editing ? (
+            <div className="mt-3">
+              <textarea
+                value={ideaText}
+                onChange={(e) => setIdeaText(e.target.value)}
+                rows={Math.min(10, Math.max(3, ideaText.split('\n').length + 1))}
+                className="w-full rounded-lg p-3 text-[14px] leading-relaxed outline-none"
+                style={{ border: `1.5px solid ${accent}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={saveIdeaEdit}
+                  disabled={editBusy}
+                  className="inline-flex min-h-[38px] items-center rounded-[6px] px-4 text-[13px] font-semibold"
+                  style={{ background: accent, color: inkOn(accent), opacity: editBusy ? 0.6 : 1 }}
+                >
+                  {editBusy ? 'Saving…' : 'Save edit'}
+                </button>
+                <button onClick={() => { setEditing(false); setIdeaText(idea.hook || ''); }} className="text-[13px]" style={{ color: INK_MUTE, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                {editErr && <span className="text-[12px]" style={{ color: '#c0392b' }}>{editErr}</span>}
+              </div>
+            </div>
+          ) : (
+            <>
+              {(editSaved ? ideaText : idea.hook) && (
+                <p className="mt-3 max-w-[46ch]" style={{ fontFamily: BODY, fontSize: 14, lineHeight: 1.6, color: INK_SOFT }}>{editSaved ? ideaText : idea.hook}</p>
+              )}
+              {live && (
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    onClick={() => { setEditSaved(false); setEditing(true); }}
+                    style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+                  >
+                    edit this idea…
+                  </button>
+                  {editSaved && <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>}
+                </div>
+              )}
+            </>
+          )}
           <div className="mt-5 rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
             <div className="flex items-center gap-2">
               <PulseDot color={accent} size={6} />
@@ -2091,13 +2168,26 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
     </span>
   );
 
+  // Span the grid from cal.start through the END of the last scheduled item's month, so a
+  // plan that runs into next month renders whole (cal.weeks is only the seeded minimum).
+  const lastIso = cal.items.reduce((m, it) => (it.date > m ? it.date : m), cal.start);
+  const lastD = new Date(lastIso + 'T00:00:00');
+  const endOfSpan = new Date(lastD.getFullYear(), lastD.getMonth() + 1, 0);
+  const spanDays = Math.max(1, Math.round((endOfSpan.getTime() - start.getTime()) / 86400000) + 1);
+  const weekCount = Math.max(cal.weeks || 1, Math.ceil(spanDays / 7));
   const weeks: Date[][] = [];
-  for (let w = 0; w < cal.weeks; w++) {
+  for (let w = 0; w < weekCount; w++) {
     const row: Date[] = [];
     for (let d = 0; d < 7; d++) row.push(new Date(start.getTime() + (w * 7 + d) * 86400000));
     weeks.push(row);
   }
-  const monthLabel = start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  // Header label covers the whole span ("July · August 2026" across a month boundary).
+  const monthLabel = (() => {
+    const a = start.toLocaleDateString('en-GB', { month: 'long' });
+    const b = endOfSpan.toLocaleDateString('en-GB', { month: 'long' });
+    const yr = endOfSpan.getFullYear();
+    return a === b ? `${a} ${yr}` : `${a} · ${b} ${yr}`;
+  })();
   const num = (n: number) => <CountUpNum n={n} size={26} />;
   /** Approved mark on a linked chip — the calendar's visible reaction to an approve. */
   const approvedMark = (it: CalendarItem) =>
@@ -2196,7 +2286,11 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
                 const weekend = d.getDay() === 0 || d.getDay() === 6;
                 return (
                   <div key={iso} className="min-h-[112px] bg-white p-1.5" style={{ borderTop: wi > 0 ? `1px solid ${DIVIDE}` : 'none', borderLeft: di > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
-                    <div className="px-0.5 pb-1 text-[12px] font-medium tabular-nums" style={{ color: weekend ? '#c2cccb' : FAINT }}>{d.getDate()}</div>
+                    {/* Month turns are marked in the cell itself: the 1st renders "1 Aug" in
+                        quiet mono ink, so the two-month span reads without extra rows. */}
+                    <div className="px-0.5 pb-1 text-[12px] font-medium tabular-nums" style={d.getDate() === 1 ? { fontFamily: MONO, fontSize: 11, color: INK } : { color: weekend ? '#c2cccb' : FAINT }}>
+                      {d.getDate() === 1 ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : d.getDate()}
+                    </div>
                     <div className="flex flex-col gap-1">
                       {visible.map((it, i) => {
                         const time = KIND_TIME[it.kind];
@@ -2237,7 +2331,79 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
 // ---------- Lead magnet surface ----------
 const LM_FORMAT_LABEL: Record<string, string> = {
   assessment: 'Assessment', calculator: 'Calculator', worksheet: 'Worksheet', checklist: 'Checklist',
+  benchmark: 'Benchmark', report_card: 'Report card', diagnostic: 'Diagnostic',
 };
+
+/** One lead-magnet idea-bank row (live boards): concept + format chip + the same
+ *  greenlight/pass grammar as content ideas. The RPC note row IS the action. */
+function LmIdeaRow({ idea, accent, live, act }: {
+  idea: LmIdea; accent: string; live: boolean;
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [busy, setBusy] = useState<'build' | 'pass' | null>(null);
+  const [sent, setSent] = useState<'build' | 'pass' | null>(null);
+  const [err, setErr] = useState('');
+  const send = async (kind: 'build' | 'pass') => {
+    if (busy || sent) return;
+    if (live && act) {
+      setBusy(kind); setErr('');
+      const r = await act('note', idea.id, {
+        event: kind === 'build' ? 'lm_idea_build_next' : 'lm_idea_pass',
+        title: idea.title,
+      });
+      setBusy(null);
+      if (!r.ok) { setErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setSent(kind);
+  };
+  return (
+    <div className="px-3.5 py-[15px]" style={{ borderBottom: `1px solid ${LINE}`, margin: '0 -14px' }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
+        <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 16, color: INK }}>{idea.title}</span>
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-medium" style={{ background: 'rgba(2,49,47,0.05)', color: DIM }}>
+          {LM_FORMAT_LABEL[idea.format || ''] || 'Concept'}
+        </span>
+        {idea.source_label && (
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: FAINT }}>{idea.source_label}</span>
+        )}
+      </div>
+      {idea.note && (
+        <p className="mt-1.5 pl-[18px]" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: INK_MUTE }}>{idea.note}</p>
+      )}
+      <div className="mt-2.5 pl-[18px]">
+        {sent ? (
+          <span className="text-[12.5px] font-medium" style={{ color: caText(accent) }}>
+            Sent to your operator.{' '}
+            <span style={{ fontFamily: BODY, fontStyle: 'italic', fontWeight: 400, color: INK_MUTE }}>
+              {sent === 'build' ? 'This one goes to the front of the build line.' : 'Noted. It stays on the bench.'}
+            </span>
+          </span>
+        ) : (
+          <span className="inline-flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => send('build')}
+              disabled={!!busy}
+              className="inline-flex min-h-[34px] items-center rounded-[6px] px-3.5 uppercase"
+              style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'build' ? 0.55 : 1 }}
+            >
+              {busy === 'build' ? 'Sending…' : 'Build this next'}
+            </button>
+            <button
+              onClick={() => send('pass')}
+              disabled={!!busy}
+              className="inline-flex min-h-[34px] items-center rounded-[6px] px-3 text-[12.5px] font-medium"
+              style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'pass' ? 0.55 : 1 }}
+            >
+              {busy === 'pass' ? 'Sending…' : 'Pass'}
+            </button>
+            {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
@@ -2525,7 +2691,11 @@ function VoiceSurface({ board, accent, fontStack }: { board: Board; accent: stri
   );
 }
 
-function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { board: Board; accent: string; mint: string; fontStack: string; live?: boolean }) {
+function LeadMagnetSurface({ board, accent, mint, fontStack, live = false, act }: {
+  board: Board; accent: string; mint: string; fontStack: string; live?: boolean;
+  /** Board action recorder for the LM idea bank (live boards). */
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
   const lm = board.lm;
   const [lmDetail, setLmDetail] = useState<LeadMagnetEntry | null>(null);
   // Default src (scan_embed) keeps the engine's embed mode: Ivan's chrome/greeting
@@ -2553,100 +2723,148 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { b
       return { domain: u.hostname.replace(/^www\./, ''), urlPath: u.pathname.replace(/^\/+|\/+$/g, '') || undefined };
     } catch { return { domain: undefined, urlPath: undefined }; }
   })();
+  // Shared blocks, composed in a different order per mode: LIVE reads as a production tool
+  // (library first, then the idea bank, then the live tool itself); preview keeps the
+  // demo-funnel order (embed first) byte-for-byte.
+  const liveN = (board.lead_magnets || []).filter((e) => e.status === 'live').length;
+  const buildN = (board.lead_magnets || []).length - liveN;
+  const embedBlock = src ? (
+    <LiveAssessmentEmbed
+      src={src}
+      title={lm?.title}
+      domain={embedChrome.domain}
+      urlPath={embedChrome.urlPath}
+      logoUrl={board.brand?.logo_dark || board.logo_url}
+      accentHex={accent}
+      companyName={board.company_name}
+      navLinks={board.site?.nav}
+      headerBg={board.brand?.header_bg}
+      ctaText={board.site?.cta}
+      phone={board.site?.phone}
+      height={980}
+    />
+  ) : (
+    <div className="rounded-xl bg-white p-8" style={{ border: `1px solid ${LINE}` }}>
+      <p className="text-[14px]" style={{ color: DIM }}>Your first lead magnet is in production. It lands here for review this week.</p>
+    </div>
+  );
+  const libraryGrid = (board.lead_magnets || []).length > 0 ? (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {(board.lead_magnets || []).map((entry, i) => (
+        <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} boardLive={live} />
+      ))}
+    </div>
+  ) : null;
+
+  const capturedBlock = (
+    <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+      <div className="mb-3"><CardHead>Captured leads</CardHead></div>
+      {(board.leads && board.leads.length > 0) ? (
+        <>
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr style={{ color: FAINT }}>
+                <th className="pb-2 pr-3 font-medium">Email</th>
+                <th className="pb-2 pr-3 font-medium">Score</th>
+                <th className="pb-2 font-medium">Weakest area</th>
+                <th className="hidden pb-2 pl-3 font-medium sm:table-cell">When</th>
+              </tr>
+            </thead>
+            <tbody style={{ color: INK }}>
+              {board.leads.map((lead, i) => (
+                <tr key={i} style={{ borderTop: `1px solid ${DIVIDE}` }}>
+                  <td className="py-2.5 pr-3"><span className="break-all">{lead.email}</span></td>
+                  <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">{lead.score || ''}</td>
+                  <td className="py-2.5">{lead.weakest_area || ''}</td>
+                  <td className="hidden py-2.5 pl-3 sm:table-cell">{lead.when || ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-3 text-[13px]" style={{ color: DIM }}>Yours to keep, exportable anytime.</p>
+        </>
+      ) : (
+        <div className="rounded-lg px-4 py-6 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
+          <p className="mx-auto max-w-[46ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
+            Leads land here the moment someone completes your assessment. Yours to keep, exportable anytime.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+  const drawer = lmDetail ? (
+    <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
+  ) : null;
+
+  if (live) {
+    const lmIdeas = board.lm_ideas || [];
+    return (
+      <div>
+        <SectionHead eyebrow="Live assessments" title={<>Lead magnets.</>} />
+
+        {/* 1. Library */}
+        {libraryGrid && (
+          <div>
+            <div className="mb-1 flex items-baseline gap-2.5">
+              <CardHead>Library</CardHead>
+            </div>
+            <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
+              {liveN} live, {buildN} in build. Leads land in your pipeline.
+            </p>
+            {libraryGrid}
+          </div>
+        )}
+
+        {/* 2. Idea bank: concepts waiting on the client's greenlight, same grammar as content ideas. */}
+        {lmIdeas.length > 0 && (
+          <section className="mt-8 max-w-[880px]">
+            <LedgerSectionHead eyebrow="Ideas" count={lmIdeas.length} blurb="Concepts waiting in your bank. Greenlight the ones you want built next." accent={accent} />
+            {lmIdeas.map((li) => (
+              <LmIdeaRow key={li.id} idea={li} accent={accent} live={live} act={act} />
+            ))}
+          </section>
+        )}
+
+        {/* 3. The live tool itself, real URL chrome. */}
+        <div className="mt-8">
+          <div className="mb-3"><CardHead>The live assessment</CardHead></div>
+          {embedBlock}
+        </div>
+
+        {capturedBlock}
+        {drawer}
+      </div>
+    );
+  }
+
   return (
     <div>
       <SectionHead
-        eyebrow={live ? 'Live assessments' : 'Live on your domain'}
+        eyebrow="Live on your domain"
         title={<>Lead magnets, <Accent>working for you.</Accent></>}
         sub="The live one first, exactly what your leads see. It scores them, then captures their email. New capture assets ship on the calendar below it."
       />
-      {src ? (
-        <LiveAssessmentEmbed
-          src={src}
-          title={lm?.title}
-          domain={embedChrome.domain}
-          urlPath={embedChrome.urlPath}
-          logoUrl={board.brand?.logo_dark || board.logo_url}
-          accentHex={accent}
-          companyName={board.company_name}
-          navLinks={board.site?.nav}
-          headerBg={board.brand?.header_bg}
-          ctaText={board.site?.cta}
-          phone={board.site?.phone}
-          height={980}
-        />
-      ) : (
-        <div className="rounded-xl bg-white p-8" style={{ border: `1px solid ${LINE}` }}>
-          <p className="text-[14px]" style={{ color: DIM }}>Your first lead magnet is in production. It lands here for review this week.</p>
-        </div>
-      )}
+      {embedBlock}
 
       {/* Library: the live one plus what's coming. Statuses are honest; mockup covers
           are typographic, never screenshots of things that don't exist yet. */}
-      {(board.lead_magnets || []).length > 0 && (
+      {libraryGrid && (
         <div className="mt-8">
           <div className="mb-1 flex items-baseline gap-2.5">
             <CardHead>Your lead magnet library</CardHead>
             <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>
-              {(() => {
-                // Non-live entries are concepts/builds, not calendared dates: say what they are.
-                const liveN = (board.lead_magnets || []).filter((e) => e.status === 'live').length;
-                const buildN = (board.lead_magnets || []).length - liveN;
-                return [liveN > 0 ? `${liveN} live` : '', buildN > 0 ? `${buildN} in build` : ''].filter(Boolean).join(' · ');
-              })()}
+              {[liveN > 0 ? `${liveN} live` : '', buildN > 0 ? `${buildN} in build` : ''].filter(Boolean).join(' · ')}
             </span>
           </div>
           <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
             Each one scores or grades a real problem your buyers have, captures the email, and feeds the leads table below.
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(board.lead_magnets || []).map((entry, i) => (
-              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} boardLive={live} />
-            ))}
-          </div>
+          {libraryGrid}
         </div>
       )}
 
-      <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
-        <div className="mb-3"><CardHead>Captured leads</CardHead></div>
-        {(board.leads && board.leads.length > 0) ? (
-          <>
-            {/* Columns prioritized at phone widths: "When" hides under 640px so nothing clips. */}
-            <table className="w-full text-left text-[13px]">
-              <thead>
-                <tr style={{ color: FAINT }}>
-                  <th className="pb-2 pr-3 font-medium">Email</th>
-                  <th className="pb-2 pr-3 font-medium">Score</th>
-                  <th className="pb-2 font-medium">Weakest area</th>
-                  <th className="hidden pb-2 pl-3 font-medium sm:table-cell">When</th>
-                </tr>
-              </thead>
-              <tbody style={{ color: INK }}>
-                {board.leads.map((lead, i) => (
-                  <tr key={i} style={{ borderTop: `1px solid ${DIVIDE}` }}>
-                    <td className="py-2.5 pr-3"><span className="break-all">{lead.email}</span></td>
-                    <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">{lead.score || ''}</td>
-                    <td className="py-2.5">{lead.weakest_area || ''}</td>
-                    <td className="hidden py-2.5 pl-3 sm:table-cell">{lead.when || ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-3 text-[13px]" style={{ color: DIM }}>Yours to keep, exportable anytime.</p>
-          </>
-        ) : (
-          /* Fresh preview board: no real leads yet, so no staged sample row. */
-          <div className="rounded-lg px-4 py-6 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
-            <p className="mx-auto max-w-[46ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
-              Leads land here the moment someone completes your assessment. Yours to keep, exportable anytime.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {lmDetail && (
-        <LmDetailDrawer entry={lmDetail} board={board} accent={accent} mint={mint} fontStack={fontStack} live={live} onClose={() => setLmDetail(null)} />
-      )}
+      {capturedBlock}
+      {drawer}
     </div>
   );
 }
@@ -3385,6 +3603,113 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
         </p>
       </div>
 
+      {/* Outreach program (live boards): the bar, the funnel, the four staged lanes. Real
+          counts only; every lane names what arms it. Renders above the pipeline. */}
+      {live && board.outreach && (() => {
+        const o = board.outreach!;
+        const lanes = o.lanes || [];
+        const funnel = o.funnel || [];
+        return (
+          <section className="mb-10">
+            <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2" style={{ borderColor: LINE_BOLD }}>
+              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>outreach</span>
+              {o.note && <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>{o.note}</span>}
+            </div>
+
+            {/* The bar: who qualifies. */}
+            {o.icp && (
+              <div className="rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the bar</span>
+                  {o.icp.label && <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: INK }}>{o.icp.label}</span>}
+                </div>
+                {(o.icp.bar || []).length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {(o.icp.bar || []).map((b) => (
+                      <span key={b} className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[12px] font-medium" style={{ border: `1px solid ${LINE}`, background: caWash(accent, 5), color: INK }}>
+                        <span className="h-[5px] w-[5px] shrink-0" style={{ background: caText(accent) }} aria-hidden />
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {o.icp.note && <p className="mt-3 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{o.icp.note}</p>}
+              </div>
+            )}
+
+            {/* The funnel: engager to call, in four steps. */}
+            {funnel.length > 0 && (
+              <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                <div className="flex flex-col sm:flex-row">
+                  {funnel.map((s, i) => (
+                    <div key={i} className="relative flex gap-3 pb-5 last:pb-0 sm:flex-1 sm:flex-col sm:gap-2 sm:pb-0 sm:pr-4 sm:last:pr-0">
+                      {i < funnel.length - 1 && (
+                        <>
+                          <span className="absolute bottom-0 left-[9px] top-6 w-px sm:hidden" style={{ background: LINE }} aria-hidden />
+                          <span className="absolute hidden h-px sm:block" style={{ background: LINE, top: 9, left: 30, right: 8 }} aria-hidden />
+                        </>
+                      )}
+                      <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
+                        <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{i + 1}</span>
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold leading-snug" style={{ color: INK }}>{s.step}</div>
+                        {s.detail && <div className="mt-0.5 text-[12px] leading-snug" style={{ color: DIM }}>{s.detail}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* The four lanes, staged. Counts are real or absent. */}
+            {lanes.length > 0 && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {lanes.map((ln) => (
+                  <div key={ln.key || ln.name} className="rounded-xl bg-white p-4" style={{ border: `1px solid ${LINE}` }}>
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ln.name}</div>
+                      {ln.status && (
+                        <span className="inline-flex shrink-0 items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>{ln.status}</span>
+                      )}
+                    </div>
+                    {(typeof ln.count === 'number' || typeof ln.scanned === 'number') && (
+                      <div className="mt-2.5 flex items-baseline gap-4">
+                        {typeof ln.count === 'number' && (
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.count}</span>
+                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>counted</span>
+                          </span>
+                        )}
+                        {typeof ln.scanned === 'number' && (
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: INK }}>{ln.scanned}</span>
+                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>reviewed</span>
+                          </span>
+                        )}
+                        {typeof ln.fits === 'number' && (
+                          <span className="flex items-baseline gap-1.5">
+                            <span className="tabular-nums" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1, color: caText(accent) }}>{ln.fits}</span>
+                            <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE }}>fits</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {ln.detail && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{ln.detail}</p>}
+                    {ln.arms && (
+                      <div className="mt-2.5 border-t pt-2 uppercase" style={{ borderColor: DIVIDE, fontFamily: MONO, fontSize: 9, letterSpacing: '0.1em', color: FAINT }}>arms: {ln.arms}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Delineate the pipeline section that follows. */}
+            <div className="mt-10 border-b pb-2 uppercase" style={{ borderColor: LINE_BOLD, fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>pipeline</div>
+          </section>
+        );
+      })()}
+
       {leads.length === 0 ? (
         <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
           <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
@@ -3588,10 +3913,33 @@ function LeadDetailModal({ lead, accent, onClose, live = false }: { lead: Pipeli
   );
 }
 
-function PerformanceSurface({ board, accent }: { board: Board; accent: string }) {
+function PerformanceSurface({ board, accent, live = false }: { board: Board; accent: string; live?: boolean }) {
   const perf = board.performance;
   const updates = board.engine_updates || [];
   const indicators = perf?.indicators || [];
+  const outreachInds = perf?.outreach_indicators || [];
+  // Shared ghost card: awaiting-first-data treatment, identical for both groups. The
+  // content group keeps its per-indicator expectation line; outreach carries one group note.
+  const ghostCard = (ind: PerfIndicator, i: number, expectation?: string) => (
+    <div key={ind.key} className="rounded-xl bg-white p-4 sm:p-5" style={{ boxShadow: CARD_SHADOW }}>
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
+        {ind.source && <div className="shrink-0 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
+      </div>
+      {/* Ghost placeholder rule: shows a value WILL live here, unmistakably not data. */}
+      <div className="mt-4 mb-1 select-none" style={{ width: 26, height: 3, background: '#e2e8f0' }} aria-hidden />
+      <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: '#c9d3d1' }} aria-hidden>awaiting first data</div>
+      <svg viewBox="0 0 200 44" className="mt-3 h-11 w-full" preserveAspectRatio="none" aria-hidden>
+        <path
+          d={PLACEHOLDER_SPARKS[i % PLACEHOLDER_SPARKS.length]}
+          fill="none" stroke="#c9d3d1" strokeWidth="1.6" strokeDasharray="3.5 5" strokeLinecap="round"
+        />
+        <line x1="0" y1="43" x2="200" y2="43" stroke="rgba(2,49,47,0.06)" strokeWidth="1.5" />
+      </svg>
+      <div className="mt-2 text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: MONO, color: FAINT }}>No data yet</div>
+      {expectation && <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{expectation}</p>}
+    </div>
+  );
   return (
     <div>
       <SectionHead
@@ -3601,27 +3949,22 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {indicators.map((ind, i) => (
-          <div key={ind.key} className="rounded-xl bg-white p-4 sm:p-5" style={{ boxShadow: CARD_SHADOW }}>
-            <div className="flex items-baseline justify-between gap-2">
-              <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
-              {ind.source && <div className="shrink-0 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
-            </div>
-            {/* Ghost placeholder rule: shows a value WILL live here, unmistakably not data. */}
-            <div className="mt-4 mb-1 select-none" style={{ width: 26, height: 3, background: '#e2e8f0' }} aria-hidden />
-            <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: '#c9d3d1' }} aria-hidden>awaiting first data</div>
-            <svg viewBox="0 0 200 44" className="mt-3 h-11 w-full" preserveAspectRatio="none" aria-hidden>
-              <path
-                d={PLACEHOLDER_SPARKS[i % PLACEHOLDER_SPARKS.length]}
-                fill="none" stroke="#c9d3d1" strokeWidth="1.6" strokeDasharray="3.5 5" strokeLinecap="round"
-              />
-              <line x1="0" y1="43" x2="200" y2="43" stroke="rgba(2,49,47,0.06)" strokeWidth="1.5" />
-            </svg>
-            <div className="mt-2 text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: MONO, color: FAINT }}>No data yet</div>
-            <p className="mt-2 text-[12.5px] leading-relaxed" style={{ color: DIM }}>{expectationFor(ind)}</p>
-          </div>
-        ))}
+        {indicators.map((ind, i) => ghostCard(ind, i, expectationFor(ind)))}
       </div>
+
+      {/* Outreach indicators (live boards): same awaiting-first-data treatment, tied to
+          the staged lanes on the Leads tab. */}
+      {live && outreachInds.length > 0 && (
+        <div className="mt-8">
+          <div className="mb-1 flex items-baseline gap-3">
+            <CardHead>Outreach</CardHead>
+            <span style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>Counts start the day your lanes arm.</span>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {outreachInds.map((ind, i) => ghostCard(ind, i + 1))}
+          </div>
+        </div>
+      )}
 
       {updates.length > 0 && (
         <div className="mt-6 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
@@ -4485,12 +4828,12 @@ export default function ClientBoardPage() {
     ),
     review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
-    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
+    lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} act={act} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
-    performance: <PerformanceSurface board={viewBoard} accent={accent} />,
+    performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
   };
 
