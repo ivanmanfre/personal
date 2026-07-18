@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import '../editorial-cockpit.css';
 import { useTodayFeeds, type TriageFeed } from '../../../lib/useCockpitData';
 import { usePulse } from '../../../lib/usePulse';
+import { useChangelog, type ChangelogItem } from '../../../lib/useChangelog';
 import { useCountUp } from '../primitives/useCountUp';
 import type { SectionId } from '../types';
 
@@ -56,9 +57,52 @@ function Lockup({ value, label, sub, tone = 'ink', onClick }: LockupProps) {
   );
 }
 
+/**
+ * "Since you last looked" — the alive strip. One horizontal, mono-register run
+ * of what changed since the last visit (max 5). Clicking an item jumps to the
+ * owning section. First visit: "baseline set today". Zero changes: muted note.
+ * Hairline top rule only — no borders, no prose.
+ */
+function ChangelogStrip({ items, firstVisit, loading, onNavigate }: {
+  items: ChangelogItem[];
+  firstVisit: boolean;
+  loading: boolean;
+  onNavigate?: NavFn;
+}) {
+  let body: React.ReactNode;
+  if (loading && items.length === 0 && !firstVisit) {
+    body = <span className="ec-changelog-empty">checking for changes…</span>;
+  } else if (firstVisit) {
+    body = <span className="ec-changelog-empty">baseline set today</span>;
+  } else if (items.length === 0) {
+    body = <span className="ec-changelog-empty">no changes since yesterday</span>;
+  } else {
+    body = items.map((it) => (
+      <button
+        key={it.id}
+        type="button"
+        className="ec-changelog-item"
+        onClick={() => onNavigate?.(it.section, it.sub)}
+        title={`Open ${it.section}`}
+      >
+        <span className="ec-changelog-what">{it.what}</span>
+        <span className="ec-changelog-sep">·</span>
+        <span className="ec-changelog-when">{it.when}</span>
+      </button>
+    ));
+  }
+  return (
+    <div className="ec-changelog">
+      <span className="ec-changelog-lbl">Since you last looked</span>
+      <div className="ec-changelog-run">{body}</div>
+    </div>
+  );
+}
+
 export function Today({ onNavigate }: { onNavigate?: NavFn }) {
   const feeds = useTodayFeeds();
   const { results: pulse, probedAt } = usePulse();
+  const changelog = useChangelog();
 
   // Drift alarms = live non-dormant sources that have gone quiet or frozen.
   const drift = useMemo(
@@ -97,6 +141,14 @@ export function Today({ onNavigate }: { onNavigate?: NavFn }) {
       </div>
 
       <h1 className="ec-hed ec-hed--today">Today</h1>
+
+      {/* Since you last looked — the alive strip (build 1). */}
+      <ChangelogStrip
+        items={changelog.items}
+        firstVisit={changelog.firstVisit}
+        loading={changelog.loading}
+        onNavigate={onNavigate}
+      />
 
       {/* Above-the-fold triage strip — stat lockups over real feeds */}
       <div className="ec-strip">

@@ -7,6 +7,7 @@ import { TourProvider, useTour } from './tour/TourProvider';
 import { TourNarratorCard } from './tour/TourNarratorCard';
 import { onNav } from './lib/navBus';
 import { LiveStatus } from './live/LiveStatus';
+import { useNavDots } from '../../lib/useChangelog';
 import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
@@ -188,6 +189,11 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
 
   const renderer = sectionRenderers[active];
 
+  // Nav change-dots: mark entries whose source changed since last visited.
+  // Clears when the section is opened (active === id). See useNavDots.
+  const navDots = useNavDots(active);
+  const dottedIds = new Set(navItems.filter((it) => navDots.has(it.id)).map((it) => it.id));
+
   return (
     <TourProvider>
       <div className="dashboard-v2">
@@ -218,7 +224,7 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
             aria-hidden="true"
           />
 
-          <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
+          <Sidebar items={navItems} active={active} onSelect={handleSelect} open={navOpen} onClose={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} dots={dottedIds} />
           <main className="dv-main">
             <div className="dv-panel" key={`${active}:${navNonce}`}>
               {renderer ? renderer() : (

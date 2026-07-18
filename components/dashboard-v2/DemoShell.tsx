@@ -8,6 +8,7 @@ import { Today } from './sections/Today';
 import { WarmPipeline } from './sections/WarmPipeline';
 import { ClientsRoadmap } from './sections/ClientsRoadmap';
 import { SystemPulse } from './sections/SystemPulse';
+import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
 import { InternalTabs } from '../dashboard/InternalTabs';
@@ -28,7 +29,6 @@ import type { NavItem, SectionId } from './types';
 // ── Lazy v1 panels (reused as-is, never restyled) ──────────────────────────
 const PostStudioPanel = lazy(() => import('../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../dashboard/LeadMagnetStudioPanel'));
-const StyleGalleryPanel = lazy(() => import('../dashboard/StyleGalleryPanel'));
 const PromptLibraryPanel = lazy(() => import('../dashboard/PromptLibraryPanel'));
 const OutreachPanel = lazy(() => import('../dashboard/OutreachPanel'));
 const AudienceAuditsPanel = lazy(() => import('../dashboard/AudienceAuditsPanel'));
@@ -72,7 +72,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     items: [
       { id: 'posts', name: 'Posts', render: host(<PostStudioPanel />) },
       { id: 'lmstudio', name: 'LM Studio', render: host(<LeadMagnetStudioPanel />) },
-      { id: 'styles', name: 'Styles', render: host(<StyleGalleryPanel />) },
+      { id: 'styles', name: 'Styles', render: () => <StylesLive /> },
       { id: 'prompts', name: 'Prompts', render: host(<PromptLibraryPanel />) },
     ],
   },

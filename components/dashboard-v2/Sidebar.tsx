@@ -39,9 +39,10 @@ interface SidebarProps {
   onClose?: () => void;        // dismiss the mobile drawer
   collapsed?: boolean;         // desktop rail (icon-only) state
   onToggleCollapse?: () => void;
+  dots?: Set<string>;          // nav ids showing a change-dot (round 3 alive layer)
 }
 
-export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onToggleCollapse, dots }: SidebarProps) {
   const renderItem = (it: NavItem, groupKey: string) => (
     <button
       key={it.id}
@@ -53,6 +54,9 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
       <span className="dv-nav-icon" aria-hidden="true">{GROUP_ICON[groupKey] || dot}</span>
       <span className="dv-nav-name">{it.name}</span>
       <span className="dv-nav-short" aria-hidden="true">{it.name}</span>
+      {dots?.has(it.id) && (
+        <span className="dv-nav-dot" aria-label="changed since last visit" title="changed since last visit" />
+      )}
       {it.badge && it.badge.count > 0 && (
         <span className={`dv-nav-badge ${it.badge.severity === 'warn' ? 'dv-nav-badge--amber' : ''}`}>
           {it.badge.count}
