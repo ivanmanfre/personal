@@ -4242,9 +4242,10 @@ const TABS = [
   { id: 'leads', label: 'Leads', group: 'Reports' },
   { id: 'performance', label: 'Performance', group: 'Reports' },
   { id: 'strategy', label: 'Strategy', group: 'Reports' },
+  { id: 'team', label: 'Team', group: 'Settings' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
-const NAV_GROUPS = ['Content', 'Reports'] as const;
+const NAV_GROUPS = ['Content', 'Reports', 'Settings'] as const;
 
 /** 16px stroke icons for the nav (feather register, 1.8 stroke). */
 const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
@@ -4287,6 +4288,13 @@ const NAV_ICON_PATHS: Record<TabId, React.ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9.5" />
       <path d="m15.8 8.2-2 5.6-5.6 2 2-5.6 5.6-2z" />
+    </>
+  ),
+  team: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M3.5 20v-1.5a5.5 5.5 0 0 1 11 0V20" />
+      <path d="M16 5.2a3.5 3.5 0 0 1 0 5.7M17.5 13.5a5.5 5.5 0 0 1 3 5V20" />
     </>
   ),
 };
@@ -4473,6 +4481,175 @@ function BoardSignIn({ slug, onAuthed }: { slug: string; onAuthed: (s: BoardSess
         {err && <p className="mt-3" style={{ fontFamily: GK, fontSize: 12.5, lineHeight: 1.5, color: RED }}>{err}</p>}
         <div className="mt-9 uppercase" style={{ fontFamily: GK, fontWeight: 700, fontSize: 9.5, letterSpacing: '0.2em', color: '#a5a29a' }}>InboundOnSteroids</div>
       </div>
+    </div>
+  );
+}
+
+/** Team tab (live boards only) — self-serve invites. An invite APPENDS an email to
+ *  the board's allow-list (invite_board_member RPC, session-authed) and fires the
+ *  normal sign-in email at the invitee. There is never a shareable join-link:
+ *  forwarding an invite email grants nothing to anyone but the named address.
+ *  Members can invite; removals are operator-only (a teammate can't eject the
+ *  founder). Token-only (?k=) visitors see a sign-in nudge instead — the invite
+ *  RPC needs an email session to know WHO invited. */
+function TeamSurface({ slug, accent, session }: { slug: string; accent: string; session: BoardSession | null }) {
+  const [team, setTeam] = useState<string[] | null>(null);
+  const [me, setMe] = useState('');
+  const [teamState, setTeamState] = useState<'loading' | 'ready' | 'noauth' | 'unavailable'>(session ? 'loading' : 'noauth');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  // Token-only visitors: a compact "email me a sign-in link" form (same edge fn,
+  // same no-oracle posture — the response never reveals allow-list membership).
+  const [selfEmail, setSelfEmail] = useState('');
+  const [selfSent, setSelfSent] = useState(false);
+  const emailOk = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
+
+  useEffect(() => {
+    if (!session) { setTeamState('noauth'); return; }
+    let dead = false;
+    (async () => {
+      const { data, error } = await supabase.rpc('get_board_team', { p_slug: slug, p_session: session.token });
+      if (dead) return;
+      const res = (data as any) || null;
+      if (!error && res?.ok && Array.isArray(res.allowed_emails)) {
+        setTeam(res.allowed_emails); setMe(String(res.me || '')); setTeamState('ready');
+      } else if (res?.error === 'not_authenticated') {
+        setTeamState('noauth');
+      } else {
+        setTeamState('unavailable');
+      }
+    })();
+    return () => { dead = true; };
+  }, [slug, session]);
+
+  const invite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!emailOk(email) || busy || !session) return;
+    setBusy(true); setNotice(null);
+    try {
+      const { data, error } = await supabase.rpc('invite_board_member', { p_slug: slug, p_session: session.token, p_email: email });
+      const res = (data as any) || null;
+      if (!error && res?.ok) {
+        if (Array.isArray(res.allowed_emails)) setTeam(res.allowed_emails);
+        if (res.already_member) {
+          setNotice({ kind: 'ok', text: `${email} is already on the team.` });
+        } else {
+          // The allow-list write is the security; the email is the courtesy.
+          try { await supabase.functions.invoke('board-magic-link', { body: { slug, email } }); } catch { /* best-effort */ }
+          setNotice({ kind: 'ok', text: `${email} is in. They just got a sign-in email — no passwords, no setup.` });
+          setInviteEmail('');
+        }
+      } else if (res?.error === 'list_full') {
+        setNotice({ kind: 'err', text: 'The team list is full (10 seats). Ask your operator to make room.' });
+      } else if (res?.error === 'not_authenticated') {
+        setTeamState('noauth');
+      } else {
+        setNotice({ kind: 'err', text: 'That invite did not go through. Try again in a moment.' });
+      }
+    } catch {
+      setNotice({ kind: 'err', text: 'That invite did not go through. Try again in a moment.' });
+    }
+    setBusy(false);
+  };
+
+  const sendSelfLink = async () => {
+    if (!emailOk(selfEmail) || busy) return;
+    setBusy(true);
+    try { await supabase.functions.invoke('board-magic-link', { body: { slug, email: selfEmail.trim().toLowerCase() } }); } catch { /* uniform */ }
+    setBusy(false); setSelfSent(true);
+  };
+
+  return (
+    <div>
+      <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.2em', color: INK_MUTE }}>Settings</div>
+      <h2 className="mt-2" style={{ fontFamily: SERIF, fontSize: 26, lineHeight: 1.15, color: INK }}>Team access</h2>
+      <p className="mt-2 max-w-[520px] text-[14.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+        Everyone on this list can sign in to the board with their own email. No passwords, no shared links.
+      </p>
+
+      {teamState === 'noauth' && (
+        <div className="mt-7 max-w-[520px] bg-white p-6" style={{ border: `1px solid ${LINE}` }}>
+          <div className="text-[15px] font-semibold" style={{ fontFamily: BODY, color: INK }}>Sign in to manage your team</div>
+          {selfSent ? (
+            <p className="mt-2 text-[13.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+              If <span style={{ color: INK, fontWeight: 600 }}>{selfEmail.trim().toLowerCase()}</span> is on the team list, a sign-in link is on its way. Open it and come back to this tab.
+            </p>
+          ) : (
+            <>
+              <p className="mt-2 text-[13.5px] leading-relaxed" style={{ fontFamily: BODY, color: DIM }}>
+                Inviting teammates needs an email sign-in, so every invite is on the record. Enter your email and we'll send you a one-tap link.
+              </p>
+              <form onSubmit={(e) => { e.preventDefault(); void sendSelfLink(); }} className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+                <input
+                  type="email" inputMode="email" autoComplete="email"
+                  value={selfEmail} onChange={(e) => setSelfEmail(e.target.value)} placeholder="you@company.com"
+                  className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
+                  style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
+                />
+                <button type="submit" disabled={!emailOk(selfEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase"
+                  style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: emailOk(selfEmail) && !busy ? 'pointer' : 'default', opacity: emailOk(selfEmail) && !busy ? 1 : 0.5 }}>
+                  {busy ? 'Sending…' : 'Email me a link'}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+      )}
+
+      {teamState === 'loading' && (
+        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: FAINT }}>Loading your team…</div>
+      )}
+
+      {teamState === 'unavailable' && (
+        <div className="mt-7 max-w-[520px] bg-white px-5 py-6 text-[13.5px]" style={{ border: `1px solid ${LINE}`, fontFamily: BODY, color: DIM }}>
+          Team management isn't switched on for this board yet. Ask your operator.
+        </div>
+      )}
+
+      {teamState === 'ready' && (
+        <>
+          <div className="mt-7 max-w-[520px] overflow-hidden bg-white" style={{ border: `1px solid ${LINE}` }}>
+            <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
+              <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Who has access</span>
+              <span className="tabular-nums" style={{ fontFamily: MONO, fontSize: 10.5, color: INK_MUTE }}>{team?.length ?? 0}/10</span>
+            </div>
+            {(team || []).map((email, i) => (
+              <div key={email} className="flex min-h-[46px] items-center gap-3 px-5" style={{ borderTop: i > 0 ? `1px solid ${DIVIDE}` : 'none' }}>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: caWash(accent, 16), color: caText(accent) }} aria-hidden>
+                  {email.slice(0, 2).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px]" style={{ fontFamily: BODY, color: INK }}>{email}</span>
+                {email === me && (
+                  <span className="uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', color: INK_MUTE }}>you</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 max-w-[520px] bg-white p-5" style={{ border: `1px solid ${LINE}` }}>
+            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.16em', color: INK_MUTE }}>Invite a teammate</div>
+            <form onSubmit={(e) => { e.preventDefault(); void invite(); }} className="mt-3 flex flex-col gap-2.5 sm:flex-row">
+              <input
+                type="email" inputMode="email"
+                value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setNotice(null); }} placeholder="teammate@company.com"
+                className="min-w-0 flex-1 px-3.5 py-2.5 text-[14px]"
+                style={{ fontFamily: BODY, color: INK, background: 'white', border: `1px solid ${LINE}`, outline: 'none' }}
+              />
+              <button type="submit" disabled={!emailOk(inviteEmail) || busy} className="shrink-0 px-5 py-2.5 uppercase"
+                style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: emailOk(inviteEmail) && !busy ? 'pointer' : 'default', opacity: emailOk(inviteEmail) && !busy ? 1 : 0.5 }}>
+                {busy ? 'Inviting…' : 'Invite'}
+              </button>
+            </form>
+            {notice && (
+              <p className="mt-2.5 text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: notice.kind === 'ok' ? caText(accent) : '#C8361B' }}>{notice.text}</p>
+            )}
+            <p className="mt-3 text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
+              They'll get a sign-in email right away and can always sign in later with their own address. Need to remove someone? Ask your operator — removals are operator-only.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -5115,6 +5292,7 @@ export default function ClientBoardPage() {
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} live={isLive} />,
     strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
+    team: <TeamSurface slug={slug || ''} accent={accent} session={session} />,
   };
 
   const logo = (h: number) => (
@@ -5128,9 +5306,14 @@ export default function ClientBoardPage() {
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
   // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
-  // fold into the content surface). Preview keeps the full demo nav unchanged.
-  const visibleTabs = isLive ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos') : TABS;
-  const activeTab: TabId = isLive && (tab === 'voice' || tab === 'photos') ? 'week' : tab;
+  // fold into the content surface). Team (self-serve invites) is live-only — preview
+  // boards are demo funnels with no allow-list to manage.
+  const visibleTabs = isLive
+    ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos')
+    : TABS.filter((t) => t.id !== 'team');
+  const activeTab: TabId = isLive
+    ? (tab === 'voice' || tab === 'photos' ? 'week' : tab)
+    : (tab === 'team' ? 'week' : tab);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -5217,7 +5400,7 @@ export default function ClientBoardPage() {
           <div className="mt-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.22em', color: INK_MUTE }}>content desk</div>
         </div>
         <nav className="flex flex-col gap-5 px-0 py-5" aria-label="Board sections">
-          {NAV_GROUPS.map((g) => (
+          {NAV_GROUPS.filter((g) => visibleTabs.some((t) => t.group === g)).map((g) => (
             <div key={g}>
               <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE, opacity: 0.75 }}>{g}</div>
               <div className="flex flex-col">
