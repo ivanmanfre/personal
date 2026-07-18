@@ -55,7 +55,7 @@ const stepLabel = (name: string) => STEP_LABELS[name] || name;
  *  live choreography and by the reload path that lands d1 as an already-finished
  *  review card (so an in-progress detail never shows on a done step). */
 const INTRO_DONE_DETAILS: Record<string, string> = {
-  'Hook agent': 'Tried 9 openings and kept the strongest',
+  'Hook agent': 'Chose the opening line',
   'Draft agent': 'Wrote it, then rewrote it once after a self-review',
   'Copy quality gate': 'Quality check passed, nothing flagged',
   'Image check': 'Image matches the post, ready for you',
@@ -201,6 +201,11 @@ const caBorder = (a: string, pct = 40) => `color-mix(in oklab, ${a} ${pct}%, tra
 /** Review-row washes, running-step fills (5–9%). */
 const caWash = (a: string, pct = 6) => `color-mix(in oklab, ${a} ${pct}%, transparent)`;
 
+/** Zero em-dash law: board free-text (voice traits, etc.) can carry em dashes from the
+ *  source data. Swap them for commas at render so no em dash ever reaches the client. */
+function noDash(s?: string): string {
+  return (s || '').replace(/\s*—\s*/g, ', ').replace(/—/g, ', ');
+}
 function cleanHex(hex?: string, fallback = '#4f46e5'): string {
   const h = (hex || '').replace(/[^0-9a-fA-F]/g, '');
   return h.length === 6 ? `#${h}` : fallback;
@@ -477,7 +482,7 @@ function FeedPreview({ item, board, accent, fontStack, size = 'lg', cover = 'pla
 const STAGE_META: Record<Stage, { label: string; hint: string }> = {
   planned: { label: 'Planned', hint: 'On the calendar. The engine drafts each one a few days ahead.' },
   drafted: { label: 'Drafted', hint: 'The engine is writing these. They move to your review when ready.' },
-  review: { label: 'Your review', hint: 'Your only job. Approve or request a change.' },
+  review: { label: 'Your review', hint: 'Approve it, or say what to change.' },
   scheduled: { label: 'Scheduled', hint: 'Approved and queued to publish.' },
   published: { label: 'Published · example', hint: 'How live posts will report here once the engine is running.' },
 };
@@ -492,7 +497,7 @@ const LIST_STAGE_SECTIONS: { stage: Stage; label: string; blurb: string }[] = [
   { stage: 'scheduled', label: 'Scheduled', blurb: 'Approved and queued to publish on their dates.' },
   { stage: 'published', label: 'Published', blurb: 'How live posts will report here once the engine is running.' },
 ];
-function STAGE_META_review_blurb() { return 'Your only job. Approve, or say what to change in plain words.'; }
+function STAGE_META_review_blurb() { return 'Approve, or say what to change in plain words.'; }
 const IDEAS_BLURB = "The engine's upcoming idea bank. Each one drafts when it reaches its slot.";
 
 /** Editorial section header for a ledger stage group: mono-caps eyebrow + accent count,
@@ -522,7 +527,7 @@ function stageStatus(q: QueueItem, stage: Stage, startIso?: string): React.React
       ? <span className="inline-flex items-center gap-2 text-[12px] font-medium" style={{ color: DIM }}><PulseDot color="var(--cb-mint)" /> {q.live_step || 'Generating…'}</span>
       : <span className="text-[12px]" style={{ color: FAINT }}>In production</span>;
   }
-  if (stage === 'review') return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)} unless you change it</span>;
+  if (stage === 'review') return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>In your review{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
   if (stage === 'scheduled') return <span className="text-[12px] font-medium tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)}</span>;
   // Example state, not a claim: nothing has run on the client's LinkedIn yet.
   return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Example · {fmtDay(q.publish_date)}</span>;
@@ -555,10 +560,9 @@ function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
       </span>
     );
   }
-  const n = daysUntil(q.publish_date);
   const sub =
     stage === 'review'
-      ? `auto-publishes${n != null && n > 1 ? ` · in ${n} days` : n === 1 ? ' · tomorrow' : n === 0 ? ' · today' : ''}`
+      ? 'in your review'
       : stage === 'scheduled'
       ? 'approved · queued'
       : stage === 'published'
@@ -567,7 +571,7 @@ function PublishCell({ q, stage }: { q: QueueItem; stage: Stage }) {
   return (
     <span className="block text-right">
       <span className="block text-[12.5px] font-medium tabular-nums" style={{ color: INK, fontVariantNumeric: 'tabular-nums' }}>
-        {fmtDay(q.publish_date) || '—'}
+        {fmtDay(q.publish_date) || 'this week'}
       </span>
       <span className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] tabular-nums" style={{ color: FAINT }}>
         {stage === 'scheduled' && <span className="inline-block h-[5px] w-[5px] rounded-full" style={{ background: FAINT }} aria-hidden />}
@@ -591,9 +595,7 @@ function weekAbbr(iso?: string): string {
 /** Mono stage mark for a ledger row — honest, and the auto-publish clock is part of it. */
 function stageMark(q: QueueItem, stage: Stage, autoDays: number): { text: string; sub?: string; color: string; pulse?: boolean } {
   if (stage === 'review') {
-    const n = daysUntil(q.publish_date);
-    const days = n != null && n > 0 ? n : autoDays;
-    return { text: '● Your review', sub: `auto-publishes in ${days} ${days === 1 ? 'day' : 'days'}`, color: caText(q.pillar ? 'var(--cb-accent)' : 'var(--cb-accent)') };
+    return { text: '● Your review', sub: 'waiting on you', color: caText('var(--cb-accent)') };
   }
   if (stage === 'scheduled') return { text: '✓ Scheduled', sub: q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : undefined, color: caText('var(--cb-accent)') };
   if (stage === 'drafted') return { text: 'Drafting', color: INK_MUTE, pulse: !!q.generating };
@@ -675,7 +677,7 @@ function IdeaPreviewModal({ idea, accent, onClose }: { idea: Idea; accent: strin
   );
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips }: {
+function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
@@ -686,6 +688,8 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   setView: (v: ContentView) => void;
   /** Week-home "skip this day" marks: skipped items stay listed but lose their actions. */
   skips: Record<string, true>;
+  /** Live mode folds the client photo pool in here (no standalone Photos tab). */
+  foldPhotos?: React.ReactNode;
 }) {
   const autoDays = board.auto_publish_days ?? 3;
   const reduce = useReducedMotion();
@@ -825,7 +829,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                         >Approve ✓</button>
                         <button onClick={(e) => { e.stopPropagation(); onOpen(q, { changing: true }); }} style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>request a change…</button>
                       </div>
-                      <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>{mark.sub || `auto-publishes in ${autoDays} days`} if untouched</div>
+                      <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12, color: INK_MUTE }}>Nothing publishes until you approve it.</div>
                     </>
                   ) : q.generating ? (
                     <BuildSequence trail={q.agent_trail || []} accent={accent} />
@@ -861,7 +865,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
         className="grid cursor-pointer items-center gap-x-[18px] px-3.5 py-[15px] transition-colors duration-150 hover:brightness-[0.985] sm:grid-cols-[96px_minmax(0,1fr)_110px_190px_26px]"
         style={{ margin: '0 -14px' }}
       >
-        <span style={{ fontFamily: MONO, fontSize: 12, color: INK_MUTE }}>—</span>
+        <span style={{ fontFamily: MONO, fontSize: 12, color: INK_MUTE }}>idea</span>
         <span className="flex min-w-0 items-center gap-2.5">
           <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: caText(accent) }} aria-hidden />
           <span className="min-w-0">
@@ -885,7 +889,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           <SectionHead
             eyebrow="The pipeline"
             title={<>The pipeline, <Accent>in your voice.</Accent></>}
-            sub={`Everything the engine produces moves through these stages. Open a row to see it exactly as the feed will. Anything in your review you don't touch publishes automatically after ${autoDays} days.`}
+            sub={`Everything the engine produces moves through these stages. Open a row to see it exactly as the feed will. Nothing goes out until you approve it.`}
           />
         </div>
         <div className="inline-flex shrink-0 overflow-hidden rounded-[8px]" style={{ border: `1px solid ${LINE}` }} role="tablist" aria-label="Content view">
@@ -1033,6 +1037,13 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           </div>
         </div>
       </div>
+
+      {/* Live mode: the client photo pool folds in here (no standalone Photos tab). */}
+      {foldPhotos && (
+        <div className="mt-8 max-w-[880px] rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+          {foldPhotos}
+        </div>
+      )}
     </div>
   );
 }
@@ -1209,7 +1220,7 @@ function WeekCard({ q, accent, focused, approving, flashOn, autoDays, panel, onF
               {panel.none ? (
                 <div className="mt-3 rounded-lg p-3.5" style={{ background: 'rgba(2,49,47,0.03)', border: `1px dashed ${LINE}` }}>
                   <p className="text-[13px] leading-relaxed" style={{ color: DIM }}>
-                    This one is already built and live on your domain, so there is no alternate angle to serve. Request a change instead and your operator adjusts it.
+                    No alternate angle is queued for this slot. Request a change instead and your operator adjusts it.
                   </p>
                   <div className="mt-2.5 flex gap-2">
                     <button onClick={() => { onClosePanel(); onOpen({ changing: true }); }} className="inline-flex min-h-[32px] items-center rounded-[6px] px-3 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
@@ -1486,7 +1497,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
               <p className="mt-1 max-w-[52ch]" style={{ fontFamily: BODY, fontSize: 16, lineHeight: 1.6, color: INK_SOFT }}>
                 {total === 0
                   ? 'Nothing needs you this week. Every piece is already approved or operator-run. The engine keeps drafting next week behind the scenes.'
-                  : `Seven pieces, approved in your voice, queued to their slots. The engine keeps drafting next week behind the scenes, and if you ever miss a week nothing stalls: drafts publish automatically after ${autoDays} days.`}
+                  : 'Approved in your voice and queued to their slots. The engine keeps drafting next week behind the scenes, and nothing goes out until you approve it.'}
               </p>
               <div className="mt-6" style={{ borderTop: `1px solid ${LINE_BOLD}` }}>
                 {actionable.map((q) => (
@@ -1554,7 +1565,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           onClick={(e) => { e.stopPropagation(); onOpen(focused, { changing: true }); }}
                           style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 14, background: 'none', border: 'none', color: INK_MUTE, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
                         >edit a line…</button>
-                        <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>untouched pieces auto-publish in {autoDays} days</span>
+                        <span className="ml-auto hidden sm:inline" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 12.5, color: INK_MUTE }}>nothing publishes until you approve it</span>
                       </div>
                       {/* Different-idea panel: a seeded alternate ANGLE, never an instant draft. */}
                       <AnimatePresence initial={false}>
@@ -1569,7 +1580,7 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
                           >
                             {curPanel.none ? (
                               <div className="mt-4 rounded-lg p-3.5" style={{ background: caWash('#1a1a1a', 3), border: `1px dashed ${LINE}` }}>
-                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>This one is already built and live on your domain, so there's no alternate angle to serve. Request a change instead and your operator adjusts it.</p>
+                                <p style={{ fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>No alternate angle is queued for this slot. Request a change instead and your operator adjusts it.</p>
                                 <div className="mt-2.5 flex gap-2">
                                   <button onClick={() => { setAngle(null); onOpen(focused, { changing: true }); }} className="rounded-[6px] px-3 py-2 text-[12.5px] font-semibold" style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}>Request a change</button>
                                   <button onClick={() => setAngle(null)} className="px-3 py-2 text-[12.5px]" style={{ color: INK_MUTE }}>Close</button>
@@ -1676,17 +1687,56 @@ function AgentTrail({ steps, accent }: { steps: AgentStep[]; accent: string }) {
   );
 }
 
-function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false }: {
+function DetailModal({ item, board, accent, stage, onClose, onApprove, initialChanging = false, isLive, act }: {
   item: QueueItem; board: Board; accent: string; stage: Stage;
   onClose: () => void; onApprove: (id: string) => void; initialChanging?: boolean;
+  isLive: boolean;
+  act: (action: 'edit_copy' | 'request_changes', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
 }) {
+  const reduce = useReducedMotion();
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(item.body || '');
   const [changing, setChanging] = useState(initialChanging);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
+  const [editSaved, setEditSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const ctaInk = inkOn(accent);
   const canAct = stage === 'review';
+
+  // Client-appropriate provenance (replaces the internal agent trail): a human status and a
+  // plain "what happens next" line. No agent steps, scores, prompts, model names, or auto-publish.
+  const statusLabel = stage === 'review' ? 'In your review'
+    : stage === 'scheduled' ? 'Approved'
+    : stage === 'drafted' ? 'Being written'
+    : stage === 'published' ? 'Example' : 'Planned';
+  const nextLine = stage === 'review' ? 'Approve it, or request a change. What you approve goes to your operator to publish.'
+    : stage === 'scheduled' ? 'Approved. Your operator publishes it on its date.'
+    : stage === 'drafted' ? 'Being written now. It lands in your review shortly.'
+    : stage === 'published' ? 'An example of how published posts will report here once the engine is live.'
+    : 'The engine drafts this a few days before its date, then it lands in your review.';
+
+  // Edit + request-changes: live boards record the real action and only confirm after ok:true.
+  const saveEdit = async () => {
+    if (isLive) {
+      setBusy(true); setErr('');
+      const r = await act('edit_copy', item.id, { body });
+      setBusy(false);
+      if (!r.ok) { setErr(r.error || 'Could not save that. Try again.'); return; }
+    }
+    setEditSaved(true);
+    setEditing(false);
+  };
+  const sendChange = async () => {
+    if (isLive) {
+      setBusy(true); setErr('');
+      const r = await act('request_changes', item.id, { note });
+      setBusy(false);
+      if (!r.ok) { setErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setSent(true); setChanging(false);
+  };
 
   // Escape steps out one level at a time: edit / request-change mode first, then the modal.
   useEffect(() => {
@@ -1702,15 +1752,22 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
   }, [editing, changing, onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
-      {/* Dialog caps at viewport height with internal scroll — the action footer stays
-          visible at small desktop sizes (1280x720) instead of falling below the fold. */}
-      <div className="relative mx-auto my-0 flex min-h-full w-full max-w-4xl flex-col bg-white sm:my-6 sm:min-h-0 sm:max-h-[calc(100vh-48px)] sm:rounded-xl" style={{ boxShadow: '0 30px 80px rgba(2,32,32,.32)' }}>
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+      <motion.div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+      {/* Right-anchored sheet (Studio grammar): slides in from the right; scrim, Esc and X
+          all close it, and the list behind stays mounted. Internal scroll pins the footer. */}
+      <motion.div
+        className="fixed inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white"
+        style={{ boxShadow: '-24px 0 80px rgba(2,32,32,.28)' }}
+        initial={reduce ? false : { x: '100%' }}
+        animate={{ x: 0 }}
+        exit={reduce ? undefined : { x: '100%' }}
+        transition={{ type: 'tween', duration: 0.3, ease: EASE }}
+      >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2.5 px-4 pb-4 pt-4 sm:px-6 sm:pt-6">
+        <div className="flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           <KindChip q={item} accent={accent} />
-          {item.pillar && <span className="text-[12px] capitalize" style={{ color: FAINT }}>{item.pillar}</span>}
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
           <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1719,9 +1776,9 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
-        <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
-          {/* Left: content preview / edit */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-5 sm:px-6 sm:pb-6">
+        <div className="flex flex-col gap-6">
+          {/* Content preview / edit */}
           <div className="min-w-0">
             {item.kind === 'newsletter' && item.body ? (
               /* Newsletter issues read as email, not as a LinkedIn post. */
@@ -1769,17 +1826,19 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <button
-                    onClick={() => setEditing(false)}
+                    onClick={saveEdit}
+                    disabled={busy}
                     className="inline-flex min-h-[40px] items-center rounded-[6px] px-4 text-[13px] font-semibold"
-                    style={{ background: accent, color: ctaInk }}
+                    style={{ background: accent, color: ctaInk, opacity: busy ? 0.6 : 1 }}
                   >
-                    Done editing
+                    {busy ? 'Saving…' : 'Save edit'}
                   </button>
-                  <span className="text-[12px]" style={{ color: FAINT }}>Edits sync to your operator before publish.</span>
+                  <span className="text-[12px]" style={{ color: FAINT }}>Your operator gets your edit before it goes out.</span>
                   <span className="ml-auto text-[12px] tabular-nums" style={{ color: body.length > 210 ? '#b45309' : FAINT }}>
                     {body.length} chars{body.length > 210 ? ' · past the LinkedIn fold' : ''}
                   </span>
                 </div>
+                {err && <div className="mt-2 text-[12px]" style={{ color: '#c0392b' }}>{err}</div>}
               </div>
             ) : (
               <div className="cb-linkedin-preview">
@@ -1807,28 +1866,45 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                   </div>
                 )}
                 {canAct && item.body && (
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="mt-3 inline-flex min-h-[40px] items-center rounded-[6px] px-4 text-[13px] font-semibold"
-                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-                  >
-                    Edit copy
-                  </button>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => { setEditSaved(false); setEditing(true); }}
+                      className="inline-flex min-h-[40px] items-center rounded-[6px] px-4 text-[13px] font-semibold"
+                      style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
+                    >
+                      Edit copy
+                    </button>
+                    {editSaved && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Edit sent to your operator.</span>}
+                  </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Right: agent trail */}
-          <div className="h-fit rounded-xl p-4" style={{ background: 'rgba(2,49,47,0.02)', border: `1px solid ${LINE}` }}>
-            <AgentTrail steps={item.agent_trail || []} accent={accent} />
+          {/* Provenance (client-appropriate): status, its date, and what happens next.
+              No agent steps, scores, prompts, or model names. */}
+          <div className="rounded-xl p-4 sm:p-5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+            <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>What happens next</div>
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              <div>
+                <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>Status</div>
+                <div className="mt-1" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{statusLabel}</div>
+              </div>
+              {item.publish_date && (
+                <div>
+                  <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.12em', color: FAINT }}>{stage === 'scheduled' || stage === 'published' ? 'Date' : 'Scheduled for'}</div>
+                  <div className="mt-1 tabular-nums" style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: INK }}>{fmtDay(item.publish_date)}</div>
+                </div>
+              )}
+            </div>
+            <p className="mt-3.5 pt-3.5" style={{ borderTop: `1px solid ${DIVIDE}`, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: INK_SOFT }}>{nextLine}</p>
           </div>
         </div>
         </div>
 
         {/* Sticky action footer — Approve stays visible while the body scrolls. */}
         {canAct && (
-          <div className="sticky bottom-0 shrink-0 rounded-b-xl border-t bg-white px-4 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
+          <div className="sticky bottom-0 shrink-0 border-t bg-white px-5 py-3.5 sm:px-6" style={{ borderColor: LINE }}>
             <div className="flex flex-wrap items-center gap-2.5">
               <motion.button
                 onClick={() => { onApprove(item.id); onClose(); }}
@@ -1848,7 +1924,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
               >
                 Request changes
               </button>
-              {sent && <span className="text-[13px] font-medium" style={{ color: DIM }}>Sent. Your operator will adjust it before the publish date.</span>}
+              {sent && <span className="text-[13px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>}
             </div>
             {changing && !sent && (
               <div className="mt-3">
@@ -1860,18 +1936,22 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                   className="w-full rounded-lg p-3 text-[14px] outline-none"
                   style={{ border: `1px solid ${LINE}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
                 />
-                <button
-                  onClick={() => { setSent(true); setChanging(false); }}
-                  className="mt-2 inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-                >
-                  Send to your operator
-                </button>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={sendChange}
+                    disabled={busy || !note.trim()}
+                    className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: busy || !note.trim() ? 0.55 : 1 }}
+                  >
+                    {busy ? 'Sending…' : 'Send to your operator'}
+                  </button>
+                  {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
+                </div>
               </div>
             )}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -2071,7 +2151,15 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
 }) {
   const live = entry.status === 'live';
   const heroBg = live ? (brand?.header_bg || INK) : `color-mix(in srgb, ${accent} ${[9, 6, 12, 7, 5][i % 5]}%, white)`;
-  const titleColor = live ? '#ffffff' : `color-mix(in srgb, ${accent} 72%, ${INK})`;
+  // BUG FIX: live cards previously hardcoded a WHITE title. When the client's header_bg is
+  // light (Rise DTC = #ffffff) the title rendered white-on-white = invisible. Derive the ink
+  // from the actual hero color so it's readable on either a light or dark client brand bar.
+  const liveHeroHex = cleanHex(brand?.header_bg, '#131210');
+  const liveInk = inkOn(liveHeroHex);
+  const titleColor = live ? liveInk : `color-mix(in srgb, ${accent} 72%, ${INK})`;
+  const liveChip = liveInk === '#ffffff'
+    ? { background: 'rgba(255,255,255,0.12)', color: '#ffffff' }
+    : { background: 'rgba(19,18,16,0.06)', color: caText(accent) };
   const statusChip = live
     ? { label: 'Live', bg: `color-mix(in srgb, ${mint} 16%, white)`, color: INK, dot: mint }
     : entry.status === 'in_production'
@@ -2082,7 +2170,7 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i }: {
       <div className="flex aspect-[16/10] flex-col justify-between p-4" style={{ background: heroBg }}>
         <span
           className="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em]"
-          style={live ? { background: 'rgba(255,255,255,0.12)', color: mint } : { background: 'rgba(255,255,255,0.75)', color: DIM }}
+          style={live ? liveChip : { background: 'rgba(255,255,255,0.75)', color: DIM }}
         >
           {LM_FORMAT_LABEL[entry.format] || entry.format}
         </span>
@@ -2341,12 +2429,27 @@ const PILLAR_JOBS: Record<string, string> = {
   personal: 'The founder behind the work. Keeps the feed human.',
 };
 
-function StrategySurface({ board, accent, mint }: { board: Board; accent: string; mint: string }) {
+function StrategySurface({ board, accent, mint, isLive, act }: {
+  board: Board; accent: string; mint: string;
+  isLive: boolean;
+  act: (action: 'shift_request', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
   const strat = board.strategy;
   const [open, setOpen] = useState<string | null>(null);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [shiftSent, setShiftSent] = useState(false);
+  const [shiftBusy, setShiftBusy] = useState(false);
+  const [shiftErr, setShiftErr] = useState('');
   const [note, setNote] = useState('');
+  const sendShift = async () => {
+    if (isLive) {
+      setShiftBusy(true); setShiftErr('');
+      const r = await act('shift_request', null, { note });
+      setShiftBusy(false);
+      if (!r.ok) { setShiftErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setShiftSent(true); setShiftOpen(false);
+  };
   if (!strat) return null;
 
   const openPillar = strat.pillars.find((p) => p.key === open);
@@ -2417,6 +2520,11 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
             { label: 'Lead magnets', n: t.lm, bg: `color-mix(in srgb, ${mint} 15%, white)` },
             { label: 'Newsletters', n: t.newsletter, bg: 'rgba(2,49,47,0.04)' },
           ].filter((f) => f.n > 0);
+          // Zero-fabrication: the calendar is often a near-term seed, not the whole month.
+          // Only show a format SPLIT when it actually covers the plan total — otherwise it
+          // contradicts the headline count (e.g. "1 Text post" under a 24-post month).
+          const covered = t.post + t.carousel + t.lm + t.newsletter;
+          if (!covered || covered < (strat.total || 0)) return null;
           return (
             <div className="mt-6">
               <div className="mb-2"><CardHead>Formats this month</CardHead></div>
@@ -2481,7 +2589,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
               {traits.map((t) => (
                 <span key={t} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium" style={{ background: `color-mix(in srgb, ${accent} 7%, white)`, color: INK }}>
                   <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                  {t}
+                  {noDash(t)}
                 </span>
               ))}
             </div>
@@ -2496,7 +2604,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
       <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
         <div className="mb-3"><CardHead>Recent shifts</CardHead></div>
         {shiftSent ? (
-          <p className="text-[13.5px] font-medium" style={{ color: DIM }}>Shift request sent. Your operator reviews every request and replies before the next batch drafts.</p>
+          <p className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator. They review every request and reply before the next batch drafts.</p>
         ) : (
           <p className="text-[13.5px] leading-relaxed" style={{ color: DIM }}>No shifts requested yet. The mix is reviewed monthly with your operator.</p>
         )}
@@ -2520,13 +2628,17 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
                   className="w-full rounded-lg p-3 text-[14px] outline-none"
                   style={{ border: `1px solid ${LINE}`, color: INK, background: 'rgba(2,49,47,0.02)' }}
                 />
-                <button
-                  onClick={() => { setShiftSent(true); setShiftOpen(false); }}
-                  className="mt-2 inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
-                  style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff' }}
-                >
-                  Send
-                </button>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={sendShift}
+                    disabled={shiftBusy || !note.trim()}
+                    className="inline-flex min-h-[44px] items-center rounded-[6px] px-4 text-[14px] font-semibold"
+                    style={{ border: `1px solid ${LINE}`, color: INK, background: '#fff', opacity: shiftBusy || !note.trim() ? 0.55 : 1 }}
+                  >
+                    {shiftBusy ? 'Sending…' : 'Send'}
+                  </button>
+                  {shiftErr && <span className="text-[12px]" style={{ color: '#c0392b' }}>{shiftErr}</span>}
+                </div>
               </div>
             )}
           </div>
@@ -2545,15 +2657,16 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
         <p className="mt-3 text-[13px] font-medium" style={{ color: INK }}>InboundOnSteroids · Operator</p>
       </div>
 
-      {/* Your plan: the money card. Deliverables derived from THIS board's own calendar,
-          so the numbers can never disagree with the rest of the surface. */}
-      {(() => {
-        const t = { post: 0, carousel: 0, lm: 0, newsletter: 0 };
-        (board.calendar?.items || []).forEach((it) => { if (it.kind in t) (t as any)[it.kind] += 1; });
+      {/* Your plan: the preview-only deliverables card (a live production tool never shows
+          pricing or a pause control). Counts come from the plan total + real board arrays,
+          so nothing disagrees with the headline. */}
+      {!isLive && (() => {
+        const liveLms = (board.lead_magnets || []).filter((e) => e.status === 'live').length;
+        const nlIssues = (board.newsletter?.issues || []).length;
         const ships: string[] = [
-          `${t.post + t.carousel} LinkedIn posts, drafted for your approval`,
-          ...(t.lm > 0 ? [`${t.lm} lead magnet${t.lm === 1 ? '' : 's'}, live on your domain`] : []),
-          ...(t.newsletter > 0 ? [`${t.newsletter} newsletter issue${t.newsletter === 1 ? '' : 's'}`] : []),
+          `${strat.total} LinkedIn posts, drafted for your approval`,
+          ...(liveLms > 0 ? [`${liveLms} lead magnet${liveLms === 1 ? '' : 's'}, live on your domain`] : []),
+          ...(nlIssues > 0 ? [`${nlIssues} newsletter issue${nlIssues === 1 ? '' : 's'}`] : []),
           'Captured leads pipeline, exportable anytime',
           'Monthly performance report from your operator',
         ];
@@ -2562,11 +2675,7 @@ function StrategySurface({ board, accent, mint }: { board: Board; accent: string
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
                 <CardHead>Your plan</CardHead>
-                <p className="mt-0.5 text-[13px]" style={{ color: DIM }}>Operator plan</p>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="tabular-nums" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 30, lineHeight: 1.05, color: INK }}>$2,000</span>
-                <span className="text-[13px] font-medium" style={{ color: DIM }}>/month</span>
+                <p className="mt-0.5 text-[13px]" style={{ color: DIM }}>Operator plan · month to month</p>
               </div>
             </div>
             <div className="mt-4 flex flex-col gap-2">
@@ -2656,7 +2765,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
                 )}
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                  Written in your voice, approved by you
+                  Drafted in your voice, ready for your review
                 </span>
               </div>
             </div>
@@ -3027,7 +3136,7 @@ function LeadsSurface({ board, accent, preview, onOpen }: { board: Board; accent
         <h2 style={{ fontFamily: SERIF, fontSize: 'clamp(29px, 3.4vw, 40px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>Leads</h2>
         <p className="mt-3.5 max-w-[62ch]" style={{ fontFamily: BODY, fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
           {usingSample
-            ? 'Everyone your content pulled in, and where each person sits in the pipeline. These are example leads — real named people land here the moment your engine goes live.'
+            ? 'Everyone your content pulled in, and where each person sits in the pipeline. These are example leads. Real named people land here the moment your engine goes live.'
             : 'Everyone your content pulled in, and where each person sits in the pipeline. Yours to keep, exportable anytime.'}
         </p>
       </div>
@@ -3187,13 +3296,13 @@ function LeadDetailModal({ lead, accent, onClose }: { lead: PipelineLead; accent
                   })}
                 </div>
                 <p className="mt-5 text-[12px] leading-relaxed" style={{ fontFamily: BODY, color: FAINT }}>
-                  Every message marked <span style={{ color: caText(accent) }}>sent</span> went out automatically. You approve the first send; after that the engine runs the cadence.
+                  Every message marked <span style={{ color: caText(accent) }}>sent</span> went out as part of the cadence. When someone replies, the thread pauses here for you.
                 </p>
               </>
             ) : (
               <div className="rounded-[10px] p-4" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
                 <p style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
-                  {first} just entered the pipeline. The conversation shows up here as the engine reaches out, and you approve the first send.
+                  {first} just entered the pipeline. The conversation shows up here as the engine reaches out.
                 </p>
               </div>
             )}
@@ -3252,8 +3361,9 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
               <div className="text-[13.5px] font-semibold leading-snug" style={{ color: INK }}>{ind.label}</div>
               {ind.source && <div className="shrink-0 text-[11px]" style={{ color: FAINT }}>from {ind.source}</div>}
             </div>
-            {/* Ghost numeral: shows what WILL live here — unmistakably a placeholder. */}
-            <div className="mt-2 select-none" style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 28, lineHeight: 1, color: '#e2e8f0' }} aria-hidden>—</div>
+            {/* Ghost placeholder rule: shows a value WILL live here, unmistakably not data. */}
+            <div className="mt-4 mb-1 select-none" style={{ width: 26, height: 3, background: '#e2e8f0' }} aria-hidden />
+            <div className="mt-2 uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: '#c9d3d1' }} aria-hidden>awaiting first data</div>
             <svg viewBox="0 0 200 44" className="mt-3 h-11 w-full" preserveAspectRatio="none" aria-hidden>
               <path
                 d={PLACEHOLDER_SPARKS[i % PLACEHOLDER_SPARKS.length]}
@@ -3292,7 +3402,7 @@ function PerformanceSurface({ board, accent }: { board: Board; accent: string })
 type PhotoItem = { name: string; url: string; createdAt: string };
 type PhotoUpload = { key: string; name: string; status: 'uploading' | 'done' | 'error'; error?: string };
 
-function PhotosSurface({ board: _board, accent, slug }: { board: Board; accent: string; slug: string }) {
+function PhotosSurface({ board: _board, accent, slug, compact = false }: { board: Board; accent: string; slug: string; compact?: boolean }) {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploads, setUploads] = useState<PhotoUpload[]>([]);
@@ -3351,11 +3461,21 @@ function PhotosSurface({ board: _board, accent, slug }: { board: Board; accent: 
 
   return (
     <div>
-      <SectionHead
-        eyebrow="Your photo pool"
-        title="Photos"
-        sub="Candid shots of you doing real things, plus a few founder, family and friends photos. Real faces pull harder than stock. These feed your post images."
-      />
+      {compact ? (
+        <div className="mb-4">
+          <div className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Your photo pool</div>
+          <div className="mt-2" style={{ fontFamily: SERIF, fontSize: 'clamp(20px, 2.4vw, 26px)', lineHeight: 1.1, letterSpacing: '-0.01em', color: INK }}>Photos the engine pulls from</div>
+          <p className="mt-2 max-w-[58ch]" style={{ fontFamily: BODY, fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
+            Candid shots of you doing real things. Real faces pull harder than stock, so these feed your post images.
+          </p>
+        </div>
+      ) : (
+        <SectionHead
+          eyebrow="Your photo pool"
+          title="Photos"
+          sub="Candid shots of you doing real things, plus a few founder, family and friends photos. Real faces pull harder than stock. These feed your post images."
+        />
+      )}
 
       {/* Upload control + counter */}
       <div className="mb-7 rounded-xl bg-white p-5 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
@@ -3632,6 +3752,9 @@ export default function ClientBoardPage() {
   };
   const reduceMotion = useReducedMotion();
   const introRan = useRef(false);
+  // Live-mode flag readable from callbacks defined above the mode derivation (kept in sync
+  // during render below). Live boards route actions through the real client_board_action RPC.
+  const isLiveRef = useRef(false);
   const flashTimer = useRef<number>(0);
   const introTimers = useRef<number[]>([]);
   // Undo window after an action: toast with Z / click to restore the row.
@@ -3652,10 +3775,31 @@ export default function ClientBoardPage() {
     window.clearTimeout(undoTimer.current);
     undoTimer.current = window.setTimeout(() => setUndo(null), 6000);
   };
+  // Real, token-gated board action. Same anon-key RPC posture as get_client_board.
+  // Returns {ok:true} or {ok:false,error}. Never throws to the caller.
+  const act = async (
+    action: 'approve' | 'edit_copy' | 'request_changes' | 'shift_request' | 'note',
+    ref?: string | null,
+    payload?: Record<string, unknown> | null,
+  ): Promise<{ ok: boolean; error?: string }> => {
+    if (!slug || !token) return { ok: false, error: 'missing token' };
+    try {
+      const { data, error } = await supabase.rpc('client_board_action', {
+        p_slug: slug, p_token: token, p_action: action, p_ref: ref ?? null, p_payload: payload ?? null,
+      });
+      if (error) return { ok: false, error: error.message };
+      return (data as any) ?? { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  };
   const approve = (id: string) => {
     setStageOverride((s) => ({ ...s, [id]: 'scheduled' }));
     flash(id);
     armUndo(id, 'approve');
+    // Live boards record the approve for the operator (the RPC insert IS the action;
+    // it never flips carousel_drafts.status, so client drafts stay out of Ivan's scheduler).
+    if (isLiveRef.current) { void act('approve', id); }
   };
   const pickAngle = (id: string, alt: AltAngle) => {
     setAngleSwaps((s) => ({ ...s, [id]: alt }));
@@ -3673,6 +3817,9 @@ export default function ClientBoardPage() {
     window.clearTimeout(undoTimer.current);
     setUndo((u) => {
       if (u) {
+        // Live: tell the operator the client walked back an approve (truthful, uses the
+        // note action — the earlier approve row is not deleted, it is superseded by this).
+        if (u.kind === 'approve' && isLiveRef.current) { void act('note', u.id, { event: 'undo_approve' }); }
         if (u.kind === 'approve') setStageOverride((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
         else if (u.kind === 'angle') setAngleSwaps((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
         else setWeekSkips((s) => { const { [u.id]: _drop, ...rest } = s; return rest; });
@@ -3722,7 +3869,7 @@ export default function ClientBoardPage() {
     // which re-fires this effect — a dep-tied cleanup would kill the choreography mid-run.
     // Step names mirror the stored trails exactly (client vocabulary, no internal tool names).
     const at = (ms: number, fn: () => void) => introTimers.current.push(window.setTimeout(fn, ms));
-    at(1300, () => patch((q) => completeStep('Hook agent', INTRO_DONE_DETAILS['Hook agent'], { step: 'Draft agent', detail: 'writing the first draft…', done: false, t: 'now' })({ ...q, live_step: 'Opening chosen · kept the strongest of 9' })));
+    at(1300, () => patch((q) => completeStep('Hook agent', INTRO_DONE_DETAILS['Hook agent'], { step: 'Draft agent', detail: 'writing the first draft…', done: false, t: 'now' })({ ...q, live_step: 'Opening chosen' })));
     at(2900, () => patch((q) => completeStep('Draft agent', INTRO_DONE_DETAILS['Draft agent'], { step: 'Copy quality gate', detail: 'reading it back…', done: false, t: 'now' })({ ...q, live_step: 'Written · rewrote once after a self-review' })));
     at(4300, () => patch((q) => completeStep('Copy quality gate', INTRO_DONE_DETAILS['Copy quality gate'], { step: 'Image check', detail: 'checking the image…', done: false, t: 'now' })({ ...q, live_step: 'Quality check passed, nothing flagged' })));
     at(5500, () => patch((q) => completeStep('Image check', INTRO_DONE_DETAILS['Image check'])({ ...q, live_step: 'Ready for your review' })));
@@ -3915,6 +4062,10 @@ export default function ClientBoardPage() {
   // 'demo' (legacy) and 'preview' (current) mean the same thing — the board is a
   // built-ahead preview, not a live account. Reads both so a data migration can't break it.
   const isPreview = mode === 'demo' || mode === 'preview';
+  // Live mode = the production tool (not a built-ahead demo). Drives copy stripping, tab
+  // removal (Voice + standalone Photos), real RPC actions, and the pricing/pause hide.
+  const isLive = !isPreview;
+  isLiveRef.current = isLive;
 
   // Per-board share metadata (mirrors ScanReportPage). Sets the title + a NEUTRAL OG about
   // a content preview built for this company — never Ivan's agency pitch — and an OG image
@@ -4082,7 +4233,7 @@ export default function ClientBoardPage() {
         modalOpen={!!detail}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} />,
     newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
@@ -4090,7 +4241,7 @@ export default function ClientBoardPage() {
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} />,
     performance: <PerformanceSurface board={viewBoard} accent={accent} />,
-    strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} />,
+    strategy: <StrategySurface board={viewBoard} accent={accent} mint={mint} isLive={isLive} act={act} />,
   };
 
   const logo = (h: number) => (
@@ -4103,6 +4254,10 @@ export default function ClientBoardPage() {
   const reviewCount = viewBoard.queue.filter((q) => stageOf(q) === 'review' && !weekSkips[q.id]).length;
   const founderName = board.founder?.name || board.company_name;
   const goTab = (id: TabId) => { setTab(id); window.scrollTo({ top: 0 }); };
+  // Live mode = production tool: drop the Voice tab and the standalone Photos tab (photos
+  // fold into the content surface). Preview keeps the full demo nav unchanged.
+  const visibleTabs = isLive ? TABS.filter((t) => t.id !== 'voice' && t.id !== 'photos') : TABS;
+  const activeTab: TabId = isLive && (tab === 'voice' || tab === 'photos') ? 'week' : tab;
 
   return (
     <MotionConfig reducedMotion="user">
@@ -4193,8 +4348,8 @@ export default function ClientBoardPage() {
             <div key={g}>
               <div className="mb-1 px-6 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.2em', color: INK_MUTE, opacity: 0.75 }}>{g}</div>
               <div className="flex flex-col">
-                {TABS.filter((t) => t.group === g).map((t) => {
-                  const active = tab === t.id;
+                {visibleTabs.filter((t) => t.group === g).map((t) => {
+                  const active = activeTab === t.id;
                   const isHero = t.id === 'week';
                   return (
                     <button
@@ -4233,7 +4388,7 @@ export default function ClientBoardPage() {
             <div className="mt-1.5 text-[10.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>A rough idea in, a drafted post or lead magnet back.</div>
           </div>
           <div className="flex items-center gap-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.12em', color: INK }}>
-            <PulseDot color={accent} size={7} /> engine running
+            <PulseDot color={accent} size={7} /> {isLive ? (reviewCount > 0 ? `${reviewCount} in review · engine live` : 'engine live') : 'engine running'}
           </div>
           {isPreview && (
             <div className="flex items-center gap-2 text-[11.5px] leading-snug" style={{ fontFamily: BODY, color: INK_MUTE }}>
@@ -4266,7 +4421,7 @@ export default function ClientBoardPage() {
           A hairline top rule carries the tab name + live-preview mark (mono, quiet). */}
       <div className="lg:ml-[216px]" style={{ background: PAPER }}>
         <div className="sticky top-0 z-10 hidden h-12 items-center gap-2.5 px-8 backdrop-blur lg:flex" style={{ borderBottom: `1px solid ${LINE}`, background: 'rgba(247,244,239,0.86)' }}>
-          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{TABS.find((t) => t.id === tab)?.label}</span>
+          <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>{TABS.find((t) => t.id === activeTab)?.label}</span>
           <span
             className="ml-auto inline-flex items-center gap-2 uppercase"
             title={isPreview ? 'Your first month, built ahead' : undefined}
@@ -4284,14 +4439,14 @@ export default function ClientBoardPage() {
         <main className="px-4 pb-[calc(env(safe-area-inset-bottom)+88px)] pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-9">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={tab}
+              key={activeTab}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* Week + Content get the wider two-column editorial layout; others cap tighter. */}
-              <div className={`w-full ${tab === 'week' ? 'max-w-[1140px]' : tab === 'calendar' || tab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[tab]}</div>
+              <div className={`w-full ${activeTab === 'week' ? 'max-w-[1140px]' : activeTab === 'calendar' || activeTab === 'review' ? 'max-w-5xl' : 'max-w-[880px]'}`}>{surfaces[activeTab]}</div>
             </motion.div>
           </AnimatePresence>
         </main>
@@ -4300,8 +4455,8 @@ export default function ClientBoardPage() {
       {/* Mobile bottom tabs */}
       <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/85 px-1 pt-1 backdrop-blur-md lg:hidden" style={{ borderColor: LINE, paddingBottom: 'max(6px, env(safe-area-inset-bottom))' }}>
         <nav className="grid w-full grid-cols-5" aria-label="Board sections">
-          {TABS.map((t) => {
-            const active = tab === t.id;
+          {visibleTabs.map((t) => {
+            const active = activeTab === t.id;
             return (
               <button
                 key={t.id}
@@ -4355,6 +4510,8 @@ export default function ClientBoardPage() {
           initialChanging={detailChanging}
           onClose={() => { setDetail(null); setDetailChanging(false); }}
           onApprove={approve}
+          isLive={isLive}
+          act={act}
         />
       )}
       {ideaPreview && (
