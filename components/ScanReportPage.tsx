@@ -2774,7 +2774,7 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
       )
     : null;
   // When the LM is a live, results-forward assessment we can embed, use it everywhere.
-  const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName });
+  const lmEmbedUrl = buildAssessmentEmbedUrl(cs.sample_output?.lm, { prospectId: scan?.company_slug || companyName, bname: displayCompany, blogo: prospectLogo });
   const lmSim = cs.sample_output?.lm?.sim;
   const lmCover = cs.sample_output?.lm?.cover_url || '';
   const lmStatic = !lmEmbedUrl && !lmSim && Boolean(lmCover);
@@ -2861,9 +2861,9 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
     figureLabel: roomMode === 'network' ? 'Buyers already connected to you' : 'Buyers already in your comments',
     figureSub: roomMode === 'network'
       ? (audEst
-        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}.`
-        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline.`)
-      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline.`,
+        ? `We read ${audNetSample} of your ${audNetTotal.toLocaleString('en-US')} connections and counted ${audNetCount} buyers, name by name. Averaged over the full list that lands near ${audEst}. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`
+        : `Counted one by one in the ${audNetSample} connections we read, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`)
+      : `Counted among the ${audEngagers} people who engaged your last ${audPosts} posts, each verified from their own headline. A buyer here means a decision maker at a consumer brand: founder, CMO, or head of growth.`,
     giftLine: roomMode === 'network'
       ? (audEst
         ? `${audNetCount} buyers verified by name in the ${audNetSample} connections we read; the full list likely holds around ${audEst}. Each of them said yes to you once.`
@@ -3198,12 +3198,6 @@ function ContentSystemReport({ report, scan, companyName }: { report: ReportJson
               </Exhibit>
             </div>
           )}
-          <div className="gov">
-            <span><span className="sq" aria-hidden /> Warm only · people who engaged you</span>
-            <span><span className="sq" aria-hidden /> ~15 requests a week · capped</span>
-            <span><span className="sq" aria-hidden /> 27% warm acceptance in our lanes · cold sits near 14%</span>
-            <span><span className="sq" aria-hidden /> It runs on auto-approve; a veto is there if you ever want it</span>
-          </div>
           <ChapterCta line={<>This lane opens in week one, {who}.</>} />
         </Rev>
 
