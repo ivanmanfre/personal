@@ -653,7 +653,31 @@ function BuildSequence({ trail, accent }: { trail: AgentStep[]; accent: string }
 /** Lightweight preview for an IDEAS-stage row. Ideas are not approvable yet, so this is
  *  deliberately NOT the DetailModal — just the topic, its pillar, and the promise that it
  *  drafts when it reaches its slot. No feed preview, no agent trail, no actions. */
-function IdeaPreviewModal({ idea, accent, onClose, live = false }: { idea: Idea; accent: string; onClose: () => void; live?: boolean }) {
+function IdeaPreviewModal({ idea, accent, onClose, live = false, act }: {
+  idea: Idea; accent: string; onClose: () => void; live?: boolean;
+  /** Board action recorder (same RPC posture as DetailModal). Live boards record the
+   *  client's call on the idea; preview keeps buttons as local theater. */
+  act?: (action: 'note', ref?: string | null, payload?: Record<string, unknown> | null) => Promise<{ ok: boolean; error?: string }>;
+}) {
+  const [busy, setBusy] = useState<'draft' | 'pass' | null>(null);
+  const [sent, setSent] = useState<'draft' | 'pass' | null>(null);
+  const [err, setErr] = useState('');
+  // Same confirmation discipline as approve/edit/request: the confirmation renders only
+  // after the RPC lands ok:true. Preview (no act wired) confirms locally, demo theater.
+  const send = async (kind: 'draft' | 'pass') => {
+    if (busy || sent) return;
+    if (live && act) {
+      setBusy(kind); setErr('');
+      const r = await act('note', idea.id, {
+        event: kind === 'draft' ? 'idea_draft_next' : 'idea_pass',
+        idea_id: idea.id,
+        title: idea.title,
+      });
+      setBusy(null);
+      if (!r.ok) { setErr(r.error || 'Could not send that. Try again.'); return; }
+    }
+    setSent(kind);
+  };
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
     window.addEventListener('keydown', h);
@@ -681,10 +705,46 @@ function IdeaPreviewModal({ idea, accent, onClose, live = false }: { idea: Idea;
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>In the idea bank</span>
             </div>
             <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
-              {idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}
-              {live ? 'Your operator turns it into a draft when its slot opens, then it lands in your review.' : 'It drafts when it reaches its slot, then lands in your review.'}
+              {live
+                ? <>{idea.pillar ? `One ${idea.pillar} idea in your bank. ` : 'An idea in your bank. '}Tell your operator to draft it next, or pass on it.</>
+                : <>{idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.</>}
             </p>
           </div>
+
+          {/* Live: the client acts on the idea, same approve-first grammar as drafts. The
+              RPC note row IS the action; confirmation renders only after ok:true. */}
+          {live && (
+            <div className="mt-4">
+              {sent ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[13.5px] font-medium" style={{ color: caText(accent) }}>Sent to your operator.</span>
+                  <span className="text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>
+                    {sent === 'draft' ? 'This one goes to the front of the drafting line.' : 'Noted. It stays out of the drafting line.'}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={() => send('draft')}
+                    disabled={!!busy}
+                    className="inline-flex min-h-[42px] items-center rounded-[7px] px-5 uppercase transition-colors duration-150"
+                    style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.12em', background: INK, color: PAPER, border: 'none', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'draft' ? 0.55 : 1 }}
+                  >
+                    {busy === 'draft' ? 'Sending…' : 'Draft this next'}
+                  </button>
+                  <button
+                    onClick={() => send('pass')}
+                    disabled={!!busy}
+                    className="inline-flex min-h-[42px] items-center rounded-[6px] px-4 text-[13.5px] font-medium"
+                    style={{ border: `1px solid ${LINE}`, color: DIM, background: '#fff', cursor: busy ? 'default' : 'pointer', opacity: busy && busy !== 'pass' ? 0.55 : 1 }}
+                  >
+                    {busy === 'pass' ? 'Sending…' : 'Pass on this'}
+                  </button>
+                  {err && <span className="text-[12px]" style={{ color: '#c0392b' }}>{err}</span>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -714,7 +774,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   const listSections = live
     ? LIST_STAGE_SECTIONS.map((s) => (s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' } : s))
     : LIST_STAGE_SECTIONS;
-  const ideasBlurb = live ? "The engine's upcoming idea bank. Your operator turns these into drafts as slots open." : IDEAS_BLURB;
+  const ideasBlurb = live ? 'Ideas waiting in your bank. Greenlight the ones you want drafted next.' : IDEAS_BLURB;
   const reduce = useReducedMotion();
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
@@ -4705,7 +4765,7 @@ export default function ClientBoardPage() {
         />
       )}
       {ideaPreview && (
-        <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} live={isLive} />
+        <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} live={isLive} act={act} />
       )}
       {leadDetail && (
         <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
