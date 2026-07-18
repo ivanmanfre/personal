@@ -312,7 +312,10 @@ body.dashboard-v2-light .dashboard-v2 .dv-main:has(.ec) {
 .ec-fun-row { display: grid; grid-template-columns: 190px 1fr auto; align-items: center; gap: 1rem; }
 .ec-fun-label { font-family: var(--ec-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ec-body); }
 .ec-fun-track { height: 30px; background: rgba(26,26,26,0.05); position: relative; }
-.ec-fun-fill { height: 100%; background: var(--ec-ink); }
+/* display:block is load-bearing — .ec-fun-fill is a <span>; without it the
+   inline-style width= percentage (magnitude encoding) is silently ignored
+   and every bar renders as the same (invisible) width. */
+.ec-fun-fill { display: block; height: 100%; background: var(--ec-ink); }
 .ec-fun-fill--tail { background: var(--ec-sage); }
 .ec-fun-fill--off { background: repeating-linear-gradient(45deg, rgba(176,65,62,0.25), rgba(176,65,62,0.25) 6px, transparent 6px, transparent 12px); }
 .ec-fun-num { font-family: var(--ec-display); font-style: italic; font-size: 28px; line-height: 1; color: var(--ec-ink); min-width: 3.5rem; text-align: right; }

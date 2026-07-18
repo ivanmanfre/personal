@@ -65,7 +65,13 @@ export function useTodayFeeds(): TodayFeeds {
 
   useEffect(() => {
     let alive = true;
-    const today = new Date().toISOString().slice(0, 10);
+    // Local calendar day, not UTC — new Date().toISOString().slice(0,10) reads
+    // the UTC date, which drifts a day off local "today" outside UTC+0
+    // (see js-toisostring-date-key-trap). Build local midnight boundaries and
+    // convert THOSE to ISO for the query range instead.
+    const now = new Date();
+    const localDayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+    const localDayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
 
     (async () => {
       const [postsReview, commentDrafts, warmFollowups, workflowsRed, scheduledToday, client] =
@@ -74,7 +80,7 @@ export function useTodayFeeds(): TodayFeeds {
           countWithItems('comment_feed', (q) => q.eq('status', 'pending').order('created_at', { ascending: false }), 'target_name'),
           countWithItems('followup_drafts', (q) => q.eq('status', 'pending_approval').order('created_at', { ascending: false }), 'prospect_name'),
           countWithItems('dashboard_workflow_stats', (q) => q.eq('last_execution_status', 'error').order('updated_at', { ascending: false }), 'workflow_name', 6),
-          countWithItems('carousel_drafts', (q) => q.gte('scheduled_at', `${today}T00:00:00`).lte('scheduled_at', `${today}T23:59:59`).order('scheduled_at', { ascending: true }), 'title'),
+          countWithItems('carousel_drafts', (q) => q.eq('status', 'scheduled').gte('scheduled_at', localDayStart).lte('scheduled_at', localDayEnd).order('scheduled_at', { ascending: true }), 'title'),
           (async () => {
             try {
               const { data, count, error } = await supabase

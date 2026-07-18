@@ -21,8 +21,12 @@ export function WarmPipeline() {
   const [mode, setMode] = useState<Mode>('funnel');
   const data = useWarmPipeline();
 
+  // Stage counts span 938 → 2 (a ~470x spread); a linear width scale would
+  // flatten every stage past the first to a sliver. sqrt compresses the range
+  // while keeping widths honestly ordered and proportionate to magnitude.
   const maxCount = Math.max(1, ...data.stages.map((s) => s.count ?? 0), data.callBooked ?? 0);
-  const width = (n: number | null) => (n === null ? 100 : Math.max(2, (n / maxCount) * 100));
+  const maxScaled = Math.sqrt(maxCount);
+  const width = (n: number | null) => (n === null ? 100 : Math.max(2, (Math.sqrt(Math.max(n, 0)) / maxScaled) * 100));
 
   const reply = data.reply;
   const at = reply.at ? new Date(reply.at) : null;
@@ -53,6 +57,9 @@ export function WarmPipeline() {
           <div className="ec-col-lead">
             <div className="ec-kicker">The spread</div>
             <h2 className="ec-subhead">Every stage, counted off the real timestamps.</h2>
+            <div className="ec-mono" style={{ fontSize: '11px', letterSpacing: '0.06em', opacity: 0.6, marginTop: '0.3rem' }}>
+              bar width — sqrt scale (938 → 2 spread; linear would flatten every stage past the first)
+            </div>
             <div className="ec-funnel" style={{ marginTop: '1.2rem' }}>
               {data.stages.map((s) => (
                 <div className="ec-fun-row" key={s.key}>
