@@ -11,7 +11,7 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'opsideas', 'system', 'pulse', 'personal',
+  'briefing', 'today', 'pipeline', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'opsideas', 'system', 'pulse', 'personal',
 ];
 
 // Legacy slug remap: the standalone Ideas section was retired — content ideas
@@ -48,9 +48,9 @@ function TourTrigger() {
  */
 export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellProps) {
   const [active, setActive] = useState<SectionId>(() => {
-    if (typeof window === 'undefined') return 'briefing';
+    if (typeof window === 'undefined') return 'today';
     const params = new URLSearchParams(window.location.search);
-    return resolveSection(params.get('section')) ?? 'briefing';
+    return resolveSection(params.get('section')) ?? 'today';
   });
 
   // Nav bus — lets TourProvider (and any other caller) drive section changes

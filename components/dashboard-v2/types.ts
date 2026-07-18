@@ -5,6 +5,8 @@
 
 export type SectionId =
   | 'briefing'
+  | 'today'
+  | 'pipeline'
   | 'content'
   | 'reach'
   | 'ops'
