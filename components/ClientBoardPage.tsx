@@ -2057,9 +2057,9 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
       <SectionHead eyebrow="The month ahead" title={<>A month, <Accent>topic by topic.</Accent></>} sub="Every piece the engine has planned, on the day it publishes. Click any item to see it, or what the engine has planned for it." />
       <div className="mb-5 flex flex-wrap gap-3">
         {[
-          [totals.post + totals.carousel, 'posts'],
-          [totals.lm, 'lead magnets'],
-          [totals.newsletter, 'newsletters'],
+          [totals.post + totals.carousel, totals.post + totals.carousel === 1 ? 'post' : 'posts'],
+          [totals.lm, totals.lm === 1 ? 'lead magnet' : 'lead magnets'],
+          [totals.newsletter, totals.newsletter === 1 ? 'newsletter' : 'newsletters'],
         ].map(([n, label]) => (
           <div key={label as string} className="flex items-baseline gap-2 rounded-xl bg-white px-4 py-3" style={{ border: `1px solid ${LINE}` }}>
             {num(n as number)}
