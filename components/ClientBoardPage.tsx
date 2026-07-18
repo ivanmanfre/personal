@@ -134,6 +134,15 @@ interface OutreachSpec {
   icp?: { label?: string; bar?: string[]; note?: string };
   funnel?: { step: string; detail?: string }[];
   lanes?: OutreachLane[];
+  /** Client-orbit playbook (live boards): seed clients, the three touches, and the
+   *  approve-first sample DMs the client blesses on the call before anything sends. */
+  orbit_plan?: {
+    title?: string; note?: string;
+    seeds?: { name: string; status?: string }[];
+    touches?: { label: string; text: string }[];
+    gift?: { name?: string; url?: string };
+    samples?: { label?: string; text: string }[];
+  };
 }
 /** Lead-magnet idea-bank entry (live boards): a concept awaiting the client's greenlight. */
 interface LmIdea { id: string; title: string; format?: string; status?: string; note?: string; source_label?: string; cover_url?: string }
@@ -4004,6 +4013,63 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
                 ))}
               </div>
             )}
+
+            {/* Client-orbit playbook: seeds, touches, gift, and the sample DMs awaiting sign-off. */}
+            {o.orbit_plan && (() => {
+              const op = o.orbit_plan!;
+              return (
+                <div className="mt-4 rounded-xl bg-white p-4 sm:p-5" style={{ border: `1px solid ${LINE}` }}>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[13.5px] font-semibold" style={{ color: INK }}>{op.title || 'Client orbit: the playbook'}</span>
+                    <span className="inline-flex items-center px-2 py-0.5 uppercase" style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', color: INK_MUTE, border: `1px solid ${LINE}` }}>awaiting your sign-off</span>
+                  </div>
+                  {op.note && <p className="mt-1.5 text-[12.5px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>{op.note}</p>}
+                  {(op.seeds || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>seed clients</div>
+                      {(op.seeds || []).map((s) => (
+                        <div key={s.name} className="flex flex-col gap-0.5 border-t py-2 sm:flex-row sm:gap-3" style={{ borderColor: DIVIDE }}>
+                          <span className="shrink-0 text-[13px] font-semibold" style={{ color: INK }}>{s.name}</span>
+                          {s.status && <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{s.status}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {(op.touches || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-1.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>the three touches</div>
+                      {(op.touches || []).map((t) => (
+                        <div key={t.label} className="flex gap-3 border-t py-2" style={{ borderColor: DIVIDE }}>
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center bg-white" style={{ border: `1px solid ${LINE_BOLD}` }}>
+                            <span style={{ fontFamily: MONO, fontSize: 9, color: INK_MUTE }}>{t.label}</span>
+                          </span>
+                          <span className="text-[12.5px] leading-relaxed" style={{ color: DIM }}>{t.text}</span>
+                        </div>
+                      ))}
+                      {op.gift?.url && (
+                        <div className="mt-2 text-[12.5px]" style={{ color: DIM }}>
+                          The gift is live now:{' '}
+                          <a href={op.gift.url} target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2" style={{ color: caText(accent) }}>{op.gift.name || 'open it'}</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(op.samples || []).length > 0 && (
+                    <div className="mt-4">
+                      <div className="mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', color: INK_MUTE }}>sample messages, in your voice</div>
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {(op.samples || []).map((sm, i) => (
+                          <div key={i} className="rounded-lg p-3.5" style={{ background: PAPER_SUNK, border: `1px solid ${LINE}` }}>
+                            {sm.label && <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.08em]" style={{ color: FAINT }}>{sm.label}</div>}
+                            <p className="whitespace-pre-line text-[13px] leading-relaxed" style={{ fontFamily: BODY, color: INK_SOFT }}>{sm.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Delineate the pipeline section that follows. */}
             <div className="mt-10 border-b pb-2 uppercase" style={{ borderColor: LINE_BOLD, fontFamily: MONO, fontSize: 11, letterSpacing: '0.16em', color: INK }}>pipeline</div>
