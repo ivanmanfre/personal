@@ -983,7 +983,10 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           <div className="mx-auto mb-5 max-w-[552px]">
             <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: INK }}>Next week on your LinkedIn</h3>
             <p className="mt-1 text-[13.5px]" style={{ color: DIM }}>
-              {weekCounts.posts} posts, {weekCounts.lms} lead magnets, drafted from your voice.
+              {[
+                weekCounts.posts > 0 ? `${weekCounts.posts} post${weekCounts.posts === 1 ? '' : 's'}` : '',
+                weekCounts.lms > 0 ? `${weekCounts.lms} lead magnet${weekCounts.lms === 1 ? '' : 's'}` : '',
+              ].filter(Boolean).join(', ') || 'Your feed'}, drafted from your voice.
             </p>
           </div>
           <div className="flex flex-col">
@@ -1346,6 +1349,9 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
   const done = actionable.filter(handledOf).length;
   const pendingIds = actionable.filter((q) => stageOf(q) === 'review' && !skips[q.id]).map((q) => q.id);
   const doneState = total > 0 && pendingIds.length === 0;
+  // Review drafts that are NOT on this week's calendar (e.g. undated first-week drafts):
+  // the zero-state must never claim "you're set" while these wait in All content.
+  const waitingElsewhere = board.queue.filter((q) => stageOf(q) === 'review' && !skips[q.id] && !actionable.some((a) => a.id === q.id)).length;
 
   // Focus flow: one focused card, j/k or arrows to move, auto-advance after acting.
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -1461,9 +1467,11 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {/* Masthead: mono eyebrow + day headline + day-tick row (or the done headline). */}
           {doneState || total === 0 ? (
             <div className="mb-2">
-              <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>Week of {fmtDay(days[0])} · {total} of {total}</div>
+              <div className="mb-2.5 uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.22em', color: INK_MUTE }}>
+                {total === 0 && waitingElsewhere > 0 ? <>Week of {fmtDay(days[0])} · {waitingElsewhere} in review</> : <>Week of {fmtDay(days[0])} · {total} of {total}</>}
+              </div>
               <div className="cb-display" style={{ fontFamily: SERIF, fontSize: 'clamp(30px,3.6vw,44px)', lineHeight: 1.06, letterSpacing: '-0.02em', color: INK }}>
-                You're set <Accent>for the week.</Accent>
+                {total === 0 && waitingElsewhere > 0 ? <>Your first drafts <Accent>are ready.</Accent></> : <>You're set <Accent>for the week.</Accent></>}
               </div>
             </div>
           ) : (
@@ -1495,10 +1503,17 @@ function WeekSurface({ board, accent, mint, stageOf, approvedIds, angleSwaps, sk
           {(doneState || total === 0) ? (
             <motion.div initial={reduce ? false : { opacity: 0, y: 14, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.45, ease: EASE }}>
               <p className="mt-1 max-w-[52ch]" style={{ fontFamily: BODY, fontSize: 16, lineHeight: 1.6, color: INK_SOFT }}>
-                {total === 0
-                  ? 'Nothing needs you this week. Every piece is already approved or operator-run. The engine keeps drafting next week behind the scenes.'
+                {total === 0 && waitingElsewhere > 0
+                  ? `${waitingElsewhere} draft${waitingElsewhere === 1 ? ' is' : 's are'} waiting for your look in All content. Approve them and they take their slots on this calendar.`
+                  : total === 0
+                  ? 'Nothing needs you this week. The engine keeps drafting behind the scenes, and new pieces land here for your review.'
                   : 'Approved in your voice and queued to their slots. The engine keeps drafting next week behind the scenes, and nothing goes out until you approve it.'}
               </p>
+              {total === 0 && waitingElsewhere > 0 && (
+                <button onClick={() => onGoContent()} className="mt-4 uppercase" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '0.04em', color: caText(accent), background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  review them →
+                </button>
+              )}
               <div className="mt-6" style={{ borderTop: `1px solid ${LINE_BOLD}` }}>
                 {actionable.map((q) => (
                   <div key={q.id} className="grid items-baseline gap-x-4 py-3" style={{ gridTemplateColumns: '96px 1fr 120px', borderBottom: `1px solid ${DIVIDE}` }}>
