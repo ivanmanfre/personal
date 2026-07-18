@@ -226,6 +226,12 @@ function fmtDay(iso?: string): string {
   const d = new Date(iso + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
+/** Hostname of a real recorded URL (no www), or '' when absent/unparseable. Live boards
+ *  render only checkable hosts, never a synthesized vanity domain. */
+function realHostOf(url?: string): string {
+  if (!url) return '';
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
 function lmPath(title?: string): string {
   return (title || 'lead-magnet').toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim()
     .split(/\s+/).slice(-3).join('-');
@@ -520,7 +526,7 @@ function LedgerSectionHead({ eyebrow, count, blurb, accent }: { eyebrow: string;
   );
 }
 
-function stageStatus(q: QueueItem, stage: Stage, startIso?: string): React.ReactNode {
+function stageStatus(q: QueueItem, stage: Stage, startIso?: string, live = false): React.ReactNode {
   if (stage === 'planned') {
     const d = q.publish_date ? new Date(q.publish_date + 'T00:00:00') : null;
     let drafts = d ? new Date(d.getTime() - 2 * 86400000).toISOString().slice(0, 10) : '';
@@ -535,7 +541,8 @@ function stageStatus(q: QueueItem, stage: Stage, startIso?: string): React.React
   }
   if (stage === 'review') return <span className="text-[12px] tabular-nums" style={{ color: DIM }}>In your review{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
   if (stage === 'scheduled') return <span className="text-[12px] font-medium tabular-nums" style={{ color: DIM }}>Publishes {fmtDay(q.publish_date)}</span>;
-  // Example state, not a claim: nothing has run on the client's LinkedIn yet.
+  // Preview: example state, not a claim. Live: published rows ARE real, report them straight.
+  if (live) return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Published{q.publish_date ? ` · ${fmtDay(q.publish_date)}` : ''}</span>;
   return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>Example · {fmtDay(q.publish_date)}</span>;
 }
 
@@ -599,13 +606,13 @@ function weekAbbr(iso?: string): string {
 }
 
 /** Mono stage mark for a ledger row — honest, and the auto-publish clock is part of it. */
-function stageMark(q: QueueItem, stage: Stage, autoDays: number): { text: string; sub?: string; color: string; pulse?: boolean } {
+function stageMark(q: QueueItem, stage: Stage, autoDays: number, live = false): { text: string; sub?: string; color: string; pulse?: boolean } {
   if (stage === 'review') {
     return { text: '● Your review', sub: 'waiting on you', color: caText('var(--cb-accent)') };
   }
   if (stage === 'scheduled') return { text: '✓ Scheduled', sub: q.publish_date ? `${weekAbbr(q.publish_date)} ${KIND_TIME[q.kind] || ''}`.trim() : undefined, color: caText('var(--cb-accent)') };
   if (stage === 'drafted') return { text: 'Drafting', color: INK_MUTE, pulse: !!q.generating };
-  if (stage === 'published') return { text: 'Published', sub: 'example', color: INK_MUTE };
+  if (stage === 'published') return { text: 'Published', sub: live ? undefined : 'example', color: INK_MUTE };
   return { text: 'Planned', color: INK_MUTE };
 }
 
@@ -646,7 +653,7 @@ function BuildSequence({ trail, accent }: { trail: AgentStep[]; accent: string }
 /** Lightweight preview for an IDEAS-stage row. Ideas are not approvable yet, so this is
  *  deliberately NOT the DetailModal — just the topic, its pillar, and the promise that it
  *  drafts when it reaches its slot. No feed preview, no agent trail, no actions. */
-function IdeaPreviewModal({ idea, accent, onClose }: { idea: Idea; accent: string; onClose: () => void }) {
+function IdeaPreviewModal({ idea, accent, onClose, live = false }: { idea: Idea; accent: string; onClose: () => void; live?: boolean }) {
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
     window.addEventListener('keydown', h);
@@ -674,7 +681,8 @@ function IdeaPreviewModal({ idea, accent, onClose }: { idea: Idea; accent: strin
               <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: INK_MUTE }}>In the idea bank</span>
             </div>
             <p className="mt-2" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_SOFT }}>
-              {idea.pillar ? `A ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}It drafts when it reaches its slot, then lands in your review.
+              {idea.pillar ? `One ${idea.pillar} idea the engine is holding. ` : 'An idea the engine is holding. '}
+              {live ? 'Your operator turns it into a draft when its slot opens, then it lands in your review.' : 'It drafts when it reaches its slot, then lands in your review.'}
             </p>
           </div>
         </div>
@@ -683,11 +691,13 @@ function IdeaPreviewModal({ idea, accent, onClose }: { idea: Idea; accent: strin
   );
 }
 
-function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos }: {
+function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, flashId, view, setView, skips, foldPhotos, live = false }: {
   board: Board; accent: string;
   stageOf: (q: QueueItem) => Stage;
   onOpen: (q: QueueItem, opts?: { changing?: boolean }) => void;
   onOpenIdea: (idea: Idea) => void;
+  /** Live board: published rows are real (no "example" framing) and idea copy names the operator. */
+  live?: boolean;
   onApprove: (id: string) => void;
   flashId: string | null;
   view: ContentView;
@@ -698,6 +708,13 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
   foldPhotos?: React.ReactNode;
 }) {
   const autoDays = board.auto_publish_days ?? 3;
+  // Live overrides for the published stage: on a real board published rows are reports,
+  // not demo examples. Preview keeps the module constants exactly.
+  const stageLabelOf = (s: Stage) => (live && s === 'published' ? 'Published' : STAGE_META[s].label);
+  const listSections = live
+    ? LIST_STAGE_SECTIONS.map((s) => (s.stage === 'published' ? { ...s, blurb: 'Published posts report here with their dates.' } : s))
+    : LIST_STAGE_SECTIONS;
+  const ideasBlurb = live ? "The engine's upcoming idea bank. Your operator turns these into drafts as slots open." : IDEAS_BLURB;
   const reduce = useReducedMotion();
   const fontStack = board.brand?.font_heading ? `"${board.brand.font_heading}", Inter, system-ui, sans-serif` : 'Inter, system-ui, sans-serif';
   const groups = STAGE_ORDER.map((s) => ({ stage: s, items: board.queue.filter((q) => stageOf(q) === s) }));
@@ -753,31 +770,24 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoverId, approvingId, reviewIds.join(','), board]);
 
-  // Feed identity + honest counts: next-week volume read straight off the calendar.
+  // Feed identity + honest counts: count exactly what the feed view renders below, so the
+  // header can never contradict the cards (the calendar week window can be sparser than
+  // the actual review queue).
   const founder = board.founder;
   const feedItems = board.queue
     .filter((q) => (stageOf(q) === 'review' || stageOf(q) === 'scheduled') && q.body && !skips[q.id])
     .sort((a, b) => (a.publish_date || '').localeCompare(b.publish_date || ''));
-  const weekCounts = (() => {
-    const cal = board.calendar;
-    if (!cal) return { posts: feedItems.length, lms: 0 };
-    const start = new Date(cal.start + 'T00:00:00').getTime();
-    const wk = cal.items.filter((it) => {
-      const t = new Date(it.date + 'T00:00:00').getTime();
-      return t >= start && t < start + 7 * 86400000;
-    });
-    return {
-      posts: wk.filter((it) => it.kind === 'post' || it.kind === 'carousel').length,
-      lms: wk.filter((it) => it.kind === 'lm').length,
-    };
-  })();
+  const weekCounts = {
+    posts: feedItems.filter((q) => q.kind === 'post' || q.kind === 'carousel').length,
+    lms: feedItems.filter((q) => q.kind === 'lm').length,
+  };
 
   // One unfolding ledger row, reused across every stage section in the list view.
   const renderLedgerRow = (q: QueueItem) => {
     const stage = stageOf(q);
     const skipped = stage === 'review' && !!skips[q.id];
     const isOpen = openRow === q.id;
-    const mark = stageMark(q, stage, autoDays);
+    const mark = stageMark(q, stage, autoDays, live);
     const rowBg = stage === 'review' && !skipped ? caWash(accent, 5) : (flashId === q.id ? FLASH_BG : 'transparent');
     const provenance = stage === 'review' ? (q.promise || '')
       : q.generating ? 'reactive: drafting began after the news broke'
@@ -842,9 +852,9 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                   ) : stage === 'scheduled' ? (
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: caText(accent) }}>Signed off. On the schedule.</div>
                   ) : q.kind === 'lm' ? (
-                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>Live on your domain: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.</div>
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{live ? 'Live: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.' : 'Live on your domain: a real assessment your audience can take, not a cover image. Try it in the Lead magnets tab.'}</div>
                   ) : stage === 'published' ? (
-                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>An example of how your published posts will report here once the engine is live. Nothing has run on your account yet.</div>
+                    <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{live ? 'Nothing published yet. Approved posts report here once they go live.' : 'An example of how your published posts will report here once the engine is live. Nothing has run on your account yet.'}</div>
                   ) : (
                     <div style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE, maxWidth: '38ch' }}>{skipped ? 'Skipped this week. Nothing publishes in this slot.' : 'In production. It lands in your review the moment it is ready.'}</div>
                   )}
@@ -919,12 +929,12 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
           {/* IDEAS — the engine's upcoming idea bank, not yet drafted. Hides when absent. */}
           {ideas.length > 0 && (
             <section>
-              <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={IDEAS_BLURB} accent={accent} />
+              <LedgerSectionHead eyebrow="Ideas" count={ideas.length} blurb={ideasBlurb} accent={accent} />
               {ideas.map(renderIdeaRow)}
             </section>
           )}
           {/* Stage groups: Your review → Drafting → Scheduled → Published. Empty stages hide. */}
-          {LIST_STAGE_SECTIONS.map(({ stage, label, blurb }) => {
+          {listSections.map(({ stage, label, blurb }) => {
             const rows = (groups.find((g) => g.stage === stage)?.items || []).slice().sort(byDate);
             if (rows.length === 0) return null;
             return (
@@ -945,7 +955,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                 <div key={stage} className="w-[248px] shrink-0 rounded-xl p-2" style={{ background: 'rgba(2,49,47,0.03)' }}>
                   <div className="flex items-center gap-2 px-1.5 pb-2 pt-1">
                     <span className="h-[6px] w-[6px] rounded-full" style={{ background: stageDot(stage) }} aria-hidden />
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : DIM }}>{STAGE_META[stage].label}</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em]" style={{ color: stage === 'review' ? accent : DIM }}>{stageLabelOf(stage)}</span>
                     <span className="rounded-full bg-white px-1.5 text-[11px] font-semibold tabular-nums" style={{ color: DIM }}>{items.length}</span>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -972,7 +982,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
                         <span>
                           {stage === 'review' && skips[q.id]
                             ? <span className="text-[12px]" style={{ color: FAINT }}>Skipped this week</span>
-                            : stageStatus(q, stage)}
+                            : stageStatus(q, stage, undefined, live)}
                         </span>
                       </motion.button>
                     ))}
@@ -987,7 +997,7 @@ function ReviewSurface({ board, accent, stageOf, onOpen, onOpenIdea, onApprove, 
       {view === 'feed' && (
         <div className="max-w-[880px] rounded-xl px-3 py-6 sm:px-6" style={{ background: '#f3f2ef', border: `1px solid ${LINE}` }}>
           <div className="mx-auto mb-5 max-w-[552px]">
-            <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: INK }}>Next week on your LinkedIn</h3>
+            <h3 className="text-[18px] font-semibold tracking-tight" style={{ color: INK }}>{live ? 'Up next on your LinkedIn' : 'Next week on your LinkedIn'}</h3>
             <p className="mt-1 text-[13.5px]" style={{ color: DIM }}>
               {[
                 weekCounts.posts > 0 ? `${weekCounts.posts} post${weekCounts.posts === 1 ? '' : 's'}` : '',
@@ -1789,7 +1799,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-4 pt-5 sm:px-6 sm:pt-6" style={{ borderBottom: `1px solid ${DIVIDE}` }}>
           <KindChip q={item} accent={accent} />
           <span className="uppercase" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', color: caText(accent) }}>{statusLabel}</span>
-          <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start)}</span>
+          <span className="ml-auto">{stageStatus(item, stage, board.calendar?.start, isLive)}</span>
           <button onClick={onClose} aria-label="Close" className="ml-2 flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 hover:bg-[rgba(2,49,47,0.05)]">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" stroke={DIM} strokeWidth="2.2" strokeLinecap="round" />
@@ -1832,7 +1842,7 @@ function DetailModal({ item, board, accent, stage, onClose, onApprove, initialCh
                   <div className="min-w-0">
                     <div className="text-[16px] font-semibold" style={{ color: INK }}>{item.title}</div>
                     <p className="mt-1 text-[14px] leading-relaxed" style={{ color: DIM }}>{item.promise}</p>
-                    <p className="mt-2 text-[13px]" style={{ color: FAINT }}>Interactive assessment on your domain. Try it live in the Lead magnet tab.</p>
+                    <p className="mt-2 text-[13px]" style={{ color: FAINT }}>{isLive ? 'Live interactive assessment. Try it in the Lead magnets tab.' : 'Interactive assessment on your domain. Try it live in the Lead magnet tab.'}</p>
                   </div>
                 </div>
               </div>
@@ -2100,7 +2110,11 @@ function CalendarSurface({ board, accent, mint, onOpen, scheduledIds }: {
             <span className="rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums" style={{ border: `1px solid ${LINE}`, background: '#fff', color: DIM }}>
               Engine starts {fmtDay(cal.start)}
             </span>
-            <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>{cal.items.length} pieces scheduled</span>
+            {/* Count only content kinds: onboarding call/review tasks share the calendar but are not pieces. */}
+            {(() => {
+              const n = cal.items.filter((it) => ['post', 'carousel', 'lm', 'newsletter'].includes(it.kind)).length;
+              return <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>{n} content piece{n === 1 ? '' : 's'} scheduled</span>;
+            })()}
             <span className="ml-auto hidden items-center gap-4 md:inline-flex">
               {swatch(chipStyle('post'), 'Post')}
               {swatch(chipStyle('carousel'), 'Carousel')}
@@ -2167,9 +2181,11 @@ const LM_FORMAT_LABEL: Record<string, string> = {
 
 /** Typographic mockup cover for a library entry: brand tones + the title as the art.
  *  Honest by construction — status chips only, no capture counts, no fake leads. */
-function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen }: {
+function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen, boardLive = false }: {
   entry: LeadMagnetEntry; accent: string; mint: string; brand?: BoardBrand; fontStack: string; i: number;
   onOpen?: (e: LeadMagnetEntry) => void;
+  /** Live BOARD (not entry status): drop the vanity "On your domain" framing. */
+  boardLive?: boolean;
 }) {
   const live = entry.status === 'live';
   const heroBg = live ? (brand?.header_bg || INK) : `color-mix(in srgb, ${accent} ${[9, 6, 12, 7, 5][i % 5]}%, white)`;
@@ -2214,7 +2230,7 @@ function LmLibraryCard({ entry, accent, mint, brand, fontStack, i, onOpen }: {
           {statusChip.label}
         </span>
         <span className="ml-auto text-[11.5px] tabular-nums" style={{ color: FAINT }}>
-          {live ? 'On your domain' : entry.date_label || ''}
+          {live ? (boardLive ? 'Live and capturing leads' : 'On your domain') : entry.date_label || ''}
         </span>
       </div>
     </div>
@@ -2292,15 +2308,18 @@ function LmDetailDrawer({ entry, board, accent, mint, fontStack, live = false, o
             {(entry.date_label || isLiveLm) && (
               <div className="bg-white px-4 py-3.5">
                 <div className="uppercase" style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '0.14em', color: INK_MUTE }}>{isLiveLm ? 'Where' : 'On the calendar'}</div>
-                <div className="mt-1 text-[14px] font-semibold" style={{ color: INK }}>{isLiveLm ? 'On your domain' : entry.date_label}</div>
+                {/* Live board: the real host it is served from (checkable), never a vanity domain. */}
+                <div className="mt-1 truncate text-[14px] font-semibold" style={{ color: INK }}>{isLiveLm ? (live ? realHostOf(entry.url) || 'Live' : 'On your domain') : entry.date_label}</div>
               </div>
             )}
           </div>
 
           <p className="mt-6" style={{ fontFamily: BODY, fontStyle: 'italic', fontSize: 13.5, lineHeight: 1.6, color: INK_MUTE }}>
             {isLiveLm
-              ? 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.'
-              : (live ? 'In build. It lands on the calendar and goes live on your domain when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
+              ? (live
+                ? 'Live and capturing leads. It scores or grades a real problem your buyers have, then captures their email into your leads.'
+                : 'Live on your domain. It scores or grades a real problem your buyers have, then captures their email into your leads.')
+              : (live ? 'In build. It goes live and starts capturing leads when ready.' : 'On the calendar. It ships live on your domain when its slot comes up.')}
           </p>
         </div>
 
@@ -2462,10 +2481,22 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { b
       ctaurl,
     });
   }, [lm, board]);
+  // Address-bar chrome. Preview keeps the vanity-domain theater (their domain + a slugified
+  // path). LIVE shows the REAL hosted URL only: a paying client can type it in, so nothing
+  // fabricated may render. No real URL on record = no address bar (the embed hides it).
+  const embedChrome = (() => {
+    if (!live) return { domain: board.domain, urlPath: lmPath(lm?.title) };
+    const real = (lm as any)?.url as string | undefined;
+    if (!real) return { domain: undefined, urlPath: undefined };
+    try {
+      const u = new URL(real);
+      return { domain: u.hostname.replace(/^www\./, ''), urlPath: u.pathname.replace(/^\/+|\/+$/g, '') || undefined };
+    } catch { return { domain: undefined, urlPath: undefined }; }
+  })();
   return (
     <div>
       <SectionHead
-        eyebrow="Live on your domain"
+        eyebrow={live ? 'Live assessments' : 'Live on your domain'}
         title={<>Lead magnets, <Accent>working for you.</Accent></>}
         sub="The live one first, exactly what your leads see. It scores them, then captures their email. New capture assets ship on the calendar below it."
       />
@@ -2473,8 +2504,8 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { b
         <LiveAssessmentEmbed
           src={src}
           title={lm?.title}
-          domain={board.domain}
-          urlPath={lmPath(lm?.title)}
+          domain={embedChrome.domain}
+          urlPath={embedChrome.urlPath}
           logoUrl={board.brand?.logo_dark || board.logo_url}
           accentHex={accent}
           companyName={board.company_name}
@@ -2497,7 +2528,12 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { b
           <div className="mb-1 flex items-baseline gap-2.5">
             <CardHead>Your lead magnet library</CardHead>
             <span className="text-[12px] tabular-nums" style={{ color: FAINT }}>
-              {(board.lead_magnets || []).filter((e) => e.status === 'live').length} live · {(board.lead_magnets || []).filter((e) => e.status !== 'live').length} on the calendar
+              {(() => {
+                // Non-live entries are concepts/builds, not calendared dates: say what they are.
+                const liveN = (board.lead_magnets || []).filter((e) => e.status === 'live').length;
+                const buildN = (board.lead_magnets || []).length - liveN;
+                return [liveN > 0 ? `${liveN} live` : '', buildN > 0 ? `${buildN} in build` : ''].filter(Boolean).join(' · ');
+              })()}
             </span>
           </div>
           <p className="mb-3 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
@@ -2505,7 +2541,7 @@ function LeadMagnetSurface({ board, accent, mint, fontStack, live = false }: { b
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {(board.lead_magnets || []).map((entry, i) => (
-              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} />
+              <LmLibraryCard key={entry.id} entry={entry} accent={accent} mint={mint} brand={board.brand} fontStack={fontStack} i={i} onOpen={setLmDetail} boardLive={live} />
             ))}
           </div>
         </div>
@@ -2858,9 +2894,11 @@ function StrategySurface({ board, accent, mint, isLive, act }: {
 }
 
 // ---------- Newsletter surface ----------
-function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
+function NewsletterSurface({ board, accent, fontStack, onOpenIssue, live = false }: {
   board: Board; accent: string; fontStack: string;
   onOpenIssue: (it: NewsletterIssue) => void;
+  /** Live board: the nurture steps are the plan, not running behavior. Frame them as such. */
+  live?: boolean;
 }) {
   const nl = board.newsletter;
   const [issueOpen, setIssueOpen] = useState(false);
@@ -2877,7 +2915,9 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
       <SectionHead
         eyebrow="Weekly to your list"
         title={<>Your newsletter, <Accent>in your voice.</Accent></>}
-        sub="One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture gets it."
+        sub={live
+          ? 'One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture will get it.'
+          : 'One issue a week, drafted from the same voice model as your posts. Every lead your assessments capture gets it.'}
       />
 
       {/* Hero: memo identity next to an inbox preview of the next issue. */}
@@ -2897,7 +2937,7 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
                 {nl.from_domain && (
                   <span className="inline-flex items-center gap-1.5">
                     <span className="h-[5px] w-[5px] rounded-full" style={{ background: accent, opacity: 0.55 }} aria-hidden />
-                    Sends from {nl.from_domain}
+                    {live ? <>Will send from {nl.from_domain}, set up in week two.</> : <>Sends from {nl.from_domain}</>}
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5">
@@ -2986,7 +3026,12 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
       {/* Nurture flow */}
       {nurture.length > 0 && (
         <div className="mt-6 rounded-xl bg-white p-4 sm:p-6" style={{ border: `1px solid ${LINE}` }}>
-          <div className="mb-4"><CardHead>Inbound leads flow</CardHead></div>
+          <div className={live ? 'mb-1' : 'mb-4'}><CardHead>Inbound leads flow</CardHead></div>
+          {/* Live: the step details are written in present tense but the sequence arms with
+              the first issue. One short lead-in frames everything below as the plan. */}
+          {live && (
+            <p className="mb-4 text-[13px]" style={{ fontFamily: BODY, fontStyle: 'italic', color: INK_MUTE }}>The plan, from your first issue on:</p>
+          )}
           <div className="flex flex-col sm:flex-row">
             {nurture.map((s, i) => {
               const last = i === nurture.length - 1;
@@ -3015,7 +3060,9 @@ function NewsletterSurface({ board, accent, fontStack, onOpenIssue }: {
             })}
           </div>
           <p className="mt-5 text-[13px]" style={{ color: FAINT }}>
-            Leads captured by your assessments feed this list automatically. Yours to keep, exportable anytime.
+            {live
+              ? 'Leads captured by your assessments will feed this list. Yours to keep, exportable anytime.'
+              : 'Leads captured by your assessments feed this list automatically. Yours to keep, exportable anytime.'}
           </p>
         </div>
       )}
@@ -3282,7 +3329,7 @@ function LeadsSurface({ board, accent, preview, onOpen, live = false }: { board:
         <div className="rounded-xl px-4 py-10 text-center" style={{ background: PAPER_SUNK, border: `1px dashed ${LINE}` }}>
           <p className="mx-auto max-w-[54ch] text-[13px] leading-relaxed" style={{ color: DIM }}>
             {live
-              ? 'Everyone matched to your buyer profile who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit engagers get a connection request and a DM. Yours to keep.'
+              ? 'Everyone matched to your buyer profile who engages your content lands here. Once your outbound lanes go live: hand-raisers get the resource and a follow-up; high-fit engagers get a connection request and a DM. Yours to keep.'
               : 'Every ICP-matched person who engages your content lands here. Hand-raisers get the resource and a follow-up; high-fit reactors get a connection request and a DM. Yours to keep.'}
           </p>
         </div>
@@ -4216,8 +4263,12 @@ export default function ClientBoardPage() {
   const ogCompany = board?.company_name || pendingCompany || 'Your brand';
   const ogImage = board?.brand?.logo_light || board?.logo_url || board?.brand?.logo_dark || 'https://ivanmanfredi.com/og-scorecard.png';
   useMetadata({
-    title: `${ogCompany} · content preview`,
-    description: `A month of content built for ${ogCompany} to preview: LinkedIn posts, carousels, and a live lead magnet, themed to your brand and ready to approve.`,
+    // LIVE boards are a production tool, not a pitch. Preview keeps the exact legacy
+    // strings: the mirror prerender matches the literal '· content preview' title.
+    title: isLive ? `${ogCompany} · content board` : `${ogCompany} · content preview`,
+    description: isLive
+      ? 'Your content board: drafts in review, calendar, lead magnets, leads, and performance.'
+      : `A month of content built for ${ogCompany} to preview: LinkedIn posts, carousels, and a live lead magnet, themed to your brand and ready to approve.`,
     canonical: slug ? `https://ivanmanfredi.com/client/${slug}` : undefined,
     ogImage,
     noindex: true,
@@ -4372,10 +4423,10 @@ export default function ClientBoardPage() {
         modalOpen={!!detail}
       />
     ),
-    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
+    review: <ReviewSurface board={viewBoard} accent={accent} stageOf={stageOf} onOpen={openDetail} onOpenIdea={setIdeaPreview} onApprove={approve} flashId={flashId} view={contentView} setView={setContentView} skips={weekSkips} live={isLive} foldPhotos={isLive ? <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} compact /> : null} />,
     calendar: <CalendarSurface board={viewBoard} accent={accent} mint={mint} onOpen={openCalendarItem} scheduledIds={scheduledIds} />,
     lm: <LeadMagnetSurface board={viewBoard} accent={accent} mint={mint} fontStack={fontStack} live={isLive} />,
-    newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} />,
+    newsletter: <NewsletterSurface board={viewBoard} accent={accent} fontStack={fontStack} onOpenIssue={openNewsletterIssue} live={isLive} />,
     voice: <VoiceSurface board={viewBoard} accent={accent} fontStack={fontStack} />,
     photos: <PhotosSurface board={viewBoard} accent={accent} slug={slug || ''} />,
     leads: <LeadsSurface board={viewBoard} accent={accent} preview={isPreview} onOpen={setLeadDetail} live={isLive} />,
@@ -4654,7 +4705,7 @@ export default function ClientBoardPage() {
         />
       )}
       {ideaPreview && (
-        <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} />
+        <IdeaPreviewModal idea={ideaPreview} accent={accent} onClose={() => setIdeaPreview(null)} live={isLive} />
       )}
       {leadDetail && (
         <LeadDetailModal lead={leadDetail} accent={accent} onClose={() => setLeadDetail(null)} live={isLive} />
