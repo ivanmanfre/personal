@@ -401,6 +401,29 @@ const LmWorkSurface: React.FC = () => {
                           <p className="ws-lm-missing">No launch copy on this draft yet.</p>
                         )}
                       </div>
+
+                      {/* Minor artifacts — video + open-graph. Rendered explicitly
+                          (link when present, muted empty line when absent) so no
+                          typed field is silently dropped. Kept compact: they are
+                          0% populated in the current queue and must stay minor. */}
+                      <div className="ws-lm-minors">
+                        <div className="ws-lm-minor">
+                          <span className="ws-lm-minor-lbl">Video</span>
+                          {current.videoUrl ? (
+                            <a className="ws-lm-link" href={current.videoUrl} target="_blank" rel="noreferrer">Open video</a>
+                          ) : (
+                            <span className="ws-lm-minor-empty">No video on this draft</span>
+                          )}
+                        </div>
+                        <div className="ws-lm-minor">
+                          <span className="ws-lm-minor-lbl">Open Graph</span>
+                          {current.ogUrl ? (
+                            <a className="ws-lm-link" href={current.ogUrl} target="_blank" rel="noreferrer">Open link</a>
+                          ) : (
+                            <span className="ws-lm-minor-empty">No open graph image on this draft</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 

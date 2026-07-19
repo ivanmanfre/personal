@@ -63,11 +63,22 @@ export function useStrategyMap() {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'paid');
 
-      // 6. Active client instances
-      const { count: activeClientsCount } = await supabase
-        .from('client_instances')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_active', true);
+      // 6. Active clients — the count of real paying clients.
+      //
+      // The old source (client_instances.is_active) counts dead pre-pivot
+      // automation-monitoring rows (Ivan System + ProSWPPP + Lemonade + Reeder +
+      // Agency Ops = 5), not real clients — the truth is 1 (Rise DTC). The real
+      // roster lives in client_registry, which the dashboard anon key cannot read
+      // (RLS returns 0 rows — rows hold live secrets). So we derive it from a
+      // table anon CAN read: distinct non-null client_id in the live content
+      // pipeline (carousel_drafts). Fallback to 0 if the read is blocked.
+      const { data: clientPipelineRows } = await supabase
+        .from('carousel_drafts')
+        .select('client_id')
+        .not('client_id', 'is', null);
+      const activeClientsCount = new Set(
+        (clientPipelineRows ?? []).map((r: any) => r.client_id).filter(Boolean),
+      ).size;
 
       // ── Build campaigns summary ──
       const stageCountsByCampaign = new Map<string, ReturnType<typeof emptyStageCounts>>();

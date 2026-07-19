@@ -1,4 +1,8 @@
 @import './theme/light.css';
+/* v1-bridge loads AFTER light.css so its Black Box register overrides the generic
+ * light map for the 6 live v1 panels whose wrapper carries `.dv-bridge`.
+ * Both @imports stay at the top of the file, per CSS spec. */
+@import './v1-bridge.css';
 
 /*
  * Dashboard v2 — control board design system

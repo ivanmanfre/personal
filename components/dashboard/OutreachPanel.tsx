@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 
 const PROSPECTS_PER_PAGE = 30;
 import { Target, Users, MessageSquare, TrendingUp, Activity, AlertTriangle, Send } from 'lucide-react';
@@ -115,6 +115,30 @@ const OutreachPanel: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
   const [page, setPage] = useState(1);
+
+  // Deep-link: ?prospect=<id> opens that prospect's detail modal on mount. Gives
+  // the Outreach work-surface Desk (and the notification bell) a linkable thread
+  // target. Race-safe — prospects load async, so we stash the id and apply it
+  // once the row is present, then strip the param so close/reopen stays clean.
+  const initialProspectRef = useRef<string | null>(
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('prospect'),
+  );
+  useEffect(() => {
+    const target = initialProspectRef.current;
+    if (!target) return;
+    const match = prospects.find((p) => p.id === target);
+    if (match) {
+      setSelectedProspect(match);
+      initialProspectRef.current = null;
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('prospect');
+        window.history.replaceState(null, '', url.toString());
+      }
+    } else if (!loading) {
+      initialProspectRef.current = null;
+    }
+  }, [prospects, loading]);
 
   // Filtered + sorted prospects
   const filtered = useMemo(() => {

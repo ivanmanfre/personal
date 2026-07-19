@@ -1,0 +1,103 @@
+/*
+ * Outreach work surface (Wave 2) — replies-waiting Desk.
+ * Black Box v4 register, scoped under `.ec`. Reuses editorial-cockpit.css
+ * tokens (--ec-*) and worksurface.css grammar (ws-head / ws-tools / ws-tally /
+ * ws-lane / ws-lane-cap / ws-loading / ws-empty) so Outreach reads as the same
+ * product as Posts + LM Studio. Only the reply-row + verdict-badge + latest-
+ * reply hero are surface-specific and live here.
+ *
+ * The single Signal red is spent ONCE per composition: the REPLIES WAITING
+ * tally count when it is > 0 (ws-tally-count--red, already defined upstream).
+ * Nothing here re-uses red — verdict badges stay monochrome on purpose.
+ */
+
+/* ── Replies queue: one row per prospect owing a reply ─────────────────────── */
+.ec .ors-queue { border-top: 3px solid var(--ec-ink); }
+.ec .ors-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ec-rule);
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.ec .ors-row:hover { background: rgba(19, 18, 16, 0.035); }
+/* the freshest reply sits slightly elevated — a subtle lead, not a second red */
+.ec .ors-row--lead { background: rgba(19, 18, 16, 0.04); box-shadow: inset 3px 0 0 var(--ec-ink); }
+
+.ec .ors-row-top { display: flex; align-items: baseline; gap: 0.55rem; flex-wrap: wrap; }
+.ec .ors-name { font-family: var(--ec-sans); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: var(--ec-ink); }
+.ec .ors-company { font-family: var(--ec-sans); font-size: 12px; color: var(--ec-mutedc); }
+.ec .ors-age {
+  margin-left: auto;
+  font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ec .ors-snippet {
+  font-family: var(--ec-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ec-body);
+  margin-top: 0.35rem;
+  max-width: 62ch;
+}
+.ec .ors-snippet--none { color: var(--ec-mutedc); font-style: italic; }
+.ec .ors-row-meta { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; }
+
+/* audit verdict cross-link badge — monochrome (red is reserved) */
+.ec .ors-badge {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  border: 1px solid var(--ec-rule-strong);
+  padding: 0.12rem 0.4rem;
+  white-space: nowrap;
+}
+.ec .ors-badge--strong { color: var(--ec-paper); background: var(--ec-ink); border-color: var(--ec-ink); }
+.ec .ors-badge--weak { color: var(--ec-mutedc); border-color: var(--ec-rule); }
+.ec .ors-open {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-left: auto;
+}
+.ec .ors-row:hover .ors-open { color: var(--ec-ink); }
+.ec .ors-icp { font-family: 'Berkeley Mono', ui-monospace, Menlo, monospace; font-size: 11px; color: var(--ec-mutedc); }
+
+/* ── Latest-reply hero: subtle elevated pull-quote (sourced by sent_at) ─────── */
+.ec .ors-hero {
+  border-left: 2px solid var(--ec-ink);
+  padding: 0.2rem 0 0.2rem 0.9rem;
+  margin: 0 0 1.5rem;
+}
+.ec .ors-hero-lbl {
+  font-family: var(--ec-sans);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-mutedc);
+  margin-bottom: 0.35rem;
+}
+.ec .ors-hero-q { font-family: var(--ec-sans); font-size: 16px; line-height: 1.45; color: var(--ec-ink); font-weight: 500; }
+.ec .ors-hero-attr { font-family: var(--ec-sans); font-size: 11.5px; color: var(--ec-mutedc); margin-top: 0.4rem; }
+
+/* ── Follow-up drafts lane note (relocated from Warm, approval NOT armed) ───── */
+.ec .ors-fu-note {
+  font-family: var(--ec-sans);
+  font-size: 11.5px;
+  color: var(--ec-mutedc);
+  margin: 0.2rem 0 1rem;
+}

@@ -35,7 +35,33 @@ export interface SearchResult {
   updated_at: string;
 }
 
-const TRACKED_CLIENT_IDS = ['global', 'shared-tech', 'ivan', 'secondmile', 'agencyops', 'lemonade', 'proswppp', 'reeder'];
+// Ivan's own memory tiers — always present, always first, in this order.
+const OWN_TIERS = ['global', 'shared-tech', 'ivan'];
+
+/**
+ * Live-derive the client tier roster instead of hardcoding it.
+ *
+ * The old hardcoded array carried dead pre-pivot automation clients (agencyops,
+ * proswppp) that still have claude_memory rows, so a naive "distinct client_id
+ * in claude_memory" would keep rendering them. Truth of "which clients are
+ * ALIVE" lives in client_registry, which the dashboard anon key cannot read
+ * (returns 0 rows — rows hold live secrets). So we derive the live client
+ * roster from the content pipeline anon CAN read: distinct non-null client_id
+ * present in carousel_drafts / lm_drafts_v2. Dead automation clients have no
+ * content rows and drop off; the real paying client (risedtc) appears.
+ */
+async function deriveClientTiers(): Promise<string[]> {
+  const [drafts, lms] = await Promise.all([
+    supabase.from('carousel_drafts').select('client_id').not('client_id', 'is', null),
+    supabase.from('lm_drafts_v2').select('client_id').not('client_id', 'is', null),
+  ]);
+  const set = new Set<string>();
+  for (const r of drafts.data ?? []) if (r.client_id) set.add(r.client_id);
+  for (const r of lms.data ?? []) if (r.client_id) set.add(r.client_id);
+  // Never double-list Ivan's own tiers as "clients".
+  for (const own of OWN_TIERS) set.delete(own);
+  return Array.from(set).sort();
+}
 
 function parseTopic(content: string): string {
   // Try YAML frontmatter `name: ...`
@@ -75,11 +101,23 @@ export function useBrainStats() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [allRes, logsRes, reviewsRes] = await Promise.all([
+      const clientTiers = await deriveClientTiers();
+      const roster = [...OWN_TIERS, ...clientTiers];
+
+      // Per-tier exact count + newest updated_at. One query per tier avoids the
+      // PostgREST 1000-row default cap (ivan alone is ~1k rows), which a single
+      // combined .in() select would silently truncate and mis-count.
+      const tierQueries = roster.map((cid) =>
         supabase
           .from('claude_memory')
-          .select('client_id, updated_at')
-          .in('client_id', TRACKED_CLIENT_IDS),
+          .select('updated_at', { count: 'exact' })
+          .eq('client_id', cid)
+          .order('updated_at', { ascending: false })
+          .limit(1),
+      );
+
+      const [tierResults, logsRes, reviewsRes] = await Promise.all([
+        Promise.all(tierQueries),
         supabase
           .from('claude_memory')
           .select('id, client_id, file_path, content, updated_at')
@@ -92,18 +130,16 @@ export function useBrainStats() {
           .like('file_path', '%_compaction-review.md'),
       ]);
 
-      // Tier counts
-      const countMap = new Map<string, { count: number; lastSync: string | null }>();
-      for (const cid of TRACKED_CLIENT_IDS) countMap.set(cid, { count: 0, lastSync: null });
-      for (const row of allRes.data ?? []) {
-        const cur = countMap.get(row.client_id) ?? { count: 0, lastSync: null };
-        cur.count += 1;
-        if (!cur.lastSync || (row.updated_at && row.updated_at > cur.lastSync)) cur.lastSync = row.updated_at;
-        countMap.set(row.client_id, cur);
-      }
-      const tierArr: TierCount[] = TRACKED_CLIENT_IDS
-        .map((cid) => ({ client_id: cid, count: countMap.get(cid)?.count ?? 0, lastSync: countMap.get(cid)?.lastSync ?? null }))
-        .filter((t) => t.count > 0);
+      // Own tiers hide when empty (preserves prior behavior); client tiers stay
+      // visible even at 0 so the real client (risedtc) surfaces honestly rather
+      // than vanishing behind a count>0 filter.
+      const tierArr: TierCount[] = roster
+        .map((cid, i) => {
+          const res = tierResults[i];
+          const newest = (res.data ?? [])[0] as { updated_at?: string } | undefined;
+          return { client_id: cid, count: res.count ?? 0, lastSync: newest?.updated_at ?? null };
+        })
+        .filter((t) => (OWN_TIERS.includes(t.client_id) ? t.count > 0 : true));
       setTierCounts(tierArr);
 
       // Session logs

@@ -218,17 +218,17 @@ const PromptLibraryPanel: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+          <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
             <button
               onClick={() => setSortBy('slug')}
-              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'slug' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'slug' ? 'bg-[var(--ds-ink)] text-white' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
               title="Sort A-Z"
             >
               A-Z
             </button>
             <button
               onClick={() => setSortBy('updated')}
-              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'updated' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`px-2 py-0.5 text-[11px] rounded ${sortBy === 'updated' ? 'bg-[var(--ds-ink)] text-white' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
               title="Sort by recently updated"
             >
               Recent
@@ -241,7 +241,7 @@ const PromptLibraryPanel: React.FC = () => {
       </div>
 
       {error && (
-        <div className="text-[12px] text-red-300 rounded-md border border-red-900/50 bg-red-950/30 px-3 py-2">
+        <div className="text-[12px] text-[#C8361B] rounded-md border border-[#C8361B4D] bg-[#C8361B0D] px-3 py-2">
           Failed to load: {error}
         </div>
       )}
@@ -250,7 +250,7 @@ const PromptLibraryPanel: React.FC = () => {
         {/* LEFT — list */}
         <div className="space-y-2 min-w-0">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--ds-faint)]" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -265,13 +265,13 @@ const PromptLibraryPanel: React.FC = () => {
                 onClick={() => setCategory(c)}
                 className={`text-[10.5px] uppercase tracking-wider px-2 py-1 rounded-md transition-colors ${
                   category === c
-                    ? 'bg-emerald-700/40 text-emerald-200 ring-1 ring-emerald-600/40'
-                    : 'bg-zinc-900/60 text-zinc-400 ring-1 ring-zinc-800/60 hover:text-zinc-200'
+                    ? 'bg-[var(--ds-ink)] text-white ring-1 ring-[var(--ds-ink)]'
+                    : 'bg-[var(--ds-bg)] text-[var(--ds-dim)] ring-1 ring-[var(--ds-line)] hover:text-[var(--ds-ink)]'
                 }`}
               >
                 {c === 'all' ? 'All' : c}
                 {c !== 'all' && (
-                  <span className="ml-1 text-zinc-600">
+                  <span className="ml-1 text-[var(--ds-faint)]">
                     {prompts.filter((p) => (p.category ?? categorize(p.slug)) === c).length}
                   </span>
                 )}
@@ -279,11 +279,11 @@ const PromptLibraryPanel: React.FC = () => {
             ))}
           </div>
           <div className="space-y-3 overflow-y-auto max-h-[calc(80vh-160px)] pr-1">
-            {loading && <div className="text-[12px] text-zinc-500 italic flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</div>}
-            {!loading && grouped.length === 0 && <div className="text-[12px] text-zinc-500 italic">No prompts match.</div>}
+            {loading && <div className="text-[12px] text-[var(--ds-dim)] italic flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</div>}
+            {!loading && grouped.length === 0 && <div className="text-[12px] text-[var(--ds-dim)] italic">No prompts match.</div>}
             {grouped.map(([cat, list]) => (
               <div key={cat}>
-                <div className="text-[10.5px] uppercase tracking-wider text-emerald-400/70 font-semibold mb-1 px-1">{cat}</div>
+                <div className="text-[10.5px] uppercase tracking-wider text-[var(--ds-dim)] font-semibold mb-1 px-1">{cat}</div>
                 <ul className="space-y-0.5">
                   {list.map((p) => (
                     <li key={p.id}>
@@ -294,20 +294,20 @@ const PromptLibraryPanel: React.FC = () => {
                         }}
                         className={`w-full text-left px-2 py-1.5 rounded-md transition-colors flex items-center gap-2 ${
                           selectedId === p.id
-                            ? 'bg-emerald-700/30 ring-1 ring-emerald-600/40'
-                            : 'hover:bg-zinc-900/60'
+                            ? 'bg-[var(--ds-bg)] ring-1 ring-[#131210]'
+                            : 'hover:bg-[var(--ds-bg)]'
                         }`}
                       >
-                        <FileText className="w-3 h-3 text-zinc-500 shrink-0" />
+                        <FileText className="w-3 h-3 text-[var(--ds-faint)] shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <div className="text-[12px] text-zinc-200 truncate">{p.title}</div>
-                          <div className="text-[11px] text-zinc-500 font-mono truncate">{p.slug}</div>
+                          <div className="text-[12px] text-[var(--ds-ink)] truncate">{p.title}</div>
+                          <div className="text-[11px] text-[var(--ds-dim)] font-mono truncate">{p.slug}</div>
                         </div>
-                        <span className="text-[11px] text-zinc-600 tabular-nums shrink-0">{relTime(p.updatedAt)}</span>
-                        <div className="text-[11px] text-zinc-600 tabular-nums shrink-0">
+                        <span className="text-[11px] text-[var(--ds-faint)] tabular-nums shrink-0">{relTime(p.updatedAt)}</span>
+                        <div className="text-[11px] text-[var(--ds-faint)] tabular-nums shrink-0">
                           {(p.body.length / 1000).toFixed(1)}k
                         </div>
-                        <ChevronRight className={`w-3 h-3 shrink-0 transition ${selectedId === p.id ? 'text-emerald-400' : 'text-zinc-700'}`} />
+                        <ChevronRight className={`w-3 h-3 shrink-0 transition ${selectedId === p.id ? 'text-[var(--ds-ink)]' : 'text-[var(--ds-faint)]'}`} />
                       </button>
                     </li>
                   ))}
@@ -320,7 +320,7 @@ const PromptLibraryPanel: React.FC = () => {
         {/* RIGHT — editor */}
         <div className="min-w-0">
           {!selected ? (
-            <Card padded className="h-full flex items-center justify-center text-[12px] text-zinc-500 italic">
+            <Card padded className="h-full flex items-center justify-center text-[12px] text-[var(--ds-dim)] italic">
               Select a prompt from the list to edit.
             </Card>
           ) : (
@@ -332,7 +332,7 @@ const PromptLibraryPanel: React.FC = () => {
                     onChange={(e) => { setDraftTitle(e.target.value); setDirty(true); }}
                     className="text-[14px] font-semibold !py-1.5"
                   />
-                  <div className="text-[10.5px] text-zinc-500 font-mono mt-1 flex items-center gap-3">
+                  <div className="text-[10.5px] text-[var(--ds-dim)] font-mono mt-1 flex items-center gap-3">
                     <span>{selected.slug}</span>
                     <span>·</span>
                     <span>v{selected.version}</span>
@@ -348,27 +348,27 @@ const PromptLibraryPanel: React.FC = () => {
                     <span title={selected.updatedAt}>
                       {relTime(selected.updatedAt)} by {selected.updatedBy ?? 'unknown'}
                     </span>
-                    {dirty && <span className="text-amber-400">· unsaved</span>}
+                    {dirty && <span className="text-[var(--ds-dim)] font-medium">· unsaved</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => setHistoryOpen(true)}
-                    className="px-2 py-1 text-[11px] rounded inline-flex items-center gap-1 text-zinc-400 hover:text-zinc-200 border border-zinc-800 hover:bg-zinc-800/50"
+                    className="px-2 py-1 text-[11px] rounded inline-flex items-center gap-1 text-[var(--ds-dim)] hover:text-[var(--ds-ink)] border border-[var(--ds-line)] hover:bg-[var(--ds-bg)]"
                     title="Version history + diff"
                   >
                     <History className="w-3 h-3" /> History
                   </button>
-                  <div className="inline-flex rounded-md bg-zinc-900 border border-zinc-800 p-0.5">
+                  <div className="inline-flex rounded-md bg-[var(--ds-bg)] border border-[var(--ds-line)] p-0.5">
                     <button
                       onClick={() => setMode('edit')}
-                      className={`px-2 py-0.5 text-[11px] rounded inline-flex items-center gap-1 ${mode === 'edit' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      className={`px-2 py-0.5 text-[11px] rounded inline-flex items-center gap-1 ${mode === 'edit' ? 'bg-[var(--ds-ink)] text-white' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                     >
                       <Edit3 className="w-3 h-3" /> Edit
                     </button>
                     <button
                       onClick={() => setMode('preview')}
-                      className={`px-2 py-0.5 text-[11px] rounded inline-flex items-center gap-1 ${mode === 'preview' ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                      className={`px-2 py-0.5 text-[11px] rounded inline-flex items-center gap-1 ${mode === 'preview' ? 'bg-[var(--ds-ink)] text-white' : 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]'}`}
                     >
                       <Eye className="w-3 h-3" /> Preview
                     </button>
@@ -377,7 +377,7 @@ const PromptLibraryPanel: React.FC = () => {
               </div>
 
               {externalUpdate && (
-                <div className="text-[12px] rounded-md border border-[var(--d-rule-strong)] bg-[var(--d-warn-bg)] text-[var(--d-warn)] px-3 py-2 flex items-center gap-3">
+                <div className="text-[12px] rounded-md border border-[var(--ds-line)] bg-[var(--ds-bg)] text-[var(--ds-ink)] px-3 py-2 flex items-center gap-3">
                   <span>
                     Changed outside this editor ({externalUpdate.updatedBy ?? 'unknown'}, {new Date(externalUpdate.updatedAt).toLocaleTimeString()}).
                     Your unsaved draft is preserved.
@@ -400,17 +400,17 @@ const PromptLibraryPanel: React.FC = () => {
                   spellCheck={false}
                 />
               ) : (
-                <div className="border border-zinc-800/60 bg-zinc-950/60 rounded-md p-3 overflow-y-auto min-h-[60vh] flex-1 max-h-[70vh]">
+                <div className="border border-[var(--ds-line)] bg-[var(--ds-bg)] rounded-md p-3 overflow-y-auto min-h-[60vh] flex-1 max-h-[70vh]">
                   {renderLightMarkdown(draftBody || '_(empty)_', { editorial: true })}
                 </div>
               )}
 
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-900/60">
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--ds-line)]">
                 <a
                   href={selected.sourcePage?.startsWith('clickup:') ? `https://app.clickup.com/9013129303/v/dc/${selected.sourcePage.replace('clickup:','')}` : '#'}
                   target="_blank" rel="noreferrer"
                   className={`text-[10.5px] inline-flex items-center gap-1 ${
-                    selected.sourcePage ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-700 pointer-events-none'
+                    selected.sourcePage ? 'text-[var(--ds-dim)] hover:text-[var(--ds-ink)]' : 'text-[var(--ds-faint)] pointer-events-none'
                   }`}
                   title="Legacy ClickUp origin (archive — not queried at runtime)"
                 >

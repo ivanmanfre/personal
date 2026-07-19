@@ -66,12 +66,13 @@ function prettyVerdict(v: string, fallback: string): string {
 }
 
 function verdictTone(it: QAIteration): { tone: string; label: string; Icon: React.ComponentType<{ className?: string }> } {
-  if (it.isHalt) return { tone: 'text-red-700 bg-red-50 border-red-200', label: 'Halted', Icon: AlertTriangle };
+  // Black Box v4 register — red #C8361B for halt, ink on paper for pass (no green), muted ink for revision.
+  if (it.isHalt) return { tone: 'text-[#C8361B] bg-[#FAF9F7] border-[#C8361B4D]', label: 'Halted', Icon: AlertTriangle };
   const v = (it.verdict || '').toUpperCase();
   if (v === 'PASS' || v === 'REWRITE_OK' || (it.status || '').includes('APPROV')) {
-    return { tone: 'text-emerald-700 bg-emerald-50 border-emerald-200', label: prettyVerdict(v, 'Approved'), Icon: CheckCircle2 };
+    return { tone: 'text-[#131210] bg-[#FAF9F7] border-[#1312102E]', label: prettyVerdict(v, 'Approved'), Icon: CheckCircle2 };
   }
-  return { tone: 'text-amber-700 bg-amber-50 border-amber-200', label: prettyVerdict(v, 'Needs revision'), Icon: RefreshCw };
+  return { tone: 'text-[#6B675E] bg-[#FAF9F7] border-[#1312102E]', label: prettyVerdict(v, 'Needs revision'), Icon: RefreshCw };
 }
 
 function relTime(iso: string | null): string {
@@ -125,7 +126,7 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
           · {iterations.length} iteration{iterations.length === 1 ? '' : 's'}
         </span>
         {scoreDelta !== null && scoreDelta !== 0 && (
-          <span className={`text-xs tabular-nums ${scoreDelta > 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+          <span className={`text-xs tabular-nums ${scoreDelta > 0 ? 'text-[#131210]' : 'text-[#C8361B]'}`}>
             {scoreDelta > 0 ? '+' : ''}{scoreDelta.toFixed(1)} since first pass
           </span>
         )}
@@ -179,7 +180,7 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
                       <span className="text-[var(--ds-dim)]">{it.issuesCount}↯</span>
                     )}
                     {it.rewrite && (
-                      <span className="text-emerald-600 text-xs" title="A rewrite was applied">rewrite</span>
+                      <span className="text-[#6B675E] text-xs" title="A rewrite was applied">rewrite</span>
                     )}
                     <span className="text-[var(--ds-dim)] ml-auto font-mono tabular-nums text-xs">{relTime(it.ts)}</span>
                     {isExpanded ? <ChevronUp className="w-3 h-3 text-[var(--ds-dim)]" /> : <ChevronDown className="w-3 h-3 text-[var(--ds-dim)]" />}
@@ -187,8 +188,8 @@ const QAVerdictPanel: React.FC<Props> = ({ entries }) => {
                   {isExpanded && (
                     <div className="mt-1 ml-5 pl-2 border-l-2 border-[var(--ds-line)] text-xs text-[var(--ds-ink)] leading-snug max-h-[360px] overflow-y-auto space-y-2">
                       {it.rewrite && (
-                        <div className="rounded border-l-[3px] border-emerald-400 bg-emerald-50 pl-2 pr-2 py-1.5 -ml-2">
-                          <div className="text-xs uppercase tracking-wider text-emerald-700 mb-1">
+                        <div className="rounded border-l-[3px] border-[#1312102E] bg-[#FAF9F7] pl-2 pr-2 py-1.5 -ml-2">
+                          <div className="text-xs uppercase tracking-wider text-[#6B675E] mb-1">
                             Applied rewrite (what auto-publish shipped)
                           </div>
                           <div className="whitespace-pre-wrap text-[var(--ds-ink)] text-xs leading-snug">{it.rewrite}</div>

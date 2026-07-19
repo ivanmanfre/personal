@@ -29,7 +29,6 @@ import type { NavItem, SectionId } from './types';
 const PostStudioPanel = lazy(() => import('../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../dashboard/LeadMagnetStudioPanel'));
 const PromptLibraryPanel = lazy(() => import('../dashboard/PromptLibraryPanel'));
-const OutreachPanel = lazy(() => import('../dashboard/OutreachPanel'));
 const AudienceAuditsPanel = lazy(() => import('../dashboard/AudienceAuditsPanel'));
 const MeetingsPanel = lazy(() => import('../dashboard/MeetingsPanel'));
 const OverviewPanel = lazy(() => import('../dashboard/OverviewPanel'));
@@ -60,6 +59,7 @@ const host = (node: React.ReactNode) => () => <Suspense fallback={<PanelLoading 
 // internally, keeping every classic capability reachable.
 const PostWorkSurface = lazy(() => import('./review/PostWorkSurface'));
 const LmWorkSurface = lazy(() => import('./review/LmWorkSurface'));
+const OutreachWorkSurface = lazy(() => import('./review/OutreachWorkSurface'));
 
 // ── Nav model: [group] → visible subsection entries. Every one of the 11
 // legacy section ids resolves here (see notes.md mapping table). ────────────
@@ -82,7 +82,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
   {
     group: 'pipeline',
     items: [
-      { id: 'outreach', name: 'Outreach', render: host(<OutreachPanel />) },
+      { id: 'outreach', name: 'Outreach', render: host(<OutreachWorkSurface />) },
       { id: 'scans', name: 'Scans', render: host(<AudienceAuditsPanel />) },
       { id: 'calls', name: 'Calls', render: host(<MeetingsPanel />) },
     ],

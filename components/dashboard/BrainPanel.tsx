@@ -10,15 +10,14 @@ import EmptyState from './shared/EmptyState';
 import { timeAgo } from './shared/utils';
 import BrainGraphSection from './BrainGraphSection';
 
+// Colors for the live-derived tier roster (useBrainStats deriveClientTiers).
+// Ivan's own tiers + the real paying client. Any other id falls back to zinc,
+// so dead pre-pivot automation clients no longer get a reserved slot here.
 const tierColors: Record<string, string> = {
   global: 'text-emerald-400',
   'shared-tech': 'text-cyan-400',
   ivan: 'text-violet-400',
-  secondmile: 'text-blue-400',
-  agencyops: 'text-amber-400',
-  lemonade: 'text-pink-400',
-  proswppp: 'text-orange-400',
-  reeder: 'text-purple-400',
+  risedtc: 'text-rose-400',
 };
 
 const SessionLogCard: React.FC<{ log: SessionLog }> = ({ log }) => {

@@ -1,0 +1,253 @@
+/* components/dashboard-v2/v1-bridge.css
+ * Black Box v4 register overlay for the remaining LIVE v1 dashboard panels.
+ * Scoped to `.dashboard-v2 .dv-panel.dv-bridge` so it applies ONLY to sections
+ * whose wrapper carries `dv-bridge` (added per-section by the shell for the 6
+ * live panels: Scans, Calls, Health, Positioning, Agent, Usage). Archive panels
+ * never get the class, so they keep dark chrome. Never leaks to v1-proper or the
+ * public site (both lack `.dashboard-v2`).
+ *
+ * Register: paper #FFFFFF/#FAF9F7, ink #131210, muted #6B675E, hairline
+ * rgba(19,18,16,0.18), red #C8361B for failure/danger fills+text only. No green.
+ * Solid semantic fills keep their signal (red dot stays red, amber->muted ink,
+ * emerald/blue/violet->ink); only opacity-tint backgrounds become paper washes.
+ * Enumerated from a live grep of the 6 panels (freq table in wave2-reskins.md);
+ * !important + the extra .dv-bridge class win over theme/light.css generic map. */
+
+/* --- Backgrounds --- */
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-500,
+.dashboard-v2 .dv-panel.dv-bridge .bg-green-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-orange-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-orange-500 {
+  background-color: #131210 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-500 {
+  background-color: #6B675E !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-500 {
+  background-color: #C8361B !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-100,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-400,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-500,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-700\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-700\/50,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-700,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-700\/60 {
+  background-color: #F2F0EC !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-500\/5,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-950\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-950\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-red-950\/30 {
+  background-color: #FAF2F0 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-amber-950\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-500\/50,
+.dashboard-v2 .dv-panel.dv-bridge .bg-blue-950\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-600\/30,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-900\/50,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-950\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-emerald-950\/30,
+.dashboard-v2 .dv-panel.dv-bridge .bg-orange-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .bg-orange-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/15,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/20,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/30,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/50,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/60,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/70,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-800\/80,
+.dashboard-v2 .dv-panel.dv-bridge .group-hover\:bg-blue-400\/70,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-amber-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-amber-900\/10,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-emerald-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-emerald-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-emerald-600\/50,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-emerald-800\/50,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-800,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-800\/20,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-800\/30 {
+  background-color: #FAF9F7 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-900,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-900\/30,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-900\/40,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-900\/60,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-900\/80,
+.dashboard-v2 .dv-panel.dv-bridge .bg-zinc-950\/80,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:bg-zinc-900 {
+  background-color: #FFFFFF !important;
+}
+
+/* --- Text --- */
+.dashboard-v2 .dv-panel.dv-bridge .hover\:text-blue-300,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:text-emerald-200,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:text-emerald-400,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:text-zinc-200,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:text-zinc-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-blue-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-blue-300\/90,
+.dashboard-v2 .dv-panel.dv-bridge .text-blue-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-blue-400\/70,
+.dashboard-v2 .dv-panel.dv-bridge .text-emerald-200\/90,
+.dashboard-v2 .dv-panel.dv-bridge .text-emerald-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-emerald-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-emerald-400\/70,
+.dashboard-v2 .dv-panel.dv-bridge .text-emerald-400\/80,
+.dashboard-v2 .dv-panel.dv-bridge .text-green-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-orange-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-orange-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-sky-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-violet-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-violet-400\/60,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-100,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-200,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-900 {
+  color: #131210 !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .group-hover\:text-zinc-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-200,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-300\/90,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-400\/60,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-400\/70,
+.dashboard-v2 .dv-panel.dv-bridge .text-amber-400\/80,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-500,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-600,
+.dashboard-v2 .dv-panel.dv-bridge .text-zinc-700 {
+  color: #6B675E !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .text-red-300,
+.dashboard-v2 .dv-panel.dv-bridge .text-red-300\/90,
+.dashboard-v2 .dv-panel.dv-bridge .text-red-400,
+.dashboard-v2 .dv-panel.dv-bridge .text-red-400\/50,
+.dashboard-v2 .dv-panel.dv-bridge .text-red-400\/70 {
+  color: #C8361B !important;
+}
+
+/* --- Borders --- */
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-500\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-800\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-amber-800\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-blue-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .border-blue-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-blue-500\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-blue-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-500\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-600\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-700\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-700\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-emerald-800\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-orange-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-orange-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-violet-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .border-violet-500\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-violet-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-100,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-500\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-600\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700\/25,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-700\/50,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800\/15,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800\/50,
+.dashboard-v2 .dv-panel.dv-bridge .border-zinc-800\/60,
+.dashboard-v2 .dv-panel.dv-bridge .focus\:border-violet-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:border-zinc-700\/60 {
+  border-color: rgba(19,18,16,0.18) !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .border-red-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .border-red-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .border-red-500\/30,
+.dashboard-v2 .dv-panel.dv-bridge .border-red-500\/40,
+.dashboard-v2 .dv-panel.dv-bridge .border-red-900\/30 {
+  border-color: rgba(200,54,27,0.30) !important;
+}
+
+/* --- Rings --- */
+.dashboard-v2 .dv-panel.dv-bridge .focus\:ring-violet-500\/20 {
+  --tw-ring-color: rgba(19,18,16,0.18) !important;
+}
+.dashboard-v2 .dv-panel.dv-bridge .ring-red-500\/30 {
+  --tw-ring-color: rgba(200,54,27,0.30) !important;
+}
+
+/* --- Gradient from --- */
+.dashboard-v2 .dv-panel.dv-bridge .from-amber-950\/30,
+.dashboard-v2 .dv-panel.dv-bridge .from-emerald-500\/15,
+.dashboard-v2 .dv-panel.dv-bridge .from-emerald-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .from-violet-500,
+.dashboard-v2 .dv-panel.dv-bridge .from-violet-500\/10,
+.dashboard-v2 .dv-panel.dv-bridge .from-violet-500\/20,
+.dashboard-v2 .dv-panel.dv-bridge .from-zinc-950\/30,
+.dashboard-v2 .dv-panel.dv-bridge .hover\:from-violet-400 {
+  --tw-gradient-from: #FAF9F7 !important;
+}
+
+/* --- Gradient to --- */
+.dashboard-v2 .dv-panel.dv-bridge .hover\:to-violet-500,
+.dashboard-v2 .dv-panel.dv-bridge .to-emerald-600\/12,
+.dashboard-v2 .dv-panel.dv-bridge .to-emerald-600\/15,
+.dashboard-v2 .dv-panel.dv-bridge .to-violet-600,
+.dashboard-v2 .dv-panel.dv-bridge .to-violet-600\/20,
+.dashboard-v2 .dv-panel.dv-bridge .to-zinc-900\/10,
+.dashboard-v2 .dv-panel.dv-bridge .to-zinc-900\/60 {
+  --tw-gradient-to: #FAF9F7 !important;
+}
+
+/* --- Shadow color --- */
+.dashboard-v2 .dv-panel.dv-bridge .shadow-violet-500\/20 {
+  --tw-shadow-color: rgba(19,18,16,0.08) !important;
+}
+
+/* --- Divide (child top borders) --- */
+.dashboard-v2 .dv-panel.dv-bridge .divide-zinc-800\/40 > * + * {
+  border-color: rgba(19,18,16,0.18) !important;
+}
+
+/* --- Placeholder --- */
+.dashboard-v2 .dv-panel.dv-bridge .placeholder-zinc-600::placeholder {
+  color: #8A857C !important;
+}
+
+/* --- Special (white/black literals) --- */
+.dashboard-v2 .dv-panel.dv-bridge .bg-black { background-color: #131210 !important; }
+.dashboard-v2 .dv-panel.dv-bridge .text-white { color: #131210 !important; }
+

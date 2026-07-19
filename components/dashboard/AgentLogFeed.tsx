@@ -79,19 +79,20 @@ function detectStatus(e: AgentLogEntry): NodeStatus {
   return 'info';
 }
 
+// Black Box v4 register — ink dot on paper, muted for pending, red #C8361B for failure. No green.
 const NODE_COLOR: Record<NodeStatus, string> = {
-  pass:    'bg-emerald-500 ring-emerald-200',
-  fail:    'bg-red-500 ring-red-200',
-  rewrite: 'bg-amber-400 ring-amber-200',
-  info:    'bg-indigo-400 ring-indigo-200',
-  halt:    'bg-red-700 ring-red-300',
+  pass:    'bg-[#131210] ring-[#13121026]',
+  fail:    'bg-[#C8361B] ring-[#C8361B40]',
+  rewrite: 'bg-[#6B675E] ring-[#13121026]',
+  info:    'bg-[#B4B0A8] ring-[#13121026]',
+  halt:    'bg-[#C8361B] ring-[#C8361B4D]',
 };
 
 const VERDICT_CHIP: Record<NodeStatus, { label: string; cls: string } | null> = {
-  pass:    { label: 'PASS',    cls: 'text-emerald-700 bg-emerald-50 ring-emerald-200' },
-  fail:    { label: 'FAIL',    cls: 'text-red-700 bg-red-50 ring-red-200' },
-  rewrite: { label: 'REWRITE', cls: 'text-amber-700 bg-amber-50 ring-amber-200' },
-  halt:    { label: 'HALT',    cls: 'text-red-700 bg-red-50 ring-red-300' },
+  pass:    { label: 'PASS',    cls: 'text-[#131210] bg-[#FAF9F7] ring-[#1312102E]' },
+  fail:    { label: 'FAIL',    cls: 'text-[#C8361B] bg-[#FAF9F7] ring-[#C8361B4D]' },
+  rewrite: { label: 'REWRITE', cls: 'text-[#6B675E] bg-[#FAF9F7] ring-[#1312102E]' },
+  halt:    { label: 'HALT',    cls: 'text-[#C8361B] bg-[#FAF9F7] ring-[#C8361B4D]' },
   info:    null,
 };
 
@@ -220,7 +221,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-[var(--ds-ink)] hover:bg-black/[.03] transition-colors"
       >
-        <Sparkles className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+        <Sparkles className="w-3.5 h-3.5 text-[#6B675E] flex-shrink-0" />
         <span className="font-medium text-[var(--ds-ink)] text-[13px]">Agent run log</span>
         <span className="text-xs text-[var(--ds-dim)]">· {sorted.length} event{sorted.length === 1 ? '' : 's'}</span>
         <span className="ml-auto text-[var(--ds-dim)]">
@@ -264,7 +265,7 @@ const AgentLogFeed: React.FC<Props> = ({ entries, defaultOpen, table, rowId, onN
                     {!isLast && (
                       <div
                         className="flex-1 w-px"
-                        style={{ marginTop: 4, backgroundColor: '#d1d5db' }}
+                        style={{ marginTop: 4, backgroundColor: 'var(--ds-line)' }}
                       />
                     )}
                   </div>
