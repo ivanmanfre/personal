@@ -9,6 +9,7 @@ export type SectionId =
   | 'reach'
   | 'ops'
   | 'clients'
+  | 'clientops'
   | 'knowledge'
   | 'agent'
   | 'ideas'

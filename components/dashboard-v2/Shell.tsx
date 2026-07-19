@@ -11,7 +11,7 @@ import type { SectionId, NavItem, PaletteItem } from './types';
 import './dashboard-v2.css';
 
 const ALL_SECTIONS: SectionId[] = [
-  'briefing', 'content', 'reach', 'ops', 'clients', 'knowledge', 'agent', 'opsideas', 'system', 'personal',
+  'briefing', 'content', 'reach', 'ops', 'clients', 'clientops', 'knowledge', 'agent', 'opsideas', 'system', 'personal',
 ];
 
 // Legacy slug remap: the standalone Ideas section was retired — content ideas

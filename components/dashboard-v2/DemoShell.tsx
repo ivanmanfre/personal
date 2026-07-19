@@ -9,6 +9,7 @@ import { ContentStudio } from './sections/ContentStudio';
 import { ReachPipeline } from './sections/ReachPipeline';
 import { Operations } from './sections/Operations';
 import { Clients } from './sections/Clients';
+import { ClientOps } from './sections/ClientOps';
 import { Knowledge } from './sections/Knowledge';
 import { Agent } from './sections/Agent';
 import { SystemOverview } from './sections/SystemOverview';
@@ -31,12 +32,13 @@ function ShellInner() {
     { id: 'content', name: 'Content Studio', num: '01', group: 'operate' },
     { id: 'reach', name: 'Reach & Pipeline', num: '02', group: 'operate' },
     { id: 'ops', name: 'Operations', num: '03', group: 'operate', ...(checkStats.due > 0 ? { badge: { count: checkStats.due, severity: 'bad' as const } } : {}) },
-    { id: 'clients', name: 'Clients', num: '04', group: 'knowledge' },
-    { id: 'knowledge', name: 'Knowledge', num: '05', group: 'knowledge' },
-    { id: 'agent', name: 'Agent', num: '06', group: 'knowledge' },
-    { id: 'opsideas', name: 'Ops Ideas', num: '07', group: 'knowledge' },
-    { id: 'system', name: 'System', num: '08', group: 'knowledge' },
-    { id: 'personal', name: 'Personal', num: '09', group: 'personal' },
+    { id: 'clientops', name: 'Client Ops', num: '04', group: 'operate' },
+    { id: 'clients', name: 'Clients', num: '05', group: 'knowledge' },
+    { id: 'knowledge', name: 'Knowledge', num: '06', group: 'knowledge' },
+    { id: 'agent', name: 'Agent', num: '07', group: 'knowledge' },
+    { id: 'opsideas', name: 'Ops Ideas', num: '08', group: 'knowledge' },
+    { id: 'system', name: 'System', num: '09', group: 'knowledge' },
+    { id: 'personal', name: 'Personal', num: '10', group: 'personal' },
   ];
 
   // Briefing's onNavigate signature includes optional sub-tab.
@@ -57,6 +59,7 @@ function ShellInner() {
     content: () => <ContentStudio />,
     reach: () => <ReachPipeline />,
     ops: () => <Operations />,
+    clientops: () => <ClientOps />,
     clients: () => <Clients />,
     knowledge: () => <Knowledge />,
     agent: () => <Agent />,

@@ -19,11 +19,12 @@ const SECTION_ICON: Record<string, React.ReactNode> = {
   opsideas: ic(<><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5" /></>),
   system:   ic(<><rect x="2" y="2" width="20" height="8" rx="2" /><rect x="2" y="14" width="20" height="8" rx="2" /><line x1="6" y1="6" x2="6.01" y2="6" /><line x1="6" y1="18" x2="6.01" y2="18" /></>),
   personal: ic(<><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>),
+  clientops: ic(<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>),
 };
 const SECTION_SHORT: Record<string, string> = {
   briefing: 'Brief', content: 'Content', reach: 'Reach', ops: 'Ops',
   clients: 'Clients', knowledge: 'Knowledge', agent: 'Agent', personal: 'Personal',
-  opsideas: 'Ops Ideas',
+  opsideas: 'Ops Ideas', clientops: 'Client Ops',
 };
 
 interface SidebarProps {
