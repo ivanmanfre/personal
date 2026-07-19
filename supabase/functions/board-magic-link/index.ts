@@ -22,10 +22,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-// Sender identity. ivanmanfredi.com is the only Resend-verified domain TODAY;
-// flip to "InboundOnSteroids <login@inboundonsteroids.com>" once the
-// inboundonsteroids.com DNS records verify in Resend (2026-07-18 handoff step).
-const FROM = "Ivan Manfredi <login@ivanmanfredi.com>";
+// Sender identity. inboundonsteroids.com verified in Resend 2026-07-19 (DKIM+MX+SPF),
+// so sign-in email now comes from the product brand, matching the board URL.
+const FROM = "InboundOnSteroids <login@inboundonsteroids.com>";
 // Board links live on the product brand. The ivanmanfredi.com route keeps
 // working (same SPA, same RPCs) — this only changes where emails point.
 const BOARD_BASE = "https://inboundonsteroids.com/client";
