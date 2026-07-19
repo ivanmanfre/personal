@@ -10,7 +10,6 @@ import { SystemPulse } from './sections/SystemPulse';
 import { StylesLive } from './sections/StylesLive';
 import { StealBox } from './sections/StealBox';
 import { Personal } from './sections/Personal';
-import { InternalTabs } from '../dashboard/InternalTabs';
 import { LiveProvider } from './live/LiveProvider';
 import type { NavItem, SectionId } from './types';
 
@@ -28,16 +27,14 @@ import type { NavItem, SectionId } from './types';
 // ── Lazy v1 panels (reused as-is, never restyled) ──────────────────────────
 const PostStudioPanel = lazy(() => import('../dashboard/PostStudioPanel'));
 const LeadMagnetStudioPanel = lazy(() => import('../dashboard/LeadMagnetStudioPanel'));
-const PromptLibraryPanel = lazy(() => import('../dashboard/PromptLibraryPanel'));
-const AudienceAuditsPanel = lazy(() => import('../dashboard/AudienceAuditsPanel'));
-const MeetingsPanel = lazy(() => import('../dashboard/MeetingsPanel'));
-const OverviewPanel = lazy(() => import('../dashboard/OverviewPanel'));
-const WorkflowsPanel = lazy(() => import('../dashboard/WorkflowsPanel'));
-const ScheduledOpsPanel = lazy(() => import('../dashboard/ScheduledOpsPanel'));
-const StrategyPanel = lazy(() => import('../dashboard/StrategyPanel'));
-const BrainPanel = lazy(() => import('../dashboard/BrainPanel'));
-const AgentPanel = lazy(() => import('../dashboard/AgentPanel'));
-const UsagePanel = lazy(() => import('../dashboard/UsagePanel'));
+const PromptLibraryPanel = lazy(() => import('./sections/rebuilt/PromptsRebuilt'));
+const AudienceAuditsPanel = lazy(() => import('./sections/rebuilt/ScansRebuilt'));
+const MeetingsPanel = lazy(() => import('./sections/rebuilt/CallsRebuilt'));
+const HealthRebuilt = lazy(() => import('./sections/rebuilt/HealthRebuilt'));
+const StrategyPanel = lazy(() => import('./sections/rebuilt/PositioningRebuilt'));
+const BrainPanel = lazy(() => import('./sections/rebuilt/BrainRebuilt'));
+const AgentPanel = lazy(() => import('./sections/rebuilt/AgentRebuilt'));
+const UsagePanel = lazy(() => import('./sections/rebuilt/UsageRebuilt'));
 const LetterPanel = lazy(() => import('../dashboard/LetterPanel'));
 const CompetitorIntelPanel = lazy(() => import('../dashboard/CompetitorIntelPanel'));
 const SignalClustersPanel = lazy(() => import('../dashboard/SignalClustersPanel'));
@@ -97,20 +94,7 @@ const NAV: { group: string; items: { id: string; name: string; render: () => Rea
     group: 'system',
     items: [
       { id: 'pulse', name: 'Pulse', render: () => <SystemPulse /> },
-      {
-        id: 'health',
-        name: 'Health',
-        render: host(
-          <InternalTabs
-            storageKey="r2-system-health-tab"
-            tabs={[
-              { key: 'overview', label: 'Overview', render: () => <OverviewPanel /> },
-              { key: 'workflows', label: 'Workflows', render: () => <WorkflowsPanel /> },
-              { key: 'ops', label: 'Scheduled Ops', render: () => <ScheduledOpsPanel /> },
-            ]}
-          />,
-        ),
-      },
+      { id: 'health', name: 'Health', render: host(<HealthRebuilt />) },
       { id: 'positioning', name: 'Positioning', render: host(<StrategyPanel />) },
       { id: 'brain', name: 'Brain', render: host(<BrainPanel />) },
       { id: 'agent', name: 'Agent', render: host(<AgentPanel />) },
