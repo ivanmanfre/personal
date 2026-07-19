@@ -28,7 +28,7 @@ export function CommandPalette(props: CommandPaletteProps) {
       <div className="dv-cmdk" onClick={e => e.stopPropagation()}>
         <input
           ref={inputRef}
-          placeholder="Jump to anything — section, post, prompt, prospect, workflow…"
+          placeholder="Jump to anything: section, post, prompt, prospect, workflow"
           value={props.query}
           onChange={e => { props.setQuery(e.target.value); props.setActiveIdx(0); }}
         />

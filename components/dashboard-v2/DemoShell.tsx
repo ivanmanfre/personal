@@ -174,15 +174,19 @@ export default function DemoShell() {
   }, []);
   return (
     <DashboardProvider>
+      {/* Black Box v4: paper white, ink text, single hairline, sharp corners,
+          Schibsted Grotesk. Printed, not floating (no drop shadow). */}
       <Toaster
         theme="light"
         position="top-right"
         toastOptions={{
           style: {
-            background: '#ffffff',
-            color: '#0f172a',
-            border: '1px solid #e9e9ee',
-            fontFamily: 'Inter, system-ui, sans-serif',
+            background: '#FFFFFF',
+            color: '#131210',
+            border: '1px solid #131210',
+            borderRadius: 0,
+            boxShadow: 'none',
+            fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
             fontSize: 13,
           },
         }}

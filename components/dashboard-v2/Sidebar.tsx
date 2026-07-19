@@ -84,14 +84,13 @@ export function Sidebar({ items, active, onSelect, open, onClose, collapsed, onT
         </button>
       )}
       <div className="dv-brand">
-        <span className="dv-brand-logo" aria-hidden="true">
-          <svg viewBox="0 0 32 32" width="28" height="28">
-            <rect width="32" height="32" rx="7" fill="var(--d-good)" />
-            <path d="M7 22 V10 H10.5 L16 18 L21.5 10 H25 V22 H22 V14.5 L17 21.5 H15 L10 14.5 V22 Z" fill="#fff" />
-          </svg>
-        </span>
+        {/* Collapsed rail + small tiles: the ON mark inside the double-rule box. */}
+        <span className="dv-onmark" aria-hidden="true">ON</span>
+        {/* Expanded / drawer: the full wordmark, one line, ON weight 900 red. */}
         <div className="dv-brand-text">
-          <div className="dv-brand-mark">Ivan <em>System</em></div>
+          <span className="dv-wordmark" aria-label="InboundOnSteroids">
+            <span className="dv-wm-a">INBOUND</span><span className="dv-wm-on">ON</span><span className="dv-wm-a">STEROIDS</span>
+          </span>
         </div>
         {onClose && (
           <button type="button" className="dv-sidebar-close" aria-label="Close navigation" onClick={onClose}>×</button>

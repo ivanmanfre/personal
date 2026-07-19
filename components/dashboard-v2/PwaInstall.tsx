@@ -52,24 +52,24 @@ export function PwaInstall() {
   return (
     <div
       role="dialog"
-      aria-label="Install Ivan System app"
+      aria-label="Install InboundOnSteroids app"
       style={{
         position: 'fixed', bottom: '1rem', right: '1rem', zIndex: 90,
-        background: 'var(--d-ink-2)', border: '1px solid var(--d-rule-strong)',
-        borderRadius: 8, padding: '0.85rem 1rem', maxWidth: 320,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        color: 'var(--d-paper)',
+        background: '#FFFFFF', border: '1px solid #131210',
+        borderRadius: 0, padding: '0.85rem 1rem', maxWidth: 320,
+        boxShadow: 'none',
+        fontFamily: "'Schibsted Grotesk', system-ui, sans-serif",
+        color: '#131210',
       }}
     >
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
         Install as a desktop app
       </div>
-      <div style={{ fontSize: 12, color: 'var(--d-paper-dim)', lineHeight: 1.45, marginBottom: '0.75rem' }}>
+      <div style={{ fontSize: 12, color: '#6B675E', lineHeight: 1.45, marginBottom: '0.75rem' }}>
         Get a dock icon + native notifications when something needs attention.
       </div>
       <div style={{ display: 'flex', gap: '0.5rem' }}>
-        <button className="dv-btn dv-btn--good" onClick={install}>Install</button>
+        <button className="dv-btn dv-btn--bx-ink" onClick={install}>Install</button>
         <button className="dv-btn dv-btn--dim" onClick={dismiss}>Not now</button>
       </div>
     </div>

@@ -1136,3 +1136,284 @@ body.dashboard-v2-light * {
 @media (prefers-reduced-motion: reduce) {
   .dashboard-v2 .dv-panel { animation: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DIRECTION A — "THE INDEX"   ·   Black Box v4 shell   (founder verdict 2026-07-18)
+   ──────────────────────────────────────────────────────────────────────────
+   The legacy green wordmark is dead. The sidebar is now the index page of a
+   printed regulatory document: paper white, ink hairline rules, tracked-caps
+   NUMBERED section headings, clean Schibsted rows, tabular-numeral badges, and
+   ink-square change marks. The active entry is marked by a flush ink bar, never
+   a colored fill. The topbar (and the sidebar masthead) carry the full
+   INBOUNDONSTEROIDS wordmark; the collapsed rail carries the ON mark in its
+   double-rule box. Red law: the wordmark ON is fixed anatomy; beyond it, at
+   most ONE functional red per screen (the bell's top-severity badge / the "N new"
+   figure inside the open notifications panel). No green, no indigo, no glow,
+   no rounded pills, no glass, no drop shadows. Printed, not floating.
+   These rules load after theme/light.css, so they win its !important shell map.
+   ══════════════════════════════════════════════════════════════════════════ */
+.dashboard-v2 {
+  --ec-sans: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  --bx-paper: #FFFFFF;
+  --bx-ink: #131210;
+  --bx-body: #4A463E;          /* sanctioned neutral ramp: secondary body */
+  --bx-muted: #6B675E;         /* captions / section headings only */
+  --bx-dim: #9A958A;           /* disabled / comparison strokes */
+  --bx-red: #C8361B;           /* Signal red. Fixed anatomy + one functional. */
+  --bx-hair: rgba(19, 18, 16, 0.14);
+  --bx-hair-strong: rgba(19, 18, 16, 0.26);
+  --bx-wash: rgba(19, 18, 16, 0.05);   /* the faintest seat, hover only */
+}
+
+/* ── The wordmark (topbar + expanded sidebar masthead) ── */
+.dv-wordmark {
+  font-family: var(--ec-sans);
+  font-size: 13px; line-height: 1; letter-spacing: -0.02em;
+  white-space: nowrap; color: var(--bx-ink); display: inline-block;
+}
+.dv-wm-a  { font-weight: 500; }
+.dv-wm-on { font-weight: 900; color: var(--bx-red); }
+
+/* ── The ON mark — double-rule box, collapsed rail + mobile tiles only ── */
+.dv-onmark {
+  display: none;                         /* shown only inside the rail (below) */
+  align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex: 0 0 auto;
+  border: 2px solid var(--bx-ink);
+  outline: 1px solid var(--bx-ink); outline-offset: 2px;
+  background: var(--bx-paper);
+  font-family: var(--ec-sans); font-weight: 900; font-size: 13px; letter-spacing: 0;
+  color: var(--bx-red);
+}
+
+/* ── Focus ring: ink, not green ── */
+body.dashboard-v2-light .dashboard-v2 *:focus-visible { outline-color: var(--bx-ink) !important; }
+
+/* ── Sidebar: the paper index sheet ── */
+body.dashboard-v2-light .dv-sidebar {
+  background: var(--bx-paper) !important;
+  border-right: 1px solid var(--bx-hair) !important;
+  padding: 1.4rem 0 1rem;
+}
+body.dashboard-v2-light .dv-brand {
+  padding: 0 1.4rem 0.95rem; margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--bx-ink) !important;    /* the masthead plate rule */
+  display: flex; align-items: center; gap: 0.55rem;
+}
+body.dashboard-v2-light .dv-brand-text { min-width: 0; }
+
+/* ── The index list ── */
+body.dashboard-v2-light .dv-nav { padding: 0.2rem 0 0 0 !important; }
+/* Numbered section headings (document grammar): 01 CONTENT, 02 PIPELINE ... */
+body.dashboard-v2-light .dv-nav { counter-reset: bxsection; }
+body.dashboard-v2-light .dv-nav-divider {
+  counter-increment: bxsection;
+  font-family: var(--ec-sans);
+  font-size: 10px !important; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--bx-muted) !important;
+  padding: 1.2rem 1.4rem 0.5rem !important; margin: 0;
+  display: flex; align-items: baseline; gap: 0.5rem; border: none;
+}
+body.dashboard-v2-light .dv-nav-divider::before {
+  content: counter(bxsection, decimal-leading-zero);
+  font-variant-numeric: tabular-nums;
+  color: var(--bx-ink); font-weight: 700; letter-spacing: 0.02em;
+}
+body.dashboard-v2-light .dv-nav-divider:first-child { padding-top: 0.3rem !important; }
+
+/* ── Rows ── */
+body.dashboard-v2-light .dv-nav-item {
+  font-family: var(--ec-sans);
+  color: var(--bx-body) !important;
+  padding: 0.42rem 1.4rem !important; min-height: 33px !important;
+  margin: 0; border-radius: 0 !important; gap: 0.6rem;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+body.dashboard-v2-light .dv-nav-item:hover {
+  background: var(--bx-wash) !important; color: var(--bx-ink) !important;
+  padding-left: 1.4rem !important;                       /* no hover shift — the index sits still */
+}
+body.dashboard-v2-light .dv-nav-item:active { transform: none; }
+body.dashboard-v2-light .dv-nav-item[aria-current="page"],
+body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"] {
+  background: transparent !important; color: var(--bx-ink) !important; box-shadow: none !important;
+}
+/* The you-are-here mark: a flush ink bar at the sheet's left edge. */
+body.dashboard-v2-light .dv-nav-item[aria-current="page"]::before,
+body.dashboard-v2-light .dv-nav-item.dv-briefing[aria-current="page"]::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--bx-ink) !important; box-shadow: none !important; border-radius: 0;
+}
+body.dashboard-v2-light .dv-nav-name {
+  font-family: var(--ec-sans); font-size: 13px; font-weight: 500; color: inherit !important;
+}
+body.dashboard-v2-light .dv-nav-item[aria-current="page"] .dv-nav-name {
+  color: var(--bx-ink) !important; font-weight: 700;
+}
+
+/* Badges: tabular numerals in a hairline box, ink/muted (never red). */
+body.dashboard-v2-light .dv-nav-badge,
+body.dashboard-v2-light .dv-nav-badge--amber {
+  font-family: var(--ec-sans); font-size: 10.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+  min-width: 18px; padding: 0 0.34rem; text-align: center;
+  background: transparent !important; color: var(--bx-muted) !important;
+  border: 1px solid var(--bx-hair-strong); border-radius: 0;
+}
+body.dashboard-v2-light .dv-nav-badge--amber {
+  color: var(--bx-ink) !important; border-color: var(--bx-ink);
+}
+body.dashboard-v2-light .dv-nav-item[aria-current="page"] .dv-nav-badge {
+  color: var(--bx-ink) !important; border-color: var(--bx-ink);
+}
+/* Change mark: a small solid ink square. */
+body.dashboard-v2-light .dv-nav-dot {
+  background: var(--bx-ink); border-radius: 0; width: 6px; height: 6px; opacity: 0.9;
+}
+
+/* Foot + ⌘K hint */
+body.dashboard-v2-light .dv-sidebar-foot {
+  border-top: 1px solid var(--bx-hair) !important; padding: 0.8rem 1.4rem;
+}
+body.dashboard-v2-light .dv-kbd-hint {
+  font-family: var(--ec-sans); font-size: 11px !important; letter-spacing: 0.04em;
+  color: var(--bx-muted) !important;
+}
+body.dashboard-v2-light .dv-kbd-hint kbd {
+  font-family: var(--ec-sans); font-size: 10px !important; font-weight: 600;
+  background: var(--bx-paper) !important; border: 1px solid var(--bx-hair-strong) !important;
+  color: var(--bx-ink) !important; border-radius: 0 !important; padding: 0.1rem 0.32rem;
+}
+
+/* Rail toggle — a square ink control, no circle, no glow */
+body.dashboard-v2-light .dv-rail-toggle {
+  background: var(--bx-paper) !important; border: 1px solid var(--bx-hair-strong) !important;
+  color: var(--bx-muted) !important; box-shadow: none !important; border-radius: 0 !important;
+}
+body.dashboard-v2-light .dv-rail-toggle:hover {
+  background: var(--bx-ink) !important; border-color: var(--bx-ink) !important;
+  color: var(--bx-paper) !important; box-shadow: none !important;
+}
+
+/* ── Collapsed rail: the ON mark takes the masthead; entries keep ink ── */
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-brand { justify-content: center; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-onmark { display: inline-flex; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-icon { color: var(--bx-muted) !important; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-icon,
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-icon { color: var(--bx-ink) !important; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-short { font-family: var(--ec-sans); color: var(--bx-muted) !important; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item:hover .dv-nav-short,
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] .dv-nav-short { color: var(--bx-ink) !important; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"] { box-shadow: none !important; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-item[aria-current="page"]::before { left: 0; }
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-badge,
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-badge--amber {
+  background: var(--bx-ink) !important; border: none !important; border-radius: 0 !important;
+  width: 7px; height: 7px; min-width: 0; padding: 0;
+}
+/* Rail collapses section headings back to a single hairline (number + label hidden). */
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-divider {
+  font-size: 0 !important; padding: 0 !important; margin: 0.5rem 0.7rem; height: 0; overflow: hidden;
+  border-top: 1px solid var(--bx-hair) !important;
+}
+body.dashboard-v2-light .dashboard-v2-shell--rail .dv-nav-divider::before { content: none; }
+
+/* ── Mobile topbar ── */
+body.dashboard-v2-light .dv-topbar {
+  background: var(--bx-paper) !important; border-bottom: 1px solid var(--bx-ink) !important;
+}
+body.dashboard-v2-light .dv-topbar-brand { color: var(--bx-ink) !important; display: flex; align-items: center; }
+body.dashboard-v2-light .dv-hamburger { border: 1px solid var(--bx-hair-strong) !important; border-radius: 0; }
+body.dashboard-v2-light .dv-hamburger span { background: var(--bx-ink) !important; }
+
+/* ── Command palette: a printed lookup card ── */
+body.dashboard-v2-light .dv-cmdk-overlay { background: rgba(19, 18, 16, 0.32); }
+body.dashboard-v2-light .dv-cmdk {
+  background: var(--bx-paper); border: 1px solid var(--bx-ink); border-radius: 0; box-shadow: none;
+}
+body.dashboard-v2-light .dv-cmdk input {
+  font-family: var(--ec-sans); color: var(--bx-ink); border-bottom: 1px solid var(--bx-hair);
+}
+body.dashboard-v2-light .dashboard-v2 .dv-cmdk input::placeholder { color: var(--bx-muted) !important; }
+body.dashboard-v2-light .dv-cmdk-item { font-family: var(--ec-sans); color: var(--bx-body); border-radius: 0; }
+body.dashboard-v2-light .dv-cmdk-item:hover,
+body.dashboard-v2-light .dv-cmdk-item[aria-selected="true"] { background: var(--bx-wash); color: var(--bx-ink); }
+body.dashboard-v2-light .dv-cmdk-item-kbd { font-family: var(--ec-sans); color: var(--bx-muted); font-variant-numeric: tabular-nums; }
+
+/* ── LiveStatus: a small printed tag, no glass, no infinite pulse ── */
+body.dashboard-v2-light .dashboard-v2 .dv-live {
+  background: var(--bx-paper); border: 1px solid var(--bx-ink); border-radius: 0;
+  box-shadow: none; color: var(--bx-ink); font-family: var(--ec-sans);
+}
+body.dashboard-v2-light .dashboard-v2 .dv-live-beat,
+body.dashboard-v2-light .dashboard-v2 .dv-live-beat.is-working {
+  background: var(--bx-ink); border-radius: 0; width: 7px; height: 7px;
+}
+body.dashboard-v2-light .dashboard-v2 .dv-live-beat::after { display: none; }   /* kill the ping (motion law) */
+body.dashboard-v2-light .dashboard-v2 .dv-live-text { color: var(--bx-ink); font-family: var(--ec-sans); }
+body.dashboard-v2-light .dashboard-v2 .dv-live-text.dv-live-idle { color: var(--bx-muted); }
+body.dashboard-v2-light .dashboard-v2 .dv-live-spin { color: var(--bx-ink); }
+body.dashboard-v2-light .dashboard-v2 .dv-live-sound { color: var(--bx-muted); border-radius: 0; }
+body.dashboard-v2-light .dashboard-v2 .dv-live-sound:hover { background: var(--bx-wash); color: var(--bx-ink); }
+body.dashboard-v2-light .dashboard-v2 .dv-live-sound[aria-pressed="true"] { color: var(--bx-ink); }
+
+/* ── Notification bell — button ── */
+body.dashboard-v2-light .nb-button {
+  background: var(--bx-paper) !important; border: 1px solid var(--bx-hair-strong) !important;
+  color: var(--bx-ink) !important; border-radius: 0; backdrop-filter: none;
+}
+body.dashboard-v2-light .nb-button:hover { background: var(--bx-wash) !important; color: var(--bx-ink) !important; }
+body.dashboard-v2-light .nb-button:active { transform: none; }
+/* The badge is THE one functional red, and only when genuinely urgent (bad). */
+body.dashboard-v2-light .nb-badge {
+  font-family: var(--ec-sans); font-variant-numeric: tabular-nums; font-weight: 700; border-radius: 0;
+}
+body.dashboard-v2-light .nb-badge--bad  { background: var(--bx-red) !important; color: var(--bx-paper); }
+body.dashboard-v2-light .nb-badge--warn { background: var(--bx-ink) !important; color: var(--bx-paper); }
+body.dashboard-v2-light .nb-badge--good { background: var(--bx-muted) !important; color: var(--bx-paper); }
+
+/* ── Notification bell — dropdown (its own printed panel) ── */
+body.dashboard-v2-light .nb-dropdown {
+  background: var(--bx-paper); border: 1px solid var(--bx-ink); border-radius: 0;
+  box-shadow: none; font-family: var(--ec-sans);
+}
+body.dashboard-v2-light .nb-dropdown-head { color: var(--bx-ink); border-bottom: 1px solid var(--bx-hair); }
+body.dashboard-v2-light .nb-head-count { color: var(--bx-red); font-variant-numeric: tabular-nums; }  /* the one red figure */
+body.dashboard-v2-light .nb-mark { color: var(--bx-muted); border-radius: 0; }
+body.dashboard-v2-light .nb-mark:hover:not(:disabled) { background: var(--bx-wash); color: var(--bx-ink); }
+body.dashboard-v2-light .nb-mark:disabled { color: var(--bx-dim); }
+body.dashboard-v2-light .nb-empty { color: var(--bx-muted); }
+body.dashboard-v2-light .nb-group { border-top: 1px solid var(--bx-hair); }
+body.dashboard-v2-light .nb-group-head.nb-sev--bad,
+body.dashboard-v2-light .nb-group-head.nb-sev--warn { color: var(--bx-ink); }
+body.dashboard-v2-light .nb-group-head.nb-sev--good { color: var(--bx-muted); }
+body.dashboard-v2-light .nb-count {
+  background: transparent; border: 1px solid var(--bx-hair-strong); border-radius: 0;
+  color: var(--bx-muted); font-variant-numeric: tabular-nums;
+}
+body.dashboard-v2-light .nb-item:hover { background: var(--bx-wash); }
+body.dashboard-v2-light .nb-item:active { background: var(--bx-wash); transform: none; }
+body.dashboard-v2-light .nb-dot { border-radius: 0; }
+body.dashboard-v2-light .nb-item--unread .nb-dot { background: var(--bx-ink); }   /* ink square = new */
+body.dashboard-v2-light .nb-item-title { color: var(--bx-ink); }
+body.dashboard-v2-light .nb-item-time { color: var(--bx-muted); }
+body.dashboard-v2-light .nb-item-sub { color: var(--bx-muted); }
+body.dashboard-v2-light .nb-more { color: var(--bx-muted); border-radius: 0; }
+body.dashboard-v2-light .nb-more:hover { background: var(--bx-wash); color: var(--bx-ink); }
+body.dashboard-v2-light .nb-gbtn { color: var(--bx-muted); border-radius: 0; }
+body.dashboard-v2-light .nb-gbtn:hover { background: var(--bx-wash); color: var(--bx-ink); }
+body.dashboard-v2-light .nb-iaction { background: var(--bx-wash); color: var(--bx-ink); border-radius: 0; }
+body.dashboard-v2-light .nb-iaction:hover { background: var(--bx-hair); }
+body.dashboard-v2-light .nb-iaction--resolve { background: var(--bx-ink); color: var(--bx-paper); font-weight: 600; }
+body.dashboard-v2-light .nb-iaction--resolve:hover { background: #000; }
+body.dashboard-v2-light .nb-muted { border-top: 1px solid var(--bx-hair); }
+body.dashboard-v2-light .nb-muted-toggle { color: var(--bx-muted); }
+body.dashboard-v2-light .nb-muted-toggle:hover { color: var(--bx-ink); }
+body.dashboard-v2-light .nb-muted-row { color: var(--bx-muted); }
+
+/* ── PwaInstall ink button ── */
+body.dashboard-v2-light .dv-btn--bx-ink {
+  color: var(--bx-paper) !important; background: var(--bx-ink) !important; border: 1px solid var(--bx-ink) !important;
+  border-radius: 0 !important;
+}
+body.dashboard-v2-light .dv-btn--bx-ink:hover { background: #000 !important; }

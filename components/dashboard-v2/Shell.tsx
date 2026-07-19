@@ -201,7 +201,11 @@ export function Shell({ navItems, sectionRenderers, paletteItems = [] }: ShellPr
             >
               <span /><span /><span />
             </button>
-            <div className="dv-topbar-brand">Ivan <em>System</em></div>
+            <div className="dv-topbar-brand">
+              <span className="dv-wordmark" aria-label="InboundOnSteroids">
+                <span className="dv-wm-a">INBOUND</span><span className="dv-wm-on">ON</span><span className="dv-wm-a">STEROIDS</span>
+              </span>
+            </div>
           </header>
 
           {/* Notification bell — fixed top-right, layout-independent so it shows on
